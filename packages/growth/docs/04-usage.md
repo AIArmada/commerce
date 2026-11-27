@@ -10,14 +10,14 @@ Experiments are tied to a Signals `TrackedProperty` and should be created inside
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Growth\Actions\SaveExperiment;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Models\Variant;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 
 $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty): Experiment {
     /** @var Experiment $experiment */
-    $experiment = Experiment::query()->create([
+    $experiment = app(SaveExperiment::class)->create([
         'tracked_property_id' => $trackedProperty->getKey(),
         'name' => 'Pricing Page Test',
         'slug' => 'pricing-page-test',
@@ -25,7 +25,7 @@ $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty)
         'status' => 'active',
     ]);
 
-    Variant::query()->create([
+    app(SaveVariant::class)->create([
         'experiment_id' => $experiment->getKey(),
         'code' => 'A',
         'name' => 'Control',
@@ -35,7 +35,7 @@ $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty)
         'status' => VariantStatus::Active->value,
     ]);
 
-    Variant::query()->create([
+    app(SaveVariant::class)->create([
         'experiment_id' => $experiment->getKey(),
         'code' => 'B',
         'name' => 'Higher Anchoring',

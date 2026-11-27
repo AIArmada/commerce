@@ -9,11 +9,13 @@ use AIArmada\Growth\Actions\ResolveExperimentAssignment;
 use AIArmada\Growth\EntryPoints\Livewire\Concerns\InteractsWithExperimentContext;
 use AIArmada\Growth\Facades\Growth;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
+use AIArmada\Signals\Features\Browser\Api\BrowserPageProperties;
 
 it('returns null when no experiment context is available on the request', function (): void {
     expect(experiment())->toBeNull()
         ->and(Growth::variantCode())->toBeNull()
-        ->and(Growth::experimentSlug())->toBeNull();
+        ->and(Growth::experimentSlug())->toBeNull()
+        ->and(app(BrowserPageProperties::class)->currentPageProperties())->toBe([]);
 });
 
 it('exposes experiment context through the helper facade and livewire concern', function (): void {
@@ -25,12 +27,15 @@ it('exposes experiment context through the helper facade and livewire concern', 
     $manager->store(request(), $experiment, $assignment);
 
     $context = experiment();
+    $properties = app(BrowserPageProperties::class)->currentPageProperties();
     $consumer = new class
     {
         use InteractsWithExperimentContext;
     };
 
     expect($context)->not->toBeNull()
+        ->and($properties['experiment_contexts'])->toBe([$context?->toArray()])
+        ->and($properties['experiment_id'])->toBe((string) $experiment->getKey())
         ->and($context?->slug)->toBe($experiment->slug)
         ->and($context?->assignmentId())->toBe((string) $assignment->getKey())
         ->and(Growth::variantCode())->toBe($context?->variantCode())

@@ -10,12 +10,17 @@ use AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Signals\Features\Browser\Api\BrowserPageProperties;
+use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 
-arch('growth source uses strict types and no host application imports')
+arch('growth source uses strict types')
     ->expect('AIArmada\\Growth')
-    ->toUseStrictTypes()
+    ->toUseStrictTypes();
+
+arch('growth source never imports host application code')
+    ->expect('AIArmada\\Growth')
     ->not->toUse('App');
 
 arch('growth public data does not depend on runtime models or actions')
@@ -29,6 +34,7 @@ arch('growth public data does not depend on runtime models or actions')
 
 it('boots the Growth entry points and tables through the shared Testbench app', function (): void {
     expect(app(RequestExperimentSubjectResolver::class))->toBeInstanceOf(DefaultRequestExperimentSubjectResolver::class)
+        ->and(app(BrowserPageProperties::class))->toBe(app(ExperimentContextManager::class))
         ->and(app('router')->getMiddleware()['growth.experiment'])->toBe(ResolveExperiment::class)
         ->and(Artisan::all()['growth:archive-experiments'])->toBeInstanceOf(ArchiveExperimentsCommand::class)
         ->and(Artisan::all()['growth:recompute-assignments'])->toBeInstanceOf(RecomputeExperimentAssignmentsCommand::class)
