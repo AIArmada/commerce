@@ -97,6 +97,7 @@ describe('createSuggestion', function (): void {
         expect($suggestion->status)->toBe(ReorderSuggestionStatus::Pending);
         expect($suggestion->current_stock)->toBe(10);
         expect($suggestion->lead_time_days)->toBe(7);
+        expect($this->service->createSuggestion($this->product, $level))->toBeNull();
     });
 
     it('uses supplier lead time when available', function (): void {

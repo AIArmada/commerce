@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -26,16 +27,22 @@ final class DemandForecastService
         DemandPeriodType $periodType = DemandPeriodType::Daily,
         ?CarbonImmutable $periodDate = null
     ): InventoryDemandHistory {
-        $periodDate = $periodDate ?? today();
+        if ($quantity < 0 || $fulfilledQuantity < 0 || $fulfilledQuantity > $quantity) {
+            throw new InvalidArgumentException('Demand quantities must be non-negative and fulfilled quantity cannot exceed demand.');
+        }
+
+        $periodDate = ($periodDate ?? CarbonImmutable::today())->startOfDay();
         $lostQuantity = max(0, $quantity - $fulfilledQuantity);
 
         if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(InventoryOwnerScope::resolveOwner());
+
             if ($locationId === null && InventoryOwnerScope::resolveOwner() !== null) {
                 throw new InvalidArgumentException('Location is required when owner scoping is enabled');
             }
 
             if ($locationId !== null) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)
                     ->whereKey($locationId)
                     ->exists();
 
@@ -54,14 +61,20 @@ final class DemandForecastService
             $periodType,
             $periodDate
         ): InventoryDemandHistory {
-            $existing = InventoryOwnerScope::applyToLocationQuery(
-                InventoryDemandHistory::query()
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+            $query = InventoryDemandHistory::query();
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $query->forOwner(InventoryOwnerScope::resolveOwner(), false);
+            }
+
+            $existing = $query
                     ->where('inventoryable_type', $model->getMorphClass())
                     ->where('inventoryable_id', $model->getKey())
                     ->where('location_id', $locationId)
                     ->where('period_date', $periodDate)
                     ->where('period_type', $periodType->value)
-            )->first();
+                    ->lockForUpdate()->first();
 
             if ($existing) {
                 $existing->update([
@@ -96,6 +109,10 @@ final class DemandForecastService
         int $days = 30,
         ?string $locationId = null
     ): float {
+        if ($days <= 0) {
+            throw new InvalidArgumentException('Forecast period must be positive.');
+        }
+
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryDemandHistory::query()
                 ->forModel($model)
@@ -125,14 +142,7 @@ final class DemandForecastService
             $query->where('location_id', $locationId);
         }
 
-        $totalDemand = $query->sum('quantity_demanded');
-        $periodCount = $query->count();
-
-        if ($periodCount === 0) {
-            return 0.0;
-        }
-
-        return $totalDemand / $days;
+        return (float) $query->sum('quantity_demanded') / $days;
     }
 
     /**
@@ -146,6 +156,10 @@ final class DemandForecastService
         ?array $weights = null,
         ?string $locationId = null
     ): float {
+        if ($periods <= 0) {
+            throw new InvalidArgumentException('Forecast period must be positive.');
+        }
+
         if ($weights === null) {
             $weights = $this->generateDefaultWeights($periods);
         }
@@ -207,11 +221,15 @@ final class DemandForecastService
         int $periods = 30,
         ?string $locationId = null
     ): float {
+        if ($periods <= 0 || $alpha < 0 || $alpha > 1 || ! is_finite($alpha)) {
+            throw new InvalidArgumentException('Forecast period and smoothing factor are invalid.');
+        }
+
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryDemandHistory::query()
                 ->forModel($model)
                 ->daily()
-                ->orderBy('period_date', 'asc')
+                ->orderBy('period_date', 'desc')
                 ->limit($periods)
         );
 
@@ -237,7 +255,7 @@ final class DemandForecastService
             $query->where('location_id', $locationId);
         }
 
-        $history = $query->get();
+        $history = $query->get()->reverse()->values();
 
         if ($history->isEmpty()) {
             return 0.0;
@@ -432,18 +450,18 @@ final class DemandForecastService
             $query->where('location_id', $locationId);
         }
 
-        $history = $query->get();
+        $totals = $query->selectRaw('COUNT(*) as periods, COALESCE(SUM(quantity_demanded), 0) as total_demand, COALESCE(SUM(quantity_fulfilled), 0) as total_fulfilled, COALESCE(SUM(quantity_lost), 0) as total_lost')->firstOrFail();
 
-        $totalDemand = $history->sum('quantity_demanded');
-        $totalFulfilled = $history->sum('quantity_fulfilled');
-        $totalLost = $history->sum('quantity_lost');
+        $totalDemand = (int) $totals->getAttribute('total_demand');
+        $totalFulfilled = (int) $totals->getAttribute('total_fulfilled');
+        $totalLost = (int) $totals->getAttribute('total_lost');
 
         return [
             'total_demand' => $totalDemand,
             'total_fulfilled' => $totalFulfilled,
             'total_lost' => $totalLost,
             'fulfillment_rate' => $totalDemand > 0 ? ($totalFulfilled / $totalDemand) * 100 : 100.0,
-            'periods' => $history->count(),
+            'periods' => (int) $totals->getAttribute('periods'),
         ];
     }
 

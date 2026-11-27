@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
 use AIArmada\Inventory\Models\InventoryLevel;
@@ -15,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class ReplenishmentService
@@ -39,7 +42,7 @@ final class ReplenishmentService
         }
 
         $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->needsReorder()->with(['location'])
+            InventoryLevel::query()->needsReorder()->with(['location', 'inventoryable'])
         );
 
         if ($locationId !== null) {
@@ -52,17 +55,6 @@ final class ReplenishmentService
         foreach ($levels as $level) {
             $model = $level->inventoryable;
             if ($model === null) {
-                continue;
-            }
-
-            $existing = InventoryOwnerScope::applyToLocationQuery(
-                InventoryReorderSuggestion::query()
-                    ->forModel($model)
-                    ->where('location_id', $level->location_id)
-                    ->actionable()
-            )->exists();
-
-            if ($existing) {
                 continue;
             }
 
@@ -82,55 +74,81 @@ final class ReplenishmentService
         Model $model,
         InventoryLevel $level
     ): ?InventoryReorderSuggestion {
-        $supplier = $this->getPrimarySupplier($model);
-        $leadTimeDays = $supplier?->lead_time_days ?? $level->lead_time_days ?? 7;
+        return DB::transaction(function () use ($model, $level): ?InventoryReorderSuggestion {
+            $query = InventoryLevel::query()->whereKey($level->getKey());
 
-        $avgDailyDemand = (int) ceil($this->demandForecastService->calculateAverageDailyDemand(
-            $model,
-            30,
-            $level->location_id
-        ));
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
 
-        if ($avgDailyDemand === 0) {
-            $avgDailyDemand = 1;
-        }
+            $level = $query->lockForUpdate()->firstOrFail();
 
-        $currentStock = $level->quantity_available;
-        $reorderPoint = $level->safety_stock + ($avgDailyDemand * $leadTimeDays);
-        $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
-        $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
+            if ($level->inventoryable_type !== $model->getMorphClass() || (string) $level->inventoryable_id !== (string) $model->getKey()) {
+                throw new InvalidArgumentException('Stock level does not belong to the requested inventory item.');
+            }
 
-        $eoq = $this->calculateEOQ($model, $avgDailyDemand, $supplier);
-        $suggestedQuantity = $this->calculateSuggestedQuantity($level, $avgDailyDemand, $leadTimeDays, $eoq);
+            $existing = InventoryReorderSuggestion::query()->forModel($model)->where('location_id', $level->location_id)->actionable();
 
-        if ($supplier !== null) {
-            $suggestedQuantity = $supplier->roundToOrderMultiple($suggestedQuantity);
-        }
+            if (InventoryOwnerScope::isEnabled()) {
+                $existing->forOwner(InventoryOwnerScope::resolveOwner(), false);
+            }
 
-        $urgency = ReorderUrgency::fromDaysUntilStockout($daysUntilStockout, $leadTimeDays);
+            if ($existing->exists()) {
+                return null;
+            }
 
-        return InventoryReorderSuggestion::create([
-            'inventoryable_type' => $model->getMorphClass(),
-            'inventoryable_id' => $model->getKey(),
-            'location_id' => $level->location_id,
-            'supplier_leadtime_id' => $supplier?->id,
-            'status' => ReorderSuggestionStatus::Pending,
-            'current_stock' => $currentStock,
-            'reorder_point' => $reorderPoint,
-            'suggested_quantity' => $suggestedQuantity,
-            'economic_order_quantity' => $eoq,
-            'average_daily_demand' => $avgDailyDemand,
-            'lead_time_days' => $leadTimeDays,
-            'expected_stockout_date' => $expectedStockout,
-            'urgency' => $urgency,
-            'trigger_reason' => 'Stock below reorder point',
-            'calculation_details' => [
-                'safety_stock' => $level->safety_stock,
-                'max_stock' => $level->max_stock,
-                'current_reserved' => $level->quantity_reserved,
-                'demand_period_days' => 30,
-            ],
-        ]);
+            $supplier = $this->getPrimarySupplier($model);
+            $leadTimeDays = $supplier?->lead_time_days ?? $level->lead_time_days ?? 7;
+
+            $avgDailyDemand = (int) ceil($this->demandForecastService->calculateAverageDailyDemand(
+                $model,
+                30,
+                $level->location_id
+            ));
+
+            if ($avgDailyDemand === 0) {
+                $avgDailyDemand = 1;
+            }
+
+            $currentStock = $level->quantity_available;
+            $reorderPoint = $level->safety_stock + ($avgDailyDemand * $leadTimeDays);
+            $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
+            $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
+
+            $eoq = $this->calculateEOQ($model, $avgDailyDemand, $supplier);
+            $suggestedQuantity = $this->calculateSuggestedQuantity($level, $avgDailyDemand, $leadTimeDays, $eoq);
+
+            if ($supplier !== null) {
+                $suggestedQuantity = $supplier->roundToOrderMultiple($suggestedQuantity);
+            }
+
+            $urgency = ReorderUrgency::fromDaysUntilStockout($daysUntilStockout, $leadTimeDays);
+
+            return InventoryReorderSuggestion::create([
+                'inventoryable_type' => $model->getMorphClass(),
+                'inventoryable_id' => $model->getKey(),
+                'location_id' => $level->location_id,
+                'supplier_leadtime_id' => $supplier?->id,
+                'status' => ReorderSuggestionStatus::Pending,
+                'current_stock' => $currentStock,
+                'reorder_point' => $reorderPoint,
+                'suggested_quantity' => $suggestedQuantity,
+                'economic_order_quantity' => $eoq,
+                'average_daily_demand' => $avgDailyDemand,
+                'lead_time_days' => $leadTimeDays,
+                'expected_stockout_date' => $expectedStockout,
+                'urgency' => $urgency,
+                'trigger_reason' => 'Stock below reorder point',
+                'calculation_details' => [
+                    'safety_stock' => $level->safety_stock,
+                    'max_stock' => $level->max_stock,
+                    'current_reserved' => $level->quantity_reserved,
+                    'demand_period_days' => 30,
+                ],
+            ]);
+        });
     }
 
     /**
@@ -219,7 +237,7 @@ final class ReplenishmentService
      */
     public function approve(InventoryReorderSuggestion $suggestion, ?string $approvedBy = null): bool
     {
-        return $suggestion->approve($approvedBy);
+        return app(ApproveReorderSuggestion::class)->handle($suggestion, $approvedBy);
     }
 
     /**
@@ -232,7 +250,7 @@ final class ReplenishmentService
         $approved = 0;
 
         foreach ($suggestions as $suggestion) {
-            if ($suggestion->approve($approvedBy)) {
+            if ($this->approve($suggestion, $approvedBy)) {
                 $approved++;
             }
         }

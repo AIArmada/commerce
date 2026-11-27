@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Replenishment\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -16,6 +19,18 @@ final class RejectReorderSuggestion
 
     public function handle(InventoryReorderSuggestion $suggestion, ?string $reason = null): bool
     {
-        return $suggestion->reject($reason);
+        return DB::transaction(function () use ($suggestion, $reason): bool {
+            $query = InventoryReorderSuggestion::query()->whereKey($suggestion->getKey());
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $locked = $query->lockForUpdate()->firstOrFail();
+
+            return $locked->reject($reason);
+        });
     }
 }
