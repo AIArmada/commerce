@@ -543,6 +543,11 @@ final class InventoryLocation extends Model implements Auditable
             throw new AuthorizationException('Invalid parent location for the current owner context.');
         }
 
+        if (InventoryOwnerScope::isEnabled()
+            && ($this->owner_type !== $parent->owner_type || (string) $this->owner_id !== (string) $parent->owner_id)) {
+            throw new AuthorizationException('Cross-owner location hierarchies are not allowed.');
+        }
+
         $this->assertNoHierarchyCycle($parent);
 
         $depth = $parent->depth + 1;

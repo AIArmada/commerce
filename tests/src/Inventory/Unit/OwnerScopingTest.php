@@ -316,3 +316,29 @@ it('rejects transfers between global and tenant stock in either direction', func
     expect($ownedLevel->fresh()->quantity_on_hand)->toBe(5)
         ->and($globalLevel->fresh()->quantity_on_hand)->toBe(5);
 });
+
+
+it('rejects direct tenant location writes with a global parent', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = InventoryItem::create(['name' => 'Hierarchy owner']);
+    setInventoryOwnerResolver(null);
+
+    $global = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        'code' => 'GLOBAL-PARENT',
+    ]));
+
+    setInventoryOwnerResolver($owner);
+    $owned = InventoryLocation::factory()->create(['code' => 'OWNED-CHILD']);
+
+    expect(fn () => $owned->update(['parent_id' => $global->id]))
+        ->toThrow(AuthorizationException::class, 'Cross-owner location hierarchies are not allowed.');
+
+    expect($owned->fresh()->parent_id)->toBeNull();
+
+    expect(fn () => InventoryLocation::factory()->create([
+        'code' => 'INVALID-CHILD',
+        'parent_id' => $global->id,
+    ]))->toThrow(AuthorizationException::class, 'Cross-owner location hierarchies are not allowed.');
+});
