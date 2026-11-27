@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\BankAccountData;
+use AIArmada\Chip\Data\SendInstructionData;
+use AIArmada\Chip\Features\Payouts\Actions\DeleteBankAccount;
+use AIArmada\Chip\Features\Payouts\Actions\ResendPayoutWebhook;
 use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
@@ -15,7 +19,6 @@ use AIArmada\FilamentChip\Actions\SendInstructionExporter;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\CreateBankAccount;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ListBankAccounts;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ViewBankAccount;
-use AIArmada\FilamentChip\Resources\BankAccountResource\Tables\BankAccountTable;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ListCompanyStatements;
@@ -27,10 +30,10 @@ use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;
-use AIArmada\FilamentChip\Resources\SendInstructionResource\Tables\SendInstructionTable;
 use Filament\Actions\Exports\Models\Export;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Exceptions\Halt;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -111,100 +114,65 @@ it('covers resource pages and read-only list base class', function (): void {
 
     expect($viewPurchase->getTitle())->toContain('REF-123');
 
-    // Cover create record mutators + view record actions.
-    Schema::dropIfExists('chip_bank_accounts');
-    Schema::create('chip_bank_accounts', function (Blueprint $table): void {
-        $table->integer('id')->primary();
-        $table->nullableMorphs('owner');
-        $table->string('status')->nullable();
-        $table->string('name')->nullable();
-        $table->string('account_number')->nullable();
-        $table->string('bank_code')->nullable();
-        $table->string('reference')->nullable();
-        $table->timestamps();
-    });
-
     Schema::dropIfExists('chip_send_instructions');
-    Schema::create('chip_send_instructions', function (Blueprint $table): void {
-        $table->integer('id')->primary();
-        $table->nullableMorphs('owner');
-        $table->integer('bank_account_id')->nullable();
-        $table->string('amount')->default('0');
-        $table->string('email')->nullable();
-        $table->string('description')->nullable();
-        $table->string('reference')->nullable();
-        $table->string('state')->nullable();
-        $table->timestamps();
-    });
+    Schema::dropIfExists('chip_bank_accounts');
 
-    /** @var BankAccount $bankAccount */
-    $bankAccount = OwnerContext::withOwner(null, function (): BankAccount {
-        return BankAccount::query()->create([
-            'id' => 10,
-            'status' => 'verified',
-            'name' => 'Acct',
-            'account_number' => '123',
-            'bank_code' => 'MBBEMYKL',
-        ]);
-    });
+    $root = dirname(__DIR__, 4);
+    (require $root . '/packages/chip/database/migrations/2000_04_01_000004_create_chip_bank_accounts_table.php')->up();
+    (require $root . '/packages/chip/database/migrations/2000_04_01_000006_create_chip_send_instructions_table.php')->up();
 
-    /** @var SendInstruction $sendInstruction */
-    $sendInstruction = OwnerContext::withOwner(null, function (): SendInstruction {
-        return SendInstruction::query()->create([
-            'id' => 20,
-            'bank_account_id' => 10,
-            'amount' => '1.00',
-            'reference' => 'SI',
-            'state' => 'completed',
-        ]);
-    });
+    $remoteAccount = new BankAccountData(
+        id: 10,
+        status: 'verified',
+        account_number: '123',
+        bank_code: 'MBBEMYKL',
+        group_id: null,
+        name: 'Acct',
+        reference: 'ref',
+        created_at: '2026-01-01T00:00:00Z',
+        is_debiting_account: false,
+        is_crediting_account: true,
+        updated_at: '2026-01-01T00:00:00Z',
+        deleted_at: null,
+        rejection_reason: null,
+    );
 
-    $chipSendService = new class($bankAccount, $sendInstruction)
-    {
-        public int $amountInCents = 0;
+    $remoteInstruction = new SendInstructionData(
+        id: 20,
+        bank_account_id: 10,
+        amount: '1.23',
+        state: 'completed',
+        email: 'to@example.com',
+        description: 'Test',
+        reference: 'ref',
+        send_recipient_receipt: false,
+        receipt_url: null,
+        slug: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+    );
 
-        public function __construct(private BankAccount $bankAccount, private SendInstruction $sendInstruction) {}
-
-        public function createBankAccount(string $bankCode, string $accountNumber, string $accountHolderName, string $reference): BankAccount
-        {
-            return $this->bankAccount;
-        }
-
-        public function createSendInstruction(int $amountInCents, int $recipientBankAccountId, string $description, string $reference, string $email, bool $sendRecipientReceipt = false): SendInstruction
-        {
-            $this->amountInCents = $amountInCents;
-
-            return $this->sendInstruction;
-        }
-
-        public function deleteBankAccount(int $id): void {}
-
-        public function resendSendInstructionWebhook(int $id): array
-        {
-            return [];
-        }
-    };
-
+    $chipSendService = Mockery::mock(ChipSendService::class);
+    $chipSendService->shouldReceive('createBankAccount')->once()->with('MBBEMYKL', '123', 'Acct', 'ref')->andReturn($remoteAccount);
+    $chipSendService->shouldReceive('createSendInstruction')->once()->with(123, 10, 'Test', 'ref', 'to@example.com')->andReturn($remoteInstruction);
+    $chipSendService->shouldReceive('resendSendInstructionWebhook')->once()->with(20)->andReturn([]);
     app()->instance(ChipSendService::class, $chipSendService);
 
     $createBank = new CreateBankAccount;
-
-    $mutate = (new ReflectionClass($createBank))->getMethod('mutateFormDataBeforeCreate');
-
-    $data = $mutate->invoke($createBank, [
+    $create = (new ReflectionClass($createBank))->getMethod('handleRecordCreation');
+    $bankAccount = $create->invoke($createBank, [
         'bank_code' => 'MBBEMYKL',
         'account_number' => '123',
         'name' => 'Acct',
         'reference' => 'ref',
     ]);
 
-    expect($data)->toHaveKey('id')->toHaveKey('status');
+    expect($bankAccount)->toBeInstanceOf(BankAccount::class)
+        ->and($bankAccount->id)->toBe(10);
 
     $createPayout = new CreateSendInstruction;
-
-    $mutate = (new ReflectionClass($createPayout))->getMethod('mutateFormDataBeforeCreate');
-
-    $data = $mutate->invoke($createPayout, [
+    $create = (new ReflectionClass($createPayout))->getMethod('handleRecordCreation');
+    $sendInstruction = $create->invoke($createPayout, [
         'amount' => '1.23',
         'bank_account_id' => '10',
         'description' => 'Test',
@@ -212,22 +180,12 @@ it('covers resource pages and read-only list base class', function (): void {
         'email' => 'to@example.com',
     ]);
 
-    expect($data)->toHaveKey('id')->toHaveKey('state');
-    expect($chipSendService->amountInCents)->toBe(123);
+    expect($sendInstruction)->toBeInstanceOf(SendInstruction::class)
+        ->and($sendInstruction->id)->toBe(20);
 
-    OwnerContext::withOwner(null, function (): void {
-        BankAccount::query()->create([
-            'id' => 11,
-            'status' => 'pending',
-            'name' => 'Pending Acct',
-            'account_number' => '124',
-            'bank_code' => 'MBBEMYKL',
-        ]);
-    });
-
-    expect(fn () => $mutate->invoke($createPayout, [
-        'amount' => 1.23,
-        'bank_account_id' => '11',
+    expect(fn () => $create->invoke($createPayout, [
+        'amount' => '1.23',
+        'bank_account_id' => '999',
         'description' => 'Test',
         'reference' => 'ref',
         'email' => 'to@example.com',
@@ -280,6 +238,7 @@ it('enforces owner scoping in mutation action record resolution', function (): v
         $table->string('name')->nullable();
         $table->string('account_number')->nullable();
         $table->string('bank_code')->nullable();
+        $table->timestamp('deleted_at')->nullable();
         $table->timestamps();
     });
 
@@ -383,21 +342,12 @@ it('enforces owner scoping in mutation action record resolution', function (): v
         ]);
     });
 
-    $resolveBankTable = (new ReflectionClass(BankAccountTable::class))->getMethod('resolveScopedBankAccount');
-    $resolveSendTable = (new ReflectionClass(SendInstructionTable::class))->getMethod('resolveScopedSendInstruction');
+    $send = Mockery::mock(ChipSendService::class);
+    $send->shouldNotReceive('deleteBankAccount');
+    $send->shouldNotReceive('resendSendInstructionWebhook');
 
-    expect($resolveBankTable->invoke(null, $bankAccountForA)?->getKey())->toBe($bankAccountForA->getKey());
-    expect($resolveBankTable->invoke(null, $bankAccountForB))->toBeNull();
-    expect($resolveSendTable->invoke(null, $instructionForA)?->getKey())->toBe($instructionForA->getKey());
-    expect($resolveSendTable->invoke(null, $instructionForB))->toBeNull();
-
-    $viewBank = new ViewBankAccount;
-    $resolveBankView = (new ReflectionClass($viewBank))->getMethod('resolveScopedBankAccount');
-    expect($resolveBankView->invoke($viewBank, $bankAccountForA)?->getKey())->toBe($bankAccountForA->getKey());
-    expect($resolveBankView->invoke($viewBank, $bankAccountForB))->toBeNull();
-
-    $viewSend = new ViewSendInstruction;
-    $resolveSendView = (new ReflectionClass($viewSend))->getMethod('resolveScopedSendInstruction');
-    expect($resolveSendView->invoke($viewSend, $instructionForA)?->getKey())->toBe($instructionForA->getKey());
-    expect($resolveSendView->invoke($viewSend, $instructionForB))->toBeNull();
+    expect(fn () => (new DeleteBankAccount($send))->handle((int) $bankAccountForB->getKey()))
+        ->toThrow(AuthorizationException::class);
+    expect(fn () => (new ResendPayoutWebhook($send))->handle((int) $instructionForB->getKey()))
+        ->toThrow(AuthorizationException::class);
 });

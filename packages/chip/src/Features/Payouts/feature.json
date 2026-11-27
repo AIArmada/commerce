@@ -3,7 +3,8 @@
   "name": "Payouts",
   "owns": {
     "table:chip_bank_accounts": [
-      "AIArmada\\Chip\\Features\\Payouts\\Actions\\CreateBankAccount"
+      "AIArmada\\Chip\\Features\\Payouts\\Actions\\CreateBankAccount",
+      "AIArmada\\Chip\\Features\\Payouts\\Actions\\DeleteBankAccount"
     ],
     "table:chip_send_instructions": [
       "AIArmada\\Chip\\Features\\Payouts\\Actions\\CreateSendInstruction"
