@@ -4,66 +4,39 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Testimonials\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Events\FeedbackTestimonialExtracted;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Api\ReadsTestimonialSource;
 use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
-use Illuminate\Database\Eloquent\Builder;
 
 final readonly class ExtractFeedbackTestimonialAction implements ExtractsTestimonials
 {
+    public function __construct(private ReadsTestimonialSource $sources) {}
+
     public function execute(string $responseId): ?string
     {
-        return (new FeedbackResponse)->getConnection()->transaction(function () use ($responseId): ?string {
-            if (FeedbackResponse::ownerScopeConfig()->enabled) {
-                OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $responseId);
-            }
+        return (new FeedbackTestimonial)->getConnection()->transaction(function () use ($responseId): ?string {
+            $source = $this->sources->lockForExtraction($responseId);
 
-            $response = FeedbackResponse::query()->whereKey($responseId)->lockForUpdate()->firstOrFail();
-
-            $form = $response->form;
-
-            if (! $form || $form->purpose !== FeedbackFormPurpose::TestimonialCollection->value) {
+            if ($source === null) {
                 return null;
             }
 
-            $textAnswer = FeedbackAnswer::query()
-                ->where('feedback_response_id', $response->id)
-                ->whereNotNull('text_value')
-                ->where('text_value', '!=', '')
-                ->whereHas('question', function (Builder $query): void {
-                    $query->whereIn('type', ['long_text', 'short_text']);
-                })
-                ->first();
-
-            if ($textAnswer === null) {
-                return null;
-            }
-
-            $quote = mb_trim(strip_tags((string) $textAnswer->text_value));
-
-            if ($quote === '') {
-                return null;
-            }
-
-            $existing = FeedbackTestimonial::where('feedback_response_id', $response->id)->first();
+            $existing = FeedbackTestimonial::query()->where('feedback_response_id', $source->responseId)->first();
 
             if ($existing !== null) {
                 return $existing->id;
             }
 
             $testimonial = FeedbackTestimonial::create([
-                'feedback_response_id' => $response->id,
-                'feedback_answer_id' => $textAnswer->id,
-                'subject_type' => $response->subject_type,
-                'subject_id' => $response->subject_id,
-                'respondent_type' => $response->is_anonymous ? null : $response->respondent_type,
-                'respondent_id' => $response->is_anonymous ? null : $response->respondent_id,
-                'quote' => mb_substr($quote, 0, 2000),
+                'feedback_response_id' => $source->responseId,
+                'feedback_answer_id' => $source->answerId,
+                'subject_type' => $source->subjectType,
+                'subject_id' => $source->subjectId,
+                'respondent_type' => $source->respondentType,
+                'respondent_id' => $source->respondentId,
+                'quote' => $source->quote,
                 'status' => FeedbackTestimonialStatus::Pending,
             ]);
 
