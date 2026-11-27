@@ -157,6 +157,33 @@ describe('person integrity guards', function (): void {
             ->and(TitleAssignment::query()->where('titleable_id', $person->id)->exists())->toBeFalse();
     });
 
+    it('rolls back deletion when a dependent record cannot be deleted', function (): void {
+        $person = Person::create(['name' => 'Deletion Veto']);
+        $name = app(SavePersonName::class)->create($person, [
+            'name_type' => PersonNameType::Display,
+            'full_name' => 'Deletion Veto',
+            'language_code' => 'en',
+            'is_primary' => false,
+        ]);
+        $category = TitleCategory::create(['code' => 'veto', 'name' => 'Veto', 'sort_order' => 1]);
+        $title = Title::create([
+            'category_id' => $category->id,
+            'name' => 'Dr.',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $assignment = app(AssignTitleAction::class)->execute($person, $title->id);
+
+        TitleAssignment::deleting(static fn (TitleAssignment $record): bool => $record->id !== $assignment->id);
+
+        expect(fn () => app(DeletePersonAction::class)->execute($person))
+            ->toThrow(RuntimeException::class, 'Person dependent deletion was cancelled.');
+
+        expect(Person::query()->whereKey($person->id)->exists())->toBeTrue()
+            ->and(PersonName::query()->whereKey($name->id)->exists())->toBeTrue()
+            ->and(TitleAssignment::query()->whereKey($assignment->id)->exists())->toBeTrue();
+    });
+
     it('keeps derived identity fields out of mass assignment', function (): void {
         $person = Person::create([
             'name' => 'Derived Guard',

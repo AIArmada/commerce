@@ -11,6 +11,7 @@ use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Api\PersonTitlesCleaner;
 use AIArmada\Persons\Support\ModelResolver;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class CleanupPersonDependents implements PersonDependentsCleaner
 {
@@ -31,7 +32,11 @@ final readonly class CleanupPersonDependents implements PersonDependentsCleaner
                 throw new InvalidArgumentException('Person cleanup requires the configured person morph type.');
             }
 
-            $person->names()->eachById(fn (PersonName $name) => $name->delete(), 500);
+            $person->names()->eachById(static function (PersonName $name): void {
+                if (! $name->delete()) {
+                    throw new RuntimeException('Person dependent deletion was cancelled.');
+                }
+            }, 500);
             $this->titles->cleanup($personId, $personType);
             $this->credentials->cleanup($personId, $personType);
             $this->affiliations->cleanup($personId, $personType);

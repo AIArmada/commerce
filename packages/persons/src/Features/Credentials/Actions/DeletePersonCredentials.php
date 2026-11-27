@@ -6,6 +6,7 @@ namespace AIArmada\Persons\Features\Credentials\Actions;
 
 use AIArmada\Persons\Features\Credentials\Api\PersonCredentialsCleaner;
 use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use RuntimeException;
 
 final readonly class DeletePersonCredentials implements PersonCredentialsCleaner
 {
@@ -14,6 +15,10 @@ final readonly class DeletePersonCredentials implements PersonCredentialsCleaner
         CredentialAssignment::query()
             ->where('credentialable_type', $personType)
             ->where('credentialable_id', $personId)
-            ->eachById(fn (CredentialAssignment $record) => $record->delete(), 500);
+            ->eachById(static function (CredentialAssignment $record): void {
+                if (! $record->delete()) {
+                    throw new RuntimeException('Person dependent deletion was cancelled.');
+                }
+            }, 500);
     }
 }

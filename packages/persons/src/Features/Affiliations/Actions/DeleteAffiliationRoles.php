@@ -6,6 +6,7 @@ namespace AIArmada\Persons\Features\Affiliations\Actions;
 
 use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
+use RuntimeException;
 
 final readonly class DeleteAffiliationRoles
 {
@@ -13,7 +14,11 @@ final readonly class DeleteAffiliationRoles
     {
         (new Affiliation)->getConnection()->transaction(function () use ($affiliationId): void {
             $affiliation = Affiliation::query()->whereKey($affiliationId)->lockForUpdate()->firstOrFail();
-            $affiliation->roles()->eachById(fn (AffiliationRole $role) => $role->delete(), 500);
+            $affiliation->roles()->eachById(static function (AffiliationRole $role): void {
+                if (! $role->delete()) {
+                    throw new RuntimeException('Person dependent deletion was cancelled.');
+                }
+            }, 500);
         });
     }
 }
