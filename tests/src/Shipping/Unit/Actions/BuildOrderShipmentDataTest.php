@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
+use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 
 // ============================================
 // Order shipment data tests

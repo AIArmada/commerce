@@ -34,8 +34,8 @@ final readonly class OperateShipmentBatch implements BulkShipmentOperations
     }
 
     /**
-     * @param list<string> $shipmentIds
-     * @param Closure(string): void $operation
+     * @param  list<string>  $shipmentIds
+     * @param  Closure(string): void  $operation
      */
     private function execute(array $shipmentIds, string $ability, Closure $operation): ShipmentBatchResult
     {

@@ -313,5 +313,4 @@ final class JntShippingCalculator implements ConditionProviderInterface
             'quote_id' => $quote['quote_id'] ?? null,
         ];
     }
-
 }

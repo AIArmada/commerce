@@ -63,7 +63,7 @@ final class BuildOrderShipmentData implements BuildShipmentFromOrder
     }
 
     /**
-     * @param list<array<string, mixed>> $items
+     * @param  list<array<string, mixed>>  $items
      * @return list<ShipmentItemData>
      */
     private function parseItems(array $items): array

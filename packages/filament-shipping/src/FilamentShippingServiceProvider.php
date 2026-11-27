@@ -16,5 +16,4 @@ final class FilamentShippingServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews('filament-shipping');
     }
-
 }

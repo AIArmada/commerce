@@ -4,28 +4,28 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates;
 
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Features\Rates\Actions\CalculateShippingRate;
 use AIArmada\Shipping\Features\Rates\Actions\WriteRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
+use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
 use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Api\ShopRates;
+use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Policies\ShippingRatePolicy;
 use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
-use AIArmada\Cart\Conditions\ConditionProviderRegistry;
-use AIArmada\Shipping\Contracts\ZoneRateReader;
-use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
-use AIArmada\Shipping\Features\Rates\Api\ShopRates;
-use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use AIArmada\Shipping\Features\Rates\Strategies\GeoZoneResolutionStrategy;
 use AIArmada\Shipping\Features\Rates\Strategies\ThresholdFreeShippingPolicy;
+use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Shipping\Platform\FreeShippingPolicyRegistry;
 use AIArmada\Shipping\Platform\ZoneResolutionStrategyRegistry;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 
