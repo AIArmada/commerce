@@ -190,7 +190,6 @@ final class VoucherSuggestionsWidget extends Widget
                 $this->record->identifier
             );
 
-            /** @phpstan-ignore-next-line */
             $cartInstance->applyVoucher($voucher->code);
 
             Notification::make()
@@ -237,7 +236,6 @@ final class VoucherSuggestionsWidget extends Widget
                 $cartRecord->identifier
             );
 
-            /** @phpstan-ignore-next-line */
             $appliedVouchers = $cartInstance->getAppliedVouchers();
 
             if (! is_iterable($appliedVouchers)) {

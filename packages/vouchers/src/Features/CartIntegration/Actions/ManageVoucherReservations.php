@@ -47,7 +47,7 @@ final class ManageVoucherReservations implements VoucherReservations
                 $sessionIds[] = $sessionId;
             }
 
-            Cache::put($sessionsKey, array_values($sessionIds), $ttl);
+            Cache::put($sessionsKey, $sessionIds, $ttl);
         });
     }
 

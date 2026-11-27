@@ -8,13 +8,10 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
-use AIArmada\Vouchers\Runtime\WalletCleanup;
 
 final class DeleteVoucher implements VoucherDeletion
 {
     use QueriesVouchers;
-
-    public function __construct(private readonly WalletCleanup $walletCleanup) {}
 
     public function handle(string | Voucher $voucher): bool
     {
@@ -33,13 +30,6 @@ final class DeleteVoucher implements VoucherDeletion
 
             return $locked instanceof Voucher && $locked->delete() === true;
         });
-    }
-
-    public function deleteDependents(Voucher $voucher): void
-    {
-        $this->authorize($voucher);
-        $voucher->usages()->delete();
-        $this->walletCleanup->handle((string) $voucher->getKey());
     }
 
     private function authorize(Voucher $voucher): void

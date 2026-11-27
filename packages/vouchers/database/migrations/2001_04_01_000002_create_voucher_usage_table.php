@@ -17,9 +17,11 @@ return new class extends Migration
         $prefix = (string) config('vouchers.database.table_prefix', '');
         $tableName = $tables['voucher_usage'] ?? $prefix . 'voucher_usage';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        $voucherTable = $tables['vouchers'] ?? $prefix . 'vouchers';
+
+        Schema::create($tableName, function (Blueprint $table) use ($voucherTable): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('voucher_id');
+            $table->foreignUuid('voucher_id')->constrained($voucherTable)->cascadeOnDelete();
             $table->string('idempotency_key', 64)->nullable();
             $table->bigInteger('discount_amount'); // stored in cents
             $table->string('currency', 3);

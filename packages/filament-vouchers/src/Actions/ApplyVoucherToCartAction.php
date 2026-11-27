@@ -68,7 +68,6 @@ final class ApplyVoucherToCartAction
                     );
 
                     // Apply voucher using the Cart's voucher methods (added via CartManagerWithVouchers proxy)
-                    /** @phpstan-ignore-next-line - applyVoucher method is added dynamically via proxy */
                     $cartInstance->applyVoucher($code);
 
                     Notification::make()

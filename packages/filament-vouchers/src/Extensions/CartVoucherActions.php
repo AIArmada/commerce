@@ -96,7 +96,6 @@ final class CartVoucherActions
                         $record->identifier
                     );
 
-                    /** @phpstan-ignore-next-line */
                     $cartInstance->applyVoucher($code);
 
                     Notification::make()
@@ -188,7 +187,6 @@ final class CartVoucherActions
                         $record->identifier
                     );
 
-                    /** @phpstan-ignore-next-line */
                     $cartInstance->removeVoucher($voucherCode);
 
                     Notification::make()
@@ -237,7 +235,6 @@ final class CartVoucherActions
                 $record->identifier
             );
 
-            /** @phpstan-ignore-next-line */
             $vouchers = $cartInstance->getAppliedVouchers();
 
             if (empty($vouchers)) {

@@ -14,8 +14,7 @@
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DeleteVoucher"
     ],
     "table:voucher_usage": [
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage",
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DeleteVoucher"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"
     ],
     "store:voucher-lookups": [
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Persistence\\VoucherLookupCache"

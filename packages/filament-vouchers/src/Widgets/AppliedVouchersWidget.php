@@ -125,7 +125,6 @@ final class AppliedVouchersWidget extends BaseWidget
                 $this->record->identifier
             );
 
-            /** @phpstan-ignore-next-line - getAppliedVouchers method is added dynamically via proxy */
             $appliedVouchers = $cartInstance->getAppliedVouchers();
 
             $appliedVoucherItems = [];

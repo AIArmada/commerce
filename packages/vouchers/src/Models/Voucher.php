@@ -11,7 +11,6 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\VoucherDepletion;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\States\Active;
@@ -619,16 +618,11 @@ class Voucher extends Model implements Auditable
             }
         });
 
-        self::deleting(function (Voucher $voucher): void {
+        self::deleted(function (Voucher $voucher): void {
             app(VoucherLookup::class)->forgetForVoucher($voucher);
-            app(VoucherDeletion::class)->deleteDependents($voucher);
         });
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected function casts(): array
     {

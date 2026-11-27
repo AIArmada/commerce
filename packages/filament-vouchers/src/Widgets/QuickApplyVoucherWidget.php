@@ -121,7 +121,6 @@ final class QuickApplyVoucherWidget extends Widget implements HasForms
                 $this->record->identifier
             );
 
-            /** @phpstan-ignore-next-line - applyVoucher method added via proxy */
             $cartInstance->applyVoucher($code);
 
             Notification::make()

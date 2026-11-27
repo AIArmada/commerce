@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Traits;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-trait HasVoucherOwnership // @phpstan-ignore trait.unused
+trait HasVoucherOwnership
 {
     /**
      * Get the vouchers owned by this model.
