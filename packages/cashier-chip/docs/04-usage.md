@@ -61,10 +61,10 @@ integration auto-detects that package by default and fails loudly if it is unava
 [Configuration](03-configuration.md#integrations) for the explicit integration setting.
 
 ```php
-use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Actions\RefundChipPayment;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 

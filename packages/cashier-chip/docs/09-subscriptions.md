@@ -98,7 +98,7 @@ The canonical way to create a subscription is via the `CreateChipSubscription` A
 All `$builder->create()` calls delegate to it internally.
 
 ```php
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 
 $subscription = CreateChipSubscription::run(
     builder: $builder,
@@ -284,7 +284,7 @@ The canonical way to cancel a subscription is via the `CancelChipSubscription` A
 All `$subscription->cancel()` and `$subscription->cancelNow()` calls delegate to it internally.
 
 ```php
-use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
 
 // Cancel immediately
 CancelChipSubscription::run($subscription);

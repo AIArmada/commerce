@@ -9,7 +9,16 @@
     ],
     "table:cashier_chip_subscriptions": [
       "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\RenewSubscriptions",
-      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\SyncChipPurchaseStatus"
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\SyncChipPurchaseStatus",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\CreateChipSubscription",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\CancelChipSubscription",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\UpdateSubscriptionLifecycle",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\UpdateSubscriptionItems",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\UpdateSubscriptionDiscount"
+    ],
+    "table:cashier_chip_subscription_items": [
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\CreateChipSubscription",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\UpdateSubscriptionItems"
     ]
   },
   "extensions": {}

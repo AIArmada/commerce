@@ -7,7 +7,6 @@ namespace AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\Discount;
-use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
@@ -17,6 +16,9 @@ use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionDiscount;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionItems;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionLifecycle;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
@@ -40,8 +42,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Throwable;
@@ -605,31 +605,7 @@ class Subscription extends Model
      */
     public function updateQuantity(int $quantity, ?string $price = null)
     {
-        $this->guardAgainstIncomplete();
-
-        $quantity = max(1, $quantity);
-
-        if ($price) {
-            $this->findItemOrFail($price)->updateQuantity($quantity);
-
-            return $this->refresh();
-        }
-
-        $this->guardAgainstMultiplePrices();
-
-        return DB::transaction(function () use ($quantity) {
-            $this->fill([
-                'quantity' => $quantity,
-            ])->save();
-
-            $singleSubscriptionItem = $this->items()->firstOrFail();
-
-            $singleSubscriptionItem->fill([
-                'quantity' => $quantity,
-            ])->save();
-
-            return $this;
-        });
+        return app(UpdateSubscriptionItems::class)->updateQuantity($this, $quantity, $price);
     }
 
     /**
@@ -653,14 +629,7 @@ class Subscription extends Model
      */
     public function endTrial()
     {
-        if (is_null($this->trial_ends_at)) {
-            return $this;
-        }
-
-        $this->trial_ends_at = null;
-        $this->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->endTrial($this);
     }
 
     /**
@@ -670,14 +639,7 @@ class Subscription extends Model
      */
     public function extendTrial(CarbonInterface $date)
     {
-        if (! $date->isFuture()) {
-            throw new InvalidArgumentException("Extending a subscription's trial requires a date in the future.");
-        }
-
-        $this->trial_ends_at = CarbonImmutable::instance($date);
-        $this->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->extendTrial($this, $date);
     }
 
     /**
@@ -687,65 +649,7 @@ class Subscription extends Model
      */
     public function swap(string | array $prices, array $options = [])
     {
-        if (empty($prices = (array) $prices)) {
-            throw new InvalidArgumentException('Please provide at least one price when swapping.');
-        }
-
-        $this->guardAgainstIncomplete();
-
-        return DB::transaction(function () use ($prices, $options) {
-            $isSinglePrice = count($prices) === 1;
-            $firstPrice = is_string(array_values($prices)[0])
-                ? array_values($prices)[0]
-                : array_keys($prices)[0];
-
-            $existingItemIds = $this->items()->pluck('id')->all();
-            $existingByPrice = $this->items()->get()->keyBy('chip_price');
-            $createdItems = [];
-
-            foreach ($prices as $priceKey => $priceValue) {
-                $price = is_string($priceValue) ? $priceValue : $priceKey;
-                $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
-                $quantity = max(1, (int) $quantity);
-
-                $unitAmount = is_array($priceValue) ? ($priceValue['unit_amount'] ?? null) : null;
-                $unitAmount ??= $options['unit_amounts'][$price] ?? $options['unit_amount'] ?? null;
-
-                if ($unitAmount === null) {
-                    $unitAmount = $existingByPrice->get($price)?->unit_amount;
-                }
-
-                if ($unitAmount !== null && (int) $unitAmount < 0) {
-                    throw new InvalidArgumentException('Subscription item unit amount must be a non-negative integer.');
-                }
-
-                $createdItems[] = $this->createTrustedSubscriptionItem([
-                    'owner_type' => $this->owner_type,
-                    'owner_id' => $this->owner_id,
-                    'chip_id' => Str::orderedUuid()->toString(),
-                    'chip_product' => $options['product'] ?? null,
-                    'chip_price' => $price,
-                    'quantity' => $quantity,
-                    'unit_amount' => $unitAmount !== null ? (int) $unitAmount : null,
-                ]);
-            }
-
-            if ($existingItemIds !== []) {
-                $this->items()->whereIn('id', $existingItemIds)->delete();
-            }
-
-            $firstNewItem = $createdItems[0];
-
-            $this->fill([
-                'chip_price' => $isSinglePrice ? $firstPrice : null,
-                'quantity' => $isSinglePrice ? $firstNewItem?->quantity : null,
-                'ends_at' => null,
-            ])->save();
-
-            $this->unsetRelation('items');
-
-            return $this;
-        });
+        return app(UpdateSubscriptionItems::class)->swap($this, $prices, $options);
     }
 
     /**
@@ -755,19 +659,7 @@ class Subscription extends Model
      */
     public function cancel()
     {
-        // If the user was on trial, we will set the grace period to end when the trial
-        // would have ended. Otherwise, we'll use the next billing date as the end of
-        // the grace period for this current user.
-        if ($this->onTrial()) {
-            $this->ends_at = $this->trial_ends_at;
-        } else {
-            $this->ends_at = $this->next_billing_at ?? CarbonImmutable::now();
-        }
-
-        $this->canceled_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->cancel($this);
     }
 
     /**
@@ -777,17 +669,7 @@ class Subscription extends Model
      */
     public function cancelAt(DateTimeInterface | int $endsAt)
     {
-        if ($endsAt instanceof DateTimeInterface) {
-            $endsAt = CarbonImmutable::instance($endsAt);
-        } else {
-            $endsAt = CarbonImmutable::createFromTimestamp($endsAt);
-        }
-
-        $this->ends_at = $endsAt;
-        $this->canceled_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->cancelAt($this, $endsAt);
     }
 
     /**
@@ -810,11 +692,7 @@ class Subscription extends Model
      */
     public function markAsCanceled(): void
     {
-        $this->forceFill([
-            'chip_status' => SubscriptionStatus::Canceled,
-            'ends_at' => CarbonImmutable::now(),
-            'canceled_at' => CarbonImmutable::now(),
-        ])->save();
+        app(UpdateSubscriptionLifecycle::class)->markAsCanceled($this);
     }
 
     /**
@@ -826,20 +704,7 @@ class Subscription extends Model
      */
     public function resume()
     {
-        if (! $this->onGracePeriod()) {
-            throw new LogicException('Unable to resume subscription that is not within grace period.');
-        }
-
-        // Finally, we will remove the ending timestamp from the user's record in the
-        // local database to indicate that the subscription is active again and is
-        // no longer "canceled". Then we shall save this record in the database.
-        $this->forceFill([
-            'chip_status' => SubscriptionStatus::Active,
-            'ends_at' => null,
-            'canceled_at' => null,
-        ])->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->resume($this);
     }
 
     /**
@@ -918,10 +783,7 @@ class Subscription extends Model
      */
     public function setRecurringToken(string $token)
     {
-        $this->recurring_token = $token;
-        $this->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->setRecurringToken($this, $token);
     }
 
     /**
@@ -987,30 +849,7 @@ class Subscription extends Model
      */
     public function applyCoupon(string $couponId): void
     {
-        $this->validateCouponForApplication($couponId);
-
-        $coupon = $this->retrieveCoupon($couponId);
-
-        if (! $coupon) {
-            throw InvalidCoupon::notFound($couponId);
-        }
-
-        if ($this->hasUnknownPrices()) {
-            throw new InvalidArgumentException('Cannot apply a coupon to a subscription with unknown item prices. Provide unit_amount for every item.');
-        }
-
-        $totalAmount = $this->calculateSubscriptionAmount();
-        $discount = $coupon->calculateDiscount($totalAmount);
-
-        $this->fill([
-            'coupon_id' => $couponId,
-            'coupon_discount' => $discount,
-            'coupon_duration' => $coupon->duration(),
-            'coupon_applied_at' => CarbonImmutable::now(),
-        ])->save();
-
-        // Record coupon usage
-        $this->recordCouponUsage($couponId, $discount);
+        app(UpdateSubscriptionDiscount::class)->applyCoupon($this, $couponId);
     }
 
     /**
@@ -1027,12 +866,7 @@ class Subscription extends Model
      */
     public function removeDiscount(): void
     {
-        $this->fill([
-            'coupon_id' => null,
-            'coupon_discount' => null,
-            'coupon_duration' => null,
-            'coupon_applied_at' => null,
-        ])->save();
+        app(UpdateSubscriptionDiscount::class)->removeDiscount($this);
     }
 
     /**
@@ -1074,10 +908,7 @@ class Subscription extends Model
      */
     public function syncChipStatus(): void
     {
-        $status = $this->calculateCurrentStatus();
-
-        $this->chip_status = $status;
-        $this->save();
+        app(UpdateSubscriptionLifecycle::class)->syncChipStatus($this);
     }
 
     /**
@@ -1089,36 +920,7 @@ class Subscription extends Model
      */
     public function addPrice(string $price, ?int $quantity = 1, array $options = []): static
     {
-        $this->guardAgainstIncomplete();
-
-        return DB::transaction(function () use ($price, $quantity, $options): static {
-            $this->loadMissing('items');
-
-            if ($this->items->contains('chip_price', $price)) {
-                throw SubscriptionUpdateFailure::duplicatePrice($this, $price);
-            }
-
-            $this->createTrustedSubscriptionItem([
-                'owner_type' => $this->owner_type,
-                'owner_id' => $this->owner_id,
-                'chip_id' => Str::orderedUuid()->toString(),
-                'chip_product' => $options['product'] ?? null,
-                'chip_price' => $price,
-                'quantity' => $quantity,
-                'unit_amount' => $options['unit_amount'] ?? null,
-            ]);
-
-            $this->unsetRelation('items');
-
-            if ($this->hasSinglePrice()) {
-                $this->fill([
-                    'chip_price' => null,
-                    'quantity' => null,
-                ])->save();
-            }
-
-            return $this;
-        });
+        return app(UpdateSubscriptionItems::class)->addPrice($this, $price, $quantity, $options);
     }
 
     /**
@@ -1130,28 +932,7 @@ class Subscription extends Model
      */
     public function removePrice(string $price): static
     {
-        if ($this->hasSinglePrice()) {
-            throw SubscriptionUpdateFailure::cannotDeleteLastPrice($this);
-        }
-
-        $this->items()->where('chip_price', $price)->delete();
-
-        $this->unsetRelation('items');
-
-        if ($this->items()->count() < 2) {
-            $item = $this->items()->first();
-
-            if (! $item instanceof SubscriptionItem) {
-                return $this;
-            }
-
-            $this->fill([
-                'chip_price' => $item->chip_price,
-                'quantity' => $item->quantity,
-            ])->save();
-        }
-
-        return $this;
+        return app(UpdateSubscriptionItems::class)->removePrice($this, $price);
     }
 
     /**
@@ -1282,12 +1063,7 @@ class Subscription extends Model
      */
     public function pause(): static
     {
-        $this->forceFill([
-            'chip_status' => SubscriptionStatus::Paused,
-            'paused_at' => CarbonImmutable::now(),
-        ])->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->pause($this);
     }
 
     /**
@@ -1297,12 +1073,7 @@ class Subscription extends Model
      */
     public function unpause(): static
     {
-        $this->forceFill([
-            'chip_status' => SubscriptionStatus::Active,
-            'paused_at' => null,
-        ])->save();
-
-        return $this;
+        return app(UpdateSubscriptionLifecycle::class)->unpause($this);
     }
 
     /**
@@ -1529,7 +1300,7 @@ class Subscription extends Model
         });
 
         static::deleting(function (Subscription $subscription): void {
-            $subscription->items()->delete();
+            app(UpdateSubscriptionItems::class)->deleteAll($subscription);
         });
     }
 
@@ -1577,15 +1348,7 @@ class Subscription extends Model
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function createTrustedSubscriptionItem(array $attributes): SubscriptionItem
-    {
-        /** @var SubscriptionItem $item */
-        $item = $this->items()->make();
-        $item->forceFill($attributes);
-        $item->save();
 
-        return $item;
-    }
 
     /**
      * Create a new factory instance for the model.
@@ -1624,62 +1387,20 @@ class Subscription extends Model
      *
      * @throws InvalidCoupon
      */
-    protected function validateCouponForApplication(string $couponId): void
-    {
-        $coupon = $this->retrieveCoupon($couponId);
 
-        if (! $coupon) {
-            throw InvalidCoupon::notFound($couponId);
-        }
-
-        if (! $coupon->isValid()) {
-            throw InvalidCoupon::inactive($couponId);
-        }
-
-        if ($coupon->isForeverAmountOff()) {
-            throw InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
-        }
-    }
 
     /**
      * Retrieve a coupon by its ID (voucher code).
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        $service = VoucherIntegration::service();
-
-        $voucherData = $service->find($couponId);
-
-        if (! $voucherData) {
-            return null;
-        }
-
-        return new Coupon($voucherData);
+        return app(UpdateSubscriptionDiscount::class)->retrieveCoupon($couponId);
     }
 
     /**
      * Record coupon usage.
      */
-    protected function recordCouponUsage(string $couponId, int $discountAmount): void
-    {
-        $service = VoucherIntegration::service();
 
-        $billable = $this->billableModel();
-
-        if (! $billable instanceof BillableContract) {
-            throw new LogicException('A billable model is required to record coupon usage.');
-        }
-
-        $currency = $billable->preferredCurrency();
-
-        $service->recordUsage(
-            code: $couponId,
-            discountAmount: Money::$currency($discountAmount),
-            channel: 'subscription',
-            metadata: ['subscription_id' => $this->id],
-            redeemedBy: $billable,
-        );
-    }
 
     /**
      * Calculate when the discount ends based on duration.
@@ -1703,20 +1424,5 @@ class Subscription extends Model
     /**
      * Calculate the current status based on subscription state.
      */
-    protected function calculateCurrentStatus(): SubscriptionStatus
-    {
-        if ($this->ended()) {
-            return SubscriptionStatus::Canceled;
-        }
 
-        if ($this->onTrial()) {
-            return SubscriptionStatus::Trialing;
-        }
-
-        if ($this->onGracePeriod()) {
-            return SubscriptionStatus::Canceled;
-        }
-
-        return SubscriptionStatus::Active;
-    }
 }

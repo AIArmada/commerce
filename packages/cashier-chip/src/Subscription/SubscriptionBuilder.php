@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Subscription;
 
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;

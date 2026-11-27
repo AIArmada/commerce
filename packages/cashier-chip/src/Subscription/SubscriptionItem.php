@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionItems;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -19,8 +20,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 use Override;
 
 /**
@@ -209,23 +208,7 @@ class SubscriptionItem extends Model
      */
     public function updateQuantity(int $quantity): static
     {
-        $this->subscription->guardAgainstIncomplete();
-
-        $quantity = max(1, $quantity);
-
-        return DB::transaction(function () use ($quantity): static {
-            $this->fill([
-                'quantity' => $quantity,
-            ])->save();
-
-            if ($this->subscription->hasSinglePrice()) {
-                $this->subscription->fill([
-                    'quantity' => $quantity,
-                ])->save();
-            }
-
-            return $this;
-        });
+        return app(UpdateSubscriptionItems::class)->updateItemQuantity($this, $quantity);
     }
 
     /**
@@ -236,29 +219,7 @@ class SubscriptionItem extends Model
      */
     public function swap(string $price, array $options = []): static
     {
-        $this->subscription->guardAgainstIncomplete();
-
-        $unitAmount = $options['unit_amount'] ?? $this->unit_amount;
-
-        if ($unitAmount !== null && (int) $unitAmount < 0) {
-            throw new InvalidArgumentException('Subscription item unit amount must be a non-negative integer.');
-        }
-
-        return DB::transaction(function () use ($price, $options): static {
-            $this->forceFill([
-                'chip_product' => $options['product'] ?? $this->chip_product,
-                'chip_price' => $price,
-                'unit_amount' => isset($options['unit_amount']) ? (int) $options['unit_amount'] : $this->unit_amount,
-            ])->save();
-
-            if ($this->subscription->hasSinglePrice()) {
-                $this->subscription->fill([
-                    'chip_price' => $price,
-                ])->save();
-            }
-
-            return $this;
-        });
+        return app(UpdateSubscriptionItems::class)->swapItem($this, $price, $options);
     }
 
     /**

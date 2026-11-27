@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Actions;
+namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
