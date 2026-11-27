@@ -6,9 +6,8 @@ namespace AIArmada\Inventory\Features\Reservations\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
-use AIArmada\Inventory\Features\Stock\Actions\CheckLowInventory;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
@@ -54,6 +53,7 @@ final class InventoryAllocationService
 {
     public function __construct(
         private InventoryService $inventoryService,
+        private ReservationStockStore $stock,
     ) {}
 
     /**
@@ -148,7 +148,7 @@ final class InventoryAllocationService
                 ]);
 
                 // Update reserved quantity
-                $level->incrementReserved($toAllocate);
+                $this->stock->reserve($level, $toAllocate);
 
                 $allocations->push($allocation);
                 $remaining -= $toAllocate;
@@ -206,7 +206,7 @@ final class InventoryAllocationService
             $lockedAllocation->loadMissing(['level', 'inventoryable']);
 
             $quantity = $lockedAllocation->quantity;
-            $lockedAllocation->level->decrementReserved($quantity);
+            $this->stock->release($lockedAllocation->level, $quantity);
 
             $inventoryable = $lockedAllocation->inventoryable;
             $cartId = $lockedAllocation->cart_id;
@@ -248,7 +248,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $allocation->level->decrementReserved($allocation->quantity);
+                $this->stock->release($allocation->level, $allocation->quantity);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -286,7 +286,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $allocation->level->decrementReserved($allocation->quantity);
+                $this->stock->release($allocation->level, $allocation->quantity);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -312,7 +312,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $allocation->level->decrementReserved($allocation->quantity);
+                $this->stock->release($allocation->level, $allocation->quantity);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -347,28 +347,12 @@ final class InventoryAllocationService
             $movements = [];
 
             foreach ($allocations as $allocation) {
-                // Decrease on-hand (the reserved is already holding it)
-                $allocation->level->decrementOnHand($allocation->quantity);
-                $allocation->level->decrementReserved($allocation->quantity);
-
-                // Create shipment movement
-                $movement = InventoryMovement::create([
-                    'inventoryable_type' => $allocation->inventoryable_type,
-                    'inventoryable_id' => $allocation->inventoryable_id,
-                    'from_location_id' => $allocation->location_id,
-                    'quantity' => $allocation->quantity,
-                    'type' => MovementType::Shipment->value,
-                    'reason' => 'sale',
-                    'reference' => $orderId,
-                    'note' => sprintf('Committed from cart %s', $cartId),
-                    'occurred_at' => CarbonImmutable::now(),
-                ]);
-
-                $movements[] = $movement;
-
-                // Check low inventory
-                app(CheckLowInventory::class)->handle($allocation->inventoryable, $allocation->level);
-
+                $movements[] = $this->stock->commit(
+                    $allocation->level,
+                    $allocation->quantity,
+                    $orderId,
+                    sprintf('Committed from cart %s', $cartId),
+                );
                 $allocation->delete();
             }
 
@@ -395,23 +379,12 @@ final class InventoryAllocationService
             $movements = [];
 
             foreach ($allocations as $allocation) {
-                $allocation->level->decrementOnHand($allocation->quantity);
-                $allocation->level->decrementReserved($allocation->quantity);
-
-                $movement = InventoryMovement::create([
-                    'inventoryable_type' => $allocation->inventoryable_type,
-                    'inventoryable_id' => $allocation->inventoryable_id,
-                    'from_location_id' => $allocation->location_id,
-                    'quantity' => $allocation->quantity,
-                    'type' => MovementType::Shipment->value,
-                    'reason' => 'sale',
-                    'reference' => $orderId,
-                    'note' => sprintf('Committed from checkout reference %s', $reference),
-                    'occurred_at' => CarbonImmutable::now(),
-                ]);
-
-                $movements[] = $movement;
-                app(CheckLowInventory::class)->handle($allocation->inventoryable, $allocation->level);
+                $movements[] = $this->stock->commit(
+                    $allocation->level,
+                    $allocation->quantity,
+                    $orderId,
+                    sprintf('Committed from checkout reference %s', $reference),
+                );
                 $allocation->delete();
             }
 
@@ -614,7 +587,7 @@ final class InventoryAllocationService
         $count = 0;
 
         foreach ($allocations as $allocation) {
-            $allocation->level->decrementReserved($allocation->quantity);
+            $this->stock->release($allocation->level, $allocation->quantity);
             $allocation->delete();
             $count++;
         }

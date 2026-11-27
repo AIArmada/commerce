@@ -15,7 +15,7 @@
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\UpdateInventoryLevel",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\BootstrapInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\SetDefaultInventoryQuantity",
-      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService",
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\ReservationStockStore",
       "AIArmada\\Inventory\\Features\\Stock\\Persistence\\AlertDispatchService",
       "AIArmada\\Inventory\\Features\\Stock\\Persistence\\StockThresholdService"
     ],
@@ -24,7 +24,7 @@
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\ShipInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\TransferInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory",
-      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService"
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\ReservationStockStore"
     ]
   },
   "extensions": {}
