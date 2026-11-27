@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Schemas;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use DateTimeInterface;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

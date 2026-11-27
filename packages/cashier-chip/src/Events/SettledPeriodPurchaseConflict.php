@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Events;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-class SettledPeriodPurchaseConflict
+final class SettledPeriodPurchaseConflict
 {
     use Dispatchable;
-    use SerializesModels;
 
     /**
      * The subscription whose paid purchase requires reconciliation.
      */
-    public Subscription $subscription;
+    public readonly RecordReference $subscription;
 
     /**
      * The paid purchase that could not settle the subscription period.
@@ -52,7 +50,7 @@ class SettledPeriodPurchaseConflict
      * Create a new event instance.
      */
     public function __construct(
-        Subscription $subscription,
+        RecordReference $subscription,
         string $purchaseId,
         ?string $periodKey = null,
         ?int $expectedAmountMinor = null,

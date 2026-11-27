@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -35,6 +36,7 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
 
 beforeEach(function (): void {
     app()->register(CashierServiceProvider::class);
+    app()->register(CashierChipServiceProvider::class);
 
     config()->set('cashier.gateways', [
         'stripe' => [
@@ -125,6 +127,9 @@ it('lists subscriptions across billables and applies tabs and filters', function
     CashierChip::useCustomerModel($userModel);
     CashierChip::useSubscriptionModel(ChipSubscription::class);
     CashierChip::useSubscriptionItemModel(ChipSubscriptionItem::class);
+
+    $user->linkChipCustomerToOwner($team);
+    $otherUser->linkChipCustomerToOwner($team);
 
     $activeId = (string) Str::uuid();
     ChipSubscription::query()->create([

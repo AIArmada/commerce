@@ -193,6 +193,12 @@ RefundChipPayment::run($purchaseId);
 RefundChipPayment::run($purchaseId, 5000);
 ```
 
+Refunds are server-validated: the amount must be positive, must not exceed the purchase total
+or the configured maximum, and the purchase must be paid and refundable. When owner mode is
+enabled, `RefundChipPayment` also requires the purchase mirror to be visible in the current owner
+scope. `PerformsCharges::refund()` additionally verifies that the purchase belongs to the
+billable customer's CHIP client before calling CHIP.
+
 CHIP refunds can also be processed through the CHIP dashboard or lower-level API:
 
 ```php

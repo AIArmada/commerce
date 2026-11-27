@@ -6,6 +6,8 @@ namespace AIArmada\Commerce\PHPStan\TraitUsageHarness;
 
 use AIArmada\Authz\Features\Authorization\Concerns\HasAuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\CashierChip\Billing\Billable;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
@@ -99,4 +101,14 @@ abstract class VoucherOwnershipHarness extends Model
 abstract class VoucherHolderHarness extends Model
 {
     use HasVouchers;
+}
+
+/**
+ * @property string $email
+ * @property string|null $name
+ * @property string|null $phone
+ */
+abstract class CashierChipBillableHarness extends Authenticatable implements BillableModel
+{
+    use Billable;
 }

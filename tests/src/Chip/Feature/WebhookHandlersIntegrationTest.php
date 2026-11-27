@@ -8,8 +8,8 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
-use AIArmada\Chip\Models\Payment;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
@@ -99,7 +99,7 @@ describe('Webhook Handlers Integration', function (): void {
             return new EnrichedWebhookPayload(
                 event: $event,
                 rawPayload: $payload,
-                localPurchase: $purchase,
+                localPurchaseId: (string) $purchase->getKey(),
                 owner: null,
                 receivedAt: now(),
                 purchaseId: data_get($payload, 'related_to.id') ?? $purchase->id,
@@ -327,4 +327,18 @@ describe('Webhook Handlers Integration', function (): void {
         });
 
     });
+});
+
+it('does not downgrade a paid or refunded purchase on a late failure or cancellation', function (): void {
+    Event::fake();
+
+    foreach (['paid', 'refunded'] as $status) {
+        $purchase = createTestPurchase(['status' => $status]);
+        $failed = app(PaymentFailedHandler::class)->handle(createPayloadWithPurchase('purchase.payment_failure', $purchase));
+        $cancelled = app(PurchaseCancelledHandler::class)->handle(createPayloadWithPurchase('purchase.cancelled', $purchase));
+
+        expect($failed->isSkipped())->toBeTrue()
+            ->and($cancelled->isSkipped())->toBeTrue()
+            ->and($purchase->refresh()->status)->toBe($status);
+    }
 });

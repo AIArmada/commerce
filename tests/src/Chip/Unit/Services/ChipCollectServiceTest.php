@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;

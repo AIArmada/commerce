@@ -18,12 +18,12 @@ use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Testing\WebhookFactory;
-use AIArmada\Chip\Webhooks\ProcessChipWebhook;
-use AIArmada\Chip\Webhooks\WebhookMonitor;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
@@ -100,6 +100,25 @@ describe('ProcessChipWebhook', function (): void {
         (new ProcessChipWebhook($secondWebhookCall))->handle();
 
         Event::assertDispatchedTimes(PurchasePaid::class, 1);
+    });
+
+    it('does not collapse distinct events for the same purchase into a single delivery', function (): void {
+        $payload = WebhookFactory::purchasePaid([
+            'id' => 'purchase-distinct-events',
+            'updated_on' => 1704067200,
+        ]);
+
+        foreach ([1704067200, 1704070800] as $updatedOn) {
+            $call = WebhookCall::create([
+                'name' => Webhook::WEBHOOK_NAME,
+                'url' => 'https://example.test/chip/webhooks',
+                'payload' => array_replace($payload, ['updated_on' => $updatedOn]),
+            ]);
+
+            (new ProcessChipWebhook($call))->handle();
+        }
+
+        Event::assertDispatchedTimes(PurchasePaid::class, 2);
     });
 
     it('dispatches PurchasePaid event', function (): void {

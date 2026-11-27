@@ -4,30 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Enums\SendWebhookHook;
+use AIArmada\Chip\Contracts\SendWebhookHook;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
-final class SendWebhookData extends ChipData
+final readonly class SendWebhookData
 {
     /**
      * @param  array<int, string>  $event_hooks
      */
     public function __construct(
-        public readonly int $id,
-        public readonly string $name,
-        public readonly string $public_key,
-        public readonly string $callback_url,
-        public readonly string $email,
-        public readonly array $event_hooks,
-        public readonly string $created_at,
-        public readonly string $updated_at,
+        public int $id,
+        public string $name,
+        public string $public_key,
+        public string $callback_url,
+        public string $email,
+        public array $event_hooks,
+        public string $created_at,
+        public string $updated_at,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         $eventHooks = $data['event_hooks'];
 
         if (! is_array($eventHooks)) {

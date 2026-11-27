@@ -7,8 +7,8 @@ namespace AIArmada\Chip\Webhooks\Handlers;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Features\Collect\Api\PurchaseWebhookState;
 
 /**
  * Handles the documented purchase.payment_failure webhook event.
@@ -17,9 +17,9 @@ class PaymentFailedHandler implements WebhookHandler
 {
     public function handle(EnrichedWebhookPayload $payload): WebhookResult
     {
-        $localPurchase = $payload->localPurchase;
+        $localPurchaseId = $payload->localPurchaseId;
 
-        if ($localPurchase === null) {
+        if ($localPurchaseId === null) {
             return WebhookResult::skipped('Purchase not found locally');
         }
 
@@ -28,11 +28,9 @@ class PaymentFailedHandler implements WebhookHandler
             $payload->get('error_code'),
         );
 
-        // Update local status
-        $localPurchase->forceFill([
-            'status' => PurchaseStatus::ERROR,
-            'failure_reason' => $failureReason,
-        ])->save();
+        if (! app(PurchaseWebhookState::class)->markFailed($localPurchaseId, $failureReason)) {
+            return WebhookResult::skipped('Purchase is not eligible for a failure update');
+        }
 
         // Dispatch Laravel event
         PurchasePaymentFailure::dispatch(
@@ -40,7 +38,7 @@ class PaymentFailedHandler implements WebhookHandler
             $payload->rawPayload,
         );
 
-        return WebhookResult::handled("Purchase {$localPurchase->id} marked as failed");
+        return WebhookResult::handled("Purchase {$localPurchaseId} marked as failed");
     }
 
     private function failureReason(mixed $attempts, mixed $errorCode): string

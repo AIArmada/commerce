@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
+use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Http\Controllers\WebhookController;
-use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

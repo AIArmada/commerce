@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks\Handlers;
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
 
 /**
  * Handles documented CHIP refund completion webhooks.
@@ -16,9 +16,9 @@ class PurchaseRefundedHandler implements WebhookHandler
 {
     public function handle(EnrichedWebhookPayload $payload): WebhookResult
     {
-        $localPurchase = $payload->localPurchase;
+        $localPurchaseId = $payload->localPurchaseId;
 
-        if ($localPurchase === null) {
+        if ($localPurchaseId === null) {
             return WebhookResult::skipped('Purchase not found locally');
         }
 
@@ -32,13 +32,11 @@ class PurchaseRefundedHandler implements WebhookHandler
             return WebhookResult::skipped('Refund payment payload is missing');
         }
 
-        app(SyncPurchaseRefundState::class)->handle($paymentRefunded->payment, $localPurchase);
+        app(RefundStateSynchronizer::class)->handle($paymentRefunded->payment, $localPurchaseId);
 
         PaymentRefunded::dispatch($paymentRefunded->payment, $payload->rawPayload);
 
-        $localPurchase->refresh();
-
-        return WebhookResult::handled("Purchase {$localPurchase->id} refund state synchronized");
+        return WebhookResult::handled("Purchase {$localPurchaseId} refund state synchronized");
     }
 
     /**

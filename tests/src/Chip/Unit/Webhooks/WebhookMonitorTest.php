@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\WebhookHealth;
-use AIArmada\Chip\Webhooks\WebhookMonitor;
+use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
 
 describe('WebhookMonitor', function (): void {
     it('has getHealth method', function (): void {

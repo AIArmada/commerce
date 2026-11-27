@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Concerns\PerformsCharges;
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Database\Eloquent\Model;
@@ -84,7 +84,7 @@ it('does not re-fire the recurring-token charge when a token charge is retried',
         });
     $client->shouldReceive('post')
         ->zeroOrMoreTimes()
-        ->with('purchases/purchase_twostep_1/charge/', Mockery::any())
+        ->with('purchases/purchase_twostep_1/charge/', Mockery::any(), Mockery::any())
         ->andReturnUsing(function () use (&$charges): array {
             $charges++;
 

@@ -10,9 +10,9 @@ Use the built-in CHIP webhook route when you want signature verification, queued
 
 The package registers a POST route at `config('chip.webhooks.route', '/chip/webhooks')`:
 
-- controller: `AIArmada\Chip\Http\Controllers\WebhookController`
+- controller: `AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController`
 - route name: `chip.webhook`
-- processor job: `AIArmada\Chip\Webhooks\ProcessChipWebhook`
+- processor job: `AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook`
 
 This path integrates with `spatie/laravel-webhook-client` and the package's webhook event dispatcher, so incoming deliveries can be verified, deduplicated, stored, and translated into typed CHIP events.
 
@@ -38,6 +38,9 @@ Relevant config:
 
     'collect' => [
         'webhook_keys' => json_decode(env('CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS', '[]'), true) ?: [],
+        'brand_keys' => [
+            // 'brand-uuid' => '-----BEGIN PUBLIC KEY-----...',
+        ],
     ],
 
     'send' => [
@@ -61,6 +64,12 @@ This package supports both sources:
 
 - `chip.collect.public_key` (company key for Collect success callbacks)
 - `chip.webhooks.collect.webhook_keys` (per-webhook keys for Collect registered webhooks)
+- `chip.webhooks.collect.brand_keys` (brand ID to public key, required when owner mode serves multiple brands)
+
+When `chip.owner.enabled=true` and `brand_keys` is configured, the verifier reads the `brand_id` from the exact signed body and uses only that brand's key. An unknown brand or a key from another brand fails closed. Signature validation runs once per request and the result is cached on the request; the dynamic public-key cache key includes the owner scope and credential fingerprint. Owner routing uses the configured brand mapping. The controller replaces owner metadata with the server-resolved owner and ignores query parameters when storing the callback body.
+
+For signing keys and delivery retries, see the official [Collect webhook signatures](https://docs.chip-in.asia/chip-collect/overview/webhook-signatures) and [Collect delivery protocol](https://docs.chip-in.asia/chip-collect/overview/delivery-protocol).
+
 Send webhook verification requires the dedicated key returned by the CHIP Send webhook API. Send webhooks must not be posted to the Collect webhook route because their payloads have no Collect `event_type` and use SHA-512 verification.
 
 Low-level verification example:
@@ -103,6 +112,8 @@ When the built-in route is enabled, successful deliveries flow through these ste
 5. typed event dispatch through `WebhookEventDispatcher`
 6. local model synchronization
 
+Failed deliveries keep their diagnostics. A provider redelivery may recover a failed delivery: the previous failed row becomes `superseded` with a tombstone event ID, and the redelivery claims the event again. Processed rows are never replayed. The scheduled retry command also reclaims `processing` rows that have been untouched for 30 minutes.
+
 The generic event is:
 
 - `AIArmada\Chip\Events\WebhookReceived`
@@ -115,7 +126,7 @@ Typed events include:
 - `PaymentRefunded`
 - payout events
 
-If `chip.webhooks.store_webhooks` is enabled, `AIArmada\Chip\Listeners\StoreWebhookData` persists purchase payloads plus purchase-related payment payloads such as `payment.refunded`.
+If `chip.webhooks.store_webhooks` is enabled, `AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData` persists purchase payloads plus purchase-related payment payloads such as `payment.refunded`.
 
 The typed events emitted by `WebhookEventDispatcher` are the integration seam for downstream packages. `PurchaseEvent` and payment events expose stable IDs, amounts, currencies, statuses, customer details, references, metadata, and the original payload. CHIP does not generate documents or link checkout customers; those subscribers belong to their owning packages.
 
@@ -293,11 +304,11 @@ The action enriches the payload, resolves owner context from the payload or prov
 
 CHIP Send has a separate webhook API and signature scheme from CHIP Collect. The package registers a second route at `config('chip.webhooks.send.route', '/chip/send/webhooks')`:
 
-- controller: `AIArmada\Chip\Http\Controllers\SendWebhookController`
+- controller: `AIArmada\Chip\EntryPoints\Http\Controllers\SendWebhookController`
 - route name: `chip.send.webhook`
 - event: `AIArmada\Chip\Events\SendWebhookReceived`
 
-The controller verifies the raw request body with the Send webhook's dedicated public key and SHA-512 RSA signature, then dispatches the raw JSON object as `SendWebhookReceived::$payload`. CHIP Send identifies the subscribed delivery through the configured `event_hooks` resource type (`bank_account_status`, `budget_allocation_status`, or `send_instruction_status`); it does not use the Collect `event_type` envelope. Applications can interpret the verified resource payload according to the hook they configured.
+The controller verifies the raw request body with the Send webhook's dedicated public key and SHA-512 RSA signature, then dispatches the raw JSON object as `SendWebhookReceived::$payload`. Unlike Collect, Send deliveries are not persisted by the package and have no local deduplication claim: listeners must be idempotent, and a listener failure returns a non-2xx response so CHIP can redeliver. This is an intentional difference from the Collect retry/claim contract. CHIP Send identifies the subscribed delivery through the configured `event_hooks` resource type (`bank_account_status`, `budget_allocation_status`, or `send_instruction_status`); it does not use the Collect `event_type` envelope. Applications can interpret the verified resource payload according to the hook they configured.
 
 Configure the Send webhook public key directly or let the package retrieve it using `CHIP_SEND_WEBHOOK_ID`:
 

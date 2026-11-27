@@ -33,6 +33,12 @@ return [
     */
     'default_currency' => 'MYR',
 
+    'widgets' => [
+        'balance_cache_ttl' => 60,
+        'turnover_cache_ttl' => 3600,
+        'turnover_current_bucket_ttl' => 60,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Resources

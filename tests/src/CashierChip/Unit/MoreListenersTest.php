@@ -5,13 +5,14 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
-use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
-use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners\HandlePurchasePreauthorized;
+use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaymentFailure;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 
@@ -22,7 +23,7 @@ describe('MoreListeners', function (): void {
         Event::fake([PaymentFailed::class]);
 
         $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',
@@ -61,7 +62,7 @@ describe('MoreListeners', function (): void {
 
     it('handle purchase payment failure marks subscription past due', function (): void {
         $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'cli_123');
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
@@ -88,7 +89,7 @@ describe('MoreListeners', function (): void {
 
     it('handle purchase preauthorized saves recurring token', function (): void {
         $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',
@@ -134,7 +135,7 @@ describe('MoreListeners', function (): void {
 
     it('handle purchase preauthorized returns early without recurring token', function (): void {
         $user = $this->createUser();
-        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',

@@ -200,6 +200,7 @@ CHIP does not configure or run document generation or checkout/customer linking.
 
     'collect' => [
         'webhook_keys' => $collectWebhookKeys, // Parsed from CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS JSON
+        'brand_keys' => [], // brand UUID => PEM public key
     ],
 
     'send' => [
@@ -226,6 +227,23 @@ Per-webhook public keys for CHIP Collect (payments). Set as JSON mapping webhook
 ```env
 CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS='{"wh-uuid-1":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----","wh-uuid-2":"..."}'
 ```
+
+### Brand-Bound Collect Keys
+
+When owner mode serves more than one brand, bind each brand to its own public key:
+
+```php
+'webhooks' => [
+    'collect' => [
+        'brand_keys' => [
+            'brand-uuid-a' => '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----',
+            'brand-uuid-b' => '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----',
+        ],
+    ],
+],
+```
+
+With a non-empty `brand_keys` map, the verifier accepts only the key for the `brand_id` in the signed body. A missing or unmapped brand fails verification.
 
 ### Send Webhook Keys
 

@@ -11,7 +11,7 @@ use Carbon\CarbonImmutable;
  * Incoming deliveries populate the event_type/payload/headers fields, while stored endpoint definitions
  * expose configuration metadata alongside processing status flags.
  */
-final class WebhookData extends ChipData
+final readonly class WebhookData
 {
     /**
      * @param  array<string, mixed>  $events
@@ -20,35 +20,34 @@ final class WebhookData extends ChipData
      * @param  array<string>  $unique_brands
      */
     public function __construct(
-        public readonly string $id,
-        public readonly string $type,
-        public readonly int $created_on,
-        public readonly int $updated_on,
-        public readonly string $title,
-        public readonly bool $all_events,
-        public readonly string $public_key,
-        public readonly array $events,
-        public readonly string $callback,
-        public readonly bool $is_test,
-        public readonly string $version,
-        public readonly array $unique_brands,
-        public readonly ?string $event_type = null,
-        public readonly ?array $payload = null,
-        public readonly ?array $headers = null,
-        public readonly ?string $signature = null,
-        public readonly bool $verified = false,
-        public readonly bool $processed = false,
-        public readonly ?string $processed_at = null,
-        public readonly ?string $processing_error = null,
-        public readonly int $processing_attempts = 0,
+        public string $id,
+        public string $type,
+        public int $created_on,
+        public int $updated_on,
+        public string $title,
+        public bool $all_events,
+        public string $public_key,
+        public array $events,
+        public string $callback,
+        public bool $is_test,
+        public string $version,
+        public array $unique_brands,
+        public ?string $event_type = null,
+        public ?array $payload = null,
+        public ?array $headers = null,
+        public ?string $signature = null,
+        public bool $verified = false,
+        public bool $processed = false,
+        public ?string $processed_at = null,
+        public ?string $processing_error = null,
+        public int $processing_attempts = 0,
     ) {}
 
     /**
-     * @param  array<string, mixed>|self  ...$payloads
+     * @param  array<string, mixed>  $data
      */
-    public static function from(mixed ...$payloads): static
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
 
         // CHIP webhook deliveries use the resource object as the payload.
         if (
@@ -91,7 +90,6 @@ final class WebhookData extends ChipData
         /** @var array<string, mixed> $events */
         $events = $data['events'] ?? [];
         $events = array_combine(array_map('strval', array_keys($events)), array_values($events));
-
         /** @var array<string> $uniqueBrands */
         $uniqueBrands = $data['unique_brands'] ?? [];
 

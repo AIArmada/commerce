@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 
 final class ChipStatsWidget extends BaseWidget
 {
+    use RequiresChipOwnerContext;
+
     protected static ?int $sort = 1;
 
     private const int STATS_CACHE_TTL_SECONDS = 120;
@@ -25,17 +28,17 @@ final class ChipStatsWidget extends BaseWidget
     protected function getStats(): array
     {
         /** @var array{today: int, week: int, month: int, successRate: float} $numbers */
-        $numbers = OwnerCache::remember(
+        $numbers = $this->withResolvedOwnerOrExplicitGlobal(fn (): array => OwnerCache::remember(
             OwnerContext::resolve(),
             'filament-chip.chip-stats',
             self::STATS_CACHE_TTL_SECONDS,
-            fn (): array => $this->withResolvedOwnerOrExplicitGlobal(fn (): array => [
+            fn (): array => [
                 'today' => $this->getTodayRevenue(),
                 'week' => $this->getWeekRevenue(),
                 'month' => $this->getMonthRevenue(),
                 'successRate' => $this->getSuccessRate(),
-            ], ['today' => 0, 'week' => 0, 'month' => 0, 'successRate' => 0.0]),
-        );
+            ],
+        ), ['today' => 0, 'week' => 0, 'month' => 0, 'successRate' => 0.0]);
 
         $successRate = $numbers['successRate'];
 

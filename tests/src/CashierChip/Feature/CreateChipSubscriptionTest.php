@@ -2,120 +2,74 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+use AIArmada\CashierChip\Data\BillingCycle;
+use AIArmada\CashierChip\Features\Subscriptions\Api\CreateSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Api\SubscriptionDraft;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
-use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\CashierChip\Payment\PaymentMethod;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
-use AIArmada\Chip\Data\ClientData;
-use AIArmada\Commerce\Tests\TestCase;
-use Exception;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+uses(CashierChipTestCase::class);
 
-\uses(TestCase::class);
-describe('CreateChipSubscription', function (): void {
-    it('rejects empty prices', function (): void {
-        $customer = new class extends Model implements BillableContract
-        {
-            protected $guarded = [];
+it('rejects empty prices at the subscription feature boundary', function (): void {
+    expect(fn () => new SubscriptionDraft(
+        billable: new RecordReference('user', 'test'),
+        type: 'default',
+        items: [],
+        cycle: new BillingCycle,
+    ))->toThrow(InvalidArgumentException::class, 'At least one price');
+});
 
-            public function chipId(): ?string
-            {
-                return 'chip_cus_sub';
-            }
+it('creates a subscription through the pure feature contract', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_feature']);
+    $reference = app(CreateSubscription::class)->create(new SubscriptionDraft(
+        billable: new RecordReference($user->getMorphClass(), (string) $user->getKey()),
+        type: 'default',
+        items: ['price_test' => ['price' => 'price_test', 'unit_amount' => 1250, 'quantity' => 2]],
+        cycle: new BillingCycle,
+    ));
 
-            public function hasChipId(): bool
-            {
-                return true;
-            }
+    $subscription = Subscription::query()->findOrFail($reference->id);
 
-            public function chipEmail(): ?string
-            {
-                return 'sub@example.com';
-            }
+    expect($subscription->billable_id)->toBe((string) $user->getKey())
+        ->and($subscription->items()->firstOrFail()->unit_amount)->toBe(1250)
+        ->and($subscription->quantity)->toBe(2);
+});
 
-            public function chipName(): ?string
-            {
-                return 'Sub User';
-            }
+it('rejects overflowing subscription item totals', function (): void {
+    $draft = new SubscriptionDraft(
+        billable: new RecordReference('user', 'test'),
+        type: 'default',
+        items: ['price_test' => ['price' => 'price_test', 'unit_amount' => PHP_INT_MAX, 'quantity' => 2]],
+        cycle: new BillingCycle,
+    );
 
-            public function preferredCurrency(): string
-            {
-                return 'MYR';
-            }
+    expect(fn () => $draft->totalAmount())->toThrow(InvalidArgumentException::class, 'supported range');
+});
 
-            public function defaultPaymentMethod(): ?PaymentMethod
-            {
-                return null;
-            }
+it('blocks another billable before making CHIP requests in owner mode', function (): void {
+    $owner = $this->createUser();
+    $other = $this->createUser();
+    config([
+        'cashier-chip.features.owner.enabled' => true,
+        'cashier-chip.features.owner.validate_billable_owner' => true,
+    ]);
+    $clientCount = count($this->fakeChip->getFakeClient()->getClients());
 
-            public function getMorphClass(): string
-            {
-                return 'user';
-            }
+    $draft = new SubscriptionDraft(
+        billable: new RecordReference($other->getMorphClass(), (string) $other->getKey()),
+        type: 'default',
+        items: ['price_test' => ['price' => 'price_test', 'unit_amount' => 1250]],
+        cycle: new BillingCycle,
+    );
 
-            public function chipPhone(): ?string
-            {
-                return null;
-            }
+    OwnerContext::withOwner($owner, function () use ($draft): void {
+        expect(fn () => app(CreateSubscription::class)->create($draft))
+            ->toThrow(AuthorizationException::class, 'Cross-tenant subscription write blocked');
+    });
 
-            public function chipCountry(): ?string
-            {
-                return null;
-            }
-
-            public function chipAddress(): array
-            {
-                return [];
-            }
-
-            public function createOrGetChipCustomer(array $options = []): ClientData
-            {
-                throw new BadMethodCallException('Not implemented in test stub.');
-            }
-
-            public function charge(int $amount, ?string $recurringToken = null, array $options = []): Payment
-            {
-                throw new BadMethodCallException('Not implemented in test stub.');
-            }
-
-            public function chargeWithRecurringToken(int $amount, ?string $recurringToken = null, array $options = []): Payment
-            {
-                throw new BadMethodCallException('Not implemented in test stub.');
-            }
-
-            public function hasDefaultPaymentMethod(): bool
-            {
-                return false;
-            }
-
-            public function updateDefaultPaymentMethod(string $paymentMethodId): static
-            {
-                return $this;
-            }
-
-            public function deletePaymentMethod(string $paymentMethodId): void
-            {
-                // no-op
-            }
-
-            public function subscriptions(): MorphMany
-            {
-                throw new BadMethodCallException('Not implemented in test stub.');
-            }
-
-            public function subscription(string $type = 'default'): ?Subscription
-            {
-                return null;
-            }
-        };
-
-        $builder = new SubscriptionBuilder($customer, 'default');
-
-        CreateChipSubscription::run($builder);
-    })->throws(Exception::class, 'At least one price');
+    expect($this->fakeChip->getFakeClient()->getClients())->toHaveCount($clientCount)
+        ->and(Subscription::query()->withoutOwnerScope()->count())->toBe(0);
 });

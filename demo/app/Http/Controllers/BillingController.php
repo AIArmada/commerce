@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use App\Models\User;

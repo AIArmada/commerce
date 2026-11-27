@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Schemas;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

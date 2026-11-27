@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Spatie\LaravelData\Data;
-
 /**
  * Result of webhook processing.
  */
-final class WebhookResult extends Data
+final readonly class WebhookResult
 {
     public function __construct(
-        public readonly bool $success,
-        public readonly bool $handled,
-        public readonly ?string $message = null,
+        public bool $success,
+        public bool $handled,
+        public ?string $message = null,
         /** @var array<string, mixed> */
-        public readonly array $meta = [],
+        public array $meta = [],
     ) {}
 
     /**

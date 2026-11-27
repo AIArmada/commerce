@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "name": "Collect",
+  "owns": {
+    "table:chip_purchases": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
+      "AIArmada\\Chip\\Features\\Collect\\Persistence\\PurchaseIdempotencyLedger",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\ApplyPurchaseWebhookState"
+    ],
+    "table:chip_clients": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+    ],
+    "table:chip_payments": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\DeletePurchasePayments"
+    ],
+    "table:chip_customers": [
+      "AIArmada\\Chip\\Features\\Collect\\Persistence\\ChipCustomerDirectory"
+    ],
+    "store:chip.purchase_cache": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\PurchasesApi"
+    ]
+  },
+  "extensions": {}
+}

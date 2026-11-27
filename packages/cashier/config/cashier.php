@@ -54,6 +54,10 @@ return [
         ],
     ],
 
+    'billing' => [
+        'max_amount_minor' => env('CASHIER_MAX_AMOUNT_MINOR', 100_000_000),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Customer Portal

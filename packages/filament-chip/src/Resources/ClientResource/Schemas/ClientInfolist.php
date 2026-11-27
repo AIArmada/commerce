@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\ClientResource\Schemas;
 
-use AIArmada\Chip\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Client;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;

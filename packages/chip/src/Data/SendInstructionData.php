@@ -4,30 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Contracts\SendInstructionState;
 use Carbon\CarbonImmutable;
 
-final class SendInstructionData extends ChipData
+final readonly class SendInstructionData
 {
     public function __construct(
-        public readonly int $id,
-        public readonly int $bank_account_id,
-        public readonly string $amount,
-        public readonly string $state,
-        public readonly string $email,
-        public readonly string $description,
-        public readonly string $reference,
-        public readonly bool $send_recipient_receipt,
-        public readonly ?string $receipt_url,
-        public readonly ?string $slug,
-        public readonly string $created_at,
-        public readonly string $updated_at,
+        public int $id,
+        public int $bank_account_id,
+        public string $amount,
+        public string $state,
+        public string $email,
+        public string $description,
+        public string $reference,
+        public bool $send_recipient_receipt,
+        public ?string $receipt_url,
+        public ?string $slug,
+        public string $created_at,
+        public string $updated_at,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             id: (int) $data['id'],
             bank_account_id: (int) $data['bank_account_id'],
