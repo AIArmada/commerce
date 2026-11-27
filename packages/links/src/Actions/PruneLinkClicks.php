@@ -17,7 +17,7 @@ final readonly class PruneLinkClicks
             $ids = LinkClick::query()
                 ->withoutOwnerScope()
                 ->where('occurred_at', '<', $cutoff)
-                ->orderBy('id')
+                ->orderBy('occurred_at')
                 ->limit(1000)
                 ->pluck('id');
 

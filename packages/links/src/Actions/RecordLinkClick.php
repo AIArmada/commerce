@@ -40,9 +40,9 @@ final class RecordLinkClick
         $record = ! $isBot || (bool) config('links.features.tracking.bots.record', true);
 
         $click = new LinkClick([
-            'link_id' => $link->getKey(),
-            'subject_type' => $link->subject_type,
-            'subject_id' => $link->subject_id,
+            'link_id' => (string) $link->getKey(),
+            'subject_type' => $this->nullableIdentity($link->subject_type),
+            'subject_id' => $this->nullableIdentity($link->subject_id),
             'occurred_at' => CarbonImmutable::now(),
             'ip_address' => $this->resolveIpAddress($context),
             'user_agent' => $trackingEnabled && (bool) config('links.features.tracking.user_agent.store_raw', true) ? $userAgent : null,
@@ -61,8 +61,8 @@ final class RecordLinkClick
             'utm_content' => $this->utmValue($context, 'utm_content'),
             'utm_term' => $this->utmValue($context, 'utm_term'),
             'properties' => $this->propertiesValue($context),
-            'owner_type' => $link->owner_type,
-            'owner_id' => $link->owner_id,
+            'owner_type' => $this->nullableIdentity($link->owner_type),
+            'owner_id' => $this->nullableIdentity($link->owner_id),
         ]);
 
         try {
@@ -71,23 +71,24 @@ final class RecordLinkClick
             throw new LinkUnavailableException('owner_unknown');
         }
 
-        OwnerContext::withOwner($owner, static function () use ($click, $link, $isBot, $record): void {
-            $link->getConnection()->transaction(static function () use ($click, $link, $isBot, $record): void {
+        OwnerContext::withOwner($owner, function () use ($click, $link, $isBot, $record): void {
+            $link->getConnection()->transaction(function () use ($click, $link, $isBot, $record): void {
                 $locked = $link->newQuery()->withoutOwnerScope()->whereKey($link->getKey())->lockForUpdate()->first();
 
                 if ($locked === null) {
                     throw new LinkUnavailableException('link_unknown');
                 }
 
-                if ($locked->owner_type !== $link->owner_type || $locked->owner_id !== $link->owner_id) {
+                if (! $this->sameIdentity($locked->owner_type, $link->owner_type)
+                    || ! $this->sameIdentity($locked->owner_id, $link->owner_id)) {
                     throw new LinkUnavailableException('owner_changed');
                 }
 
                 if ($locked->slug !== $link->slug
                     || $locked->slug_prefix !== $link->slug_prefix
                     || $locked->require_signature !== $link->require_signature
-                    || $locked->subject_type !== $link->subject_type
-                    || $locked->subject_id !== $link->subject_id) {
+                    || ! $this->sameIdentity($locked->subject_type, $link->subject_type)
+                    || ! $this->sameIdentity($locked->subject_id, $link->subject_id)) {
                     throw new LinkUnavailableException('link_changed');
                 }
 
@@ -108,8 +109,8 @@ final class RecordLinkClick
                     return;
                 }
 
-                $click->subject_type = $locked->subject_type;
-                $click->subject_id = $locked->subject_id;
+                $click->subject_type = $this->nullableIdentity($locked->subject_type);
+                $click->subject_id = $this->nullableIdentity($locked->subject_id);
                 $click->setConnection($locked->getConnectionName());
                 $click->save();
 
@@ -375,6 +376,16 @@ final class RecordLinkClick
         $value = $this->stringValue($value);
 
         return $value !== null && mb_strlen($value) <= 500 ? $value : null;
+    }
+
+    private function nullableIdentity(mixed $value): ?string
+    {
+        return $value === null ? null : (string) $value;
+    }
+
+    private function sameIdentity(mixed $left, mixed $right): bool
+    {
+        return $this->nullableIdentity($left) === $this->nullableIdentity($right);
     }
 
     private function stringValue(mixed $value): ?string

@@ -181,8 +181,14 @@ final readonly class ApplyRewardSourceCorrectionsAction
             try {
                 // Sweeps run without an ambient owner: run the invalidation
                 // under the cycle's program owner.
+                $programId = $contribution->cycle?->program_id;
+
+                if ($programId === null) {
+                    throw new InvalidArgumentException('Unknown reward program.');
+                }
+
                 RewardProgramGuard::withProgramOwner(
-                    (string) ($contribution->cycle?->program_id ?? ''),
+                    (string) $programId,
                     static fn () => app(InvalidateRewardMilestoneContributionAction::class)->handle(
                         $contribution,
                         $actorType,

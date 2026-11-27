@@ -14,7 +14,11 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\GenerateLinkUrl;
+use AIArmada\Links\Events\LinkCreated;
+use AIArmada\Links\Events\LinkUpdated;
 use AIArmada\Links\Models\Link;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 describe('offer link actions', function (): void {
     beforeEach(function (): void {
@@ -361,4 +365,74 @@ test('network branded links snapshot the affiliate handle and preserve redirect 
 
     $new = app(CreateOfferLink::class)->execute($offer->id, $affiliate->id, ['link_style' => 'branded']);
     expect($new->link->cloakedUrl())->toContain('/go/saifnew/');
+});
+
+test('rejects custom parameters before creating a link when the reserved network parameter has no room', function (): void {
+    config(['affiliate-network.links.parameter' => 'anl']);
+
+    $site = AffiliateSite::factory()->verified()->create(['domain' => 'reserve.example.com']);
+    $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
+        'landing_url' => 'https://reserve.example.com/landing',
+        'requires_approval' => false,
+    ]);
+    $affiliate = Affiliate::create([
+        'code' => 'AFF' . uniqid(),
+        'name' => 'Reserved Parameter Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $parameters = [];
+    for ($index = 1; $index <= 50; $index++) {
+        $parameters['custom_' . $index] = 'value';
+    }
+
+    $trackedBefore = Link::query()->withoutOwnerScope()->count();
+    Event::fake([LinkCreated::class]);
+
+    expect(fn () => app(CreateOfferLink::class)->execute($offer->id, (string) $affiliate->getKey(), [
+        'custom_parameters' => http_build_query($parameters),
+    ]))->toThrow(ValidationException::class);
+
+    expect(Link::query()->withoutOwnerScope()->count())->toBe($trackedBefore)
+        ->and(AffiliateOfferLink::query()->withoutGlobalScopes()->where('offer_id', $offer->getKey())->exists())->toBeFalse();
+
+    Event::assertNotDispatched(LinkCreated::class);
+});
+
+test('adds the reserved network parameter in the create pass without an update event', function (): void {
+    config(['affiliate-network.links.parameter' => 'anl']);
+
+    $site = AffiliateSite::factory()->verified()->create(['domain' => 'reserved-event.example.com']);
+    $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
+        'landing_url' => 'https://reserved-event.example.com/landing',
+        'requires_approval' => false,
+    ]);
+    $affiliate = Affiliate::create([
+        'code' => 'AFF' . uniqid(),
+        'name' => 'Reserved Event Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $parameters = [];
+    for ($index = 1; $index <= 49; $index++) {
+        $parameters['custom_' . $index] = 'value';
+    }
+
+    Event::fake([LinkCreated::class, LinkUpdated::class]);
+
+    $link = app(CreateOfferLink::class)->execute($offer->id, (string) $affiliate->getKey(), [
+        'custom_parameters' => http_build_query($parameters),
+    ]);
+
+    expect($link->link->parameters)->toHaveCount(50)
+        ->and($link->link->parameters['anl'])->toBe($link->link->slug);
+
+    Event::assertDispatched(LinkCreated::class);
+    Event::assertNotDispatched(LinkUpdated::class);
 });

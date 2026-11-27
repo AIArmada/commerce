@@ -37,8 +37,6 @@ final class EditLink extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Link $record */
-        unset($data['subject_type'], $data['subject_id']);
-
         if (LinkForm::isProtectedSubject($record)) {
             unset($data['slug_prefix'], $data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature'], $data['deactivated_at']);
         }

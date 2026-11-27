@@ -14,7 +14,6 @@ use AIArmada\AffiliateNetwork\Platform\AffiliateProfileGuard;
 use AIArmada\AffiliateNetwork\Platform\DomainHostValidator;
 use AIArmada\AffiliateNetwork\Platform\QueryParameters;
 use AIArmada\Links\Actions\CreatePublicLink;
-use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
@@ -149,11 +148,9 @@ final class CreateOfferLink
             'subject_type' => $offerLink->getMorphClass(),
             'subject_id' => (string) $offerLink->getKey(),
             'expires_at' => $options['expires_at'] ?? null,
-        ], $style, $identity?->handle, $options['link_label'] ?? $offer->name, false);
-
-        $link = UpdateLink::run($link, ['parameters' => array_merge($parameters, [
-            (string) config('affiliate-network.links.parameter', 'anl') => $link->slug,
-        ])]);
+        ], $style, $identity?->handle, $options['link_label'] ?? $offer->name, false, null, [
+            (string) config('affiliate-network.links.parameter', 'anl'),
+        ]);
 
         return $link;
     }

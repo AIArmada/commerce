@@ -6,6 +6,7 @@ namespace AIArmada\Referrals\Models;
 
 use AIArmada\Referrals\Database\Factories\ReferralInviteFactory;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
+use AIArmada\Referrals\Persistence\DeleteReferralDependents;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -62,6 +63,10 @@ class ReferralInvite extends Model
     {
         static::creating(function (self $invite): void {
             $invite->status ??= ReferralInviteStatus::Pending;
+        });
+
+        static::deleted(function (self $invite): void {
+            app(DeleteReferralDependents::class)->forInvite($invite);
         });
 
         static::updating(function (self $invite): void {

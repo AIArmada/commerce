@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Referrals\Database\Factories\ReferralProgramFactory;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
+use AIArmada\Referrals\Persistence\DeleteReferralDependents;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -80,6 +81,10 @@ class ReferralProgram extends Model
     {
         static::creating(function (self $program): void {
             $program->status ??= ReferralProgramStatus::Draft;
+        });
+
+        static::deleted(function (self $program): void {
+            app(DeleteReferralDependents::class)->forProgram($program);
         });
     }
 

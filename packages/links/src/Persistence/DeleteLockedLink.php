@@ -16,14 +16,17 @@ final class DeleteLockedLink
             throw new LogicException('Link deletion requires a locked row inside a transaction.');
         }
 
-        $click = new LinkClick;
-        $click->setConnection($link->getConnectionName());
-        $click->newQuery()->withoutOwnerScope()->where('link_id', $link->getKey())->delete();
-
         if (! $link->delete()) {
             throw new LogicException('The tracked link could not be deleted.');
         }
 
         return true;
+    }
+
+    public function deleteDependents(Link $link): void
+    {
+        $click = new LinkClick;
+        $click->setConnection($link->getConnectionName());
+        $click->newQuery()->withoutOwnerScope()->where('link_id', $link->getKey())->delete();
     }
 }

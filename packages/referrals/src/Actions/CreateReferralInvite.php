@@ -11,10 +11,10 @@ use AIArmada\Referrals\Exceptions\ReferralAlreadyClaimedException;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Support\ReferralContactNormalizer;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -54,7 +54,7 @@ final class CreateReferralInvite
         $guard = app(ReferralProgramGuard::class);
 
         /** @var array{result: ReferralInviteCreationResult, created: bool} $created */
-        $created = DB::transaction(function () use (
+        $created = ReferralDatabase::connection()->transaction(function () use (
             $program,
             $referrer,
             $normalizedContact,

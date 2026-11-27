@@ -15,6 +15,8 @@ The complete file is `config/referrals.php`. Every setting below is read by the 
 | `referrals.database.tables.invites` | `referral_invites` | Configurable invite table. |
 | `referrals.database.tables.rewards` | `referral_rewards` | Configurable reward-intent table. |
 
+Programs, invites, and rewards must resolve to the same database connection. Referral actions fail closed before writing when they do not, and the optional voucher, affiliates, and rewards rails also require their local records on that connection so the outer referral transaction remains atomic.
+
 ## Defaults
 
 | Key | Default | Purpose |

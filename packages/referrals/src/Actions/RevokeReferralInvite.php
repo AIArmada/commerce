@@ -6,9 +6,9 @@ namespace AIArmada\Referrals\Actions;
 
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Models\ReferralInvite;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,7 +20,7 @@ final class RevokeReferralInvite
     {
         $inviteId = $invite instanceof ReferralInvite ? (string) $invite->getKey() : $invite;
 
-        $revoked = DB::transaction(function () use ($inviteId, $reason): ReferralInvite {
+        $revoked = ReferralDatabase::connection()->transaction(function () use ($inviteId, $reason): ReferralInvite {
             $guard = app(ReferralProgramGuard::class);
             $scopedInvite = $guard->invite($inviteId);
             $guard->program((string) $scopedInvite->program_id, true);

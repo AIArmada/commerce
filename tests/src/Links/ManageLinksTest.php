@@ -12,8 +12,10 @@ use AIArmada\Links\Events\LinkCreated;
 use AIArmada\Links\Events\LinkDeactivated;
 use AIArmada\Links\Events\LinkReactivated;
 use AIArmada\Links\Events\LinkUpdated;
+use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 test('creates a link with an auto-generated slug', function (): void {
@@ -165,4 +167,40 @@ test('deleting a tracked link removes its clicks without affecting other links',
     expect(app(DeleteLink::class)->handle($link))->toBeTrue()
         ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->id)->exists())->toBeFalse()
         ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $other->id)->exists())->toBeTrue();
+});
+
+test('deleting a tracked link model removes its clicks without a database cascade', function (): void {
+    $link = CreateLink::run(['name' => 'Model delete', 'destination_url' => 'https://merchant.example/model-delete']);
+    RecordLinkClick::run($link);
+
+    expect(LinkClick::query()->where('link_id', $link->id)->exists())->toBeTrue();
+
+    $link->delete();
+
+    expect(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->id)->exists())->toBeFalse();
+});
+
+test('canceling a tracked link model delete preserves its clicks', function (): void {
+    $link = CreateLink::run(['name' => 'Keep clicks', 'destination_url' => 'https://merchant.example/keep-clicks']);
+    RecordLinkClick::run($link);
+    Link::deleting(static fn (): bool => false);
+
+    expect($link->delete())->toBeFalse()
+        ->and(LinkClick::query()->where('link_id', $link->id)->exists())->toBeTrue();
+});
+
+test('updating a tracked link cannot rewrite its subject identity', function (): void {
+    $subjectId = (string) Str::uuid();
+
+    $link = CreateLink::run([
+        'name' => 'Frozen subject',
+        'destination_url' => 'https://merchant.example/frozen-subject',
+        'subject_type' => 'offer-link',
+        'subject_id' => $subjectId,
+    ]);
+
+    expect(fn () => UpdateLink::run($link, ['subject_id' => (string) Str::uuid()]))
+        ->toThrow(ValidationException::class);
+
+    expect($link->fresh()->subject_id)->toBe($subjectId);
 });

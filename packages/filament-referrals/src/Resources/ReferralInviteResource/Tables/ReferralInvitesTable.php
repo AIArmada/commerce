@@ -84,9 +84,11 @@ class ReferralInvitesTable
                                 is_string($data['reason'] ?? null) ? $data['reason'] : null,
                             );
                         } catch (Throwable $exception) {
+                            report($exception);
+
                             Notification::make()
                                 ->title('Referral invite could not be revoked')
-                                ->body($exception->getMessage())
+                                ->body('The operation could not be completed. Check the application logs.')
                                 ->danger()
                                 ->send();
 

@@ -3,14 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\CreateLink;
 use AIArmada\Links\Actions\DeactivateLink;
 use AIArmada\Links\Actions\DeleteLink;
+use AIArmada\Links\Actions\DeleteLinkForSubject;
+use AIArmada\Links\Actions\RecordLinkClick;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 test('link reads are isolated between owners', function (): void {
     $ownerA = User::create(['name' => 'Owner A', 'email' => 'owner-a-' . uniqid() . '@example.com', 'password' => 'secret']);
@@ -87,4 +93,70 @@ test('public redirects refuse links whose owner no longer exists', function (): 
     $this->get('/go/' . $link->slug)->assertGone();
 
     expect(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->id)->count())->toBe(0);
+});
+
+test('subject cascade deletion is owner-safe across tenant, global, and absent contexts', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $subjectId = (string) Str::uuid();
+
+    $link = OwnerContext::withOwner($ownerA, fn () => CreateLink::run([
+        'name' => 'Subject cascade',
+        'destination_url' => 'https://merchant.example/subject-cascade',
+        'subject_type' => 'offer-link',
+        'subject_id' => $subjectId,
+    ]));
+
+    app(RecordLinkClick::class)->handle($link);
+    $delete = app(DeleteLinkForSubject::class);
+
+    OwnerContext::withOwner($ownerB, function () use ($delete, $link, $subjectId): void {
+        expect($delete->handle((string) $link->getKey(), 'offer-link', $subjectId))->toBeTrue();
+    });
+
+    OwnerContext::withOwner(null, function () use ($delete, $link, $subjectId): void {
+        expect($delete->handle((string) $link->getKey(), 'offer-link', $subjectId))->toBeTrue();
+    });
+
+    expect(Link::query()->withoutOwnerScope()->whereKey($link->getKey())->exists())->toBeTrue()
+        ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->getKey())->exists())->toBeTrue();
+
+    OwnerContext::withOwner($ownerA, function () use ($delete, $link, $subjectId): void {
+        expect($delete->handle((string) Str::uuid(), 'offer-link', $subjectId))->toBeTrue()
+            ->and($delete->handle((string) $link->getKey(), 'offer-link', (string) Str::uuid()))->toBeFalse()
+            ->and($delete->handle((string) $link->getKey(), 'offer-link', $subjectId))->toBeTrue();
+    });
+
+    expect(Link::query()->withoutOwnerScope()->whereKey($link->getKey())->exists())->toBeFalse()
+        ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->getKey())->exists())->toBeFalse();
+
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+
+    expect(fn () => $delete->handle((string) $link->getKey(), 'offer-link', $subjectId))
+        ->toThrow(NoCurrentOwnerException::class);
+});
+
+test('subject cascade deletion never widens to global links when include-global is enabled', function (): void {
+    config(['links.owner.include_global' => true]);
+
+    $owner = User::factory()->create();
+    $subjectId = (string) Str::uuid();
+    $link = OwnerContext::withOwner(null, fn () => CreateLink::run([
+        'name' => 'Global subject cascade',
+        'destination_url' => 'https://merchant.example/global-subject-cascade',
+        'subject_type' => 'offer-link',
+        'subject_id' => $subjectId,
+    ]));
+
+    $delete = app(DeleteLinkForSubject::class);
+
+    OwnerContext::withOwner($owner, function () use ($delete, $link, $subjectId): void {
+        expect($delete->handle((string) $link->getKey(), 'offer-link', $subjectId))->toBeTrue();
+    });
+
+    expect(Link::query()->withoutOwnerScope()->whereKey($link->getKey())->exists())->toBeTrue();
+
+    OwnerContext::withOwner(null, function () use ($delete, $link, $subjectId): void {
+        expect($delete->handle((string) $link->getKey(), 'offer-link', $subjectId))->toBeTrue();
+    });
 });

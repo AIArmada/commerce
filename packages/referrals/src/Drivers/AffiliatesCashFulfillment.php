@@ -32,6 +32,10 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('No affiliate recipient is configured for this referral beneficiary.');
         }
 
+        if ($reward->connectionName === '' || $affiliate->connectionName !== $reward->connectionName) {
+            return ReferralFulfillmentResult::failed('Affiliate cash referral fulfilment requires a shared database connection.');
+        }
+
         $inviteId = (string) $reward->inviteId;
         $side = $reward->side;
         $awardKey = 'referrals:award:' . $inviteId . ':' . $side;
@@ -49,7 +53,9 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
                     'external_reference' => (string) $reward->qualificationBusinessKey,
                 ],
             );
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
             return ReferralFulfillmentResult::failed('Affiliate award failed.');
         }
 
@@ -75,6 +81,18 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('Affiliate reversal requires the stored conversion id and affiliates package.');
         }
 
+        $conversionClass = 'AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion';
+
+        if (! class_exists($conversionClass)) {
+            return ReferralFulfillmentResult::failed('The affiliates conversion model is unavailable.');
+        }
+
+        $conversionModel = new $conversionClass;
+
+        if ($reward->connectionName === '' || $conversionModel->getConnection()->getName() !== $reward->connectionName) {
+            return ReferralFulfillmentResult::failed('Affiliate cash referral reversal requires a shared database connection.');
+        }
+
         $inviteId = (string) $reward->inviteId;
         $side = $reward->side;
         $awardKey = 'referrals:award:' . $inviteId . ':' . $side;
@@ -82,7 +100,9 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
         try {
             $action = app(AwardPosting::class);
             $action->reverse($conversionId, $awardKey, $reason);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            report($exception);
+
             return ReferralFulfillmentResult::failed('Affiliate reversal failed.');
         }
 

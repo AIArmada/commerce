@@ -26,6 +26,9 @@ final readonly class ReferralRewardContext
         public ?string $externalReference,
         public array $metadata,
         public ?string $qualificationBusinessKey,
+        public string $connectionName,
+        public ?string $ownerType,
+        public ?string $ownerId,
         public ?string $manualReference = null,
     ) {}
 }

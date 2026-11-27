@@ -9,9 +9,9 @@ use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -25,17 +25,30 @@ final readonly class ExpireReferralInvites
 
         $typeColumn = (string) config('referrals.owner.owner_type_column', 'owner_type');
         $idColumn = (string) config('referrals.owner.owner_id_column', 'owner_id');
-        // Enumerate owner tuples without widening the per-owner write scope.
-        $ownerTuples = ReferralProgram::query()
-            ->withoutOwnerScope()
-            ->select([$typeColumn . ' as owner_type', $idColumn . ' as owner_id'])
-            ->distinct()
-            ->cursor();
+        $pageSize = 500;
+        $offset = 0;
+        $expiredCount = 0;
 
         // Global visibility is read-only outside an explicit global pass.
-        return OwnerScopeOverride::withoutIncludeGlobal(
-            fn (): int => $this->expireEveryOwner($ownerTuples, $now),
-        );
+        do {
+            $ownerTuples = ReferralProgram::query()
+                ->withoutOwnerScope()
+                ->select([$typeColumn . ' as owner_type', $idColumn . ' as owner_id'])
+                ->distinct()
+                ->orderBy($typeColumn)
+                ->orderBy($idColumn)
+                ->offset($offset)
+                ->limit($pageSize)
+                ->get();
+
+            $expiredCount += OwnerScopeOverride::withoutIncludeGlobal(
+                fn (): int => $this->expireEveryOwner($ownerTuples, $now),
+            );
+
+            $offset += $pageSize;
+        } while ($ownerTuples->count() === $pageSize);
+
+        return $expiredCount;
     }
 
     /**
@@ -92,7 +105,7 @@ final readonly class ExpireReferralInvites
         $count = 0;
 
         foreach ($dueInvites as $dueInvite) {
-            $count += DB::transaction(function () use ($dueInvite, $now): int {
+            $count += ReferralDatabase::connection()->transaction(function () use ($dueInvite, $now): int {
                 $guard = app(ReferralProgramGuard::class);
                 $invite = $guard->invite((string) $dueInvite->getKey(), true);
 

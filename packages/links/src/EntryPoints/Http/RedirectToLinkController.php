@@ -58,10 +58,6 @@ final class RedirectToLinkController
             }
         }
 
-        if ($link->require_signature && ! URL::hasValidSignature($request)) {
-            abort(403, 'Invalid or expired signed URL.');
-        }
-
         return redirect()->to(
             app(BuildLinkDestination::class)->handle($link, $request->query()),
             (int) config('links.defaults.redirect_status', 302),

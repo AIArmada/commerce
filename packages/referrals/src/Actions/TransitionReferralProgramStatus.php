@@ -6,8 +6,8 @@ namespace AIArmada\Referrals\Actions;
 
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Models\ReferralProgram;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final readonly class TransitionReferralProgramStatus
@@ -16,7 +16,7 @@ final readonly class TransitionReferralProgramStatus
 
     public function handle(string $programId, ReferralProgramStatus $target, ReferralProgramStatus $expected): ReferralProgram
     {
-        return DB::transaction(function () use ($programId, $target, $expected): ReferralProgram {
+        return ReferralDatabase::connection()->transaction(function () use ($programId, $target, $expected): ReferralProgram {
             $program = $this->guard->program($programId, lock: true);
 
             $allowed = match ($program->status) {

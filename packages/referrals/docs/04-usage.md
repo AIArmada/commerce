@@ -4,6 +4,8 @@ title: Referrals Usage
 
 # Referrals Usage
 
+When deleting a referral program or invite directly, call `deleteOrFail()` in the owning context so deletion and dependent cleanup share a transaction.
+
 ## Create, accept, qualify, and fulfil
 
 The host owns identity and decides when a meaningful action has happened. The following example uses host-owned `Tenant` and `User` models; replace them with your application's models. `referrerContact` is optional, but passing the referrer's verified contact lets the package reject self-invites.
@@ -122,15 +124,15 @@ The manual rail records that reference in referrals. The host must perform and v
 
 ### Vouchers
 
-Voucher ownership follows the referral program; specs cannot supply owner IDs. The validated reward freezes voucher currency and value before qualification.
+Voucher ownership follows the referral program; specs cannot supply owner IDs. The validated reward freezes voucher currency and value before qualification. Voucher lookup, replay, and reversal are constrained to the reward program's owner even when `vouchers.owner.include_global` is enabled, and downstream expiry is owner-scoped too.
 
 Install `aiarmada/vouchers`, enable the voucher driver, and put the input fields accepted by the vouchers package's `CreateVoucher` action in the `voucher` array. The adapter sets a deterministic code, currency, and idempotency marker. It stores the issued code as `external_reference`. Reversal uses vouchers' `ExpireVoucher` action, which expires the code rather than deleting the voucher.
 
-Every referral-issued voucher is **single-use and beneficiary-bound**: the adapter forces `usage_limit = 1` and `usage_limit_per_user = 1` (both alias spellings) and writes `metadata.assignee = ['type' => frozen beneficiary type, 'id' => frozen beneficiary id]`, the marker the vouchers package enforces at validation and at usage recording. The voucher is worth exactly the frozen `amount_minor`. A spec that asks for a different usage limit, a `value` that differs from `amount_minor`, or its own `metadata.assignee` is rejected at program creation; a legacy frozen spec is normalized to 1/1 at issuance. A replay returns the same code only when the existing voucher is single-use and bound to the frozen beneficiary — an unlimited or unbound voucher fails closed.
+Every referral-issued voucher is **single-use and beneficiary-bound**: the adapter forces `usage_limit = 1` and `usage_limit_per_user = 1` (both alias spellings) and writes `metadata.assignee = ['type' => frozen beneficiary type, 'id' => frozen beneficiary id]`, the marker the vouchers package enforces at validation and at usage recording. The voucher is worth exactly the frozen `amount_minor`. A spec that asks for a different usage limit, a `value` that differs from `amount_minor`, or its own `metadata.assignee` is rejected at program creation; a legacy frozen spec is normalized to 1/1 at issuance. A replay returns the same code only when the existing voucher is single-use, bound to the frozen beneficiary, matches the frozen value and currency, and is still redeemable — an unlimited, unbound, expired, depleted, or mispriced voucher fails closed.
 
 ### Affiliates cash
 
-Install `aiarmada/affiliates`, enable the `affiliate_cash` driver, and configure an amount and currency. Bind `ReferralAffiliateResolver` to map an immutable `ReferralRewardContext` (not an Eloquent model) for a frozen beneficiary to an immutable `AIArmada\Affiliates\Data\AwardRecipient` snapshot containing the affiliate ID, morph type, database connection, and owner coordinates. The adapter calls `AwardPosting::post()` using an idempotency key derived from invite and side; `Replayed` is successful, while `Rejected` and `NoAffiliate` fail the referral reward. Reversal calls `AwardPosting::reverse()` with the stored conversion ID and original award key.
+Install `aiarmada/affiliates`, enable the `affiliate_cash` driver, and configure an amount and currency. Bind `ReferralAffiliateResolver` to map an immutable `ReferralRewardContext` (not an Eloquent model) for a frozen beneficiary to an immutable `AIArmada\Affiliates\Data\AwardRecipient` snapshot containing the affiliate ID, morph type, database connection, and owner coordinates. The recipient connection must match the referral connection; a mismatch fails closed before posting. The adapter calls `AwardPosting::post()` using an idempotency key derived from invite and side; `Replayed` is successful, while `Rejected` and `NoAffiliate` fail the referral reward. Reversal calls `AwardPosting::reverse()` with the stored conversion ID and original award key.
 
 Bind `ReferralAffiliateAwardPolicy` as the host's `AffiliateAwardPolicy` to authorize only matching pending or retryable failed referral rewards. Affiliates accepts one `AffiliateAwardPolicy` binding for all award callers. A host that also records non-referral awards must bind a prefix-dispatching composite that delegates `referrals:award:` keys to this policy and other keys to the host's other policy. The referral policy uses exact amount limits and rejects mismatched amount, currency, source, qualification key, or beneficiary mapping, including the recipient's database connection and owner coordinates.
 
@@ -158,4 +160,4 @@ The host defines what counts as the first valid registration and ensures it repo
 
 ## Expiry, revocation, and reversal
 
-Schedule `php artisan referrals:expire-invites` to transition due pending or accepted invites to `Expired`. `RevokeReferralInvite` is limited to pending and accepted invites. `ReverseReferralReward` delegates to the rail, stores the reversal result, clears `rewarded_at` when returning a rewarded invite to `Qualified`, and does not make the reversed reward available for fulfilment again.
+Schedule `php artisan referrals:expire-invites` to transition due pending or accepted invites to `Expired`. The command reads deterministic bounded pages of owner tuples before writing, honours custom owner columns and explicit-global records, skips stale owners with a report, and locks each due invite inside its owner pass. `RevokeReferralInvite` is limited to pending and accepted invites. `ReverseReferralReward` delegates to the rail, stores the reversal result, clears `rewarded_at` when returning a rewarded invite to `Qualified`, and does not make the reversed reward available for fulfilment again.

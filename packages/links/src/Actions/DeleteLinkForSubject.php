@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Persistence\DeleteLockedLink;
 
@@ -13,9 +15,18 @@ final readonly class DeleteLinkForSubject
     {
         $connection = (new Link)->getConnection();
 
-        return $connection->transaction(static function () use ($linkId, $subjectType, $subjectId): bool {
+        return OwnerScopeOverride::withoutIncludeGlobal(fn (): bool => $connection->transaction(function () use ($linkId, $subjectType, $subjectId): bool {
+            $config = Link::ownerScopeConfig();
+
+            if ($config->enabled) {
+                $owner = OwnerContext::resolveConfigured($config);
+                OwnerContext::assertResolvedOrExplicitGlobal(
+                    $owner,
+                    'Deleting a tracked link requires an owner context or explicit global context.',
+                );
+            }
+
             $link = Link::query()
-                ->withoutOwnerScope()
                 ->whereKey($linkId)
                 ->lockForUpdate()
                 ->first();
@@ -29,6 +40,6 @@ final readonly class DeleteLinkForSubject
             }
 
             return app(DeleteLockedLink::class)->handle($link);
-        });
+        }));
     }
 }

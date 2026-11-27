@@ -11,9 +11,9 @@ use AIArmada\Referrals\Events\ReferralRewardReversed;
 use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Models\ReferralReward;
 use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,10 +30,16 @@ final class ReverseReferralReward
         }
 
         $rewardId = $reward instanceof ReferralReward ? (string) $reward->getKey() : $reward;
-        $reversed = DB::transaction(function () use ($rewardId, $reason): array {
+        $reversed = ReferralDatabase::connection()->transaction(function () use ($rewardId, $reason): array {
             $guard = app(ReferralProgramGuard::class);
             $scopedReward = $guard->reward($rewardId);
             $invite = $guard->invite((string) $scopedReward->invite_id, true);
+
+            if ($scopedReward->getConnection() !== ReferralDatabase::connection()
+                || $invite->getConnection() !== ReferralDatabase::connection()) {
+                throw new LogicException('Referral reversal requires one shared database connection.');
+            }
+
             $lockedReward = ReferralReward::query()
                 ->where('program_id', $invite->program_id)
                 ->where('invite_id', $invite->getKey())

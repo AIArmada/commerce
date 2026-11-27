@@ -8,7 +8,6 @@ use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralRewardContext;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -27,13 +26,21 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('The rewards entitlement job API is unavailable.');
         }
 
+        $awardModel = new $awardClass;
+
+        if ($reward->connectionName === '' || $awardModel->getConnection()->getName() !== $reward->connectionName) {
+            return ReferralFulfillmentResult::failed('Rewards points referral fulfilment requires a shared database connection.');
+        }
+
         $businessKey = 'referrals:qualified:' . $reward->inviteId . ':' . $reward->side;
 
         try {
             $reader = app($readerClass);
             $fact = $reader->read($businessKey);
         } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('The rewards source fact could not be read: ' . $exception->getMessage());
+            report($exception);
+
+            return ReferralFulfillmentResult::failed('The rewards source fact could not be read.');
         }
 
         if (! is_object($fact) || ! is_a($fact, $factClass)) {
@@ -80,7 +87,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         // reward Failed, and a retry after host rule alignment re-evaluates
         // from a clean slate.
         try {
-            DB::transaction(function () use ($jobClass, $businessKey, $expectedRecipientId, $onlyRole, $reward, $familyKey, $roleValue, $awardClass): void {
+            $awardModel->getConnection()->transaction(function () use ($jobClass, $businessKey, $expectedRecipientId, $onlyRole, $reward, $familyKey, $roleValue, $awardClass): void {
                 $jobClass::dispatchSync(
                     $businessKey,
                     onlyRecipientId: $expectedRecipientId,
@@ -120,7 +127,9 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
                 }
             });
         } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('The rewards points rail could not settle this side: ' . $exception->getMessage());
+            report($exception);
+
+            return ReferralFulfillmentResult::failed('The rewards points rail could not settle this side.');
         }
 
         return ReferralFulfillmentResult::fulfilled($businessKey);
@@ -135,6 +144,12 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
 
         if (! $this->symbolsExist([$awardClass, $correctionsClass])) {
             return ReferralFulfillmentResult::failed('The rewards corrections API is unavailable.');
+        }
+
+        $awardModel = new $awardClass;
+
+        if ($reward->connectionName === '' || $awardModel->getConnection()->getName() !== $reward->connectionName) {
+            return ReferralFulfillmentResult::failed('Rewards points referral reversal requires a shared database connection.');
         }
 
         $roleValue = $reward->side === 'referrer' ? 'sharer' : 'participant';
@@ -172,7 +187,9 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
                 ],
             ]);
         } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('The rewards corrections sweep could not be driven: ' . $exception->getMessage());
+            report($exception);
+
+            return ReferralFulfillmentResult::failed('The rewards corrections sweep could not be driven.');
         }
 
         foreach ($liveAwardIds as $awardId) {

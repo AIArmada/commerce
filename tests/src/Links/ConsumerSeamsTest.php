@@ -114,7 +114,7 @@ test('ad click ids pass through to the destination', function (): void {
     $this->get('/go/ad-traffic?gclid=abc123&fbclid=fb456&utm_source=google')
         ->assertRedirect('https://merchant.example/landing?utm_source=google&gclid=abc123&fbclid=fb456');
 
-    expect(LinkClick::query()->first()->properties)->toBe([
+    expect(LinkClick::query()->first()->properties)->toEqual([
         'click_ids' => ['gclid' => 'abc123', 'fbclid' => 'fb456'],
     ]);
 });
@@ -145,7 +145,7 @@ test('explicit click id context wins over the request', function (): void {
         'properties' => ['source' => 'email'],
     ]);
 
-    expect(LinkClick::query()->first()->properties)->toBe([
+    expect(LinkClick::query()->first()->properties)->toEqual([
         'source' => 'email',
         'click_ids' => ['fbclid' => 'map-fbclid', 'gclid' => 'explicit-gclid'],
     ]);

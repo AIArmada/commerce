@@ -50,6 +50,15 @@ class ReferralReward extends Model
     protected static function booted(): void
     {
         static::creating(function (self $reward): void {
+            $consistent = ReferralInvite::query()
+                ->whereKey((string) $reward->invite_id)
+                ->where('program_id', (string) $reward->program_id)
+                ->exists();
+
+            if (! $consistent) {
+                throw new LogicException('A referral reward must belong to the invite program.');
+            }
+
             $reward->status ??= ReferralRewardStatus::Pending;
         });
 

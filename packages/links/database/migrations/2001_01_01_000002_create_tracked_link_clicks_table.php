@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('links.database.tables.clicks', 'tracked_link_clicks'), function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('link_id')->constrained((string) config('links.database.tables.links', 'tracked_links'))->cascadeOnDelete();
+            $table->foreignUuid('link_id');
             $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('subject');
             $table->timestampTz('occurred_at');

@@ -26,6 +26,7 @@ The `aiarmada/filament-links` package is the Filament admin adapter for [`aiarma
 
 - Resource queries are owner-scoped via `OwnerUiScope`; UI filtering is not authorization
 - Link management screens must stay behind panel authentication
+- Update and delete actions combine the configured `staff_roles` check with Filament's host policy check (`LinkResource::canEdit()`/`canDelete()` delegate to `parent::canEdit()`/`parent::canDelete()`). Register a `LinkPolicy` or equivalent Gate when per-record update or delete authorization is required; the adapter does not bypass it.
 
 ## Requirements
 

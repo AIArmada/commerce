@@ -12,11 +12,13 @@ use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\DeleteLinkForSubject;
+use AIArmada\Links\Models\Link;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -40,10 +42,26 @@ final class ChromeSmokeSeeder extends Seeder
             ->whereHas('offer', fn ($query) => $query->where('slug', 'chrome-offer'))
             ->whereNotNull('link_id')
             ->get(['id', 'link_id']);
+        $trackedLinkOwners = Link::query()
+            ->withoutOwnerScope()
+            ->whereIn('id', $trackedLinks->pluck('link_id')->unique()->values())
+            ->get(['id', 'owner_type', 'owner_id'])
+            ->keyBy(static fn (Link $link): string => (string) $link->getKey());
         AffiliateOfferLink::query()->whereHas('offer', fn ($query) => $query->where('slug', 'chrome-offer'))->delete();
 
         foreach ($trackedLinks as $trackedLink) {
-            app(DeleteLinkForSubject::class)->handle((string) $trackedLink->link_id, $trackedLink->getMorphClass(), (string) $trackedLink->getKey());
+            $tracked = $trackedLinkOwners->get((string) $trackedLink->link_id);
+
+            if (! $tracked instanceof Link) {
+                continue;
+            }
+
+            $owner = OwnerContext::fromTypeAndIdOrFail($tracked->owner_type, $tracked->owner_id);
+            OwnerContext::withOwner($owner, fn (): bool => app(DeleteLinkForSubject::class)->handle(
+                (string) $trackedLink->link_id,
+                $trackedLink->getMorphClass(),
+                (string) $trackedLink->getKey(),
+            ));
         }
 
         AffiliateOffer::query()->where('slug', 'chrome-offer')->delete();
