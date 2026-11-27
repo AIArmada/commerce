@@ -8,7 +8,7 @@ use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;

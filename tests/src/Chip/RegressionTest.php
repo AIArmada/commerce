@@ -36,7 +36,7 @@ use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

@@ -15,6 +15,9 @@
     ],
     "table:chip_customers": [
       "AIArmada\\Chip\\Features\\Collect\\Persistence\\ChipCustomerDirectory"
+    ],
+    "store:chip.purchase_cache": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\PurchasesApi"
     ]
   },
   "extensions": {}

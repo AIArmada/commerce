@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services\Collect;
+namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Data\ClientDetailsData;
@@ -10,14 +10,16 @@ use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Services\Collect\CollectApi;
 use AIArmada\Chip\Support\TaxPercent;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
-final class PurchasesApi extends CollectApi
+final class PurchasesApi extends CollectApi implements PurchaseOperations
 {
     /**
      * Mutation operations safe to replay from cache.

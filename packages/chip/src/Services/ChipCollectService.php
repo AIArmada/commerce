@@ -15,13 +15,13 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use AIArmada\Chip\Services\Collect\WebhooksApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 class ChipCollectService
 {
-    private PurchasesApi $purchases;
+    private PurchaseOperations $purchases;
 
     private ClientsApi $clients;
 
@@ -35,7 +35,7 @@ class ChipCollectService
         private ChipCollectTransport $client,
         ?CacheRepository $cache = null,
     ) {
-        $this->purchases = new PurchasesApi($cache, $client);
+        $this->purchases = app(PurchaseOperations::class, ['cache' => $cache, 'client' => $client]);
         $this->clients = new ClientsApi($client);
         $this->account = new AccountApi($client);
         $this->webhooks = new WebhooksApi($client);

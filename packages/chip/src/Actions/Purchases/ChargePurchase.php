@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Actions\Purchases;
 
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -16,7 +16,7 @@ final class ChargePurchase
     use AsAction;
 
     public function __construct(
-        private readonly PurchasesApi $purchasesApi,
+        private readonly PurchaseOperations $purchasesApi,
     ) {}
 
     /**

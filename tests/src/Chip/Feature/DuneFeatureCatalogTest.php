@@ -21,3 +21,9 @@ it('declares Collect as the owner of mirrored CHIP records', function (): void {
         ->and($catalog['owners']['table:chip_clients'])->toBe('Collect')
         ->and($catalog['owners']['table:chip_payments'])->toBe('Collect');
 });
+
+it('declares the purchase cache as a Collect-owned store', function (): void {
+    $catalog = FeatureCatalog::scan(dirname(__DIR__, 4) . '/packages/chip', 'AIArmada\\Chip');
+
+    expect($catalog['owners']['store:chip.purchase_cache'])->toBe('Collect');
+});

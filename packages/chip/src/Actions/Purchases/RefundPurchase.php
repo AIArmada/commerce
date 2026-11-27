@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Actions\Purchases;
 
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -17,7 +17,7 @@ final class RefundPurchase
     use AsAction;
 
     public function __construct(
-        private readonly PurchasesApi $purchasesApi,
+        private readonly PurchaseOperations $purchasesApi,
     ) {}
 
     /**
