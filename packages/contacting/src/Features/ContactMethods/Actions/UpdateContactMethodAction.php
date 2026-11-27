@@ -9,7 +9,6 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use AIArmada\Contacting\Data\MissingValue;
 
@@ -52,7 +51,7 @@ final class UpdateContactMethodAction
             ]);
         }
 
-        DB::transaction(function () use ($contactMethod, $data, $result, $countryCode): void {
+        $contactMethod->getConnection()->transaction(function () use ($contactMethod, $data, $result, $countryCode): void {
             $contactMethod->type = $data->type;
 
             if (! $data->purpose instanceof MissingValue) {
@@ -100,7 +99,9 @@ final class UpdateContactMethodAction
                 $contactMethod->metadata = $data->metadata;
             }
 
-            $contactMethod->save();
+            if (! $contactMethod->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $contactMethod->refresh();

@@ -6,7 +6,6 @@ namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
-use Illuminate\Support\Facades\DB;
 
 final class SetPrimaryContactMethodAction
 {
@@ -16,9 +15,11 @@ final class SetPrimaryContactMethodAction
             ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
             : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
 
-        DB::transaction(function () use ($contactMethod): void {
+        $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
             $contactMethod->is_primary = true;
-            $contactMethod->save();
+            if (! $contactMethod->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $contactMethod->refresh();

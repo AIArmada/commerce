@@ -9,7 +9,6 @@ use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Support\Facades\DB;
 use AIArmada\Contacting\Data\MissingValue;
 
 final class UpdateSocialProfileAction
@@ -41,7 +40,7 @@ final class UpdateSocialProfileAction
             $data->url instanceof MissingValue ? $profile->url : $data->url,
         );
 
-        DB::transaction(function () use ($profile, $data, $result): void {
+        $profile->getConnection()->transaction(function () use ($profile, $data, $result): void {
             $profile->platform = $data->platform;
 
             if (! $data->purpose instanceof MissingValue) {
@@ -85,7 +84,9 @@ final class UpdateSocialProfileAction
                 $profile->metadata = $data->metadata;
             }
 
-            $profile->save();
+            if (! $profile->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $profile->refresh();

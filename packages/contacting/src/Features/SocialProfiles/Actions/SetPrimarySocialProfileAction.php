@@ -6,7 +6,6 @@ namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
-use Illuminate\Support\Facades\DB;
 
 final class SetPrimarySocialProfileAction
 {
@@ -16,9 +15,11 @@ final class SetPrimarySocialProfileAction
             ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
             : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
 
-        DB::transaction(function () use ($profile): void {
+        $profile->getConnection()->transaction(function () use ($profile): void {
             $profile->is_primary = true;
-            $profile->save();
+            if (! $profile->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $profile->refresh();

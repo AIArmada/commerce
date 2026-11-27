@@ -404,3 +404,29 @@ it('leaves parentless primaries undemoted by design', function (): void {
     expect($first->fresh()?->is_primary)->toBeTrue()
         ->and($second->fresh()?->is_primary)->toBeTrue();
 });
+
+it('rolls back primary demotion when a saving listener cancels the replacement', function (): void {
+    $customer = regressionCustomer('cancel-primary');
+    $first = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        value: 'first-' . uniqid() . '@example.com',
+        isPrimary: true,
+    ));
+
+    ContactMethod::saving(static function (ContactMethod $record): ?bool {
+        return str_starts_with($record->value, 'cancel-primary-') ? false : null;
+    });
+
+    try {
+        expect(fn () => $customer->addContactMethod(new ContactMethodData(
+            type: 'email',
+            value: 'cancel-primary-' . uniqid() . '@example.com',
+            isPrimary: true,
+        )))->toThrow(RuntimeException::class);
+
+        expect($first->fresh()->is_primary)->toBeTrue();
+    } finally {
+        ContactMethod::flushEventListeners();
+        ContactMethod::clearBootedModels();
+    }
+});

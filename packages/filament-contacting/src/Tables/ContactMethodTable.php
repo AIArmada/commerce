@@ -16,6 +16,10 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
+use AIArmada\FilamentContacting\Resources\ContactMethodResource;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -134,10 +138,18 @@ final class ContactMethodTable
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
-                    ->action(function ($records) use ($guard): void {
+                    ->using(function (DeleteBulkAction $action, Collection | LazyCollection $records) use ($guard): void {
                         abort_if($guard->contactMethodsReadOnly(), 403);
+
                         foreach ($records as $record) {
-                            app(DeleteContactMethodAction::class)->execute($record);
+                            try {
+                                if (! ContactMethodResource::canDelete($record) || ! app(DeleteContactMethodAction::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
                         }
                     })
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())

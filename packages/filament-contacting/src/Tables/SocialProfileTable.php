@@ -17,6 +17,10 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
+use AIArmada\FilamentContacting\Resources\SocialProfileResource;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -122,10 +126,18 @@ final class SocialProfileTable
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
-                    ->action(function ($records) use ($guard): void {
+                    ->using(function (DeleteBulkAction $action, Collection | LazyCollection $records) use ($guard): void {
                         abort_if($guard->socialProfilesReadOnly(), 403);
+
                         foreach ($records as $record) {
-                            app(DeleteSocialProfileAction::class)->execute($record);
+                            try {
+                                if (! SocialProfileResource::canDelete($record) || ! app(DeleteSocialProfileAction::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
                         }
                     })
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())

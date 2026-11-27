@@ -9,7 +9,6 @@ use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use AIArmada\Contacting\Data\MissingValue;
 
 final class CreateSocialProfileAction
@@ -59,8 +58,10 @@ final class CreateSocialProfileAction
             $profile->sort_order = $data->sortOrder;
         }
 
-        DB::transaction(function () use ($profile): void {
-            $profile->save();
+        $profile->getConnection()->transaction(function () use ($profile): void {
+            if (! $profile->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $profile;

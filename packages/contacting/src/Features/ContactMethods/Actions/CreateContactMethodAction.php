@@ -69,7 +69,9 @@ final class CreateContactMethodAction
         }
 
         $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
-            $contactMethod->save();
+            if (! $contactMethod->save()) {
+                throw new \RuntimeException('The contact write was cancelled.');
+            }
         });
 
         return $contactMethod;

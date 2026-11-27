@@ -16,6 +16,10 @@ final readonly class ValidateContactMethodData
             $payload = [];
             foreach ($data as $key => $value) {
                 $camel = lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', (string) $key))));
+                if ($camel === 'isPrimary' && $value === null) {
+                    continue;
+                }
+
                 $payload[$camel] = $value;
             }
 
