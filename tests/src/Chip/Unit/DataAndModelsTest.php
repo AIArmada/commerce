@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
-use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Features\Payouts\Models\SendLimit;
+use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Services\ChipSendService;
 use Akaunting\Money\Money;
 

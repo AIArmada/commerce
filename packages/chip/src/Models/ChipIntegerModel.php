@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use LogicException;
 use Override;
 
 /**
@@ -52,7 +53,7 @@ abstract class ChipIntegerModel extends Model
 
     protected static function tableSuffix(): string
     {
-        throw new \LogicException('CHIP models must declare a table.');
+        throw new LogicException('CHIP models must declare a table.');
     }
 
     #[Override]

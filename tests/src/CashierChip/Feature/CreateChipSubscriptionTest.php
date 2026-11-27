@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
-use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;

@@ -8,6 +8,7 @@ use AIArmada\Chip\Features\Statements\Actions\CancelCompanyStatement;
 use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -131,7 +132,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
     private function resolveScopedCompanyStatement(Model $record): ?CompanyStatement
     {
         return CompanyStatement::query()
-            ->forOwner(\AIArmada\CommerceSupport\Support\OwnerContext::CURRENT, false)
+            ->forOwner(OwnerContext::CURRENT, false)
             ->whereKey($record->getKey())
             ->first();
     }

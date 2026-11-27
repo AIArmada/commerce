@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
+use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;

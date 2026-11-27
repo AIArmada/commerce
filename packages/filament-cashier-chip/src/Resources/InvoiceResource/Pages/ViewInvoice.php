@@ -53,6 +53,7 @@ final class ViewInvoice extends ViewRecord
                 ->action(function (): void {
                     /** @var Purchase $record */
                     $record = $this->getRecord();
+
                     try {
                         app(ResendPurchaseInvoice::class)->handle((string) $record->getKey());
 
@@ -98,6 +99,7 @@ final class ViewInvoice extends ViewRecord
                 ->action(function (): void {
                     /** @var Purchase $record */
                     $record = $this->getRecord();
+
                     try {
                         app(MarkPurchaseAsPaid::class)->handle((string) $record->getKey());
 

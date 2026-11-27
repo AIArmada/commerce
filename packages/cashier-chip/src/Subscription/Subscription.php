@@ -1349,7 +1349,6 @@ class Subscription extends Model
      * @param  array<string, mixed>  $attributes
      */
 
-
     /**
      * Create a new factory instance for the model.
      *
@@ -1388,7 +1387,6 @@ class Subscription extends Model
      * @throws InvalidCoupon
      */
 
-
     /**
      * Retrieve a coupon by its ID (voucher code).
      */
@@ -1400,7 +1398,6 @@ class Subscription extends Model
     /**
      * Record coupon usage.
      */
-
 
     /**
      * Calculate when the discount ends based on duration.
@@ -1424,5 +1421,4 @@ class Subscription extends Model
     /**
      * Calculate the current status based on subscription state.
      */
-
 }

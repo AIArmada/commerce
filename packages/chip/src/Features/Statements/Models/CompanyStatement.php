@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Features\Statements\Models;
 
 use AIArmada\Chip\Models\ChipModel;
-
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 

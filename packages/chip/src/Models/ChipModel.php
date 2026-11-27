@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 use Override;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -46,7 +47,7 @@ abstract class ChipModel extends Model implements Auditable
 
     protected static function tableSuffix(): string
     {
-        throw new \LogicException('CHIP models must declare a table.');
+        throw new LogicException('CHIP models must declare a table.');
     }
 
     #[Override]
