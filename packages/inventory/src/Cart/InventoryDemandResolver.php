@@ -87,7 +87,7 @@ final class InventoryDemandResolver
 
         $model = $item->getAssociatedModel();
 
-        if (! $model instanceof Model || CompositeComponents::isCompositeModel($model)) {
+        if (! $model instanceof Model || CompositeComponents::isCompositeModel($model) || ! CompositeComponents::tracksInventory($model)) {
             return;
         }
 

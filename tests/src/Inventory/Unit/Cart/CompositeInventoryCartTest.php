@@ -44,6 +44,14 @@ it('recognizes only typed catalog composites under strict Eloquent attribute acc
     }
 });
 
+final class NonTrackingCartInventoryItem extends InventoryItem
+{
+    public function tracksInventory(): bool
+    {
+        return false;
+    }
+}
+
 final class CompositeFakeCartManager implements CartManagerInterface
 {
     public function __construct(private Cart $cart) {}
@@ -275,6 +283,22 @@ describe('composite cart inventory demand', function (): void {
 
         expect($manager->validateInventory()['available'])->toBeFalse()
             ->and(fn (): array => $manager->allocateAllInventory())->toThrow(InsufficientInventoryException::class)
+            ->and(InventoryAllocation::query()->count())->toBe(0);
+    });
+
+    it('does not require stock or allocate non-tracked standalone items', function (): void {
+        config()->set('inventory.cart.allow_backorder', false);
+        config()->set('inventory.cart.validate_on_add', false);
+
+        $service = NonTrackingCartInventoryItem::create(['name' => 'Untracked Service']);
+        $cart = new Cart(new InMemoryStorage, 'non-tracked-stock-cart');
+        $cart->add(id: 'service', name: 'Service', price: 500, quantity: 2, associatedModel: $service);
+
+        $validator = new InventoryValidator($this->allocationService);
+        $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+
+        expect($validator->validateCart($cart)->isValid)->toBeTrue()
+            ->and($manager->allocateAllInventory())->toBeEmpty()
             ->and(InventoryAllocation::query()->count())->toBe(0);
     });
 
