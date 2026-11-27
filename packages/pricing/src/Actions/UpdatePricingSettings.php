@@ -45,6 +45,5 @@ final readonly class UpdatePricingSettings
         $settings->customerGroupPricingEnabled = (bool) Arr::get($validated, 'customerGroupPricingEnabled', false);
 
         $settings->save();
-
     }
 }

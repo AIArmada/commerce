@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
+use AIArmada\Products\Actions\SaveCategory;
 use AIArmada\Products\Models\Category;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
@@ -13,6 +14,11 @@ use Illuminate\Support\Str;
 final class CreateCategory extends CreateRecord
 {
     protected static string $resource = CategoryResource::class;
+
+    protected function handleRecordCreation(array $data): Category
+    {
+        return app(SaveCategory::class)->create($data);
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

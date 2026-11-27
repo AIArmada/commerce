@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Services;
 
+use AIArmada\FilamentInventory\Persistence\InventoryStatsCache;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Reports\MovementAnalysisReport;
 use AIArmada\Inventory\Reports\StockLevelReport;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Cache;
 
 final class InventoryStatsAggregator
 {
-    private const CACHE_TTL_SECONDS = 60;
-
-    private const CACHE_PREFIX = 'inventory_stats_';
-
     public function __construct(
         private readonly StockLevelReport $stockLevelReport,
         private readonly MovementAnalysisReport $movementAnalysisReport,
@@ -60,7 +54,7 @@ final class InventoryStatsAggregator
      */
     public function getOverviewStats(): array
     {
-        return $this->cached('overview_stats', function (): array {
+        return app(InventoryStatsCache::class)->remember('overview_stats', function (): array {
             $overview = $this->stockLevelReport->getOverview();
 
             return [
@@ -76,7 +70,7 @@ final class InventoryStatsAggregator
 
     public function lowStockCount(): int
     {
-        return $this->cached('low_stock_count', fn (): int => $this->stockLevelReport->getLowStockCount());
+        return app(InventoryStatsCache::class)->remember('low_stock_count', fn (): int => $this->stockLevelReport->getLowStockCount());
     }
 
     /**
@@ -91,33 +85,6 @@ final class InventoryStatsAggregator
 
     public function clearCache(): void
     {
-        $suffix = InventoryOwnerScope::cacheKeySuffix();
-
-        Cache::forget(self::CACHE_PREFIX . 'overview_stats|' . $suffix);
-        Cache::forget(self::CACHE_PREFIX . 'low_stock_count|' . $suffix);
-    }
-
-    /**
-     * @template T
-     *
-     * @param  Closure(): T  $callback
-     * @return T
-     */
-    private function cached(string $key, Closure $callback): mixed
-    {
-        $ttl = config('filament-inventory.cache.stats_ttl', self::CACHE_TTL_SECONDS);
-
-        if ($ttl <= 0) {
-            return $callback();
-        }
-
-        /** @var T $cached */
-        $cached = Cache::flexible(
-            self::CACHE_PREFIX . $key . '|' . InventoryOwnerScope::cacheKeySuffix(),
-            [$ttl, $ttl],
-            $callback,
-        );
-
-        return $cached;
+        app(InventoryStatsCache::class)->clearCache();
     }
 }
