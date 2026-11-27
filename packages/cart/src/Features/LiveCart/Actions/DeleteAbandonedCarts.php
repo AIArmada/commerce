@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\LiveCart\Actions;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
-use AIArmada\Cart\Features\LiveCart\Persistence\CartOwnerScope;
 use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Persistence\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
@@ -106,6 +106,7 @@ final readonly class DeleteAbandonedCarts implements AbandonedCartCleanup
         return $query->whereNull('abandoned_at')
             ->where('updated_at', '<', $now->copy()->subDays($days));
     }
+
     private function assertTable(string $table): void
     {
         if ($table !== config('cart.database.table', 'carts')) {
