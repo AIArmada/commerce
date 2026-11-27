@@ -12,6 +12,7 @@ use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Events\ReminderFailed;
 use AIArmada\Engagement\Events\ReminderSent;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Artisan;
@@ -28,7 +29,7 @@ it('only dispatches pending or scheduled reminders', function (): void {
         'remind_at' => now()->subMinute(),
     ]);
 
-    $due = collect($this->manager->dueReminders());
+    $due = collect(app(ReadDueRemindersQuery::class)->execute());
     expect($due)->not->toBeEmpty();
     expect($due->first()->status)->toBeIn([ReminderStatus::Pending, ReminderStatus::Scheduled]);
 
@@ -36,7 +37,7 @@ it('only dispatches pending or scheduled reminders', function (): void {
         $this->manager->markSent($reminder);
     }
 
-    $noLongerDue = $this->manager->dueReminders();
+    $noLongerDue = app(ReadDueRemindersQuery::class)->execute();
     expect($noLongerDue)->toBeEmpty();
 });
 
@@ -181,6 +182,27 @@ it('evaluates expiration relative to the requested due time', function (): void 
         'expires_at' => now()->subHour(),
     ]);
 
-    expect(collect($this->manager->dueReminders(now()->subMinutes(90)))->pluck('id')->all())->toContain($reminder->id)
-        ->and(collect($this->manager->dueReminders())->pluck('id')->all())->not->toContain($reminder->id);
+    expect(collect(app(ReadDueRemindersQuery::class)->execute(now()->subMinutes(90)))->pluck('id')->all())->toContain($reminder->id)
+        ->and(collect(app(ReadDueRemindersQuery::class)->execute())->pluck('id')->all())->not->toContain($reminder->id);
+});
+
+it('bounds due reads and excludes expired reminders from active state', function (): void {
+    $expired = $this->manager->setReminder($this->recipient, $this->subject, 'expired', [
+        'remind_at' => now()->subHours(2),
+        'expires_at' => now()->subHour(),
+    ]);
+    $first = $this->manager->setReminder($this->recipient, $this->subject, 'first', [
+        'remind_at' => now()->subMinutes(30),
+    ]);
+    $this->manager->setReminder($this->recipient, $this->subject, 'second', [
+        'remind_at' => now()->subMinutes(15),
+    ]);
+
+    $due = app(ReadDueRemindersQuery::class)->execute(limit: 1);
+    $state = app(\AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState::class)
+        ->remindersFor($this->recipient, $this->subject);
+
+    expect($due->pluck('id')->all())->toBe([$first->id])
+        ->and(array_column($state, 'id'))->not->toContain($expired->id)
+        ->and($state)->toHaveCount(2);
 });

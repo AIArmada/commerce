@@ -8,15 +8,12 @@ use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Reactable;
-use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
-use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Interactions\Models\Share;
 
@@ -29,7 +26,6 @@ final readonly class ManageInteractionsAction
         private ManageReactionsAction $manageReactions,
         private CreateShareAction $createShare,
         private ManageBookmarkCollectionItemsAction $manageBookmarkCollectionItems,
-        private ManageRemindersAction $reminderManager,
     ) {}
 
     public function follow(CanInteract $actor, Followable $subject, array $options = []): Follow
@@ -102,8 +98,4 @@ final readonly class ManageInteractionsAction
         $this->manageBookmarkCollectionItems->removeBookmarkFromCollection($actor, $bookmark, $collection, $options);
     }
 
-    public function remind(CanInteract $actor, Remindable $subject, array $options = []): Reminder
-    {
-        return $this->reminderManager->setReminder($actor, $subject, $options['reminder_type'] ?? 'before_start', $options);
-    }
 }

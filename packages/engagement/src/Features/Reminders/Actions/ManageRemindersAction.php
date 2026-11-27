@@ -171,22 +171,6 @@ final readonly class ManageRemindersAction
         });
     }
 
-    public function dueReminders(?DateTimeInterface $at = null): iterable
-    {
-        $now = $at !== null ? CarbonImmutable::instance($at) : CarbonImmutable::now();
-
-        return Reminder::query()
-            ->whereIn('status', ['pending', 'scheduled'])
-            ->where('remind_at', '<=', $now)
-            ->where(function ($query) use ($now): void {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', $now);
-            })
-            ->orderBy('remind_at')
-            ->orderBy('id')
-            ->cursor();
-    }
-
     public function markSent(Reminder $reminder): void
     {
         if (Reminder::ownerScopeConfig()->enabled) {

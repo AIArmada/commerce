@@ -128,7 +128,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
             ->and($reminder->offset_minutes)->toBe(30)
             ->and($reminder->anchor_type)->toBe('start');
 
-        $due = collect(app(ManageRemindersAction::class)->dueReminders($now->addMinutes(31)));
+        $due = collect(app(\AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery::class)->execute($now->addMinutes(31)));
 
         expect($due)->not->toBeEmpty();
     } finally {

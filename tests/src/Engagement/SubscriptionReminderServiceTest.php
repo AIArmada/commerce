@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
@@ -11,7 +11,7 @@ use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
-    $this->manager = app(ManageInteractionsAction::class);
+    $this->manager = app(ManageRemindersAction::class);
     $this->subscriptionManager = app(ManageSubscriptionsAction::class);
     $this->actor = new EngagementActor;
     $this->subject = new EngagementSubject;
@@ -30,9 +30,8 @@ it('unsubscribes via status change', function (): void {
     expect(Subscription::query()->where('status', 'unsubscribed')->count())->toBe(1);
 });
 
-it('creates a reminder via engagement manager', function (): void {
-    $reminder = $this->manager->remind($this->actor, $this->subject, [
-        'reminder_type' => 'event',
+it('creates a reminder through the owning reminder action', function (): void {
+    $reminder = $this->manager->setReminder($this->actor, $this->subject, 'event', [
         'remind_at' => now()->addHours(1),
     ]);
 

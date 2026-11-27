@@ -54,11 +54,12 @@ title: Engagement Overview
 
 | Contract | Default Service | Purpose |
 |---|---|---|
-| `ManageInteractionsAction` | `ManageInteractionsAction` | Central facade: follow, bookmark, respond, react, remind, share |
+| `ManageInteractionsAction` | `ManageInteractionsAction` | Central facade: follow, bookmark, respond, react, share |
 | `ManageSubscriptionsAction` | `ManageSubscriptionsAction` | Subscribe, unsubscribe, mute, match subscriptions |
-| `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, due reminders, mark sent/failed |
+| `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, mark sent/failed |
 | `ReadsInteractionState` | `ReadInteractionStateQuery` | Follow, bookmark, response and reaction state |
 | `ReadsSubscriptionState` | `ReadSubscriptionStateQuery` | Bounded active subscription snapshots |
+| `ReadDueRemindersQuery` | `ReadDueRemindersQuery` | Bounded due reminder batch |
 | `ReadsReminderState` | `ReadReminderStateQuery` | Bounded pending reminder snapshots |
 | `UpdateEngagementCountersAction` | `UpdateEngagementCountersAction` | Count followers, bookmarks, responses, reactions |
 | `EngagementPolicyResolver` | `DefaultEngagementPolicyResolver` | Resolve engagement policies per model |

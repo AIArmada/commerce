@@ -6,10 +6,9 @@ namespace AIArmada\Engagement\Features\Reminders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
-use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Throwable;
@@ -18,6 +17,7 @@ final readonly class SendDueRemindersAction
 {
     public function __construct(
         private ManageRemindersAction $reminderManager,
+        private ReadDueRemindersQuery $dueReminders,
     ) {}
 
     public function execute(): int
@@ -43,13 +43,7 @@ final readonly class SendDueRemindersAction
                 $lastId = null;
 
                 do {
-                    $query = Reminder::query()
-                        ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
-                        ->where('remind_at', '<=', $now)
-                        ->where(function ($query) use ($now): void {
-                            $query->whereNull('expires_at')
-                                ->orWhere('expires_at', '>', $now);
-                        })
+                    $query = $this->dueReminders->query($now)
                         ->orderBy('remind_at')
                         ->orderBy('id');
 
@@ -62,7 +56,8 @@ final readonly class SendDueRemindersAction
                         });
                     }
 
-                    $reminders = $query->limit(100)->get();
+                    $pageSize = min(100, $remaining);
+                    $reminders = $query->limit($pageSize)->get();
 
                     foreach ($reminders as $reminder) {
                         $lastRemindAt = $reminder->getRawOriginal('remind_at');
@@ -77,7 +72,7 @@ final readonly class SendDueRemindersAction
                             break;
                         }
                     }
-                } while ($remaining > 0 && $reminders->count() === 100);
+                } while ($remaining > 0 && $reminders->count() === $pageSize);
 
                 return $count;
             })->sum();
@@ -91,13 +86,8 @@ final readonly class SendDueRemindersAction
         try {
             return $reminder->getConnection()->transaction(function () use ($reminder): bool {
                 $now = CarbonImmutable::now();
-                $lockedReminder = Reminder::query()
-                    ->pending()
+                $lockedReminder = $this->dueReminders->query($now)
                     ->whereKey($reminder->getKey())
-                    ->where('remind_at', '<=', $now)
-                    ->where(function ($query) use ($now): void {
-                        $query->whereNull('expires_at')->orWhere('expires_at', '>', $now);
-                    })
                     ->lockForUpdate()
                     ->first();
 

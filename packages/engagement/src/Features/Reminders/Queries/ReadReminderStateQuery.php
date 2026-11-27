@@ -7,6 +7,8 @@ namespace AIArmada\Engagement\Features\Reminders\Queries;
 use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Support\EngagementModelGuard;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 final class ReadReminderStateQuery implements ReadsReminderState
 {
@@ -20,7 +22,8 @@ final class ReadReminderStateQuery implements ReadsReminderState
             ->where('recipient_id', $recipient->getKey())
             ->where('remindable_type', $subject->getMorphClass())
             ->where('remindable_id', $subject->getKey())
-            ->whereIn('status', ['pending', 'scheduled'])
+            ->pending()
+            ->where(fn (Builder $query): Builder => $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now()))
             ->orderBy('id')
             ->limit($this->resultLimit())
             ->get()->toArray();
