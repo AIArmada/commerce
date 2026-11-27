@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -121,7 +122,7 @@ final class QuickApplyVoucherWidget extends Widget implements HasForms
                 $this->record->identifier
             );
 
-            $cartInstance->applyVoucher($code);
+            app(CartVoucherApplicator::class)->handle($cartInstance, $code);
 
             Notification::make()
                 ->success()

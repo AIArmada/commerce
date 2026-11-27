@@ -6,6 +6,8 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Support\CartWithVouchers;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -125,18 +127,11 @@ final class AppliedVouchersWidget extends BaseWidget
                 $this->record->identifier
             );
 
-            $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-            $appliedVoucherItems = [];
-            if (is_iterable($appliedVouchers)) {
-                foreach ($appliedVouchers as $appliedVoucher) {
-                    $appliedVoucherItems[] = $appliedVoucher;
-                }
-            }
+            $appliedVouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             // Transform vouchers into a collection for the table
             /** @var Collection<int|string, mixed> $voucherCollection */
-            $voucherCollection = collect($appliedVoucherItems);
+            $voucherCollection = collect($appliedVouchers);
 
             return $voucherCollection->map(function ($voucher) {
                 return [

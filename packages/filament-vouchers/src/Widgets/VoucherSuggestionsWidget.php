@@ -6,6 +6,9 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Support\CartWithVouchers;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -190,7 +193,7 @@ final class VoucherSuggestionsWidget extends Widget
                 $this->record->identifier
             );
 
-            $cartInstance->applyVoucher($voucher->code);
+            app(CartVoucherApplicator::class)->handle($cartInstance, $voucher->code);
 
             Notification::make()
                 ->success()
@@ -236,11 +239,7 @@ final class VoucherSuggestionsWidget extends Widget
                 $cartRecord->identifier
             );
 
-            $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-            if (! is_iterable($appliedVouchers)) {
-                return [];
-            }
+            $appliedVouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             return collect($appliedVouchers)->pluck('code')->filter()->values()->all();
         } catch (Throwable) {

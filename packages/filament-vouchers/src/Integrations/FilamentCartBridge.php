@@ -6,6 +6,12 @@ namespace AIArmada\FilamentVouchers\Integrations;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Cart as LiveCart;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -167,7 +173,7 @@ final class FilamentCartBridge
         }
     }
 
-    public function getCartInstance(Model $cart): ?object
+    public function getCartInstance(Model $cart): ?LiveCart
     {
         if (! $this->available || ! class_exists(CartInstanceManager::class)) {
             return null;
@@ -194,7 +200,7 @@ final class FilamentCartBridge
     }
 
     /**
-     * @return Collection<int, object>
+     * @return Collection<int, VoucherData>
      */
     public function getAppliedVouchers(Model $cart): Collection
     {
@@ -205,14 +211,8 @@ final class FilamentCartBridge
         }
 
         try {
-            $vouchers = $instance->getAppliedVouchers();
-
-            if (! is_iterable($vouchers)) {
-                return collect();
-            }
-
-            /** @var iterable<int, object> $vouchers */
-            return collect($vouchers);
+            return collect((new CartWithVouchers($instance))->getAppliedVouchers())
+                ->map(static fn (VoucherCondition $condition): VoucherData => $condition->getVoucher());
         } catch (Throwable $exception) {
             Log::debug('FilamentCartBridge: Failed to get applied vouchers', [
                 'cart_id' => $cart->getKey(),
@@ -238,7 +238,7 @@ final class FilamentCartBridge
             throw new VoucherException('Cart integration is not available');
         }
 
-        $instance->applyVoucher($code);
+        app(CartVoucherApplicator::class)->handle($instance, $code);
 
         return true;
     }
@@ -258,7 +258,7 @@ final class FilamentCartBridge
             throw new VoucherException('Cart integration is not available');
         }
 
-        $instance->removeVoucher($code);
+        app(CartVoucherRemoval::class)->handle($instance, $code);
 
         return true;
     }
@@ -270,7 +270,7 @@ final class FilamentCartBridge
         }
 
         return $this->getAppliedVouchers($cart)
-            ->contains(fn (object $voucher): bool => ($voucher->code ?? '') === $code);
+            ->contains(fn (VoucherData $voucher): bool => $voucher->code === $code);
     }
 
     public function countCartsWithVoucher(string $voucherCode): int

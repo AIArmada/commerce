@@ -6,6 +6,10 @@ namespace AIArmada\FilamentVouchers\Extensions;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Support\CartWithVouchers;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Exceptions\VoucherException;
@@ -96,7 +100,7 @@ final class CartVoucherActions
                         $record->identifier
                     );
 
-                    $cartInstance->applyVoucher($code);
+                    app(CartVoucherApplicator::class)->handle($cartInstance, $code);
 
                     Notification::make()
                         ->success()
@@ -187,7 +191,7 @@ final class CartVoucherActions
                         $record->identifier
                     );
 
-                    $cartInstance->removeVoucher($voucherCode);
+                    app(CartVoucherRemoval::class)->handle($cartInstance, $voucherCode);
 
                     Notification::make()
                         ->success()
@@ -235,7 +239,7 @@ final class CartVoucherActions
                 $record->identifier
             );
 
-            $vouchers = $cartInstance->getAppliedVouchers();
+            $vouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             if (empty($vouchers)) {
                 return [
