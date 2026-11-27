@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Features\Rates\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
@@ -216,7 +217,7 @@ class RateShoppingEngine
         }
 
         // If options are not concurrency-safe (contain objects/resources), fall back to sequential calls.
-        if (! $this->isConcurrencySafe($options)) {
+        if ((bool) config('shipping.features.owner.enabled', false) || ! $this->isConcurrencySafe($options)) {
             return $this->getRatesFromCarriers($carrierCodes, $origin, $destination, $packages, $options);
         }
 
@@ -401,6 +402,8 @@ class RateShoppingEngine
 
         return 'shipping:rates:' . md5(serialize([
             'owner' => $this->ownerScopeKey(),
+            'owner_enabled' => (bool) config('shipping.features.owner.enabled', false),
+            'include_global' => ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false),
             'origin' => $origin->toArray(),
             'destination' => $destination->toArray(),
             'packages' => array_map(

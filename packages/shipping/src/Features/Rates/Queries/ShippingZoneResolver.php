@@ -203,6 +203,8 @@ class ShippingZoneResolver
             'state' => $address->state,
             'city' => $address->city,
             'postcode' => $address->postcode,
+            'latitude' => $address->latitude,
+            'longitude' => $address->longitude,
             'owner_id' => $ownerId,
             'owner_type' => $ownerType,
             'owner_enabled' => (bool) config('shipping.features.owner.enabled', false),

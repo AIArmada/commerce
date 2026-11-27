@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Shipping\Unit\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -74,5 +76,22 @@ describe('Rate cache invalidation on non-taggable stores', function (): void {
         expect($second)->toHaveCount(1);
 
         $engine->clearCache();
+    });
+});
+
+it('separates rate cache keys by effective global visibility', function (): void {
+    config(['shipping.features.owner.enabled' => true, 'shipping.features.owner.include_global' => true]);
+
+    [$origin, $destination, $packages] = rateCacheAddresses();
+    $engine = new RateShoppingEngine(Mockery::mock(ShippingManager::class));
+    $method = new \ReflectionMethod($engine, 'buildCacheKey');
+
+    OwnerContext::withOwner(null, function () use ($method, $engine, $origin, $destination, $packages): void {
+        $inclusive = $method->invoke($engine, $origin, $destination, $packages);
+        $strict = OwnerScopeOverride::withoutIncludeGlobal(
+            fn () => $method->invoke($engine, $origin, $destination, $packages),
+        );
+
+        expect($inclusive)->not->toBe($strict);
     });
 });
