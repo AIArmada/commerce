@@ -8,7 +8,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
+use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use Illuminate\Support\Str;
 use ReflectionMethod;
 

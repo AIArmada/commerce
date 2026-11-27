@@ -10,7 +10,6 @@ use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
-use InvalidArgumentException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;

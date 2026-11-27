@@ -332,7 +332,7 @@ class RateShoppingEngine
 
     protected function circuitCacheKey(string $carrierCode): string
     {
-        return 'shipping:circuit:' . $carrierCode . ':failures';
+        return 'shipping:circuit:' . $this->ownerScopeKey() . ':' . $carrierCode . ':failures';
     }
 
     protected function circuitFailureThreshold(): int

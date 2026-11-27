@@ -45,7 +45,7 @@ function rateCacheAddresses(): array
 
 describe('Rate cache invalidation on non-taggable stores', function (): void {
     it('forgets instance-cached rates when tags are unavailable', function (): void {
-        config(['cache.default' => 'file']);
+        config(['cache.default' => 'file', 'shipping.features.owner.enabled' => false]);
 
         $repository = Cache::store();
 
@@ -53,9 +53,9 @@ describe('Rate cache invalidation on non-taggable stores', function (): void {
 
         [$origin, $destination, $packages] = rateCacheAddresses();
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'manual', service: 'standard', rate: 500, currency: 'MYR', estimatedDays: 3),
-        ]);
+        ];
 
         $shippingManager = Mockery::mock(ShippingManager::class);
         $shippingManager->shouldReceive('getAvailableDrivers')->andReturn(['manual']);
