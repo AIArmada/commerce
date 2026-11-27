@@ -227,6 +227,23 @@ describe('InventoryLevel', function (): void {
         expect($level->fresh()->quantity_reserved)->toBe(15);
     });
 
+    it('rejects non-positive stock mutation quantities without changing balances', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'quantity_on_hand' => 100,
+            'quantity_reserved' => 20,
+        ]);
+
+        foreach ([-1, 0] as $quantity) {
+            expect(fn () => $level->incrementOnHand($quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => $level->decrementOnHand($quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => $level->incrementReserved($quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => $level->decrementReserved($quantity))->toThrow(InvalidArgumentException::class);
+        }
+
+        expect($level->fresh()->quantity_on_hand)->toBe(100)
+            ->and($level->fresh()->quantity_reserved)->toBe(20);
+    });
+
     it('scope at location', function (): void {
         $location2 = InventoryLocation::factory()->create();
 

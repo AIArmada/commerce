@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -241,6 +242,10 @@ final class InventoryLevel extends Model implements Auditable
      */
     public function incrementOnHand(int $quantity): self
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive.');
+        }
+
         $this->increment('quantity_on_hand', $quantity);
 
         return $this;
@@ -251,6 +256,10 @@ final class InventoryLevel extends Model implements Auditable
      */
     public function decrementOnHand(int $quantity): self
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive.');
+        }
+
         $this->decrement('quantity_on_hand', $quantity);
 
         return $this;
@@ -261,6 +270,10 @@ final class InventoryLevel extends Model implements Auditable
      */
     public function incrementReserved(int $quantity): self
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive.');
+        }
+
         $this->increment('quantity_reserved', $quantity);
 
         return $this;
@@ -271,6 +284,10 @@ final class InventoryLevel extends Model implements Auditable
      */
     public function decrementReserved(int $quantity): self
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive.');
+        }
+
         $this->decrement('quantity_reserved', $quantity);
 
         return $this;
