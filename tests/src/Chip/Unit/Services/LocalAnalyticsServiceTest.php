@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use Carbon\CarbonImmutable;
 

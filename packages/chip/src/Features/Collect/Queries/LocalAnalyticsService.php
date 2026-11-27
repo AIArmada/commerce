@@ -8,7 +8,7 @@ use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Features\Collect\Api\PurchaseAnalytics;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use Carbon\CarbonImmutable;
 
 /**

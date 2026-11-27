@@ -6,8 +6,8 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Features\Collect\Models\Client;
-use AIArmada\Chip\Models\Payment;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Features\Collect\Persistence;
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Carbon\CarbonImmutable;

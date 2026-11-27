@@ -10,7 +10,7 @@ use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\WebhookRouter;

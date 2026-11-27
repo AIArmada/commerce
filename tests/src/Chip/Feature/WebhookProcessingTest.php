@@ -21,7 +21,7 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Testing\WebhookFactory;
 use Carbon\CarbonImmutable;

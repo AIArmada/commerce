@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Features\Collect\Api\PurchaseWebhookState;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\DB;
 

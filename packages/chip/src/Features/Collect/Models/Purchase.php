@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Collect\Models;
+
+use AIArmada\Chip\Models\ChipModel;
 
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;

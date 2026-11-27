@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;

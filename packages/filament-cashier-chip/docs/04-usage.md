@@ -165,7 +165,7 @@ Browse invoices from CHIP purchases.
 ### Invoice Statuses
 
 Statuses are CHIP purchase statuses, colored by
-`AIArmada\Chip\Models\Purchase::statusColor()`:
+`AIArmada\Chip\Features\Collect\Models\Purchase::statusColor()`:
 
 | Status | Color | Description |
 |--------|-------|-------------|

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Filament\Support\Icons\Heroicon;

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages;
 
 use AIArmada\Chip\Actions\Purchases\MarkPurchaseAsPaid;
 use AIArmada\Chip\Actions\Purchases\ResendPurchaseInvoice;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
