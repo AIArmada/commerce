@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\EntryPoints\Jobs;
+namespace AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use AIArmada\Jnt\Features\Tracking\Actions\ProcessTrackingWebhook;

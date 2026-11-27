@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\EntryPoints\Listeners;
+namespace AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners;
 
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;

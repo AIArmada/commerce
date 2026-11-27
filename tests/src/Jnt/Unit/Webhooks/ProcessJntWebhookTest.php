@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
-use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;

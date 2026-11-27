@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;

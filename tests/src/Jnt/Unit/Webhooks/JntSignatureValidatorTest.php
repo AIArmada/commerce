@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
 use AIArmada\Jnt\Webhooks\JntWebhookProfile;
 use AIArmada\Jnt\Webhooks\JntWebhookResponse;
