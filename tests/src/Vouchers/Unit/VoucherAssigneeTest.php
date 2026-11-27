@@ -12,7 +12,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;

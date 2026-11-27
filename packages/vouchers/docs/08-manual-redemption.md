@@ -223,7 +223,7 @@ class AdminVoucherController extends Controller
 Use the `ValidateVoucherCode` action for checkout-aware programmatic validation that returns a structured result:
 
 ```php
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Cart\Facades\Cart;
 
 $result = ValidateVoucherCode::run('SUMMER2024', Cart::getCartInstance('default', $cartIdentifier));

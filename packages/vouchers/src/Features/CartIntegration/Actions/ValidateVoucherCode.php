@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ValidateVoucherCode
+final class ValidateVoucherCode
 {
     use AsAction;
 

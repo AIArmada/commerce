@@ -58,7 +58,7 @@ use AIArmada\Rewards\Support\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use Akaunting\Money\Money;

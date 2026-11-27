@@ -9,7 +9,7 @@ use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;

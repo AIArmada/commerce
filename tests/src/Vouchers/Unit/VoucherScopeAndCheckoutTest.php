@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;

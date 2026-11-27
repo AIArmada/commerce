@@ -37,7 +37,7 @@ Lower order = applied earlier in the calculation chain.
 ### Via ApplyVoucherToCart Action
 
 ```php
-use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 
@@ -72,7 +72,7 @@ Cart::clearVouchers();
 ### Via RemoveVoucherFromCart Action
 
 ```php
-use AIArmada\Vouchers\Actions\RemoveVoucherFromCart;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\RemoveVoucherFromCart;
 use AIArmada\Cart\Facades\Cart;
 
 RemoveVoucherFromCart::run(
