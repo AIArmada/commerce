@@ -7,7 +7,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
+use AIArmada\Promotions\Actions\RecordPromotionFulfillmentUsage;
+use AIArmada\Promotions\EntryPoints\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Str;
 
@@ -63,7 +64,7 @@ it('counts each order only once when payment events are redelivered', function (
     $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
 
     $order = persistedOrderWithPromotion($owner, $promotion);
-    $listener = new MarkPromotionAsUsedOnFulfillment;
+    $listener = app(MarkPromotionAsUsedOnFulfillment::class);
 
     $listener->handle(new OrderFulfillmentRequired(order: $order, transactionId: 'txn_1', gateway: 'chip'));
     $listener->handle(new OrderFulfillmentRequired(order: $order->fresh(), transactionId: 'txn_1', gateway: 'chip'));
@@ -87,8 +88,8 @@ test('stamp persistence failure aborts instead of being swallowed', function ():
     ]);
     $order->exists = true;
 
-    $method = new ReflectionMethod(MarkPromotionAsUsedOnFulfillment::class, 'persistCountedPromotionIds');
+    $method = new ReflectionMethod(RecordPromotionFulfillmentUsage::class, 'persistCountedPromotionIds');
 
-    expect(fn (): mixed => $method->invoke(new MarkPromotionAsUsedOnFulfillment, $order, $owner, ['promo-1']))
+    expect(fn (): mixed => $method->invoke(new RecordPromotionFulfillmentUsage, $order, $owner, ['promo-1']))
         ->toThrow(RuntimeException::class, 'disk on fire');
 });

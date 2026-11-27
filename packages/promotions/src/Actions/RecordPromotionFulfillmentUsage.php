@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Promotions\Listeners;
+namespace AIArmada\Promotions\Actions;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Facades\DB;
@@ -16,11 +15,10 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
-final class MarkPromotionAsUsedOnFulfillment
+final readonly class RecordPromotionFulfillmentUsage
 {
-    public function handle(OrderFulfillmentRequired $event): void
+    public function handle(Order $order, ?string $ownerType, int|string|null $ownerId): void
     {
-        $order = $event->order;
         $sessionId = $this->resolveSessionId($order);
 
         if ($sessionId === null) {
@@ -28,11 +26,6 @@ final class MarkPromotionAsUsedOnFulfillment
 
             return;
         }
-
-        // ponytail: cross-tenant session lookup — session ID is resolved from
-        // the order's own owner-scoped metadata, so the lookup target is already
-        // bounded to the same owner as the order. Strip owner scope for direct
-        // session lookup since CheckoutSession may be stored as a global record.
         $session = CheckoutSession::query()
             ->withoutGlobalScope(OwnerScope::class)
             ->find($sessionId);
@@ -43,8 +36,8 @@ final class MarkPromotionAsUsedOnFulfillment
             return;
         }
 
-        if ((string) $session->getAttribute('owner_type') !== (string) $event->owner_type
-            || (string) $session->getAttribute('owner_id') !== (string) $event->owner_id) {
+        if ((string) $session->getAttribute('owner_type') !== (string) $ownerType
+            || (string) $session->getAttribute('owner_id') !== (string) $ownerId) {
             $this->skip('checkout session owner tuple does not match the order', [
                 'order_id' => $order->getKey(),
                 'session_id' => $sessionId,
@@ -65,7 +58,7 @@ final class MarkPromotionAsUsedOnFulfillment
         }
 
         try {
-            $owner = OwnerTupleParser::fromTypeAndId($event->owner_type, $event->owner_id)->toOwnerModel();
+            $owner = OwnerTupleParser::fromTypeAndId($ownerType, $ownerId)->toOwnerModel();
         } catch (Throwable $exception) {
             $this->skip('order owner tuple is malformed', [
                 'order_id' => $order->getKey(),
@@ -74,13 +67,7 @@ final class MarkPromotionAsUsedOnFulfillment
 
             return;
         }
-
-        // The usage increments and the deduplication stamp commit
-        // atomically, under the order lock: a crash between them stays
-        // retryable without double-counting, and overlapping deliveries
-        // serialize on the order row. The order lookup is unscoped by a
-        // known id because this listener must work without ambient scope.
-        DB::transaction(function () use ($order, $allocations, $owner): void {
+        DB::transaction(function () use ($order, $allocations, $owner, $ownerType, $ownerId): void {
             $lockedOrder = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($order->getKey())
@@ -93,9 +80,20 @@ final class MarkPromotionAsUsedOnFulfillment
                 return;
             }
 
+            if ((string) $lockedOrder->getAttribute('owner_type') !== (string) $ownerType
+                || (string) $lockedOrder->getAttribute('owner_id') !== (string) $ownerId) {
+                $this->skip('locked order owner tuple does not match the event', ['order_id' => $lockedOrder->getKey()]);
+
+                return;
+            }
+
             $countedPromotionIds = $this->countedPromotionIds($lockedOrder);
 
             foreach ($allocations as $allocation) {
+                if (! is_array($allocation)) {
+                    continue;
+                }
+
                 if (($allocation['provider_key'] ?? '') !== 'promotions') {
                     Log::debug('Promotion usage skipped: allocation belongs to another provider.', [
                         'order_id' => $lockedOrder->getKey(),
@@ -107,13 +105,11 @@ final class MarkPromotionAsUsedOnFulfillment
 
                 $promotionId = $allocation['meta']['promotion_id'] ?? null;
 
-                if ($promotionId === null) {
+                if (! is_string($promotionId) || $promotionId === '') {
                     $this->skip('promotion allocation has no promotion id', ['order_id' => $lockedOrder->getKey()]);
 
                     continue;
                 }
-
-                // Redelivered fulfillment events must not double-count usage.
                 if (in_array((string) $promotionId, $countedPromotionIds, true)) {
                     continue;
                 }
@@ -194,10 +190,6 @@ final class MarkPromotionAsUsedOnFulfillment
         }
 
         $metadata['promotions_usage_counted'] = $countedPromotionIds;
-
-        // Stamp failures must abort the transaction: the usage increments
-        // commit together with the stamp, or a relay retry would count
-        // them again.
         OwnerContext::withOwner($owner, static function () use ($order, $metadata): void {
             $saved = $order->forceFill(['metadata' => $metadata])->saveQuietly();
 

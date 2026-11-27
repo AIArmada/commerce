@@ -6,7 +6,7 @@ namespace AIArmada\Promotions;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
+use AIArmada\Promotions\EntryPoints\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Services\PromotionService;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
 use Illuminate\Support\Facades\Event;

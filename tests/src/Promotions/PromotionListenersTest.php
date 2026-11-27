@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
+use AIArmada\Promotions\EntryPoints\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\PromotionsServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -27,7 +27,7 @@ it('increments usage count for the paid order promotion in the order owner scope
     $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
     $otherPromotion = OwnerContext::withOwner($otherOwner, fn (): Promotion => Promotion::factory()->active()->create());
 
-    $listener = new MarkPromotionAsUsedOnFulfillment;
+    $listener = app(MarkPromotionAsUsedOnFulfillment::class);
 
     $listener->handle(new OrderFulfillmentRequired(
         order: orderWithPromotion($owner, $promotion),
@@ -49,7 +49,7 @@ it('counts usage for free orders through the fulfillment event', function (): vo
     $owner = User::factory()->create();
     $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
 
-    $listener = new MarkPromotionAsUsedOnFulfillment;
+    $listener = app(MarkPromotionAsUsedOnFulfillment::class);
 
     $listener->handle(new OrderFulfillmentRequired(
         order: orderWithPromotion($owner, $promotion),

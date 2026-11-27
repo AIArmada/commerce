@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Vouchers\Actions\ChangeVoucherAvailability;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -28,13 +27,7 @@ final class ActivateVoucherAction extends Action
         $this->visible(fn (Voucher $record): bool => $record->status instanceof Paused && ! $record->isExpired());
 
         $this->action(function (Voucher $record): void {
-            if (config('vouchers.owner.enabled', false)) {
-                /** @var Voucher $record */
-                $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
-            }
-
-            $record->status->transitionTo(Active::class);
-            $record->save();
+            app(ChangeVoucherAvailability::class)->handle($record, true);
 
             Notification::make()
                 ->title('Voucher activated')

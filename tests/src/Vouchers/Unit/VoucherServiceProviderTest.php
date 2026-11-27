@@ -10,7 +10,7 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
