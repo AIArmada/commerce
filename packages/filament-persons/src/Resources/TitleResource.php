@@ -9,7 +9,7 @@ use AIArmada\FilamentPersons\Resources\TitleResource\Pages\CreateTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\EditTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ListTitles;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ViewTitle;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Support\ModelResolver;
 use BackedEnum;
 use Filament\Actions;

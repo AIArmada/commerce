@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\Persons\Database\Factories\TitleIssuerFactory;
 use AIArmada\Persons\Enums\IssuerType;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
@@ -68,6 +69,11 @@ class TitleIssuer extends Model
 
             $issuer->setAttribute('issuer_name', mb_trim($issuerName));
         });
+    }
+
+    protected static function newFactory(): TitleIssuerFactory
+    {
+        return TitleIssuerFactory::new();
     }
 
     public function getTable(): string

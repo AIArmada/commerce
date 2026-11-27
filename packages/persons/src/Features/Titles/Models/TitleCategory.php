@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\Persons\Database\Factories\TitleCategoryFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,6 +41,11 @@ class TitleCategory extends Model
                 $category->titles()->chunkById(500, static fn (Collection $titles) => $titles->each->delete());
             });
         });
+    }
+
+    protected static function newFactory(): TitleCategoryFactory
+    {
+        return TitleCategoryFactory::new();
     }
 
     public function getTable(): string

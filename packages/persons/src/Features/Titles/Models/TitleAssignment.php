@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\Persons\Database\Factories\TitleAssignmentFactory;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -40,6 +41,11 @@ class TitleAssignment extends Model
         'date_expired',
         'status',
     ];
+
+    protected static function newFactory(): TitleAssignmentFactory
+    {
+        return TitleAssignmentFactory::new();
+    }
 
     public function getTable(): string
     {

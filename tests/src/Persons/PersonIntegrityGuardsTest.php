@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
@@ -13,9 +13,9 @@ use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Models\PersonName;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
-use AIArmada\Persons\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

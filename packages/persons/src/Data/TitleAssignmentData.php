@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
 

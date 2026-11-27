@@ -9,7 +9,7 @@ use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\CreateTitleIssu
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\EditTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\ListTitleIssuers;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\ViewTitleIssuer;
-use AIArmada\Persons\Models\TitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;

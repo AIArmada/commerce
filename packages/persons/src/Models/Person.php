@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -164,9 +164,9 @@ class Person extends Model implements Sortable
     public function save(array $options = []): bool
     {
         try {
-            return parent::save($options);
-        } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23000' || ! str_contains($exception->getMessage(), 'persons_slug_unique')) {
+            return $this->getConnection()->transaction(fn (): bool => parent::save($options));
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! str_contains($exception->getMessage(), 'persons_slug_unique')) {
                 throw $exception;
             }
 

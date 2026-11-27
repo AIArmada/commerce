@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\Persons\Features\Titles\Actions;
 
 use AIArmada\Persons\Enums\TitleUsagePosition;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -70,12 +70,11 @@ final class ReorderTitleAction
                 $this->moveToTemporaryRange($newTitles);
             }
 
-            $this->persistOrder($oldOrdered, exclude: $title);
             if ($oldScope !== $newScope) {
-                $this->persistOrder($newOrdered, exclude: $title);
-            } else {
-                $this->persistOrder($newOrdered, exclude: $title);
+                $this->persistOrder($oldOrdered, exclude: $title);
             }
+
+            $this->persistOrder($newOrdered, exclude: $title);
 
             $title->sort_order = $this->positionOf($newOrdered, $title);
             $title->save();

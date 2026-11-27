@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
-use AIArmada\Persons\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**

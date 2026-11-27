@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\Persons\Database\Factories\TitleFactory;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
@@ -60,6 +61,11 @@ class Title extends Model
                 $title->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
             });
         });
+    }
+
+    protected static function newFactory(): TitleFactory
+    {
+        return TitleFactory::new();
     }
 
     public function getTable(): string

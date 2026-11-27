@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\Persons\Features\Titles\Actions;
 
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 
 final class AssignTitleAction
@@ -45,12 +45,8 @@ final class AssignTitleAction
         $assignment->titleable()->associate($titleable);
 
         try {
-            $assignment->save();
-        } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23000') {
-                throw $exception;
-            }
-
+            $assignment->getConnection()->transaction(fn (): bool => $assignment->save());
+        } catch (UniqueConstraintViolationException $exception) {
             $raced = TitleAssignment::query()
                 ->where('titleable_type', $titleable->getMorphClass())
                 ->where('titleable_id', $titleable->getKey())

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Titles",
+  "owns": {
+    "table:titles": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\ReorderTitleAction"
+    ],
+    "table:title_assignments": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\AssignTitleAction"
+    ]
+  },
+  "extensions": {}
+}

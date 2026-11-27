@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
@@ -17,10 +17,10 @@ use AIArmada\Persons\Models\Affiliation;
 use AIArmada\Persons\Models\AffiliationRole;
 use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Models\PersonName;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
-use AIArmada\Persons\Models\TitleCategory;
-use AIArmada\Persons\Models\TitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

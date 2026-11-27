@@ -31,7 +31,7 @@ published_at timestamp.
 
 ```php
 use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
-use AIArmada\Persons\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 
 $person = app(CreatePersonAction::class)->execute(['name' => 'Ahmad Rahman']);
@@ -84,7 +84,7 @@ For reusable orchestration, use the additive core assignment actions:
 
 ```php
 use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
-use AIArmada\Persons\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 
 $titleAssignment = app(AssignTitleAction::class)->execute($person, $prof->id);
 $credentialAssignment = app(AssignCredentialAction::class)->execute($person, $phd->id);
@@ -92,7 +92,7 @@ $credentialAssignment = app(AssignCredentialAction::class)->execute($person, $ph
 
 ```php
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\Title;
 
 // Find a title definition
 $prof = Title::where('name', 'Prof')->first();
