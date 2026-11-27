@@ -488,6 +488,7 @@ php artisan customers:rebuild-segments --dry-run
 ### Create Group
 
 ```php
+use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
 use AIArmada\Customers\Models\CustomerGroup;
 
 $group = CustomerGroup::create([
@@ -503,19 +504,19 @@ $group = CustomerGroup::create([
 
 ```php
 // Add member
-$group->addMember($customer, 'member');
+app(ManageCustomerGroupMembership::class)->add($group, $customer, 'member');
 
 // Add admin
-$group->addMember($customer, 'admin');
+app(ManageCustomerGroupMembership::class)->add($group, $customer, 'admin');
 
 // Promote to admin
-$group->promoteToAdmin($customer);
+app(ManageCustomerGroupMembership::class)->promote($group, $customer);
 
 // Demote to member
-$group->demoteToMember($customer);
+app(ManageCustomerGroupMembership::class)->demote($group, $customer);
 
 // Remove member
-$group->removeMember($customer);
+app(ManageCustomerGroupMembership::class)->remove($group, $customer);
 ```
 
 ### Check Membership

@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
-use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -119,69 +118,6 @@ class CustomerGroup extends Model implements Auditable
     // =========================================================================
     // MEMBER MANAGEMENT
     // =========================================================================
-
-    /**
-     * Add a member to this group.
-     */
-    public function addMember(Customer $customer, string $role = 'member'): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Group and customer must share the same owner context.');
-        }
-
-        $this->members()->syncWithoutDetaching([
-            $customer->id => [
-                'role' => $role,
-                'joined_at' => CarbonImmutable::now(),
-            ],
-        ]);
-    }
-
-    /**
-     * Remove a member from this group.
-     */
-    public function removeMember(Customer $customer): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Group and customer must share the same owner context.');
-        }
-
-        $this->members()->detach($customer->id);
-    }
-
-    /**
-     * Promote a member to admin.
-     */
-    public function promoteToAdmin(Customer $customer): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Group and customer must share the same owner context.');
-        }
-
-        $this->members()->updateExistingPivot($customer->id, ['role' => 'admin']);
-    }
-
-    /**
-     * Demote an admin to member.
-     */
-    public function demoteToMember(Customer $customer): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Group and customer must share the same owner context.');
-        }
-
-        $this->members()->updateExistingPivot($customer->id, ['role' => 'member']);
-    }
-
-    private function isSameOwnerAsCustomer(Customer $customer): bool
-    {
-        if ($this->owner_type === null && $this->owner_id === null) {
-            return $customer->owner_type === null && $customer->owner_id === null;
-        }
-
-        return $customer->owner_type === $this->owner_type
-            && $customer->owner_id === $this->owner_id;
-    }
 
     /**
      * Check if customer is a member.

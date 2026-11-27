@@ -10,6 +10,9 @@
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SyncManualSegmentMemberships",
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\TransferSegmentMemberships",
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\DetachDeletedSegmentMemberships"
+    ],
+    "table:customer_group_members": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\ManageCustomerGroupMembership"
     ]
   },
   "extensions": {}

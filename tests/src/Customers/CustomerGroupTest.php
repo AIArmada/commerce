@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use Illuminate\Database\Eloquent\Builder;
@@ -68,6 +69,14 @@ describe('CustomerGroup Model', function (): void {
     });
 
     describe('Database Operations', function (): void {
+        it('rejects unpersisted group membership references', function (): void {
+            $group = new CustomerGroup;
+            $customer = new Customer;
+
+            expect(fn () => app(ManageCustomerGroupMembership::class)->add($group, $customer))
+                ->toThrow(InvalidArgumentException::class);
+        });
+
         it('can create a group', function (): void {
             $group = CustomerGroup::create([
                 'name' => 'Test Group ' . uniqid(),
@@ -106,7 +115,7 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer);
 
             expect($group->hasMember($customer))->toBeTrue();
         });
@@ -121,8 +130,8 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer);
-            $group->removeMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer);
+            app(ManageCustomerGroupMembership::class)->remove($group, $customer);
 
             expect($group->hasMember($customer))->toBeFalse();
         });
@@ -137,8 +146,8 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer, 'member');
-            $group->promoteToAdmin($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer, 'member');
+            app(ManageCustomerGroupMembership::class)->promote($group, $customer);
 
             expect($group->isAdmin($customer))->toBeTrue();
         });
@@ -153,8 +162,8 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer, 'admin');
-            $group->demoteToMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer, 'admin');
+            app(ManageCustomerGroupMembership::class)->demote($group, $customer);
 
             expect($group->isAdmin($customer))->toBeFalse()
                 ->and($group->hasMember($customer))->toBeTrue();
