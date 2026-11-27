@@ -7,7 +7,7 @@ use AIArmada\Cashier\Events\PaymentSucceeded as CashierPaymentSucceeded;
 use AIArmada\CashierChip\Events\PaymentSucceeded as CashierChipPaymentSucceeded;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
-use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
+use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;

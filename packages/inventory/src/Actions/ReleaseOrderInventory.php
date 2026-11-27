@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Listeners;
+namespace AIArmada\Inventory\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\MovementType;
@@ -32,14 +32,14 @@ use InvalidArgumentException;
  * 2. **After shipment**: If inventory was already deducted, create
  *    a return movement to restore stock.
  */
-final class ReleaseInventoryFromOrder
+final class ReleaseOrderInventory
 {
     public function __construct(
         private readonly InventoryService $inventoryService,
         private readonly InventoryAllocationService $allocationService,
     ) {}
 
-    public function handle(InventoryReleaseRequired $event): void
+    public function execute(InventoryReleaseRequired $event): void
     {
         if (! config('inventory.orders.enabled', true)) {
             return;
@@ -123,12 +123,16 @@ final class ReleaseInventoryFromOrder
         }
 
         try {
-            return InventoryOperation::create([
+            return DB::transaction(fn (): InventoryOperation => InventoryOperation::create([
                 'order_id' => $order->id,
                 'kind' => $kind,
                 'status' => InventoryOperation::STATUS_PENDING,
-            ]);
+            ]));
         } catch (QueryException $e) {
+            if (! in_array((string) ($e->errorInfo[0] ?? $e->getCode()), ['23000', '23505'], true)) {
+                throw $e;
+            }
+
             return InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
                 ->where('order_id', $order->id)
                 ->where('kind', $kind)
@@ -175,7 +179,7 @@ final class ReleaseInventoryFromOrder
     private function restoreShippedInventory(Order $order): void
     {
         // Find shipment movements for this order
-        $movements = InventoryMovement::query()
+        $movements = InventoryOwnerScope::applyToMovementQuery(InventoryMovement::query())
             ->where('type', MovementType::Shipment->value)
             ->whereIn('reference', [$order->order_number, $order->getKey()])
             ->get();

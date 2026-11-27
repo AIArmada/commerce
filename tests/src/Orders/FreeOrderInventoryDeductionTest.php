@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
-use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
+use AIArmada\Inventory\EntryPoints\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;

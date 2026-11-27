@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Listeners;
+namespace AIArmada\Inventory\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
@@ -40,7 +40,7 @@ use RuntimeException;
  * 2. **Without a reservation**: If the order was created directly without cart
  *    allocations (API, admin, etc.), deduct inventory directly.
  */
-final class DeductInventoryFromOrder
+final class DeductOrderInventory
 {
     public function __construct(
         private readonly InventoryService $inventoryService,
@@ -48,7 +48,7 @@ final class DeductInventoryFromOrder
         private readonly ?CheckoutReservationService $reservationService = null,
     ) {}
 
-    public function handle(InventoryDeductionRequired $event): void
+    public function execute(InventoryDeductionRequired $event): void
     {
         if (! config('inventory.orders.enabled', true)) {
             return;
@@ -167,12 +167,16 @@ final class DeductInventoryFromOrder
         }
 
         try {
-            return InventoryOperation::create([
+            return DB::transaction(fn (): InventoryOperation => InventoryOperation::create([
                 'order_id' => $order->id,
                 'kind' => $kind,
                 'status' => InventoryOperation::STATUS_PENDING,
-            ]);
+            ]));
         } catch (QueryException $e) {
+            if (! in_array((string) ($e->errorInfo[0] ?? $e->getCode()), ['23000', '23505'], true)) {
+                throw $e;
+            }
+
             return InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
                 ->where('order_id', $order->id)
                 ->where('kind', $kind)

@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Inventory\Listeners\ReleaseInventoryFromOrder;
+use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Models\InventoryOperation;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Models\Order;

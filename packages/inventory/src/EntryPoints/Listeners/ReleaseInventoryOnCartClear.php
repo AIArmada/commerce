@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Listeners;
+namespace AIArmada\Inventory\EntryPoints\Listeners;
 
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 

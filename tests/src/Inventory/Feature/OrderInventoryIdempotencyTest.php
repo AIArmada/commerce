@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
-use AIArmada\Inventory\Listeners\ReleaseInventoryFromOrder;
+use AIArmada\Inventory\EntryPoints\Listeners\DeductInventoryFromOrder;
+use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryOperation;

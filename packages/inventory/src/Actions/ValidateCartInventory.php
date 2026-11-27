@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Cart;
+namespace AIArmada\Inventory\Actions;
 
 use AIArmada\Cart\Events\ItemAdded;
+use AIArmada\Inventory\Cart\InventoryDemandResolver;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Carbon\CarbonImmutable;
@@ -18,13 +19,13 @@ use Illuminate\Support\Facades\DB;
  * is merged per inventory model across the whole cart, so a standalone line
  * and a component line for the same SKU never allocate twice.
  */
-final class ValidateInventoryOnAdd
+final class ValidateCartInventory
 {
     public function __construct(
         private readonly InventoryAllocationService $allocationService,
     ) {}
 
-    public function handle(ItemAdded $event): void
+    public function execute(ItemAdded $event): void
     {
         if (! config('inventory.cart.validate_on_add', false)) {
             return;
