@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Spatie\Health\Checks\Result;
 

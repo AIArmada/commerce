@@ -13,7 +13,7 @@ use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;

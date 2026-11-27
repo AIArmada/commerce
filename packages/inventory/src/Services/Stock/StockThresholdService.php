@@ -10,7 +10,7 @@ use AIArmada\Inventory\Events\MaxStockExceeded;
 use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Events\SafetyStockBreached;
 use AIArmada\Inventory\Events\StockRestored;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;

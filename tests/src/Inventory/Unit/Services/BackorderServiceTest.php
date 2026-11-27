@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
 use AIArmada\Inventory\States\Fulfilled;

@@ -12,7 +12,7 @@ use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\ViewInvent
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Schemas\InventoryLevelForm;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Schemas\InventoryLevelInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Tables\InventoryLevelsTable;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;

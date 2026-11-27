@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Reports;
 
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

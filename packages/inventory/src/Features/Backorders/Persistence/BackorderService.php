@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Features\Backorders\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\States\Pending;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

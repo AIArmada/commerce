@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Contracts;
 
 use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

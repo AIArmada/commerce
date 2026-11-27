@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Features\Reservations\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;

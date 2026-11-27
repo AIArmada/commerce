@@ -17,7 +17,7 @@ use AIArmada\Events\Features\Commerce\Actions\FinalizeOccurredEventOrdersAction;
 use AIArmada\Events\Features\Commerce\Actions\StartOccurrenceCheckoutAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Ticketing\Data\TicketTypeData;
 use AIArmada\Ticketing\Models\TicketType;

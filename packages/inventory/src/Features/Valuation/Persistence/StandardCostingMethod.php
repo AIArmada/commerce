@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Contracts\CostingMethodInterface;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Model;

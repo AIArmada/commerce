@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Services;
 
 use AIArmada\FilamentInventory\Persistence\InventoryStatsCache;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Reports\MovementAnalysisReport;
 use AIArmada\Inventory\Reports\StockLevelReport;
 use Illuminate\Database\Eloquent\Builder;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Services\Stock;
 
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;

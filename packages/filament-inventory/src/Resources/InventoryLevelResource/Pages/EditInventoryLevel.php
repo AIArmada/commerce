@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages;
 
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
 use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;

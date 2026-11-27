@@ -6,7 +6,7 @@ use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
 beforeEach(function (): void {

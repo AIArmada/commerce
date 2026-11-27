@@ -9,7 +9,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
