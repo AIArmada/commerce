@@ -6,8 +6,8 @@ namespace AIArmada\Referrals\Drivers;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
-use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Data\ReferralRewardContext;
+use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use Illuminate\Contracts\Container\Container;
 
 final class ReferralRewardFulfillmentRouter implements ReferralRewardFulfillment

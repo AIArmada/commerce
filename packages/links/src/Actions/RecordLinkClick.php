@@ -12,9 +12,9 @@ use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use AIArmada\Links\Support\LinkAttributes;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
-use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class RecordLinkClick

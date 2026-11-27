@@ -7,6 +7,7 @@ namespace AIArmada\Referrals\Drivers;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralRewardContext;
+use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
@@ -122,7 +123,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $spec = $reward->spec['voucher'] ?? [];
         $expectedValue = $reward->amountMinor ?? ($spec['value'] ?? null);
         $type = $voucher->getAttribute('type');
-        $type = $type instanceof \BackedEnum ? $type->value : $type;
+        $type = $type instanceof BackedEnum ? $type->value : $type;
 
         return is_int($expectedValue)
             && (int) $voucher->getAttribute('value') === $expectedValue

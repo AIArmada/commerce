@@ -6,8 +6,8 @@ namespace AIArmada\FilamentLinks\Resources\LinkResource\Tables;
 
 use AIArmada\FilamentLinks\Resources\LinkResource;
 use AIArmada\FilamentLinks\Resources\LinkResource\Schemas\LinkForm;
-use AIArmada\Links\Actions\DeleteLink;
 use AIArmada\Links\Actions\DeactivateLink;
+use AIArmada\Links\Actions\DeleteLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Models\Link;
