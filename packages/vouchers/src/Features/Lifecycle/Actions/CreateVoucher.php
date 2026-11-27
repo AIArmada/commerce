@@ -14,7 +14,6 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
 use AIArmada\Vouchers\Support\VoucherInputValidator;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -47,7 +46,7 @@ final class CreateVoucher implements VoucherCreator
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return DB::transaction(function () use ($data): VoucherModel {
+                return (new VoucherModel)->getConnection()->transaction(function () use ($data): VoucherModel {
                     $code = $data['code'] ?? $this->generateCode();
                     $normalizedCode = $this->normalizeCode($code);
 
@@ -84,24 +83,12 @@ final class CreateVoucher implements VoucherCreator
 
                     $createData = VoucherAffiliateOwnershipGuard::sanitize($createData);
 
-                    // Handle owner assignment
-                    if (
-                        config('vouchers.owner.enabled', false)
-                        && config('vouchers.owner.auto_assign_on_create', true)
-                    ) {
+                    if (config('vouchers.owner.enabled', false)) {
                         $owner = OwnerContext::resolve();
+                        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
-                        if ($owner !== null) {
-                            // Defense-in-depth: never trust inbound owner columns when a
-                            // concrete owner context is resolved for this request.
-                            $createData['owner_type'] = $owner->getMorphClass();
-                            $createData['owner_id'] = $owner->getKey();
-                        } elseif (isset($data['owner_type'], $data['owner_id'])) {
-                            // Explicit system-level writes may pass owner columns when no
-                            // owner context is currently resolved.
-                            $createData['owner_type'] = $data['owner_type'];
-                            $createData['owner_id'] = $data['owner_id'];
-                        }
+                        $createData['owner_type'] = $owner?->getMorphClass();
+                        $createData['owner_id'] = $owner?->getKey();
                     } elseif (isset($data['owner_type'], $data['owner_id'])) {
                         $createData['owner_type'] = $data['owner_type'];
                         $createData['owner_id'] = $data['owner_id'];

@@ -107,7 +107,11 @@ class VoucherValidator
         }
 
         // Check per-user usage limit
-        if (config('vouchers.validation.check_user_limit', true) && $voucher->usage_limit_per_user) {
+        if (config('vouchers.validation.check_user_limit', true) && $voucher->usage_limit_per_user !== null) {
+            if ($voucher->usage_limit_per_user === 0) {
+                return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
+            }
+
             $user = $this->getUser();
             if ($user) {
                 $usageCount = VoucherUsage::where('voucher_id', $voucher->id)

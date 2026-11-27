@@ -21,7 +21,6 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -360,7 +359,7 @@ describe('RepairRegression renewal idempotency', function (): void {
 describe('RepairRegression security', function (): void {
     it('rejects expired coupons at subscription creation', function (): void {
         $this->app->instance(VoucherService::class, new RepairFakeVoucherService([
-            'DEAD' => regressionVoucher('DEAD', Paused::class, ['duration' => 'once']),
+            'DEAD' => regressionVoucher('DEAD', 'paused', ['duration' => 'once']),
         ]));
 
         $user = $this->createUser(['chip_id' => 'cli_coupon']);

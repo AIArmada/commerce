@@ -43,7 +43,7 @@ it('issues one-time vouchers linked to the source promotion', function (): void 
         return $promotion;
     });
 
-    $issued = IssueVouchersFromPromotion::run($promotion, count: 2);
+    $issued = OwnerContext::withOwner($owner, fn () => IssueVouchersFromPromotion::run($promotion, count: 2));
 
     expect($issued)->toHaveCount(2)
         ->and($issued->first())->toBeInstanceOf(VoucherData::class);

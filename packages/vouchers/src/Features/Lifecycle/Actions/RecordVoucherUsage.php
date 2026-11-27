@@ -20,7 +20,6 @@ use AIArmada\Vouchers\States\Expired;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -47,7 +46,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
         ?string $notes = null,
         ?VoucherModel $voucherModel = null
     ): VoucherUsage {
-        return DB::transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
+        return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
             /** @var VoucherModel|null $lockedVoucher */
             $lockedVoucher = $this->voucherQuery()
                 ->where('code', $this->normalizeCode($code))
@@ -95,6 +94,14 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 throw VoucherExpiredException::withCode($lockedVoucher->code);
             }
 
+            if (! $lockedVoucher->hasStarted()) {
+                throw InvalidVoucherException::notStarted($lockedVoucher->code);
+            }
+
+            if (! $lockedVoucher->status->canBeUsed()) {
+                throw InvalidVoucherException::notActive($lockedVoucher->code);
+            }
+
             $this->assertCurrencyMatches($lockedVoucher, $discountAmount);
 
             if ((int) $discountAmount->getAmount() < 0) {
@@ -109,6 +116,10 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                     throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
                 }
             }
+            if ($lockedVoucher->usage_limit_per_user === 0) {
+                throw VoucherUsageLimitException::userLimit($lockedVoucher->code);
+            }
+
             if ($redeemedBy !== null && $lockedVoucher->usage_limit_per_user !== null) {
                 $currentUserUses = VoucherUsage::where('voucher_id', $lockedVoucher->id)
                     ->where('redeemed_by_type', $redeemedBy->getMorphClass())

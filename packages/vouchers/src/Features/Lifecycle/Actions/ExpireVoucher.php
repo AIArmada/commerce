@@ -12,7 +12,6 @@ use AIArmada\Vouchers\Events\VoucherExpired;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\States\Expired;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class ExpireVoucher
@@ -22,7 +21,7 @@ final class ExpireVoucher
 
     public function handle(string $code): void
     {
-        DB::transaction(function () use ($code): void {
+        (new Voucher)->getConnection()->transaction(function () use ($code): void {
             $voucher = $this->voucherQuery()
                 ->where('code', $this->normalizeCode($code))
                 ->lockForUpdate()

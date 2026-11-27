@@ -320,7 +320,7 @@ Cart::validateAppliedVouchers(): array<string>
 ### VoucherData
 
 ```php
-class VoucherData
+final readonly class VoucherData
 {
     public string $id;
     public string $code;
@@ -339,9 +339,9 @@ class VoucherData
     public bool $allowsManualRedemption;
     public int|string|null $ownerId;
     public ?string $ownerType;
-    public ?DateTimeInterface $startsAt;
-    public ?DateTimeInterface $expiresAt;
-    public States\VoucherStatus $status;
+    public ?DateTimeImmutable $startsAt;
+    public ?DateTimeImmutable $expiresAt;
+    public VoucherStatus $status;
     public ?array $targetDefinition;
     public ?array $metadata;
 }
@@ -355,7 +355,7 @@ class VoucherData
 ### VoucherValidationResult
 
 ```php
-class VoucherValidationResult
+final readonly class VoucherValidationResult
 {
     public bool $isValid;
     public ?string $reason;
@@ -389,11 +389,9 @@ enum VoucherType: string
 
 Two distinct types share this name:
 
-- `AIArmada\Vouchers\Data\VoucherStatus` — the plain backed enum used for labels, filters,
-  and option lists.
+- `AIArmada\Vouchers\Data\VoucherStatus` — the backed enum used for immutable voucher snapshots, labels, filters and option lists.
 - `AIArmada\Vouchers\States\VoucherStatus` — the abstract Spatie model-state that the `status`
-  cast on `Voucher` and `VoucherData::$status` actually resolves to. This is the type you
-  pass to `create()` and receive from reads.
+  cast on the Eloquent `Voucher` resolves to. Model writes use this state; snapshot reads return the backed enum.
 
 ```php
 // AIArmada\Vouchers\Data\VoucherStatus

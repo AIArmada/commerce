@@ -57,6 +57,10 @@ final class UpdateVoucher implements VoucherUpdater
                 $data['currency'] = mb_strtoupper($data['currency']);
             }
 
+            if ($status !== null && ! $status instanceof VoucherStatus && ! is_string($status)) {
+                throw ValidationException::withMessages(['status' => 'Invalid voucher status.']);
+            }
+
             $locked->update($data);
 
             if ($status instanceof VoucherStatus || is_string($status)) {

@@ -283,3 +283,13 @@ describe('voucher session reservations', function (): void {
         Cache::flush();
     });
 });
+
+it('rejects new usage for paused and future vouchers', function (): void {
+    $paused = guardVoucher(['status' => 'paused']);
+    $future = guardVoucher(['starts_at' => now()->addDay()]);
+
+    foreach ([$paused, $future] as $voucher) {
+        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100)))
+            ->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+    }
+});

@@ -142,8 +142,8 @@ final readonly class VoucherData implements \JsonSerializable
             maxDiscount: isset($data['max_discount']) || isset($data['maxDiscount'])
                 ? (int) ($data['max_discount'] ?? $data['maxDiscount'])
                 : null,
-            usageLimit: $data['usage_limit'] ?? $data['usageLimit'] ?? null,
-            usageLimitPerUser: $data['usage_limit_per_user'] ?? $data['usageLimitPerUser'] ?? null,
+            usageLimit: isset($data['usage_limit']) || isset($data['usageLimit']) ? (int) ($data['usage_limit'] ?? $data['usageLimit']) : null,
+            usageLimitPerUser: isset($data['usage_limit_per_user']) || isset($data['usageLimitPerUser']) ? (int) ($data['usage_limit_per_user'] ?? $data['usageLimitPerUser']) : null,
             allowsManualRedemption: (bool) ($data['allows_manual_redemption'] ?? $data['allowsManualRedemption'] ?? false),
             ownerId: $data['owner_id'] ?? $data['ownerId'] ?? null,
             ownerType: $data['owner_type'] ?? $data['ownerType'] ?? null,
@@ -156,7 +156,7 @@ final readonly class VoucherData implements \JsonSerializable
             affiliateCommissionType: self::normalizeAffiliateCommissionType(
                 $data['affiliate_commission_type'] ?? $data['affiliateCommissionType'] ?? null
             ),
-            affiliateCommissionValue: $data['affiliate_commission_value'] ?? $data['affiliateCommissionValue'] ?? null,
+            affiliateCommissionValue: isset($data['affiliate_commission_value']) || isset($data['affiliateCommissionValue']) ? (int) ($data['affiliate_commission_value'] ?? $data['affiliateCommissionValue']) : null,
             affiliateId: $data['affiliate_id'] ?? $data['affiliateId'] ?? null,
             affiliateProgramId: $data['affiliate_program_id'] ?? $data['affiliateProgramId'] ?? null,
             affiliateUplineLevels: $data['affiliate_upline_levels'] ?? $data['affiliateUplineLevels'] ?? null,
@@ -288,8 +288,8 @@ final readonly class VoucherData implements \JsonSerializable
 
         $value = $data[$field];
 
-        if (is_float($value)) {
-            throw new \InvalidArgumentException("VoucherData '{$field}' must be an integer ({$description}). Got float: {$value}.");
+        if (! is_int($value) && (! is_string($value) || filter_var($value, FILTER_VALIDATE_INT) === false)) {
+            throw new \InvalidArgumentException("VoucherData '{$field}' must be an integer ({$description}).");
         }
     }
 
@@ -321,7 +321,7 @@ final readonly class VoucherData implements \JsonSerializable
     private static function normalizeAffiliateCommissionType(mixed $value): ?string
     {
         if ($value instanceof BackedEnum) {
-            return $value->value;
+            return (string) $value->value;
         }
 
         if (is_string($value) && $value !== '') {

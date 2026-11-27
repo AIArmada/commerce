@@ -102,11 +102,9 @@ final readonly class VoucherInputValidator
         }
 
         if (is_string($value) && preg_match('/^-?\d+$/', mb_trim($value))) {
-            return (int) $value;
-        }
+            $parsed = filter_var($value, FILTER_VALIDATE_INT);
 
-        if (is_float($value) && (float) (int) $value === $value) {
-            return (int) $value;
+            return $parsed === false ? null : $parsed;
         }
 
         return null;

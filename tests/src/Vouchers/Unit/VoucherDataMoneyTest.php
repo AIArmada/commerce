@@ -41,3 +41,21 @@ it('rejects float aliases at the DTO boundary as well', function (): void {
         'minCartValue' => 100.5,
     ]))->toThrow(\InvalidArgumentException::class);
 });
+
+it('round trips a voucher snapshot without leaking model state or mutable dates', function (): void {
+    $date = new \DateTime('2026-12-01T10:00:00+08:00');
+    $snapshot = VoucherData::fromArray([
+        'code' => 'SNAPSHOT',
+        'type' => 'fixed',
+        'value' => 100,
+        'status' => 'paused',
+        'starts_at' => $date,
+        'usage_limit' => 0,
+    ]);
+
+    $date->modify('+1 day');
+    expect($snapshot->startsAt?->format('Y-m-d'))->toBe('2026-12-01')
+        ->and($snapshot->status)->toBe(\AIArmada\Vouchers\Data\VoucherStatus::Paused)
+        ->and(VoucherData::fromArray($snapshot->toArray())->toArray())->toBe($snapshot->toArray())
+        ->and((new ReflectionClass(VoucherData::class))->isReadOnly())->toBeTrue();
+});

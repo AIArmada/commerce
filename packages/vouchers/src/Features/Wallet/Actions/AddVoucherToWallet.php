@@ -12,7 +12,6 @@ use AIArmada\Vouchers\Runtime\WalletClaim;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -30,12 +29,16 @@ final class AddVoucherToWallet implements WalletClaim
      */
     public function handle(string $code, Model $holder, ?array $metadata = null): VoucherWallet
     {
-        return DB::transaction(function () use ($code, $holder, $metadata): VoucherWallet {
-            $voucher = $this->findVoucher($code);
+        return (new VoucherModel)->getConnection()->transaction(function () use ($code, $holder, $metadata): VoucherWallet {
             $voucher = $this->voucherQuery()
-                ->whereKey($voucher->id)
+                ->where('code', $this->normalizeCode($code))
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $voucher instanceof VoucherModel) {
+                throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
+            }
+
             $existing = VoucherWallet::where('voucher_id', $voucher->id)
                 ->where('holder_type', $holder->getMorphClass())
                 ->where('holder_id', $holder->getKey())
@@ -74,21 +77,6 @@ final class AddVoucherToWallet implements WalletClaim
                 return $raced;
             }
         });
-    }
-
-    private function findVoucher(string $code): VoucherModel
-    {
-        $normalizedCode = $this->normalizeCode($code);
-
-        $voucher = $this->voucherQuery()
-            ->where('code', $normalizedCode)
-            ->first();
-
-        if (! $voucher) {
-            throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
-        }
-
-        return $voucher;
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool

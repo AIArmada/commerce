@@ -13,7 +13,7 @@ The package exposes domain actions built with `lorisleiva/laravel-actions`. Each
 Set an `assignee` marker in voucher metadata to restrict validation and redemption to one model. The `type` must be the model's morph class and `id` its key:
 
 ```php
-use AIArmada\Vouchers\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Data\VoucherType;
 
 // Assume $customer is the intended recipient model.
@@ -37,7 +37,7 @@ Validation uses the authenticated model. `RecordVoucherUsage` also requires that
 ### CreateVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = CreateVoucher::run([
@@ -54,7 +54,7 @@ $voucher = CreateVoucher::run([
 ### UpdateVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\UpdateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\UpdateVoucher;
 
 $voucher = UpdateVoucher::run('SUMMER2024', [
     'name' => 'Updated Summer Sale',
@@ -66,7 +66,7 @@ $voucher = UpdateVoucher::run('SUMMER2024', [
 ### ExpireVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\ExpireVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 
 ExpireVoucher::run('SUMMER2024');
 ```
@@ -118,7 +118,7 @@ if ($result->isValid) {
 }
 ```
 
-`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidArgumentException::floatNotAllowed` — pass integer minor units only.
+`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidArgumentException` — pass integer minor units only.
 
 Validation fails closed on anything it cannot evaluate:
 
