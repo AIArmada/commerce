@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Actions\AddVoucherToWallet;
+use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Enums\VoucherType;

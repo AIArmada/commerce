@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Runtime\WalletClaim;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -17,7 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Add a voucher to the owner's wallet.
  */
-final class AddVoucherToWallet
+final class AddVoucherToWallet implements WalletClaim
 {
     use AsAction;
     use QueriesVouchers;
@@ -31,17 +32,10 @@ final class AddVoucherToWallet
     {
         return DB::transaction(function () use ($code, $holder, $metadata): VoucherWallet {
             $voucher = $this->findVoucher($code);
-
-            // Serialize concurrent claims per voucher. The row lock also
-            // enforces the one-active-entry rule on drivers without partial
-            // unique index support (PostgreSQL and SQLite).
             $voucher = $this->voucherQuery()
                 ->whereKey($voucher->id)
                 ->lockForUpdate()
                 ->firstOrFail();
-
-            // An already-active entry is returned as-is; a redeemed entry
-            // does not block a fresh claim.
             $existing = VoucherWallet::where('voucher_id', $voucher->id)
                 ->where('holder_type', $holder->getMorphClass())
                 ->where('holder_id', $holder->getKey())

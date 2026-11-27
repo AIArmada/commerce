@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Runtime\WalletRemoval;
 use Illuminate\Database\Eloquent\Model;
 
-final readonly class RemoveVoucherFromWallet
+final readonly class RemoveVoucherFromWallet implements WalletRemoval
 {
     use QueriesVouchers;
 

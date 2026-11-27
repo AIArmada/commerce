@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Actions\AddVoucherToWallet;
+use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\RemoveVoucherFromWallet;
+use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
@@ -220,7 +220,7 @@ class VoucherService implements VoucherServiceInterface
      */
     public function addToWallet(string $code, Model $holder, ?array $metadata = null): VoucherWallet
     {
-        return AddVoucherToWallet::run($code, $holder, $metadata);
+        return app(WalletClaim::class)->handle($code, $holder, $metadata);
     }
 
     /**
@@ -228,7 +228,7 @@ class VoucherService implements VoucherServiceInterface
      */
     public function removeFromWallet(string $code, Model $holder): bool
     {
-        return app(RemoveVoucherFromWallet::class)->handle($code, $holder);
+        return app(WalletRemoval::class)->handle($code, $holder);
     }
 
     /**

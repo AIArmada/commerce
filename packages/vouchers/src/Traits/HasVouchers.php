@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Traits;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Actions\AddVoucherToWallet;
-use AIArmada\Vouchers\Actions\RemoveVoucherFromWallet;
+use AIArmada\Vouchers\Runtime\WalletClaim;
+use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -49,7 +49,7 @@ trait HasVouchers
      */
     public function addVoucherToWallet(string $voucherCode): VoucherWallet
     {
-        return AddVoucherToWallet::run($voucherCode, $this);
+        return app(WalletClaim::class)->handle($voucherCode, $this);
     }
 
     /**
@@ -57,7 +57,7 @@ trait HasVouchers
      */
     public function removeVoucherFromWallet(string $voucherCode): bool
     {
-        return app(RemoveVoucherFromWallet::class)->handle($voucherCode, $this);
+        return app(WalletRemoval::class)->handle($voucherCode, $this);
     }
 
     /**

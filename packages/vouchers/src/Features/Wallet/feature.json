@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Wallet",
+  "owns": {
+    "table:voucher_wallets": [
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\AddVoucherToWallet",
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\RemoveVoucherFromWallet"
+    ]
+  },
+  "extensions": {}
+}
