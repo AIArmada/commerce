@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Services;
 
-use AIArmada\Shipping\Actions\CancelShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
 use AIArmada\Shipping\Actions\CreateShipment;
-use AIArmada\Shipping\Actions\GenerateLabel;
-use AIArmada\Shipping\Actions\RecalculateShipmentWeight;
-use AIArmada\Shipping\Actions\ShipShipment;
-use AIArmada\Shipping\Actions\UpdateShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\RecalculateShipmentWeight;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Models\Shipment;

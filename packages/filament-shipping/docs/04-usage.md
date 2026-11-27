@@ -204,8 +204,8 @@ For programmatic shipping operations outside of table actions, use the domain Ac
 
 ```php
 use AIArmada\Shipping\Actions\CreateShipment;
-use AIArmada\Shipping\Actions\ShipShipment;
-use AIArmada\Shipping\Actions\GenerateLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Data\ShipmentData;
 
 // Inside a Filament action handler

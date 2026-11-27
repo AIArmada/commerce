@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "name": "Shipments",
+  "owns": {
+    "table:shipments": [
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\UpdateShipmentStatus",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecalculateShipmentWeight"
+    ],
+    "table:shipment_events": [
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\UpdateShipmentStatus"
+    ],
+    "table:shipment_labels": [
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\GenerateLabel"
+    ],
+    "table:shipment_operations": [
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ReconcileShipmentOperation"
+    ]
+  },
+  "extensions": {}
+}

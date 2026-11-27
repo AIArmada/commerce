@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\UpdateShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Models\Shipment;

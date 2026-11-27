@@ -9,9 +9,9 @@ and supports both `::run()` (static) and `->handle()` (injected).
 
 ```php
 use AIArmada\Shipping\Actions\CreateShipment;
-use AIArmada\Shipping\Actions\ShipShipment;
-use AIArmada\Shipping\Actions\CancelShipment;
-use AIArmada\Shipping\Actions\GenerateLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingEventData;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\CancelShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Actions;
 
-use AIArmada\Shipping\Actions\RecalculateShipmentWeight;
+use AIArmada\Shipping\Features\Shipments\Actions\RecalculateShipmentWeight;
 use AIArmada\Shipping\Models\Shipment;
 use Illuminate\Support\Facades\DB;
 

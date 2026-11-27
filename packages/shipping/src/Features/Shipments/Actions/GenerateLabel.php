@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Actions;
+namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentLabel;

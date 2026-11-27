@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\ShipShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Enums\DriverCapability;
