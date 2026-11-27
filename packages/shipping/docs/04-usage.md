@@ -488,7 +488,7 @@ use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 
 $returns = app(PackageReturns::class);
-$rma = $returns->request($shipment, $orderItem->id, 1, 'damaged');
+$rma = $returns->request($shipment->id, $orderItem->id, 1, 'damaged');
 app(ApproveReturn::class)->execute($rma->id);
 $rma->refresh();
 $rma = $returns->receive($rma, $inspectionByReturnItemId, $receivingLocationId);

@@ -159,10 +159,10 @@ it('requires the complete inspected unit and settles its net price and tax exact
     [$order, $item, $first, $second] = orderWithPackageUnits();
     $shipment = shipPackageUnit($order, $item, 1);
     $returns = app(PackageReturns::class);
-    $rma = $returns->request($shipment, $item->id, 1, 'defective');
+    $rma = $returns->request($shipment->id, $item->id, 1, 'defective');
 
-    expect($returns->request($shipment, $item->id, 1, 'defective')->id)->toBe($rma->id);
-    expect(fn () => $returns->request($shipment, $item->id, 2, 'defective'))->toThrow(DomainException::class);
+    expect($returns->request($shipment->id, $item->id, 1, 'defective')->id)->toBe($rma->id);
+    expect(fn () => $returns->request($shipment->id, $item->id, 2, 'defective'))->toThrow(DomainException::class);
     $refund = app(RegisterOrderRefund::class);
     $metadata = ['return_authorization_id' => $rma->id];
 
@@ -257,7 +257,7 @@ it('rejects a package return or refund when the current owner owns a different o
     [$shipment, $order, $item, $rma] = OwnerContext::withOwner($owner, function (): array {
         [$order, $item] = orderWithPackageUnits();
         $shipment = shipPackageUnit($order, $item, 1);
-        $rma = app(PackageReturns::class)->request($shipment, $item->id, 1, 'damaged');
+        $rma = app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged');
 
         return [$shipment, $order, $item, $rma];
     });
@@ -265,7 +265,7 @@ it('rejects a package return or refund when the current owner owns a different o
     OwnerContext::withOwner($other, function () use ($shipment, $order, $item, $rma): void {
         expect(ReturnAuthorization::query()->find($rma->id))->toBeNull()
             ->and(Shipment::query()->find($shipment->id))->toBeNull();
-        expect(fn () => app(PackageReturns::class)->request($shipment, $item->id, 1, 'damaged'))
+        expect(fn () => app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged'))
             ->toThrow(ModelNotFoundException::class);
         expect(fn () => app(RegisterOrderRefund::class)->execute($order, 1000, 'foreign-refund', 'Return', [
             'return_authorization_id' => $rma->id,
@@ -279,7 +279,7 @@ it('retries only the unsettled part when a package refund spans multiple payment
     $order->payments()->create(['gateway' => 'manual', 'status' => PaymentStatus::Completed, 'amount' => 1898, 'currency' => 'MYR']);
     $shipment = shipPackageUnit($order, $item, 1);
     $returns = app(PackageReturns::class);
-    $rma = $returns->request($shipment, $item->id, 1, 'damaged');
+    $rma = $returns->request($shipment->id, $item->id, 1, 'damaged');
     app(ApproveReturn::class)->execute($rma->id);
     $rma->refresh();
     $inspection = $rma->items()->get()->mapWithKeys(fn ($line): array => [$line->id => [

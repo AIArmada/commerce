@@ -24,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(\AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment::class, \AIArmada\Shipping\Features\Shipments\Queries\FindReturnShipment::class);
         $app->bind(ShipmentStatistics::class, ReadShipmentStatistics::class);
         $app->bind(ShipmentOperations::class, OperateStoredShipment::class);
         $app->bind(ManageManualShipment::class, WriteManualShipment::class);

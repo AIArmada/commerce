@@ -7,7 +7,6 @@ namespace AIArmada\Shipping\Features\Returns\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 
 final readonly class ManagePackageReturn implements PackageReturnWorkflow
 {
@@ -15,12 +14,12 @@ final readonly class ManagePackageReturn implements PackageReturnWorkflow
 
     public function shippedUnits(string $shipmentId): array
     {
-        return $this->returns->shippedUnits($this->shipment($shipmentId));
+        return $this->returns->shippedUnits($shipmentId);
     }
 
     public function request(string $shipmentId, string $orderItemId, int $ordinal, string $reason): string
     {
-        return (string) $this->returns->request($this->shipment($shipmentId), $orderItemId, $ordinal, $reason)->getKey();
+        return (string) $this->returns->request($shipmentId, $orderItemId, $ordinal, $reason)->getKey();
     }
 
     public function receive(string $authorizationId, array $inspection, ?string $locationId = null): string
@@ -31,13 +30,6 @@ final readonly class ManagePackageReturn implements PackageReturnWorkflow
     public function complete(string $authorizationId, ?string $transactionId = null): string
     {
         return (string) $this->returns->complete($this->authorization($authorizationId), $transactionId)->getKey();
-    }
-
-    private function shipment(string $id): Shipment
-    {
-        return (bool) config('shipping.features.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(Shipment::class, $id)
-            : Shipment::query()->findOrFail($id);
     }
 
     private function authorization(string $id): ReturnAuthorization

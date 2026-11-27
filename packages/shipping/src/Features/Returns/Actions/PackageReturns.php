@@ -16,10 +16,9 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
-use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
-use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
+use AIArmada\Shipping\Features\Shipments\Api\ReturnShipment;
+use AIArmada\Shipping\Features\Shipments\Api\ReturnShipmentLine;
 use AIArmada\Shipping\Features\Returns\States\RmaCancelled;
 use AIArmada\Shipping\Features\Returns\States\RmaCompleted;
 use AIArmada\Shipping\Features\Returns\States\RmaDraft;
@@ -37,26 +36,29 @@ final class PackageReturns implements PackageReturnVerifier
 {
     use AssertsOrderOwnerBoundary;
 
+    public function __construct(private readonly ReadReturnShipment $shipments) {}
+
     /** @return array<string, string> */
-    public function shippedUnits(Shipment $shipment): array
+    public function shippedUnits(string $shipmentId): array
     {
+        $shipment = $this->shipments->find($shipmentId);
         $order = $this->orderFor($shipment);
         $items = $order->items()->get()->keyBy('id');
 
-        return $shipment->items()->whereNotNull('package_unit_ordinal')->get()
-            ->mapWithKeys(fn (ShipmentItem $line): array => [
-                $line->order_item_id . ':' . $line->package_unit_ordinal => $items->get($line->order_item_id)?->name . ' / unit ' . $line->package_unit_ordinal,
+        return collect($this->shipments->packageLines($shipmentId))
+            ->mapWithKeys(fn (ReturnShipmentLine $line): array => [
+                $line->orderItemId . ':' . $line->ordinal => $items->get($line->orderItemId)?->name . ' / unit ' . $line->ordinal,
             ])->all();
     }
 
-    public function request(Shipment $shipment, string $orderItemId, int $ordinal, string $reason): ReturnAuthorization
+    public function request(string $shipmentId, string $orderItemId, int $ordinal, string $reason): ReturnAuthorization
     {
-        return DB::transaction(function () use ($shipment, $orderItemId, $ordinal, $reason): ReturnAuthorization {
-            $shipment = Shipment::query()->findOrFail($shipment->getKey());
-            $order = $this->orderFor($shipment)->newQuery()->whereKey($shipment->shippable_id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($shipmentId, $orderItemId, $ordinal, $reason): ReturnAuthorization {
+            $shipment = $this->shipments->find($shipmentId);
+            $order = $this->orderFor($shipment)->newQuery()->whereKey($shipment->orderId)->lockForUpdate()->firstOrFail();
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
             $unit = new PackageUnit($order->items()->findOrFail($orderItemId), $ordinal);
-            $shipmentItems = $this->shipmentItems($shipment, $unit);
+            $shipmentItems = $this->shipmentItems($shipment->id, $unit);
 
             $existing = $this->activeReturns($order, $unit)->first();
             if ($existing instanceof ReturnAuthorization) {
@@ -78,7 +80,7 @@ final class PackageReturns implements PackageReturnVerifier
 
             foreach ($shipmentItems as $item) {
                 $rma->items()->create([
-                    'original_item_type' => $item->getMorphClass(),
+                    'original_item_type' => $item->morphType,
                     'original_item_id' => $item->id,
                     'name' => $item->name,
                     'sku' => $item->sku,
@@ -140,7 +142,7 @@ final class PackageReturns implements PackageReturnVerifier
 
             $this->assertContents($rma, $unit, approved: true, inspected: true);
 
-            foreach ($this->shipmentItems($rma->originalShipment()->firstOrFail(), $unit) as $index => $shippedItem) {
+            foreach ($this->shipmentItems((string) $rma->original_shipment_id, $unit) as $index => $shippedItem) {
                 $item = $items->firstWhere('original_item_id', $shippedItem->id);
                 $component = $unit->components[$index];
                 $restockQuantity = $item?->metadata['restock_quantity'] ?? 0;
@@ -300,7 +302,7 @@ final class PackageReturns implements PackageReturnVerifier
     /** @return array{Order, PackageUnit} */
     private function resolve(ReturnAuthorization $rma): array
     {
-        $shipment = $rma->originalShipment()->firstOrFail();
+        $shipment = $this->shipments->find((string) $rma->original_shipment_id);
         $order = $this->orderFor($shipment);
         if ($rma->owner_id !== $order->owner_id || $rma->owner_type !== $order->owner_type
             || $rma->order_item_id === null || $rma->package_unit_ordinal === null || $rma->type !== 'refund') {
@@ -310,33 +312,30 @@ final class PackageReturns implements PackageReturnVerifier
         return [$order, new PackageUnit($order->items()->findOrFail($rma->order_item_id), $rma->package_unit_ordinal)];
     }
 
-    private function orderFor(Shipment $shipment): Order
+    private function orderFor(ReturnShipment $shipment): Order
     {
-        $order = $shipment->shippable;
-        if (! $order instanceof Order || $shipment->owner_id !== $order->owner_id || $shipment->owner_type !== $order->owner_type) {
+        if ($shipment->orderId === null || $shipment->orderType !== (new Order)->getMorphClass()) {
+            throw new DomainException('The original shipment must belong to the order.');
+        }
+
+        $order = Order::query()->findOrFail($shipment->orderId);
+
+        if ($shipment->ownerId !== $order->owner_id || $shipment->ownerType !== $order->owner_type) {
             throw new DomainException('The original shipment must belong to the order.');
         }
 
         return $order;
     }
 
-    /** @return Collection<int, ShipmentItem> */
-    private function shipmentItems(Shipment $shipment, PackageUnit $unit): Collection
+    /** @return Collection<int, ReturnShipmentLine> */
+    private function shipmentItems(string $shipmentId, PackageUnit $unit): Collection
     {
-        if ($shipment->shipped_at === null || $shipment->status instanceof Cancelled) {
-            throw new DomainException('The complete package unit must belong to the original shipment.');
-        }
-
-        return OrderShipmentUnits::assertUnit(
-            $unit,
-            $shipment->items()->where('order_item_id', $unit->item->id)
-                ->where('package_unit_ordinal', $unit->ordinal)->get(),
-        );
+        return collect($this->shipments->unitLines($shipmentId, $unit->item->id, $unit->ordinal));
     }
 
     private function assertContents(ReturnAuthorization $rma, PackageUnit $unit, bool $approved = false, bool $inspected = false): void
     {
-        $shipmentItems = $this->shipmentItems($rma->originalShipment()->firstOrFail(), $unit)->keyBy('id');
+        $shipmentItems = $this->shipmentItems((string) $rma->original_shipment_id, $unit)->keyBy('id');
         $items = $rma->items()->get();
         if ($items->count() !== $shipmentItems->count() || $items->pluck('original_item_id')->unique()->count() !== $items->count()) {
             throw new DomainException('A return must cover one complete package unit.');
@@ -344,7 +343,7 @@ final class PackageReturns implements PackageReturnVerifier
 
         foreach ($items as $item) {
             $shipped = $shipmentItems->get($item->original_item_id);
-            if ($shipped === null || $item->original_item_type !== $shipped->getMorphClass()
+            if ($shipped === null || $item->original_item_type !== $shipped->morphType
                 || $item->quantity_requested !== $shipped->quantity
                 || ($approved && $item->quantity_approved !== $shipped->quantity)
                 || ($inspected && ($item->quantity_received !== $shipped->quantity
