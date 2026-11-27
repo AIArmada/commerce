@@ -4,7 +4,8 @@
   "owns": {
     "table:persons": [
       "AIArmada\\Persons\\Features\\Identity\\Actions\\CreatePersonAction",
-      "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction"
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\UpdatePersonAction"
     ]
   },
   "extensions": {}
