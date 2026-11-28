@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Support;
+namespace AIArmada\Products\Persistence;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 /**
- * Fresh-install equivalent of the legacy identity cutover: owner/global
- * partial unique indexes without the derived scope columns.
+ * Owner and global identity uniqueness for base catalog migrations.
  */
 final class ProductIdentityIndexes
 {
