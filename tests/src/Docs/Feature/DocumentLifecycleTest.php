@@ -32,3 +32,30 @@ it('deletes a document through the lifecycle contract', function (): void {
 
     expect(Doc::query()->find($id))->toBeNull();
 });
+
+it('rolls back a bulk deletion when a paid document is included', function (): void {
+    $draft = Doc::factory()->create(['status' => Draft::class]);
+    $paid = Doc::factory()->create(['status' => Paid::class]);
+
+    expect(fn () => app(DocumentLifecycle::class)->delete([(string) $draft->getKey(), (string) $paid->getKey()]))
+        ->toThrow(LogicException::class);
+
+    expect(Doc::query()->find($draft->getKey()))->not->toBeNull()
+        ->and(Doc::query()->find($paid->getKey()))->not->toBeNull();
+});
+
+it('does not remove the stored PDF when document deletion rolls back', function (): void {
+    $disk = app(\AIArmada\Docs\Contracts\DocServiceInterface::class)->resolveStorageDiskForDocType('invoice');
+    \Illuminate\Support\Facades\Storage::fake($disk);
+    $doc = Doc::factory()->invoice()->create(['status' => Draft::class]);
+    $doc->forceFill(['pdf_path' => 'rollback-document.pdf'])->save();
+    \Illuminate\Support\Facades\Storage::disk($disk)->put('rollback-document.pdf', 'document');
+
+    expect(fn () => $doc->getConnection()->transaction(function () use ($doc): void {
+        app(DocumentLifecycle::class)->delete([(string) $doc->getKey()]);
+        throw new RuntimeException('Rollback');
+    }))->toThrow(RuntimeException::class, 'Rollback');
+
+    expect(Doc::query()->find($doc->getKey()))->not->toBeNull();
+    \Illuminate\Support\Facades\Storage::disk($disk)->assertExists('rollback-document.pdf');
+});

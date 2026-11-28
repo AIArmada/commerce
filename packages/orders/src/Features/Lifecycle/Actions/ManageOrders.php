@@ -9,6 +9,7 @@ use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
+use AIArmada\Orders\States\PendingPayment;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -69,7 +70,14 @@ final readonly class ManageOrders implements OrderAdministration
         DB::transaction(function () use ($orderIds): void {
             foreach ($orderIds as $orderId) {
                 $order = $this->lockOrder($orderId);
-                $order->delete();
+                if ((! $order->status->equals(Created::class) && ! $order->status->equals(PendingPayment::class))
+                    || $order->payments()->exists() || $order->refunds()->exists()) {
+                    throw new LogicException('Only draft or awaiting-payment orders without payment or refund records can be deleted.');
+                }
+
+                if ($order->delete() !== true) {
+                    throw new LogicException('Order deletion was rejected.');
+                }
             }
         });
     }

@@ -281,6 +281,18 @@ final class Doc extends Model implements Auditable
         }
     }
 
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(function (): ?bool {
+            if ($this->exists) {
+                $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+                $this->refresh();
+            }
+
+            return parent::delete();
+        });
+    }
+
     protected static function booted(): void
     {
         self::deleting(function (Doc $doc): void {
@@ -291,7 +303,7 @@ final class Doc extends Model implements Auditable
             $doc->approvals()->delete();
             $doc->shareLinks()->delete();
             $doc->eInvoiceSubmission?->delete();
-            $doc->deleteStoredPdf();
+            $doc->getConnection()->afterCommit(fn () => $doc->deleteStoredPdf());
         });
     }
 

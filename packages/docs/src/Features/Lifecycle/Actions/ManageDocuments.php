@@ -13,6 +13,7 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 final readonly class ManageDocuments implements DocumentLifecycle
 {
@@ -36,14 +37,23 @@ final readonly class ManageDocuments implements DocumentLifecycle
 
     public function delete(array $docIds): void
     {
-        // Each deletion has its own transaction because storage cleanup is
-        // external to the database and cannot be rolled back with other rows.
-        foreach (array_unique($docIds) as $docId) {
-            DB::transaction(function () use ($docId): void {
+        $docIds = array_values(array_unique($docIds));
+        sort($docIds, SORT_STRING);
+
+        DB::transaction(function () use ($docIds): void {
+            foreach ($docIds as $docId) {
                 $doc = $this->lockDocument($docId);
-                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn () => $doc->delete());
-            });
-        }
+                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc): void {
+                    if ($doc->isPaid() || $doc->paid_at !== null || $doc->payments()->exists() || $doc->eInvoiceSubmission()->exists()) {
+                        throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
+                    }
+
+                    if ($doc->delete() !== true) {
+                        throw new LogicException('Document deletion was rejected.');
+                    }
+                });
+            }
+        });
     }
 
     public function markSent(array $docIds): array

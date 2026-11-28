@@ -46,3 +46,16 @@ it('protects partially paid orders from administrative deletion', function (): v
     expect($order->refresh()->getTotalPaid())->toBe(5000)
         ->and($order->payments()->count())->toBe(1);
 });
+
+it('rejects deletion of a free order that has entered processing', function (): void {
+    $order = Order::query()->create([
+        'status' => \AIArmada\Orders\States\Processing::class,
+        'currency' => 'MYR',
+        'grand_total' => 0,
+    ]);
+
+    expect(fn () => app(OrderAdministration::class)->deleteDrafts([(string) $order->getKey()]))
+        ->toThrow(LogicException::class);
+
+    expect(Order::query()->find($order->getKey()))->not->toBeNull();
+});
