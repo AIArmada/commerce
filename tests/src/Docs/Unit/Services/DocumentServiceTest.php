@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\DocTotals;
-use AIArmada\Docs\Services\SequenceManager;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;

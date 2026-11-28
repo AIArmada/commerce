@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Docs\Actions\DeliverDocEmail;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocPreviewController;
@@ -11,18 +11,18 @@ use AIArmada\Docs\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Models\DocSequence;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocEmailService;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\DueDocReminders;
-use AIArmada\Docs\Services\SequenceManager;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;

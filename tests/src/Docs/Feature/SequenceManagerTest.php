@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocType;
-use AIArmada\Docs\Models\DocSequence;
-use AIArmada\Docs\Models\SequenceNumber;
-use AIArmada\Docs\Services\SequenceManager;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Models\SequenceNumber;
 
 beforeEach(function (): void {
-    DocSequence::query()->delete();
     SequenceNumber::query()->delete();
+    DocSequence::query()->delete();
 });
 
 test('it creates default sequence when none exists', function (): void {
@@ -156,4 +156,9 @@ test('sequence respects padding configuration', function (): void {
     $numericPart = array_pop($numericParts);
 
     expect($numericPart)->toBe('000001');
+});
+
+test('rejects nonpositive reserved numbers', function (): void {
+    expect(fn () => app(SequenceManager::class)->reserve('invoice', 0))
+        ->toThrow(InvalidArgumentException::class);
 });

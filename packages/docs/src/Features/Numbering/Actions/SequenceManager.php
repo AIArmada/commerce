@@ -2,25 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Numbering\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
-use AIArmada\Docs\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
  * Manages document sequence number generation with atomic operations.
  */
-final class SequenceManager
+final readonly class SequenceManager implements DocumentSequence
 {
+    public function nextNumber(string $docType): string
+    {
+        return $this->generate($docType, config('docs.owner.enabled', false) ? OwnerContext::resolve() : null);
+    }
+
     /**
      * Generate the next document number for a given type.
      *
@@ -42,7 +49,7 @@ final class SequenceManager
                         $sequence = $this->createDefaultSequenceResilient($type, $owner);
                     }
 
-                    return $sequence->generateNumber();
+                    return $this->advance($sequence);
                 });
             });
         });
@@ -56,7 +63,7 @@ final class SequenceManager
         $query = DocSequence::query()
             ->where('doc_type', $docType)
             ->where('is_active', true)
-            ->forOwner($owner, (bool) config('docs.owner.include_global', false));
+            ->forOwner($owner, false);
 
         if ($forUpdate) {
             $query->lockForUpdate();
@@ -128,6 +135,10 @@ final class SequenceManager
      */
     public function reserve(DocType | string $docType, int $number, ?Model $owner = null): bool
     {
+        if ($number < 1) {
+            throw new InvalidArgumentException('Reserved sequence number must be positive.');
+        }
+
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
         return OwnerContext::withOwner($owner, function () use ($type, $number, $owner): bool {
@@ -147,25 +158,10 @@ final class SequenceManager
                         ->first();
 
                     if (! $sequenceNumber) {
-                        try {
-                            $sequence->numbers()->create([
-                                'period_key' => $periodKey,
-                                'last_number' => $number,
-                            ]);
-                        } catch (QueryException $exception) {
-                            if (! self::isUniqueViolation($exception)) {
-                                throw $exception;
-                            }
-
-                            $sequenceNumber = $sequence->numbers()
-                                ->where('period_key', $periodKey)
-                                ->lockForUpdate()
-                                ->first();
-
-                            if ($sequenceNumber && $number > $sequenceNumber->last_number) {
-                                $sequenceNumber->update(['last_number' => $number]);
-                            }
-                        }
+                        $sequence->numbers()->create([
+                            'period_key' => $periodKey,
+                            'last_number' => $number,
+                        ]);
 
                         return true;
                     }
@@ -184,11 +180,8 @@ final class SequenceManager
     private function createDefaultSequenceResilient(string $docType, ?Model $owner): DocSequence
     {
         try {
-            return $this->createDefaultSequence($docType, $owner);
-        } catch (QueryException $exception) {
-            if (! self::isUniqueViolation($exception)) {
-                throw $exception;
-            }
+            return DB::transaction(fn (): DocSequence => $this->createDefaultSequence($docType, $owner));
+        } catch (UniqueConstraintViolationException $exception) {
 
             $sequence = $this->getActiveSequence($docType, $owner);
 
@@ -209,9 +202,28 @@ final class SequenceManager
         return "docs.sequence-first-use.{$docType}.{$ownerKey}";
     }
 
-    private static function isUniqueViolation(QueryException $exception): bool
+    private function advance(DocSequence $sequence): string
     {
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true);
+        if ($sequence->start_number < 1 || $sequence->increment < 1) {
+            throw new InvalidArgumentException('Sequence start and increment must be positive.');
+        }
+
+        $periodKey = $sequence->getCurrentPeriodKey();
+        $number = $sequence->numbers()->where('period_key', $periodKey)->lockForUpdate()->first();
+
+        if ($number === null) {
+            $next = $sequence->start_number;
+            $sequence->numbers()->create(['period_key' => $periodKey, 'last_number' => $next]);
+        } else {
+            if ($number->last_number > PHP_INT_MAX - $sequence->increment) {
+                throw new RuntimeException('Document sequence exhausted the supported integer range.');
+            }
+
+            $next = $number->last_number + $sequence->increment;
+            $number->update(['last_number' => $next]);
+        }
+
+        return $sequence->formatNumber($next);
     }
 
     /**

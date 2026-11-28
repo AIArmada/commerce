@@ -39,10 +39,10 @@ return new class extends Migration
             $table->index('owner_type', $sequencesTable . '_owner_type_index');
         });
 
-        Schema::create($numbersTable, function (Blueprint $table) use ($numbersTable): void {
+        Schema::create($numbersTable, function (Blueprint $table) use ($numbersTable, $sequencesTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_sequence_id');
+            $table->foreignUuid('doc_sequence_id')->constrained($sequencesTable)->cascadeOnDelete();
             $table->string('period_key', 20);
             $table->unsignedBigInteger('last_number')->default(0);
             $table->timestampsTz();

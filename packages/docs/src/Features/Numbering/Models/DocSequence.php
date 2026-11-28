@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Numbering\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocType;
@@ -17,9 +16,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\QueryException;
 use OwenIt\Auditing\Contracts\Auditable;
-use RuntimeException;
 
 /**
  * Document sequence configuration for generating unique document numbers.
@@ -85,52 +82,6 @@ final class DocSequence extends Model implements Auditable
     }
 
     /**
-     * Generate the next document number for this sequence.
-     */
-    public function generateNumber(): string
-    {
-        return OwnerContext::withOwner($this->owner, function (): string {
-            $periodKey = $this->getCurrentPeriodKey();
-
-            // Get or create sequence number record for this period
-            $sequenceNumber = $this->numbers()
-                ->where('period_key', $periodKey)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $sequenceNumber) {
-                try {
-                    $sequenceNumber = $this->numbers()->make([
-                        'period_key' => $periodKey,
-                        'last_number' => $this->start_number - $this->increment,
-                    ]);
-
-                    $sequenceNumber->save();
-                } catch (QueryException $exception) {
-                    if (! in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
-                        throw $exception;
-                    }
-
-                    $sequenceNumber = $this->numbers()
-                        ->where('period_key', $periodKey)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $sequenceNumber) {
-                        throw new RuntimeException('Unable to reserve a sequence number for the current period.');
-                    }
-                }
-            }
-
-            // Increment and save
-            $nextNumber = $sequenceNumber->last_number + $this->increment;
-            $sequenceNumber->update(['last_number' => $nextNumber]);
-
-            return $this->formatNumber($nextNumber);
-        });
-    }
-
-    /**
      * Format a number according to the sequence format.
      */
     public function formatNumber(int $number): string
@@ -169,13 +120,6 @@ final class DocSequence extends Model implements Auditable
             : $this->start_number;
 
         return $this->formatNumber($nextNumber);
-    }
-
-    protected static function booted(): void
-    {
-        self::deleting(function (DocSequence $sequence): void {
-            $sequence->numbers()->delete();
-        });
     }
 
     /**

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentDocs\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
-use AIArmada\Docs\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use BackedEnum;
 use Filament\Actions\BulkAction;

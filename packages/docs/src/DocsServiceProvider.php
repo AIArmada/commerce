@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use AIArmada\Docs\Platform\ExtensionRegistry;
 use AIArmada\Docs\Platform\FeatureCatalog;
@@ -12,7 +13,6 @@ use AIArmada\Docs\Platform\FeatureModule;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\Services\SequenceManager;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -51,9 +51,6 @@ final class DocsServiceProvider extends PackageServiceProvider
 
         $this->app->scoped(Numbering\DocumentNumberRegistry::class);
 
-        // Sequence manager
-        $this->app->singleton(SequenceManager::class);
-
         $this->app->singleton(RichContentRendererInterface::class, TiptapJsonRenderer::class);
         $this->app->singleton(DocRenderService::class);
 
@@ -61,7 +58,7 @@ final class DocsServiceProvider extends PackageServiceProvider
         $this->app->scoped(DocService::class, function ($app) {
             return new DocService(
                 $app->make(Numbering\DocumentNumberRegistry::class),
-                $app->make(SequenceManager::class),
+                $app->make(DocumentSequence::class),
                 $app->make(Services\DocTotals::class),
                 $app->make(Actions\RecordDocPayment::class),
             );
@@ -89,7 +86,7 @@ final class DocsServiceProvider extends PackageServiceProvider
             DocServiceInterface::class,
             DocRenderService::class,
             RichContentRendererInterface::class,
-            SequenceManager::class,
+            DocumentSequence::class,
             Services\DocTotals::class,
             Actions\RecordDocPayment::class,
             'doc',

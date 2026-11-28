@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Actions\CreateDocVersion;
 use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
@@ -40,7 +41,7 @@ final class DocService implements DocServiceInterface
 {
     public function __construct(
         protected DocumentNumberRegistry $numberRegistry,
-        protected SequenceManager $sequenceManager,
+        protected DocumentSequence $sequenceManager,
         protected DocTotals $totals,
         protected RecordDocPayment $paymentRecorder,
     ) {}
@@ -80,7 +81,7 @@ final class DocService implements DocServiceInterface
         $owner = $this->resolveOwner();
 
         return DB::transaction(function () use ($data, $type, $docType, $owner): Doc {
-            $docNumber = $data->docNumber ?? $this->sequenceManager->generate($type, $owner);
+            $docNumber = $data->docNumber ?? $this->sequenceManager->nextNumber($type->value);
             $this->assertDocNumberAvailable($docNumber, $owner);
 
             $template = $this->resolveTemplateSelection($docType, $data->docTemplateId, $data->templateSlug);
@@ -180,7 +181,7 @@ final class DocService implements DocServiceInterface
         return OwnerContext::withOwner($owner, function () use ($type, $data, $owner): Doc {
             return DB::transaction(function () use ($type, $data, $owner): Doc {
                 // Generate document number
-                $docNumber = $this->sequenceManager->generate($type, $owner);
+                $docNumber = $this->sequenceManager->nextNumber($type->value);
                 $this->assertDocNumberAvailable($docNumber, $owner);
 
                 $this->assertNoMajorUnitKeys($data);
