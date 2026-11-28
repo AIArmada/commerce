@@ -6,7 +6,7 @@ namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Organizations\Contracts;
+namespace AIArmada\Organizations\Authorization;
 
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;

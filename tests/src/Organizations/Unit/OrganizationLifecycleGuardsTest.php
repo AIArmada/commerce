@@ -13,7 +13,7 @@ use AIArmada\Organizations\Actions\MakeOrganizationPublicAction;
 use AIArmada\Organizations\Actions\RestoreOrganizationAction;
 use AIArmada\Organizations\Actions\SuspendOrganizationAction;
 use AIArmada\Organizations\Actions\TransferOrganizationOwnershipAction;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;

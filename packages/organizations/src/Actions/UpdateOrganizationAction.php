@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Actions;
 
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

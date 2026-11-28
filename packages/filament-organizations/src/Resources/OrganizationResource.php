@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\Resources;
 
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource\Pages;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Models\Organization;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
