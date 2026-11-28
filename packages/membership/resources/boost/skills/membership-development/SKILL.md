@@ -5,7 +5,7 @@ description: Develop membership integrations using Laravel Dune package boundari
 
 # Membership
 
-Membership owns applications, invitations and membership-role reconciliation. Call `AIArmada\Membership\Actions\AddMemberAction::run()`, `RemoveMemberAction::run()`, `ChangeMemberRoleAction::run()` and `SyncMembershipRolesAction` through the container. The subject must expose a belongs-to-many members relationship; use the `HasMembers` trait. Resolve owner scope before mutation, serialize changes under the subject row lock, and preserve the host subject's membership invariants. Invitation delivery occurs after commit. Do not add compatibility aliases for moved classes.
+Membership owns applications, invitations and membership-role reconciliation. Call `AIArmada\Membership\Actions\AddMemberAction::run()`, `RemoveMemberAction::run()`, `ChangeMemberRoleAction::run()` and `SyncMembershipRolesAction` through the container. The subject must expose a belongs-to-many members relationship; use the `HasMembers` trait. Resolve owner scope before mutation, serialize changes under the subject row lock, and preserve the host subject's membership invariants. Invitation delivery, application lifecycle events and notifications, and `MembershipHook` callbacks occur after the outermost transaction commits. Use `MembershipMutationGuard` for synchronous invariant checks; hooks observe committed mutations and must not be used to veto writes. Do not add compatibility aliases for moved classes.
 
 ## Verification
 
