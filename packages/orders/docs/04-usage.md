@@ -436,18 +436,13 @@ Both actions share the same internal order-doc builder, so customer data, order 
 ### PDF Invoice Output
 
 ```php
-use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 
-$generator = app(GenerateInvoice::class);
-
-// Get a download response (PDF when a PDF runtime is present, HTML fallback otherwise)
-return $generator->download($order);
-
-// Or write the rendered document to a path and get the path back
-$path = $generator->save($order, storage_path('app/invoices/'.$order->order_number.'.pdf'));
+// After authorizing access to the order:
+return app(OrderInvoiceDownload::class)->download((string) $order->getKey());
 ```
 
-Use `GenerateInvoice` for ad-hoc PDF generation and download responses. Use `CreateOrderInvoiceDoc` / `CreateOrderReceiptDoc` when you want persisted Docs records that integrate with the Docs package.
+Use `OrderInvoiceDownload` for invoice download responses. Use the `OrderDocuments` contract when you want persisted Docs records that integrate with the Docs package.
 
 ## Health Checks
 

@@ -11,15 +11,16 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\FilamentOrdersServiceProvider;
-use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use AIArmada\Orders\States\Created;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\HttpFoundation\Response;
 
 uses(TestCase::class);
 
@@ -47,11 +48,11 @@ beforeEach(function (): void {
         }
     });
 
-    app()->instance(GenerateInvoice::class, new class
+    app()->instance(OrderInvoiceDownload::class, new class implements OrderInvoiceDownload
     {
-        public function download(Order $order)
+        public function download(string $orderId): Response
         {
-            return response('invoice:' . $order->getKey(), 200);
+            return response('invoice:' . $orderId, 200);
         }
     });
 });

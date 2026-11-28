@@ -7,6 +7,7 @@ namespace AIArmada\Orders\Features\Documents\Actions;
 use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Generate PDF invoice for an order.
  */
-final class GenerateInvoice
+final class GenerateInvoice implements OrderInvoiceDownload
 {
     use BuildsOrderDocs;
 
@@ -31,8 +32,12 @@ final class GenerateInvoice
     /**
      * Generate and download invoice.
      */
-    public function download(Order $order): PdfBuilder | StreamedResponse
+    public function download(string $orderId): PdfBuilder | StreamedResponse
     {
+        $order = Order::query()
+            ->forOwner(includeGlobal: (bool) config('orders.owner.include_global', false))
+            ->findOrFail($orderId);
+
         if (! $this->hasPdfRuntime()) {
             return $this->downloadOrderHtmlFallback(
                 order: $order,

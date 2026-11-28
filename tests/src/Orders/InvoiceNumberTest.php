@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Contracts\OrderInvoiceNumber;
-use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use AIArmada\Orders\States\Completed;
 
 it('mints an invoice number once and reuses it on later downloads', function (): void {
@@ -18,12 +18,12 @@ it('mints an invoice number once and reuses it on later downloads', function ():
 
     expect($order->invoice_number)->toBeNull();
 
-    app(GenerateInvoice::class)->download($order->refresh());
+    app(OrderInvoiceDownload::class)->download((string) $order->getKey());
     $first = $order->refresh()->invoice_number;
 
     expect($first)->not->toBeNull();
 
-    app(GenerateInvoice::class)->download($order->refresh());
+    app(OrderInvoiceDownload::class)->download((string) $order->getKey());
 
     expect($order->refresh()->invoice_number)->toBe($first);
 });
@@ -44,8 +44,8 @@ it('gives every order its own invoice number', function (): void {
         'grand_total' => 20000,
     ]);
 
-    app(GenerateInvoice::class)->download($first);
-    app(GenerateInvoice::class)->download($second);
+    app(OrderInvoiceDownload::class)->download((string) $first->getKey());
+    app(OrderInvoiceDownload::class)->download((string) $second->getKey());
 
     expect($first->refresh()->invoice_number)->not->toBe($second->refresh()->invoice_number);
 });

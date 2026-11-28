@@ -5,16 +5,18 @@ description: Develop Orders integrations using Laravel Dune boundaries. Order li
 
 # Orders development
 
-- Use the named Orders actions for payments, refunds, and document issuance; do not write payment or refund totals from integrations.
+- Use the public Orders contracts for payments, refunds, and document issuance; do not write payment or refund totals from integrations.
 - Preserve tenant scope and use the persisted order identity when locking or issuing documents.
 - Payment and refund amounts are integer minor units. Never replace completed payment evidence with the order total.
-- Use `AssignOrderInvoiceNumber` for persistent invoice identity; never mint a new number on every download.
+- Use `Contracts\OrderInvoiceNumber` for persistent invoice identity; never mint a new number on every download.
 
 ```php
-use AIArmada\Orders\Actions\AssignOrderInvoiceNumber;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 
-$number = app(AssignOrderInvoiceNumber::class)->execute($order);
+$number = app(OrderInvoiceNumber::class)->assign($orderId);
 ```
+
+Use `Runtime\OrderInvoiceDownload` for authorized invoice download responses without importing internal feature actions or the PDF SDK.
 
 ## Verification
 

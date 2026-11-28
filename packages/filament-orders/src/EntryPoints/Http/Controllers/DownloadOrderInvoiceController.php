@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
-use Spatie\LaravelPdf\PdfBuilder;
+use Illuminate\Contracts\Support\Responsable;
 use Symfony\Component\HttpFoundation\Response;
 
 final readonly class DownloadOrderInvoiceController
 {
-    public function __invoke(string $order): PdfBuilder | Response
+    public function __invoke(string $order): Responsable | Response
     {
         if ((bool) config('orders.owner.enabled', false) && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
             abort(404);
@@ -28,6 +28,6 @@ final readonly class DownloadOrderInvoiceController
 
         abort_unless($user && Gate::forUser($user)->allows('view', $record), 403);
 
-        return app(GenerateInvoice::class)->download($record);
+        return app(OrderInvoiceDownload::class)->download((string) $record->getKey());
     }
 }

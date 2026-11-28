@@ -48,7 +48,7 @@ describe('GenerateInvoice Action', function (): void {
 
             $action = new GenerateInvoice;
 
-            $response = $action->download($order);
+            $response = $action->download((string) $order->getKey());
 
             expect($response)->toBeInstanceOf(StreamedResponse::class)
                 ->and((string) $response->headers->get('content-type'))->toContain('text/html')
