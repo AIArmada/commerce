@@ -13,9 +13,9 @@ use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Models\RewardPayee;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use InvalidArgumentException;
 
 /**

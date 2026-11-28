@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

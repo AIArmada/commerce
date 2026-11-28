@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Finance\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
-use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardPayoutTerms;
 use Carbon\CarbonImmutable;

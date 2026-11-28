@@ -7,12 +7,12 @@ namespace AIArmada\Rewards\Features\Finance\Actions;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -51,7 +51,7 @@ final readonly class CancelRewardPayoutAction
         string $reason,
         ?CarbonInterface $decidedAt = null,
     ): RewardPayoutRequest {
-        RewardProgramGuard::findPayoutRequestOrFail($request);
+        RewardPayoutGuard::findOrFail($request);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);

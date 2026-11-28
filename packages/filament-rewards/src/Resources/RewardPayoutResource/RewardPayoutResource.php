@@ -8,7 +8,7 @@ use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Tables\RewardPayoutsTable;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;

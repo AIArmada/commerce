@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Tables\RewardPayeesTable;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;

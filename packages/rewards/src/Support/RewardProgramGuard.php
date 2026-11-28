@@ -11,7 +11,6 @@ use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardRecovery;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -110,25 +109,6 @@ final class RewardProgramGuard
 
         if (! $resolved instanceof RewardAward) {
             throw new InvalidArgumentException('Unknown reward award.');
-        }
-
-        self::findProgramOrFail((string) $resolved->program_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the payout request and prove its program is in the current
-     * owner scope.
-     */
-    public static function findPayoutRequestOrFail(RewardPayoutRequest | string $request): RewardPayoutRequest
-    {
-        $id = $request instanceof RewardPayoutRequest ? (string) $request->getKey() : $request;
-
-        $resolved = RewardPayoutRequest::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardPayoutRequest) {
-            throw new InvalidArgumentException('Unknown reward payout request.');
         }
 
         self::findProgramOrFail((string) $resolved->program_id);

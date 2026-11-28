@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Finance\Queries;
 
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutSnapshot;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 
 final readonly class RewardPayoutQuery implements RewardPayoutQueryApi
 {

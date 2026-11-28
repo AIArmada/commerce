@@ -8,7 +8,7 @@ use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Features\Finance\Actions\RejectRewardPayeeAction;
 use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
-use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
