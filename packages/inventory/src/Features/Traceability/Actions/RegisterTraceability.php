@@ -97,7 +97,7 @@ final readonly class RegisterTraceability
             $query->forOwner($owner, false);
         }
 
-        return $query->whereKey($id)->firstOrFail();
+        return $query->whereKey($id)->lockForUpdate()->firstOrFail();
     }
 
     private function item(InventoryLevel $level): Model

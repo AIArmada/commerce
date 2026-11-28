@@ -38,7 +38,16 @@ final readonly class UpdateTraceabilityDetails
                 $details['metadata'] = array_replace($record->metadata ?? [], $details['metadata']);
             }
 
-            $record->update($details);
+            $record->fill($details);
+
+            if (($record->isDirty('manufactured_at') || $record->isDirty('expires_at'))
+                && $record->manufactured_at !== null
+                && $record->expires_at !== null
+                && $record->expires_at->lt($record->manufactured_at)) {
+                throw new InvalidArgumentException('Batch expiry cannot precede manufacture');
+            }
+
+            $record->save();
 
             return $record;
         }, 3);

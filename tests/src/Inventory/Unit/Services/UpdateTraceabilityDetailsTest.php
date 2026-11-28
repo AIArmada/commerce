@@ -78,3 +78,29 @@ it('rejects fractional costs and blank traceability identifiers without changing
     expect($action->batch($batch, ['batch_number' => '  CLEAN-BATCH  ', 'unit_cost_minor' => '120'])->batch_number)->toBe('CLEAN-BATCH')
         ->and($action->serial($serial, ['serial_number' => '  CLEAN-SERIAL  ', 'unit_cost_minor' => '220'])->serial_number)->toBe('CLEAN-SERIAL');
 });
+
+it('rejects expiry before manufacture when either date is edited and rolls back other changes', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'manufactured_at' => '2025-01-01 00:00:00',
+        'expires_at' => '2027-01-01 00:00:00',
+        'lot_number' => 'ORIGINAL',
+    ]);
+    $action = app(UpdateTraceabilityDetails::class);
+
+    expect(fn () => $action->batch($batch, [
+        'expires_at' => '2024-01-01 00:00:00',
+        'lot_number' => 'INVALID',
+    ]))->toThrow(InvalidArgumentException::class, 'Batch expiry cannot precede manufacture');
+
+    expect(fn () => $action->batch($batch, [
+        'manufactured_at' => '2028-01-01 00:00:00',
+    ]))->toThrow(InvalidArgumentException::class, 'Batch expiry cannot precede manufacture');
+
+    $batch->refresh();
+
+    expect($batch->lot_number)->toBe('ORIGINAL')
+        ->and($batch->manufactured_at?->toDateString())->toBe('2025-01-01')
+        ->and($batch->expires_at?->toDateString())->toBe('2027-01-01');
+
+    expect($action->batch($batch, ['expires_at' => null])->expires_at)->toBeNull();
+});
