@@ -13,8 +13,8 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInvento
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Stock\FeatureModule as StockFeatureModule;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Traceability\FeatureModule as TraceabilityFeatureModule;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Traceability\FeatureModule as TraceabilityFeatureModule;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;

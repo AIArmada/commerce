@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogImportFile;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\DuplicateProduct;
@@ -476,7 +477,7 @@ class ProductsTable
 
             [$imported, $updated, $errors] = app(ImportCatalogProducts::class)->execute($rows, $updateExisting, $skipErrors, $authorize);
 
-            app(\AIArmada\FilamentProducts\Actions\DeleteCatalogImportFile::class)->execute($csvFile);
+            app(DeleteCatalogImportFile::class)->execute($csvFile);
 
             Notification::make()
                 ->title('Import completed')

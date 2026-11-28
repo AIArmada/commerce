@@ -8,12 +8,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Pricing\Actions\CopyPriceablePrices;
 use AIArmada\Pricing\Models\Price;
-use Illuminate\Support\Facades\Schema;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 final readonly class DuplicateProduct
