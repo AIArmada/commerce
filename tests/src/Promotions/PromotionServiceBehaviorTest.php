@@ -116,6 +116,7 @@ it('enforces a per-customer limit from owner-scoped order allocations', function
             'discount_data' => [
                 'allocations' => [[
                     'provider_key' => 'promotions',
+                    'requested_amount' => 1000,
                     'meta' => ['promotion_id' => $promotion->getKey()],
                 ]],
             ],
