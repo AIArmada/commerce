@@ -12,6 +12,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\FilamentDocs\Rendering\FilamentRichContentRenderer;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
@@ -32,10 +33,31 @@ it('renders authenticated online previews without an existing pdf', function ():
         'pdf_path' => null,
     ]);
 
+    Gate::define('document.view', static fn (User $actor): bool => $actor->is($user));
+
     $this->actingAs($user)
         ->get(route('filament-docs.documents.view', ['doc' => $doc->getKey()]))
         ->assertSuccessful()
         ->assertSee('INV-PREVIEW');
+
+    expect($doc->fresh()->pdf_path)->toBeNull();
+});
+
+it('denies authenticated document routes without document view permission', function (): void {
+    config()->set('docs.owner.enabled', false);
+
+    $user = User::factory()->create();
+    $doc = Doc::factory()->create(['pdf_path' => null]);
+
+    Gate::define('document.view', static fn (): bool => false);
+    Gate::define('purchase.view', static fn (): bool => true);
+
+    $this->actingAs($user)
+        ->get(route('filament-docs.documents.view', ['doc' => $doc->getKey()]))
+        ->assertForbidden();
+
+    $this->get(route('filament-docs.download', ['doc' => $doc->getKey()]))
+        ->assertForbidden();
 
     expect($doc->fresh()->pdf_path)->toBeNull();
 });

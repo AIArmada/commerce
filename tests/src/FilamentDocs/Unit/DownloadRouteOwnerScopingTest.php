@@ -14,6 +14,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 uses(TestCase::class);
@@ -26,6 +27,7 @@ beforeEach(function (): void {
 
     config()->set('docs.storage.disk', 'local');
     Storage::fake('local');
+    Gate::define('document.view', static fn (): bool => true);
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
