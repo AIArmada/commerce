@@ -246,8 +246,15 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             }
 
             $reservations = [];
+            $payments = RefundAllocator::eligiblePayments($lockedOrder);
+            $capacities = RefundAllocator::remainingByPayment($lockedOrder, $payments);
+            $allocationKeys = array_map(
+                static fn (OrderPayment $payment): string => sprintf('cancel:%s:%s', $lockedOrder->getKey(), $payment->getKey()),
+                $payments,
+            );
+            $existingKeys = $lockedOrder->refunds()->whereIn('allocation_key', $allocationKeys)->pluck('allocation_key')->flip();
 
-            foreach (RefundAllocator::eligiblePayments($lockedOrder) as $payment) {
+            foreach ($payments as $payment) {
                 if ($remaining <= 0) {
                     break;
                 }
@@ -256,11 +263,11 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
                 // recorded failure) never reserve the same payment twice.
                 $allocationKey = sprintf('cancel:%s:%s', $lockedOrder->getKey(), $payment->getKey());
 
-                if ($lockedOrder->refunds()->where('allocation_key', $allocationKey)->exists()) {
+                if ($existingKeys->has($allocationKey)) {
                     continue;
                 }
 
-                $amount = min(RefundAllocator::remainingForPayment($payment), $remaining);
+                $amount = min($capacities[(string) $payment->getKey()], $remaining);
 
                 if ($amount <= 0) {
                     continue;

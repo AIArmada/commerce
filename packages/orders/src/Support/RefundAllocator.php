@@ -127,14 +127,14 @@ final class RefundAllocator
             return [['payment' => $resolved, 'amount' => $amount]];
         }
 
-        $eligible = self::eligiblePayments($order, $payment);
+        $eligible = self::eligiblePayments($order);
+        $capacities = self::remainingByPayment($order, $eligible);
         $available = 0;
-        $capacities = [];
 
-        foreach ($eligible as $candidate) {
-            $capacity = self::remainingForPayment($candidate);
-            $capacities[(string) $candidate->getKey()] = $capacity;
-            $available += $capacity;
+        foreach ($capacities as $capacity) {
+            // The request is already bounded by the order balance. Saturate
+            // at that bound rather than overflowing an integer sum.
+            $available += min($capacity, $amount - $available);
         }
 
         if ($amount > $available) {
@@ -169,6 +169,35 @@ final class RefundAllocator
         }
 
         return $allocations;
+    }
+
+    /**
+     * Compute capacity for a locked order's eligible receipts with one
+     * aggregate query instead of a query for every receipt.
+     *
+     * @param  list<OrderPayment>  $payments
+     * @return array<string, int>
+     */
+    public static function remainingByPayment(Order $order, array $payments): array
+    {
+        if ($payments === []) {
+            return [];
+        }
+
+        $reserved = $order->refunds()
+            ->whereIn('payment_id', array_map(static fn (OrderPayment $payment): string => (string) $payment->getKey(), $payments))
+            ->whereIn('status', [RefundStatus::Pending->value, RefundStatus::Completed->value])
+            ->selectRaw('payment_id, SUM(amount) as reserved_amount')
+            ->groupBy('payment_id')
+            ->pluck('reserved_amount', 'payment_id');
+
+        $capacities = [];
+        foreach ($payments as $payment) {
+            $id = (string) $payment->getKey();
+            $capacities[$id] = max(0, (int) $payment->amount - (int) $reserved->get($id, 0));
+        }
+
+        return $capacities;
     }
 
     /**

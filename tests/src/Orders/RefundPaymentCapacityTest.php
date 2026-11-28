@@ -14,6 +14,7 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
+use AIArmada\Orders\Support\RefundAllocator;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -521,4 +522,38 @@ it('dispatches the refund failed event with the persisted failure state', functi
             && $event->refund->failed_at !== null
             && $event->refund->notes === 'Provider rejected',
     );
+});
+
+it('computes multi-receipt refund capacities in one aggregate query', function (): void {
+    $order = ord04Order(6000);
+    $first = ord04Payment($order, 'ord04-group-a', 2000);
+    $second = ord04Payment($order, 'ord04-group-b', 2000);
+    $third = ord04Payment($order, 'ord04-group-c', 2000);
+    $order->refresh();
+
+    $action = app(RegisterOrderRefund::class);
+    $action->createPending($order, 500, 'ord04-group-pending', 'Pending', [], $first);
+    $settled = $action->createPending($order->refresh(), 750, 'ord04-group-settled', 'Settled', [], $second);
+    $action->completePending($settled[0], 'ord04-group-provider');
+    $failed = $action->createPending($order->refresh(), 250, 'ord04-group-failed', 'Failed', [], $third);
+    $action->failPending($failed[0], 'Declined');
+
+    $order->refresh();
+    $payments = RefundAllocator::eligiblePayments($order);
+    $connection = $order->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $capacities = RefundAllocator::remainingByPayment($order, $payments);
+        $queries = $connection->getQueryLog();
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
+
+    expect($capacities[(string) $first->getKey()])->toBe(1500)
+        ->and($capacities[(string) $second->getKey()])->toBe(1250)
+        ->and($capacities[(string) $third->getKey()])->toBe(2000)
+        ->and($queries)->toHaveCount(1);
 });
