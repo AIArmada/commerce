@@ -8,6 +8,7 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class RequestTaxExemption
 {
@@ -30,7 +31,9 @@ final readonly class RequestTaxExemption
                 'expires_at' => $attributes['expires_at'] ?? null,
                 'status' => PendingState::class,
             ]);
-            $exemption->save();
+            if (! $exemption->save()) {
+                throw new RuntimeException('Tax exemption request was cancelled.');
+            }
 
             return $exemption;
         });

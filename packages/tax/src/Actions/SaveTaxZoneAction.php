@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SaveTaxZoneAction
 {
@@ -24,7 +25,9 @@ final readonly class SaveTaxZoneAction
 
             $record->fill($attributes);
 
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Tax zone save was cancelled.');
+            }
 
             return $record;
         });

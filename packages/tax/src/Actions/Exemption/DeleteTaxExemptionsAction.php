@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions\Exemption;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class DeleteTaxExemptionsAction
 {
@@ -17,7 +18,9 @@ final readonly class DeleteTaxExemptionsAction
     {
         DB::transaction(function () use ($ids): void {
             foreach (TaxOwnerScope::lockWritable(TaxExemption::query(), $ids) as $exemption) {
-                $exemption->delete();
+                if ($exemption->delete() !== true) {
+                    throw new RuntimeException('Tax exemption deletion was cancelled.');
+                }
             }
         });
     }

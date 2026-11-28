@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SetTaxRatesActiveAction
 {
@@ -17,7 +18,9 @@ final readonly class SetTaxRatesActiveAction
     {
         DB::transaction(function () use ($ids, $active): void {
             foreach (TaxOwnerScope::lockWritable(TaxRate::query(), $ids) as $rate) {
-                $rate->update(['is_active' => $active]);
+                if (! $rate->update(['is_active' => $active])) {
+                    throw new RuntimeException('Tax rate status update was cancelled.');
+                }
             }
         });
     }

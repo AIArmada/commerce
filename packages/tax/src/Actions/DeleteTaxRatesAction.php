@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class DeleteTaxRatesAction
 {
@@ -17,7 +18,9 @@ final readonly class DeleteTaxRatesAction
     {
         DB::transaction(function () use ($ids): void {
             foreach (TaxOwnerScope::lockWritable(TaxRate::query(), $ids) as $record) {
-                $record->delete();
+                if ($record->delete() !== true) {
+                    throw new RuntimeException('Tax rate deletion was cancelled.');
+                }
             }
         });
     }

@@ -9,6 +9,7 @@ use AIArmada\Tax\Queries\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class RenewTaxExemptionAction
 {
@@ -22,7 +23,9 @@ final readonly class RenewTaxExemptionAction
                 throw new InvalidArgumentException('The new expiry must be after today and the exemption start date.');
             }
 
-            $exemption->update(['expires_at' => $expiry]);
+            if (! $exemption->update(['expires_at' => $expiry])) {
+                throw new RuntimeException('Tax exemption renewal was cancelled.');
+            }
         });
     }
 }

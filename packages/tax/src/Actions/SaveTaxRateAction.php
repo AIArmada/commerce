@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SaveTaxRateAction
 {
@@ -24,7 +25,9 @@ final readonly class SaveTaxRateAction
 
             $record->fill($attributes);
 
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Tax rate save was cancelled.');
+            }
 
             return $record;
         });

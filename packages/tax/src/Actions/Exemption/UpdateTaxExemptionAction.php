@@ -9,6 +9,7 @@ use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class UpdateTaxExemptionAction
 {
@@ -34,7 +35,9 @@ final readonly class UpdateTaxExemptionAction
                 throw new AuthorizationException('Only pending exemptions can be edited. Use the authorized lifecycle actions.');
             }
 
-            $exemption->save();
+            if (! $exemption->save()) {
+                throw new RuntimeException('Tax exemption update was cancelled.');
+            }
 
             return $exemption;
         });
