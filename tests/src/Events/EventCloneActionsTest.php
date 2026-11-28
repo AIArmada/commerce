@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventAction;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventContentsAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
 use AIArmada\Events\Features\Catalog\Actions\SaveEventTemplateAction;
@@ -21,6 +22,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
 use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
+
+final class CloneConfiguredEvent extends Event {}
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -530,4 +533,38 @@ it('rolls back the cloned event if a scope extension fails', function (): void {
         ->toThrow(RuntimeException::class, 'Extension failed');
 
     expect(Event::query()->where('title', 'Failed clone')->exists())->toBeFalse();
+});
+
+it('rejects cloning content into the source scope', function (): void {
+    $event = Event::factory()->create();
+
+    expect(fn () => app(CloneEventContentsAction::class)->handle($event->id, $event->id))
+        ->toThrow(InvalidArgumentException::class, 'Cannot clone contents into the source scope.');
+});
+
+it('rejects mismatched occurrence scopes before copying contents', function (): void {
+    $event = Event::factory()->create();
+    $other = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    expect(fn () => app(CloneEventContentsAction::class)->handle(
+        $event->id,
+        $other->id,
+        sourceOccurrenceId: $occurrence->id,
+        targetOccurrenceId: $occurrence->id,
+    ))->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+});
+
+it('uses the configured event model when cloning', function (): void {
+    $event = Event::factory()->create();
+    config()->set('events.models.event', CloneConfiguredEvent::class);
+
+    $clone = app(CloneEventAction::class)->handle($event);
+
+    expect($clone)->toBeInstanceOf(CloneConfiguredEvent::class)
+        ->and($clone->id)->not->toBe($event->id);
+
+    $id = app(EventCloneService::class)->cloneEvent($event->id);
+
+    expect(CloneConfiguredEvent::query()->findOrFail($id)->id)->not->toBe($event->id);
 });

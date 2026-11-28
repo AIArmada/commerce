@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
-use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
 use AIArmada\Events\Features\Catalog\Models\EventAudience;
 use AIArmada\Events\Features\Catalog\Models\EventAudienceProfile;
@@ -19,6 +18,7 @@ use AIArmada\Events\Features\Catalog\Models\EventReference;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\Models\EventTimeExpression;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +87,18 @@ final class CloneEventContentsAction
             $targetOccurrenceId,
             $targetSessionId,
         ): Collection {
+            if (($sourceOccurrenceId === null) !== ($targetOccurrenceId === null)
+                || ($sourceSessionId === null) !== ($targetSessionId === null)) {
+                throw new InvalidArgumentException('Source and target clone scopes must have the same type.');
+            }
+
+            if ($sourceEventId === $targetEventId && $sourceOccurrenceId === $targetOccurrenceId && $sourceSessionId === $targetSessionId) {
+                throw new InvalidArgumentException('Cannot clone contents into the source scope.');
+            }
+
+            $this->validateScope($sourceEventId, $sourceOccurrenceId, $sourceSessionId);
+            $this->validateScope($targetEventId, $targetOccurrenceId, $targetSessionId);
+
             $cloned = new Collection;
 
             foreach ($relations as $relation) {
@@ -142,6 +154,20 @@ final class CloneEventContentsAction
         });
     }
 
+    private function validateScope(string $eventId, ?string $occurrenceId, ?string $sessionId): void
+    {
+        if ($occurrenceId !== null) {
+            EventOccurrence::query()->where('event_id', $eventId)->findOrFail($occurrenceId);
+        }
+
+        if ($sessionId !== null) {
+            EventSession::query()
+                ->where('event_id', $eventId)
+                ->where('event_occurrence_id', $occurrenceId)
+                ->findOrFail($sessionId);
+        }
+    }
+
     private function cloneSpatieMedia(
         string $sourceEventId,
         string $targetEventId,
@@ -165,8 +191,8 @@ final class CloneEventContentsAction
                 ->where('event_id', $targetEventId)
                 ->findOrFail($targetOccurrenceId);
         } else {
-            $source = Event::query()->findOrFail($sourceEventId);
-            $target = Event::query()->findOrFail($targetEventId);
+            $source = ModelResolver::eventClass()::query()->findOrFail($sourceEventId);
+            $target = ModelResolver::eventClass()::query()->findOrFail($targetEventId);
         }
 
         if (! $source instanceof HasMedia || ! $target instanceof HasMedia) {

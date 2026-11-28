@@ -9,6 +9,7 @@ use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class CloneEventAction
 {
@@ -23,7 +24,12 @@ final class CloneEventAction
      */
     public function handle(Event $event, array $options = []): Event
     {
-        EventWriteGuard::findOrFail($event);
+        $event = EventWriteGuard::findOrFail($event);
+
+        if (! $event instanceof Event) {
+            throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
+        }
+
         $cloneOccurrences = $options['clone_occurrences'] ?? false;
 
         return DB::transaction(function () use ($event, $options, $cloneOccurrences): Event {
@@ -31,7 +37,7 @@ final class CloneEventAction
                 ? $event->title . ' (Copy)'
                 : $this->contentNormalizer->normalizeTitle((string) $options['title']);
 
-            $clone = new Event;
+            $clone = $event->newInstance();
             $clone->forceFill([
                 'owner_type' => $event->owner_type,
                 'owner_id' => $event->owner_id,

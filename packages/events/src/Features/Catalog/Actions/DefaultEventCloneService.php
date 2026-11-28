@@ -9,8 +9,10 @@ use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ExtensionRegistry;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class DefaultEventCloneService implements EventCloneService
 {
@@ -24,7 +26,13 @@ final class DefaultEventCloneService implements EventCloneService
     public function cloneEvent(string $eventId, array $options = []): string
     {
         return DB::transaction(function () use ($eventId, $options): string {
-            $clone = $this->cloneEvent->handle(Event::query()->whereKey($eventId)->firstOrFail(), $options);
+            $event = EventWriteGuard::findOrFail($eventId);
+
+            if (! $event instanceof Event) {
+                throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
+            }
+
+            $clone = $this->cloneEvent->handle($event, $options);
 
             $this->cloneCrossFeatureScope('event', $eventId, 'event', (string) $clone->getKey(), $options);
 
