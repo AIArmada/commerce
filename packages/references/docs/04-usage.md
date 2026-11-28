@@ -71,9 +71,10 @@ Parts have one persisted representation: the `reference_parts` JSON attribute. E
 Authorship is a role on the polymorphic `reference_contributors` table, not a text column. Link any contributor model (persons, institutions, …) with an explicit role; links are an unordered set and read back stable by contributor ID:
 
 ```php
+use AIArmada\References\Actions\SyncReferenceContributors;
 use AIArmada\References\Enums\ReferenceContributorRole;
 
-$reference->syncContributors(ReferenceContributorRole::Author, $author->getMorphClass(), [
+app(SyncReferenceContributors::class)->handle($reference, ReferenceContributorRole::Author, $author->getMorphClass(), [
     (string) $firstAuthor->getKey(),
     (string) $secondAuthor->getKey(),
 ]);
@@ -81,7 +82,7 @@ $reference->syncContributors(ReferenceContributorRole::Author, $author->getMorph
 $authors = $reference->contributorsForRole(ReferenceContributorRole::Author)->with('contributor')->get();
 ```
 
-Works own authorship: the `author` role can only be stored on works, and editions and parts inherit the effective contributors of their root work via `effectiveContributors()`. Other roles (for example an edition editor) may still be stored directly on any record kind. Contributor IDs must be UUIDs.
+Works own authorship: the `author` role can only be stored on works, and editions and parts inherit the effective contributors of their root work via `effectiveContributors()`. Other roles (for example an edition editor) may still be stored directly on any record kind. Contributor IDs must be UUIDs. Sync locks the reference row and enforces write-owner context, including explicit global context for global references. A unique index prevents duplicate contributor identities.
 
 ```php
 $editionAuthors = $edition->effectiveContributors(ReferenceContributorRole::Author);
@@ -89,7 +90,7 @@ $editionAuthors = $edition->effectiveContributors(ReferenceContributorRole::Auth
 
 ## Deleting a reference subtree
 
-`Reference::delete()` runs in a transaction: it iteratively collects the full `parent_id` subtree, then removes every row individually, children first, so each row fires its own `deleting`/`deleted` events and carries its media and contributor links with it. Media deletes are chunked. The cascade covers the whole hierarchy regardless of row scope, and each row is removed inside its own owner context.
+`Reference::delete()` delegates its model lifecycle to `DeleteReference`, which runs in a transaction: it iteratively collects the full `parent_id` subtree, then removes every row individually, children first, so each row fires its own `deleting`/`deleted` events and carries its media and contributor links with it. Media deletes are chunked. The cascade covers the whole hierarchy regardless of row scope, and each row is removed inside its own owner context.
 
 ```php
 use AIArmada\References\Models\Reference;
@@ -100,10 +101,12 @@ $reference->delete(); // children + covers/gallery removed with it
 
 ## Status lifecycle
 
-Use `transitionStatus()` to move between statuses. Publishing stamps `published_at` when empty (direct saves of a `Published` row do the same); returning to draft clears it.
+Use `TransitionReferenceStatus` to move between statuses. Publishing stamps `published_at` when empty (direct saves of a `Published` row do the same); returning to draft clears it.
 
 ```php
-$reference->transitionStatus(ReferenceStatus::Published);
+use AIArmada\References\Actions\TransitionReferenceStatus;
+
+app(TransitionReferenceStatus::class)->handle($reference, ReferenceStatus::Published);
 ```
 
 ## Slug misconfiguration fails loud

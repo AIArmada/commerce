@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\References\Actions\TransitionReferenceStatus;
 use AIArmada\References\Enums\ReferencePartType;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
@@ -205,11 +206,11 @@ test('status transitions keep the publish timestamp in sync', function (): void 
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Lifecycle',
     ]);
 
-    $reference->transitionStatus(ReferenceStatus::Published);
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Published);
 
     expect($reference->fresh()->published_at)->not->toBeNull();
 
-    $reference->transitionStatus(ReferenceStatus::Draft);
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Draft);
 
     expect($reference->fresh()->published_at)->toBeNull()
         ->and($reference->fresh()->status)->toBe(ReferenceStatus::Draft);

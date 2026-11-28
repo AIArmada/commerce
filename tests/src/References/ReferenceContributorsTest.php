@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\References\Actions\SyncReferenceContributors;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config()->set('references.owner.enabled', true);
@@ -37,7 +40,8 @@ test('syncs contributors as an unordered UUID set stable by contributor id', fun
     $second = makeContributorUser('contrib-second@example.test');
     $work = makeWork();
 
-    $work->syncContributors(
+    (new SyncReferenceContributors)->handle(
+        $work,
         ReferenceContributorRole::Author,
         $first->getMorphClass(),
         [(string) $second->getKey(), (string) $first->getKey(), (string) $second->getKey(), ''],
@@ -50,7 +54,7 @@ test('syncs contributors as an unordered UUID set stable by contributor id', fun
     expect($stored)->toEqualCanonicalizing($expected)
         ->and(ReferenceContributor::query()->count())->toBe(2);
 
-    $work->syncContributors(ReferenceContributorRole::Author, $first->getMorphClass(), []);
+    (new SyncReferenceContributors)->handle($work, ReferenceContributorRole::Author, $first->getMorphClass(), []);
 
     expect($work->contributorsForRole(ReferenceContributorRole::Author)->count())->toBe(0);
 });
@@ -59,19 +63,22 @@ test('rejects non-UUID contributor ids and unknown roles', function (): void {
     $user = makeContributorUser('contrib-invalid@example.test');
     $work = makeWork();
 
-    expect(fn (): Reference => $work->syncContributors(
+    expect(fn (): Reference => (new SyncReferenceContributors)->handle(
+        $work,
         ReferenceContributorRole::Author,
         $user->getMorphClass(),
         ['not-a-uuid'],
     ))->toThrow(InvalidArgumentException::class, 'UUID');
 
-    expect(fn (): Reference => $work->syncContributors(
+    expect(fn (): Reference => (new SyncReferenceContributors)->handle(
+        $work,
         'ghost',
         $user->getMorphClass(),
         [(string) $user->getKey()],
     ))->toThrow(InvalidArgumentException::class, 'role');
 
-    expect(fn (): Reference => $work->syncContributors(
+    expect(fn (): Reference => (new SyncReferenceContributors)->handle(
+        $work,
         ReferenceContributorRole::Author,
         '  ',
         [(string) $user->getKey()],
@@ -83,7 +90,8 @@ test('rejects non-UUID contributor ids and unknown roles', function (): void {
         'title' => 'Unpersisted',
     ]);
 
-    expect(fn (): Reference => $unpersisted->syncContributors(
+    expect(fn (): Reference => (new SyncReferenceContributors)->handle(
+        $unpersisted,
         ReferenceContributorRole::Author,
         $user->getMorphClass(),
         [(string) $user->getKey()],
@@ -104,13 +112,15 @@ test('stores authors on works only while other roles may live on children', func
         'edition_number' => 1,
     ]);
 
-    expect(fn (): Reference => $edition->syncContributors(
+    expect(fn (): Reference => (new SyncReferenceContributors)->handle(
+        $edition,
         ReferenceContributorRole::Author,
         $author->getMorphClass(),
         [(string) $author->getKey()],
     ))->toThrow(InvalidArgumentException::class, 'works');
 
-    $edition->syncContributors(
+    (new SyncReferenceContributors)->handle(
+        $edition,
         ReferenceContributorRole::Editor,
         $editor->getMorphClass(),
         [(string) $editor->getKey()],
@@ -124,7 +134,8 @@ test('inherits effective contributors from the root work', function (): void {
     $author = makeContributorUser('contrib-inherit@example.test');
     $work = makeWork();
 
-    $work->syncContributors(
+    (new SyncReferenceContributors)->handle(
+        $work,
         ReferenceContributorRole::Author,
         $author->getMorphClass(),
         [(string) $author->getKey()],
@@ -159,7 +170,8 @@ test('deleting a reference removes its contributor links', function (): void {
     $editor = makeContributorUser('contrib-cascade-editor@example.test');
     $work = makeWork();
 
-    $work->syncContributors(
+    (new SyncReferenceContributors)->handle(
+        $work,
         ReferenceContributorRole::Author,
         $author->getMorphClass(),
         [(string) $author->getKey()],
@@ -174,7 +186,8 @@ test('deleting a reference removes its contributor links', function (): void {
         'edition_number' => 1,
     ]);
 
-    $edition->syncContributors(
+    (new SyncReferenceContributors)->handle(
+        $edition,
         ReferenceContributorRole::Editor,
         $editor->getMorphClass(),
         [(string) $editor->getKey()],
@@ -185,4 +198,33 @@ test('deleting a reference removes its contributor links', function (): void {
     $work->delete();
 
     expect(ReferenceContributor::query()->count())->toBe(0);
+});
+
+test('blocks contributor sync against another owner even for a retained model', function (): void {
+    $owner = makeContributorUser('contrib-owner@example.test');
+    $other = makeContributorUser('contrib-other@example.test');
+    $work = OwnerContext::withOwner($owner, fn (): Reference => makeWork('Owned Work'));
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => (new SyncReferenceContributors)->handle(
+        $work,
+        ReferenceContributorRole::Author,
+        $other->getMorphClass(),
+        [(string) $other->getKey()],
+    )))->toThrow(AuthorizationException::class);
+
+    expect(ReferenceContributor::query()->where('reference_id', $work->getKey())->count())->toBe(0);
+});
+
+test('repeated sync keeps a single contributor identity', function (): void {
+    $author = makeContributorUser('contrib-repeat@example.test');
+    $work = makeWork();
+    $action = new SyncReferenceContributors;
+    $ids = [(string) $author->getKey()];
+
+    $action->handle($work, ReferenceContributorRole::Author, $author->getMorphClass(), $ids);
+    $first = $work->contributors()->firstOrFail()->getKey();
+    $action->handle($work, ReferenceContributorRole::Author, $author->getMorphClass(), $ids);
+
+    expect($work->contributors()->count())->toBe(1)
+        ->and($work->contributors()->firstOrFail()->getKey())->toBe($first);
 });

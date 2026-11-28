@@ -24,6 +24,8 @@ class ReferenceContributor extends Model
 {
     use HasUuids;
 
+    protected $table = 'reference_contributors';
+
     protected $fillable = [
         'reference_id',
         'contributor_type',
