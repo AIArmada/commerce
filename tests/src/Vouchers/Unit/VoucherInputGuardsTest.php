@@ -107,23 +107,23 @@ describe('voucher update guards', function (): void {
 
 describe('voucher creation validation', function (): void {
     it('requires a type and a value', function (): void {
-        expect(fn (): Voucher => CreateVoucher::run(['code' => 'NOTYPE']))
+        expect(fn (): VoucherData => CreateVoucher::run(['code' => 'NOTYPE']))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['code' => 'NOVALUE', 'type' => VoucherType::Fixed]))
+        expect(fn (): VoucherData => CreateVoucher::run(['code' => 'NOVALUE', 'type' => VoucherType::Fixed]))
             ->toThrow(ValidationException::class);
     });
 
     it('rejects unknown voucher types', function (): void {
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'mystery', 'value' => 100]))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'mystery', 'value' => 100]))
             ->toThrow(ValidationException::class);
     });
 
     it('rejects negative values and oversized percentages', function (): void {
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => -5]))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => -5]))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'percentage', 'value' => 10001]))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'percentage', 'value' => 10001]))
             ->toThrow(ValidationException::class);
     });
 
@@ -135,26 +135,26 @@ describe('voucher creation validation', function (): void {
     });
 
     it('rejects bad currencies, limits, and date ranges', function (): void {
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'currency' => 'ZZZ']))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'currency' => 'ZZZ']))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'currency' => 'TOOLONG']))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'currency' => 'TOOLONG']))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit' => -1]))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit' => -1]))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit_per_user' => -2]))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit_per_user' => -2]))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run([
+        expect(fn (): VoucherData => CreateVoucher::run([
             'type' => 'fixed',
             'value' => 100,
             'starts_at' => now()->addDay(),
             'expires_at' => now(),
         ]))->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'starts_at' => 'not-a-date']))
+        expect(fn (): VoucherData => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'starts_at' => 'not-a-date']))
             ->toThrow(ValidationException::class);
     });
 

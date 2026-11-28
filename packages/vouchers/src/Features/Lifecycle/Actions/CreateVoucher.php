@@ -6,9 +6,10 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherCreated;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
@@ -33,7 +34,7 @@ final class CreateVoucher implements VoucherCreator
      *
      * @param  array<string, mixed>  $data
      */
-    public function handle(array $data): VoucherModel
+    public function handle(array $data): VoucherData
     {
         $this->validator->validate($data);
 
@@ -46,7 +47,7 @@ final class CreateVoucher implements VoucherCreator
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return (new VoucherModel)->getConnection()->transaction(function () use ($data): VoucherModel {
+                return (new VoucherModel)->getConnection()->transaction(function () use ($data): VoucherData {
                     $code = $data['code'] ?? $this->generateCode();
                     $normalizedCode = $this->normalizeCode($code);
 
@@ -96,9 +97,10 @@ final class CreateVoucher implements VoucherCreator
 
                     $voucher = VoucherModel::create($createData);
 
-                    event(new VoucherCreated(VoucherSnapshot::fromModel($voucher)));
+                    $snapshot = VoucherSnapshot::fromModel($voucher);
+                    event(new VoucherCreated($snapshot));
 
-                    return $voucher;
+                    return $snapshot;
                 });
             } catch (QueryException $exception) {
                 if ($codeProvided || ! $this->isUniqueConstraintViolation($exception) || $attempt === $attempts) {

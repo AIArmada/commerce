@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
@@ -39,10 +40,11 @@ describe('CreateVoucher Action', function (): void {
             'description' => 'Test voucher',
         ]);
 
-        expect($voucher)->toBeInstanceOf(Voucher::class)
+        expect($voucher)->toBeInstanceOf(VoucherData::class)
             ->and($voucher->code)->toBe('TEST20')
             ->and($voucher->type)->toBe(VoucherType::Percentage)
-            ->and($voucher->value)->toBe(20);
+            ->and($voucher->value)->toBe(20)
+            ->and(Voucher::query()->findOrFail($voucher->id)->code)->toBe('TEST20');
     });
 
     it('generates a code if not provided', function (): void {
@@ -88,10 +90,10 @@ describe('CreateVoucher Action', function (): void {
         ]);
 
         expect($voucher->currency)->toBe('USD')
-            ->and($voucher->usage_limit)->toBe(100)
-            ->and($voucher->usage_limit_per_user)->toBe(1)
-            ->and($voucher->min_cart_value)->toBe(5000)
-            ->and($voucher->max_discount)->toBe(2000)
+            ->and($voucher->usageLimit)->toBe(100)
+            ->and($voucher->usageLimitPerUser)->toBe(1)
+            ->and($voucher->minCartValue)->toBe(5000)
+            ->and($voucher->maxDiscount)->toBe(2000)
             ->and($voucher->metadata)->toBe(['campaign' => 'summer']);
     });
 
@@ -102,7 +104,7 @@ describe('CreateVoucher Action', function (): void {
             'value' => 100,
         ]);
 
-        expect($voucher)->toBeInstanceOf(Voucher::class)
+        expect($voucher)->toBeInstanceOf(VoucherData::class)
             ->and($voucher->code)->toBe('ACTION-TEST');
     });
 
@@ -118,8 +120,8 @@ describe('CreateVoucher Action', function (): void {
             ],
         ]);
 
-        expect($voucher->promotion_id)->toBe('promotion-trace-1')
-            ->and($voucher->value_config)->toBe([
+        expect($voucher->promotionId)->toBe('promotion-trace-1')
+            ->and($voucher->valueConfig)->toBe([
                 'buy' => ['quantity' => 2],
                 'get' => ['quantity' => 1, 'discount' => '100%'],
             ]);
@@ -158,11 +160,11 @@ describe('CreateVoucher Action', function (): void {
             ],
         ]);
 
-        expect($voucher->affiliate_id)->toBe($affiliate->id)
-            ->and($voucher->affiliate_program_id)->toBe($program->id)
-            ->and($voucher->affiliate_commission_type)->toBe(CommissionType::Fixed)
-            ->and($voucher->affiliate_commission_value)->toBe(2500)
-            ->and($voucher->affiliate_upline_levels)->toBe([
+        expect($voucher->affiliateId)->toBe($affiliate->id)
+            ->and($voucher->affiliateProgramId)->toBe($program->id)
+            ->and($voucher->affiliateCommissionType)->toBe(CommissionType::Fixed->value)
+            ->and($voucher->affiliateCommissionValue)->toBe(2500)
+            ->and($voucher->affiliateUplineLevels)->toBe([
                 ['level' => 1, 'share' => 0.05],
             ]);
     });
@@ -171,7 +173,7 @@ describe('CreateVoucher Action', function (): void {
         config()->set('affiliates.owner.enabled', false);
 
         foreach (['affiliate_id', 'affiliate_program_id'] as $field) {
-            expect(fn (): Voucher => CreateVoucher::run([
+            expect(fn (): VoucherData => CreateVoucher::run([
                 'code' => 'ACTION-INVALID-REFERENCE-' . $field,
                 'type' => VoucherType::Fixed,
                 'value' => 100,
@@ -208,7 +210,7 @@ describe('CreateVoucher Action', function (): void {
             ]);
         });
 
-        expect(fn (): Voucher => OwnerContext::withOwner($ownerA, function () use ($foreignProgram): Voucher {
+        expect(fn (): VoucherData => OwnerContext::withOwner($ownerA, function () use ($foreignProgram): VoucherData {
             return CreateVoucher::run([
                 'code' => 'ACTION-FOREIGN-PROGRAM',
                 'type' => VoucherType::Fixed,
@@ -242,8 +244,8 @@ describe('CreateVoucher Action', function (): void {
             'owner_id' => 'forged-owner-id',
         ]);
 
-        expect($voucher->owner_type)->toBe($resolvedOwner->getMorphClass())
-            ->and((string) $voucher->owner_id)->toBe((string) $resolvedOwner->getKey());
+        expect($voucher->ownerType)->toBe($resolvedOwner->getMorphClass())
+            ->and((string) $voucher->ownerId)->toBe((string) $resolvedOwner->getKey());
     });
 });
 

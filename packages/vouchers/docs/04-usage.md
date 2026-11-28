@@ -6,18 +6,18 @@ title: Usage
 
 ## Canonical API: Actions
 
-The package exposes domain actions built with `lorisleiva/laravel-actions`. Each action is a self-contained unit with a `run()` static entrypoint.
+The package exposes domain actions built with `lorisleiva/laravel-actions`. Use feature APIs for lifecycle creation and updates; they return immutable voucher snapshots. Other actions are self-contained units with a `run()` static entrypoint.
 
 ## Recipient-bound vouchers
 
 Set an `assignee` marker in voucher metadata to restrict validation and redemption to one model. The `type` must be the model's morph class and `id` its key:
 
 ```php
-use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
 use AIArmada\Vouchers\Data\VoucherType;
 
 // Assume $customer is the intended recipient model.
-$voucher = CreateVoucher::run([
+$voucher = app(VoucherCreator::class)->handle([
     'code' => 'WELCOME-ALICE',
     'name' => 'Welcome offer',
     'type' => VoucherType::Fixed,
@@ -32,15 +32,15 @@ $voucher = CreateVoucher::run([
 ]);
 ```
 
-Validation uses the authenticated model. `RecordVoucherUsage` also requires that model as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, and currency match.
+Validation uses the authenticated model. `RecordVoucherUsage` also requires that model as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, currency and channel match.
 
 ### CreateVoucher
 
 ```php
-use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
 use AIArmada\Vouchers\Data\VoucherType;
 
-$voucher = CreateVoucher::run([
+$voucher = app(VoucherCreator::class)->handle([
     'code' => 'SUMMER2024',
     'name' => 'Summer Sale 2024',
     'type' => VoucherType::Percentage,
@@ -54,9 +54,9 @@ $voucher = CreateVoucher::run([
 ### UpdateVoucher
 
 ```php
-use AIArmada\Vouchers\Features\Lifecycle\Actions\UpdateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 
-$voucher = UpdateVoucher::run('SUMMER2024', [
+$voucher = app(VoucherUpdater::class)->handle($voucher->id, [
     'name' => 'Updated Summer Sale',
     'value' => 2500,
     'expires_at' => now()->addMonths(6),

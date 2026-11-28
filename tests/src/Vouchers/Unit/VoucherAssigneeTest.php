@@ -9,6 +9,7 @@ declare(strict_types=1);
 // unused revocation cannot be followed by a late use.
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
@@ -26,13 +27,10 @@ use Illuminate\Validation\ValidationException;
 
 function assigneeUser(): FixtureUser
 {
-    $user = new FixtureUser(['name' => 'Assignee', 'email' => 'assignee-' . Str::random(8) . '@example.test']);
-    $user->forceFill(['id' => (string) Str::uuid()]);
-
-    return $user;
+    return FixtureUser::factory()->create(['name' => 'Assignee', 'email' => 'assignee-' . Str::random(8) . '@example.test']);
 }
 
-function assigneeVoucher(FixtureUser $assignee, array $attributes = []): Voucher
+function assigneeVoucher(FixtureUser $assignee, array $attributes = []): VoucherData
 {
     return CreateVoucher::run(array_merge([
         'code' => 'ASSIGN-' . mb_strtoupper(Str::random(8)),

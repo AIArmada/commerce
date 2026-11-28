@@ -12,16 +12,15 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\States\Active;
@@ -69,10 +68,7 @@ class VoucherService implements VoucherServiceInterface
 
         $data['status'] ??= Active::class;
 
-        /** @var VoucherModel $voucher */
-        $voucher = app(VoucherCreator::class)->handle($data);
-
-        return VoucherSnapshot::fromModel($voucher);
+        return app(VoucherCreator::class)->handle($data);
     }
 
     /**
