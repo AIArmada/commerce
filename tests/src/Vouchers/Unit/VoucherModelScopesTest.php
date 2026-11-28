@@ -195,7 +195,42 @@ describe('Voucher Model Methods', function (): void {
             ->and($limited->usageProgress)->toBe(30.0);
     });
 
-    /* Conversion/abandoned/statistics removed; covered by Integration/VoucherAppliedCountTest. */
+    it('calculates statistics from a single redemption count', function (): void {
+        $voucher = createVoucherForScopesTest([
+            'applied_count' => 4,
+            'usage_limit' => 5,
+        ]);
+
+        VoucherUsage::create([
+            'voucher_id' => $voucher->id,
+            'discount_amount' => 100,
+            'currency' => 'MYR',
+            'channel' => 'web',
+            'used_at' => now(),
+        ]);
+
+        $connection = $voucher->getConnection();
+        $wasLogging = $connection->logging();
+        $connection->enableQueryLog();
+        $before = count($connection->getQueryLog());
+
+        try {
+            $statistics = $voucher->getStatistics();
+            $queryCount = count($connection->getQueryLog()) - $before;
+        } finally {
+            if (! $wasLogging) {
+                $connection->disableQueryLog();
+            }
+        }
+
+        expect($statistics)->toBe([
+            'applied_count' => 4,
+            'redeemed_count' => 1,
+            'abandoned_count' => 3,
+            'conversion_rate' => 25.0,
+            'remaining_uses' => 4,
+        ])->and($queryCount)->toBe(1);
+    });
 });
 
 describe('Voucher Stacking Methods', function (): void {

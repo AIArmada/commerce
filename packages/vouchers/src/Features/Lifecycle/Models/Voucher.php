@@ -358,9 +358,9 @@ class Voucher extends Model implements Auditable
         return [
             'applied_count' => $appliedCount,
             'redeemed_count' => $usageCount,
-            'abandoned_count' => $this->getAbandonedCount(),
-            'conversion_rate' => $this->getConversionRate(),
-            'remaining_uses' => $this->getRemainingUses(),
+            'abandoned_count' => max(0, $appliedCount - $usageCount),
+            'conversion_rate' => $appliedCount === 0 ? null : (float) (($usageCount / $appliedCount) * 100),
+            'remaining_uses' => $this->usage_limit === null ? null : max(0, $this->usage_limit - $usageCount),
         ];
     }
 
