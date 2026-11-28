@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerModelLookup;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 
 describe('VoucherValidator', function (): void {
     beforeEach(function (): void {
