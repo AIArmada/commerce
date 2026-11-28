@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Interactions",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentEngagement\\Features\\Interactions\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

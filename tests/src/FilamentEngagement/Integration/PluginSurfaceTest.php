@@ -5,22 +5,26 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
-use AIArmada\Engagement\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkCollectionResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\FollowResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ReactionResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ResponseResource;
+use AIArmada\FilamentEngagement\Features\Overview\EntryPoints\Filament\Widgets\EngagementOverviewWidget;
+use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Resources\ReminderResource;
+use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Resources\SubscriptionResource;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
-use AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource;
-use AIArmada\FilamentEngagement\Resources\BookmarkResource;
-use AIArmada\FilamentEngagement\Resources\FollowResource;
-use AIArmada\FilamentEngagement\Resources\ReactionResource;
-use AIArmada\FilamentEngagement\Resources\ReminderResource;
-use AIArmada\FilamentEngagement\Resources\ResponseResource;
-use AIArmada\FilamentEngagement\Resources\SubscriptionResource;
-use AIArmada\FilamentEngagement\Widgets\EngagementOverviewWidget;
+use Filament\Panel;
 
 it('exposes the plugin resources and widget', function (): void {
     $plugin = FilamentEngagementPlugin::make();
 
-    $resources = (new ReflectionMethod($plugin, 'getResources'))->invoke($plugin);
-    $widgets = (new ReflectionMethod($plugin, 'getWidgets'))->invoke($plugin);
+    $panel = Panel::make()->id('engagement-test');
+    $plugin->register($panel);
+
+    $resources = $panel->getResources();
+    $widgets = $panel->getWidgets();
 
     expect($plugin->getId())->toBe('filament-engagement')
         ->and($resources)->toContain(

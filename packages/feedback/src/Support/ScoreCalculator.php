@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackQuestionOption;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 
 final class ScoreCalculator
 {
-    public function calculateScore(FeedbackQuestion $question, mixed $value): ?float
+    public function calculateScore(QuestionDefinition $question, mixed $value): ?float
     {
         $type = FeedbackQuestionType::tryFrom($question->type);
 
@@ -18,7 +17,7 @@ final class ScoreCalculator
             return null;
         }
 
-        if (! $question->is_scored && ! $type->isScoredType()) {
+        if (! $question->isScored && ! $type->isScoredType()) {
             return null;
         }
 
@@ -30,7 +29,7 @@ final class ScoreCalculator
             return $this->calculateChoiceScore($question, $value);
         }
 
-        $scoringRules = $question->scoring_rules;
+        $scoringRules = $question->scoringRules;
 
         if (! empty($scoringRules) && isset($scoringRules['map'])) {
             return (float) ($scoringRules['map'][(string) $value] ?? 0);
@@ -39,7 +38,7 @@ final class ScoreCalculator
         return null;
     }
 
-    public function calculateMaxScore(FeedbackQuestion $question): ?float
+    public function calculateMaxScore(QuestionDefinition $question): ?float
     {
         $type = FeedbackQuestionType::tryFrom($question->type);
 
@@ -47,16 +46,14 @@ final class ScoreCalculator
             return null;
         }
 
-        if ($question->is_scored && $type->isChoiceType()) {
-            $max = $question->relationLoaded('options')
-                ? $question->options->whereNotNull('score')->max('score')
-                : $question->options()->max('score');
+        if ($question->isScored && $type->isChoiceType()) {
+            $scores = array_filter(array_column($question->options, 'score'), static fn (?float $score): bool => $score !== null);
 
-            return $max !== null ? (float) $max : null;
+            return $scores === [] ? null : max($scores);
         }
 
         if ($type->isScoredType()) {
-            $settings = $question->settings ?? [];
+            $settings = $question->settings;
 
             return (float) match ($type) {
                 FeedbackQuestionType::Nps => 10,
@@ -68,7 +65,7 @@ final class ScoreCalculator
         return null;
     }
 
-    private function calculateChoiceScore(FeedbackQuestion $question, mixed $value): ?float
+    private function calculateChoiceScore(QuestionDefinition $question, mixed $value): ?float
     {
         if ($value === null) {
             return null;
@@ -76,15 +73,10 @@ final class ScoreCalculator
 
         $optionValues = is_array($value) ? $value : [$value];
 
-        $options = $question->relationLoaded('options')
-            ? $question->options
-            : $question->options()->get();
-
         $scoresByValue = [];
-        foreach ($options as $option) {
-            /** @var FeedbackQuestionOption $option */
-            if ($option->score !== null) {
-                $scoresByValue[(string) $option->value] = (float) $option->score;
+        foreach ($question->options as $option) {
+            if ($option['score'] !== null) {
+                $scoresByValue[$option['value']] = $option['score'];
             }
         }
 

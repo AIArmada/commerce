@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 
 test('traits are usable', function (): void {
     expect(trait_exists(HasContactMethods::class))->toBeTrue();

@@ -1,0 +1,123 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentFeedback\Features\Invitations\EntryPoints\Filament\Resources;
+
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+final class FeedbackInvitationResource extends Resource
+{
+    protected static ?string $model = FeedbackInvitation::class;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-feedback.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-feedback.resources.navigation_sort.feedback_invitation');
+
+        return is_numeric($sort) ? (int) $sort : null;
+    }
+
+    public static function getNavigationIcon(): string
+    {
+        return 'heroicon-o-envelope';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
+            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_form_id'));
+
+        return $query->addSelect(['form_name' => $forms->select('name')]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('form_name')
+                    ->label('Form')
+                    ->searchable(query: static fn (Builder $query, string $search): Builder => $query->whereIn(
+                        $query->getModel()->qualifyColumn('feedback_form_id'),
+                        OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)->select('id')->where('name', 'like', '%' . $search . '%'),
+                    )),
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('phone')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('effective_status')
+                    ->badge()
+                    ->formatStateUsing(fn (FeedbackInvitationStatus | string $state): string => $state instanceof FeedbackInvitationStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackInvitationStatus | string $state): string => match ($state instanceof FeedbackInvitationStatus ? $state->value : $state) {
+                        'pending' => 'gray',
+                        'sent' => 'info',
+                        'opened' => 'warning',
+                        'started' => 'warning',
+                        'submitted' => 'success',
+                        'expired' => 'danger',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('sent_at')
+                    ->dateTime()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('opened_at')
+                    ->dateTime()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('submitted_at')
+                    ->dateTime()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('expires_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(FeedbackInvitationStatus::options())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+
+                        if ($status === FeedbackInvitationStatus::Expired->value) {
+                            return $query->where(function (Builder $query): void {
+                                $query
+                                    ->where('status', FeedbackInvitationStatus::Expired->value)
+                                    ->orWhere(function (Builder $query): void {
+                                        $query
+                                            ->whereNotIn('status', self::TERMINAL_STATUSES)
+                                            ->whereNotNull('expires_at')
+                                            ->where('expires_at', '<=', now());
+                                    });
+                            });
+                        }
+
+                        return $status === null ? $query : $query->where('status', $status);
+                    }),
+            ]);
+    }
+
+    /** @var list<string> */
+    private const TERMINAL_STATUSES = [
+        FeedbackInvitationStatus::Submitted->value,
+        FeedbackInvitationStatus::Cancelled->value,
+        FeedbackInvitationStatus::Expired->value,
+    ];
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => FeedbackInvitationResource\Pages\ListFeedbackInvitations::route('/'),
+        ];
+    }
+}

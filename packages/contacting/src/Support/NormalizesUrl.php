@@ -14,30 +14,33 @@ final class NormalizesUrl
 
         $url = mb_trim($url);
 
-        if ($url === '') {
+        if ($url === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $url) === 1) {
             return null;
         }
 
-        // Reject non-http/https URLs explicitly
-        if (preg_match('/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//', $url)) {
-            if (preg_match('#^https?://#i', $url) !== 1) {
+        if (preg_match('#^https?://#i', $url) !== 1) {
+            if (preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $url) === 1
+                || (! str_contains($url, '.') && ! str_starts_with($url, 'localhost'))) {
                 return null;
             }
 
-            $normalized = preg_replace_callback(
-                '#^(https?)://([^/]*)#i',
-                static fn (array $matches): string => mb_strtolower($matches[1]) . '://' . mb_strtolower($matches[2]),
-                $url,
-            );
-
-            return is_string($normalized) ? $normalized : null;
+            $url = 'https://' . $url;
         }
 
-        // If URL has no scheme and looks like a domain, prepend https://
-        if (str_contains($url, '.') || str_contains($url, 'localhost')) {
-            return 'https://' . $url;
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
         }
 
-        return null;
+        $parts = parse_url($url);
+
+        if (! is_array($parts) || ! isset($parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
+            return null;
+        }
+
+        return preg_replace_callback(
+            '~^(https?)://([^/?#]*)~i',
+            static fn (array $matches): string => mb_strtolower($matches[1]) . '://' . mb_strtolower($matches[2]),
+            $url,
+        );
     }
 }

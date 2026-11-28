@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -145,9 +145,9 @@ it('blocks cross-owner contacting writes', function (): void {
         return $customerB->addContactMethod(ContactMethodData::email('snapshot-source-' . uniqid() . '@example.com'));
     });
 
-    expect(fn (): ContactSnapshot => (new CreateContactSnapshotAction)->fromContactMethod(
+    expect(fn (): ContactSnapshot => app(CreateContactSnapshotAction::class)->fromContactMethod(
         $customerA,
-        $contactMethodB,
+        $contactMethodB->id,
         'cross-owner',
     ))->toThrow(AuthorizationException::class);
 });

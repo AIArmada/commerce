@@ -6,8 +6,8 @@ namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipCleaner;
 use AIArmada\Customers\Models\Customer;

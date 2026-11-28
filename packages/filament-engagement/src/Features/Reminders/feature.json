@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Reminders",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentEngagement\\Features\\Reminders\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

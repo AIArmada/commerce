@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Subscriptions",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentEngagement\\Features\\Subscriptions\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

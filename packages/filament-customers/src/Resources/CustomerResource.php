@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\RelationManagers\ContactMethodsRelationManager;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;

@@ -4,26 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\ArchiveFeedbackFormAction;
-use AIArmada\Feedback\Actions\CloseFeedbackFormAction;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\DuplicateFeedbackFormAction;
-use AIArmada\Feedback\Actions\ExtractFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\HideFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\MarkFeedbackInvitationOpenedAction;
-use AIArmada\Feedback\Actions\MarkFeedbackResponseAsSpamAction;
-use AIArmada\Feedback\Actions\PublishFeedbackFormAction;
-use AIArmada\Feedback\Actions\RejectFeedbackResponseAction;
-use AIArmada\Feedback\Actions\RejectFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
-use AIArmada\Feedback\Actions\ReviewFeedbackResponseAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
-use AIArmada\Feedback\Actions\StartFeedbackResponseAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
-use AIArmada\Feedback\Analytics\CsatCalculator;
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
-use AIArmada\Feedback\Analytics\NpsCalculator;
+use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\NpsResultData;
@@ -34,20 +15,37 @@ use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackFormCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationSent;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
-use AIArmada\Feedback\Support\AnswerValueNormalizer;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
+use AIArmada\Feedback\Features\Forms\Actions\ArchiveFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CloseFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\DuplicateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\PublishFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Invitations\Actions\MarkFeedbackInvitationOpenedAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Actions\MarkFeedbackResponseAsSpamAction;
+use AIArmada\Feedback\Features\Responses\Actions\RejectFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\ReviewFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\StartFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Actions\ExtractFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use AIArmada\Feedback\Support\ScoreCalculator;
 use AIArmada\Feedback\Traits\ReceivesFeedback;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\MultipleRecordsFoundException;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -119,7 +117,11 @@ it('creates a full form from a template through the trait', function (): void {
         ],
     ]);
 
-    $form = $traitSubject->createFeedbackFormFromTemplate('trait-template');
+    $formId = $traitSubject->createFeedbackFormFromTemplate('trait-template', [
+        'subject_type' => 'untrusted-type',
+        'subject_id' => 'untrusted-id',
+    ]);
+    $form = FeedbackForm::query()->findOrFail($formId);
 
     expect($form->sections()->count())->toBe(1)
         ->and($form->questions()->count())->toBe(1)
@@ -127,7 +129,7 @@ it('creates a full form from a template through the trait', function (): void {
         ->and($form->subject_type)->toBe($traitSubject->getMorphClass())
         ->and((string) $form->subject_id)->toBe((string) $traitSubject->getKey());
 
-    Event::assertDispatched(FeedbackFormCreated::class);
+    Event::assertDispatched(FeedbackFormCreated::class, fn (FeedbackFormCreated $event): bool => $event->formId === $form->id);
 });
 
 it('aggregates per-question NPS and CSAT over answer scores', function (): void {
@@ -142,15 +144,15 @@ it('aggregates per-question NPS and CSAT over answer scores', function (): void 
 
     app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($nps->id, $nps->key, 10),
             new SubmittedAnswerData($csat->id, $csat->key, 2),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
-    $npsResult = app(NpsCalculator::class)->calculate($form, 'recommendation');
-    $csatResult = app(CsatCalculator::class)->calculate($form, 'satisfaction');
+    $npsResult = app(FeedbackAnalyticsQuery::class)->nps($form->id, 'recommendation');
+    $csatResult = app(FeedbackAnalyticsQuery::class)->csat($form->id, 'satisfaction');
 
     // Response total is 12 (promoter range); per-question aggregates must not see it.
     expect($npsResult->promoterCount)->toBe(1)
@@ -189,7 +191,7 @@ it('guards response, form, invitation, and testimonial lifecycle writes by owner
         fn () => app(MarkFeedbackInvitationOpenedAction::class)->execute($invitation),
         fn () => app(RejectFeedbackTestimonialAction::class)->execute($testimonial),
         fn () => app(HideFeedbackTestimonialAction::class)->execute($testimonial),
-        fn () => app(ExtractFeedbackTestimonialAction::class)->execute($response),
+        fn () => app(ExtractFeedbackTestimonialAction::class)->execute($response->id),
     ];
 
     foreach ($attempts as $attempt) {
@@ -205,7 +207,7 @@ it('returns the reviewed response on resubmit but allows resubmit after rejectio
     $form = regressionPublishedForm('Review Resubmit Form', ['isOneResponsePerRespondent' => true]);
     $data = fn (): SubmitFeedbackResponseData => new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -242,10 +244,10 @@ it('sums per-question maxima for the response max score', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($rating->id, $rating->key, 4),
             new SubmittedAnswerData($choice->id, $choice->key, 'high'),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
@@ -265,7 +267,7 @@ it('separates completed responses from pending review', function (): void {
         'feedback_form_id' => $form->id, 'status' => 'draft', 'is_anonymous' => true,
     ]);
 
-    $live = app(FeedbackAnalyticsService::class)->calculateLive($form);
+    $live = app(FeedbackAnalyticsQuery::class)->calculateLive($form->id);
 
     expect($live->totalResponses)->toBe(3)
         ->and($live->completedResponses)->toBe(2)
@@ -279,7 +281,7 @@ it('calculates live analytics in a single query', function (): void {
     DB::listen(function () use (&$queries): void {
         $queries++;
     });
-    app(FeedbackAnalyticsService::class)->calculateLive($form);
+    app(FeedbackAnalyticsQuery::class)->calculateLive($form->id);
 
     expect($queries)->toBe(1);
 });
@@ -298,7 +300,7 @@ it('scores preloaded choice questions without extra queries', function (): void 
     DB::listen(function () use (&$queries): void {
         $queries++;
     });
-    $score = app(ScoreCalculator::class)->calculateScore($question, ['a', 'b']);
+    $score = app(ScoreCalculator::class)->calculateScore($question->definition(), ['a', 'b']);
 
     expect($score)->toBe(7.0)
         ->and($queries)->toBe(0);
@@ -318,10 +320,10 @@ it('rejects choice values outside the defined options', function (): void {
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($single->id, $single->key, 'hacker'),
             new SubmittedAnswerData($multi->id, $multi->key, ['ok', 'hacker']),
-        ]),
+        ],
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -336,12 +338,12 @@ it('accepts scalar and array matrix answers within the defined options', functio
 
     $scalar = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, 'good')]),
+        answers: [new SubmittedAnswerData($matrix->id, $matrix->key, 'good')],
         isAnonymous: true,
     ));
     $array = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, ['good'])]),
+        answers: [new SubmittedAnswerData($matrix->id, $matrix->key, ['good'])],
         isAnonymous: true,
     ));
 
@@ -349,7 +351,7 @@ it('accepts scalar and array matrix answers within the defined options', functio
         ->and($array->status)->toBe(FeedbackResponseStatus::Submitted)
         ->and(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
             formId: $form->id,
-            answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, 'evil')]),
+            answers: [new SubmittedAnswerData($matrix->id, $matrix->key, 'evil')],
             isAnonymous: true,
         )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -358,14 +360,14 @@ it('marks invitations sent and dispatches the sent event', function (): void {
     Event::fake([FeedbackInvitationCreated::class, FeedbackInvitationSent::class]);
     $form = regressionPublishedForm('Sent Invitation Form');
 
-    $result = app(SendFeedbackInvitationAction::class)->execute(form: $form, email: 'sent@example.com');
+    $result = app(SendFeedbackInvitationAction::class)->execute(formId: $form->id, email: 'sent@example.com');
     $invitation = $result['invitation'];
 
     expect($invitation->status)->toBe(FeedbackInvitationStatus::Sent)
         ->and($invitation->sent_at)->not->toBeNull();
 
-    Event::assertDispatched(FeedbackInvitationCreated::class);
-    Event::assertDispatched(FeedbackInvitationSent::class);
+    Event::assertDispatched(FeedbackInvitationCreated::class, fn (FeedbackInvitationCreated $event): bool => $event->invitationId === $invitation->id);
+    Event::assertDispatched(FeedbackInvitationSent::class, fn (FeedbackInvitationSent $event): bool => $event->invitationId === $invitation->id);
 });
 
 it('rejects respondents outside the allowlist', function (): void {
@@ -375,13 +377,13 @@ it('rejects respondents outside the allowlist', function (): void {
     $user = feedbackRegressionUser('Allowed Respondent');
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $otherForm->getMorphClass(),
         respondentId: (string) $otherForm->getKey(),
     ))->toThrow(InvalidArgumentException::class, 'not allowed');
 
     $response = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $user->getMorphClass(),
         respondentId: (string) $user->getKey(),
     );
@@ -427,7 +429,7 @@ it('rejects disabled question types at submission validation', function (): void
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($question->id, $question->key, 'x')]),
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'x')],
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -436,7 +438,7 @@ it('refuses to start responses on closed forms or invalid invitations', function
     $form = regressionPublishedForm('Start Guard Form');
     app(CloseFeedbackFormAction::class)->execute($form);
 
-    expect(fn () => app(StartFeedbackResponseAction::class)->execute(form: $form, isAnonymous: true))
+    expect(fn () => app(StartFeedbackResponseAction::class)->execute(formId: $form->id, isAnonymous: true))
         ->toThrow(RuntimeException::class, 'not accepting');
 
     $open = regressionPublishedForm('Start Guard Open Form');
@@ -447,8 +449,8 @@ it('refuses to start responses on closed forms or invalid invitations', function
     ]);
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
-        form: $open,
-        invitation: $cancelled,
+        formId: $open->id,
+        invitationId: $cancelled->id,
         isAnonymous: true,
     ))->toThrow(RuntimeException::class, 'cancelled');
 });
@@ -466,10 +468,10 @@ it('extracts testimonials only from sanitized long or short text answers', funct
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($email->id, $email->key, 'user@example.com'),
             new SubmittedAnswerData($story->id, $story->key, '<b>Great</b> product<script>alert(1)</script>'),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
@@ -491,7 +493,7 @@ it('skips testimonial extraction for non-text answers and missing forms', functi
     ]);
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($question->id, $question->key, 'a@example.com')]),
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'a@example.com')],
         isAnonymous: true,
     ));
 
@@ -503,7 +505,7 @@ it('skips testimonial extraction for non-text answers and missing forms', functi
         'is_anonymous' => true,
     ]);
 
-    expect(app(ExtractFeedbackTestimonialAction::class)->execute($orphan))->toBeNull();
+    expect(app(ExtractFeedbackTestimonialAction::class)->execute($orphan->id))->toBeNull();
 });
 
 it('persists response metadata from the submission payload', function (): void {
@@ -511,7 +513,7 @@ it('persists response metadata from the submission payload', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         isAnonymous: true,
         metadata: ['source' => 'repair'],
     ));
@@ -536,8 +538,8 @@ it('throttles invitation resolution per client IP across tokens', function (): v
 it('returns calculated NPS and CSAT results from the analytics service', function (): void {
     $form = regressionPublishedForm('Service Results');
 
-    expect(app(FeedbackAnalyticsService::class)->nps($form))->toBeInstanceOf(NpsResultData::class)
-        ->and(app(FeedbackAnalyticsService::class)->csat($form))->toBeInstanceOf(CsatResultData::class);
+    expect(app(FeedbackAnalyticsQuery::class)->nps($form->id))->toBeInstanceOf(NpsResultData::class)
+        ->and(app(FeedbackAnalyticsQuery::class)->csat($form->id))->toBeInstanceOf(CsatResultData::class);
 });
 
 it('builds the dashboard response trend on sqlite', function (): void {
@@ -549,24 +551,24 @@ it('builds the dashboard response trend on sqlite', function (): void {
         'submitted_at' => CarbonImmutable::now(),
     ]);
 
-    $dashboard = app(FeedbackAnalyticsService::class)->dashboard();
+    $dashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
 
     expect($dashboard['response_trend'])->toBeArray()
         ->and(array_sum($dashboard['response_trend']))->toBe(1);
 });
 
 it('normalizes unsafe numbers and dates to null', function (): void {
-    $normalizer = app(AnswerValueNormalizer::class);
+    $normalizer = app(AnswerNormalizer::class);
 
-    $number = $normalizer->normalize(new FeedbackQuestion(['type' => 'number']), 'abc');
-    $scored = $normalizer->normalize(new FeedbackQuestion(['type' => 'rating']), 'abc');
-    $datetime = $normalizer->normalize(new FeedbackQuestion(['type' => 'datetime']), 'not-a-date');
+    $number = $normalizer->normalize('number', 'abc');
+    $scored = $normalizer->normalize('rating', 'abc');
+    $datetime = $normalizer->normalize('datetime', 'not-a-date');
 
     expect($number['number_value'])->toBeNull()
         ->and($scored['number_value'])->toBeNull()
         ->and($datetime['datetime_value'])->toBeNull();
 
-    $valid = $normalizer->normalize(new FeedbackQuestion(['type' => 'number']), '4.5');
+    $valid = $normalizer->normalize('number', '4.5');
 
     expect($valid['number_value'])->toBe(4.5);
 });
@@ -576,7 +578,7 @@ it('truncates overlong IP addresses on submit', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         isAnonymous: true,
         ipAddress: str_repeat('1', 300),
     ));
@@ -595,7 +597,7 @@ it('persists invitation expiry when submission fails on an expired invitation', 
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         invitationId: $invitation->id,
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'expired');
@@ -695,14 +697,69 @@ it('averages per-question scores over answers on the trait', function (): void {
 
     app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($q1->id, $q1->key, 10),
             new SubmittedAnswerData($q2->id, $q2->key, 0),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
     // Response total is 10; the q2 answer average must be 0, not 10.
     expect($traitSubject->averageFeedbackScore('q2'))->toBe(0.0)
         ->and($traitSubject->averageFeedbackScore('q1'))->toBe(10.0);
+});
+
+it('includes reviewed subject feedback and excludes drafts, rejected and other subjects', function (): void {
+    $subject = feedbackRegressionUser('Metric subject');
+    $traitSubject = RepairReceivesFeedbackUser::query()->whereKey($subject->id)->firstOrFail();
+    $other = feedbackRegressionUser('Other metric subject');
+    $form = regressionPublishedForm('Subject metrics');
+
+    expect($traitSubject->averageFeedbackScore())->toBeNull()
+        ->and($traitSubject->npsScore($form->id))->toBeNull();
+
+    foreach ([
+        ['submitted', 10],
+        ['reviewed', 0],
+        ['draft', 10],
+        ['rejected', 10],
+        ['spam', 10],
+    ] as [$status, $score]) {
+        FeedbackResponse::query()->create([
+            'feedback_form_id' => $form->id,
+            'subject_type' => $traitSubject->getMorphClass(),
+            'subject_id' => $traitSubject->getKey(),
+            'status' => $status,
+            'score' => $score,
+        ]);
+    }
+
+    FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'subject_type' => $traitSubject->getMorphClass(),
+        'subject_id' => $other->getKey(),
+        'status' => 'submitted',
+        'score' => 10,
+    ]);
+
+    expect($traitSubject->averageFeedbackScore())->toBe(5.0)
+        ->and($traitSubject->npsScore($form->id))->toBe(0);
+});
+
+it('rejects ambiguous template slugs without creating a form', function (): void {
+    $subject = feedbackRegressionUser('Ambiguous template subject');
+    $traitSubject = RepairReceivesFeedbackUser::query()->whereKey($subject->id)->firstOrFail();
+
+    foreach (['First', 'Second'] as $name) {
+        FeedbackTemplate::query()->create([
+            'name' => $name,
+            'slug' => 'ambiguous-template',
+            'purpose' => 'general',
+            'status' => 'published',
+        ]);
+    }
+
+    expect(fn () => $traitSubject->createFeedbackFormFromTemplate('ambiguous-template'))
+        ->toThrow(MultipleRecordsFoundException::class)
+        ->and(count($traitSubject->feedbackFormIds()))->toBe(0);
 });

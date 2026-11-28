@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
@@ -49,14 +47,14 @@ beforeEach(function (): void {
         }
     });
 
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('enforces every engagement policy decision', function (): void {
-    $manager = app(EngagementManager::class);
-    $subscriptions = app(SubscriptionManager::class);
-    $reminders = app(ReminderManager::class);
+    $manager = app(ManageInteractionsAction::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
+    $reminders = app(ManageRemindersAction::class);
 
     expect(fn () => $manager->follow($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class)

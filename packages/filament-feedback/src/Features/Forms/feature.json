@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Forms",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentFeedback\\Features\\Forms\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

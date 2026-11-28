@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentFeedback\FilamentFeedbackTestCase;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentFeedback\Exports\FeedbackResponsesExport;
-use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackInvitationResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackResponseResource;
-use AIArmada\FilamentFeedback\Support\FeedbackDashboardMemo;
+use AIArmada\FilamentFeedback\Features\Analytics\Queries\FeedbackDashboardMemo;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
+use AIArmada\FilamentFeedback\Features\Invitations\EntryPoints\Filament\Resources\FeedbackInvitationResource;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Exports\FeedbackResponsesExport;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Resources\FeedbackResponseResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 
@@ -42,8 +42,8 @@ it('shares one dashboard computation across widgets within a request', function 
         ->and($queries)->toBeEmpty();
 });
 
-it('leaves response counting to the table column', function (): void {
-    expect(FeedbackFormResource::getEloquentQuery()->toSql())->not->toContain('responses');
+it('projects response counts without loading a cross-feature relation', function (): void {
+    expect(FeedbackFormResource::getEloquentQuery()->toSql())->toContain('responses_count');
 });
 
 it('keeps network identifiers out of the response export', function (): void {
@@ -54,7 +54,7 @@ it('keeps network identifiers out of the response export', function (): void {
     expect($columns)->not->toContain('ip_address');
 });
 
-it('eager loads the parent form on invitation and response tables', function (): void {
-    expect(FeedbackInvitationResource::getEloquentQuery()->getEagerLoads())->toHaveKey('form')
-        ->and(FeedbackResponseResource::getEloquentQuery()->getEagerLoads())->toHaveKey('form');
+it('projects the parent form name on invitation and response tables without ORM relationships', function (): void {
+    expect(FeedbackInvitationResource::getEloquentQuery()->toSql())->toContain('form_name')
+        ->and(FeedbackResponseResource::getEloquentQuery()->toSql())->toContain('form_name');
 });

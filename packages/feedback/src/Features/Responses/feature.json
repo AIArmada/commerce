@@ -1,0 +1,27 @@
+{
+    "schema": 1,
+    "name": "Responses",
+    "owns": {
+        "table:feedback_answers": [
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\CalculateFeedbackAnswerScoreAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteFeedbackAnswerDependentsAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteFeedbackResponseDependentsAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\NormalizeFeedbackAnswerAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\ValidateFeedbackAnswersAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\SubmitFeedbackResponseAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteResponseDependenciesAction"
+        ],
+        "table:feedback_responses": [
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\CalculateFeedbackResponseScoreAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteFeedbackAnswerDependentsAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteFeedbackResponseDependentsAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\MarkFeedbackResponseAsSpamAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\RejectFeedbackResponseAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\ReviewFeedbackResponseAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\StartFeedbackResponseAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\SubmitFeedbackResponseAction",
+            "AIArmada\\Feedback\\Features\\Responses\\Actions\\DeleteResponseDependenciesAction"
+        ]
+    },
+    "extensions": {}
+}
