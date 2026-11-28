@@ -109,7 +109,7 @@ it('matches per-line results and resolves the default list once', function (): v
     expect($defaultListQueries)->toHaveCount(1);
 });
 
-it('keeps explicit price lists per line in batch mode', function (): void {
+it('resolves an explicit price list once in batch mode', function (): void {
     $list = PriceList::create([
         'name' => 'Explicit List',
         'slug' => 'explicit-list-' . uniqid(),
@@ -128,11 +128,39 @@ it('keeps explicit price lists per line in batch mode', function (): void {
         'currency' => 'MYR',
     ]);
 
+    $item = new BatchPricingItem($itemId, 9000);
+    DB::enableQueryLog();
+
     $results = $this->calculator->calculateMany(
-        [['item' => new BatchPricingItem($itemId, 9000)]],
+        [['item' => $item], ['item' => $item], ['item' => $item]],
         ['price_list_id' => $list->id],
     );
 
-    expect($results[0]->finalPrice)->toBe(2500)
-        ->and($results[0]->priceListName)->toBe('Explicit List');
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($results)->toHaveCount(3);
+
+    foreach ($results as $result) {
+        expect($result->finalPrice)->toBe(2500)
+            ->and($result->priceListName)->toBe('Explicit List');
+    }
+
+    $listQueries = array_values(array_filter(
+        $queries,
+        fn (array $query): bool => str_contains($query['query'], 'price_lists'),
+    ));
+
+    expect($listQueries)->toHaveCount(1);
+});
+
+it('does not resolve price lists for empty batches', function (): void {
+    DB::enableQueryLog();
+
+    expect($this->calculator->calculateMany([]))->toBe([]);
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toBe([]);
 });

@@ -35,8 +35,8 @@ final class PriceCalculator implements PriceCalculatorInterface
     ) {}
 
     /**
-     * Calculate prices for many lines at once, resolving the default price
-     * list a single time instead of once per line.
+     * Calculate prices for many lines at once, resolving the requested or
+     * default price list a single time instead of once per line.
      *
      * @param  array<int, array{item: Priceable, quantity?: int}>  $lines
      * @param  array<string, mixed>  $context
@@ -44,14 +44,20 @@ final class PriceCalculator implements PriceCalculatorInterface
      */
     public function calculateMany(array $lines, array $context = []): array
     {
+        if ($lines === []) {
+            return [];
+        }
+
         $context['effective_at'] = $this->resolveEffectiveAt($context);
-        $shareDefault = Arr::get($context, 'price_list_id') === null;
-        $defaultList = $shareDefault ? $this->resolveDefaultPriceList($context) : null;
+        $priceListId = Arr::get($context, 'price_list_id');
+        $priceList = is_string($priceListId) && $priceListId !== ''
+            ? EligiblePriceLists::query($context, $context['effective_at'], $this->resolveCurrency($context))->whereKey($priceListId)->first()
+            : $this->resolveDefaultPriceList($context);
 
         $results = [];
 
         foreach ($lines as $index => $line) {
-            $results[$index] = $this->calculateWithList($line['item'], $line['quantity'] ?? 1, $context, $defaultList, $shareDefault);
+            $results[$index] = $this->calculateWithList($line['item'], $line['quantity'] ?? 1, $context, $priceList, true);
         }
 
         return $results;
@@ -62,7 +68,7 @@ final class PriceCalculator implements PriceCalculatorInterface
         return $this->calculateWithList($item, $quantity, $context, null, false);
     }
 
-    private function calculateWithList(Priceable $item, int $quantity, array $context, ?PriceList $defaultList, bool $shareDefault): PriceResultData
+    private function calculateWithList(Priceable $item, int $quantity, array $context, ?PriceList $resolvedList, bool $listResolved): PriceResultData
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
         $context['effective_at'] = $effectiveAt;
@@ -138,7 +144,7 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context, $effectiveAt, $defaultList, $shareDefault);
+        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context, $effectiveAt, $resolvedList, $listResolved);
         if ($priceListResult !== null) {
             $breakdown[] = ['type' => 'price_list', 'price' => $priceListResult['price'], 'list' => $priceListResult['name']];
 
@@ -172,17 +178,17 @@ final class PriceCalculator implements PriceCalculatorInterface
         return get_class($item);
     }
 
-    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context, CarbonImmutable $effectiveAt, ?PriceList $defaultList = null, bool $shareDefault = false): ?array
+    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context, CarbonImmutable $effectiveAt, ?PriceList $resolvedList = null, bool $listResolved = false): ?array
     {
         $currency = $this->resolveCurrency($context);
         $priceListId = Arr::get($context, 'price_list_id');
 
-        if (is_string($priceListId) && $priceListId !== '') {
+        if ($listResolved) {
+            $priceList = $resolvedList;
+        } elseif (is_string($priceListId) && $priceListId !== '') {
             $priceList = EligiblePriceLists::query($context, $effectiveAt, $currency)
                 ->whereKey($priceListId)
                 ->first();
-        } elseif ($shareDefault || $defaultList !== null) {
-            $priceList = $defaultList;
         } else {
             $priceList = $this->resolveDefaultPriceList($context);
         }
