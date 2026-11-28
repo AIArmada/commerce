@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables;
 
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
-use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -26,7 +26,7 @@ class RewardFundingTable
                 TextColumn::make('balances')
                     ->label('Funded / Avail')
                     ->state(function (RewardFundingEntry $record): string {
-                        $balances = RewardBudgetLedger::balances((string) $record->program_id, (string) $record->currency);
+                        $balances = app(RewardBudgetReadApi::class)->balances((string) $record->program_id, (string) $record->currency);
 
                         return $balances['funded'] . ' / ' . $balances['available'];
                     }),

@@ -7,8 +7,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -35,7 +35,7 @@ class RewardBenefitItemsTable
                 TextColumn::make('cost')->state(fn (RewardBenefitItem $record): string => $record->direct_entitlement ? 'direct' : ((string) $record->cost_points . ' ' . (string) $record->cost_unit)),
                 TextColumn::make('stock')
                     ->state(function (RewardBenefitItem $record): string {
-                        $balances = RewardBenefitStockLedger::balances($record);
+                        $balances = app(RewardBenefitStockReadApi::class)->balances((string) $record->getKey());
 
                         return $balances['available'] . ' / ' . $balances['capacity'];
                     }),

@@ -134,7 +134,10 @@ final class RewardBenefitStockLedger
                 throw $exception;
             }
 
-            $existing = RewardBenefitStockMovement::query()->where('movement_key', $movementKey)->first();
+            $existing = RewardBenefitStockMovement::query()
+                ->where('movement_key', $movementKey)
+                ->lockForUpdate()
+                ->first();
 
             if ($existing instanceof RewardBenefitStockMovement
                 && $existing->kind === $kind

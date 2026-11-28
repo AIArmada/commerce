@@ -18,8 +18,12 @@ use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\RewardRecoveryReso
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 use Illuminate\Foundation\Auth\Access\Authorizable;
@@ -185,5 +189,33 @@ describe('reward admin query scoping', function (): void {
 
         expect($visible)->not->toContain(RewardAwardStatus::Approved->value)
             ->and(RewardFraudResource::getEloquentQuery()->whereKey($held->getKey())->exists())->toBeTrue();
+    });
+});
+
+it('checks program ownership when reading reward stock and budget balances', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $program = OwnerContext::withOwner($owner, fn (): RewardProgram => RewardProgram::factory()->create());
+    $item = RewardBenefitItem::factory()->create(['program_id' => $program->getKey(), 'capacity' => 12]);
+    $budget = app(RewardBudgetReadApi::class);
+    $stock = app(RewardBenefitStockReadApi::class);
+
+    OwnerContext::withOwner($owner, function () use ($budget, $stock, $program, $item): void {
+        expect($budget->balances((string) $program->getKey(), 'MYR'))->toBe([
+            'funded' => 0,
+            'reserved' => 0,
+            'net_spent' => 0,
+            'available' => 0,
+        ])->and($stock->balances((string) $item->getKey()))->toBe([
+            'capacity' => 12,
+            'reserved' => 0,
+            'consumed' => 0,
+            'available' => 12,
+        ]);
+    });
+
+    OwnerContext::withOwner($other, function () use ($budget, $stock, $program, $item): void {
+        expect(fn () => $budget->balances((string) $program->getKey(), 'MYR'))->toThrow(AuthorizationException::class)
+            ->and(fn () => $stock->balances((string) $item->getKey()))->toThrow(AuthorizationException::class);
     });
 });
