@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
 use AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
@@ -40,7 +41,7 @@ final readonly class BulkTransferPassesAction
         $requestedPassIds = array_values(array_unique($passIds));
 
         return (new Pass)->getConnection()->transaction(function () use ($requestedPassIds, $newHolder, $reason, $holderAttributes, $authorizedBy): Collection {
-            $passes = Pass::query()->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
+            $passes = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
             $missingPassIds = array_values(array_diff($requestedPassIds, $passes->modelKeys()));
 
             if ($missingPassIds !== []) {

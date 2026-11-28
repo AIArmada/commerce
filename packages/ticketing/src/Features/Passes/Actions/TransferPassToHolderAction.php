@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Data\TransferInputData;
@@ -27,7 +28,7 @@ final readonly class TransferPassToHolderAction
         ?Model $authorizedBy = null,
     ): PassHolder {
         return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $holderAttributes, $reason, $authorizedBy): PassHolder {
-            $lockedPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
+            $lockedPass = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->whereKey($pass->getKey())->lockForUpdate()->first();
 
             if (! $lockedPass instanceof Pass) {
                 throw new AuthorizationException('The pass is not accessible in the current owner scope.');

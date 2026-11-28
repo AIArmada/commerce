@@ -12,6 +12,7 @@ use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 function createUserHolder(string $name, string $email): User
 {
@@ -262,4 +263,44 @@ it('does not allow a stale or foreign holder id to be used through the transfer 
             existing_holder_id: (string) $holder->getKey(),
         ),
     ))->toThrow(InvalidArgumentException::class, 'different pass');
+});
+
+it('does not let an owner transfer a readable global pass', function (): void {
+    config()->set('ticketing.owner.include_global', true);
+    Pass::clearBootedModels();
+
+    try {
+        $owner = User::factory()->create();
+        $pass = OwnerContext::withOwner(null, fn (): Pass => Pass::factory()->create());
+
+        OwnerContext::withOwner($owner, function () use ($pass): void {
+            expect(Pass::query()->whereKey($pass->getKey())->exists())->toBeTrue();
+
+            $writer = app(PassTransferServiceInterface::class);
+
+            expect($writer->canTransfer((string) $pass->getKey()))->toBeFalse()
+                ->and(fn () => $writer->transfer(new TransferInputData(
+                    pass_id: (string) $pass->getKey(),
+                    name: 'Unauthorized Recipient',
+                )))->toThrow(AuthorizationException::class)
+                ->and(fn () => app(TransferPassToHolderAction::class)->handle(
+                    $pass,
+                    PassHolder::factory()->make(),
+                ))->toThrow(AuthorizationException::class)
+                ->and(fn () => app(BulkTransferPassesAction::class)->handle(
+                    [(string) $pass->getKey()],
+                    PassHolder::factory()->make(),
+                ))->toThrow(ModelNotFoundException::class);
+        });
+
+        OwnerContext::withOwner(null, function () use ($pass): void {
+            expect(PassHolder::query()->where('pass_id', $pass->getKey())->count())->toBe(0)
+                ->and(PassTransfer::query()->where('pass_id', $pass->getKey())->count())->toBe(0);
+
+            expect(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeTrue();
+        });
+    } finally {
+        config()->set('ticketing.owner.include_global', false);
+        Pass::clearBootedModels();
+    }
 });

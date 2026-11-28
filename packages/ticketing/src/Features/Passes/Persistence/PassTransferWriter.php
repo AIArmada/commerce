@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Persistence;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Data\TransferInputData;
@@ -22,7 +23,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
     public function transfer(TransferInputData $input): string
     {
         return (new Pass)->getConnection()->transaction(function () use ($input): string {
-            $pass = Pass::query()->whereKey($input->pass_id)->lockForUpdate()->first();
+            $pass = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->whereKey($input->pass_id)->lockForUpdate()->first();
 
             if (! $pass instanceof Pass) {
                 throw new AuthorizationException('The pass is not accessible in the current owner scope.');
@@ -124,7 +125,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
 
     public function canTransfer(string $passId): bool
     {
-        $pass = Pass::query()->find($passId);
+        $pass = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->find($passId);
 
         return $pass instanceof Pass && $this->isTransferable($pass);
     }
