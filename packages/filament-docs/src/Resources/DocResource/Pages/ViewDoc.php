@@ -14,6 +14,8 @@ use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
@@ -40,6 +42,7 @@ final class ViewDoc extends ViewRecord
                 ->openUrlInNewTab(),
 
             Actions\Action::make('generate_pdf')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Generate PDF')
                 ->icon(Heroicon::OutlinedDocumentArrowDown)
                 ->color('info')
@@ -57,6 +60,7 @@ final class ViewDoc extends ViewRecord
                 }),
 
             Actions\Action::make('create_share_link')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Share')
                 ->icon(Heroicon::OutlinedLink)
                 ->form([
@@ -89,6 +93,7 @@ final class ViewDoc extends ViewRecord
                 }),
 
             Actions\Action::make('revoke_share_links')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Revoke Links')
                 ->icon(Heroicon::OutlinedNoSymbol)
                 ->color('warning')
@@ -111,6 +116,7 @@ final class ViewDoc extends ViewRecord
 
             Actions\ActionGroup::make([
                 Actions\Action::make('mark_sent')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Sent')
                     ->icon(Heroicon::OutlinedPaperAirplane)
                     ->color('info')
@@ -122,6 +128,7 @@ final class ViewDoc extends ViewRecord
                     }),
 
                 Actions\Action::make('mark_paid')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Paid')
                     ->icon(Heroicon::OutlinedBanknotes)
                     ->color('success')
@@ -133,6 +140,7 @@ final class ViewDoc extends ViewRecord
                     }),
 
                 Actions\Action::make('cancel')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Cancel Document')
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
@@ -150,6 +158,7 @@ final class ViewDoc extends ViewRecord
                 ->color('gray'),
 
             Actions\Action::make('delete')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                 ->label('Delete')
                 ->icon(Heroicon::OutlinedTrash)
                 ->color('danger')
@@ -167,7 +176,7 @@ final class ViewDoc extends ViewRecord
 
     private static function canCancel(Doc $record): bool
     {
-        return ! $record->status->equals(Paid::class) && ! $record->status->equals(Cancelled::class);
+        return ! $record->status->equals(Paid::class) && ! $record->status->equals(Cancelled::class) && ! $record->status->equals(Refunded::class);
     }
 
     /**

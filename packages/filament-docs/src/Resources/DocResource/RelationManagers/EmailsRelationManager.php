@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Contracts\DocumentEmailSender;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -78,6 +79,7 @@ final class EmailsRelationManager extends RelationManager
             ])
             ->recordActions([
                 Action::make('resend')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->requiresConfirmation()

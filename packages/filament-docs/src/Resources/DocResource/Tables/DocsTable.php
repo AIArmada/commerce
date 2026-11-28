@@ -13,6 +13,8 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
 use AIArmada\FilamentDocs\Support\DocBulkActions;
@@ -119,7 +121,7 @@ final class DocsTable
                     ->query(
                         fn (Builder $query): Builder => $query
                             ->where('due_date', '<', CarbonImmutable::now())
-                            ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class)])
+                            ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class), DocStatus::normalize(Refunded::class)])
                     ),
 
                 Filter::make('paid')
@@ -158,6 +160,7 @@ final class DocsTable
 
                 ActionGroup::make([
                     Action::make('generate_pdf')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Generate PDF')
                         ->icon(Heroicon::OutlinedDocumentArrowDown)
                         ->action(function (Doc $record): void {
@@ -169,6 +172,7 @@ final class DocsTable
                     RecordPaymentAction::make(),
 
                     Action::make('mark_sent')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Mark as Sent')
                         ->icon(Heroicon::OutlinedPaperAirplane)
                         ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
@@ -179,6 +183,7 @@ final class DocsTable
                         }),
 
                     Action::make('mark_paid')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Mark as Paid')
                         ->icon(Heroicon::OutlinedBanknotes)
                         ->color('success')
@@ -190,6 +195,7 @@ final class DocsTable
                         }),
 
                     Action::make('delete')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                         ->label('Delete')
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
@@ -204,6 +210,7 @@ final class DocsTable
             ])
             ->toolbarActions([
                 BulkAction::make('generate_pdfs')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Generate PDFs')
                     ->icon(Heroicon::OutlinedDocumentArrowDown)
                     ->requiresConfirmation()
@@ -214,6 +221,7 @@ final class DocsTable
                     ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('mark_as_sent')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Sent')
                     ->icon(Heroicon::OutlinedPaperAirplane)
                     ->action(function (Collection $records): void {
@@ -223,6 +231,7 @@ final class DocsTable
                     ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('delete_selected')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                     ->label('Delete Selected')
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')

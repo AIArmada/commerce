@@ -8,6 +8,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
+use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
+use AIArmada\FilamentDocs\Actions\SendEmailAction;
 use AIArmada\FilamentDocs\Pages\AgingReportPage;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
@@ -182,4 +184,16 @@ it('still lets the assigned user act without the approval ability (M5)', functio
     $this->actingAs($other);
 
     expect($method->invoke(null, $assigned))->toBeFalse();
+});
+
+it('requires document update permission for custom payment and email actions', function (): void {
+    $this->actingAs(filamentDocs_userWithAbilities(['document.viewAny', 'document.view']));
+
+    expect(RecordPaymentAction::make()->isAuthorized())->toBeFalse()
+        ->and(SendEmailAction::make()->isAuthorized())->toBeFalse();
+
+    $this->actingAs(filamentDocs_userWithAbilities(['document.update']));
+
+    expect(RecordPaymentAction::make()->isAuthorized())->toBeTrue()
+        ->and(SendEmailAction::make()->isAuthorized())->toBeTrue();
 });

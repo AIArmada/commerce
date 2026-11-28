@@ -12,6 +12,7 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -36,6 +37,7 @@ final class RecordPaymentAction
     public static function make(): Action
     {
         return Action::make('record_payment')
+            ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
             ->label('Record Payment')
             ->icon(Heroicon::OutlinedBanknotes)
             ->color('success')

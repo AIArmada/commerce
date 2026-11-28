@@ -10,6 +10,7 @@ use AIArmada\Docs\Contracts\DocumentPaymentEditor;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\CreateAction;
@@ -103,10 +104,12 @@ final class PaymentsRelationManager extends RelationManager
             ->filters([])
             ->headerActions([
                 CreateAction::make()
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->using(fn (array $data): DocPayment => static::recordPaymentForDoc($this->getOwnerDoc(), $data)),
             ])
             ->recordActions([
                 EditAction::make()
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->using(fn (DocPayment $record, array $data): DocPayment => static::updatePaymentForDoc($this->getOwnerDoc(), $record, $data)),
             ])
             ->defaultSort('paid_at', 'desc');

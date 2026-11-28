@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Contracts\DocumentEmailSender;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -26,6 +27,7 @@ final class SendEmailAction
     public static function make(string $name = 'send_email'): Action
     {
         return Action::make($name)
+            ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
             ->label(__('Send Email'))
             ->icon('heroicon-o-envelope')
             ->color('info')
