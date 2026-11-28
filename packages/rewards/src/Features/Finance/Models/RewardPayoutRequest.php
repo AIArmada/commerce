@@ -6,7 +6,6 @@ namespace AIArmada\Rewards\Features\Finance\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardPayoutRequestFactory;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
-use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -58,7 +57,6 @@ use LogicException;
  * @property string|null $confirmed_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read RewardAward $award
  * @property-read RewardPayee $payee
  */
 class RewardPayoutRequest extends Model
@@ -120,14 +118,6 @@ class RewardPayoutRequest extends Model
             'failed_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<RewardAward, $this>
-     */
-    public function award(): BelongsTo
-    {
-        return $this->belongsTo(RewardAward::class, 'award_id');
     }
 
     /**

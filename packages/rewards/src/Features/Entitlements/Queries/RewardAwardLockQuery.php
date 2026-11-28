@@ -22,7 +22,7 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
             $query->lockForUpdate();
         }
 
-        $award = $query->first(['id', 'program_id', 'recipient_id', 'status']);
+        $award = $query->first(['id', 'program_id', 'recipient_type', 'recipient_id', 'status']);
 
         if ($award === null) {
             return null;
@@ -32,6 +32,7 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 
         return new RewardAwardDecision(
             id: (string) $award->getKey(),
+            recipientType: (string) $award->recipient_type,
             recipientId: (string) $award->recipient_id,
             status: $award->status->value,
         );

@@ -6,13 +6,11 @@ namespace AIArmada\Rewards\Features\Points\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardPointLotFactory;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
-use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -41,7 +39,6 @@ use LogicException;
  * @property CarbonImmutable|null $expired_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read RewardAward $award
  * @property-read Collection<int, RewardPointMovement> $movements
  */
 class RewardPointLot extends Model
@@ -86,14 +83,6 @@ class RewardPointLot extends Model
             'depleted_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<RewardAward, $this>
-     */
-    public function award(): BelongsTo
-    {
-        return $this->belongsTo(RewardAward::class, 'award_id');
     }
 
     /**

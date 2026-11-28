@@ -12,7 +12,7 @@ use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -35,10 +35,10 @@ class RewardPayoutsTable
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(function (RewardPayoutRequest $record): string {
-                        $award = RewardAward::query()->whereKey((string) $record->award_id)->first();
+                        $award = app(RewardAwardLockApi::class)->findAwardDecision((string) $record->award_id);
 
-                        return $award instanceof RewardAward
-                            ? RewardAdminPresenter::recipientLabel((string) $award->recipient_type, (string) $award->recipient_id)
+                        return $award !== null
+                            ? RewardAdminPresenter::recipientLabel($award->recipientType, $award->recipientId)
                             : '—';
                     }),
                 TextColumn::make('amount_minor')->label('Amount (minor)')->numeric(),
