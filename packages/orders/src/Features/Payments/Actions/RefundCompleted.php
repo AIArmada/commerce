@@ -126,13 +126,14 @@ final class RefundCompleted extends Transition
                 $lockedOrder->refresh();
             }
 
-            event(new OrderRefunded(
+            $event = new OrderRefunded(
                 $lockedOrder,
                 $amount,
                 $lockedRefund->reason,
                 (string) $lockedRefund->getKey(),
                 $lockedRefund->metadata ?? [],
-            ));
+            );
+            $lockedOrder->getConnection()->afterCommit(static fn () => event($event));
 
             return $lockedOrder;
         });

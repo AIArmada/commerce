@@ -181,13 +181,14 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         // One event per persisted allocation row: the recorded identity
         // and amount are per-payment facts, not the aggregate request.
         foreach ($created as $refund) {
-            event(new OrderRefunded(
+            $event = new OrderRefunded(
                 $order,
                 (int) $refund->amount,
                 $reason,
                 (string) $refund->getKey(),
                 $metadata,
-            ));
+            );
+            $order->getConnection()->afterCommit(static fn () => event($event));
         }
 
         return $order;
@@ -533,7 +534,8 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         });
 
         if ($changed) {
-            event(new OrderRefundFailed($failed->order, $failed, $reason, $failed->metadata ?? []));
+            $event = new OrderRefundFailed($failed->order, $failed, $reason, $failed->metadata ?? []);
+            $failed->getConnection()->afterCommit(static fn () => event($event));
         }
 
         return $failed;

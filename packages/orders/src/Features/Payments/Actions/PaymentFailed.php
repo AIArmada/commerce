@@ -48,8 +48,8 @@ final class PaymentFailed extends Transition
             app(OrderPaymentLifecycle::class)->markPaymentFailed((string) $this->order->getKey());
             $this->order->refresh();
 
-            // Dispatch event
-            event(new OrderPaymentFailed($this->order, $this->reason));
+            $event = new OrderPaymentFailed($this->order, $this->reason);
+            $this->order->getConnection()->afterCommit(static fn () => event($event));
 
             return $this->order;
         });

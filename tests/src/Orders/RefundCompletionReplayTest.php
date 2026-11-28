@@ -163,3 +163,33 @@ it('rejects lifecycle settlement without the corresponding accounting totals', f
         ->toThrow(LogicException::class, 'Only fully refunded orders')
         ->and($order->refresh()->refunded_at)->toBeNull();
 });
+
+it('does not dispatch refund events for rolled back financial changes', function (string $operation): void {
+    Event::fake([OrderRefunded::class, OrderRefundFailed::class]);
+
+    $order = ord06Order();
+    $payment = ord06Payment($order, 'rollback-' . $operation);
+    $action = app(RegisterOrderRefund::class);
+    $refund = $operation === 'direct'
+        ? null
+        : $action->createPending($order->refresh(), 1000, 'rollback-' . $operation, 'Refund', [], $payment)[0];
+
+    expect(fn () => $order->getConnection()->transaction(function () use ($order, $payment, $action, $refund, $operation): void {
+        match ($operation) {
+            'direct' => $action->execute($order->refresh(), 1000, 'rollback-direct', 'Refund', [], $payment),
+            'complete' => $action->completePending($refund),
+            'fail' => $action->failPending($refund, 'Provider rejected'),
+        };
+
+        Event::assertNotDispatched(OrderRefunded::class);
+        Event::assertNotDispatched(OrderRefundFailed::class);
+
+        throw new RuntimeException('Rollback refund');
+    }))->toThrow(RuntimeException::class, 'Rollback refund');
+
+    Event::assertNotDispatched(OrderRefunded::class);
+    Event::assertNotDispatched(OrderRefundFailed::class);
+
+    expect($order->refresh()->getTotalRefunded())->toBe(0)
+        ->and($order->getTotalPendingRefunded())->toBe($operation === 'direct' ? 0 : 1000);
+})->with(['direct', 'complete', 'fail']);
