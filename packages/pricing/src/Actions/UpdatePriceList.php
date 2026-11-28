@@ -6,6 +6,7 @@ namespace AIArmada\Pricing\Actions;
 
 use AIArmada\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class UpdatePriceList
 {
@@ -14,7 +15,9 @@ final readonly class UpdatePriceList
     {
         return DB::transaction(function () use ($priceList, $attributes): PriceList {
             $record = PriceList::query()->forOwner()->whereKey($priceList->getKey())->lockForUpdate()->firstOrFail();
-            $record->update($attributes);
+            if (! $record->update($attributes)) {
+                throw new RuntimeException('Pricing record write was cancelled.');
+            }
 
             return $record;
         });

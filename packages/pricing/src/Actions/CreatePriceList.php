@@ -7,6 +7,7 @@ namespace AIArmada\Pricing\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class CreatePriceList
 {
@@ -25,7 +26,9 @@ final readonly class CreatePriceList
                 }
             }
 
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Pricing record write was cancelled.');
+            }
 
             return $record;
         });

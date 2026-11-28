@@ -9,6 +9,7 @@ use AIArmada\Pricing\Models\PriceList;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class EnsurePriceListBySlug
 {
@@ -36,7 +37,9 @@ final readonly class EnsurePriceListBySlug
                             $candidate->assignOwner($owner);
                         }
 
-                        $candidate->save();
+                        if (! $candidate->save()) {
+                            throw new RuntimeException('Pricing record write was cancelled.');
+                        }
 
                         return $candidate;
                     });
@@ -51,8 +54,8 @@ final readonly class EnsurePriceListBySlug
 
             $list->fill(Arr::except($attributes, ['id', 'slug', 'owner_type', 'owner_id']));
 
-            if ($list->isDirty()) {
-                $list->save();
+            if ($list->isDirty() && ! $list->save()) {
+                throw new RuntimeException('Pricing record write was cancelled.');
             }
 
             return $list;

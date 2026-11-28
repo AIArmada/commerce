@@ -7,6 +7,7 @@ namespace AIArmada\Pricing\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SavePrice
 {
@@ -25,7 +26,9 @@ final readonly class SavePrice
                 }
             }
 
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Pricing record write was cancelled.');
+            }
 
             return $record;
         });
@@ -36,7 +39,9 @@ final readonly class SavePrice
     {
         return DB::transaction(function () use ($record, $attributes): Price {
             $locked = Price::query()->forOwner()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
-            $locked->update($attributes);
+            if (! $locked->update($attributes)) {
+                throw new RuntimeException('Pricing record write was cancelled.');
+            }
 
             return $locked;
         });

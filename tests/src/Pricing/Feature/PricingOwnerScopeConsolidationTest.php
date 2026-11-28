@@ -122,3 +122,33 @@ it('assigns the active pricing owner when automatic assignment is disabled', fun
             ->and(Price::query()->forOwner()->where('price_list_id', $list->id)->count())->toBe(1);
     });
 });
+
+it('rolls back cancelled pricing writes including default list demotion', function (): void {
+    config()->set('pricing.features.owner.enabled', false);
+
+    $list = app(CreatePriceList::class)->execute([
+        'name' => 'Original default',
+        'slug' => 'original-default',
+        'currency' => 'MYR',
+        'is_default' => true,
+    ]);
+
+    $product = Product::query()->create(['name' => 'Pricing cancellation product', 'price' => 1000]);
+    $price = app(EnsureListPrice::class)->execute($list, $product->getMorphClass(), $product->id, 900, null, 'MYR');
+
+    PriceList::creating(static fn (PriceList $record): bool => $record->slug !== 'cancelled-default');
+    Price::updating(static fn (Price $record): bool => $record->getKey() !== $price->getKey());
+
+    expect(fn () => app(CreatePriceList::class)->execute([
+        'name' => 'Cancelled default',
+        'slug' => 'cancelled-default',
+        'currency' => 'MYR',
+        'is_default' => true,
+    ]))->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(SavePrice::class)->update($price, ['amount' => 100]))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(EnsureListPrice::class)->execute($list, $product->getMorphClass(), $product->id, 100, null, 'MYR'))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and($list->fresh()->is_default)->toBeTrue()
+        ->and($price->fresh()->amount)->toBe(900);
+});

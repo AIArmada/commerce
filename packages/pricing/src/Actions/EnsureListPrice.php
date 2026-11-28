@@ -8,6 +8,7 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class EnsureListPrice
 {
@@ -50,8 +51,8 @@ final readonly class EnsureListPrice
 
             $price->fill($values);
 
-            if ($price->isDirty()) {
-                $price->save();
+            if ($price->isDirty() && ! $price->save()) {
+                throw new RuntimeException('Pricing record write was cancelled.');
             }
 
             return $price;

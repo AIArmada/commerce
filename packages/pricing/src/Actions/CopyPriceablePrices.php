@@ -9,6 +9,7 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceTier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use InvalidArgumentException;
 
 final readonly class CopyPriceablePrices
@@ -37,7 +38,9 @@ final readonly class CopyPriceablePrices
                     foreach ($prices as $price) {
                         $copy = $price->replicate();
                         $copy->priceable_id = $target->getKey();
-                        $copy->save();
+                        if (! $copy->save()) {
+                            throw new RuntimeException('Pricing record write was cancelled.');
+                        }
                     }
                 });
 
@@ -48,7 +51,9 @@ final readonly class CopyPriceablePrices
                     foreach ($records as $tier) {
                         $copy = $tier->replicate();
                         $copy->tierable_id = $target->getKey();
-                        $copy->save();
+                        if (! $copy->save()) {
+                            throw new RuntimeException('Pricing record write was cancelled.');
+                        }
                     }
                 });
         }, 3);
