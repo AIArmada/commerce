@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Models\DocVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -18,7 +19,7 @@ test('doc version restore', function (): void {
         'snapshot' => $snapshot,
     ]);
 
-    $version->restore();
+    app(DocumentVersions::class)->restore((string) $version->getKey());
 
     expect($doc->fresh()->notes)->toBe('Old Notes');
 });

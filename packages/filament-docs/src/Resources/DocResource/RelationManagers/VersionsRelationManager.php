@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Models\DocVersion;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -72,7 +73,7 @@ final class VersionsRelationManager extends RelationManager
                             throw new NotFoundHttpException('Document not found.');
                         }
 
-                        $record->restore();
+                        app(DocumentVersions::class)->restore((string) $record->getKey());
                         $this->dispatch('refresh');
                     }),
             ])

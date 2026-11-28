@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Docs\Actions\CreateDocVersion;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentSequence;
@@ -448,7 +448,9 @@ final class DocService implements DocServiceInterface
      */
     public function createVersion(Doc $doc, ?string $summary = null): DocVersion
     {
-        return app(CreateDocVersion::class)->execute($doc, $summary);
+        $versionId = app(DocumentVersions::class)->capture((string) $doc->getKey(), $summary);
+
+        return $doc->versions()->findOrFail($versionId);
     }
 
     /**

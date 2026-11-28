@@ -14,6 +14,7 @@ use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Mail\DocMail;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
@@ -343,7 +344,7 @@ test('restore applies the snapshot through the service and records a version', f
     $service->update($doc, ['notes' => 'v2 notes']);
 
     $firstVersion = $doc->versions()->orderBy('version_number')->firstOrFail();
-    $firstVersion->restore();
+    app(DocumentVersions::class)->restore((string) $firstVersion->getKey());
 
     $fresh = $doc->fresh();
 
@@ -366,7 +367,7 @@ test('restore ignores immutable snapshot keys', function (): void {
         'change_summary' => 'seed',
     ]);
 
-    $version->restore();
+    app(DocumentVersions::class)->restore((string) $version->getKey());
 
     $fresh = $doc->fresh();
 

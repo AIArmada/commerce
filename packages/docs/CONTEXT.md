@@ -42,6 +42,7 @@ keywords:
 - Owner/security: Persisted document models use `HasOwner`; write logic belongs to core Actions, not UI adapters.
 
 ## Key surfaces
+- Versioning feature: `Features/Versioning` owns document version writes; use `Contracts/DocumentVersions` for capture and restore.
 - Numbering feature: `Features/Numbering` owns sequence configuration and counters; document creation uses `Contracts/DocumentSequence`.
 - Models: `Doc`, `DocApproval`, `DocEInvoiceSubmission`, `DocEmail`, `DocEmailTemplate`, `DocPayment`, `DocSequence`, `DocShareLink`, `DocStatusHistory`, `DocTemplate`, `DocVersion`, `DocWorkflow`, `DocWorkflowStep`, `SequenceNumber`
 - Actions/Services: `Services/DocEmailService`, `Features/Payments/Actions/RecordDocPayment`, `Services/DocRenderService`, `Services/DocService`, `Services/DocTotals`, `Services/DueDocReminders`, `Services/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
