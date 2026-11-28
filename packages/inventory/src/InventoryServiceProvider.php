@@ -54,7 +54,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->registerCoreServices();
         $this->registerFeatureModules();
     }
 
@@ -95,16 +94,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
             'inventory',
             'inventory.allocations',
         ];
-    }
-
-    /**
-     * Register core inventory services.
-     */
-    private function registerCoreServices(): void
-    {
-        $this->app->singleton(InventoryService::class);
-        $this->app->alias(InventoryService::class, 'inventory');
-
     }
 
     private function registerFeatureModules(): void

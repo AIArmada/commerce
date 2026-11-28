@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Traits;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Queries\InventoryStockQuery;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -47,7 +47,7 @@ trait HasInventory
      */
     public function getTotalOnHand(): int
     {
-        return $this->getInventoryService()->getTotalOnHand($this);
+        return app(InventoryStockQuery::class)->getTotalOnHand($this);
     }
 
     /**
@@ -55,7 +55,7 @@ trait HasInventory
      */
     public function getTotalAvailable(): int
     {
-        return $this->getInventoryService()->getTotalAvailable($this);
+        return app(InventoryStockQuery::class)->getTotalAvailable($this);
     }
 
     /**
@@ -63,7 +63,7 @@ trait HasInventory
      */
     public function hasInventory(int $quantity = 1): bool
     {
-        return $this->getInventoryService()->hasInventory($this, $quantity);
+        return app(InventoryStockQuery::class)->hasInventory($this, $quantity);
     }
 
     /**
@@ -71,7 +71,7 @@ trait HasInventory
      */
     public function getInventoryAtLocation(string $locationId): ?InventoryLevel
     {
-        return $this->getInventoryService()->getLevel($this, $locationId);
+        return app(InventoryStockQuery::class)->getLevel($this, $locationId);
     }
 
     /**
@@ -81,7 +81,7 @@ trait HasInventory
      */
     public function getAvailability(): array
     {
-        return $this->getInventoryService()->getAvailability($this);
+        return app(InventoryStockQuery::class)->getAvailability($this);
     }
 
     /**
@@ -100,7 +100,7 @@ trait HasInventory
      */
     public function getInventoryHistory(int $limit = 50): Collection
     {
-        return $this->getInventoryService()->getMovementHistory($this, $limit);
+        return app(InventoryStockQuery::class)->getMovementHistory($this, $limit);
     }
 
     /**
@@ -110,16 +110,6 @@ trait HasInventory
     {
         $threshold ??= (int) config('inventory.default_reorder_point', 10);
 
-        return $threshold >= 0 && $this->inventoryLevels()
-            ->whereRaw('(quantity_on_hand - quantity_reserved) <= ?', [$threshold])
-            ->exists();
-    }
-
-    /**
-     * Get the inventory service instance.
-     */
-    protected function getInventoryService(): InventoryService
-    {
-        return app(InventoryService::class);
+        return app(InventoryStockQuery::class)->isLowInventory($this, $threshold);
     }
 }

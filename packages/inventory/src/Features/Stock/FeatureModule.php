@@ -17,17 +17,22 @@ use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Stock\Queries\AllocationCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\DeductionCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
+use AIArmada\Inventory\Features\Stock\Queries\InventoryStockQuery;
 use AIArmada\Inventory\Features\Stock\Queries\LocationVisibilityQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockIdentityQuery;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(InventoryService::class);
+        $app->alias(InventoryService::class, 'inventory');
+        $app->singleton(InventoryStockQuery::class);
         $app->singleton(FulfillmentLocationService::class);
         $app->singleton(AllocationCandidates::class, AllocationCandidatesQuery::class);
         $app->singleton(DeductionCandidates::class, DeductionCandidatesQuery::class);

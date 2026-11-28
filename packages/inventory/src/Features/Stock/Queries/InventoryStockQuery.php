@@ -157,6 +157,16 @@ final readonly class InventoryStockQuery
         return $this->getTotalAvailable($model) >= $quantity;
     }
 
+    public function isLowInventory(Model $model, int $threshold): bool
+    {
+        return $threshold >= 0 && InventoryOwnerScope::applyToLocationQuery(
+            InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->whereHas('location', fn (Builder $location): Builder => InventoryOwnerScope::applyToLocationQuery($location)->where('is_active', true))
+        )->whereRaw($this->availablePerLevelExpression() . ' <= ?', [$threshold])->exists();
+    }
+
     /**
      * Get inventory level at a specific location.
      */

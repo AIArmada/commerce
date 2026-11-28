@@ -32,6 +32,24 @@ describe('InventoryService', function (): void {
         ]);
     });
 
+    it('does not create default locations for unsuccessful default stock operations', function (): void {
+        InventoryLocation::query()->where('code', InventoryLocation::DEFAULT_LOCATION_CODE)->delete();
+
+        expect(fn () => $this->inventoryService->receiveAtDefault($this->item, 0))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->inventoryService->shipFromDefault($this->item, 1))
+            ->toThrow(InsufficientInventoryException::class)
+            ->and(InventoryLocation::query()->where('code', InventoryLocation::DEFAULT_LOCATION_CODE)->exists())->toBeFalse();
+    });
+
+    it('receives and ships through the canonical default-location actions', function (): void {
+        $receipt = $this->inventoryService->receiveAtDefault($this->item, 4);
+        $shipment = $this->inventoryService->shipFromDefault($this->item, 1);
+
+        expect($receipt->to_location_id)->toBe($shipment->from_location_id)
+            ->and($this->inventoryService->getTotalAvailable($this->item))->toBe(3);
+    });
+
     it('receives inventory and records movement', function (): void {
         Event::fake();
 

@@ -175,6 +175,13 @@ describe('HasInventory trait', function (): void {
             expect($this->item->isLowInventory(10))->toBeTrue();
         });
 
+        it('excludes inactive locations from low-stock checks', function (): void {
+            $this->location->update(['is_active' => false]);
+
+            expect($this->item->isLowInventory(100))->toBeFalse()
+                ->and($this->item->getTotalAvailable())->toBe(0);
+        });
+
         it('uses default threshold from config', function (): void {
             config(['inventory.default_reorder_point' => 200]);
 

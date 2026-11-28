@@ -7,7 +7,8 @@ namespace AIArmada\Inventory\Services;
 use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Actions\BootstrapInventory;
 use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
-use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveAtDefault;
+use AIArmada\Inventory\Features\Stock\Actions\ShipFromDefault;
 use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
@@ -189,9 +190,7 @@ final class InventoryService
         ?string $note = null,
         ?string $userId = null
     ): InventoryMovement {
-        $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
-
-        return $this->receive($model, $location->id, $quantity, $reason, $note, $userId);
+        return app(ReceiveAtDefault::class)->handle($model, $quantity, $reason, $note, $userId);
     }
 
     /**
@@ -205,8 +204,6 @@ final class InventoryService
         ?string $note = null,
         ?string $userId = null
     ): InventoryMovement {
-        $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
-
-        return $this->ship($model, $location->id, $quantity, $reason, $reference, $note, $userId);
+        return app(ShipFromDefault::class)->handle($model, $quantity, $reason, $reference, $note, $userId);
     }
 }
