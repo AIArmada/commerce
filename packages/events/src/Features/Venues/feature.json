@@ -3,10 +3,12 @@
   "name": "Venues",
   "owns": {
     "table:event_venues": [
-      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueDependents"
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\ImportVenueAction"
     ],
     "table:event_venue_spaces": [
-      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents"
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\ManageVenueSpaceAction"
     ],
     "table:event_venue_space_types": [
       "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents"
