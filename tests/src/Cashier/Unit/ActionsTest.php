@@ -172,6 +172,10 @@ describe('Actions', function (): void {
     });
 
     describe('CancelSubscription', function (): void {
+        beforeEach(function (): void {
+            $this->subscriptionMock->shouldReceive('owner')->once()->andReturn($this->billable);
+        });
+
         it('cancels at period end and dispatches SubscriptionCanceled', function (): void {
             $this->subscriptionMock->shouldReceive('cancel')->once()->andReturn($this->subscriptionMock);
             $this->subscriptionMock->shouldNotReceive('cancelNow');

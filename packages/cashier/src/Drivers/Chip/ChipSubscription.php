@@ -216,7 +216,7 @@ class ChipSubscription implements SubscriptionContract
     public function owner(): BillableContract
     {
         /** @var BillableContract */
-        return $this->subscription->owner;
+        return $this->subscription->billable;
     }
 
     /**

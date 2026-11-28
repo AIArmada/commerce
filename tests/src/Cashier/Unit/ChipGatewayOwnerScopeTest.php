@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Drivers\Chip\ChipSubscription as UnifiedChipSubscription;
 use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\Tenant;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -78,4 +80,13 @@ it('does not retrieve a CHIP subscription owned by another tenant', function ():
     expect($resolved)->not->toBeNull()
         ->and($resolved?->id())->toBe($subscriptionId)
         ->and($crossTenant)->toBeNull();
+});
+
+it('resolves the subscription billable rather than its tenant owner', function (): void {
+    $billable = new ChipBillableUser;
+    $subscription = new ChipSubscription;
+    $subscription->setRelation('billable', $billable);
+    $subscription->setRelation('owner', new Tenant);
+
+    expect((new UnifiedChipSubscription($subscription))->owner())->toBe($billable);
 });
