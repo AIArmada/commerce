@@ -114,7 +114,7 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
     }
 
     $manager = Mockery::mock(CartInstanceManager::class);
-    $manager->shouldNotReceive('resolve');
+    $manager->shouldNotReceive('resolveForSnapshot');
     app()->instance(CartInstanceManager::class, $manager);
 
     expect($bridge->getCartInstance($cartOwnedByB))->toBeNull();
@@ -127,4 +127,32 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
     expect(fn () => $bridge->removeVoucher($cartOwnedByB, 'SAVE10'))
         ->toThrow(VoucherException::class, 'not authorized');
 
+});
+
+it('blocks global and foreign cart access even when voucher ownership is disabled', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('vouchers.owner.enabled', false);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $attributes = ['instance' => 'default', 'identifier' => 'owner-collision', 'currency' => 'USD'];
+    $global = OwnerContext::withOwner(null, fn () => Cart::query()->create($attributes));
+    $foreign = OwnerContext::withOwner($other, fn () => Cart::query()->create($attributes));
+    $owned = OwnerContext::withOwner($owner, fn () => Cart::query()->create($attributes));
+
+    OwnerContext::withOwner($owner, function () use ($global, $foreign, $owned): void {
+        expect(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($global))->toBeFalse()
+            ->and(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($foreign))->toBeFalse()
+            ->and(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($owned))->toBeTrue();
+
+        $manager = Mockery::mock(CartInstanceManager::class);
+        $manager->shouldNotReceive('resolveForSnapshot');
+        app()->instance(CartInstanceManager::class, $manager);
+
+        $bridge = new FilamentCartBridge;
+        expect(fn () => $bridge->applyVoucher($global, 'SAVE10'))->toThrow(VoucherException::class)
+            ->and(fn () => $bridge->removeVoucher($foreign, 'SAVE10'))->toThrow(VoucherException::class);
+    });
 });

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Cart\Runtime\CartInstanceManager;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
 use Filament\Actions\Action;
@@ -41,32 +40,19 @@ final class ApplyVoucherToCartAction
             ->action(function (array $data, Cart $record): void {
                 $code = $data['voucher_code'] ?? '';
 
-                if (config('vouchers.owner.enabled', false)) {
-                    $isVisible = OwnerQuery::applyToEloquentBuilder(
-                        Cart::query(),
-                        OwnerContext::resolve(),
-                        (bool) config('vouchers.owner.include_global', false),
-                    )
-                        ->whereKey($record->getKey())
-                        ->exists();
+                if (! CartSnapshotAccess::allows($record)) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Not Authorized')
+                        ->body('You cannot modify this cart.')
+                        ->icon(Heroicon::OutlinedExclamationCircle)
+                        ->send();
 
-                    if (! $isVisible) {
-                        Notification::make()
-                            ->warning()
-                            ->title('Not Authorized')
-                            ->body('You cannot modify this cart.')
-                            ->icon(Heroicon::OutlinedExclamationCircle)
-                            ->send();
-
-                        return;
-                    }
+                    return;
                 }
 
                 try {
-                    $cartInstance = app(CartInstanceManager::class)->resolve(
-                        $record->instance,
-                        $record->identifier
-                    );
+                    $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($record->toSnapshotData());
 
                     app(CartVoucherApplicator::class)->handle($cartInstance, $code);
 

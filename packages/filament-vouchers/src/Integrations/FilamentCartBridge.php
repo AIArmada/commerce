@@ -6,11 +6,10 @@ namespace AIArmada\FilamentVouchers\Integrations;
 
 use AIArmada\Cart\Cart as LiveCart;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
@@ -44,30 +43,6 @@ final class FilamentCartBridge
             $this->cartModel = Cart::class;
             $this->cartResource = CartResource::class;
         }
-    }
-
-    private function isOwnerEnabled(): bool
-    {
-        return (bool) config('vouchers.owner.enabled', false);
-    }
-
-    /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    private function scopeForOwner(Builder $query): Builder
-    {
-        if (! $this->isOwnerEnabled()) {
-            return $query;
-        }
-
-        return OwnerQuery::applyToEloquentBuilder(
-            $query,
-            OwnerContext::resolve(),
-            (bool) config('vouchers.owner.include_global', false),
-        );
     }
 
     public function isAvailable(): bool
@@ -124,7 +99,7 @@ final class FilamentCartBridge
 
         try {
             $query = $model::query();
-            $query = $this->scopeForOwner($query);
+            $query = CartSnapshotAccess::scope($query);
 
             /** @var Model|null $cart */
             $cart = $query
@@ -162,7 +137,7 @@ final class FilamentCartBridge
         try {
             $query = $model::query();
 
-            return $this->scopeForOwner($query)->find($cartId);
+            return CartSnapshotAccess::scope($query)->find($cartId);
         } catch (Throwable $exception) {
             Log::debug('FilamentCartBridge: Failed to find cart', [
                 'cart_id' => $cartId,
@@ -185,10 +160,7 @@ final class FilamentCartBridge
 
         try {
             /** @var Cart $cart */
-            return app(CartInstanceManager::class)->resolve(
-                $cart->instance,
-                $cart->identifier
-            );
+            return app(CartInstanceManager::class)->resolveForSnapshot($cart->toSnapshotData());
         } catch (Throwable $exception) {
             Log::debug('FilamentCartBridge: Failed to get cart instance', [
                 'cart_id' => $cart->getKey(),
@@ -290,7 +262,7 @@ final class FilamentCartBridge
 
             /** @var Builder<Model> $query */
             $query = $model::query();
-            $query = $this->scopeForOwner($query);
+            $query = CartSnapshotAccess::scope($query);
             $driver = ConnectionDriver::name($query->getConnection());
             $escapeClause = LikeSearch::escapeClause($query);
 
@@ -339,7 +311,7 @@ final class FilamentCartBridge
         try {
             /** @var Builder<Model> $query */
             $query = $model::query();
-            $query = $this->scopeForOwner($query);
+            $query = CartSnapshotAccess::scope($query);
             $driver = ConnectionDriver::name($query->getConnection());
             $condition = match ($driver) {
                 'pgsql' => 'conditions::text ILIKE ?',
@@ -369,16 +341,6 @@ final class FilamentCartBridge
 
     private function isCartVisibleToCurrentOwner(Model $cart): bool
     {
-        if (! $this->isOwnerEnabled()) {
-            return true;
-        }
-
-        $cartClass = $cart::class;
-
-        /** @var Builder<Model> $query */
-        $query = $cartClass::query();
-        $query = $this->scopeForOwner($query);
-
-        return $query->whereKey($cart->getKey())->exists();
+        return CartSnapshotAccess::allows($cart);
     }
 }

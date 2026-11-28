@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -56,18 +57,8 @@ final class VoucherSuggestionsWidget extends Widget
             return collect();
         }
 
-        if (config('vouchers.owner.enabled', false)) {
-            $isVisible = OwnerQuery::applyToEloquentBuilder(
-                Cart::query(),
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            )
-                ->whereKey($this->record->getKey())
-                ->exists();
-
-            if (! $isVisible) {
-                return collect();
-            }
+        if (! CartSnapshotAccess::allows($this->record)) {
+            return collect();
         }
 
         try {
@@ -154,25 +145,15 @@ final class VoucherSuggestionsWidget extends Widget
             return;
         }
 
-        if (config('vouchers.owner.enabled', false)) {
-            $isVisible = OwnerQuery::applyToEloquentBuilder(
-                Cart::query(),
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            )
-                ->whereKey($this->record->getKey())
-                ->exists();
+        if (! CartSnapshotAccess::allows($this->record)) {
+            Notification::make()
+                ->warning()
+                ->title('Not Authorized')
+                ->body('You cannot modify this cart.')
+                ->icon(Heroicon::OutlinedExclamationCircle)
+                ->send();
 
-            if (! $isVisible) {
-                Notification::make()
-                    ->warning()
-                    ->title('Not Authorized')
-                    ->body('You cannot modify this cart.')
-                    ->icon(Heroicon::OutlinedExclamationCircle)
-                    ->send();
-
-                return;
-            }
+            return;
         }
 
         try {
@@ -188,10 +169,7 @@ final class VoucherSuggestionsWidget extends Widget
                 return;
             }
 
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $this->record->instance,
-                $this->record->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($this->record->toSnapshotData());
 
             app(CartVoucherApplicator::class)->handle($cartInstance, $voucher->code);
 
@@ -234,10 +212,7 @@ final class VoucherSuggestionsWidget extends Widget
         try {
             /** @var Cart $cartRecord */
             $cartRecord = $this->record;
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $cartRecord->instance,
-                $cartRecord->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($cartRecord->toSnapshotData());
 
             $appliedVouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 

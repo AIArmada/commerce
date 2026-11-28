@@ -56,7 +56,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $live->registerDynamicCondition($applied->toCartCondition(), null, $applied->getRuleFactoryKey(), $applied->getRuleFactoryContext());
 
     $manager = Mockery::mock(CartInstanceManager::class);
-    $manager->shouldReceive('resolve')->andReturn($live);
+    $manager->shouldReceive('resolveForSnapshot')->andReturn($live);
     app()->instance(CartInstanceManager::class, $manager);
 
     $voucher = Voucher::query()->create([
@@ -105,7 +105,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     // Cart branch (Throwable)
     app()->instance(CartInstanceManager::class, new class
     {
-        public function resolve(string $instance, string $identifier): object
+        public function resolveForSnapshot(\AIArmada\Cart\Data\CartSnapshotData $snapshot): object
         {
             throw new RuntimeException('Boom');
         }
@@ -226,7 +226,7 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
     $voucher->assignOwner($ownerA)->save();
 
     $manager = Mockery::mock(CartInstanceManager::class);
-    $manager->shouldNotReceive('resolve');
+    $manager->shouldNotReceive('resolveForSnapshot');
     app()->instance(CartInstanceManager::class, $manager);
 
     $suggestions = app(VoucherSuggestionsWidget::class);
