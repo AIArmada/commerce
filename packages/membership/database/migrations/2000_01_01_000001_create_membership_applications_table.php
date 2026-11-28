@@ -21,6 +21,7 @@ return new class extends Migration
             $table->uuid('subject_id');
             $table->foreignUuid('applicant_id')->nullable();
             $table->string('status')->default('pending');
+            $table->unsignedTinyInteger('pending_guard')->nullable()->storedAs("CASE WHEN status = 'pending' THEN 1 ELSE NULL END");
             $table->string('granted_role')->nullable();
             $table->text('justification');
             $table->foreignUuid('reviewer_id')->nullable();
@@ -37,8 +38,8 @@ return new class extends Migration
             $table->index('reviewer_id');
             $table->index('cancelled_by');
             $table->unique(
-                ['subject_type', 'subject_id', 'applicant_id', 'status'],
-                'membership_applications_subject_applicant_status_unique',
+                ['subject_type', 'subject_id', 'applicant_id', 'status', 'pending_guard'],
+                'membership_applications_pending_unique',
             );
         });
     }

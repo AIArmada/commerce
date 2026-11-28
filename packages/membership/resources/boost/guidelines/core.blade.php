@@ -5,3 +5,5 @@ Membership owns applications, invitations and membership-role reconciliation. Ca
 Register invitation transport and verifier implementations through `AIArmada\Membership\Support\InvitationChannelManager`; built-in email adapters live under `AIArmada\Membership\Drivers`.
 
 The `membership:sync-roles` command is registered from `AIArmada\Membership\EntryPoints\Commands\SyncRolesCommand` and delegates role reconciliation to `SyncMembershipRolesAction`.
+
+Only one pending application per subject and applicant is allowed. The database-generated pending guard preserves all terminal application history without preventing subsequent applications or requiring lifecycle writers to maintain a second status field.

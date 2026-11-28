@@ -21,7 +21,7 @@ use ValueError;
 
 final class ApplyForMembershipAction
 {
-    private const string UNIQUE_INDEX = 'membership_applications_subject_applicant_status_unique';
+    private const string UNIQUE_INDEX = 'membership_applications_pending_unique';
 
     use AsAction;
 
@@ -145,6 +145,7 @@ final class ApplyForMembershipAction
             && str_contains($message, 'subject_type')
             && str_contains($message, 'subject_id')
             && str_contains($message, 'applicant_id')
-            && str_contains($message, 'status');
+            && str_contains($message, 'status')
+            && str_contains($message, 'pending_guard');
     }
 }

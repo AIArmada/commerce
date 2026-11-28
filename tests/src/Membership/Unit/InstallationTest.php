@@ -22,7 +22,7 @@ it('creates membership applications table', function (): void {
 
     expect($schema->hasTable('membership_applications'))->toBeTrue()
         ->and($schema->hasColumns('membership_applications', ['owner_type', 'owner_id']))->toBeTrue()
-        ->and($schema->hasIndex('membership_applications', 'membership_applications_subject_applicant_status_unique'))->toBeTrue();
+        ->and($schema->hasIndex('membership_applications', 'membership_applications_pending_unique'))->toBeTrue();
 });
 
 it('creates membership invitations table', function (): void {

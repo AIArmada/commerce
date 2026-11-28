@@ -45,6 +45,8 @@ class MembershipApplication extends Model
         'meta',
     ];
 
+    protected $hidden = ['pending_guard'];
+
     protected static string $ownerScopeConfigKey = 'membership.owner';
 
     protected static bool $ownerScopeEnabledByDefault = true;
