@@ -6,11 +6,13 @@ namespace AIArmada\Inventory\Features\Traceability;
 
 use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Features\Traceability\Api\BatchAging;
+use AIArmada\Inventory\Features\Traceability\Api\BatchExportRows;
 use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchAgingQuery;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchExportRowsQuery;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchIdentityQuery;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
@@ -22,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->singleton(BatchService::class);
         $app->singleton(BatchAging::class, BatchAgingQuery::class);
+        $app->singleton(BatchExportRows::class, BatchExportRowsQuery::class);
         $app->singleton(BatchIdentity::class, BatchIdentityQuery::class);
         $app->bind(BatchReservationBalances::class, BatchAllocationService::class);
         $app->singleton(SerialService::class);

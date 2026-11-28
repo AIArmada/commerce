@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Traceability\Api\BatchExportRows;
 use Carbon\CarbonImmutable;
 
 /**
  * Export batch/lot information.
  */
-final class BatchExport implements ExportableInterface
+final readonly class BatchExport implements ExportableInterface
 {
     public function __construct(
         private ?string $status = null,
@@ -43,44 +42,7 @@ final class BatchExport implements ExportableInterface
 
     public function getRows(): iterable
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()->with('location:id,name')
-        );
-
-        if ($this->status !== null) {
-            $query->where('status', $this->status);
-        }
-
-        if ($this->expiringOnly) {
-            $expiryDate = CarbonImmutable::now()->addDays($this->expiringWithinDays);
-            $query->whereNotNull('expires_at')
-                ->where('expires_at', '<=', $expiryDate)
-                ->where('expires_at', '>', CarbonImmutable::now());
-        }
-
-        foreach ($query->orderBy('id')->lazy(500) as $batch) {
-            $daysUntilExpiry = $batch->expires_at !== null
-                ? CarbonImmutable::now()->diffInDays($batch->expires_at, false)
-                : null;
-
-            yield [
-                $batch->batch_number,
-                $batch->inventoryable_type,
-                $batch->inventoryable_id,
-                $batch->location->name ?? 'Unknown',
-                $batch->quantity_on_hand,
-                $batch->status,
-                $batch->unit_cost_minor !== null ? $batch->unit_cost_minor / 100 : 0,
-                ($batch->quantity_on_hand * ($batch->unit_cost_minor ?? 0)) / 100,
-                $batch->manufactured_at?->format('Y-m-d'),
-                $batch->expires_at?->format('Y-m-d'),
-                $daysUntilExpiry,
-                $batch->supplier_id,
-                $batch->purchase_order_number,
-                $batch->metadata['notes'] ?? null,
-                $batch->created_at->format('Y-m-d H:i:s'),
-            ];
-        }
+        return app(BatchExportRows::class)->rows($this->status, $this->expiringOnly, $this->expiringWithinDays);
     }
 
     public function getFilename(): string

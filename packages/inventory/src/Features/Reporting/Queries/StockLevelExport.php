@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Stock\Api\StockExportRows;
 use Carbon\CarbonImmutable;
-use InvalidArgumentException;
 
 /**
  * Export stock levels to various formats.
  */
-final class StockLevelExport implements ExportableInterface
+final readonly class StockLevelExport implements ExportableInterface
 {
     /**
      * @param  array<string, mixed>  $filters
@@ -42,57 +39,7 @@ final class StockLevelExport implements ExportableInterface
 
     public function getRows(): iterable
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->with('location:id,name')
-        );
-
-        if (isset($this->filters['location_id'])) {
-            $locationId = (string) $this->filters['location_id'];
-
-            if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
-
-                if (! $isAllowed) {
-                    throw new InvalidArgumentException('Invalid location for current owner');
-                }
-            }
-
-            $query->where('location_id', $locationId);
-        }
-
-        if (isset($this->filters['low_stock_only']) && $this->filters['low_stock_only']) {
-            $query->lowStock();
-        }
-
-        if (isset($this->filters['out_of_stock_only']) && $this->filters['out_of_stock_only']) {
-            $query->where('quantity_on_hand', '<=', 0);
-        }
-
-        foreach ($query->orderBy('id')->lazy(500) as $level) {
-            $available = $level->available;
-            $status = match (true) {
-                $level->quantity_on_hand <= 0 => 'Out of Stock',
-                $level->isLowStock() => 'Low Stock',
-                $level->needsReorder() => 'Reorder Needed',
-                default => 'In Stock',
-            };
-
-            yield [
-                $level->inventoryable_type,
-                $level->inventoryable_id,
-                $level->location->name ?? 'Unknown',
-                $level->quantity_on_hand,
-                $level->quantity_reserved,
-                $available,
-                $level->safety_stock ?? 0,
-                $level->max_stock ?? 0,
-                $level->reorder_point ?? 0,
-                $status,
-                $level->updated_at->format('Y-m-d H:i:s'),
-            ];
-        }
+        return app(StockExportRows::class)->levels($this->filters);
     }
 
     public function getFilename(): string

@@ -6,11 +6,8 @@ namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Stock\Api\StockExportRows;
 use Carbon\CarbonImmutable;
-use InvalidArgumentException;
 
 /**
  * Export inventory movements to various formats.
@@ -47,52 +44,12 @@ final class MovementExport implements ExportableInterface
 
     public function getRows(): iterable
     {
-        $query = InventoryMovement::query()
-            ->with(['fromLocation:id,name', 'toLocation:id,name'])
-            ->whereBetween('occurred_at', [$this->startDate, $this->endDate])
-            ->orderBy('occurred_at', 'desc');
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($query);
-        }
-
-        if ($this->movementType !== null) {
-            $query->where('type', $this->movementType->value);
-        }
-
-        if ($this->locationId !== null) {
-            if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($this->locationId)
-                    ->exists();
-
-                if (! $isAllowed) {
-                    throw new InvalidArgumentException('Invalid location for current owner');
-                }
-            }
-
-            $query->where(function ($q): void {
-                $q->where('from_location_id', $this->locationId)
-                    ->orWhere('to_location_id', $this->locationId);
-            });
-        }
-
-        foreach ($query->orderBy('id')->lazy(500) as $movement) {
-            yield [
-                $movement->id,
-                $movement->type,
-                $movement->inventoryable_type,
-                $movement->inventoryable_id,
-                $movement->fromLocation?->name ?? '-',
-                $movement->toLocation?->name ?? '-',
-                $movement->quantity,
-                $movement->reason,
-                $movement->reference,
-                $movement->note,
-                $movement->occurred_at->format('Y-m-d H:i:s'),
-                $movement->created_at->format('Y-m-d H:i:s'),
-            ];
-        }
+        return app(StockExportRows::class)->movements(
+            $this->startDate ?? CarbonImmutable::now()->subMonth(),
+            $this->endDate ?? CarbonImmutable::now(),
+            $this->movementType?->value,
+            $this->locationId,
+        );
     }
 
     public function getFilename(): string
