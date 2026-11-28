@@ -6,7 +6,7 @@ namespace AIArmada\Pricing\Support;
 
 use AIArmada\Pricing\Contracts\CustomerPriceResolverInterface;
 use AIArmada\Pricing\Models\Price;
-use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use Illuminate\Support\Arr;
 
 final class CustomerPriceResolver implements CustomerPriceResolverInterface
@@ -36,9 +36,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
             ->forQuantity($quantity)
             ->whereIn(
                 'price_list_id',
-                PriceList::query()
-                    ->active($effectiveAt)
-                    ->where('currency', $currency)
+                EligiblePriceLists::query($context, $effectiveAt, $currency)
                     ->where('customer_id', $customerId)
                     ->select('id')
             )

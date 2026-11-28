@@ -7,8 +7,8 @@ namespace AIArmada\Pricing\Support;
 use AIArmada\Pricing\Contracts\TierResolverInterface;
 use AIArmada\Pricing\Data\TierPriceResultData;
 use AIArmada\Pricing\Events\TierApplied;
-use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use Illuminate\Support\Arr;
 
 final class TierResolver implements TierResolverInterface
@@ -25,9 +25,7 @@ final class TierResolver implements TierResolverInterface
         $priceListId = Arr::get($context, 'price_list_id');
         $currency = $this->resolveCurrency($context);
 
-        if (is_string($priceListId) && $priceListId !== '' && ! PriceList::query()
-            ->active($this->resolveEffectiveAt($context))
-            ->where('currency', $currency)
+        if (is_string($priceListId) && $priceListId !== '' && ! EligiblePriceLists::query($context, $this->resolveEffectiveAt($context), $currency)
             ->whereKey($priceListId)
             ->exists()) {
             $priceListId = null;

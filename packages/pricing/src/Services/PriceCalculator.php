@@ -14,6 +14,7 @@ use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Events\PriceCalculated;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\ResolvesCurrency;
 use AIArmada\Pricing\Support\ResolvesEffectiveAt;
@@ -177,8 +178,7 @@ final class PriceCalculator implements PriceCalculatorInterface
         $priceListId = Arr::get($context, 'price_list_id');
 
         if (is_string($priceListId) && $priceListId !== '') {
-            $priceList = PriceList::query()->active($effectiveAt)
-                ->where('currency', $currency)
+            $priceList = EligiblePriceLists::query($context, $effectiveAt, $currency)
                 ->whereKey($priceListId)
                 ->first();
         } elseif ($shareDefault || $defaultList !== null) {
@@ -218,8 +218,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
 
-        return PriceList::query()->active($effectiveAt)
-            ->where('currency', $this->resolveCurrency($context))
+        return EligiblePriceLists::query($context, $effectiveAt, $this->resolveCurrency($context))
             ->default()
             ->orderByDesc('priority')
             ->orderBy('created_at')

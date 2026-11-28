@@ -6,7 +6,7 @@ namespace AIArmada\Pricing\Support;
 
 use AIArmada\Pricing\Contracts\SegmentPriceResolverInterface;
 use AIArmada\Pricing\Models\Price;
-use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use Illuminate\Support\Arr;
 
 final class SegmentPriceResolver implements SegmentPriceResolverInterface
@@ -21,7 +21,11 @@ final class SegmentPriceResolver implements SegmentPriceResolverInterface
     {
         $segmentIds = Arr::get($context, 'segment_ids');
 
-        if (! is_array($segmentIds) || $segmentIds === []) {
+        $segmentIds = is_array($segmentIds)
+            ? array_values(array_filter($segmentIds, static fn (mixed $id): bool => is_string($id) && $id !== ''))
+            : [];
+
+        if ($segmentIds === []) {
             return null;
         }
 
@@ -36,9 +40,7 @@ final class SegmentPriceResolver implements SegmentPriceResolverInterface
             ->forQuantity($quantity)
             ->whereIn(
                 'price_list_id',
-                PriceList::query()
-                    ->active($effectiveAt)
-                    ->where('currency', $currency)
+                EligiblePriceLists::query($context, $effectiveAt, $currency)
                     ->whereIn('segment_id', $segmentIds)
                     ->select('id')
             )

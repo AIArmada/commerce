@@ -716,3 +716,56 @@ describe('TestPriceableItem', function (): void {
         expect($item->isOnSale())->toBeFalse();
     });
 });
+
+it('does not expose customer-specific prices through explicit or default list selection', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $customerId = (string) Illuminate\Support\Str::uuid();
+    $item = new TestPriceableItem((string) Illuminate\Support\Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Private Customer List',
+        'slug' => 'private-customer-list',
+        'customer_id' => $customerId,
+        'is_default' => true,
+        'currency' => 'MYR',
+    ]);
+    Price::create([
+        'price_list_id' => $list->id,
+        'priceable_type' => TestPriceableItem::class,
+        'priceable_id' => $item->getBuyableIdentifier(),
+        'amount' => 100,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item)->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['price_list_id' => $list->id])->finalPrice)->toBe(1000)
+        ->and($calculator->calculateMany([['item' => $item]])[0]->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['customer_id' => $customerId])->finalPrice)->toBe(100);
+});
+
+it('requires both customer and segment eligibility for a doubly targeted list', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $customerId = (string) Illuminate\Support\Str::uuid();
+    $segmentId = (string) Illuminate\Support\Str::uuid();
+    $item = new TestPriceableItem((string) Illuminate\Support\Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Private Segment List',
+        'slug' => 'private-segment-list',
+        'customer_id' => $customerId,
+        'segment_id' => $segmentId,
+        'currency' => 'MYR',
+    ]);
+    Price::create([
+        'price_list_id' => $list->id,
+        'priceable_type' => TestPriceableItem::class,
+        'priceable_id' => $item->getBuyableIdentifier(),
+        'amount' => 100,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item, 1, ['customer_id' => $customerId])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['segment_ids' => [$segmentId]])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['price_list_id' => $list->id])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['customer_id' => $customerId, 'segment_ids' => [$segmentId]])->finalPrice)->toBe(100);
+});
