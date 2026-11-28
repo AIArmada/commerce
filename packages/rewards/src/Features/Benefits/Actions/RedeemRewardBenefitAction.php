@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
-use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;

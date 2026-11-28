@@ -13,8 +13,8 @@ use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneCont
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RevokeRewardBadgeAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Features\Points\Actions;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
-use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Models\RewardPointOperation;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use Carbon\CarbonInterface;
 
 final readonly class ManageRewardPoints implements RewardPointsApi

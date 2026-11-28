@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
+use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Models\RewardProgram;
 
 /**
  * Shared approval-chain acquisition for direct approvals and appeal

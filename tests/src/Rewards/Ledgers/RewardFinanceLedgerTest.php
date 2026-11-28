@@ -16,7 +16,6 @@ use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardPayoutInstruction;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Drivers\NullRewardPayoutExecutor;
-use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
@@ -28,6 +27,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\ReverseRewardFulfillmentActio
 use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;

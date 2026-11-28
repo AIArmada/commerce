@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
-use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardPointInput;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;

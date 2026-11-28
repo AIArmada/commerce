@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
-use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
@@ -26,6 +25,7 @@ use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Support\RewardVersionResolver;

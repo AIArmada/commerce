@@ -9,8 +9,8 @@ use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
-use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Support\RewardOperationKeys;
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
@@ -291,5 +291,4 @@ final readonly class CreditRewardPointsAction
             throw new InvalidArgumentException('Credit operation key is already bound to a different recipient, family, unit, amount, or schedule.');
         }
     }
-
 }

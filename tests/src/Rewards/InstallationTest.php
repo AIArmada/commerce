@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Platform\FeatureCatalog;
-use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
-use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
@@ -27,9 +24,12 @@ use AIArmada\Rewards\Drivers\NullRewardReadinessChecker;
 use AIArmada\Rewards\Drivers\NullRewardReservationResolver;
 use AIArmada\Rewards\Drivers\NullRewardSourceFactReader;
 use AIArmada\Rewards\Features\Benefits\Actions\RewardBenefitCatalogService;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
+use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Platform\FeatureCatalog;
 use AIArmada\Rewards\RewardsServiceProvider;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
