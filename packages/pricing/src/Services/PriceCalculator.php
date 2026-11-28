@@ -199,14 +199,14 @@ final class PriceCalculator implements PriceCalculatorInterface
             ->forQuantity($quantity)
             ->orderByDesc('min_quantity')
             ->orderBy('id')
-            ->first();
+            ->value('amount');
 
-        if (! $price) {
+        if ($price === null) {
             return null;
         }
 
         return [
-            'price' => $price->amount,
+            'price' => (int) $price,
             'name' => $priceList->name,
         ];
     }

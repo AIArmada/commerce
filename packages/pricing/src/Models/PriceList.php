@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Actions\ClearOtherDefaultPriceLists;
 use AIArmada\Pricing\Actions\DeletePriceListChildren;
 use AIArmada\Pricing\Persistence\AtomicPriceListPersistence;
+use AIArmada\Pricing\Queries\OwnerScopedPricingReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -321,17 +322,6 @@ class PriceList extends Model implements Auditable
             throw new AuthorizationException(sprintf('%s must reference an accessible owner-scoped record.', $attribute));
         }
 
-        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
-            return;
-        }
-
-        /** @var class-string<Model> $modelClass */
-        $exists = $modelClass::query()
-            ->whereKey($value)
-            ->exists();
-
-        if (! $exists) {
-            throw new AuthorizationException(sprintf('%s is not accessible in the current owner scope.', $attribute));
-        }
+        OwnerScopedPricingReference::assertAccessible($modelClass, $value, $priceList->owner_type, $priceList->owner_id, $attribute);
     }
 }

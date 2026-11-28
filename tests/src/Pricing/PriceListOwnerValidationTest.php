@@ -69,3 +69,46 @@ it('rejects a segment reference owned by another tenant', function (): void {
         'segment_id' => $segmentB->id,
     ])))->toThrow(AuthorizationException::class);
 });
+
+it('enforces pricing ownership even when customer owner scoping is disabled', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Pricing Reference Owner',
+        'email' => 'pricing-disabled-scope-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    [$customer, $segment] = OwnerContext::withOwner($owner, static fn (): array => [
+        Customer::query()->create([
+            'first_name' => 'Private',
+            'last_name' => 'Customer',
+            'status' => CustomerStatus::Active,
+        ]),
+        Segment::query()->create([
+            'name' => 'Private Segment',
+            'slug' => 'private-pricing-segment-' . uniqid(),
+        ]),
+    ]);
+
+    config(['customers.features.owner.enabled' => false]);
+
+    OwnerContext::withOwner(null, function () use ($customer, $segment): void {
+        foreach (['customer_id' => $customer->id, 'segment_id' => $segment->id] as $attribute => $id) {
+            expect(fn () => PriceList::query()->create([
+                'name' => 'Invalid Global List',
+                'slug' => 'invalid-global-' . uniqid(),
+                'currency' => 'MYR',
+                $attribute => $id,
+            ]))->toThrow(AuthorizationException::class, $attribute);
+        }
+    });
+
+    $list = OwnerContext::withOwner($owner, fn (): PriceList => PriceList::query()->create([
+        'name' => 'Owned List',
+        'slug' => 'valid-owned-' . uniqid(),
+        'currency' => 'MYR',
+        'customer_id' => $customer->id,
+        'segment_id' => $segment->id,
+    ]));
+
+    expect($list->exists)->toBeTrue();
+});
