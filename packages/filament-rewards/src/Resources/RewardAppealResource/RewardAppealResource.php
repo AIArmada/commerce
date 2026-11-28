@@ -9,7 +9,7 @@ use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppe
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Schemas\RewardAppealInfolist;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Tables\RewardAppealsTable;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Entitlements\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardAppealDecisionFactory;
-use AIArmada\Rewards\Models\RewardAppeal;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

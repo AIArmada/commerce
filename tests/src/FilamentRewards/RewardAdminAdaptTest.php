@@ -48,7 +48,7 @@ use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;

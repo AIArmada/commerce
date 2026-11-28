@@ -35,7 +35,7 @@ use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Entitlements\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardAppealFactory;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
+use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

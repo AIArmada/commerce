@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardAppealStatus;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

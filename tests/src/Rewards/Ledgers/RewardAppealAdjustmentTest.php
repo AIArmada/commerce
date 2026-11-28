@@ -15,7 +15,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
