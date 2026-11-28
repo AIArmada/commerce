@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
@@ -150,33 +149,6 @@ final class RewardProgramGuard
         }
 
         self::findAwardOrFail((string) $resolved->award_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the contribution and prove its cycle's program is in the
-     * current owner scope. A cycle without a program throws — a
-     * program-less contribution must fail closed, never resolve against
-     * whatever ambient scope happens to exist.
-     */
-    public static function findContributionOrFail(RewardMilestoneContribution | string $contribution): RewardMilestoneContribution
-    {
-        $id = $contribution instanceof RewardMilestoneContribution ? (string) $contribution->getKey() : $contribution;
-
-        $resolved = RewardMilestoneContribution::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardMilestoneContribution) {
-            throw new InvalidArgumentException('Unknown reward milestone contribution.');
-        }
-
-        $programId = $resolved->cycle?->program_id;
-
-        if ($programId === null) {
-            throw new InvalidArgumentException('Milestone contribution references no program.');
-        }
-
-        self::findProgramOrFail((string) $programId);
 
         return $resolved;
     }

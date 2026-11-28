@@ -15,6 +15,8 @@ use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneCont
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
@@ -26,8 +28,6 @@ use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

@@ -9,11 +9,11 @@ use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardMilestoneGuard;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +58,7 @@ final readonly class InvalidateRewardMilestoneContributionAction
 
         // The program is the tenant boundary: prove the contribution's
         // cycle's program is in the current owner scope before any lock.
-        RewardProgramGuard::findContributionOrFail($contribution);
+        RewardMilestoneGuard::findOrFail($contribution);
 
         $contributionId = $contribution instanceof RewardMilestoneContribution
             ? (string) $contribution->getKey()

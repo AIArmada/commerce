@@ -19,8 +19,8 @@ use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContribu
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\RecheckRewardAwardsJob;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

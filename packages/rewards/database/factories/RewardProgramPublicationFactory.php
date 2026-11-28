@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramPublication;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramPublication;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
