@@ -9,6 +9,7 @@ use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Support\Facades\Event;
 
 describe('TransferInventory', function (): void {
@@ -51,6 +52,23 @@ describe('TransferInventory', function (): void {
         expect($movement->to_location_id)->toBe($this->toLocation->id);
 
         Event::assertDispatched(InventoryTransferred::class);
+    });
+
+    it('records exactly one ledger movement for a transfer', function (): void {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->fromLocation->id,
+            'quantity_on_hand' => 50,
+        ]);
+
+        $movement = $this->action->handle($this->item, $this->fromLocation->id, $this->toLocation->id, 20);
+
+        $ledger = InventoryMovement::query()->where('inventoryable_id', $this->item->getKey())->get();
+
+        expect($ledger)->toHaveCount(1)
+            ->and($ledger->first()->id)->toBe($movement->id)
+            ->and($movement->quantity)->toBe(20);
     });
 
     it('updates source location quantity', function (): void {

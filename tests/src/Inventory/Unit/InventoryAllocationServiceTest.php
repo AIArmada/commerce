@@ -93,6 +93,12 @@ describe('InventoryAllocationService', function (): void {
             ->and($movements[0]->reference)->toBe('ORDER-123')
             ->and($movements[0]->quantity)->toBe(8)
             ->and(InventoryMovement::query()->findOrFail($movements[0]->id)->reference)->toBe('ORDER-123');
+
+        $ledger = InventoryMovement::query()->findOrFail($movements[0]->id);
+
+        expect($ledger->quantity_before)->toBe(10)
+            ->and($ledger->quantity_after)->toBe(2)
+            ->and(InventoryMovement::query()->where('inventoryable_id', $this->item->getKey())->count())->toBe(3);
         expect($levelA?->quantity_reserved)->toBe(0);
         expect($levelB?->quantity_reserved)->toBe(0);
         expect($levelA?->quantity_on_hand + $levelB?->quantity_on_hand)->toBe(8); // 16 received - 8 committed

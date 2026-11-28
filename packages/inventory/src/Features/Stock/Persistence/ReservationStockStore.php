@@ -53,8 +53,17 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Commit quantity exceeds reserved or on-hand stock.');
             }
 
-            $record->decrement('quantity_on_hand', $quantity);
-            $record->decrement('quantity_reserved', $quantity);
+            $before = $record->quantity_on_hand;
+            $record->suppressLedgerAudit = true;
+
+            try {
+                $record->forceFill([
+                    'quantity_on_hand' => $before - $quantity,
+                    'quantity_reserved' => $record->quantity_reserved - $quantity,
+                ])->save();
+            } finally {
+                $record->suppressLedgerAudit = false;
+            }
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $record->inventoryable_type,
@@ -62,6 +71,8 @@ final readonly class ReservationStockStore implements ReservationStock
                 'from_location_id' => $record->location_id,
                 'batch_id' => $batchId,
                 'quantity' => $quantity,
+                'quantity_before' => $before,
+                'quantity_after' => $record->quantity_on_hand,
                 'type' => MovementType::Shipment->value,
                 'reason' => 'sale',
                 'reference' => $orderId,
