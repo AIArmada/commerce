@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Actions\CreateProduct;
+use AIArmada\Products\Actions\EnsureProductBySlug;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Actions\ReplaceOptionValues;
+use AIArmada\Products\Actions\UpdateProduct;
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Enums\AttributeType;
@@ -20,6 +24,7 @@ use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Persistence\CustomAttributeValues;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
@@ -286,4 +291,49 @@ it('rolls back option replacement when a submitted value belongs to another opti
 
     expect($red->fresh()->name)->toBe('Red')
         ->and($foreign->fresh()->name)->toBe('Large');
+});
+
+it('updates the current locked product rather than relying on stale dirty tracking', function (): void {
+    $product = Product::create(['name' => 'Stale Product', 'price' => 1000]);
+    $current = Product::query()->findOrFail($product->id);
+    $current->update(['price' => 2000]);
+
+    $updated = app(UpdateProduct::class)->execute($product, ['price' => 1000]);
+
+    expect($updated->price)->toBe(1000)
+        ->and($product->fresh()->price)->toBe(1000);
+});
+
+it('does not update tenant-visible global products through the generic action', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $global = OwnerContext::withOwner(null, fn (): Product => Product::create(['name' => 'Global Product']));
+    $owner = User::query()->create(['name' => 'Product Tenant', 'email' => 'product-tenant@example.com', 'password' => 'secret']);
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Product::query()->whereKey($global->id)->exists())->toBeTrue();
+        expect(fn () => app(UpdateProduct::class)->execute($global, ['name' => 'Changed']))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): string => $global->fresh()->name))->toBe('Global Product');
+});
+
+it('provisions a tenant product without updating a visible global product of the same slug', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $owner = User::query()->create(['name' => 'Offer Tenant', 'email' => 'offer-tenant@example.com', 'password' => 'secret']);
+    $ensure = app(EnsureProductBySlug::class);
+    $global = OwnerContext::withOwner(null, fn (): Product => $ensure->execute('shared-offer', ['name' => 'Global Offer', 'price' => 1000]));
+
+    OwnerContext::withOwner($owner, function () use ($ensure, $global, $owner): void {
+        $tenant = $ensure->execute('shared-offer', ['name' => 'Tenant Offer', 'price' => 2000]);
+        $again = $ensure->execute('shared-offer', ['name' => 'Updated Offer', 'price' => 3000, 'slug' => 'wrong-slug']);
+
+        expect($tenant->id)->not->toBe($global->id)
+            ->and($tenant->owner_id)->toBe($owner->getKey())
+            ->and($again->id)->toBe($tenant->id)
+            ->and($again->slug)->toBe('shared-offer')
+            ->and($again->price)->toBe(3000);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): int => $global->fresh()->price))->toBe(1000);
 });

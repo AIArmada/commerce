@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
 
-final class UpdateProduct
+final readonly class UpdateProduct
 {
     /**
      * ProductUpdated fires once via the model's $dispatchesEvents mapping.
@@ -16,11 +17,20 @@ final class UpdateProduct
      */
     public function execute(Product $product, array $data): Product
     {
-        DB::transaction(function () use ($product, $data): void {
-            $product->update($data);
-        });
+        return DB::transaction(function () use ($product, $data): Product {
+            $query = Product::query();
 
-        return $product->fresh() ?? $product;
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
+            $locked->update($data);
+
+            return $locked->refresh();
+        }, 3);
     }
 
     /**
