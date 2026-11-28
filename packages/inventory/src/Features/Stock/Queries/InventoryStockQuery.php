@@ -26,7 +26,7 @@ final readonly class InventoryStockQuery
             InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
         )
             ->select('location_id')
             ->selectRaw($this->availableAggregateExpression() . ' as available_total')
@@ -51,7 +51,7 @@ final readonly class InventoryStockQuery
             InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
         )->sum(DB::raw($this->availablePerLevelExpression()));
 
         return (int) $total;
@@ -101,7 +101,7 @@ final readonly class InventoryStockQuery
                             });
                         }
                     })
-                    ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+                    ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             )
                 ->select('inventoryable_type', 'inventoryable_id')
                 ->selectRaw($this->availableAggregateExpression() . ' as available_total')
@@ -143,7 +143,7 @@ final readonly class InventoryStockQuery
             InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn (Builder $locationQuery): Builder => $locationQuery->where('is_active', true))
+                ->whereHas('location', fn (Builder $locationQuery): Builder => InventoryOwnerScope::applyToLocationQuery($locationQuery)->where('is_active', true))
         );
 
         return (int) $query->sum('quantity_on_hand');

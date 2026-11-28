@@ -141,6 +141,19 @@ describe('InventoryService', function (): void {
         expect($this->inventoryService->hasInventory($this->item, 20))->toBeFalse();
     });
 
+    it('excludes inactive locations consistently from aggregate stock queries', function (): void {
+        $this->inventoryService->receive($this->item, $this->locationA->id, 7);
+        $this->inventoryService->receive($this->item, $this->locationB->id, 5);
+        $this->locationB->update(['is_active' => false]);
+
+        $key = $this->item->getMorphClass() . ':' . $this->item->getKey();
+
+        expect($this->inventoryService->getAvailability($this->item))->toBe([$this->locationA->id => 7])
+            ->and($this->inventoryService->getTotalAvailable($this->item))->toBe(7)
+            ->and($this->inventoryService->getTotalOnHand($this->item))->toBe(7)
+            ->and($this->inventoryService->getAvailabilityForMany([$this->item]))->toBe([$key => 7]);
+    });
+
     it('reports bulk availability for many models in one call', function (): void {
         $other = InventoryItem::create(['name' => 'Other Inventory Item']);
         $unstocked = InventoryItem::create(['name' => 'Unstocked Inventory Item']);

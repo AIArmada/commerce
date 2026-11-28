@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -96,7 +97,7 @@ it('does not allow tenants to mutate visible global stock', function (): void {
     $owner = InventoryItem::create(['name' => 'Tenant']);
     $sku = InventoryItem::create(['name' => 'Stock item']);
     [$location, $level] = OwnerContext::withOwner(null, function () use ($sku): array {
-        $location = InventoryLocation::getOrCreateDefault();
+        $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
         app(InventoryService::class)->receive($sku, $location->id, 10);
 
         return [$location, InventoryLevel::query()->where('location_id', $location->id)->firstOrFail()];
@@ -111,7 +112,7 @@ it('does not allow tenants to mutate visible global stock', function (): void {
         expect(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 99]))
             ->toThrow(ModelNotFoundException::class);
 
-        $default = InventoryLocation::getOrCreateDefault();
+        $default = app(SaveInventoryLocation::class)->getOrCreateDefault();
         expect($default->id)->not->toBe($location->id);
     });
 
