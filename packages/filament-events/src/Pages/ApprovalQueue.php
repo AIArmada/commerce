@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Pages;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventApprovalWorkflow;
 use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
@@ -22,10 +23,12 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
-use Throwable;
 use UnitEnum;
 
 final class ApprovalQueue extends Page implements HasTable
@@ -40,16 +43,16 @@ final class ApprovalQueue extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $submissionClass = ModelResolver::submissionClass();
+
         return $table
-            ->query(
-                ModelResolver::approvalRequestClass()::query()
-                    ->whereHasMorph(
-                        'approvable',
-                        ['event_submission'],
-                        fn (Builder $query): Builder => $query->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false)),
-                    )
-                    ->with('approvable')
-            )
+            ->query(fn (): Builder => ModelResolver::approvalRequestClass()::query()
+                ->whereHasMorph(
+                    'approvable',
+                    [$submissionClass],
+                    fn (Builder $query): Builder => $query->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false)),
+                )
+                ->with(['approvable' => fn (MorphTo $relation) => $relation->morphWith([$submissionClass => ['event.owner']])]))
             ->columns([
                 TextColumn::make('approvable_type')->badge()->label('Type'),
                 TextColumn::make('approvable_id')->label('Subject ID'),
@@ -68,7 +71,7 @@ final class ApprovalQueue extends Page implements HasTable
                 SelectFilter::make('status')
                     ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']),
                 SelectFilter::make('approvable_type')
-                    ->options(['event_submission' => 'Event Submission']),
+                    ->options([(new $submissionClass)->getMorphClass() => 'Event Submission']),
             ])
             ->actions([
                 Action::make('approve')
@@ -135,7 +138,7 @@ final class ApprovalQueue extends Page implements HasTable
     {
         try {
             $submission = $this->resolveSubmission($record);
-        } catch (Throwable) {
+        } catch (AuthorizationException | ModelNotFoundException | NoCurrentOwnerException | InvalidArgumentException) {
             return false;
         }
 

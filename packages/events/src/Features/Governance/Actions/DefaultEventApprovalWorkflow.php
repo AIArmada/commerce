@@ -86,7 +86,13 @@ final readonly class DefaultEventApprovalWorkflow implements EventApprovalWorkfl
                 throw new InvalidArgumentException('Only pending event approval requests can be changed.');
             }
 
-            $submission = $request->approvable()->lockForUpdate()->first();
+            $submissionClass = ModelResolver::submissionClass();
+
+            if ($request->approvable_type !== (new $submissionClass)->getMorphClass()) {
+                throw new InvalidArgumentException('Approval requests must point to an event submission.');
+            }
+
+            $submission = $submissionClass::query()->whereKey($request->approvable_id)->lockForUpdate()->first();
 
             if (! $submission instanceof EventSubmission || $submission->event_id === null) {
                 throw new InvalidArgumentException('Approval requests must point to a submission attached to an event.');

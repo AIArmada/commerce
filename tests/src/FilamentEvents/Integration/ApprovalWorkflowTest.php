@@ -64,3 +64,21 @@ it('rolls back approval request changes when moderation fails', function (): voi
             ->and($submission->refresh()->status->getValue())->toBe('pending');
     });
 });
+
+it('rejects approval decisions for non-submission subjects', function (): void {
+    $owner = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        $event = Event::factory()->create();
+        $request = EventApprovalRequest::factory()->create([
+            'approvable_type' => $event->getMorphClass(),
+            'approvable_id' => $event->id,
+            'status' => 'pending',
+        ]);
+
+        expect(fn () => app(EventApprovalWorkflow::class)->approve($request->id, $owner))
+            ->toThrow(InvalidArgumentException::class, 'Approval requests must point to an event submission.');
+
+        expect($request->refresh()->status)->toBe('pending');
+    });
+});
