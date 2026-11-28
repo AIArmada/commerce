@@ -9,9 +9,9 @@ use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
-use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointInput;
@@ -428,16 +428,7 @@ final readonly class RefundRewardPointsAction
             }
         }
 
-        $awards = app(RewardAwardLockApi::class);
-        $programs = app(RewardProgramLockApi::class);
-
-        foreach ($previewLots->pluck('award_id')->filter()->unique() as $awardId) {
-            $awards->assertAwardInScopeWhenExists((string) $awardId);
-        }
-
-        foreach ($previewLots->pluck('program_id')->filter()->unique() as $programId) {
-            $programs->assertProgramInScopeWhenExists((string) $programId);
-        }
+        RewardPointLotScope::assertAccessible($previewLots);
 
         return [$previewLotIds, $previewLots, $scope];
     }

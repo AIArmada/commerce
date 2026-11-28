@@ -8,6 +8,7 @@ use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
@@ -226,6 +227,7 @@ final readonly class DebitRewardPointsAction
         }
 
         $lots = RewardPointLedger::lockCandidateLots($recipientType, $recipientId, $familyKey, $unit);
+        RewardPointLotScope::assertAccessible($lots);
 
         $movements = $lots->isEmpty()
             ? collect()
@@ -338,6 +340,8 @@ final readonly class DebitRewardPointsAction
             throw new InvalidArgumentException('Reservation lot is missing.');
         }
 
+        RewardPointLotScope::assertAccessible($lots);
+
         $reserves = RewardPointMovement::query()
             ->where('kind', RewardPointMovementKind::Reserve)
             ->where('reservation_key', $reservationKey)
@@ -407,6 +411,8 @@ final readonly class DebitRewardPointsAction
             : RewardPointLot::query()->whereIn('id', $lotIds)->get()->keyBy(
                 static fn (RewardPointLot $lot): string => (string) $lot->getKey()
             );
+
+        RewardPointLotScope::assertAccessible($lots);
 
         foreach ($existing as $movement) {
             if ($movement->kind !== RewardPointMovementKind::Debit) {

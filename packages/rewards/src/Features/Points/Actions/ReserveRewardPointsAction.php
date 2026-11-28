@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Features\Points\Actions;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
@@ -217,6 +218,7 @@ final readonly class ReserveRewardPointsAction
         }
 
         $lots = RewardPointLedger::lockCandidateLots($recipientType, $recipientId, $familyKey, $unit);
+        RewardPointLotScope::assertAccessible($lots);
 
         $movements = $lots->isEmpty()
             ? collect()
@@ -278,6 +280,8 @@ final readonly class ReserveRewardPointsAction
             : RewardPointLot::query()->whereIn('id', $lotIds)->get()->keyBy(
                 static fn (RewardPointLot $lot): string => (string) $lot->getKey()
             );
+
+        RewardPointLotScope::assertAccessible($lots);
 
         foreach ($existing as $movement) {
             if ($movement->kind !== RewardPointMovementKind::Reserve

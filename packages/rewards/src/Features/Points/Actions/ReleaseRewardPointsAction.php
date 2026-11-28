@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Features\Points\Actions;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointInput;
@@ -76,6 +77,8 @@ final readonly class ReleaseRewardPointsAction
                 ->all();
 
             if ($winner !== []) {
+                RewardPointLotScope::assertMovementLotsAccessible($winner);
+
                 return $winner;
             }
 
@@ -119,6 +122,12 @@ final readonly class ReleaseRewardPointsAction
             ->lockForUpdate()
             ->get()
             ->keyBy(fn (RewardPointLot $lot): string => (string) $lot->getKey());
+
+        if ($lots->count() !== count($previewLotIds)) {
+            throw new InvalidArgumentException('Reservation lot is missing.');
+        }
+
+        RewardPointLotScope::assertAccessible($lots);
 
         $reserves = RewardPointMovement::query()
             ->where('kind', RewardPointMovementKind::Reserve)

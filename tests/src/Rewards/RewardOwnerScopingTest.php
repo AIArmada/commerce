@@ -39,7 +39,10 @@ use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -733,4 +736,46 @@ it('refuses new refunds and replay of refunds from a foreign program', function 
 
     expect($replay)->toHaveCount(1)
         ->and(RewardPointLot::query()->count())->toBe($lotCount);
+});
+
+it('refuses spending reserving capturing releasing and replaying foreign program points', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $family = $program->family_key;
+
+    OwnerContext::withOwner($owner, static function () use ($program, $recipient, $at, $family): void {
+        CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, $at, null, null, (string) $program->getKey(), 'credit:owner-ledger');
+        DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 10, 'debit:owner-ledger', 'spend', null, $at);
+        ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'reserve:owner-ledger', 'hold', $at);
+    });
+
+    $before = RewardPointMovement::query()->count();
+
+    OwnerContext::withOwner($other, static function () use ($recipient, $family, $at): void {
+        foreach (['debit:owner-ledger', 'debit:foreign-ledger'] as $key) {
+            expect(fn () => DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 10, $key, 'spend', null, $at))
+                ->toThrow(AuthorizationException::class);
+        }
+
+        foreach (['reserve:owner-ledger', 'reserve:foreign-ledger'] as $key) {
+            expect(fn () => ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 20, $key, 'hold', $at))
+                ->toThrow(AuthorizationException::class);
+        }
+
+        expect(fn () => DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'capture:foreign-ledger', 'capture', 'reserve:owner-ledger', $at))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    expect(RewardPointMovement::query()->count())->toBe($before);
+
+    expect(OwnerContext::withOwner($owner, static fn (): array => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at)))
+        ->toHaveCount(1);
+
+    expect(fn () => OwnerContext::withOwner($other, static fn (): array => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at)))
+        ->toThrow(AuthorizationException::class);
 });
