@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDisputeApi;
-use AIArmada\Rewards\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardProgramGuard;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Queries;
 
 use AIArmada\Rewards\Data\RewardPayoutInstruction;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 
 final readonly class RewardPayoutInstructionMapper
 {

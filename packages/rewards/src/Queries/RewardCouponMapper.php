@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Queries;
 
 use AIArmada\Rewards\Data\RewardCouponGrant;
 use AIArmada\Rewards\Data\RewardCouponTerms;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 
 final readonly class RewardCouponMapper
 {
