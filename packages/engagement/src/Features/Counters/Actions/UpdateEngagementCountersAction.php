@@ -86,7 +86,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         $counters = $this->interactions->aggregateCounters($subjectType, (string) $subjectId);
 
         foreach ($counters as $type => $count) {
-            EngagementCounter::query()->updateOrCreate(
+            EngagementCounter::query()->forOwner()->updateOrCreate(
                 [
                     'subject_type' => $subjectType,
                     'subject_id' => $subjectId,
@@ -116,7 +116,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     private function recalculateFollowersByIdentity(string $subjectType, string $subjectId): void
     {
-        EngagementCounter::query()->updateOrCreate(
+        EngagementCounter::query()->forOwner()->updateOrCreate(
             [
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -134,7 +134,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     {
         $count = $this->interactions->countBookmarksByIdentity($subjectType, $subjectId);
 
-        EngagementCounter::query()->updateOrCreate(
+        EngagementCounter::query()->forOwner()->updateOrCreate(
             [
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -157,7 +157,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     {
         if ($responseType !== null) {
             foreach (['', $responseType] as $counterKey) {
-                EngagementCounter::query()->updateOrCreate(
+                EngagementCounter::query()->forOwner()->updateOrCreate(
                     [
                         'subject_type' => $subjectType,
                         'subject_id' => $subjectId,
@@ -177,7 +177,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         $counts = $this->interactions->groupedResponseCounts($subjectType, $subjectId);
         $now = CarbonImmutable::now();
 
-        EngagementCounter::query()->updateOrCreate(
+        EngagementCounter::query()->forOwner()->updateOrCreate(
             [
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -191,7 +191,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         );
 
         foreach ($this->responseCounterKeys($subjectType, $subjectId, $counts) as $counterKey) {
-            EngagementCounter::query()->updateOrCreate(
+            EngagementCounter::query()->forOwner()->updateOrCreate(
                 [
                     'subject_type' => $subjectType,
                     'subject_id' => $subjectId,
@@ -212,7 +212,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
      */
     private function responseCounterKeys(string $subjectType, string $subjectId, array $counts): array
     {
-        $storedKeys = EngagementCounter::query()
+        $storedKeys = EngagementCounter::query()->forOwner()
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
             ->where('counter_type', 'responses')
@@ -233,7 +233,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     {
         if ($reactionType !== null) {
             foreach (['', $reactionType] as $counterKey) {
-                EngagementCounter::query()->updateOrCreate(
+                EngagementCounter::query()->forOwner()->updateOrCreate(
                     [
                         'subject_type' => $subjectType,
                         'subject_id' => $subjectId,
@@ -253,7 +253,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         $counts = $this->interactions->groupedReactionCounts($subjectType, $subjectId);
         $now = CarbonImmutable::now();
 
-        EngagementCounter::query()->updateOrCreate(
+        EngagementCounter::query()->forOwner()->updateOrCreate(
             [
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -267,7 +267,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         );
 
         foreach ($this->reactionCounterKeys($subjectType, $subjectId, $counts) as $counterKey) {
-            EngagementCounter::query()->updateOrCreate(
+            EngagementCounter::query()->forOwner()->updateOrCreate(
                 [
                     'subject_type' => $subjectType,
                     'subject_id' => $subjectId,
@@ -288,7 +288,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
      */
     private function reactionCounterKeys(string $subjectType, string $subjectId, array $counts): array
     {
-        $storedKeys = EngagementCounter::query()
+        $storedKeys = EngagementCounter::query()->forOwner()
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
             ->where('counter_type', 'reactions')
@@ -330,7 +330,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     private function adjustLockedCounter(string $subjectType, string $subjectId, string $counterType, string $counterKey, int $delta): void
     {
-        $counter = EngagementCounter::query()
+        $counter = EngagementCounter::query()->forOwner()
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
             ->where('counter_type', $counterType)

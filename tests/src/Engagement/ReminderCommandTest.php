@@ -16,6 +16,7 @@ use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
@@ -211,7 +212,7 @@ it('bounds due reads and excludes expired reminders from active state', function
 });
 
 it('does not report successful reminder delivery when no delivery listener is registered', function (): void {
-    Event::forget(ReminderDue::class);
+    $this->app->instance(Dispatcher::class, new \Illuminate\Events\Dispatcher($this->app));
 
     $reminder = $this->manager->setReminder($this->recipient, $this->subject, 'before_start', [
         'remind_at' => now()->subMinute(),
