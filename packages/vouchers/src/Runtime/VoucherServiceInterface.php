@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Runtime;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
@@ -91,7 +91,7 @@ interface VoucherServiceInterface
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function addToWallet(string $code, Model $holder, ?array $metadata = null): VoucherWallet;
+    public function addToWallet(string $code, Model $holder, ?array $metadata = null): WalletClaimData;
 
     /**
      * Remove a voucher from a user's wallet.

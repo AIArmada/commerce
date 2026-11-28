@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void recordUsage(string $code, \Akaunting\Money\Money $discountAmount, ?string $channel = null, ?array<string, mixed> $metadata = null, ?\Illuminate\Database\Eloquent\Model $redeemedBy = null, ?string $notes = null, ?string $voucherId = null)
  * @method static void redeemManually(string $code, \Akaunting\Money\Money $discountAmount, ?string $reference = null, ?array<string, mixed> $metadata = null, ?\Illuminate\Database\Eloquent\Model $redeemedBy = null, ?string $notes = null)
  * @method static list<\AIArmada\Vouchers\Data\VoucherUsageData> getUsageHistory(string $code, int $limit = 100)
- * @method static \AIArmada\Vouchers\Models\VoucherWallet addToWallet(string $code, \Illuminate\Database\Eloquent\Model $owner, ?array<string, mixed> $metadata = null)
+ * @method static \AIArmada\Vouchers\Data\WalletClaimData addToWallet(string $code, \Illuminate\Database\Eloquent\Model $owner, ?array<string, mixed> $metadata = null)
  * @method static bool removeFromWallet(string $code, \Illuminate\Database\Eloquent\Model $owner)
  *
  * @see VoucherService

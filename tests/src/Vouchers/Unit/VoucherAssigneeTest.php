@@ -18,9 +18,9 @@ use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -233,6 +233,6 @@ it('prevents a foreign account from claiming an assigned voucher into its wallet
     $stranger = assigneeUser();
     $voucher = assigneeVoucher($assignee);
 
-    expect(fn () => app(WalletClaim::class)->handle($voucher->code, $stranger))
+    expect(fn () => app(WalletClaim::class)->handle($voucher->code, EloquentRecordReference::fromModel($stranger)))
         ->toThrow(InvalidVoucherException::class, 'another account');
 });

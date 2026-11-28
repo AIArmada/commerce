@@ -9,6 +9,7 @@ use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
@@ -19,10 +20,9 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
-use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -152,9 +152,9 @@ class VoucherService implements VoucherServiceInterface
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function addToWallet(string $code, Model $holder, ?array $metadata = null): VoucherWallet
+    public function addToWallet(string $code, Model $holder, ?array $metadata = null): WalletClaimData
     {
-        return app(WalletClaim::class)->handle($code, $holder, $metadata);
+        return app(WalletClaim::class)->handle($code, EloquentRecordReference::fromModel($holder), $metadata);
     }
 
     /**

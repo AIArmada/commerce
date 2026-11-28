@@ -16,12 +16,12 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherUsageData;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherWallet;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -277,12 +277,12 @@ describe('AddVoucherToWallet Action', function (): void {
         };
 
         $action = app(AddVoucherToWallet::class);
-        $wallet = $action->handle('WALLET-TEST', $owner);
+        $wallet = $action->handle('WALLET-TEST', EloquentRecordReference::fromModel($owner));
 
-        expect($wallet)->toBeInstanceOf(VoucherWallet::class)
-            ->and($wallet->voucher_id)->toBe($voucher->id)
-            ->and($wallet->holder_type)->toBe('user')
-            ->and($wallet->holder_id)->toBe('user-123');
+        expect($wallet)->toBeInstanceOf(WalletClaimData::class)
+            ->and($wallet->voucherId)->toBe($voucher->id)
+            ->and($wallet->holderType)->toBe('user')
+            ->and($wallet->holderId)->toBe('user-123');
     });
 
     it('throws exception for non-existent voucher', function (): void {
@@ -304,7 +304,7 @@ describe('AddVoucherToWallet Action', function (): void {
         };
 
         $action = app(AddVoucherToWallet::class);
-        $action->handle('NON-EXISTENT', $owner);
+        $action->handle('NON-EXISTENT', EloquentRecordReference::fromModel($owner));
     })->throws(VoucherNotFoundException::class);
 
     it('adds wallet entry with metadata', function (): void {
@@ -334,7 +334,7 @@ describe('AddVoucherToWallet Action', function (): void {
         };
 
         $action = app(AddVoucherToWallet::class);
-        $wallet = $action->handle('META-TEST', $owner, ['source' => 'signup']);
+        $wallet = $action->handle('META-TEST', EloquentRecordReference::fromModel($owner), ['source' => 'signup']);
 
         expect($wallet->metadata)->toBe(['source' => 'signup']);
     });
@@ -366,9 +366,9 @@ describe('AddVoucherToWallet Action', function (): void {
         };
 
         $action = app(AddVoucherToWallet::class);
-        $wallet = $action->handle('  normalize-test  ', $owner);
+        $wallet = $action->handle('  normalize-test  ', EloquentRecordReference::fromModel($owner));
 
-        expect($wallet->voucher_id)->toBe($voucher->id);
+        expect($wallet->voucherId)->toBe($voucher->id);
     });
 });
 

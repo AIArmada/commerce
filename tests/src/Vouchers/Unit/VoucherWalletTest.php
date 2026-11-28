@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Models\Voucher;
@@ -481,7 +482,7 @@ test('voucher service can add to wallet', function (): void {
 
     $walletEntry = $service->addToWallet('SERVICE1', $user, ['source' => 'test']);
 
-    expect($walletEntry)->toBeInstanceOf(VoucherWallet::class)
+    expect($walletEntry)->toBeInstanceOf(WalletClaimData::class)
         ->and($walletEntry->metadata)->toHaveKey('source')
         ->and($walletEntry->metadata['source'])->toBe('test');
 });

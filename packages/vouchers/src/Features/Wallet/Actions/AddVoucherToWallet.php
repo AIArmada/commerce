@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -28,49 +28,47 @@ final class AddVoucherToWallet implements WalletClaim
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function handle(string $code, Model $holder, ?array $metadata = null, ?string $voucherId = null): VoucherWallet
+    public function handle(string $code, RecordReference $holder, ?array $metadata = null, ?string $voucherId = null): WalletClaimData
     {
-        if (! $holder->exists || (string) $holder->getKey() === '') {
-            throw new InvalidArgumentException('A persisted wallet holder is required.');
-        }
-
         $connection = (new VoucherWallet)->getConnection();
 
-        return $connection->transaction(function () use ($code, $holder, $metadata, $voucherId, $connection): VoucherWallet {
-            $id = $this->catalog->lockForWalletClaim($code, $voucherId, $holder->getMorphClass(), (string) $holder->getKey());
+        return $connection->transaction(function () use ($code, $holder, $metadata, $voucherId, $connection): WalletClaimData {
+            $id = $this->catalog->lockForWalletClaim($code, $voucherId, $holder->type, $holder->id);
 
             $owner = config('vouchers.owner.enabled', false)
                 ? OwnerContext::resolveConfigured(VoucherWallet::ownerScopeConfig())
                 : null;
 
             $existing = VoucherWallet::query()->forOwner($owner, false)->where('voucher_id', $id)
-                ->where('holder_type', $holder->getMorphClass())
-                ->where('holder_id', $holder->getKey())
+                ->where('holder_type', $holder->type)
+                ->where('holder_id', $holder->id)
                 ->whereNull('redeemed_at')
                 ->first();
 
             if ($existing instanceof VoucherWallet) {
-                return $existing;
+                return $this->snapshot($existing, $holder, false);
             }
 
             try {
-                return $connection->transaction(fn (): VoucherWallet => VoucherWallet::create([
+                $wallet = $connection->transaction(fn (): VoucherWallet => VoucherWallet::create([
                     'voucher_id' => $id,
-                    'holder_type' => $holder->getMorphClass(),
-                    'holder_id' => $holder->getKey(),
+                    'holder_type' => $holder->type,
+                    'holder_id' => $holder->id,
                     'owner_type' => $owner?->getMorphClass(),
                     'owner_id' => $owner?->getKey(),
                     'claimed_at' => CarbonImmutable::now(),
                     'metadata' => $metadata,
                 ]));
+
+                return $this->snapshot($wallet, $holder, true);
             } catch (QueryException $exception) {
                 if (! $this->isUniqueConstraintViolation($exception)) {
                     throw $exception;
                 }
 
                 $raced = VoucherWallet::query()->forOwner($owner, false)->where('voucher_id', $id)
-                    ->where('holder_type', $holder->getMorphClass())
-                    ->where('holder_id', $holder->getKey())
+                    ->where('holder_type', $holder->type)
+                    ->where('holder_id', $holder->id)
                     ->whereNull('redeemed_at')
                     ->first();
 
@@ -78,9 +76,21 @@ final class AddVoucherToWallet implements WalletClaim
                     throw $exception;
                 }
 
-                return $raced;
+                return $this->snapshot($raced, $holder, false);
             }
         });
+    }
+
+    private function snapshot(VoucherWallet $wallet, RecordReference $holder, bool $created): WalletClaimData
+    {
+        return new WalletClaimData(
+            id: $wallet->id,
+            voucherId: $wallet->voucher_id,
+            holderType: $holder->type,
+            holderId: $holder->id,
+            metadata: $wallet->metadata,
+            created: $created,
+        );
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool

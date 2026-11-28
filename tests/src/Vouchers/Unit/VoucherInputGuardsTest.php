@@ -171,10 +171,12 @@ describe('wallet claim hardening', function (): void {
         $voucher = guardVoucher();
         $user = guardWalletUser();
 
-        $first = AddVoucherToWallet::run($voucher->code, $user);
-        $second = AddVoucherToWallet::run($voucher->code, $user);
+        $first = AddVoucherToWallet::run($voucher->code, EloquentRecordReference::fromModel($user));
+        $second = AddVoucherToWallet::run($voucher->code, EloquentRecordReference::fromModel($user));
 
         expect($second->id)->toBe($first->id)
+            ->and($first->created)->toBeTrue()
+            ->and($second->created)->toBeFalse()
             ->and(VoucherWallet::where('voucher_id', $voucher->id)->count())->toBe(1);
     });
 
@@ -182,13 +184,13 @@ describe('wallet claim hardening', function (): void {
         $voucher = guardVoucher();
         $user = guardWalletUser();
 
-        $first = AddVoucherToWallet::run($voucher->code, $user);
-        $first->markAsRedeemed();
+        $first = AddVoucherToWallet::run($voucher->code, EloquentRecordReference::fromModel($user));
+        VoucherWallet::query()->findOrFail($first->id)->markAsRedeemed();
 
-        $second = AddVoucherToWallet::run($voucher->code, $user);
+        $second = AddVoucherToWallet::run($voucher->code, EloquentRecordReference::fromModel($user));
 
         expect($second->id)->not->toBe($first->id)
-            ->and($second->redeemed_at)->toBeNull();
+            ->and(VoucherWallet::query()->findOrFail($second->id)->redeemed_at)->toBeNull();
     });
 
     it('dedupes service-level wallet adds', function (): void {
@@ -206,7 +208,8 @@ describe('wallet claim hardening', function (): void {
         $voucher = guardVoucher();
         $user = guardWalletUser();
 
-        $entry = AddVoucherToWallet::run($voucher->code, $user);
+        $claim = AddVoucherToWallet::run($voucher->code, EloquentRecordReference::fromModel($user));
+        $entry = VoucherWallet::query()->findOrFail($claim->id);
         $stale = VoucherWallet::query()->whereKey($entry->id)->first();
 
         expect($stale->redeemed_at)->toBeNull();

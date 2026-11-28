@@ -8,11 +8,11 @@ use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Features\Wallet\Actions\DeleteWalletEntry;
 use AIArmada\Vouchers\Features\Wallet\Actions\RemoveVoucherFromWallet;
 use AIArmada\Vouchers\Features\Wallet\Actions\TransitionWalletTimestamp;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract

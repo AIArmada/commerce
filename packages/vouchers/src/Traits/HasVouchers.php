@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Traits;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -50,7 +51,10 @@ trait HasVouchers
      */
     public function addVoucherToWallet(string $voucherCode): VoucherWallet
     {
-        return app(WalletClaim::class)->handle($voucherCode, $this);
+        $holder = EloquentRecordReference::fromModel($this);
+        $claim = app(WalletClaim::class)->handle($voucherCode, $holder);
+
+        return $this->voucherWallets()->whereKey($claim->id)->firstOrFail();
     }
 
     /**

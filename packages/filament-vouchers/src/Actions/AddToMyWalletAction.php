@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Exceptions\VoucherException;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -79,9 +80,9 @@ final class AddToMyWalletAction
 
                 try {
                     $metadata = ! empty($data['notes']) ? ['notes' => $data['notes']] : null;
-                    $walletEntry = app(WalletClaim::class)->handle($record->code, $user, $metadata, (string) $record->getKey());
+                    $walletEntry = app(WalletClaim::class)->handle($record->code, EloquentRecordReference::fromModel($user), $metadata, (string) $record->getKey());
 
-                    if (! $walletEntry->wasRecentlyCreated) {
+                    if (! $walletEntry->created) {
                         Notification::make()
                             ->info()
                             ->title('Already in Wallet')
