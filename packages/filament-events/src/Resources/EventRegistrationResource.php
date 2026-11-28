@@ -55,7 +55,7 @@ final class EventRegistrationResource extends Resource
 
         return $query
             ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
-            ->with(['event', 'occurrence', 'registrant', 'participants.contactMethods']);
+            ->with(['event', 'occurrence', 'registrant', 'displayParticipant.contactMethods']);
     }
 
     public static function table(Table $table): Table
@@ -73,7 +73,7 @@ final class EventRegistrationResource extends Resource
                             return mb_trim(($registrant->first_name ?? '') . ' ' . ($registrant->last_name ?? ''));
                         }
 
-                        return $record->participants->first()?->name ?? '';
+                        return $record->displayParticipant?->name ?? '';
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         $pattern = LikeSearch::contains($search);
@@ -95,10 +95,10 @@ final class EventRegistrationResource extends Resource
                         $registrant = $record->registrant;
                         if ($registrant instanceof Customer) {
                             return $registrant->resolveEmail()
-                                ?? $record->participants->first()?->resolveEmail();
+                                ?? $record->displayParticipant?->resolveEmail();
                         }
 
-                        return $record->participants->first()?->resolveEmail();
+                        return $record->displayParticipant?->resolveEmail();
                     })
                     ->copyable()
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -132,10 +132,10 @@ final class EventRegistrationResource extends Resource
                         $registrant = $record->registrant;
                         if ($registrant instanceof Customer) {
                             return $registrant->resolvePhone()
-                                ?? $record->participants->first()?->resolvePhone();
+                                ?? $record->displayParticipant?->resolvePhone();
                         }
 
-                        return $record->participants->first()?->resolvePhone();
+                        return $record->displayParticipant?->resolvePhone();
                     })
                     ->copyable(),
                 Tables\Columns\TextColumn::make('registrant.company')

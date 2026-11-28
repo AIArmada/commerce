@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -34,3 +36,31 @@ it('resolves only valid participant contacts and prefers primary contacts withou
     'email' => ['email', 'resolveEmail'],
     'phone' => ['phone', 'resolvePhone'],
 ]);
+
+it('selects the primary participant for each registration and a deterministic fallback otherwise', function (): void {
+    config()->set('events.features.owner.enabled', false);
+
+    $event = Event::factory()->create();
+    $registration = EventRegistration::factory()->create(['event_id' => $event->id]);
+    $other = EventRegistration::factory()->create(['event_id' => $event->id]);
+
+    $makeParticipant = static fn (EventRegistration $record, bool $primary, string $name, string $createdAt): EventRegistrationParticipant => EventRegistrationParticipant::factory()->create([
+        'event_id' => $event->id,
+        'event_registration_id' => $record->id,
+        'name' => $name,
+        'is_primary' => $primary,
+        'created_at' => $createdAt,
+    ]);
+
+    $makeParticipant($registration, false, 'Secondary', '2027-01-01 09:00:00');
+    $primary = $makeParticipant($registration, true, 'Primary', '2027-01-01 10:00:00');
+    $makeParticipant($other, false, 'Later', '2027-01-01 11:00:00');
+    $fallback = $makeParticipant($other, false, 'Earlier', '2027-01-01 08:00:00');
+
+    $records = EventRegistration::query()->with('displayParticipant.contactMethods')
+        ->whereKey([$registration->id, $other->id])->get()->keyBy('id');
+
+    expect($records[$registration->id]->displayParticipant?->id)->toBe($primary->id)
+        ->and($records[$other->id]->displayParticipant?->id)->toBe($fallback->id)
+        ->and($records[$registration->id]->displayParticipant?->relationLoaded('contactMethods'))->toBeTrue();
+});

@@ -75,6 +75,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventRegistration> $childRegistrations
  * @property-read Model|Eloquent $registrant
  * @property-read Collection<int, EventRegistrationParticipant> $participants
+ * @property-read EventRegistrationParticipant|null $displayParticipant
  * @property-read Collection<int, EventRegistrationAnswer> $answers
  * @property-read Collection<int, EventRegistrationItem> $items
  * @property-read Collection<int, Pass> $passes
@@ -307,6 +308,21 @@ class EventRegistration extends Model
         $modelClass = static::participantModelClass();
 
         return $this->hasOne($modelClass, 'event_registration_id')->where('is_primary', true);
+    }
+
+    /**
+     * @return HasOne<EventRegistrationParticipant, $this>
+     */
+    public function displayParticipant(): HasOne
+    {
+        /** @var class-string<EventRegistrationParticipant> $modelClass */
+        $modelClass = static::participantModelClass();
+
+        return $this->hasOne($modelClass, 'event_registration_id')
+            ->orderByDesc('is_primary')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit(1);
     }
 
     /**
