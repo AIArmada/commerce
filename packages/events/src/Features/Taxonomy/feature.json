@@ -15,7 +15,8 @@
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\CloneTaxonomyScopeAction",
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyScopeDependents",
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DemotePrimaryClassification",
-      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\ManageEventClassificationAction"
     ],
     "table:event_term_policies": [
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
