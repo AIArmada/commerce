@@ -7,13 +7,11 @@ namespace AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
-use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
@@ -81,22 +79,7 @@ trait HasVoucherWallet
      */
     public function getAvailableVouchers(?int $limit = null): Collection
     {
-        /** @var Collection<int, VoucherWallet> $wallets */
-        $wallets = $this->voucherWallets()
-            ->with(['voucher' => static function (BelongsTo $query): void {
-                $query->withCount('usages');
-            }])
-            ->whereNotNull('claimed_at')
-            ->whereNull('redeemed_at')
-            ->whereHas('voucher', static function (Builder $query): void {
-                $query->live();
-            })
-            ->when($limit !== null, static function (Builder $query) use ($limit): void {
-                $query->limit(max(1, $limit));
-            })
-            ->get();
-
-        return $wallets->filter(fn (VoucherWallet $wallet) => $wallet->canBeUsed());
+        return $this->readWalletEntries(expired: false, limit: $limit);
     }
 
     /**
@@ -108,7 +91,6 @@ trait HasVoucherWallet
     {
         /** @var Collection<int, VoucherWallet> $wallets */
         $wallets = $this->voucherWallets()
-            ->with('voucher')
             ->whereNotNull('redeemed_at')
             ->orderByDesc('redeemed_at')
             ->get();
@@ -123,22 +105,39 @@ trait HasVoucherWallet
      */
     public function getExpiredVouchers(?int $limit = null): Collection
     {
-        /** @var Collection<int, VoucherWallet> $wallets */
-        $wallets = $this->voucherWallets()
-            ->with(['voucher' => static function (BelongsTo $query): void {
-                $query->withCount('usages');
-            }])
+        return $this->readWalletEntries(expired: true, limit: $limit);
+    }
+
+    /** @return Collection<int, VoucherWallet> */
+    private function readWalletEntries(bool $expired, ?int $limit): Collection
+    {
+        $limit = $limit === null ? null : max(1, $limit);
+        $reader = app(VoucherWalletReader::class);
+        /** @var Collection<int, VoucherWallet> $matches */
+        $matches = collect();
+
+        $this->voucherWallets()
             ->whereNotNull('claimed_at')
             ->whereNull('redeemed_at')
-            ->whereHas('voucher', static function (Builder $query): void {
-                $query->whereNotNull('expires_at')->where('expires_at', '<', CarbonImmutable::now());
-            })
-            ->when($limit !== null, static function (Builder $query) use ($limit): void {
-                $query->limit(max(1, $limit));
-            })
-            ->get();
+            ->chunkById(100, static function (Collection $wallets) use ($reader, $expired, $limit, $matches): bool {
+                $states = $reader->readMany($wallets->pluck('voucher_id')->unique()->values()->all());
 
-        return $wallets->filter(fn (VoucherWallet $wallet) => $wallet->isExpired());
+                foreach ($wallets as $wallet) {
+                    $state = $states[$wallet->voucher_id] ?? null;
+
+                    if ($state !== null && ($expired ? $state->expired : $state->redeemable)) {
+                        $matches->push($wallet);
+
+                        if ($limit !== null && $matches->count() >= $limit) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            });
+
+        return $matches;
     }
 
     /**

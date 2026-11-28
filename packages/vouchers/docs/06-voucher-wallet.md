@@ -57,8 +57,8 @@ Get vouchers that can be used:
 $available = $user->getAvailableVouchers();
 
 foreach ($available as $walletEntry) {
-    echo $walletEntry->voucher->code;
-    echo $walletEntry->voucher->name;
+    echo $walletEntry->voucherSnapshot()?->code;
+    echo $walletEntry->voucherSnapshot()?->name;
     
     if ($walletEntry->canBeUsed()) {
         // Show "Apply" button
@@ -74,7 +74,7 @@ Get vouchers that have been used:
 $redeemed = $user->getRedeemedVouchers();
 
 foreach ($redeemed as $walletEntry) {
-    echo $walletEntry->voucher->code;
+    echo $walletEntry->voucherSnapshot()?->code;
     echo "Used on: " . $walletEntry->redeemed_at->format('d M Y');
 }
 ```
@@ -87,10 +87,12 @@ Get vouchers that have expired:
 $expired = $user->getExpiredVouchers();
 
 foreach ($expired as $walletEntry) {
-    echo $walletEntry->voucher->code;
-    echo "Expired: " . $walletEntry->voucher->expires_at->format('d M Y');
+    echo $walletEntry->voucherSnapshot()?->code;
+    echo "Expired: " . $walletEntry->voucherSnapshot()?->expiresAt?->format('d M Y');
 }
 ```
+
+Wallet entries expose voucher information through `voucherSnapshot()`, not an Eloquent relationship. For bulk rendering, use `VoucherWalletReader::readMany()` with the distinct voucher IDs to avoid per-entry reads.
 
 ## Wallet Entry Status
 
@@ -172,7 +174,7 @@ Use wallet vouchers in the cart:
 $vouchers = $user->getAvailableVouchers();
 
 // User selects a voucher
-$selectedCode = $vouchers->first()->voucher->code;
+$selectedCode = $vouchers->first()?->voucherSnapshot()?->code;
 
 // Apply to cart
 Cart::applyVoucher($selectedCode);

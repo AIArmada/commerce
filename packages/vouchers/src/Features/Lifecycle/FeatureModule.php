@@ -28,6 +28,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Features\Lifecycle\Extensions\VoucherAffiliateRemovalGuard;
@@ -35,6 +36,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherEligibility;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherUsageHistory;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadWalletVouchers;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
@@ -58,6 +60,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(VoucherDeletion::class, DeleteVoucher::class);
         $app->bind(VoucherDepletion::class, DepleteVoucher::class);
         $app->bind(VoucherUpdater::class, UpdateVoucher::class);
+        $app->bind(VoucherWalletReader::class, ReadWalletVouchers::class);
 
         if (interface_exists(AffiliateRemovalGuard::class)) {
             $app->tag([VoucherAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);

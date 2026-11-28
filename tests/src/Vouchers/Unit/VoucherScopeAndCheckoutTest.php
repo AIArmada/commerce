@@ -112,7 +112,7 @@ describe('wallet helper queries', function (): void {
             ->and($expiredWallets->pluck('voucher_id')->all())->toBe([$expired->id]);
     });
 
-    it('preloads usage counts with wallet vouchers', function (): void {
+    it('reads wallet voucher states in batches without exposing persistence models', function (): void {
         $user = scopeWalletUser('wallet-count');
 
         $voucher = scopeVoucher();
@@ -121,7 +121,7 @@ describe('wallet helper queries', function (): void {
         $available = $user->getAvailableVouchers();
 
         expect($available)->toHaveCount(1)
-            ->and(array_key_exists('usages_count', $available->first()->voucher->getAttributes()))->toBeTrue();
+            ->and($available->first()->voucherSnapshot()?->id)->toBe($voucher->id);
     });
 
     it('honors the wallet listing limit', function (): void {

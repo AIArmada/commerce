@@ -33,7 +33,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
                     'total' => (clone $wallets)->count(),
                     'claimed' => (clone $wallets)->whereNotNull('claimed_at')->count(),
                     'redeemed' => (clone $wallets)->whereNotNull('redeemed_at')->count(),
-                    'available' => (clone $wallets)->whereNull('redeemed_at')->count(),
+                    'available' => (clone $wallets)->whereNotNull('claimed_at')->whereNull('redeemed_at')->count(),
                     'unique_vouchers' => (clone $wallets)->distinct('voucher_id')->count('voucher_id'),
                     'unique_holders' => $this->distinctHolderCount(clone $wallets),
                 ];

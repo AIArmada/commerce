@@ -90,7 +90,7 @@ test('voucher has uses left', function (): void {
     expect($voucher->hasUsageLimitRemaining())->toBeFalse();
 });
 
-test('wallet statistics aggregate persisted claims and redemptions in one query', function (): void {
+test('wallet statistics verify voucher visibility before aggregating wallet entries', function (): void {
     config()->set('vouchers.owner.enabled', false);
 
     $voucher = Voucher::create([
@@ -125,5 +125,5 @@ test('wallet statistics aggregate persisted claims and redemptions in one query'
     }
 
     expect($counts)->toBe(['total' => 3, 'claimed' => 2, 'redeemed' => 1, 'available' => 1])
-        ->and($queries)->toHaveCount(1);
+        ->and($queries)->toHaveCount(2);
 });

@@ -8,12 +8,13 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
+use AIArmada\Vouchers\Features\Lifecycle\Api\WalletVoucherState;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
-use AIArmada\Vouchers\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
@@ -30,7 +31,6 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property array<string, mixed>|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read Voucher $voucher
  * @property-read Model|null $holder
  * @property-read Model|null $owner
  */
@@ -64,12 +64,14 @@ final class VoucherWallet extends Model implements Auditable
         return $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
     }
 
-    /**
-     * @return BelongsTo<Voucher, $this>
-     */
-    public function voucher(): BelongsTo
+    public function voucherSnapshot(): ?VoucherData
     {
-        return $this->belongsTo(Voucher::class);
+        return $this->voucherState()?->voucher;
+    }
+
+    private function voucherState(): ?WalletVoucherState
+    {
+        return app(VoucherWalletReader::class)->readMany([$this->voucher_id])[$this->voucher_id] ?? null;
     }
 
     /**
@@ -107,10 +109,7 @@ final class VoucherWallet extends Model implements Auditable
 
     public function isExpired(): bool
     {
-        /** @var Voucher|null $voucher */
-        $voucher = $this->voucher;
-
-        return $voucher !== null && $voucher->isExpired();
+        return $this->voucherState()?->expired ?? false;
     }
 
     public function canBeUsed(): bool
@@ -119,10 +118,7 @@ final class VoucherWallet extends Model implements Auditable
             return false;
         }
 
-        /** @var Voucher|null $voucher */
-        $voucher = $this->voucher;
-
-        return $voucher !== null && $voucher->canBeRedeemed();
+        return $this->voucherState()?->redeemable ?? false;
     }
 
     protected function casts(): array
