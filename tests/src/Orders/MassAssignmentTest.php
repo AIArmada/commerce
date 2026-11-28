@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -127,7 +128,7 @@ it('still transitions payment and refund lifecycles through model methods', func
         'status' => RefundStatus::Pending,
         'reason' => 'test',
     ]);
-    $refund->markAsCompleted();
+    app(OrderRefunds::class)->completePendingRefund((string) $refund->getKey());
 
     expect($refund->refresh()->refunded_at)->not->toBeNull();
 });

@@ -13,7 +13,6 @@ use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Enums\RefundStatus;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -143,30 +142,6 @@ final class OrderRefund extends Model implements Auditable
     public function hasProviderSubmissionStarted(): bool
     {
         return $this->provider_submission_started_at !== null;
-    }
-
-    public function markAsCompleted(?string $transactionId = null): self
-    {
-        $this->status = RefundStatus::Completed;
-        $this->refunded_at = CarbonImmutable::now();
-
-        if ($transactionId !== null) {
-            $this->transaction_id = $transactionId;
-        }
-
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsFailed(string $reason): self
-    {
-        $this->status = RefundStatus::Failed;
-        $this->failed_at = CarbonImmutable::now();
-        $this->notes = $reason;
-        $this->save();
-
-        return $this;
     }
 
     // ─────────────────────────────────────────────────────────────

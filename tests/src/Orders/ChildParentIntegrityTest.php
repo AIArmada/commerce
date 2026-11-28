@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -286,7 +287,7 @@ it('still creates child rows and applies supported updates', function (): void {
 
     expect($order->refresh()->pending_refunded_total)->toBe(400);
 
-    $refund->markAsCompleted();
+    app(OrderRefunds::class)->completePendingRefund((string) $refund->getKey());
 
     expect($order->refresh()->pending_refunded_total)->toBe(0)
         ->and($order->refresh()->refunded_total)->toBe(400)

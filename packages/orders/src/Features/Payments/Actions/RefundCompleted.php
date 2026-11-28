@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
@@ -25,6 +26,8 @@ use Spatie\ModelStates\Transition;
  */
 final class RefundCompleted extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private OrderRefund $refund,
         private ?string $transactionId = null,
@@ -32,7 +35,7 @@ final class RefundCompleted extends Transition
 
     public function handle(): Order
     {
-        return DB::transaction(function (): Order {
+        return $this->refund->getConnection()->transaction(function (): Order {
             $refundId = $this->refund->getKey();
             $orderId = $this->refund->order_id;
 
@@ -49,6 +52,7 @@ final class RefundCompleted extends Transition
             $lockedOrder = Order::query()
                 ->lockForUpdate()
                 ->findOrFail($orderId);
+            $this->assertOwnerBoundaryForMutation($lockedOrder, __METHOD__);
             $lockedOrder->unsetRelation('refunds');
 
             /** @var OrderRefund|null $lockedRefund */
@@ -83,7 +87,14 @@ final class RefundCompleted extends Transition
                 throw new InvalidArgumentException('Refund amount must be greater than zero.');
             }
 
-            $lockedRefund->markAsCompleted($this->transactionId);
+            $lockedRefund->status = RefundStatus::Completed;
+            $lockedRefund->refunded_at = CarbonImmutable::now();
+
+            if ($this->transactionId !== null) {
+                $lockedRefund->transaction_id = $this->transactionId;
+            }
+
+            $lockedRefund->save();
             $lockedOrder->unsetRelation('refunds');
             // The status-change event already moved the totals; refresh so
             // reads and the save below use fresh totals.
@@ -94,13 +105,17 @@ final class RefundCompleted extends Transition
             $paidTotal = $lockedOrder->getTotalPaid();
             $refundedTotal = $lockedOrder->getTotalRefunded();
 
-            foreach ($lockedOrder->payments()->get() as $payment) {
-                $completedForPayment = (int) $lockedOrder->refunds()
-                    ->where('payment_id', $payment->getKey())
-                    ->where('status', RefundStatus::Completed->value)
-                    ->sum('amount');
+            $completedByPayment = $lockedOrder->refunds()
+                ->where('status', RefundStatus::Completed->value)
+                ->whereNotNull('payment_id')
+                ->selectRaw('payment_id, SUM(amount) as refunded_amount')
+                ->groupBy('payment_id')
+                ->pluck('refunded_amount', 'payment_id');
 
-                if ($completedForPayment >= (int) $payment->amount) {
+            foreach ($lockedOrder->payments()->where('status', PaymentStatus::Completed->value)->get() as $payment) {
+                $completedAmount = (int) $completedByPayment->get((string) $payment->getKey(), 0);
+
+                if ($completedAmount >= (int) $payment->amount && $completedAmount > 0) {
                     $payment->markAsRefunded();
                 }
             }

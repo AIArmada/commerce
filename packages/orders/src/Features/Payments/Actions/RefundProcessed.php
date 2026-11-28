@@ -6,6 +6,7 @@ namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
@@ -15,7 +16,6 @@ use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
 
@@ -43,7 +43,7 @@ final class RefundProcessed extends Transition
 
     public function handle(): Order
     {
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $now = CarbonImmutable::now();
 
             if ($this->amount <= 0) {
@@ -94,13 +94,17 @@ final class RefundProcessed extends Transition
             $paidTotal = $this->order->getTotalPaid();
             $refundedTotal = $this->order->getTotalRefunded();
 
-            foreach ($this->order->payments()->get() as $payment) {
-                $attributed = (int) $this->order->refunds()
-                    ->where('payment_id', $payment->getKey())
-                    ->where('status', RefundStatus::Completed->value)
-                    ->sum('amount');
+            $completedByPayment = $this->order->refunds()
+                ->where('status', RefundStatus::Completed->value)
+                ->whereNotNull('payment_id')
+                ->selectRaw('payment_id, SUM(amount) as refunded_amount')
+                ->groupBy('payment_id')
+                ->pluck('refunded_amount', 'payment_id');
 
-                if ($attributed >= (int) $payment->amount) {
+            foreach ($this->order->payments()->where('status', PaymentStatus::Completed->value)->get() as $payment) {
+                $completedAmount = (int) $completedByPayment->get((string) $payment->getKey(), 0);
+
+                if ($completedAmount >= (int) $payment->amount && $completedAmount > 0) {
                     $payment->markAsRefunded();
                 }
             }

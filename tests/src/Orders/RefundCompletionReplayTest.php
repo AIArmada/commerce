@@ -125,3 +125,23 @@ it('emits a refund failure event only on the first pending-to-failed transition'
 
     Event::assertDispatchedTimes(OrderRefundFailed::class, 1);
 });
+
+it('does not rewrite a previously refunded payment timestamp when another payment is refunded', function (): void {
+    $order = ord06Order();
+    $first = ord06Payment($order, 'first-paid');
+    $second = ord06Payment($order, 'second-paid');
+    $action = app(RegisterOrderRefund::class);
+
+    $firstRefund = $action->createPending($order->refresh(), 5000, 'first-refund', 'First refund', [], $first);
+    $action->completePending($firstRefund[0], 'first-provider-refund');
+    $timestamp = $first->refresh()->refunded_at;
+
+    $this->travel(1)->minutes();
+    $secondRefund = $action->createPending($order->refresh(), 5000, 'second-refund', 'Second refund', [], $second);
+    $action->completePending($secondRefund[0], 'second-provider-refund');
+
+    expect($first->refresh()->refunded_at?->toDateTimeString())->toBe($timestamp?->toDateTimeString())
+        ->and($second->refresh()->status)->toBe(PaymentStatus::Refunded);
+
+    $this->travelBack();
+});

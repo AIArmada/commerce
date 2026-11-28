@@ -412,7 +412,10 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             $changed = $lockedRefund->isPending();
 
             if ($changed) {
-                $lockedRefund->markAsFailed($reason);
+                $lockedRefund->status = RefundStatus::Failed;
+                $lockedRefund->failed_at = CarbonImmutable::now();
+                $lockedRefund->notes = $reason;
+                $lockedRefund->save();
 
                 // The status-change event already moved the totals; refresh so
                 // any later reads in this request see fresh values.

@@ -165,7 +165,7 @@ describe('RegisterOrderRefund', function (): void {
 
         $action = new RegisterOrderRefund;
         $refund = $action->createPending($order, 5000, 'failed-key', 'Failed refund');
-        $refund[0]->markAsFailed('Provider rejected the refund.');
+        $action->failPending($refund[0], 'Provider rejected the refund.');
 
         expect(fn () => $action->createPending($order, 5000, 'failed-key', 'Retry refund'))
             ->toThrow(RuntimeException::class, 'has already failed')
