@@ -8,6 +8,7 @@ use AIArmada\Checkout\Contracts\DiscountProvider;
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\PromotionTargetingCart;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Runtime\PromotionServiceInterface;
@@ -56,16 +57,8 @@ final class PromotionsAdapter implements DiscountProvider
 
     private function makeContext(CheckoutSession $session): TargetingContext
     {
-        $cartSnapshot = $session->cart_snapshot ?? [];
-        $items = $cartSnapshot['items'] ?? [];
-
         return new TargetingContext(
-            cart: (object) [
-                'items' => $items,
-                'subtotal' => $session->subtotal,
-                'total' => $session->grand_total,
-                'quantity' => count($items),
-            ],
+            cart: PromotionTargetingCart::fromSession($session),
             user: null,
             request: null,
             metadata: [
