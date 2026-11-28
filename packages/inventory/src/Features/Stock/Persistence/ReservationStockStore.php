@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class ReservationStockStore implements ReservationStock
 {
@@ -27,7 +28,9 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Reservation quantity exceeds available stock.');
             }
 
-            $record->increment('quantity_reserved', $quantity);
+            if (! $record->forceFill(['quantity_reserved' => $record->quantity_reserved + $quantity])->save()) {
+                throw new RuntimeException('Inventory reservation balance update was cancelled.');
+            }
         });
     }
 
@@ -40,7 +43,9 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Release quantity exceeds reserved stock.');
             }
 
-            $record->decrement('quantity_reserved', $quantity);
+            if (! $record->forceFill(['quantity_reserved' => $record->quantity_reserved - $quantity])->save()) {
+                throw new RuntimeException('Inventory reservation balance update was cancelled.');
+            }
         });
     }
 
@@ -57,10 +62,12 @@ final readonly class ReservationStockStore implements ReservationStock
             $record->suppressLedgerAudit = true;
 
             try {
-                $record->forceFill([
+                if (! $record->forceFill([
                     'quantity_on_hand' => $before - $quantity,
                     'quantity_reserved' => $record->quantity_reserved - $quantity,
-                ])->save();
+                ])->save()) {
+                    throw new RuntimeException('Inventory balance update was cancelled.');
+                }
             } finally {
                 $record->suppressLedgerAudit = false;
             }
@@ -79,6 +86,10 @@ final readonly class ReservationStockStore implements ReservationStock
                 'note' => $note,
                 'occurred_at' => CarbonImmutable::now(),
             ]);
+
+            if (! $movement->exists) {
+                throw new RuntimeException('Inventory movement creation was cancelled.');
+            }
 
             if ($record->inventoryable instanceof Model) {
                 app(CheckLowInventory::class)->handle($record->inventoryable, $record);

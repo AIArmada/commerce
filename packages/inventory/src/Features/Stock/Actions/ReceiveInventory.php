@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
+use RuntimeException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class ReceiveInventory
@@ -48,8 +49,14 @@ final class ReceiveInventory
 
             $before = $level->quantity_on_hand;
             $level->suppressLedgerAudit = true;
-            $level->increment('quantity_on_hand', $quantity);
-            $level->refresh();
+
+            try {
+                if (! $level->update(['quantity_on_hand' => $before + $quantity])) {
+                    throw new RuntimeException('Inventory balance update was cancelled.');
+                }
+            } finally {
+                $level->suppressLedgerAudit = false;
+            }
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -64,6 +71,10 @@ final class ReceiveInventory
                 'note' => $note,
                 'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
             ]);
+
+            if (! $movement->exists) {
+                throw new RuntimeException('Inventory movement creation was cancelled.');
+            }
 
             Event::dispatch(new InventoryReceived($model, $level, $movement));
 

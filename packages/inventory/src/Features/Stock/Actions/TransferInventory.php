@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
+use RuntimeException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class TransferInventory
@@ -87,8 +88,10 @@ final class TransferInventory
             $toLevel->suppressLedgerAudit = true;
 
             try {
-                $fromLevel->update(['quantity_on_hand' => $fromLevel->quantity_on_hand - $quantity]);
-                $toLevel->update(['quantity_on_hand' => $toLevel->quantity_on_hand + $quantity]);
+                if (! $fromLevel->update(['quantity_on_hand' => $fromLevel->quantity_on_hand - $quantity])
+                    || ! $toLevel->update(['quantity_on_hand' => $toLevel->quantity_on_hand + $quantity])) {
+                    throw new RuntimeException('Inventory balance update was cancelled.');
+                }
             } finally {
                 $fromLevel->suppressLedgerAudit = false;
                 $toLevel->suppressLedgerAudit = false;
@@ -105,6 +108,10 @@ final class TransferInventory
                 'note' => $note,
                 'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
             ]);
+
+            if (! $movement->exists) {
+                throw new RuntimeException('Inventory movement creation was cancelled.');
+            }
 
             Event::dispatch(new InventoryTransferred($model, $fromLevel, $toLevel, $movement));
 

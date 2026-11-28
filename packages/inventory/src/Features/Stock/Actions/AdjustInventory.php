@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
+use RuntimeException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class AdjustInventory
@@ -62,7 +63,14 @@ final class AdjustInventory
             // level's direct-write auto-audit must stand down.
             if ($difference !== 0) {
                 $level->suppressLedgerAudit = true;
-                $level->update(['quantity_on_hand' => $newQuantity]);
+
+                try {
+                    if (! $level->update(['quantity_on_hand' => $newQuantity])) {
+                        throw new RuntimeException('Inventory balance update was cancelled.');
+                    }
+                } finally {
+                    $level->suppressLedgerAudit = false;
+                }
             }
 
             $movement = InventoryMovement::create([
@@ -79,6 +87,10 @@ final class AdjustInventory
                 'note' => $note ?? sprintf('Adjusted from %d to %d', $oldQuantity, $newQuantity),
                 'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
             ]);
+
+            if (! $movement->exists) {
+                throw new RuntimeException('Inventory movement creation was cancelled.');
+            }
 
             if ($difference !== 0) {
                 Event::dispatch(new InventoryAdjusted($model, $level, $movement, $oldQuantity, $newQuantity));

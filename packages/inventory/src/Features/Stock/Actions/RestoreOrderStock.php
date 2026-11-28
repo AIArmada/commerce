@@ -64,7 +64,9 @@ final readonly class RestoreOrderStock implements RestoreOrderStockContract
                 $level->suppressLedgerAudit = true;
 
                 try {
-                    $level->update(['quantity_on_hand' => $before + $movement->quantity]);
+                    if (! $level->update(['quantity_on_hand' => $before + $movement->quantity])) {
+                        throw new RuntimeException('Inventory balance update was cancelled.');
+                    }
                 } finally {
                     $level->suppressLedgerAudit = false;
                 }
@@ -83,6 +85,10 @@ final readonly class RestoreOrderStock implements RestoreOrderStockContract
                     'note' => sprintf('Restored from cancelled order #%s', $orderNumber),
                     'occurred_at' => CarbonImmutable::now(),
                 ]);
+
+                if (! $receipt->exists) {
+                    throw new RuntimeException('Inventory movement creation was cancelled.');
+                }
 
                 Event::dispatch(new InventoryReceived($movement->inventoryable, $level, $receipt));
             }

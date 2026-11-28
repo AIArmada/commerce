@@ -11,8 +11,10 @@ use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
@@ -212,4 +214,51 @@ describe('InventoryService', function (): void {
     it('returns an empty map for an empty bulk availability request', function (): void {
         expect($this->inventoryService->getAvailabilityForMany([]))->toBe([]);
     });
+});
+
+it('rolls back stock and reservation operations when a balance write is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Cancelled Ledger Item']);
+    $source = InventoryLocation::factory()->create();
+    $destination = InventoryLocation::factory()->create();
+    $inventory = app(InventoryService::class);
+    $inventory->receive($item, $source->id, 100);
+    $inventory->receive($item, $destination->id, 10);
+    $level = $inventory->getLevel($item, $source->id);
+    $stock = app(ReservationStockStore::class);
+    $stock->reserve($level->id, 20);
+    $movements = InventoryMovement::query()->count();
+
+    InventoryLevel::updating(static fn (InventoryLevel $record): bool => $record->getKey() !== $level->getKey());
+
+    foreach ([
+        fn () => $inventory->receive($item, $source->id, 5),
+        fn () => $inventory->ship($item, $source->id, 5),
+        fn () => $inventory->adjust($item, $source->id, 95),
+        fn () => $inventory->transfer($item, $source->id, $destination->id, 5),
+        fn () => $stock->reserve($level->id, 5),
+        fn () => $stock->release($level->id, 5),
+        fn () => $stock->commit($level->id, 5, null, 'Cancelled commit'),
+    ] as $operation) {
+        expect($operation)->toThrow(RuntimeException::class, 'cancelled');
+    }
+
+    expect($level->fresh()->quantity_on_hand)->toBe(100)
+        ->and($level->fresh()->quantity_reserved)->toBe(20)
+        ->and($inventory->getLevel($item, $destination->id)->quantity_on_hand)->toBe(10)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('rolls back stock when movement creation is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Cancelled Movement Item']);
+    $location = InventoryLocation::factory()->create();
+    $inventory = app(InventoryService::class);
+    $inventory->receive($item, $location->id, 100);
+    $movements = InventoryMovement::query()->count();
+
+    InventoryMovement::creating(static fn (InventoryMovement $movement): bool => $movement->inventoryable_id !== $item->getKey());
+
+    expect(fn () => $inventory->receive($item, $location->id, 5))
+        ->toThrow(RuntimeException::class, 'movement creation was cancelled')
+        ->and($inventory->getTotalOnHand($item))->toBe(100)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
 });
