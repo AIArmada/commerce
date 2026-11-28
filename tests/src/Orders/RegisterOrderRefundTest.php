@@ -10,6 +10,7 @@ use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
+use AIArmada\Orders\Support\RefundAllocationValidator;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -170,4 +171,44 @@ describe('RegisterOrderRefund', function (): void {
             ->toThrow(RuntimeException::class, 'has already failed')
             ->and($order->refresh()->refunds()->count())->toBe(1);
     });
+});
+
+it('does not refund again when a provider has replaced the original request transaction id', function (): void {
+    $order = Order::create([
+        'order_number' => 'ORD-REPLAY-' . uniqid(),
+        'status' => Returned::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    OrderPayment::create([
+        'order_id' => $order->id,
+        'gateway' => 'stripe',
+        'amount' => 10000,
+        'currency' => 'MYR',
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
+    $action = app(RegisterOrderRefund::class);
+    $pending = $action->createPending($order, 3000, 'original-request', 'Refund');
+    $action->completePending($pending[0], 'provider-reference');
+
+    $action->execute($order, 3000, 'original-request', 'Refund');
+    $action->execute($order, 3000, 'provider-reference', 'Refund');
+
+    expect($order->refunds()->count())->toBe(1)
+        ->and($order->refresh()->getTotalRefunded())->toBe(3000);
+
+    expect(fn () => $action->execute($order, 3000, 'original-request', 'Refund', ['refund_allocations' => ['entity' => 1]]))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects overflowing refund allocation amounts without integer coercion', function (): void {
+    expect(fn () => RefundAllocationValidator::assertAmount(['refund_allocations' => ['entity' => (string) PHP_INT_MAX . '0']], PHP_INT_MAX))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => RefundAllocationValidator::assertAmount(['refund_allocations' => ['a' => PHP_INT_MAX, 'b' => 1]], PHP_INT_MAX))
+        ->toThrow(InvalidArgumentException::class);
 });

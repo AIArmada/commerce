@@ -49,7 +49,9 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             throw new InvalidArgumentException('A refund transaction ID is required.');
         }
 
-        return DB::transaction(function () use ($order, $amount, $transactionId, $reason, $metadata, $payment): Order {
+        RefundAllocationValidator::assertAmount($metadata, $amount);
+
+        return $order->getConnection()->transaction(function () use ($order, $amount, $transactionId, $reason, $metadata, $payment): Order {
             // Keep the caller's model instance while locking the database row,
             // so retries cannot create duplicate refunds or overshoot the
             // remaining refundable amount.
@@ -57,16 +59,26 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
                 ->lockForUpdate()
                 ->findOrFail($order->getKey());
             $order->refresh();
+            $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
             $metadata = $this->packageRefundMetadata($order, $metadata);
 
-            $existingRefund = $order->refunds()
-                ->where('transaction_id', $transactionId)
-                ->first();
+            // The allocation key survives provider settlement, while the
+            // transaction ID can change. Replay the original request first.
+            $existingRows = $order->refunds()->where('allocation_key', $transactionId)->get();
 
-            if ($existingRefund instanceof OrderRefund) {
+            if ($existingRows->isEmpty()) {
+                $matched = $order->refunds()->where('transaction_id', $transactionId)->first();
+
+                if ($matched instanceof OrderRefund) {
+                    $existingRows = $order->refunds()->where('allocation_key', $matched->allocation_key)->get();
+                }
+            }
+
+            if ($existingRows->isNotEmpty()) {
+                /** @var OrderRefund $existingRefund */
+                $existingRefund = $existingRows->first();
                 $this->assertSamePackageReturn($existingRefund, $metadata);
-                $existingRows = $order->refunds()->where('transaction_id', $transactionId)->get();
 
                 if ($amount !== (int) $existingRows->sum('amount')) {
                     throw new DomainException(isset($metadata['package_unit']) ? 'The amount does not match the existing package refund.' : 'The amount does not match the existing refund.');
@@ -76,11 +88,11 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
                     throw new InvalidArgumentException('The specified payment does not match the existing refund allocations.');
                 }
 
-                if ($existingRefund->isPending()) {
+                if ($existingRows->contains(fn (OrderRefund $refund): bool => $refund->isPending())) {
                     throw new RuntimeException("Refund transaction {$transactionId} is already pending.");
                 }
 
-                if ($existingRefund->isFailed()) {
+                if ($existingRows->contains(fn (OrderRefund $refund): bool => $refund->isFailed())) {
                     throw new RuntimeException("Refund transaction {$transactionId} has already failed.");
                 }
 
@@ -130,8 +142,9 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
 
         RefundAllocationValidator::assertAmount($metadata, $amount);
 
-        return DB::transaction(function () use ($order, $amount, $transactionId, $reason, $metadata, $payment): array {
+        return $order->getConnection()->transaction(function () use ($order, $amount, $transactionId, $reason, $metadata, $payment): array {
             $lockedOrder = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
+            $this->assertOwnerBoundaryForMutation($lockedOrder, __METHOD__);
             $metadata = $this->packageRefundMetadata($lockedOrder, $metadata);
 
             // The allocation key is the caller's idempotency key. Check it
@@ -213,8 +226,9 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
     {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        return DB::transaction(function () use ($order, $reason): array {
+        return $order->getConnection()->transaction(function () use ($order, $reason): array {
             $lockedOrder = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
+            $this->assertOwnerBoundaryForMutation($lockedOrder, __METHOD__);
 
             if (! $lockedOrder->status instanceof Canceled) {
                 throw new RuntimeException(sprintf(
@@ -467,6 +481,8 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         $lockedOrder = $order->newQuery()
             ->lockForUpdate()
             ->findOrFail($order->getKey());
+
+        $this->assertOwnerBoundaryForMutation($lockedOrder, __METHOD__);
 
         return $lockedOrder;
     }

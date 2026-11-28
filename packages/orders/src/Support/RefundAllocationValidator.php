@@ -32,7 +32,13 @@ final class RefundAllocationValidator
                 throw new InvalidArgumentException('Refund allocations must contain positive amounts keyed by entity ID.');
             }
 
-            $allocated += (int) $allocation;
+            $minor = (int) $allocation;
+
+            if ($minor > $amount - $allocated) {
+                throw new InvalidArgumentException('Refund allocations must add up to the refund amount.');
+            }
+
+            $allocated += $minor;
         }
 
         if ($allocated !== $amount) {
@@ -46,6 +52,15 @@ final class RefundAllocationValidator
             return $value > 0;
         }
 
-        return is_string($value) && ctype_digit($value) && (int) $value > 0;
+        if (! is_string($value) || ! ctype_digit($value)) {
+            return false;
+        }
+
+        $normalized = ltrim($value, '0');
+        $maximum = (string) PHP_INT_MAX;
+
+        return $normalized !== ''
+            && (strlen($normalized) < strlen($maximum)
+                || (strlen($normalized) === strlen($maximum) && strcmp($normalized, $maximum) <= 0));
     }
 }
