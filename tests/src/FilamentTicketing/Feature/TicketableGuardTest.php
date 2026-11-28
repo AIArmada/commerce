@@ -10,6 +10,9 @@ use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
 use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Tests\Fixtures\OwnedTicketable;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -88,4 +91,40 @@ it('rejects unregistered types and missing ids', function (): void {
 it('derives search columns only from existing table columns', function (): void {
     expect(TicketablePickerColumns::searchColumnsFor(OwnedTicketable::class))->toBe(['name'])
         ->and(TicketablePickerColumns::titleAttributeFor(OwnedTicketable::class))->toBe('name');
+});
+
+it('rejects forged scalar ticketable identifiers', function (): void {
+    expect(fn () => app(ValidateTicketableReference::class)->handle([
+        'ticketable_type' => OwnedTicketable::class,
+        'ticketable_id' => true,
+    ]))->toThrow(ValidationException::class);
+});
+
+it('keeps the ticket type attached to its original host', function (): void {
+    $owner = ticketableOwner('ticketable-write@example.com');
+    $first = ownedTicketable($owner, 'First show');
+    $second = ownedTicketable($owner, 'Second show');
+
+    OwnerContext::withOwner($owner, function () use ($first, $second): void {
+        $data = [
+            'name' => 'Admission',
+            'code' => 'GENERAL',
+            'access_type' => 'general',
+            'admits_quantity' => 1,
+            'status' => 'active',
+            'visibility' => 'public',
+            'price' => 5000,
+        ];
+
+        $type = app(SaveTicketType::class)->handle($first, $data);
+        expect($type->ticketable_id)->toBe($first->getKey());
+
+        expect(fn () => app(SaveTicketType::class)->handle($second, $data, $type))
+            ->toThrow(AuthorizationException::class);
+
+        expect(fn () => app(DeleteTicketType::class)->handle($type, $second))
+            ->toThrow(AuthorizationException::class);
+
+        expect(app(DeleteTicketType::class)->handle($type, $first))->toBeTrue();
+    });
 });

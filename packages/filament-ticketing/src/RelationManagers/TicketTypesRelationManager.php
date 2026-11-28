@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
+use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\FilamentTicketing\Schemas\TicketTypeFormSchema;
 use AIArmada\FilamentTicketing\Tables\TicketTypeTable;
 use Filament\Actions\CreateAction;
@@ -43,18 +46,28 @@ class TicketTypesRelationManager extends RelationManager
             ->columns(TicketTypeTable::columns())
             ->filters(TicketTypeTable::filters())
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->visible(fn (): bool => TicketTypeResource::canCreate())
+                    ->using(function (array $data): Model {
+                        abort_unless(TicketTypeResource::canCreate(), 403);
+
+                        return app(SaveTicketType::class)->handle($this->getOwnerRecord(), $data);
+                    }),
             ])
             ->actions([
                 EditAction::make()
-                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
-                    ->before(function (?Model $record): void {
-                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    ->visible(fn (TicketType $record): bool => TicketTypeResource::canEdit($record))
+                    ->using(function (TicketType $record, array $data): Model {
+                        abort_unless(TicketTypeResource::canEdit($record), 403);
+
+                        return app(SaveTicketType::class)->handle($this->getOwnerRecord(), $data, $record);
                     }),
                 DeleteAction::make()
-                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
-                    ->before(function (?Model $record): void {
-                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    ->visible(fn (TicketType $record): bool => TicketTypeResource::canDelete($record))
+                    ->using(function (TicketType $record): bool {
+                        abort_unless(TicketTypeResource::canDelete($record), 403);
+
+                        return app(DeleteTicketType::class)->handle($record, $this->getOwnerRecord());
                     }),
             ]);
     }

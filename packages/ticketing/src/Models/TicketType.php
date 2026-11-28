@@ -104,8 +104,8 @@ class TicketType extends Model
             $ticketType->passes()->update(['ticket_type_id' => null]);
 
             TicketTypeComponent::query()
-                ->where('parent_ticket_type_id', $key)
-                ->orWhere('component_ticket_type_id', $key)
+                ->where(fn (Builder $query): Builder => $query->where('parent_ticket_type_id', $key)
+                    ->orWhere('component_ticket_type_id', $key))
                 ->delete();
 
             $ticketType->bundleProducts()->delete();

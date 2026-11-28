@@ -4,14 +4,17 @@
   "owns": {
     "table:ticket_pass_holders": [
       "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter",
-      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\IssuePassesAction"
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\IssuePassesAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass"
     ],
     "table:ticket_pass_transfers": [
-      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter"
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass"
     ],
     "table:ticket_passes": [
       "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassIssuer",
-      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\RevokePassAction"
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\RevokePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass"
     ]
   },
   "extensions": {}

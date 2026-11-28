@@ -6,6 +6,10 @@ namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\Pages;
 
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
+use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -20,12 +24,14 @@ final class EditTicketType extends EditRecord
         ];
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        return app(ValidateTicketableReference::class)->handle($data);
+        abort_unless($record instanceof TicketType && TicketTypeResource::canEdit($record), 403);
+
+        $data = app(ValidateTicketableReference::class)->handle($data);
+        $class = Relation::getMorphedModel($data['ticketable_type']) ?? $data['ticketable_type'];
+        $host = $class::query()->findOrFail($data['ticketable_id']);
+
+        return app(SaveTicketType::class)->handle($host, $data, $record);
     }
 }

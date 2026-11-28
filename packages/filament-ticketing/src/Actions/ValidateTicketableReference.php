@@ -24,7 +24,7 @@ final readonly class ValidateTicketableReference
         $type = $data['ticketable_type'] ?? null;
         $id = $data['ticketable_id'] ?? null;
 
-        if (! is_string($type) || $type === '' || ! is_scalar($id) || (string) $id === '') {
+        if (! is_string($type) || $type === '' || (! is_string($id) && ! is_int($id)) || (string) $id === '') {
             throw ValidationException::withMessages([
                 'ticketable' => 'Select a ticketable record.',
             ]);
@@ -41,15 +41,18 @@ final readonly class ValidateTicketableReference
         /** @var Builder<Model> $query */
         $query = $class::query();
 
-        $exists = OwnerUiScope::apply($query, includeGlobal: false)
+        $record = OwnerUiScope::apply($query, includeGlobal: false)
             ->whereKey((string) $id)
-            ->exists();
+            ->first();
 
-        if (! $exists) {
+        if (! $record instanceof Model) {
             throw ValidationException::withMessages([
                 'ticketable' => 'The selected ticketable record is not accessible.',
             ]);
         }
+
+        $data['ticketable_type'] = $record->getMorphClass();
+        $data['ticketable_id'] = (string) $record->getKey();
 
         return $data;
     }

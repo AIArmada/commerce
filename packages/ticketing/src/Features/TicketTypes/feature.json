@@ -3,7 +3,18 @@
   "name": "TicketTypes",
   "owns": {
     "table:ticket_types": [
-      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\EnsureTicketTypeAction"
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\EnsureTicketTypeAction",
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\SaveTicketType",
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\DeleteTicketType"
+    ],
+    "table:ticket_type_components": [
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\DeleteTicketType"
+    ],
+    "table:ticket_type_products": [
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\DeleteTicketType"
+    ],
+    "table:ticket_type_seating_options": [
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\DeleteTicketType"
     ]
   },
   "extensions": {}

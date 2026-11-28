@@ -13,6 +13,8 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
+use AIArmada\Ticketing\Features\Passes\Actions\DeletePass;
 use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
@@ -29,6 +31,8 @@ final class TicketingDriver implements EventTicketingDriver
         private readonly EnsureTicketTypeAction $ensureTicketType,
         private readonly IssuePassesAction $issuePasses,
         private readonly RevokePassAction $revokePass,
+        private readonly DeletePass $deletePass,
+        private readonly DeleteTicketType $deleteTicketType,
         private readonly InventoryService $inventory,
         private readonly ?PassDeliveryServiceInterface $passDelivery = null,
     ) {}
@@ -264,7 +268,7 @@ final class TicketingDriver implements EventTicketingDriver
                 ->where('registration_id', $scopeId)
                 ->chunkById(200, function (iterable $passes): void {
                     foreach ($passes as $pass) {
-                        $pass->delete();
+                        $this->deletePass->handle($pass);
                     }
                 });
 
@@ -279,7 +283,7 @@ final class TicketingDriver implements EventTicketingDriver
             ->where('ticketable_id', $scopeId)
             ->chunkById(200, function (iterable $ticketTypes): void {
                 foreach ($ticketTypes as $ticketType) {
-                    $ticketType->delete();
+                    $this->deleteTicketType->handle($ticketType);
                 }
             });
 
@@ -288,7 +292,7 @@ final class TicketingDriver implements EventTicketingDriver
             ->where('ticketable_id', $scopeId)
             ->chunkById(200, function (iterable $passes): void {
                 foreach ($passes as $pass) {
-                    $pass->delete();
+                    $this->deletePass->handle($pass);
                 }
             });
     }
