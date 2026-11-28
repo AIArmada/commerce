@@ -89,6 +89,32 @@ describe('FifoCostService', function (): void {
         expect($result['layers'])->toHaveCount(2);
     });
 
+    it('uses the same deterministic FIFO order for estimates and consumption when timestamps tie', function (): void {
+        $date = CarbonImmutable::parse('2026-01-01 00:00:00');
+        $layers = [];
+
+        foreach ([100, 200] as $cost) {
+            $layers[] = InventoryCostLayer::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+                'quantity' => 10,
+                'remaining_quantity' => 10,
+                'unit_cost_minor' => $cost,
+                'total_cost_minor' => 10 * $cost,
+                'currency' => config('inventory.defaults.currency', 'MYR'),
+                'layer_date' => $date,
+                'created_at' => $date,
+            ]);
+        }
+
+        usort($layers, fn (InventoryCostLayer $a, InventoryCostLayer $b): int => strcmp($a->id, $b->id));
+
+        expect($this->service->getOldestLayer($this->item, $this->location->id)->id)->toBe($layers[0]->id)
+            ->and($this->service->estimateCogs($this->item, 1, $this->location->id))->toBe($layers[0]->unit_cost_minor)
+            ->and($this->service->consume($this->item, 1, $this->location->id)['layers'][0]['layer_id'])->toBe($layers[0]->id);
+    });
+
     it('consume returns partial when insufficient', function (): void {
         $this->service->addLayer($this->item, 30, 500, $this->location->id);
 

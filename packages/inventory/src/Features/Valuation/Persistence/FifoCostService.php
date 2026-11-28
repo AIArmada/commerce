@@ -115,7 +115,7 @@ final class FifoCostService
                 $query->where('location_id', $locationId);
             }
 
-            $layers = $query->orderBy('id')->lockForUpdate()->get();
+            $layers = $query->lockForUpdate()->get();
 
             $totalConsumed = 0;
             $totalCost = 0;

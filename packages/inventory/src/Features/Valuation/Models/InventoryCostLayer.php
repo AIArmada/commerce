@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Features\Valuation\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryCostLayerFactory;
@@ -80,12 +81,19 @@ final class InventoryCostLayer extends Model implements Auditable
                 return;
             }
 
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+            if ($layer->exists && ! InventoryOwnerScope::forMutation(self::query())->whereKey($layer->getKey())->exists()) {
+                throw new AuthorizationException('Cost layer is not writable in the current owner context.');
+            }
+
             $resolvedOwnerType = null;
             $resolvedOwnerId = null;
             $ownerResolvedFromRelation = false;
 
             if ($layer->location_id !== null) {
-                $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($layer->location_id)
                     ->first();
 
@@ -99,12 +107,17 @@ final class InventoryCostLayer extends Model implements Auditable
             }
 
             if ($layer->batch_id !== null) {
-                $batch = InventoryBatch::query()
+                $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
                     ->whereKey($layer->batch_id)
                     ->first();
 
                 if ($batch === null) {
                     throw new AuthorizationException('Invalid batch for current owner context.');
+                }
+
+                if ($batch->inventoryable_type !== $layer->inventoryable_type
+                    || (string) $batch->inventoryable_id !== (string) $layer->inventoryable_id) {
+                    throw new AuthorizationException('Batch inventory identity does not match cost layer.');
                 }
 
                 if ($layer->location_id !== null && $batch->location_id !== $layer->location_id) {
@@ -139,8 +152,6 @@ final class InventoryCostLayer extends Model implements Auditable
                 if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
                     return;
                 }
-
-                $owner = InventoryOwnerScope::resolveOwner();
 
                 if ($owner === null) {
                     return;
@@ -203,12 +214,12 @@ final class InventoryCostLayer extends Model implements Auditable
 
     public function scopeFifoOrder(Builder $query): Builder
     {
-        return $query->orderBy('layer_date', 'asc')->orderBy('created_at', 'asc');
+        return $query->orderBy('layer_date', 'asc')->orderBy('created_at', 'asc')->orderBy('id', 'asc');
     }
 
     public function scopeLifoOrder(Builder $query): Builder
     {
-        return $query->orderBy('layer_date', 'desc')->orderBy('created_at', 'desc');
+        return $query->orderBy('layer_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc');
     }
 
     public function scopeUsingMethod(Builder $query, CostingMethod $method): Builder
