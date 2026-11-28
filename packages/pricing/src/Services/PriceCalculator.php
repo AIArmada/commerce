@@ -103,7 +103,18 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $tierResult = $this->tierResolver->resolve($priceableType, $priceableId, $quantity, $context);
+        if (! $listResolved) {
+            $requestedListId = Arr::get($context, 'price_list_id');
+            $resolvedList = is_string($requestedListId) && $requestedListId !== ''
+                ? EligiblePriceLists::query($context, $effectiveAt, $currency)->whereKey($requestedListId)->first()
+                : $this->resolveDefaultPriceList($context);
+            $listResolved = true;
+        }
+
+        $tierContext = $context;
+        $tierContext['price_list_id'] = $resolvedList?->id;
+
+        $tierResult = $this->tierResolver->resolve($priceableType, $priceableId, $quantity, $tierContext);
         if ($tierResult !== null) {
             $breakdown[] = ['type' => 'tier', 'price' => $tierResult->price, 'tier' => $tierResult->tier];
 
@@ -144,7 +155,7 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context, $effectiveAt, $resolvedList, $listResolved);
+        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $currency, $effectiveAt, $resolvedList);
         if ($priceListResult !== null) {
             $breakdown[] = ['type' => 'price_list', 'price' => $priceListResult['price'], 'list' => $priceListResult['name']];
 
@@ -178,21 +189,8 @@ final class PriceCalculator implements PriceCalculatorInterface
         return get_class($item);
     }
 
-    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context, CarbonImmutable $effectiveAt, ?PriceList $resolvedList = null, bool $listResolved = false): ?array
+    private function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, string $currency, CarbonImmutable $effectiveAt, ?PriceList $priceList): ?array
     {
-        $currency = $this->resolveCurrency($context);
-        $priceListId = Arr::get($context, 'price_list_id');
-
-        if ($listResolved) {
-            $priceList = $resolvedList;
-        } elseif (is_string($priceListId) && $priceListId !== '') {
-            $priceList = EligiblePriceLists::query($context, $effectiveAt, $currency)
-                ->whereKey($priceListId)
-                ->first();
-        } else {
-            $priceList = $this->resolveDefaultPriceList($context);
-        }
-
         if (! $priceList) {
             return null;
         }

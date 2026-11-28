@@ -770,3 +770,30 @@ it('requires both customer and segment eligibility for a doubly targeted list', 
         ->and($calculator->calculate($item, 1, ['price_list_id' => $list->id])->finalPrice)->toBe(1000)
         ->and($calculator->calculate($item, 1, ['customer_id' => $customerId, 'segment_ids' => [$segmentId]])->finalPrice)->toBe(100);
 });
+
+it('applies eligible default list tiers consistently to single and batch calculations', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Default Tier List',
+        'slug' => 'default-tier-list',
+        'is_default' => true,
+        'currency' => 'MYR',
+    ]);
+
+    PriceTier::create([
+        'price_list_id' => $list->id,
+        'tierable_type' => TestPriceableItem::class,
+        'tierable_id' => $item->getBuyableIdentifier(),
+        'min_quantity' => 5,
+        'amount' => 700,
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item, 5)->finalPrice)->toBe(700)
+        ->and($calculator->calculateMany([['item' => $item, 'quantity' => 5]])[0]->finalPrice)->toBe(700)
+        ->and($calculator->calculate($item, 1)->finalPrice)->toBe(1000);
+});
