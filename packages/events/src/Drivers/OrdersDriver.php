@@ -16,7 +16,7 @@ use AIArmada\Events\Data\EventOrderItemData;
 use AIArmada\Events\Data\EventRefundMatchData;
 use AIArmada\Events\Data\EventRefundResultData;
 use AIArmada\Events\Data\EventRefundStateData;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -32,7 +32,7 @@ use RuntimeException;
 final class OrdersDriver implements EventOrderDriver
 {
     public function __construct(
-        private readonly ?OrderServiceInterface $orders,
+        private readonly ?OrderRefunds $orders,
         private readonly ?PaymentGatewayResolverInterface $gateways,
     ) {}
 
@@ -183,19 +183,19 @@ final class OrdersDriver implements EventOrderDriver
         $metadata['provider'] = $this->paymentProvider($payment);
 
         $refunds = OwnerContext::withOwner($this->ownerOf($order), fn (): array => $this->orderService()->createPendingRefund(
-            order: $order,
+            orderId: (string) $order->getKey(),
             amount: $amount,
             transactionId: $transactionId ?? 'event-refund-' . $orderId,
             reason: $reason,
             metadata: $metadata,
-            payment: $payment,
+            paymentId: (string) $payment->getKey(),
         ));
 
         if (count($refunds) !== 1) {
             throw new RuntimeException('The selected payment did not produce exactly one refund reservation.');
         }
 
-        return (string) $refunds[0]->getKey();
+        return $refunds[0];
     }
 
     public function refundIdForRegistration(string $orderId, string $registrationId): ?string
@@ -213,7 +213,7 @@ final class OrdersDriver implements EventOrderDriver
 
         return OwnerContext::withOwner(
             $this->ownerOf($refund),
-            fn (): bool => $this->orderService()->claimPendingRefundSubmission($refund),
+            fn (): bool => $this->orderService()->claimPendingRefundSubmission((string) $refund->getKey()),
         );
     }
 
@@ -222,7 +222,7 @@ final class OrdersDriver implements EventOrderDriver
         $refund = $this->refund($refundId);
 
         OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $transactionId): void {
-            $this->orderService()->completePendingRefund($refund, $transactionId);
+            $this->orderService()->completePendingRefund((string) $refund->getKey(), $transactionId);
         });
     }
 
@@ -233,7 +233,7 @@ final class OrdersDriver implements EventOrderDriver
 
         OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $reason): void {
             $this->orderService()->failPendingRefund(
-                $refund,
+                (string) $refund->getKey(),
                 $reason !== '' ? mb_substr($reason, 0, 500) : 'Refund failed.',
             );
         });
@@ -399,13 +399,13 @@ final class OrdersDriver implements EventOrderDriver
     {
         $config = $model::ownerScopeConfig();
 
-        return OwnerContext::fromTypeAndId(
+        return OwnerContext::fromTypeAndIdOrFail(
             $model->getAttribute($config->ownerTypeColumn),
             $model->getAttribute($config->ownerIdColumn),
         );
     }
 
-    private function orderService(): OrderServiceInterface
+    private function orderService(): OrderRefunds
     {
         return $this->orders ?? throw new RuntimeException('The AIArmada orders integration is unavailable.');
     }

@@ -8,19 +8,16 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventOrderDriver;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
-use AIArmada\Orders\Services\OrderService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
     config()->set('orders.owner.enabled', false);
-    app()->bind(OrderServiceInterface::class, OrderService::class);
 });
 
 it('matches, correlates and completes a trusted provider refund confirmation for the owning registration', function (): void {

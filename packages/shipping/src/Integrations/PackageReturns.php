@@ -9,7 +9,7 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
@@ -207,7 +207,7 @@ final class PackageReturns implements PackageReturnVerifier
 
             $remaining = $unit->refundAmount() - $this->settledRefundAmount($order, $rma);
             if ($transactionId !== null && $remaining > 0) {
-                app(OrderServiceInterface::class)->processRefund($order, $remaining, $transactionId, $rma->reason, [
+                app(OrderRefunds::class)->processRefund((string) $order->getKey(), $remaining, $transactionId, $rma->reason, [
                     'return_authorization_id' => $rma->id,
                 ]);
             }
