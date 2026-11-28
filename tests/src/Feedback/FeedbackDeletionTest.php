@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\DeleteFeedbackFormAction;
-use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;
-use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackQuestionOption;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackSection;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionAction;
+use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackSectionAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 
 it('deletes the complete feedback form aggregate', function (): void {
     $form = app(CreateFeedbackFormAction::class)
@@ -47,6 +48,11 @@ it('deletes the complete feedback form aggregate', function (): void {
         'quote' => 'Delete me',
         'status' => 'pending',
     ]);
+    FeedbackTestimonial::query()->create([
+        'feedback_answer_id' => $answer->id,
+        'quote' => 'Answer-only testimonial',
+        'status' => 'pending',
+    ]);
     FeedbackInvitation::query()->create([
         'feedback_form_id' => $form->id,
         'token_hash' => hash('sha256', 'delete-invitation'),
@@ -73,7 +79,91 @@ it('deletes the complete feedback form aggregate', function (): void {
         ->and(ContactMethod::query()->count())->toBe(0);
 });
 
-it('nulls testimonial answer references when deleting a question', function (): void {
+it('deletes a batch of feedback responses and answers with bounded SQL queries', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Batch Delete'));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
+
+    $responses = [];
+
+    foreach (range(1, 30) as $number) {
+        $response = FeedbackResponse::query()->create([
+            'feedback_form_id' => $form->id,
+            'status' => 'submitted',
+            'is_anonymous' => true,
+        ]);
+        $responses[] = $response;
+
+        FeedbackAnswer::query()->create([
+            'feedback_response_id' => $response->id,
+            'feedback_question_id' => $question->id,
+            'text_value' => "Comment {$number}",
+        ]);
+
+        ContactMethod::query()->create([
+            'contactable_type' => $response->getMorphClass(),
+            'contactable_id' => $response->id,
+            'type' => 'email',
+            'purpose' => 'general',
+            'value' => "batch-response-{$number}@example.com",
+        ]);
+
+        SocialProfile::query()->create([
+            'socialable_type' => $response->getMorphClass(),
+            'socialable_id' => $response->id,
+            'platform' => 'facebook',
+            'purpose' => 'general',
+            'handle' => "batch-response-{$number}",
+        ]);
+    }
+
+    foreach (array_slice($responses, 0, 3) as $index => $response) {
+        $testimonial = FeedbackTestimonial::query()->create([
+            'feedback_response_id' => $response->id,
+            'quote' => "Batch testimonial {$index}",
+            'status' => 'pending',
+        ]);
+
+        ContactMethod::query()->create([
+            'contactable_type' => $testimonial->getMorphClass(),
+            'contactable_id' => $testimonial->id,
+            'type' => 'email',
+            'purpose' => 'general',
+            'value' => "batch-testimonial-{$index}@example.com",
+        ]);
+
+        SocialProfile::query()->create([
+            'socialable_type' => $testimonial->getMorphClass(),
+            'socialable_id' => $testimonial->id,
+            'platform' => 'facebook',
+            'purpose' => 'general',
+            'handle' => "batch-testimonial-{$index}",
+        ]);
+    }
+
+    $connection = $form->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        app(DeleteFeedbackFormAction::class)->execute($form);
+        $queryCount = count($connection->getQueryLog());
+    } finally {
+        $connection->disableQueryLog();
+    }
+
+    expect($queryCount)->toBeLessThan(35)
+        ->and(FeedbackResponse::query()->count())->toBe(0)
+        ->and(FeedbackAnswer::query()->count())->toBe(0)
+        ->and(FeedbackTestimonial::query()->count())->toBe(0)
+        ->and(ContactMethod::query()->count())->toBe(0)
+        ->and(SocialProfile::query()->count())->toBe(0);
+});
+
+it('nulls testimonial answer references when deleting a question', function (bool $direct): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Question'));
     $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
@@ -98,14 +188,18 @@ it('nulls testimonial answer references when deleting a question', function (): 
         'status' => 'pending',
     ]);
 
-    app(DeleteFeedbackQuestionAction::class)->execute($question);
+    if ($direct) {
+        $question->delete();
+    } else {
+        app(DeleteFeedbackQuestionAction::class)->execute($question);
+    }
 
     expect($testimonial->fresh()->feedback_answer_id)->toBeNull()
         ->and(FeedbackAnswer::query()->count())->toBe(0)
         ->and(FeedbackQuestion::query()->count())->toBe(0);
-});
+})->with([true, false]);
 
-it('nulls question section references when deleting a section', function (): void {
+it('nulls question section references when deleting a section', function (bool $direct): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Section'));
     $structure = app(SaveFeedbackFormStructureAction::class);
@@ -117,8 +211,36 @@ it('nulls question section references when deleting a section', function (): voi
         'feedback_section_id' => $section->id,
     ]);
 
-    app(DeleteFeedbackSectionAction::class)->execute($section);
+    if ($direct) {
+        $section->delete();
+    } else {
+        app(DeleteFeedbackSectionAction::class)->execute($section);
+    }
 
     expect($question->fresh()->feedback_section_id)->toBeNull()
         ->and(FeedbackSection::query()->count())->toBe(0);
+})->with([true, false]);
+
+it('deletes form structure with owner scoping disabled', function (): void {
+    config(['feedback.owner.enabled' => false]);
+
+    $form = app(CreateFeedbackFormAction::class)
+        ->execute(new CreateFeedbackFormData(name: 'Unscoped Deletion'));
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $section = $structure->saveSection($form->id, ['title' => 'Section']);
+    $question = $structure->saveQuestion($form->id, [
+        'feedback_section_id' => $section->id,
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
+
+    app(DeleteFeedbackSectionAction::class)->execute($section);
+    expect($question->fresh()->feedback_section_id)->toBeNull();
+
+    app(DeleteFeedbackQuestionAction::class)->execute($question);
+    expect(FeedbackQuestion::query()->whereKey($question->id)->exists())->toBeFalse();
+
+    app(DeleteFeedbackFormAction::class)->execute($form);
+    expect(FeedbackForm::query()->whereKey($form->id)->exists())->toBeFalse();
 });

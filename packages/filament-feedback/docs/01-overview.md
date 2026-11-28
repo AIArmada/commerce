@@ -24,6 +24,6 @@ All resources apply `OwnerUiScope` to enforce tenant isolation. Submitted IDs ar
 
 ## What else ships here
 
-- `FeedbackDashboard` page plus NPS/CSAT/trend/completion widgets (see `src/Widgets/`)
-- Exports `FeedbackResponsesExport`, `FeedbackAnswersExport`, `FeedbackTestimonialsExport` (see `src/Exports/`)
+- `FeedbackDashboard` page plus NPS/CSAT/trend/completion widgets (see `src/Features/Analytics/EntryPoints/Filament/Widgets/`)
+- Exports `FeedbackResponsesExport`, `FeedbackAnswersExport`, `FeedbackTestimonialsExport` (see `src/Features/*/EntryPoints/Filament/Exports/`)
 - Config `filament-feedback.php`: `navigation`, `resources`, `pages`

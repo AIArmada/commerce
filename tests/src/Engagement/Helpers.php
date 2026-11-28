@@ -2,16 +2,33 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementContextSubject;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
-/**
- * Create a test actor for engagement operations.
- */
-function createEngagementActor(): User
+function engagementActor(array $attributes = []): EngagementActor
 {
-    return User::query()->create([
-        'name' => 'Engagement Actor',
+    return EngagementActor::query()->create(array_merge([
+        'name' => 'Engagement actor',
         'email' => 'engagement-actor-' . uniqid() . '@example.com',
         'password' => 'secret',
-    ]);
+    ], $attributes));
+}
+
+function engagementSubject(array $attributes = []): EngagementSubject
+{
+    return EngagementSubject::query()->create(array_merge([
+        'name' => 'Engagement subject',
+        'email' => 'engagement-subject-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ], $attributes));
+}
+
+function engagementContextSubject(array $attributes = []): EngagementContextSubject
+{
+    return EngagementContextSubject::query()->create(array_merge([
+        'name' => 'Engagement context subject',
+        'email' => 'engagement-context-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ], $attributes));
 }

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Events\SubscriptionMatched;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use AIArmada\Events\Events\EventPublished;
 use AIArmada\Events\Features\Catalog\Models\Event;
@@ -14,8 +13,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
-    $this->manager = app(SubscriptionManager::class);
-    $this->subscriber = new EngagementActor;
+    $this->manager = app(ManageSubscriptionsAction::class);
+    $this->subscriber = engagementActor();
 });
 
 it('does not auto-match subscriptions when an events publication is dispatched', function (): void {
@@ -40,9 +39,9 @@ it('does not auto-match subscriptions when an events publication is dispatched',
 });
 
 it('does not match subscriptions with non-matching subject', function (): void {
-    $this->manager->subscribe($this->subscriber, new EngagementSubject, 'updates');
+    $this->manager->subscribe($this->subscriber, engagementSubject(), 'updates');
 
-    $subject = new EngagementSubject;
+    $subject = engagementSubject();
 
     $matches = iterator_to_array(
         $this->manager->matchingSubscriptions($subject, 'event_occurrence_published', [])
@@ -78,9 +77,10 @@ it('matches subscriptions through the console command', function (): void {
         '--trigger' => 'event_published',
     ]))->toBe(0);
 
-    EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched): bool {
-        return $matched->subscription->subscriber_id === $this->subscriber->getKey()
-            && $matched->subject instanceof EngagementSubject
+    EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched) use ($subject): bool {
+        return $matched->subscriberId === $this->subscriber->getKey()
+            && $matched->subjectType === EngagementSubject::class
+            && $matched->subjectId === $subject->id
             && $matched->trigger === 'event_published';
     });
 });

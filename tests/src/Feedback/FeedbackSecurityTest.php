@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackQuestionOption;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackSection;
-use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('does not mass assign feedback owner columns', function (string $modelClass): void {
@@ -110,4 +111,25 @@ it('rejects cross-owner polymorphic subjects', function (): void {
             subjectId: $subject->id,
         )),
     ))->toThrow(AuthorizationException::class);
+});
+
+it('resolves unscoped references without requiring an owner context', function (): void {
+    $user = User::query()->create([
+        'name' => 'Unscoped Respondent',
+        'email' => 'unscoped-respondent-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $guard = app(FeedbackModelReferenceGuard::class);
+
+    expect($guard->resolve($user->getMorphClass(), (string) $user->getKey())->is($user))->toBeTrue();
+});
+
+it('resolves feedback references when owner scoping is disabled', function (): void {
+    config(['feedback.owner.enabled' => false]);
+
+    $form = app(CreateFeedbackFormAction::class)
+        ->execute(new CreateFeedbackFormData(name: 'Unscoped Feedback Form'));
+
+    expect(app(FeedbackModelReferenceGuard::class)->resolve(FeedbackForm::class, $form->id)->is($form))->toBeTrue();
 });

@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentFeedback\FilamentFeedbackTestCase;
-use AIArmada\FilamentFeedback\Pages\FeedbackDashboard;
-use AIArmada\FilamentFeedback\Widgets\FeedbackAverageRatingWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackCompletionRateWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackCsatWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackLatestCommentsWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackNpsWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackOverviewWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackRatingDistributionWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackResponseTrendWidget;
-use AIArmada\FilamentFeedback\Widgets\FeedbackTestimonialsPendingWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Pages\FeedbackDashboard;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackAverageRatingWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackCompletionRateWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackCsatWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackLatestCommentsWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackNpsWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackOverviewWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackRatingDistributionWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackResponseTrendWidget;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Widgets\FeedbackTestimonialsPendingWidget;
 
 uses(FilamentFeedbackTestCase::class);
 

@@ -9,14 +9,16 @@ use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Actions\CreateContactMethodAction;
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Data\MissingValue;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ValidateContactMethodData;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
@@ -37,7 +39,6 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
-use Spatie\LaravelData\Optional;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\File;
@@ -83,7 +84,9 @@ class Customer extends Model implements Auditable, HasMedia
     use DeletesAtomically;
     use HasAddresses;
     use HasCommerceAudit;
-    use HasContactMethods;
+    use HasContactMethods {
+        addContactMethod as private createCanonicalContactMethod;
+    }
     use HasCustomerLifecycle;
     use HasCustomerSegmentation;
     use HasFactory;
@@ -156,9 +159,11 @@ class Customer extends Model implements Auditable, HasMedia
 
     public function addContactMethod(ContactMethodData | array $data): ContactMethod
     {
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
+        if (static::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(static::class, $this->getKey());
         }
+
+        $data = app(ValidateContactMethodData::class)->execute($data);
 
         if ($data->type === 'email') {
             $existingContact = $this->findExistingContactEmail($data->value);
@@ -170,7 +175,7 @@ class Customer extends Model implements Auditable, HasMedia
             $this->assertContactEmailIsUnique($data->value);
 
             try {
-                return app(CreateContactMethodAction::class)->execute($this, $data);
+                return $this->createCanonicalContactMethod($data);
             } catch (UniqueConstraintViolationException) {
                 throw ValidationException::withMessages([
                     'email' => 'The email has already been taken within the current owner scope.',
@@ -186,7 +191,7 @@ class Customer extends Model implements Auditable, HasMedia
             }
         }
 
-        return app(CreateContactMethodAction::class)->execute($this, $data);
+        return $this->createCanonicalContactMethod($data);
     }
 
     private function findExistingContactEmail(string $email): ?ContactMethod
@@ -219,9 +224,9 @@ class Customer extends Model implements Auditable, HasMedia
             return null;
         }
 
-        $countryCode = $data->countryCode instanceof Optional ? null : $data->countryCode;
+        $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
-        $normalized = app(NormalizeContactMethodAction::class)->execute(
+        $normalized = app(ContactMethodNormalizer::class)->normalize(
             $data->type,
             $data->value,
             $countryCode ?? config('contacting.defaults.country_code'),

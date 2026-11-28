@@ -37,13 +37,13 @@
                 $comments = $this->getLatestComments();
             @endphp
 
-            @if ($comments->isEmpty())
+            @if ($comments === [])
                 <p class="text-sm text-gray-500 dark:text-gray-400">No comments yet.</p>
             @else
                 <ul class="space-y-3">
                     @foreach ($comments as $comment)
                         <li class="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
-                            {{ $comment->text_value }}
+                            {{ $comment['text_value'] }}
                         </li>
                     @endforeach
                 </ul>

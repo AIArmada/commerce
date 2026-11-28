@@ -13,6 +13,8 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Notifications\Notification;
 use RuntimeException;
+use stdClass;
+use Throwable;
 
 final class CommunicationManagerService implements CommunicationManager
 {
@@ -29,32 +31,65 @@ final class CommunicationManagerService implements CommunicationManager
         ?CommunicationContextData $context = null,
     ): string {
         $context ??= new CommunicationContextData;
+        $idempotencyKey = $context->normalizedIdempotencyKey();
         $eventReference = $context->subjectType !== null || $context->subjectId !== null
             ? $this->referenceNormalizer->normalize($context)
             : null;
 
         $connection = (new Communication)->getConnection();
 
-        return $connection->transaction(function () use ($connection, $notifiable, $notification, $context, $eventReference): string {
-            if ($context->idempotencyKey !== null) {
-                $lockKey = $this->scopedLockKey($context->idempotencyKey);
+        return $connection->transaction(function () use ($connection, $notifiable, $notification, $context, $eventReference, $idempotencyKey): string {
+            $lockKey = null;
+            $rollbackState = new stdClass;
+            $rollbackState->retainLock = false;
+
+            if ($idempotencyKey !== null) {
+                $lockKey = $this->scopedLockKey($idempotencyKey);
                 $acquired = $this->idempotencyLock->acquire(
                     $lockKey,
                     max(1, (int) config('communications.cache.idempotency_ttl', 3600)),
                 );
 
                 if (! $acquired) {
-                    throw new RuntimeException('Duplicate communication detected for idempotency key.');
+                    throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $idempotencyKey);
                 }
 
-                $connection->afterRollBack(fn () => $this->idempotencyLock->release($lockKey));
+                $connection->afterRollBack(function () use ($rollbackState, $lockKey): void {
+                    if (! $rollbackState->retainLock) {
+                        $this->idempotencyLock->release($lockKey);
+                    }
+                });
             }
 
-            $communication = $this->dispatcher->handle($notifiable, $notification, $context);
-            $this->attachEventReference($communication, $eventReference);
+            try {
+                $communication = $this->dispatcher->handleUnique($notifiable, $notification, $context);
+                $this->attachEventReference($communication, $eventReference);
 
-            return (string) $communication->getKey();
+                return (string) $communication->getKey();
+            } catch (RuntimeException $exception) {
+                if ($lockKey !== null) {
+                    if ($this->isDuplicateException($exception, $idempotencyKey)) {
+                        $rollbackState->retainLock = true;
+                    } else {
+                        $this->idempotencyLock->release($lockKey);
+                    }
+                }
+
+                throw $exception;
+            } catch (Throwable $exception) {
+                if ($lockKey !== null) {
+                    $this->idempotencyLock->release($lockKey);
+                }
+
+                throw $exception;
+            }
         });
+    }
+
+    private function isDuplicateException(RuntimeException $exception, ?string $idempotencyKey): bool
+    {
+        return $idempotencyKey !== null
+            && $exception->getMessage() === 'Duplicate communication detected for idempotency key: ' . $idempotencyKey;
     }
 
     private function scopedLockKey(string $key): string

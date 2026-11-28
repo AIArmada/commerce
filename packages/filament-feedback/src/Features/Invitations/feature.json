@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Invitations",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentFeedback\\Features\\Invitations\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

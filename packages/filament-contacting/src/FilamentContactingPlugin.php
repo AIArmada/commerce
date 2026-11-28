@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting;
 
-use AIArmada\FilamentContacting\Resources\ContactMethodResource;
-use AIArmada\FilamentContacting\Resources\ContactSnapshotResource;
-use AIArmada\FilamentContacting\Resources\SocialProfileResource;
+use AIArmada\FilamentContacting\Contracts\AdminPanelContribution;
+use AIArmada\FilamentContacting\Platform\ExtensionRegistry;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -19,8 +18,10 @@ final class FilamentContactingPlugin implements Plugin
 
     public static function get(): static
     {
-        /* @phpstan-ignore return.type */
-        return filament(app(self::class)->getId());
+        /** @var static $plugin */
+        $plugin = filament(app(self::class)->getId());
+
+        return $plugin;
     }
 
     public function getId(): string
@@ -36,21 +37,14 @@ final class FilamentContactingPlugin implements Plugin
 
         $resources = [];
 
-        if (config('filament-contacting.resources.contact_methods.enabled', false)) {
-            $resources[] = ContactMethodResource::class;
+        foreach (app(ExtensionRegistry::class)->resolve('admin.panel.contributions', AdminPanelContribution::class) as $contribution) {
+            if ($contribution instanceof AdminPanelContribution) {
+                $resources += $contribution->resources();
+            }
         }
 
-        if (config('filament-contacting.resources.social_profiles.enabled', false)) {
-            $resources[] = SocialProfileResource::class;
-        }
-
-        if (config('filament-contacting.resources.contact_snapshots.enabled', false)) {
-            $resources[] = ContactSnapshotResource::class;
-        }
-
-        if ($resources !== []) {
-            $panel->resources($resources);
-        }
+        ksort($resources);
+        $panel->resources(array_values($resources));
     }
 
     public function boot(Panel $panel): void {}

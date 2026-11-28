@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

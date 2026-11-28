@@ -14,7 +14,7 @@ The form builder page allows adding, editing, reordering, and deleting sections,
 
 ## Send invitations
 
-From the invitations relation manager on a form, create and send invitation links. Track sent, opened, started, and submitted states.
+From the invitations page on a form, create and send invitation links. Track sent, opened, started, and submitted states.
 
 ## Review responses
 
@@ -39,4 +39,4 @@ The feedback dashboard provides widgets for:
 
 ## Export responses
 
-Use the built-in Filament export actions to export responses, answers, and testimonials. All exports are owner-scoped. Authorize export actions for trusted roles only: exports carry respondent and subject identifiers, while network identifiers such as IP addresses are excluded from the response export.
+Use the built-in Filament export actions on the responses and testimonials tables. All exports are owner-scoped. Authorize export actions for trusted roles only: exports carry respondent and subject identifiers, while network identifiers such as IP addresses are excluded from the response export.

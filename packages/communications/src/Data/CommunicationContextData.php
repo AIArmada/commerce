@@ -29,6 +29,21 @@ final readonly class CommunicationContextData
         public array $metadata = [],
     ) {}
 
+    public function normalizedIdempotencyKey(): ?string
+    {
+        if ($this->idempotencyKey === null) {
+            return null;
+        }
+
+        $key = mb_trim($this->idempotencyKey);
+
+        if ($key === '') {
+            throw new InvalidArgumentException('Communication idempotency key must not be blank.');
+        }
+
+        return $key;
+    }
+
     /** @param array<string, mixed> $values */
     public static function from(array $values): self
     {

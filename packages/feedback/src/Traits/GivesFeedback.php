@@ -4,47 +4,39 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectResponses;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * @template TModel of Model
- *
- * @mixin TModel
+ * @mixin Model
  */
 trait GivesFeedback
 {
-    public function feedbackResponses(): MorphMany
+    /** @return list<string> */
+    public function givenFeedbackResponseIds(): array
     {
-        return $this->morphMany(FeedbackResponse::class, 'respondent');
+        return app(ReadsSubjectResponses::class)->respondentIds($this->getMorphClass(), (string) $this->getKey());
     }
 
-    public function hasSubmittedFeedbackFor(Model $subject, ?FeedbackForm $form = null): bool
+    public function hasSubmittedFeedbackFor(Model $subject, ?string $formId = null): bool
     {
-        $query = $this->feedbackResponses()
-            ->where('subject_type', $subject->getMorphClass())
-            ->where('subject_id', $subject->getKey())
-            ->where('status', 'submitted');
-
-        if ($form !== null) {
-            $query->where('feedback_form_id', $form->id);
-        }
-
-        return $query->exists();
+        return app(ReadsSubjectResponses::class)->hasSubmitted(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $subject->getMorphClass(),
+            (string) $subject->getKey(),
+            $formId,
+        );
     }
 
-    public function latestFeedbackResponseFor(Model $subject, ?FeedbackForm $form = null): ?FeedbackResponse
+    public function latestFeedbackResponseIdFor(Model $subject, ?string $formId = null): ?string
     {
-        $query = $this->feedbackResponses()
-            ->where('subject_type', $subject->getMorphClass())
-            ->where('subject_id', $subject->getKey());
-
-        if ($form !== null) {
-            $query->where('feedback_form_id', $form->id);
-        }
-
-        return $query->latest()->first();
+        return app(ReadsSubjectResponses::class)->latestId(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $subject->getMorphClass(),
+            (string) $subject->getKey(),
+            $formId,
+        );
     }
 }

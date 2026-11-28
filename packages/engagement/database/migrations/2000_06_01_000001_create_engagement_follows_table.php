@@ -55,5 +55,14 @@ return new class extends Migration
                 'engagement_follows_actor_subject_unique',
             );
         });
+
+        $connection = Schema::getConnection();
+        $grammar = $connection->getQueryGrammar();
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (follower_type, follower_id, followable_type, followable_id) WHERE owner_type IS NULL AND owner_id IS NULL',
+            $grammar->wrap('engagement_follows_global_unique'),
+            $grammar->wrapTable($tableName),
+        ));
     }
 };
