@@ -12,9 +12,11 @@ use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 /**
@@ -52,11 +54,22 @@ class AddressValidationPage extends Page
         return 'Address Validation';
     }
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', ModelResolver::addressClass());
+    }
+
     /**
      * @return array<int, array{id: string, customer_name: string, full_address: string, country: string, violations: array<string, string>}>
      */
     public function getInvalidAddresses(): array
     {
+        $user = Filament::auth()->user();
+        abort_unless($user !== null, 403);
+        Gate::forUser($user)->authorize('viewAny', ModelResolver::addressClass());
+
         $validator = app(AddressValidator::class);
 
         return $this->customerAddressesQuery()

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Services\CustomerResolver;
 
 /**
  * @return array{billing: array<string, mixed>, shipping: array<string, mixed>}

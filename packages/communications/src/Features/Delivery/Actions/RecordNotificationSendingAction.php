@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Communications\Features\Delivery\Actions;
+
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Events\DeliverySending;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
+use RuntimeException;
+
+final class RecordNotificationSendingAction
+{
+    public function handle(string $communicationId, string $deliveryId): CommunicationDelivery
+    {
+        $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
+
+        if ($delivery->communication_id !== $communicationId) {
+            throw new RuntimeException('Delivery does not belong to the supplied communication.');
+        }
+
+        $delivery->status = DeliveryStatus::Sending;
+        $delivery->sending_at = CarbonImmutable::now();
+        $delivery->save();
+
+        Event::dispatch(new DeliverySending(
+            deliveryId: $delivery->id,
+            communicationId: $communicationId,
+            channel: $delivery->channel,
+        ));
+
+        return $delivery;
+    }
+}

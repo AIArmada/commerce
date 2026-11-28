@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "Identity",
+  "owns": {
+    "table:persons": [
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\CreatePersonAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\UpdatePersonAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\PersistPerson",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\DeletePersonAction"
+    ],
+    "table:person_names": [
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\CleanupPersonDependents"
+    ]
+  },
+  "extensions": {}
+}

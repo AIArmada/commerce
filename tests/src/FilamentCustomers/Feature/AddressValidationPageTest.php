@@ -9,6 +9,7 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\FilamentCustomersServiceProvider;
 use AIArmada\FilamentCustomers\Pages\AddressValidationPage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
@@ -42,6 +43,14 @@ beforeEach(function (): void {
 });
 
 it('lists only invalid addresses inside the current owner scope', function (): void {
+    $user = User::query()->create([
+        'name' => 'Address Reviewer',
+        'email' => 'address-reviewer-' . uniqid() . '@example.com',
+        'password' => 'password',
+    ]);
+    test()->actingAs($user);
+    Gate::before(static fn (mixed $authenticatedUser, string $ability): ?bool => $ability === 'viewAny' ? true : null);
+
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Suppressions",
+  "owns": {
+    "table:communication_suppressions": [
+      "AIArmada\\Communications\\Features\\Suppressions\\Actions\\CreateSuppressionAction",
+      "AIArmada\\Communications\\Features\\Suppressions\\Actions\\LiftSuppressionAction"
+    ]
+  },
+  "extensions": {}
+}

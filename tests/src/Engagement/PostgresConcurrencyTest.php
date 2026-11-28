@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
-use AIArmada\Communications\Jobs\DispatchManagedNotificationJob;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Delivery\Actions\CommunicationManagerService;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\FollowCreated;
 use AIArmada\Engagement\Events\ReminderDue;
@@ -691,7 +691,7 @@ it('rejects duplicate manager notifications durably without a shared cache store
 
             Cache::store('array')->flush();
 
-            expect(fn (): Communication => $manager->notify($notifiable, new EngagementPostgresEmptyNotification, $context))
+            expect(fn (): string => $manager->notify($notifiable, new EngagementPostgresEmptyNotification, $context))
                 ->toThrow(RuntimeException::class, 'Duplicate communication detected for idempotency key: pg-manager-idempotency-key')
                 ->and(Communication::query()->withoutOwnerScope()->where('idempotency_key', 'pg-manager-idempotency-key')->count())->toBe(1);
         });

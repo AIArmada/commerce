@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Concerns;
 
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Segment;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 trait HasCustomerLifecycle
@@ -36,22 +34,6 @@ trait HasCustomerLifecycle
         return $this->accepts_marketing;
     }
 
-    public function optInMarketing(): void
-    {
-        $this->forceFill([
-            'accepts_marketing' => true,
-            'marketing_consented_at' => CarbonImmutable::now(),
-        ])->save();
-    }
-
-    public function optOutMarketing(): void
-    {
-        $this->forceFill([
-            'accepts_marketing' => false,
-            'marketing_revoked_at' => CarbonImmutable::now(),
-        ])->save();
-    }
-
     public function getFullNameAttribute(): string
     {
         return mb_trim("{$this->first_name} {$this->last_name}");
@@ -79,10 +61,8 @@ trait HasCustomerLifecycle
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeInSegment(Builder $query, string | Segment $segment): Builder
+    public function scopeInSegment(Builder $query, string $segmentId): Builder
     {
-        $segmentId = $segment instanceof Segment ? $segment->id : $segment;
-
         return $query->whereHas('segments', fn (Builder $segmentQuery): Builder => $segmentQuery->whereKey($segmentId));
     }
 }

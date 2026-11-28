@@ -19,7 +19,7 @@ keywords:
 - Composer: `aiarmada/persons`
 - Role: Shared, global human identity: canonical persons + multi-context names, titles, credentials, and affiliations (polymorphic).
 - Triggers: person, identity, title, credential, affiliation, names
-- Search first: `src/Models, src/Enums, src/Support, config, database/migrations, docs`
+- Search first: `src/Features, src/Models, src/Contracts, src/Drivers, config, docs`
 - Related: `commerce-support`, `addressing`, `customers`, `organizations`, `events`, `filament-persons`
 - Paired: `filament-persons` (Filament admin adapter)
 
@@ -49,7 +49,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Affiliation`, `AffiliationRole`, `CredentialAssignment`, `CredentialDefinition`, `Person`, `PersonName`, `Title`, `TitleAssignment`, `TitleCategory`, `TitleIssuer`
-- Actions/Services: `Actions/CreatePersonAction`, `Actions/AssignTitleAction`, `Actions/AssignCredentialAction`, `Actions/ReorderTitleAction`, `Support/ModelResolver`, `Support/PersonsModelReferenceGuard`
+- Actions/Services: `Features/Identity/Actions/{CreatePersonAction,UpdatePersonAction,SavePersonName,ReorderFeaturedPersonsAction}`, `Features/Titles/Actions/{AssignTitleAction,ReorderTitleAction}`, `Features/Credentials/Actions/AssignCredentialAction`, `Features/Affiliations/Actions/SaveAffiliation`, `Support/ModelResolver`, `Support/PersonsModelReferenceGuard`
 - Config `persons.php`: `database` (`table_prefix`, `json_column_type`, and 10 `tables.*` keys: `persons`, `person_names`, `title_categories`, `titles`, `title_issuers`, `title_assignments`, `credential_definitions`, `credential_assignments`, `affiliations`, `affiliation_roles`), `models` (`person`, `country`, `institution`), `integrations.addressing.enabled`
 
 ## Docs map

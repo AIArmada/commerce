@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Contracts\CommunicationContextAware;
 use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Jobs\DispatchManagedNotificationJob;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Delivery\Actions\CommunicationManagerService;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Communications\Services\CommunicationManagerService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -104,7 +104,7 @@ it('rejects blank idempotency keys before writing', function (): void {
     expect(fn (): Communication => $action->handle(new DurableIdempotencyNotifiable, new DurableIdempotencyMailNotification, $context))
         ->toThrow(InvalidArgumentException::class, 'Communication idempotency key must not be blank.')
         ->and(Communication::query()->count())->toBe(0)
-        ->and(fn (): Communication => app(CommunicationManagerService::class)->notify(
+        ->and(fn (): string => app(CommunicationManagerService::class)->notify(
             new DurableIdempotencyNotifiable,
             new DurableIdempotencyMailNotification,
             $context,
@@ -183,8 +183,8 @@ it('enforces communication reference uniqueness while allowing distinct roles', 
     $roleEvent = $action->handle($communication->id, 'events', 'event-durable-1', 'event');
     $roleSubject = $action->handle($communication->id, 'events', 'event-durable-1', 'subject');
 
-    expect($nullRoleAgain->id)->toBe($nullRole->id)
-        ->and($roleEvent->id)->not->toBe($roleSubject->id)
+    expect($nullRoleAgain)->toBe($nullRole)
+        ->and($roleEvent)->not->toBe($roleSubject)
         ->and(CommunicationReference::query()->where('communication_id', $communication->id)->count())->toBe(3);
 
     expect(fn (): bool => DB::table((new CommunicationReference)->getTable())->insert([
@@ -219,18 +219,18 @@ it('isolates manager idempotency cache locks across owners and avoids mutating d
         'idempotencyKey' => 'shared-tenant-lock-key',
     ]);
 
-    $first = OwnerContext::withOwner($ownerA, fn (): Communication => $manager->notify(
+    $first = OwnerContext::withOwner($ownerA, fn (): string => $manager->notify(
         new DurableIdempotencyNotifiable,
         new DurableIdempotencyMailNotification,
         $context,
     ));
-    $second = OwnerContext::withOwner($ownerB, fn (): Communication => $manager->notify(
+    $second = OwnerContext::withOwner($ownerB, fn (): string => $manager->notify(
         new DurableIdempotencyNotifiable,
         new DurableIdempotencyMailNotification,
         $context,
     ));
 
-    expect($second->id)->not->toBe($first->id);
+    expect($second)->not->toBe($first);
 
     $contextAware = new class extends Notification implements CommunicationContextAware
     {

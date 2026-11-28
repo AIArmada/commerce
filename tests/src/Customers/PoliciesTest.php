@@ -7,10 +7,10 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\EntryPoints\Policies\SegmentPolicy;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Policies\CustomerPolicy;
-use AIArmada\Customers\Policies\SegmentPolicy;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -120,7 +120,7 @@ describe('CustomerPolicy', function (): void {
 
     describe('viewAny', function (): void {
         it('allows viewing any customers with the view permission', function (): void {
-            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->viewAny($this->permitted)))->toBeTrue();
         });
 
         it('denies viewing any customers without the view permission', function (): void {
@@ -144,7 +144,7 @@ describe('CustomerPolicy', function (): void {
                 'user_id' => null,
             ], null);
 
-            expect($this->policy->view($this->permitted, $globalCustomer))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->view($this->permitted, $globalCustomer)))->toBeTrue();
         });
 
         it('denies viewing owner-scoped customer without owner resolver', function (): void {
@@ -212,7 +212,7 @@ describe('CustomerPolicy', function (): void {
 
     describe('create', function (): void {
         it('allows creating customers with the create permission', function (): void {
-            expect($this->policy->create($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->create($this->permitted)))->toBeTrue();
         });
 
         it('denies creating customers without the create permission', function (): void {
@@ -235,7 +235,7 @@ describe('CustomerPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->permitted, $globalCustomer))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->update($this->permitted, $globalCustomer)))->toBeTrue();
         });
 
         it('denies updating an in-scope customer without the update permission', function (): void {
@@ -263,7 +263,7 @@ describe('CustomerPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->permitted, $globalCustomer))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->delete($this->permitted, $globalCustomer)))->toBeTrue();
         });
 
         it('denies deleting an in-scope customer without the delete permission', function (): void {
@@ -291,7 +291,7 @@ describe('CustomerPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->addCredit($this->permitted, $globalCustomer))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->addCredit($this->permitted, $globalCustomer)))->toBeTrue();
         });
 
         it('denies adding credit without the add-credit permission', function (): void {
@@ -332,7 +332,7 @@ describe('CustomerPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->deductCredit($this->permitted, $globalCustomer))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->deductCredit($this->permitted, $globalCustomer)))->toBeTrue();
         });
 
         it('denies deducting credit without the deduct-credit permission', function (): void {
@@ -378,7 +378,7 @@ describe('SegmentPolicy', function (): void {
 
     describe('viewAny', function (): void {
         it('allows viewing any segments with the view permission', function (): void {
-            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->viewAny($this->permitted)))->toBeTrue();
         });
 
         it('denies viewing any segments without the view permission', function (): void {
@@ -395,13 +395,12 @@ describe('SegmentPolicy', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global Segment',
                 'slug' => 'global-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->view($this->permitted, $segment))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->view($this->permitted, $segment)))->toBeTrue();
         });
 
         it('denies cross-tenant segment access when owner resolver is set', function (): void {
@@ -411,7 +410,6 @@ describe('SegmentPolicy', function (): void {
             $segmentA = createPolicySegment([
                 'name' => 'A Segment',
                 'slug' => 'a-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
@@ -420,7 +418,6 @@ describe('SegmentPolicy', function (): void {
             $segmentB = createPolicySegment([
                 'name' => 'B Segment',
                 'slug' => 'b-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
@@ -438,7 +435,6 @@ describe('SegmentPolicy', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global No View Segment',
                 'slug' => 'global-no-view-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
@@ -450,7 +446,7 @@ describe('SegmentPolicy', function (): void {
 
     describe('create', function (): void {
         it('allows creating segments with the create permission', function (): void {
-            expect($this->policy->create($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->create($this->permitted)))->toBeTrue();
         });
 
         it('denies creating segments without the create permission', function (): void {
@@ -467,20 +463,18 @@ describe('SegmentPolicy', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global Update Segment',
                 'slug' => 'global-update-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->permitted, $segment))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->update($this->permitted, $segment)))->toBeTrue();
         });
 
         it('denies updating an in-scope segment without the update permission', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global No Update Segment',
                 'slug' => 'global-no-update-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
@@ -495,20 +489,18 @@ describe('SegmentPolicy', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global Delete Segment',
                 'slug' => 'global-delete-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->permitted, $segment))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->delete($this->permitted, $segment)))->toBeTrue();
         });
 
         it('denies deleting an in-scope segment without the delete permission', function (): void {
             $segment = createPolicySegment([
                 'name' => 'Global No Delete Segment',
                 'slug' => 'global-no-delete-segment-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'owner_type' => null,
                 'owner_id' => null,
@@ -528,7 +520,7 @@ describe('SegmentPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->rebuild($this->permitted, $segment))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->rebuild($this->permitted, $segment)))->toBeTrue();
         });
 
         it('denies rebuilding without the rebuild permission', function (): void {

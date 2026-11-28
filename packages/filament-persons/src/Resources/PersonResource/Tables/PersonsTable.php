@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\Tables;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentPersons\Resources\PersonResource;
+use AIArmada\Persons\Features\Identity\Actions\DeletePersonAction;
+use AIArmada\Persons\Models\Person;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -15,6 +18,9 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 
 class PersonsTable
 {
@@ -52,7 +58,18 @@ class PersonsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof Person || ! PersonResource::canDelete($record) || ! app(DeletePersonAction::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
 
