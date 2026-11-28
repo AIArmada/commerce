@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
@@ -596,4 +598,44 @@ it('blocks generic activation of a composite with an unpublished nested componen
         ->toThrow(InvalidCompositePackageException::class, 'must be active');
 
     expect($parent->fresh()->status)->toBe(ProductStatus::Draft);
+});
+
+it('resolves frozen inventory components within the active owner scope override', function (): void {
+    config([
+        'products.features.owner.enabled' => true,
+        'products.features.owner.auto_assign_on_create' => true,
+        'products.features.owner.include_global' => true,
+    ]);
+
+    $owner = User::query()->create([
+        'name' => 'Component Owner',
+        'email' => 'component-scope-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $global = OwnerContext::withOwner(null, fn (): Product => makeComponentProduct());
+
+    $component = [
+        'product_id' => $global->id,
+        'variant_id' => null,
+        'inventoryable_type' => $global->getMorphClass(),
+        'inventoryable_id' => $global->id,
+        'quantity' => 1,
+        'sku' => $global->sku,
+        'name' => $global->name,
+        'weight' => null,
+        'dimensions' => null,
+        'requires_shipping' => true,
+        'tracks_inventory' => true,
+    ];
+
+    OwnerContext::withOwner($owner, function () use ($component, $global): void {
+        expect(CompositeComponents::resolveInventoryModel($component)?->getKey())->toBe($global->id);
+
+        OwnerScopeOverride::withoutIncludeGlobal(function () use ($component): void {
+            expect(CompositeComponents::resolveInventoryModel($component))->toBeNull();
+        });
+
+        expect(CompositeComponents::resolveInventoryModel($component)?->getKey())->toBe($global->id);
+    });
 });

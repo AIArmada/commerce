@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\CompositeComponents as ComponentSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Inventory\Contracts\InventoryableInterface;
 use AIArmada\Inventory\Traits\HasInventory;
 use AIArmada\Orders\Models\OrderItem;
@@ -143,21 +144,15 @@ final class CompositeComponents
             return;
         }
 
-        $owner = OwnerContext::resolve();
-
-        // Leave the model's existing global scope in place when there is no
-        // explicit context; it will raise the canonical owner error instead of
-        // silently running global work.
-        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-            return;
-        }
+        $owner = OwnerContext::resolveConfigured($config);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
         $query->withoutGlobalScope(OwnerScope::class);
 
         OwnerQuery::applyToEloquentBuilder(
             $query,
             $owner,
-            $config->includeGlobal,
+            $config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
             $config->ownerTypeColumn,
             $config->ownerIdColumn,
         );
