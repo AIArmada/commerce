@@ -104,7 +104,7 @@ This provides:
 - `$product->inventoryMovements()` - Movement history
 - And read helpers such as `getTotalAvailable()`, `getTotalOnHand()`, `getAvailability()`, and `hasInventory()`
 
-Serial numbers come from the separate `HasSerialNumbers` trait, and batch records via `Services\Batch\BatchService::getBatchesForModel()`.
+Serial numbers come from the separate `HasSerialNumbers` trait, and batch records via `Features\Traceability\Queries\BatchLookupService::getBatchesForModel()`.
 
 Stock mutations belong to `InventoryService`; cart allocations belong to
 `InventoryAllocationService` or the checkout reservation contract.

@@ -16,6 +16,8 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
+use AIArmada\Inventory\Features\Traceability\Queries\ExpiryMonitorService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
@@ -89,14 +91,14 @@ describe('BatchService', function (): void {
             'location_id' => $this->location->id,
         ]);
 
-        $found = $this->service->findByBatchNumber('BATCH-FIND');
+        $found = app(BatchLookupService::class)->findByBatchNumber('BATCH-FIND');
 
         expect($found)->not->toBeNull();
         expect($found->batch_number)->toBe('BATCH-FIND');
     });
 
     it('find by batch number returns null when not found', function (): void {
-        $found = $this->service->findByBatchNumber('NONEXISTENT');
+        $found = app(BatchLookupService::class)->findByBatchNumber('NONEXISTENT');
 
         expect($found)->toBeNull();
     });
@@ -115,7 +117,7 @@ describe('BatchService', function (): void {
             'location_id' => $this->location->id,
         ]);
 
-        $batches = $this->service->getBatchesForModel($this->item);
+        $batches = app(BatchLookupService::class)->getBatchesForModel($this->item);
 
         expect($batches)->toHaveCount(2);
     });
@@ -139,7 +141,7 @@ describe('BatchService', function (): void {
             'quantity_on_hand' => 50,
         ]);
 
-        $allocatable = $this->service->getAllocatableBatches($this->item);
+        $allocatable = app(BatchLookupService::class)->getAllocatableBatches($this->item);
 
         expect($allocatable)->toHaveCount(1);
     });
@@ -166,7 +168,7 @@ describe('BatchService', function (): void {
             'expires_at' => null,
         ]);
 
-        $total = $this->service->getTotalAvailable($this->item);
+        $total = app(BatchLookupService::class)->getTotalAvailable($this->item);
 
         // (100-20) + (50-10) = 80 + 40 = 120
         expect($total)->toBe(120);
@@ -446,7 +448,7 @@ describe('BatchService', function (): void {
             'expires_at' => CarbonImmutable::now()->addDays(60),
         ]);
 
-        $expiring = $this->service->getExpiringBatches(30);
+        $expiring = app(ExpiryMonitorService::class)->getExpiringBatches(30);
 
         expect($expiring)->toHaveCount(1);
         expect($expiring->first()->batch_number)->toBe('BATCH-EXPIRING');

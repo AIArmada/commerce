@@ -35,3 +35,5 @@ Use `Features/Valuation/Api/InventoryValues` for reporting across FIFO, weighted
 Serial-number tracking uses `Features/Traceability/Traits/HasSerialNumbers`. Single and bulk registration use the Traceability persistence boundary and record registration history atomically.
 
 Serial lifecycle mutations belong to `AIArmada\Inventory\Features\Traceability\Persistence\SerialService`. Use `AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService` for `findBySerialNumber`, `getForModel`, `getAvailableForSale`, and `getHistory`; do not query through the mutation service.
+
+Use `AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService` for batch lookup, allocatable batches and total available quantities; use `ExpiryMonitorService` for expiry queries and `Actions\ProcessExpiredBatches` for expiration mutations. `BatchService` owns batch lifecycle writes.

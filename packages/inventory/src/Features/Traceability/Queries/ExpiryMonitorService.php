@@ -5,25 +5,26 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 
 final class ExpiryMonitorService
 {
-    public function __construct(
-        private BatchService $batchService
-    ) {}
-
     /**
-     * Get all batches expiring within the given days.
+     * Get batches expiring within days.
      *
      * @return Collection<int, InventoryBatch>
      */
     public function getExpiringBatches(int $days = 30): Collection
     {
-        return $this->batchService->getExpiringBatches($days);
+        return InventoryOwnerScope::applyToLocationQuery(
+            InventoryBatch::query()
+                ->active()
+                ->expiringSoon($days)
+                ->with(['location', 'inventoryable'])
+                ->orderBy('expires_at')
+        )->get();
     }
 
     /**
@@ -76,29 +77,10 @@ final class ExpiryMonitorService
      */
     public function getExpiryRiskAssessment(): array
     {
-        $criticalQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()->active()->expiringSoon(7)
-        );
-
-        $critical = $criticalQuery->get();
-
-        $warningQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->active()
-                ->whereNotNull('expires_at')
-                ->whereBetween('expires_at', [CarbonImmutable::now()->addDays(8), CarbonImmutable::now()->addDays(30)])
-        );
-
-        $warning = $warningQuery->get();
-
-        $attentionQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->active()
-                ->whereNotNull('expires_at')
-                ->whereBetween('expires_at', [CarbonImmutable::now()->addDays(31), CarbonImmutable::now()->addDays(90)])
-        );
-
-        $attention = $attentionQuery->get();
+        $now = CarbonImmutable::now();
+        $critical = $this->expiryWindow($now, $now->addDays(7), true);
+        $warning = $this->expiryWindow($now->addDays(7), $now->addDays(30));
+        $attention = $this->expiryWindow($now->addDays(30), $now->addDays(90));
 
         $totalAtRisk = $critical->merge($warning)->sum(function (InventoryBatch $batch): int {
             return $batch->quantity_on_hand * ($batch->unit_cost_minor ?? 0);
@@ -133,14 +115,6 @@ final class ExpiryMonitorService
 
                 return $batch->quantity_on_hand > $quantityCanSell;
             });
-    }
-
-    /**
-     * Process and mark expired batches.
-     */
-    public function processExpiredBatches(): int
-    {
-        return $this->batchService->processExpiredBatches();
     }
 
     /**
@@ -194,11 +168,9 @@ final class ExpiryMonitorService
     {
         $alerts = [];
 
-        // Critical - expiring in 7 days
-        $criticalQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()->active()->expiringSoon(7)
-        );
-        $critical = $criticalQuery->get();
+        $now = CarbonImmutable::now();
+        $critical = $this->expiryWindow($now, $now->addDays(7), true);
+        $warning = $this->expiryWindow($now->addDays(7), $now->addDays(30));
 
         foreach ($critical as $batch) {
             $alerts[] = [
@@ -209,16 +181,6 @@ final class ExpiryMonitorService
                 'severity' => 'critical',
             ];
         }
-
-        // Warning - expiring in 30 days
-        $warningQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->active()
-                ->whereNotNull('expires_at')
-                ->whereBetween('expires_at', [CarbonImmutable::now()->addDays(8), CarbonImmutable::now()->addDays(30)])
-        );
-
-        $warning = $warningQuery->get();
 
         foreach ($warning as $batch) {
             $alerts[] = [
@@ -231,5 +193,17 @@ final class ExpiryMonitorService
         }
 
         return $alerts;
+    }
+
+    /** @return Collection<int, InventoryBatch> */
+    private function expiryWindow(CarbonImmutable $start, CarbonImmutable $end, bool $includeStart = false): Collection
+    {
+        return InventoryOwnerScope::applyToLocationQuery(InventoryBatch::query())
+            ->active()
+            ->where('expires_at', $includeStart ? '>=' : '>', $start)
+            ->where('expires_at', '<=', $end)
+            ->orderBy('expires_at')
+            ->orderBy('id')
+            ->get();
     }
 }

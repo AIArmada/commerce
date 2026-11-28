@@ -7,13 +7,12 @@ use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
-use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->batchService = new BatchService;
-    $this->service = new BatchAllocationService($this->batchService);
+    $this->service = new BatchAllocationService(new BatchLookupService);
 });
 
 describe('allocateFefo', function (): void {

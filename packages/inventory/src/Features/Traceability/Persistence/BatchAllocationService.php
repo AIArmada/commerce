@@ -9,6 +9,7 @@ use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +19,7 @@ use InvalidArgumentException;
 final class BatchAllocationService implements BatchReservationBalances
 {
     public function __construct(
-        private BatchService $batchService
+        private readonly BatchLookupService $batches
     ) {}
 
     /**
@@ -32,7 +33,7 @@ final class BatchAllocationService implements BatchReservationBalances
             throw new InvalidArgumentException('Quantity must be positive');
         }
 
-        $batches = $this->batchService->getAllocatableBatches($model, $locationId);
+        $batches = $this->batches->getAllocatableBatches($model, $locationId);
 
         return $this->allocateFromBatches($batches, $quantity);
     }
@@ -201,7 +202,7 @@ final class BatchAllocationService implements BatchReservationBalances
      */
     public function checkAvailability(Model $model, int $quantity, ?string $locationId = null): bool
     {
-        return $this->batchService->getTotalAvailable($model, $locationId) >= $quantity;
+        return $quantity > 0 && $this->batches->getTotalAvailable($model, $locationId) >= $quantity;
     }
 
     /**
@@ -216,7 +217,7 @@ final class BatchAllocationService implements BatchReservationBalances
      */
     public function getFefoAllocationPlan(Model $model, int $quantity, ?string $locationId = null): array
     {
-        $batches = $this->batchService->getAllocatableBatches($model, $locationId);
+        $batches = $this->batches->getAllocatableBatches($model, $locationId);
         $totalAvailable = $batches->sum(fn (InventoryBatch $b): int => $b->available);
 
         $allocations = [];

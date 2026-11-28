@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -80,13 +81,12 @@ function makeOwnerScopedBatchServiceFixture(): array
     ];
 }
 
-it('scopes BatchService::findByBatchNumber to current owner (and global when enabled)', function (): void {
+it('scopes BatchLookupService::findByBatchNumber to current owner (and global when enabled)', function (): void {
     $fixture = makeOwnerScopedBatchServiceFixture();
     $sku = $fixture['sku'];
     $locationA = $fixture['locationA'];
     $locationB = $fixture['locationB'];
     $locationGlobal = $fixture['locationGlobal'];
-    $service = $fixture['service'];
 
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
@@ -117,13 +117,13 @@ it('scopes BatchService::findByBatchNumber to current owner (and global when ena
 
     setBatchServiceOwnerResolver($fixture['ownerA']);
 
-    expect($service->findByBatchNumber('BATCH-A'))
+    expect(app(BatchLookupService::class)->findByBatchNumber('BATCH-A'))
         ->not->toBeNull();
 
-    expect($service->findByBatchNumber('BATCH-B'))
+    expect(app(BatchLookupService::class)->findByBatchNumber('BATCH-B'))
         ->toBeNull();
 
-    expect($service->findByBatchNumber('BATCH-G'))
+    expect(app(BatchLookupService::class)->findByBatchNumber('BATCH-G'))
         ->not->toBeNull();
 });
 
@@ -131,7 +131,6 @@ it('can exclude global batches when include_global is false', function (): void 
     $fixture = makeOwnerScopedBatchServiceFixture();
     $sku = $fixture['sku'];
     $locationGlobal = $fixture['locationGlobal'];
-    $service = $fixture['service'];
 
     config()->set('inventory.owner.include_global', false);
 
@@ -147,17 +146,16 @@ it('can exclude global batches when include_global is false', function (): void 
 
     setBatchServiceOwnerResolver($fixture['ownerA']);
 
-    expect($service->findByBatchNumber('BATCH-G2'))
+    expect(app(BatchLookupService::class)->findByBatchNumber('BATCH-G2'))
         ->toBeNull();
 });
 
-it('scopes BatchService::getBatchesForModel to current owner (and global when enabled)', function (): void {
+it('scopes BatchLookupService::getBatchesForModel to current owner (and global when enabled)', function (): void {
     $fixture = makeOwnerScopedBatchServiceFixture();
     $sku = $fixture['sku'];
     $locationA = $fixture['locationA'];
     $locationB = $fixture['locationB'];
     $locationGlobal = $fixture['locationGlobal'];
-    $service = $fixture['service'];
 
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
@@ -188,7 +186,7 @@ it('scopes BatchService::getBatchesForModel to current owner (and global when en
 
     setBatchServiceOwnerResolver($fixture['ownerA']);
 
-    $batches = $service->getBatchesForModel($sku);
+    $batches = app(BatchLookupService::class)->getBatchesForModel($sku);
 
     expect($batches->pluck('batch_number')->all())
         ->toContain('BATCH-A1', 'BATCH-G1')
