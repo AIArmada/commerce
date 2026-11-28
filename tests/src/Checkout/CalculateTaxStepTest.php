@@ -73,6 +73,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
         'pricing_data' => [
             'items' => [
                 [
+                    'item_id' => 'line-1',
                     'quantity' => 1,
                     'line_total' => 1000,
                 ],
@@ -81,6 +82,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
         'cart_snapshot' => [
             'items' => [
                 [
+                    'id' => 'line-1',
                     'quantity' => 1,
                     'price' => 1000,
                     'tax_class' => 'reduced',
@@ -127,4 +129,44 @@ it('does not calculate item tax for a non-taxable cart snapshot line', function 
 
     expect($result['total'])->toBe(0)
         ->and($result['taxable_amount'])->toBe(0);
+});
+
+it('matches pricing to the correct taxable cart line regardless of row order', function (): void {
+    $calculator = mock(TaxCalculatorInterface::class);
+    $calculator->shouldReceive('calculateTax')->once()
+        ->withArgs(fn (int $amount, string $taxClass, ?string $zoneId, array $context): bool => $amount === 800 && $taxClass === 'reduced')
+        ->andReturn(new TaxResultData(40, 'rate', 'Reduced', 500, 'zone', 'Malaysia'));
+    $calculator->shouldNotReceive('calculateShippingTax');
+
+    $session = new CheckoutSession;
+    $session->forceFill([
+        'subtotal' => 2800,
+        'cart_snapshot' => ['items' => [
+            ['id' => 'exempt-line', 'price' => 2000, 'attributes' => ['is_taxable' => false]],
+            ['id' => 'taxable-line', 'price' => 1000, 'attributes' => ['tax_class' => 'reduced']],
+        ]],
+        'pricing_data' => ['items' => [
+            ['item_id' => 'taxable-line', 'line_total' => 800],
+            ['item_id' => 'exempt-line', 'line_total' => 2000],
+        ]],
+    ]);
+
+    $result = (new TaxAdapter)->calculateTax($session);
+
+    expect($result['total'])->toBe(40)
+        ->and($result['taxable_amount'])->toBe(800);
+});
+
+it('rejects mismatched pricing identities before tax calculation', function (): void {
+    $calculator = mock(TaxCalculatorInterface::class);
+    $calculator->shouldNotReceive('calculateTax');
+
+    $session = new CheckoutSession;
+    $session->forceFill([
+        'cart_snapshot' => ['items' => [['id' => 'actual-line', 'price' => 1000]]],
+        'pricing_data' => ['items' => [['item_id' => 'unknown-line', 'line_total' => 1000]]],
+    ]);
+
+    expect(fn () => (new TaxAdapter)->calculateTax($session))
+        ->toThrow(InvalidArgumentException::class, 'Checkout pricing does not match the cart snapshot.');
 });

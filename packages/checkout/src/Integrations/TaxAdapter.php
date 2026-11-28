@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Integrations;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
+use InvalidArgumentException;
 
 final class TaxAdapter
 {
@@ -128,21 +129,42 @@ final class TaxAdapter
         $pricingItems = array_values($session->pricing_data['items'] ?? []);
         $cartItems = array_values($session->cart_snapshot['items'] ?? []);
 
-        $baseAmounts = [];
+        $pricingById = [];
+        foreach ($pricingItems as $pricingItem) {
+            $id = $this->lineIdentity($pricingItem['item_id'] ?? null);
 
-        foreach ($pricingItems as $index => $pricingItem) {
-            $cartItem = $cartItems[$index] ?? [];
+            if (isset($pricingById[$id])) {
+                throw new InvalidArgumentException('Duplicate checkout pricing line identity.');
+            }
+
+            $pricingById[$id] = $pricingItem;
+        }
+
+        $baseAmounts = [];
+        $matchedPricing = [];
+
+        foreach ($cartItems as $index => $cartItem) {
+            $pricingItem = [];
+
+            if ($pricingById !== []) {
+                $id = $this->lineIdentity($cartItem['id'] ?? null);
+
+                if (! isset($pricingById[$id]) || isset($matchedPricing[$id])) {
+                    throw new InvalidArgumentException('Checkout pricing does not match the cart snapshot.');
+                }
+
+                $pricingItem = $pricingById[$id];
+                $matchedPricing[$id] = true;
+            }
+
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
             $lineTotal = (int) ($pricingItem['line_total'] ?? (($pricingItem['unit_price'] ?? $cartItem['price'] ?? 0) * $quantity));
 
             $baseAmounts[$index] = max(0, $lineTotal);
         }
 
-        if ($baseAmounts === []) {
-            foreach ($cartItems as $index => $cartItem) {
-                $quantity = max(1, (int) ($cartItem['quantity'] ?? 1));
-                $baseAmounts[$index] = max(0, (int) (($cartItem['price'] ?? 0) * $quantity));
-            }
+        if (count($matchedPricing) !== count($pricingById)) {
+            throw new InvalidArgumentException('Checkout pricing contains an unknown cart line.');
         }
 
         $allocatedDiscounts = $this->allocateAmount((int) $session->discount_total, $baseAmounts);
@@ -150,8 +172,8 @@ final class TaxAdapter
         $taxableItems = [];
 
         foreach ($baseAmounts as $index => $baseAmount) {
-            $pricingItem = $pricingItems[$index] ?? [];
-            $cartItem = $cartItems[$index] ?? [];
+            $cartItem = $cartItems[$index];
+            $pricingItem = $pricingById === [] ? [] : $pricingById[$this->lineIdentity($cartItem['id'] ?? null)];
             $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
             $isTaxable = (bool) ($attributes['is_taxable'] ?? $cartItem['is_taxable'] ?? $pricingItem['is_taxable'] ?? true);
 
@@ -164,6 +186,15 @@ final class TaxAdapter
         }
 
         return $taxableItems;
+    }
+
+    private function lineIdentity(mixed $value): string
+    {
+        if ((! is_string($value) && ! is_int($value)) || (string) $value === '') {
+            throw new InvalidArgumentException('Checkout tax calculation requires a stable cart line identity.');
+        }
+
+        return (string) $value;
     }
 
     /**
