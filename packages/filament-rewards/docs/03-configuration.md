@@ -34,7 +34,7 @@ Every resource reads its group and sort order from these keys. The `CommerceNavi
 'staff_roles' => ['super_admin', 'admin'],
 ```
 
-Roles consulted when the authenticated user carries role methods (for example Spatie permissions). Panel users without role support count as staff.
+Roles consulted when the authenticated user carries role methods (for example Spatie permissions). Panel users without role support must explicitly pass the `reward-staff` Gate ability; otherwise they are denied.
 
 ### Staff boundary and Gate abilities
 
@@ -54,7 +54,7 @@ Hosts must therefore define the abilities these decisions consult — or a `Gate
 | `decide` | Appeal **Decide** |
 | `reward-fraud-steward` | Fraud stewardship page access and fraud **Dismiss** |
 
-`RewardAdminPresenter::canDecideAward($record, $ability)` runs `Gate::forUser($user)->allows($ability, $record)`, so the record is passed as the Gate argument — define policies or abilities against `AIArmada\Rewards\Models\RewardAward` / `RewardAppeal` accordingly. A host that defines none of these abilities denies every decision (fail-closed). Role-less hosts (users without role methods) still count as staff for the role check, but the Gate abilities are always required.
+`RewardAdminPresenter::canDecideAward($record, $ability)` runs `Gate::forUser($user)->allows($ability, $record)`, so the record is passed as the Gate argument — define policies or abilities against `AIArmada\Rewards\Models\RewardAward` / `RewardAppeal` accordingly. A host that defines none of these abilities denies every decision (fail-closed). Role-less hosts must define `reward-staff` in addition to the decision abilities. Authentication alone never grants staff access.
 
 ## Owners
 

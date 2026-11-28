@@ -20,6 +20,8 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
+use Illuminate\Auth\GenericUser;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 describe('FilamentRewardsPlugin', function (): void {
@@ -66,6 +68,19 @@ describe('reward resource navigation', function (): void {
 });
 
 describe('RewardAdminPresenter', function (): void {
+    it('denies authenticated users without role support unless explicitly granted staff access', function (): void {
+        $user = new GenericUser(['id' => 'roleless-user']);
+        auth()->setUser($user);
+
+        expect(RewardAdminPresenter::staffActor())->toBeNull()
+            ->and(RewardProgramResource::canCreate())->toBeFalse();
+
+        Gate::define('reward-staff', static fn (GenericUser $actor): bool => $actor->getAuthIdentifier() === 'roleless-user');
+
+        expect(RewardAdminPresenter::staffActor())->toBe($user)
+            ->and(RewardProgramResource::canCreate())->toBeTrue();
+    });
+
     it('serves outcome and currency options from the rewards registry', function (): void {
         expect(RewardAdminPresenter::outcomeOptions())->toBe([
             'contribution' => 'contribution',

@@ -7,7 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Actions\SyncMembershipRolesAction;
+use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -17,33 +17,36 @@ final class RemoveMemberAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly MembershipMembersQuery $members,
+        private readonly MembershipSubjectGuard $subjectGuard,
+        private readonly SyncMembershipRolesAction $roleSync,
+    ) {}
+
     public function handle(Model $subject, Model $user): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
         $role = null;
         $removed = DB::transaction(function () use ($subject, $user, &$role): bool {
             $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-            /** @phpstan-ignore method.notFound */
-            $member = $subject->members()->whereKey($user->getKey())->first();
+            $member = $this->members->find($subject, $user);
 
             if ($member === null) {
                 return false;
             }
 
-            /** @phpstan-ignore property.notFound */
-            $role = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
+            $role = MemberRole::fromSpatieRoleName((string) $this->members->role($member));
 
             if ($subject instanceof MembershipMutationGuard) {
                 $subject->assertMemberCanBeRemoved($member);
             }
 
-            /** @phpstan-ignore method.notFound */
-            $subject->members()->detach($user->getKey());
+            $this->members->relation($subject)->detach($user->getKey());
 
             if ($role !== null) {
-                app(SyncMembershipRolesAction::class)->revokeFromUser($subject, $user, $role);
+                $this->roleSync->revokeFromUser($subject, $user, $role);
             }
 
             return true;

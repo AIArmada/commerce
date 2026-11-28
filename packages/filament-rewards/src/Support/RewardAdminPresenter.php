@@ -215,7 +215,7 @@ final class RewardAdminPresenter
             return $user->hasAnyRole(is_array($roles) ? $roles : ['super_admin', 'admin']) ? $user : null;
         }
 
-        return $user;
+        return Gate::forUser($user)->allows('reward-staff') ? $user : null;
     }
 
     public static function staffRole(): string

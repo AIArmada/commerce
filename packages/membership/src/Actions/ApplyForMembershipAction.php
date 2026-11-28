@@ -23,9 +23,11 @@ final class ApplyForMembershipAction
 
     use AsAction;
 
+    public function __construct(private readonly MembershipSubjectGuard $subjectGuard) {}
+
     public function handle(Model $subject, Model $user, string $justification, array $meta = []): MembershipApplication
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
         $justification = mb_trim($justification);
 
@@ -45,7 +47,9 @@ final class ApplyForMembershipAction
         $created = false;
 
         try {
-            $application = DB::transaction(function () use ($applicantId, $justification, $meta, $subjectId, $subjectType, &$created): MembershipApplication {
+            $application = DB::transaction(function () use ($applicantId, $justification, $meta, $subject, $subjectId, $subjectType, &$created): MembershipApplication {
+                $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
                 $existing = $this->pendingApplicationQuery($subjectType, $subjectId, $applicantId)
                     ->lockForUpdate()
                     ->first();
@@ -114,7 +118,7 @@ final class ApplyForMembershipAction
 
         $encoded = json_encode($meta);
 
-        if ($encoded === false || mb_strlen($encoded) > 65535) {
+        if ($encoded === false || strlen($encoded) > 65535) {
             throw new InvalidArgumentException('Application metadata must not exceed 65535 bytes.');
         }
     }

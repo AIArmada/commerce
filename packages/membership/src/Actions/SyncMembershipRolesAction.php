@@ -32,8 +32,13 @@ use Spatie\Permission\PermissionRegistrar;
  * membership-owned assignment; independent grants must use a different role
  * name. Other team assignments are preserved.
  */
-final class SyncMembershipRolesAction
+final readonly class SyncMembershipRolesAction
 {
+    public function __construct(
+        private RoleAdministrationApi $administration,
+        private PermissionRegistrar $registrar,
+    ) {}
+
     /**
      * @param  class-string<Model>|null  $subjectClass
      */
@@ -46,11 +51,10 @@ final class SyncMembershipRolesAction
     ): RoleRecord {
         $name = $role->spatieRoleName();
         $guard = $guardName ?? (string) config('auth.defaults.guard', 'web');
-        $administration = app(RoleAdministrationApi::class);
         $permissionNames = $role->permissions();
 
         if ($permissionNames === ['*']) {
-            $permissionNames = $administration->permissionNames($guard);
+            $permissionNames = $this->administration->permissionNames($guard);
         } else {
             $prefix = $this->resolvePermissionPrefix($subjectClass);
 
@@ -59,7 +63,7 @@ final class SyncMembershipRolesAction
             }
         }
 
-        return $administration->ensureRole($name, $guard, $teamId, $permissionNames, $prune);
+        return $this->administration->ensureRole($name, $guard, $teamId, $permissionNames, $prune);
     }
 
     public function syncAll(bool $prune = false): int
@@ -71,7 +75,7 @@ final class SyncMembershipRolesAction
             $count++;
         }
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->registrar->forgetCachedPermissions();
 
         return $count;
     }
@@ -86,14 +90,14 @@ final class SyncMembershipRolesAction
                 guardName: Guard::getDefaultName($user),
             );
 
-            app(RoleAdministrationApi::class)->assignRole($this->reference($user), $spatieRole->id);
+            $this->administration->assignRole($this->reference($user), $spatieRole->id);
         });
     }
 
     public function revokeFromUser(Model $subject, Model $user, MemberRole $role): void
     {
         $this->inSubjectTeam($subject, function () use ($role, $user): void {
-            app(RoleAdministrationApi::class)->revokeRole($this->reference($user), $role->spatieRoleName());
+            $this->administration->revokeRole($this->reference($user), $role->spatieRoleName());
         });
     }
 

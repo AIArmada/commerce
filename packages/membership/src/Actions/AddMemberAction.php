@@ -7,7 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Actions\SyncMembershipRolesAction;
+use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +22,12 @@ final class AddMemberAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly MembershipMembersQuery $members,
+        private readonly MembershipSubjectGuard $subjectGuard,
+        private readonly SyncMembershipRolesAction $roleSync,
+    ) {}
+
     /**
      * Pivot id-column presence by connection and table. Pivot schemas are
      * deploy-time constants, so this never varies within a worker lifecycle.
@@ -32,13 +38,12 @@ final class AddMemberAction
 
     public function handle(Model $subject, Model $user, MemberRole $role): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
         DB::transaction(function () use ($subject, $user, $role): void {
             $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-            /** @phpstan-ignore method.notFound */
-            $existingMember = $subject->members()->whereKey($user->getKey())->first();
+            $existingMember = $this->members->find($subject, $user);
 
             $this->persist($subject, $user, $role, $existingMember, false);
         });
@@ -55,7 +60,7 @@ final class AddMemberAction
      */
     public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
         $this->persist($subject, $user, $role, $existingMember, $notifyAdded);
     }
@@ -67,8 +72,7 @@ final class AddMemberAction
 
     private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
-        /** @phpstan-ignore property.notFound */
-        $existingRole = $existingMember?->pivot?->role;
+        $existingRole = $this->members->role($existingMember);
         $membershipTable = $this->membershipTable($subject);
 
         try {
@@ -89,8 +93,7 @@ final class AddMemberAction
                     }
                 }
 
-                /** @phpstan-ignore method.notFound */
-                $subject->members()->syncWithoutDetaching([
+                $this->members->relation($subject)->syncWithoutDetaching([
                     $user->getKey() => $pivotData,
                 ]);
 
@@ -99,10 +102,10 @@ final class AddMemberAction
                     : null;
 
                 if ($oldRole !== null && $oldRole !== $role) {
-                    app(SyncMembershipRolesAction::class)->revokeFromUser($subject, $user, $oldRole);
+                    $this->roleSync->revokeFromUser($subject, $user, $oldRole);
                 }
 
-                app(SyncMembershipRolesAction::class)->assignToUser($subject, $user, $role);
+                $this->roleSync->assignToUser($subject, $user, $role);
             });
         } catch (QueryException $exception) {
             if (! $this->isMembershipUniquenessViolation($exception, $membershipTable)) {
@@ -119,7 +122,7 @@ final class AddMemberAction
 
     private function pivotHasIdColumn(Model $subject, string $membershipTable): bool
     {
-        $key = ($subject->getConnectionName() ?? 'default') . '.' . $membershipTable;
+        $key = $subject->getConnection()->getName() . '.' . $subject->getConnection()->getDatabaseName() . '.' . $membershipTable;
 
         return self::$pivotIdColumnCache[$key] ??= $subject->getConnection()
             ->getSchemaBuilder()
