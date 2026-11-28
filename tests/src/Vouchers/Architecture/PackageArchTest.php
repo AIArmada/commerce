@@ -19,9 +19,11 @@ arch('voucher data and feature APIs remain framework-independent')
         'AIArmada\Vouchers\Data',
         'AIArmada\Vouchers\Features\CartIntegration\Api',
         'AIArmada\Vouchers\Features\Lifecycle\Api',
+        'AIArmada\Vouchers\Features\Wallet\Api',
     ])
     ->not->toUse([
         'AIArmada\Vouchers\Features\Lifecycle\Models',
+        'AIArmada\Vouchers\Features\Wallet\Models',
         'AIArmada\Vouchers\Features\Lifecycle\Actions',
         'AIArmada\Vouchers\Features\Wallet\Actions',
         'AIArmada\Vouchers\Features\CartIntegration\Actions',
@@ -36,3 +38,16 @@ arch('voucher platform never depends on feature implementations')
 arch('cart integration does not import voucher persistence models')
     ->expect('AIArmada\Vouchers\Features\CartIntegration')
     ->not->toUse('AIArmada\Vouchers\Features\Lifecycle\Models');
+
+arch('wallet persistence and actions do not import lifecycle implementation classes')
+    ->expect([
+        'AIArmada\Vouchers\Features\Wallet\Models',
+        'AIArmada\Vouchers\Features\Wallet\Actions',
+        'AIArmada\Vouchers\Features\Wallet\Queries',
+    ])
+    ->not->toUse([
+        'AIArmada\Vouchers\Features\Lifecycle\Models',
+        'AIArmada\Vouchers\Features\Lifecycle\Actions',
+        'AIArmada\Vouchers\Features\Lifecycle\Queries',
+        'AIArmada\Vouchers\Features\Lifecycle\Persistence',
+    ]);

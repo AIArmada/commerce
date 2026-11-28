@@ -147,3 +147,50 @@ it('counts multiple allocations of the same promotion as one customer redemption
     expect($service->getApplicablePromotions($context)->pluck('id')->all())
         ->not->toContain($promotion->getKey());
 });
+
+it('only counts canonical checkout allocations towards a customer limit', function (): void {
+    $customer = User::factory()->create();
+    $promotion = Promotion::factory()->automatic()->active()->create([
+        'discount_value' => 10,
+        'per_customer_limit' => 1,
+        'min_purchase_amount' => null,
+        'min_quantity' => null,
+        'usage_limit' => null,
+    ]);
+
+    Order::factory()->create([
+        'customer_id' => $customer->getKey(),
+        'metadata' => [
+            'allocations' => [[
+                'provider_key' => 'promotions',
+                'meta' => ['promotion_id' => $promotion->getKey()],
+            ]],
+        ],
+    ]);
+
+    $service = app(PromotionService::class);
+    $context = new TargetingContext(null, $customer);
+
+    expect($service->getApplicablePromotions($context)->pluck('id')->all())
+        ->toContain($promotion->getKey());
+
+    orderWithPromotionAllocation($customer, $promotion);
+
+    expect($service->getApplicablePromotions($context)->pluck('id')->all())
+        ->not->toContain($promotion->getKey());
+});
+
+it('denies customer-limited promotions when the customer identifier is malformed', function (): void {
+    $promotion = Promotion::factory()->automatic()->active()->create([
+        'discount_value' => 10,
+        'per_customer_limit' => 1,
+        'min_purchase_amount' => null,
+        'min_quantity' => null,
+        'usage_limit' => null,
+    ]);
+
+    $context = new TargetingContext(null, metadata: ['customer_id' => []]);
+
+    expect(app(PromotionService::class)->getApplicablePromotions($context)->pluck('id')->all())
+        ->not->toContain($promotion->getKey());
+});

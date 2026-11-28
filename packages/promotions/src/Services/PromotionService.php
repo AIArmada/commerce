@@ -256,29 +256,23 @@ final class PromotionService implements PromotionServiceInterface
     {
         $customerId = $context->metadata['customer_id'] ?? $context->user?->getKey();
 
-        if ($customerId === null || $customerId === '') {
+        if ((! is_string($customerId) && ! is_int($customerId)) || (string) $customerId === '') {
             Log::debug('Promotion per-customer limit denied: no customer identifier.');
 
             return null;
         }
 
-        /** @phpstan-var class-string<Order> $orderClass */
-        $orderClass = 'AIArmada\\Orders\\Models\\Order';
-
-        if (! class_exists($orderClass)) {
+        if (! class_exists(Order::class)) {
             Log::debug('Promotion per-customer limit denied: orders package is unavailable.');
 
             return null;
         }
 
         try {
-            $orders = $orderClass::query()
+            $orders = Order::query()
+                ->forOwner(OwnerContext::resolve(), false)
                 ->where('customer_id', $customerId)
                 ->select(['id', 'metadata']);
-
-            if (method_exists($orderClass, 'scopeForOwner')) {
-                $orders->forOwner(OwnerContext::resolve(), false);
-            }
 
             if ($asOf !== null) {
                 $orders->where('created_at', '<=', $asOf);
@@ -313,9 +307,7 @@ final class PromotionService implements PromotionServiceInterface
             return [];
         }
 
-        $allocations = $metadata['discount_data']['allocations']
-            ?? $metadata['allocations']
-            ?? [];
+        $allocations = $metadata['discount_data']['allocations'] ?? [];
 
         if (! is_array($allocations)) {
             return [];
