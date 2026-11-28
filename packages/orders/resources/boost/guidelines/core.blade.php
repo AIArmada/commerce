@@ -6,6 +6,7 @@
 - Preserve tenant scope and use the persisted order identity when locking or issuing documents.
 - Payment and refund amounts are integer minor units. Never replace completed payment evidence with the order total.
 - Use `Contracts\OrderInvoiceNumber` for persistent invoice identity; never mint a new number on every download.
+- Use `Runtime\OrderInvoiceDownload` for authorized invoice responses without importing feature internals or the PDF SDK.
 
 ```php
 use AIArmada\Orders\Contracts\OrderInvoiceNumber;

@@ -7,7 +7,6 @@ namespace AIArmada\Orders\Features\Lifecycle\Actions;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderNotes;
 use AIArmada\Orders\Models\Order;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class ManageOrderNotes implements OrderNotes
@@ -18,7 +17,7 @@ final readonly class ManageOrderNotes implements OrderNotes
     {
         $this->validate($content, $visibility);
 
-        return DB::transaction(function () use ($orderId, $content, $visibility, $actorId): string {
+        return (new Order)->getConnection()->transaction(function () use ($orderId, $content, $visibility, $actorId): string {
             $order = $this->lockOrder($orderId);
 
             return (string) $order->orderNotes()->create([
@@ -33,7 +32,7 @@ final readonly class ManageOrderNotes implements OrderNotes
     {
         $this->validate($content, $visibility);
 
-        DB::transaction(function () use ($orderId, $noteId, $content, $visibility): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId, $noteId, $content, $visibility): void {
             $order = $this->lockOrder($orderId);
             $note = $order->orderNotes()->lockForUpdate()->findOrFail($noteId);
             $note->update(['content' => $content, 'visibility' => $visibility]);
@@ -42,7 +41,7 @@ final readonly class ManageOrderNotes implements OrderNotes
 
     public function remove(string $orderId, array $noteIds): void
     {
-        DB::transaction(function () use ($orderId, $noteIds): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId, $noteIds): void {
             $order = $this->lockOrder($orderId);
 
             foreach (array_unique($noteIds) as $noteId) {
@@ -53,7 +52,7 @@ final readonly class ManageOrderNotes implements OrderNotes
 
     private function lockOrder(string $orderId): Order
     {
-        $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         return $order;

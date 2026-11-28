@@ -17,11 +17,12 @@ final readonly class AssignOrderInvoiceNumber implements OrderInvoiceNumber
 
     public function assign(string $orderId): string
     {
-        $order = Order::query()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         $number = $order->getConnection()->transaction(function () use ($order): string {
-            $lockedOrder = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
+            $lockedOrder = $order->newQuery()->forOwner()->lockForUpdate()->findOrFail($order->getKey());
+            $this->assertOwnerBoundaryForMutation($lockedOrder, __METHOD__);
 
             if (is_string($lockedOrder->invoice_number) && mb_trim($lockedOrder->invoice_number) !== '') {
                 return $lockedOrder->invoice_number;

@@ -12,6 +12,8 @@ use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
+use AIArmada\Orders\Contracts\OrderNotes;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
@@ -222,6 +224,10 @@ it('excludes globally visible orders from tenant-local mutation and intake contr
             ->and(app(OrderServiceInterface::class)->find($global->id))->toBeNull();
 
         expect(fn () => app(OrderAdministration::class)->updateNotes($global->id, ['notes' => 'foreign']))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderNotes::class)->add($global->id, 'foreign', 'internal'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderInvoiceNumber::class)->assign($global->id))
             ->toThrow(ModelNotFoundException::class);
         expect(fn () => app(OrderPaymentConfirmation::class)->confirm($global->id, 'foreign-payment', 'manual', 1000))
             ->toThrow(ModelNotFoundException::class);
