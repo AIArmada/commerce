@@ -420,16 +420,6 @@ class ChipGateway extends AbstractGateway
         return $invoices;
     }
 
-    /** @var iterable<int, mixed> $rawInvoices */
-        $invoices = collect($rawInvoices)
-            ->take(self::DEFAULT_LIST_LIMIT)
-            ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))
-            ->values();
-
-        /** @var Collection<int, InvoiceContract> $invoices */
-        return $invoices;
-    }
-
     /**
      * Get all payment methods (recurring tokens) for a customer.
      *
