@@ -377,12 +377,12 @@ it('refuses a foreign clawback and a member-role clawback on the owner award', f
 
     expect(fn () => OwnerContext::withOwner(
         $ownerB,
-        static fn () => ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'consume-audit', $at),
+        static fn () => ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'consume-audit', $at),
     ))->toThrow(AuthorizationException::class);
 
     expect(fn () => OwnerContext::withOwner(
         $ownerA,
-        static fn () => ClawBackAwardPointsAction::run($award, 'user', (string) $enrollment->member_id, 'member', 'consume-audit', $at),
+        static fn () => ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', (string) $enrollment->member_id, 'member', 'consume-audit', $at),
     ))->toThrow(InvalidArgumentException::class, 'staff/admin/system identity');
 
     expect(RewardPointLot::query()->where('award_id', $award->getKey())->count())->toBe($lotCount)

@@ -150,7 +150,7 @@ it('D1 leaves no dispute when a full refund precedes reversal', function (): voi
     expect($again->status)->toBe(RewardAwardStatus::Reversed)
         ->and($again->entries()->count())->toBe($entriesBefore);
 
-    $rerun = ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
+    $rerun = ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
 
     expect($rerun)->toBe(['clawed_points' => 0, 'consumed_points' => 0, 'dispute_id' => null])
         ->and(RewardPointMovement::query()->count())->toBe($movementsBefore)
@@ -257,7 +257,7 @@ it('D1 nets repeat spend and refund cycles', function (): void {
     // A consumed reversal replays onto its single dispute without new rows.
     $movementsBefore = RewardPointMovement::query()->count();
 
-    $rerun = ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
+    $rerun = ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
 
     expect($rerun['dispute_id'])->toBe((string) $dispute->getKey())
         ->and($rerun['clawed_points'])->toBe(0)

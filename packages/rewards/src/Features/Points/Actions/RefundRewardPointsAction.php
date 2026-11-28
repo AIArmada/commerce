@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
-use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
-use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointInput;
@@ -241,24 +240,7 @@ final readonly class RefundRewardPointsAction
             ->filter()
             ->all()));
 
-        sort($previewAwardIds);
-
-        $lockedPreviewAwards = $previewAwardIds === []
-            ? collect()
-            : RewardAward::query()
-                ->whereIn('id', $previewAwardIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
-
-        if ($lockedPreviewAwards->count() !== count($previewAwardIds)) {
-            throw new InvalidArgumentException('Linked debit award is missing.');
-        }
-
-        $reversedAwardIds = $lockedPreviewAwards
-            ->filter(static fn (RewardAward $award): bool => $award->status === RewardAwardStatus::Reversed)
-            ->map(static fn (RewardAward $award): string => (string) $award->getKey())
-            ->all();
+        $reversedAwardIds = app(RewardAwardLockApi::class)->lockAndFindReversedAwards($previewAwardIds);
 
         // Full recipient-scope lots up front, sorted by id: this single
         // acquisition covers the original debit lots AND the sequence scope

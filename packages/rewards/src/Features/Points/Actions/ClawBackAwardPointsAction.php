@@ -7,14 +7,13 @@ namespace AIArmada\Rewards\Features\Points\Actions;
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDisputeApi;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
-use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -62,7 +61,7 @@ final readonly class ClawBackAwardPointsAction
      * @return array{clawed_points: int, consumed_points: int, dispute_id: ?string}
      */
     public function handle(
-        RewardAward | string $award,
+        string $awardId,
         string $actorType,
         ?string $actorId,
         string $actorRole,
@@ -72,10 +71,6 @@ final readonly class ClawBackAwardPointsAction
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);
 
-        // The program is the tenant boundary: prove the award's program is in
-        // the current owner scope before any lock or mutation.
-        RewardProgramGuard::findAwardOrFail($award);
-
         if (! in_array($actorRole, ['staff', 'admin', 'system'], true)) {
             throw new InvalidArgumentException('Award point clawback requires a staff/admin/system identity.');
         }
@@ -84,18 +79,13 @@ final readonly class ClawBackAwardPointsAction
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
-        $awardId = $award instanceof RewardAward ? (string) $award->getKey() : $award;
         $resolver = $this->reservationResolver ?? app(RewardReservationResolver::class);
 
         return DB::transaction(function () use ($awardId, $actorType, $actorId, $actorRole, $reason, $decided, $resolver): array {
-            $locked = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();
-
-            if (! $locked instanceof RewardAward) {
-                throw new InvalidArgumentException('Unknown reward award.');
-            }
+            app(RewardAwardLockApi::class)->lockScopedAward($awardId);
 
             $lots = RewardPointLot::query()
-                ->where('award_id', $locked->getKey())
+                ->where('award_id', $awardId)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
@@ -179,13 +169,13 @@ final readonly class ClawBackAwardPointsAction
                         'kind' => RewardPointMovementKind::Adjust,
                         'delta' => -$residual,
                         'operation_key' => RewardOperationKeys::lotAllocation(
-                            RewardOperationKeys::aggregate('clawback', 'award', (string) $locked->getKey(), (string) $lot->unit, $residual),
+                            RewardOperationKeys::aggregate('clawback', 'award', $awardId, (string) $lot->unit, $residual),
                             (string) $lot->getKey(),
                         ),
-                        'aggregate_operation_key' => RewardOperationKeys::aggregate('clawback', 'award', (string) $locked->getKey(), (string) $lot->unit, $residual),
+                        'aggregate_operation_key' => RewardOperationKeys::aggregate('clawback', 'award', $awardId, (string) $lot->unit, $residual),
                         'linked_movement_id' => null,
                         'reservation_key' => null,
-                        'award_id' => $locked->getKey(),
+                        'award_id' => $awardId,
                         'actor_type' => $actorType,
                         'actor_id' => $actorId,
                         'reason' => 'reversal-clawback:' . $reason,
@@ -210,7 +200,7 @@ final readonly class ClawBackAwardPointsAction
 
             if ($consumed > 0) {
                 $disputeId = app(RewardDisputeApi::class)->recordConsumedPointsDispute(
-                    (string) $locked->getKey(),
+                    $awardId,
                     [
                         'type' => 'points',
                         'unit' => $unit,
