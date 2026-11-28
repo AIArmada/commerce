@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Actions\BootstrapInventory;
 use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
@@ -299,6 +300,19 @@ final class InventoryService
             ->orderByDesc('occurred_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Initialize inventory only when the item has no stock levels in the
+     * current writable owner scope. Never replenish an existing level.
+     */
+    public function bootstrapAtDefault(
+        Model $model,
+        int $minimumOnHand,
+        ?string $reason = null,
+        ?string $note = null,
+    ): void {
+        app(BootstrapInventory::class)->execute($model, $minimumOnHand, $reason, $note);
     }
 
     /**

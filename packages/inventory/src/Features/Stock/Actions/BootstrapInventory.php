@@ -10,7 +10,6 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 final readonly class BootstrapInventory
 {
@@ -18,7 +17,7 @@ final readonly class BootstrapInventory
 
     public function execute(Model $model, int $minimumOnHand, ?string $reason = null, ?string $note = null): void
     {
-        if ($minimumOnHand < 1 || ! Schema::hasTable((new InventoryLevel)->getTable())) {
+        if ($minimumOnHand < 1) {
             return;
         }
 
@@ -40,6 +39,6 @@ final readonly class BootstrapInventory
             }
 
             $this->inventory->receiveAtDefault($model, $minimumOnHand, $reason, $note);
-        });
+        }, 3);
     }
 }

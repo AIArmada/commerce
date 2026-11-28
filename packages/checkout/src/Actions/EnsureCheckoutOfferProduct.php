@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Actions;
 
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Actions\BootstrapInventory;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Actions\EnsureListPrice;
 use AIArmada\Pricing\Actions\EnsurePriceListBySlug;
 use AIArmada\Products\Actions\EnsureProductBySlug;
@@ -70,8 +70,8 @@ final readonly class EnsureCheckoutOfferProduct
                 $offer->currency,
             );
 
-            if (($offer->minimumOnHand ?? 0) > 0 && config('checkout.integrations.inventory.enabled', false) && class_exists(BootstrapInventory::class)) {
-                app(BootstrapInventory::class)->execute($product, $offer->minimumOnHand, $offer->inventoryReason, $offer->inventoryNote);
+            if (($offer->minimumOnHand ?? 0) > 0 && config('checkout.integrations.inventory.enabled', false) && class_exists(InventoryService::class)) {
+                app(InventoryService::class)->bootstrapAtDefault($product, $offer->minimumOnHand, $offer->inventoryReason, $offer->inventoryNote);
             }
 
             return $product->fresh() ?? $product;

@@ -5,13 +5,11 @@ declare(strict_types=1);
 use AIArmada\Checkout\Actions\EnsureCheckoutOfferProduct;
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('creates a checkout offer product with price list, price, and seeded inventory', function (): void {
@@ -64,11 +62,17 @@ it('creates a checkout offer product with price list, price, and seeded inventor
         ->and($price?->amount)->toBe(9700)
         ->and($price?->compare_amount)->toBe(12700);
 
-    if (Schema::hasTable((new InventoryLevel)->getTable())) {
-        $onHand = OwnerContext::withOwner(null, static fn (): int => app(InventoryService::class)->getTotalOnHand($product));
+    OwnerContext::withOwner(null, function () use ($offer, $product): void {
+        $inventory = app(InventoryService::class);
+        expect($inventory->getTotalOnHand($product))->toBe(5);
 
-        expect($onHand)->toBeGreaterThanOrEqual(5);
-    }
+        $inventory->shipFromDefault($product, 5, reason: 'checkout-offer-test-sale');
+
+        $ensured = app(EnsureCheckoutOfferProduct::class)->handle($offer);
+
+        expect($ensured->is($product))->toBeTrue()
+            ->and($inventory->getTotalOnHand($ensured))->toBe(0);
+    });
 });
 
 it('is idempotent when ensuring the same checkout offer product twice', function (): void {
