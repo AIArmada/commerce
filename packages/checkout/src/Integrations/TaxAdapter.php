@@ -64,7 +64,7 @@ final class TaxAdapter
             $weightedRateAmount += $result->ratePercentage * $lineTaxableAmount;
             $weightedRateBase += $lineTaxableAmount;
             $isExempt = $isExempt && $result->isExempt();
-            $breakdown = array_merge($breakdown, $this->normalizeBreakdown($result, 'items', (string) $lineId));
+            array_push($breakdown, ...$this->normalizeBreakdown($result, 'items', (string) $lineId));
         }
 
         if ($session->shipping_total > 0) {
@@ -84,7 +84,7 @@ final class TaxAdapter
                 $taxableAmount += $session->shipping_total;
             }
 
-            $breakdown = array_merge($breakdown, $this->normalizeBreakdown($shippingResult, 'shipping'));
+            array_push($breakdown, ...$this->normalizeBreakdown($shippingResult, 'shipping'));
         }
 
         $rate = $weightedRateBase > 0

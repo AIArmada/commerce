@@ -109,7 +109,7 @@ return [
 
 ### Per-Rate Rounding (`StandardRateApplier`)
 
-`AIArmada\Tax\Services\RateApplier\StandardRateApplier` reads `tax.defaults.round_per_rate` (default `true`) and rounds each rate result before adding it to the total. Compound rates build on `amount + accumulated non-compound tax` (tax-exclusive); tax-inclusive prices keep the original amount as the extraction base:
+`AIArmada\Tax\Services\RateApplier\StandardRateApplier` reads `tax.defaults.round_per_rate` (default `true`) and rounds each rate result before adding it to the total. Compound rates build on the net amount plus accumulated tax. For inclusive prices, the net amount is derived from the combined tax multiplier, and rounded amounts are bounded by the original gross amount (including negative credit amounts). The breakdown always sums to the returned total:
 
 ```php
 use AIArmada\Tax\Services\RateApplier\StandardRateApplier;

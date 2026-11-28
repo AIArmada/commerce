@@ -48,6 +48,13 @@ final class StandardRateApplier implements TaxRateApplierInterface
                 ? (int) round($rawTax)
                 : (int) round($unroundedTax) - $totalTax;
 
+            if ($pricesIncludeTax) {
+                $remaining = $amountInCents - $totalTax;
+                $taxAmount = $amountInCents >= 0
+                    ? min($taxAmount, $remaining)
+                    : max($taxAmount, $remaining);
+            }
+
             $totalTax += $taxAmount;
             $breakdown[] = [
                 'name' => $rate->name,

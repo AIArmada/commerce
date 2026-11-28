@@ -140,6 +140,27 @@ describe('TaxCalculatorEdgeCases', function (): void {
             ->and($result['breakdown'][1]['amount'])->toBe(500);
     });
 
+    it('bounds inclusive per-rate rounding by the gross amount for sales and credits', function (): void {
+        $rates = new Collection;
+
+        for ($index = 0; $index < 5; $index++) {
+            $rates->push(new TaxRate([
+                'name' => 'Rate ' . $index,
+                'rate' => 10000,
+                'is_compound' => false,
+            ]));
+        }
+
+        $applier = new StandardRateApplier(roundPerRate: true);
+        $sale = $applier->apply(3, $rates, true);
+        $credit = $applier->apply(-3, $rates, true);
+
+        expect($sale['total'])->toBe(3)
+            ->and($credit['total'])->toBe(-3)
+            ->and(array_sum(array_column($sale['breakdown'], 'amount')))->toBe(3)
+            ->and(array_sum(array_column($credit['breakdown'], 'amount')))->toBe(-3);
+    });
+
     it('fallback zone id resolution', function (): void {
         $fallbackZone = TaxZone::create([
             'name' => 'Fallback Zone',
