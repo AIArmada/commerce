@@ -359,7 +359,7 @@ abstract class AbstractGateway implements GatewayContract
      */
     protected function billableModel(): string
     {
-        return $this->getConfig('model', config('cashier.models.billable', 'App\\Models\\User'));
+        return $this->getConfig('model', config('cashier.models.billable'));
     }
 
     /**

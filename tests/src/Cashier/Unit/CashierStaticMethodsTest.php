@@ -202,6 +202,7 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             Cashier::restoreOctaneDefaults();
 
             expect(Cashier::$customerModel)->toBe(User::class)
+                ->and(config('cashier.models.billable'))->toBe(User::class)
                 ->and(Cashier::$deactivatePastDue)->toBeTrue()
                 ->and(Cashier::$deactivateIncomplete)->toBeTrue()
                 ->and(Cashier::formatAmount(1000, 'USD', 'en_US'))->not->toBe('mutated');

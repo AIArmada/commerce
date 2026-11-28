@@ -43,7 +43,8 @@ describe('Cashier', function (): void {
     it('can use a custom customer model', function (): void {
         Cashier::useCustomerModel(User::class);
 
-        expect(Cashier::$customerModel)->toBe(User::class);
+        expect(Cashier::$customerModel)->toBe(User::class)
+            ->and(config('cashier.models.billable'))->toBe(User::class);
     });
 
     it('can configure deactivate past due setting', function (): void {

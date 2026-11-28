@@ -65,6 +65,7 @@ final class CashierServiceProvider extends PackageServiceProvider
         $this->registerOctaneListeners();
 
         $this->app->booted(static function (): void {
+            Cashier::useCustomerModel((string) config('cashier.models.billable'));
             Cashier::rememberOctaneDefaults();
         });
 
