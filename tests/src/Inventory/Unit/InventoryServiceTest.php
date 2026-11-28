@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryAdjusted;
-use AIArmada\Inventory\Events\InventoryReceived;
-use AIArmada\Inventory\Events\InventoryShipped;
-use AIArmada\Inventory\Events\InventoryTransferred;
+use AIArmada\Inventory\Features\Stock\Events\InventoryAdjusted;
+use AIArmada\Inventory\Features\Stock\Events\InventoryReceived;
+use AIArmada\Inventory\Features\Stock\Events\InventoryShipped;
+use AIArmada\Inventory\Features\Stock\Events\InventoryTransferred;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Events;
+namespace AIArmada\Inventory\Features\Stock\Events;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class InventoryShipped implements ShouldDispatchAfterCommit
+final class InventoryAdjusted implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use SerializesModels;
@@ -19,6 +19,16 @@ final class InventoryShipped implements ShouldDispatchAfterCommit
     public function __construct(
         public Model $inventoryable,
         public InventoryLevel $level,
-        public InventoryMovement $movement
+        public InventoryMovement $movement,
+        public int $oldQuantity,
+        public int $newQuantity
     ) {}
+
+    /**
+     * Get the difference between old and new quantities.
+     */
+    public function getDifference(): int
+    {
+        return $this->newQuantity - $this->oldQuantity;
+    }
 }

@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryReceived;
+use AIArmada\Inventory\Features\Stock\Events\InventoryReceived;
 use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock as RestoreOrderStockContract;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;

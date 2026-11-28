@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryShipped;
+use AIArmada\Inventory\Features\Stock\Events\InventoryShipped;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
