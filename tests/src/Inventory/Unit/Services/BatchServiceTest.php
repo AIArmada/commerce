@@ -13,6 +13,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
@@ -63,6 +64,22 @@ describe('BatchService', function (): void {
             -10
         );
     })->throws(InvalidArgumentException::class);
+
+    it('rejects blank batch numbers and expiry before manufacture', function (): void {
+        expect(fn () => $this->service->createBatch($this->item, '   ', $this->location->id, 10))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect(fn () => $this->service->createBatch(
+            $this->item,
+            'INVALID-DATES',
+            $this->location->id,
+            10,
+            CarbonImmutable::now()->subDays(2),
+            CarbonImmutable::now()->subDay(),
+        ))->toThrow(InvalidArgumentException::class);
+
+        expect(InventoryBatch::query()->count())->toBe(0);
+    });
 
     it('find by batch number', function (): void {
         InventoryBatch::factory()->create([
@@ -206,7 +223,7 @@ describe('BatchService', function (): void {
             'location_id' => $this->location->id,
             'quantity_on_hand' => 20,
         ]);
-        $level->incrementReserved(8);
+        app(ReservationStockStore::class)->reserve($level->id, 8);
 
         $group = InventoryReservation::create([
             'reference' => 'quarantine-group',
@@ -282,6 +299,21 @@ describe('BatchService', function (): void {
         expect($newBatch->batch_number)->toBe('BATCH-SPLIT');
         expect($newBatch->quantity_on_hand)->toBe(30);
         expect($batch->fresh()->quantity_on_hand)->toBe(70);
+    });
+
+    it('rejects splitting recalled or expired stock', function (): void {
+        $batch = $this->service->createBatch($this->item, 'RESTRICTED-SPLIT', $this->location->id, 100);
+        $batch->update(['status' => BatchStatus::Recalled->value]);
+
+        expect(fn () => $this->service->splitBatch($batch, 20, 'RECALLED-SPLIT'))
+            ->toThrow(InvalidArgumentException::class);
+
+        $batch->update(['status' => BatchStatus::Active->value, 'expires_at' => CarbonImmutable::now()->subDay()]);
+
+        expect(fn () => $this->service->splitBatch($batch, 20, 'EXPIRED-SPLIT'))
+            ->toThrow(InvalidArgumentException::class)
+            ->and($batch->fresh()->quantity_on_hand)->toBe(100)
+            ->and(InventoryBatch::query()->count())->toBe(1);
     });
 
     it('split batch throws for invalid quantity', function (): void {

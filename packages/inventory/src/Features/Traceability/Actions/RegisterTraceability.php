@@ -114,13 +114,13 @@ final readonly class RegisterTraceability
     /** @param array<string, mixed> $attributes */
     private function identifier(array $attributes, string $key): string
     {
-        $value = mb_trim((string) ($attributes[$key] ?? ''));
+        $value = $attributes[$key] ?? null;
 
-        if ($value === '') {
+        if (! is_string($value) || mb_trim($value) === '') {
             throw new InvalidArgumentException('Traceability identifier is required');
         }
 
-        return $value;
+        return mb_trim($value);
     }
 
     /** @param array<string, mixed> $attributes */

@@ -82,8 +82,18 @@ final class BatchService
         ?string $supplierId = null,
         ?string $purchaseOrderNumber = null
     ): InventoryBatch {
+        $batchNumber = mb_trim($batchNumber);
+
+        if (! $model->exists || $model->getKey() === null || $batchNumber === '') {
+            throw new InvalidArgumentException('A persisted item and nonempty batch number are required');
+        }
+
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        if ($manufacturedAt !== null && $expiresAt !== null && $expiresAt->lt($manufacturedAt)) {
+            throw new InvalidArgumentException('Batch expiry cannot precede manufacture');
         }
 
         if ($unitCostMinor !== null && $unitCostMinor < 0) {
@@ -316,6 +326,12 @@ final class BatchService
         return DB::transaction(function () use ($batch, $quantityToSplit, $newBatchNumber): InventoryBatch {
             $batch = $this->lockBatch($batch);
 
+            $newBatchNumber = mb_trim($newBatchNumber);
+
+            if ($newBatchNumber === '' || $batch->status !== BatchStatus::Active->value || $batch->is_expired) {
+                throw new InvalidArgumentException('Only active, unexpired batches can be split with a nonempty batch number');
+            }
+
             if ($quantityToSplit <= 0 || $quantityToSplit >= $batch->available) {
                 throw new InvalidArgumentException('Invalid quantity to split');
             }
@@ -368,6 +384,11 @@ final class BatchService
     {
         return DB::transaction(function () use ($batches, $newBatchNumber): InventoryBatch {
             $batches = $this->lockBatches($batches);
+            $newBatchNumber = mb_trim($newBatchNumber);
+
+            if ($newBatchNumber === '') {
+                throw new InvalidArgumentException('Merged batch number must not be empty');
+            }
 
             if ($batches->count() < 2) {
                 throw new InvalidArgumentException('Need at least 2 batches to merge');
