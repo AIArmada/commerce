@@ -140,6 +140,27 @@ describe('InventoryService', function (): void {
         ]);
     });
 
+    it('bounds bulk stock queries and deduplicates identities across batches', function (): void {
+        $this->inventoryService->receive($this->item, $this->locationA->id, 7);
+
+        $models = [$this->item];
+
+        for ($i = 0; $i < 201; $i++) {
+            $models[] = InventoryItem::create(['name' => 'Bulk item ' . $i]);
+        }
+
+        $last = $models[array_key_last($models)];
+        $this->inventoryService->receive($last, $this->locationB->id, 3);
+        $models[] = $this->item;
+
+        $totals = $this->inventoryService->getAvailabilityForMany($models);
+
+        expect($totals)->toHaveCount(202)
+            ->and($totals[$this->item->getMorphClass() . ':' . $this->item->getKey()])->toBe(7)
+            ->and($totals[$last->getMorphClass() . ':' . $last->getKey()])->toBe(3)
+            ->and(array_sum($totals))->toBe(10);
+    });
+
     it('records exact before and after balances without duplicate ledger movements', function (): void {
         $first = $this->inventoryService->receive($this->item, $this->locationA->id, 10);
         $second = $this->inventoryService->receive($this->item, $this->locationA->id, 5);
