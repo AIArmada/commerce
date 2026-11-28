@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating;
 
-use AIArmada\Seating\Console\Commands\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Livewire\SeatMap;
 use AIArmada\Seating\Services\DefaultSeatAllocator;

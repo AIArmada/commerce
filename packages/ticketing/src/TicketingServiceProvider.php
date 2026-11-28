@@ -6,7 +6,7 @@ namespace AIArmada\Ticketing;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Seating\Actions\ReleaseAllocationsAction;
-use AIArmada\Ticketing\Console\Commands\ExpireTransfersCommand;
+use AIArmada\Ticketing\EntryPoints\Console\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
