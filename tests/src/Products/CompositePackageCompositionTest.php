@@ -521,3 +521,32 @@ it('duplicates composite membership without copying publication state', function
         ->and($membership->quantity)->toBe(2)
         ->and($source->fresh()->status)->toBe(ProductStatus::Active);
 });
+
+it('does not let tenant-visible global packages be modified or published by a tenant', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $owner = User::query()->create(['name' => 'Global Package Reader', 'email' => 'global-package-reader@example.com', 'password' => 'secret']);
+
+    $parent = OwnerContext::withOwner(null, function (): Product {
+        $parent = makeCompositeParent();
+        $component = makeComponentProduct(['type' => ProductType::Service, 'requires_shipping' => false, 'tracks_inventory' => false]);
+        app(ReplaceProductComponents::class)->handle($parent, [
+            ['component_product_id' => $component->id, 'quantity' => 1],
+        ]);
+
+        return $parent;
+    });
+
+    OwnerContext::withOwner($owner, function () use ($parent): void {
+        expect(Product::query()->whereKey($parent->id)->exists())->toBeTrue()
+            ->and(fn () => app(ReplaceProductComponents::class)->handle($parent, []))
+            ->toThrow(InvalidCompositePackageException::class, 'not accessible')
+            ->and(fn () => app(PublishCompositeProduct::class)->handle($parent))
+            ->toThrow(InvalidCompositePackageException::class, 'not accessible');
+    });
+
+    OwnerContext::withOwner(null, function () use ($parent): void {
+        expect($parent->fresh()->status)->toBe(ProductStatus::Draft)
+            ->and($parent->components()->count())->toBe(1);
+        expect(app(PublishCompositeProduct::class)->handle($parent)->status)->toBe(ProductStatus::Active);
+    });
+});

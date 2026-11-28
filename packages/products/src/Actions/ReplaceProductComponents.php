@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -44,8 +45,15 @@ final class ReplaceProductComponents
     public function handle(Product $product, array $components, ?Variant $parentVariant = null): Collection
     {
         return DB::transaction(function () use ($product, $components, $parentVariant): Collection {
-            $parent = Product::query()
-                ->whereKey($product->getKey())
+            $query = Product::query();
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $parent = $query->whereKey($product->getKey())
                 ->lockForUpdate()
                 ->first();
 
