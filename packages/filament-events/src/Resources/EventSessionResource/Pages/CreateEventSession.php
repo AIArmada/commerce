@@ -38,5 +38,4 @@ final class CreateEventSession extends CreateRecord
 
         return app(CreateEventSessionAction::class)->handle($occurrence, $data);
     }
-
 }

@@ -34,5 +34,4 @@ final class CreateEventOccurrence extends CreateRecord
 
         return app(CreateEventOccurrenceAction::class)->handle($event, $data);
     }
-
 }

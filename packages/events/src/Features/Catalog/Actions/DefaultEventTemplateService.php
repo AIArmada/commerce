@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;

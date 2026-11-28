@@ -18,10 +18,10 @@ use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -37,8 +37,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\Rules\Unique;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 class EventResource extends Resource

@@ -5,11 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Venues\Actions\ManageVenueSpaceAction;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 it('validates capacity and actor when saving venue spaces', function (): void {
     $actor = User::factory()->create();
-    \Illuminate\Support\Facades\Gate::define('manageSharedEventCatalog', fn (User $user): bool => $user->is($actor));
+    Gate::define('manageSharedEventCatalog', fn (User $user): bool => $user->is($actor));
     $action = app(ManageVenueSpaceAction::class);
     $data = ['name' => 'Main Hall', 'slug' => 'main-hall', 'capacity' => 80, 'status' => 'active', 'visibility' => 'public'];
 

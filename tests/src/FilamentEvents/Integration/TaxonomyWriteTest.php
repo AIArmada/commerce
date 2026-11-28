@@ -6,16 +6,18 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Taxonomy\Actions\ManageEventTaxonomyAction;
 use AIArmada\Events\Features\Taxonomy\Actions\ManageEventTermAction;
 use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 it('prevents cross-taxonomy parents, cycles, and flattening a populated hierarchy', function (): void {
     $actor = User::factory()->create();
-    \Illuminate\Support\Facades\Gate::define('manageSharedEventCatalog', fn (User $user): bool => $user->is($actor));
+    Gate::define('manageSharedEventCatalog', fn (User $user): bool => $user->is($actor));
     $taxonomy = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $other = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $action = app(ManageEventTermAction::class);
     $outsider = User::factory()->create();
-    expect(fn () => $action->save($taxonomy->id, null, ['name' => 'Denied', 'code' => 'denied'], $outsider))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => $action->save($taxonomy->id, null, ['name' => 'Denied', 'code' => 'denied'], $outsider))->toThrow(AuthorizationException::class);
     $root = $action->save($taxonomy->id, null, ['name' => 'Root', 'code' => 'root'], $actor);
     $child = $action->save($taxonomy->id, null, ['name' => 'Child', 'code' => 'child', 'parent_id' => $root->id], $actor);
 
