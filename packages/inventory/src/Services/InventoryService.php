@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
-use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;

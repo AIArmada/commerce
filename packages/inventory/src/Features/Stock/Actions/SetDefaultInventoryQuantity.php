@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
