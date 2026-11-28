@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Integrations\FulfillmentLocationService;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

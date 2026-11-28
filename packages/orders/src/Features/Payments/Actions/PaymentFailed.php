@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderPaymentFailed;
 use AIArmada\Orders\Models\Order;

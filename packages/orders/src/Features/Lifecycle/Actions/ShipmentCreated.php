@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Events\OrderShipped;

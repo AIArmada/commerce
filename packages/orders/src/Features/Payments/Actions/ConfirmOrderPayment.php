@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Models\Order;
 use InvalidArgumentException;

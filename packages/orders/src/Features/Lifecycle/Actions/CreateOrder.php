@@ -10,7 +10,7 @@ use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
 use AIArmada\Orders\Models\Order;

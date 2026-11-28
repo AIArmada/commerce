@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;

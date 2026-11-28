@@ -8,7 +8,7 @@ use AIArmada\Inventory\Cart\CompositeComponents;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Orders\Data\ReturnedPackageUnit;
