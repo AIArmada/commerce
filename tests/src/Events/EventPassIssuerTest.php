@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
@@ -78,6 +79,10 @@ it('prefers session seat maps over event seat maps', function (): void {
     $pass = Pass::query()->findOrFail($passes[0]);
 
     expect($pass->seatAllocations()->first()?->seat_id)->toBe($sessionSeat->id);
+
+    app(EventSeatingDriver::class)->allocatePassSeats((string) $pass->getKey());
+
+    expect($pass->seatAllocations()->where('status', 'active')->count())->toBe(1);
 });
 
 it('revokes unused passes and releases their seats even when the registration is already terminal', function (string $status, bool $byIds): void {
@@ -116,3 +121,25 @@ it('revokes unused passes and releases their seats even when the registration is
     'cancelled registration' => ['cancelled', false],
     'refund by pass ids' => ['refunded', true],
 ]);
+
+it('does not allocate seats for a revoked pass on delayed issuance', function (): void {
+    $event = Event::factory()->create();
+    $ticketType = createEventTicketType($event, ['seating_mode' => SeatingMode::Assigned]);
+    $map = SeatMap::factory()->create([
+        'seatable_type' => $event->getMorphClass(),
+        'seatable_id' => $event->getKey(),
+    ]);
+    $section = SeatSection::factory()->create(['seat_map_id' => $map->getKey()]);
+    Seat::factory()->available()->create(['seat_section_id' => $section->getKey()]);
+
+    $pass = Pass::factory()->create([
+        'ticketable_type' => $event->getMorphClass(),
+        'ticketable_id' => $event->getKey(),
+        'ticket_type_id' => $ticketType->getKey(),
+        'status' => 'revoked',
+    ]);
+
+    app(EventSeatingDriver::class)->allocatePassSeats((string) $pass->getKey());
+
+    expect($pass->seatAllocations()->count())->toBe(0);
+});

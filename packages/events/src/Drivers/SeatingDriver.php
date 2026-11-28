@@ -7,6 +7,7 @@ namespace AIArmada\Events\Drivers;
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;
 use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
@@ -22,8 +23,9 @@ use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeSeatingOption;
+use AIArmada\Ticketing\States\Activated;
+use AIArmada\Ticketing\States\Issued;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class SeatingDriver implements EventSeatingDriver
@@ -162,37 +164,42 @@ final class SeatingDriver implements EventSeatingDriver
 
     public function allocatePassSeats(string $passId): void
     {
-        $pass = Pass::query()->with(['ticketType.ticketable'])->find($passId);
+        $pass = Pass::query()->whereKey($passId)->lockForUpdate()->first();
+        (new Pass)->getConnection()->transaction(function () use ($passId): void {
 
-        if (! $pass instanceof Pass) {
-            return;
-        }
+            if (! $pass instanceof Pass || ! ($pass->status instanceof Issued || $pass->status instanceof Activated) || ! $pass->isValid()) {
+                return;
+            }
 
-        $ticketType = $pass->ticketType;
+            if ($pass->seatAllocations()->withoutOwnerScope()->where('status', 'active')->exists()) {
+                return;
+            }
 
-        if (! $ticketType instanceof TicketType) {
-            return;
-        }
+            $pass->load('ticketType.ticketable');
+            $ticketType = $pass->ticketType;
 
-        $seatingMode = $ticketType->seating_mode;
+            if (! $ticketType instanceof TicketType) {
+                return;
+            }
 
-        if ($seatingMode === null || ! $seatingMode->requiresAllocation()) {
-            return;
-        }
+            $seatingMode = $ticketType->seating_mode;
 
-        $scope = $this->passScope($pass);
+            if ($seatingMode === null || ! $seatingMode->requiresAllocation()) {
+                return;
+            }
 
-        if ($scope === null) {
-            return;
-        }
+            $scope = $this->passScope($pass);
 
-        $map = $this->resolveActiveMap($scope['type'], $scope['id']);
+            if ($scope === null) {
+                return;
+            }
 
-        if ($map === null) {
-            throw new SeatMapNotFoundException('No active seat map found for the event scope.');
-        }
+            $map = $this->resolveActiveMap($scope['type'], $scope['id']);
 
-        DB::transaction(function () use ($pass, $ticketType, $seatingMode, $map): void {
+            if ($map === null) {
+                throw new SeatMapNotFoundException('No active seat map found for the event scope.');
+            }
+
             if ($seatingMode === SeatingMode::GeneralAdmission) {
                 $this->ensureSectionAllocation->handle(
                     section: $this->sectionFor($ticketType),
@@ -213,13 +220,17 @@ final class SeatingDriver implements EventSeatingDriver
                 reference: (string) $pass->getKey(),
             );
 
-            $this->convertHolds->handle(
+            $allocations = $this->convertHolds->handle(
                 holds: $holds,
                 mode: $seatingMode,
                 allocToType: $pass->getMorphClass(),
                 allocToId: (string) $pass->getKey(),
                 reference: $pass->pass_no,
             );
+
+            if ($allocations->count() !== 1) {
+                throw new InsufficientSeatsException('Unable to convert a seat hold for the pass.');
+            }
         });
     }
 
@@ -261,6 +272,7 @@ final class SeatingDriver implements EventSeatingDriver
     {
         $sessionClass = ModelResolver::sessionClass();
         $occurrenceClass = ModelResolver::occurrenceClass();
+        $eventClass = ModelResolver::eventClass();
         $ticketable = $pass->ticketable;
 
         $sessionId = $pass->session_id ?? ($ticketable instanceof $sessionClass ? $ticketable->getKey() : null);
@@ -275,7 +287,7 @@ final class SeatingDriver implements EventSeatingDriver
             return ['type' => 'occurrence', 'id' => (string) $occurrenceId];
         }
 
-        if ($ticketable instanceof Model) {
+        if ($ticketable instanceof $eventClass) {
             return ['type' => 'event', 'id' => (string) $ticketable->getKey()];
         }
 
