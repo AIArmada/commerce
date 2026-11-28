@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
-use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
@@ -19,6 +16,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
+use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
@@ -27,15 +25,13 @@ use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\States\Active;
-use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 
 class VoucherService implements VoucherServiceInterface
 {
-    use QueriesVouchers;
+    use NormalizesVoucherCodes;
 
     public function __construct(
         protected VoucherValidation $validator,
@@ -139,30 +135,7 @@ class VoucherService implements VoucherServiceInterface
         ?Model $redeemedBy = null,
         ?string $notes = null
     ): void {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        if (
-            config('vouchers.redemption.manual_requires_flag', true)
-            && ! $voucher->allowsManualRedemption()
-        ) {
-            throw ManualRedemptionNotAllowedException::forVoucher($voucher->code);
-        }
-
-        /** @var string $channel */
-        $channel = config('vouchers.redemption.manual_channel', 'manual');
-
-        $this->recordUsage(
-            code: $code,
-            discountAmount: $discountAmount,
-            channel: $channel,
-            metadata: array_merge($metadata ?? [], ['reference' => $reference]),
-            redeemedBy: $redeemedBy,
-            notes: $notes,
-            voucherModel: $voucher
-        );
+        app(VoucherRedemption::class)->redeemManually($code, $discountAmount, $reference, $metadata, $redeemedBy, $notes);
     }
 
     /**
@@ -207,9 +180,6 @@ class VoucherService implements VoucherServiceInterface
         app(VoucherReservations::class)->release($code, $sessionId, $voucherId);
     }
 
-    /**
-     * Redeem a voucher after successful order completion.
-     */
     public function redeem(
         string $code,
         string $orderId,
@@ -217,94 +187,6 @@ class VoucherService implements VoucherServiceInterface
         ?string $currency = null,
         ?string $voucherId = null,
     ): void {
-        $voucher = $this->voucherIdentityQuery($code, $voucherId)->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        $currency = $this->resolveMoneyCurrency($currency, $voucher);
-
-        $voucherType = $voucher->type instanceof VoucherType
-            ? $voucher->type
-            : VoucherType::tryFrom((string) $voucher->type);
-
-        $order = $this->resolveOrder($orderId);
-        $redeemedBy = $order?->customer;
-
-        // Calculate the discount amount based on voucher type
-        $discount = $discountAmount ?? match ($voucherType) {
-            VoucherType::Percentage => $this->percentageRedeemDiscount($voucher, $order),
-            VoucherType::Fixed => (int) ($voucher->value ?? 0),
-            default => 0,
-        };
-        if ($discount < 0) {
-            throw ValidationException::withMessages(['discount_amount' => 'Voucher discount cannot be negative.']);
-        }
-
-        $money = Money::{$currency}($discount);
-        $metadata = [
-            'order_id' => $orderId,
-        ];
-
-        if ($order instanceof Order) {
-            $orderNumber = $order->getAttribute('order_number');
-
-            if (is_string($orderNumber) && mb_trim($orderNumber) !== '') {
-                $metadata['order_number'] = mb_trim($orderNumber);
-            }
-
-            foreach (['subtotal', 'discount_total', 'grand_total'] as $attribute) {
-                $value = $order->getAttribute($attribute);
-
-                if (is_numeric($value)) {
-                    $metadata[$attribute] = (int) $value;
-                }
-            }
-        }
-
-        $this->recordUsage(
-            code: $voucher->code,
-            discountAmount: $money,
-            channel: 'checkout',
-            metadata: $metadata,
-            redeemedBy: $redeemedBy,
-            voucherModel: $voucher
-        );
-    }
-
-    private function resolveMoneyCurrency(?string $currency, VoucherModel $voucher): string
-    {
-        $normalized = mb_strtoupper(mb_trim($currency ?? $voucher->currency));
-
-        if (! preg_match('/^[A-Z]{3}$/', $normalized) || ! array_key_exists($normalized, Currency::getCurrencies())) {
-            throw ValidationException::withMessages(['currency' => 'The redemption currency must be a supported 3-letter code.']);
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Recompute a percentage discount from the order subtotal when the
-     * caller did not supply the allocated checkout amount, so the usage
-     * row records the real discount instead of zero.
-     */
-    private function percentageRedeemDiscount(VoucherModel $voucher, ?Model $redeemedBy): int
-    {
-        $subtotal = $redeemedBy?->getAttribute('subtotal');
-
-        if (! is_numeric($subtotal) || (int) $subtotal <= 0) {
-            return 0;
-        }
-
-        return app(VoucherDiscountCalculator::class)->calculate(VoucherSnapshot::fromModel($voucher), (int) $subtotal);
-    }
-
-    private function resolveOrder(string $orderId): ?Order
-    {
-        if (! class_exists(Order::class) || ! (new Order)->getConnection()->getSchemaBuilder()->hasTable((new Order)->getTable())) {
-            return null;
-        }
-
-        return Order::query()
-            ->select(['id', 'order_number', 'subtotal', 'discount_total', 'grand_total', 'customer_type', 'customer_id'])
-            ->find($orderId);
+        app(VoucherRedemption::class)->redeem($code, $orderId, $discountAmount, $currency, $voucherId);
     }
 }
