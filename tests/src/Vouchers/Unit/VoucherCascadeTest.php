@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +55,7 @@ it('cascades voucher deletion to usage and wallet rows with foreign keys enforce
 
         expect($throughService ? $service->delete($voucher->code) : $voucher->delete())->toBeTrue()
             ->and(VoucherUsage::query()->whereKey($usage->getKey())->exists())->toBeFalse()
-            ->and(VoucherWallet::query()->whereKey($wallet->getKey())->exists())->toBeFalse();
+            ->and(VoucherWallet::query()->whereKey($wallet->id)->exists())->toBeFalse();
     } finally {
         DB::setDefaultConnection($originalConnection);
         Schema::clearResolvedInstance('db.schema');
