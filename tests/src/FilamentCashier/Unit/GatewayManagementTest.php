@@ -103,9 +103,9 @@ it('checks configured CHIP health through the collect service', function (): voi
     app()->instance(ChipCollectService::class, $chip);
 
     $page = app(GatewayManagement::class);
-    $method = (new ReflectionClass(GatewayManagement::class))->getMethod('checkChipHealth');
+    $method = (new ReflectionClass(GatewayManagement::class))->getMethod('checkGatewayHealth');
 
-    expect($method->invoke($page))->toMatchArray([
+    expect($method->invoke($page, 'chip'))->toMatchArray([
         'status' => 'healthy',
         'color' => 'success',
         'message' => null,

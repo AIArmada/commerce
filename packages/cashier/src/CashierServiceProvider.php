@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\EntryPoints\Console\WebhookReplayCommand;
+use AIArmada\Cashier\Contracts\GatewayHealthProbe;
 use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Drivers\GatewayHealthDriver;
 use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Cashier\Facades\Cashier as CashierFacade;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
@@ -43,6 +45,7 @@ final class CashierServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias(GatewayManager::class, 'cashier');
+        $this->app->bind(GatewayHealthProbe::class, GatewayHealthDriver::class);
 
         $this->app->bind('cashier.gateway.stripe', static fn ($app): StripeGateway => new StripeGateway($app['config']->get('cashier.gateways.stripe', [])));
         $this->app->bind('cashier.gateway.chip', static fn ($app): ChipGateway => new ChipGateway($app['config']->get('cashier.gateways.chip', [])));
