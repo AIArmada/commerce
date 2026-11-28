@@ -34,6 +34,7 @@ use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
@@ -416,3 +417,21 @@ it('requires fraud stewardship for direct record authorization', function (): vo
     Gate::define('reward-fraud-steward', static fn (): bool => false);
     expect(RewardFraudResource::canView($award))->toBeFalse();
 });
+
+it('requires operation-specific payout authorization inside the handler', function (string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    $request = RewardPayoutRequest::factory()->make();
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardPayouts::class,
+        $ability,
+        $request,
+        $data,
+    ))->toBe(403);
+})->with([
+    'approve' => ['approve', ['reason' => 'Finance review']],
+    'confirm' => ['confirm', ['bank_reference' => 'REF-123']],
+    'reconcile' => ['reconcile', []],
+]);

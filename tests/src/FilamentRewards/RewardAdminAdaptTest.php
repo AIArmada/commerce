@@ -542,7 +542,8 @@ it('renders finance tables and runs record, verify, and approve actions', functi
         ])
         ->assertHasNoTableActionErrors();
 
-    expect($request->fresh()->status->value)->toBe('approved');
+    expect($request->fresh()->status->value)->toBe('approved')
+        ->and($request->fresh()->evidence['approval_reason'])->toBe('Finance review passed; releasing to the payout queue.');
 });
 
 it('requires funding for every cash variant currency before activation', function (): void {

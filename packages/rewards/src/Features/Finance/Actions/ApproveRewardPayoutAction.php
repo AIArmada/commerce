@@ -54,7 +54,7 @@ final readonly class ApproveRewardPayoutAction
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
-        return DB::transaction(function () use ($requestId, $actorId, $decided): RewardPayoutRequest {
+        return DB::transaction(function () use ($requestId, $actorId, $decided, $reason): RewardPayoutRequest {
             $pre = RewardPayoutRequest::query()->whereKey($requestId)->first();
 
             if (! $pre instanceof RewardPayoutRequest) {
@@ -106,7 +106,11 @@ final readonly class ApproveRewardPayoutAction
             $attempt = RewardBudgetLedger::attemptOf($locked->evidence);
 
             if ($attempt <= 1) {
+                $evidence = $locked->evidence ?? [];
+                $evidence['approval_reason'] = $reason;
+
                 $locked->forceFill([
+                    'evidence' => $evidence,
                     'status' => RewardPayoutRequestStatus::Approved,
                     'approved_by' => $actorId,
                     'approved_at' => $decided,
@@ -114,7 +118,7 @@ final readonly class ApproveRewardPayoutAction
             } else {
                 $evidence = $locked->evidence ?? [];
                 $reapprovals = $evidence['reapprovals'] ?? [];
-                $reapprovals[] = ['by' => $actorId, 'at' => $decided->toIso8601String(), 'attempt' => $attempt];
+                $reapprovals[] = ['by' => $actorId, 'at' => $decided->toIso8601String(), 'attempt' => $attempt, 'reason' => $reason];
                 $evidence['reapprovals'] = $reapprovals;
 
                 $locked->forceFill([

@@ -78,6 +78,7 @@ class RewardPayoutsTable
                     ->action(function (RewardPayoutRequest $record, array $data, ApproveRewardPayoutAction $approve): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canOperatePayout($record, 'approve'), 403);
 
                         try {
                             $approve->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
@@ -121,6 +122,7 @@ class RewardPayoutsTable
                     ->action(function (RewardPayoutRequest $record, array $data, ConfirmRewardPayoutAction $confirm): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canOperatePayout($record, 'confirm'), 403);
 
                         try {
                             $confirm->handle($record, ['bank_reference' => (string) $data['bank_reference']], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
@@ -141,6 +143,7 @@ class RewardPayoutsTable
                     ->action(function (RewardPayoutRequest $record, ReconcileRewardPayoutAction $reconcile): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canOperatePayout($record, 'reconcile'), 403);
 
                         try {
                             $reconcile->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());

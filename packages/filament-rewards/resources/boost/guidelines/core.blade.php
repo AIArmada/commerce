@@ -5,3 +5,5 @@ Filament Rewards is the administrative entry point for Rewards. Read program-sco
 Read budget and benefit stock balances through `AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi` and `AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi`; both validate the current program owner scope before reading the ledger.
 
 Use `RewardPayeeSelectionApi` for award-bound verified payout destination choices. It exposes masked labels and processor names only; the Finance request action revalidates the selected destination under lock.
+
+Payout handlers require the corresponding `approve`, `submit`, `confirm`, `reconcile`, or `cancel` Gate ability on the payout record; the Finance action independently validates ownership and lifecycle state. Approval reasons are retained in the payout evidence, including each reapproval.
