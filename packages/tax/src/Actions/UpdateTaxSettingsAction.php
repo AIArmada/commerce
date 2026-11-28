@@ -35,7 +35,7 @@ final readonly class UpdateTaxSettingsAction
 
         $taxIdLabel = Arr::get($state, 'taxIdLabel', 'Tax ID');
 
-        if (! in_array($taxIdLabel, ['VAT Number', 'GST Number', 'SST Number', 'Tax ID'], true)) {
+        if (! in_array($taxIdLabel, ['VAT Number', 'GST Number', 'SST Number', 'Tax ID', 'ABN', 'EIN'], true)) {
             throw new InvalidArgumentException('Unsupported tax ID label.');
         }
 
