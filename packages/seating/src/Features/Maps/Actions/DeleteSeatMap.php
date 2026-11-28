@@ -14,6 +14,7 @@ final readonly class DeleteSeatMap
     public function handle(SeatMap $record, ?Model $host = null): bool
     {
         return $record->getConnection()->transaction(function () use ($record, $host): bool {
+            /** @var SeatMap $map */
             $map = OwnerUiScope::apply(SeatMap::query(), includeGlobal: false)->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
             if ($host !== null && ($map->seatable_type !== $host->getMorphClass() || (string) $map->seatable_id !== (string) $host->getKey())) {

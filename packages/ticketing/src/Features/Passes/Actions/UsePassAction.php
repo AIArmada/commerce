@@ -16,6 +16,7 @@ final readonly class UsePassAction
     public function handle(Pass $pass): Pass
     {
         return $pass->getConnection()->transaction(function () use ($pass): Pass {
+            /** @var Pass $locked */
             $locked = OwnerUiScope::apply(Pass::query(), includeGlobal: false)
                 ->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
 

@@ -59,11 +59,7 @@ final readonly class ConvertHoldsToAllocationsAction
                     );
                 }
 
-                if (SeatAllocation::query()
-                    ->withoutOwnerScope()
-                    ->where('seat_id', $seat->getKey())
-                    ->where('status', 'active')
-                    ->exists()) {
+                if ($this->hasActiveAllocation($seat)) {
                     continue;
                 }
 
@@ -99,7 +95,7 @@ final readonly class ConvertHoldsToAllocationsAction
                         return $allocation;
                     });
                 } catch (UniqueConstraintViolationException $exception) {
-                    if (! SeatAllocation::query()->withoutOwnerScope()->where('seat_id', $seat->getKey())->where('status', 'active')->exists()) {
+                    if (! $this->hasActiveAllocation($seat)) {
                         throw $exception;
                     }
 
@@ -111,5 +107,14 @@ final readonly class ConvertHoldsToAllocationsAction
 
             return $allocations;
         });
+    }
+
+    private function hasActiveAllocation(Seat $seat): bool
+    {
+        return SeatAllocation::query()
+            ->withoutOwnerScope()
+            ->where('seat_id', $seat->getKey())
+            ->where('status', 'active')
+            ->exists();
     }
 }

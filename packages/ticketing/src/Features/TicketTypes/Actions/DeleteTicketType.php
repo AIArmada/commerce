@@ -14,6 +14,7 @@ final readonly class DeleteTicketType
     public function handle(TicketType $record, ?Model $host = null): bool
     {
         return $record->getConnection()->transaction(function () use ($record, $host): bool {
+            /** @var TicketType $type */
             $type = OwnerUiScope::apply(TicketType::query(), includeGlobal: false)
                 ->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 

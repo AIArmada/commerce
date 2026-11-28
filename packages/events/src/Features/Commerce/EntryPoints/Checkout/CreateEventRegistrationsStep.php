@@ -14,7 +14,7 @@ use AIArmada\Events\Data\EventOrderItemData;
 use AIArmada\Events\Features\Commerce\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Platform\EventTicketScope;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Throwable;

@@ -40,6 +40,7 @@ final readonly class SaveSeatMap
                     $map->seatable()->associate($host);
                 }
             } else {
+                /** @var SeatMap $map */
                 $map = OwnerUiScope::apply(SeatMap::query(), includeGlobal: false)->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
                 if ($host !== null && ($map->seatable_type !== $host->getMorphClass() || (string) $map->seatable_id !== (string) $host->getKey())) {

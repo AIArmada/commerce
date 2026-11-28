@@ -52,6 +52,7 @@ final readonly class SaveTicketType
                 $type = new TicketType;
                 $type->ticketable()->associate($ticketable);
             } else {
+                /** @var TicketType $type */
                 $type = OwnerUiScope::apply(TicketType::query(), includeGlobal: false)
                     ->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
