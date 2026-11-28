@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
@@ -114,7 +115,7 @@ final readonly class RevokeRewardBenefitGrantAction
         // The bound coupon contract serializes revocation against usage
         // recording: either the use commits first and revocation refuses,
         // or revocation commits first and later usage is refused.
-        app(RewardBenefitCouponFulfillment::class)->revoke($grant);
+        app(RewardBenefitCouponFulfillment::class)->revoke(RewardCouponMapper::grant($grant));
     }
 
     private function refundCapture(

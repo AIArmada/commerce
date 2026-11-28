@@ -10,6 +10,7 @@ use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Fulfillment\VouchersRewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -128,6 +129,6 @@ test('vouchers reward benefit coupon fulfillment fails closed when voucher terms
         'reserved_at' => CarbonImmutable::now('UTC'),
     ]);
 
-    expect(fn () => (new VouchersRewardBenefitCouponFulfillment)->issue($grant, $item, CarbonImmutable::now('UTC')))
+    expect(fn () => (new VouchersRewardBenefitCouponFulfillment)->issue(RewardCouponMapper::grant($grant), RewardCouponMapper::terms($item), CarbonImmutable::now('UTC')))
         ->toThrow(InvalidArgumentException::class);
 });

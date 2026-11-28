@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
@@ -113,6 +114,6 @@ final readonly class ConsumeRewardBenefitAction
      */
     private function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
     {
-        app(RewardBenefitCouponFulfillment::class)->assertCanonicalUsage($grant, $useEvidence);
+        app(RewardBenefitCouponFulfillment::class)->assertCanonicalUsage(RewardCouponMapper::grant($grant), $useEvidence);
     }
 }

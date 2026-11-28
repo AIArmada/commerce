@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Fulfillment;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Data\RewardCouponGrant;
+use AIArmada\Rewards\Data\RewardCouponTerms;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -17,7 +17,7 @@ use InvalidArgumentException;
  */
 final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCouponFulfillment
 {
-    public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
+    public function issue(RewardCouponGrant $grant, RewardCouponTerms $item, CarbonImmutable $decided): string
     {
         $createActionClass = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
         $addToWalletClass = 'AIArmada\\Vouchers\\Actions\\AddVoucherToWallet';
@@ -26,19 +26,19 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
         }
 
-        $config = $item->fulfillment_config['voucher'] ?? null;
+        $config = $item->fulfillmentConfig['voucher'] ?? null;
 
         if (! is_array($config)) {
             throw new InvalidArgumentException('Coupon fulfillment requires frozen voucher terms on the catalog item.');
         }
 
-        $holder = $this->resolveRecipientModel((string) $grant->recipient_type, (string) $grant->recipient_id);
+        $holder = $this->resolveRecipientModel((string) $grant->recipientType, (string) $grant->recipientId);
 
         if (! $holder instanceof Model) {
             throw new InvalidArgumentException('Coupon recipient account is missing or unsupported.');
         }
 
-        $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grant_key), 0, 12));
+        $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grantKey), 0, 12));
 
         app($createActionClass)->handle([
             'code' => $code,
@@ -49,26 +49,26 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             'usage_limit' => 1,
             'usage_limit_per_user' => 1,
             'starts_at' => $decided,
-            'expires_at' => $item->expires_at,
-            'description' => 'Reward benefit grant ' . $grant->grant_key,
+            'expires_at' => $item->expiresAt,
+            'description' => 'Reward benefit grant ' . $grant->grantKey,
             'metadata' => [
                 'assignee' => [
-                    'type' => (string) $grant->recipient_type,
-                    'id' => (string) $grant->recipient_id,
+                    'type' => (string) $grant->recipientType,
+                    'id' => (string) $grant->recipientId,
                 ],
-                'grant_key' => (string) $grant->grant_key,
+                'grant_key' => (string) $grant->grantKey,
             ],
         ]);
 
         app($addToWalletClass)->handle($code, $holder, [
-            'grant_key' => (string) $grant->grant_key,
-            'benefit_key' => (string) $item->benefit_key,
+            'grant_key' => (string) $grant->grantKey,
+            'benefit_key' => (string) $item->benefitKey,
         ]);
 
         return $code;
     }
 
-    public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
+    public function assertCanonicalUsage(RewardCouponGrant $grant, array $useEvidence): void
     {
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
@@ -79,7 +79,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
         /** @var Model|null $voucher */
         $voucher = $voucherClass::query()
-            ->where('code', (string) $grant->external_ref)
+            ->where('code', (string) $grant->externalReference)
             ->lockForUpdate()
             ->first();
 
@@ -103,8 +103,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
         } else {
             $matches = $usageClass::query()
                 ->where('voucher_id', $voucher->getKey())
-                ->where('redeemed_by_type', (string) $grant->recipient_type)
-                ->where('redeemed_by_id', (string) $grant->recipient_id)
+                ->where('redeemed_by_type', (string) $grant->recipientType)
+                ->where('redeemed_by_id', (string) $grant->recipientId)
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
@@ -121,14 +121,14 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             $usage = $matches->firstOrFail();
         }
 
-        if ((string) $usage->getAttribute('redeemed_by_type') !== (string) $grant->recipient_type
-            || (string) $usage->getAttribute('redeemed_by_id') !== (string) $grant->recipient_id
+        if ((string) $usage->getAttribute('redeemed_by_type') !== (string) $grant->recipientType
+            || (string) $usage->getAttribute('redeemed_by_id') !== (string) $grant->recipientId
         ) {
             throw new InvalidArgumentException('The cited usage was not redeemed by the grant recipient; refusing consumption.');
         }
     }
 
-    public function revoke(RewardBenefitGrant $grant): void
+    public function revoke(RewardCouponGrant $grant): void
     {
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
@@ -140,7 +140,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
         /** @var Model|null $voucher */
         $voucher = $voucherClass::query()
-            ->where('code', (string) $grant->external_ref)
+            ->where('code', (string) $grant->externalReference)
             ->lockForUpdate()
             ->first();
 
@@ -157,7 +157,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             throw new InvalidArgumentException('Coupon was used; revocation is closed — open a recovery case instead.');
         }
 
-        app($expireActionClass)->handle((string) $grant->external_ref);
+        app($expireActionClass)->handle((string) $grant->externalReference);
     }
 
     private function resolveRecipientModel(string $recipientType, string $recipientId): ?Model

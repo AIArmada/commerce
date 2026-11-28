@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
@@ -228,6 +229,6 @@ final readonly class FulfillRewardBenefitAction
 
         // Recipient-bound issuance through the bound coupon contract.
         // Validation and usage recording refuse any other account.
-        return app(RewardBenefitCouponFulfillment::class)->issue($grant, $item, $decided);
+        return app(RewardBenefitCouponFulfillment::class)->issue(RewardCouponMapper::grant($grant), RewardCouponMapper::terms($item), $decided);
     }
 }
