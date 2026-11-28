@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Data\ShareLinkAction;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
@@ -118,7 +119,7 @@ final class ViewDoc extends ViewRecord
                     ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        $record->markAsSent();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'sent');
                         Notification::make()->title('Document marked as sent')->success()->send();
                     }),
 
@@ -129,7 +130,7 @@ final class ViewDoc extends ViewRecord
                     ->visible(fn (Doc $record): bool => $record->canBePaid())
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        $record->markAsPaid();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'paid');
                         Notification::make()->title('Document marked as paid')->success()->send();
                     }),
 
@@ -142,7 +143,7 @@ final class ViewDoc extends ViewRecord
                     ->modalHeading('Cancel Document')
                     ->modalDescription('Are you sure you want to cancel this document? This action cannot be undone.')
                     ->action(function (Doc $record): void {
-                        $record->cancel();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'cancelled');
                         Notification::make()->title('Document cancelled')->warning()->send();
                     }),
             ])
@@ -156,7 +157,7 @@ final class ViewDoc extends ViewRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    $record->delete();
+                    app(DocumentLifecycle::class)->delete([(string) $record->getKey()]);
                 }),
         ];
     }

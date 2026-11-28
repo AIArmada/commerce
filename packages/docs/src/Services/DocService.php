@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
@@ -491,7 +492,8 @@ final class DocService implements DocServiceInterface
      */
     public function markAsSent(Doc $doc, ?string $notes = null): void
     {
-        $doc->markAsSent($notes);
+        app(DocumentLifecycle::class)->changeStatus((string) $doc->getKey(), 'sent', $notes);
+        $doc->refresh();
     }
 
     /**
@@ -499,7 +501,8 @@ final class DocService implements DocServiceInterface
      */
     public function updateStatus(Doc $doc, DocStatus | string $status, ?string $notes = null): void
     {
-        $doc->transitionStatusTo($status, $notes);
+        app(DocumentLifecycle::class)->changeStatus((string) $doc->getKey(), DocStatus::resolveStateClassFor($status, $doc), $notes);
+        $doc->refresh();
     }
 
     /**

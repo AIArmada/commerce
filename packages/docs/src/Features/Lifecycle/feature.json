@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Lifecycle",
+  "owns": {
+    "table:docs": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
+    ],
+    "table:docs_status_histories": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
+    ]
+  },
+  "extensions": {}
+}

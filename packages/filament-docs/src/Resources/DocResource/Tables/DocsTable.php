@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Cancelled;
@@ -173,7 +174,7 @@ final class DocsTable
                         ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->markAsSent();
+                            app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'sent');
                             Notification::make()->title('Marked as sent')->success()->send();
                         }),
 
@@ -184,7 +185,7 @@ final class DocsTable
                         ->visible(fn (Doc $record): bool => $record->canBePaid())
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->markAsPaid();
+                            app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'paid');
                             Notification::make()->title('Marked as paid')->success()->send();
                         }),
 
@@ -195,7 +196,7 @@ final class DocsTable
                         ->requiresConfirmation()
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->delete();
+                            app(DocumentLifecycle::class)->delete([(string) $record->getKey()]);
                         }),
                 ])
                     ->icon(Heroicon::OutlinedEllipsisVertical)
@@ -228,10 +229,8 @@ final class DocsTable
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
-                        $records->each(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->delete();
-                        });
+                        $records->each(fn (Doc $record) => DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.'));
+                        app(DocumentLifecycle::class)->delete(array_map('strval', $records->modelKeys()));
                     })
                     ->deselectRecordsAfterCompletion(),
             ])
