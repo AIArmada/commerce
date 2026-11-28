@@ -14,7 +14,7 @@ use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Models\DocStatusHistory;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;

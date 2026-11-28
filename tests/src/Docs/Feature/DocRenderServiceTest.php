@@ -14,7 +14,7 @@ use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;

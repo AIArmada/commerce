@@ -23,7 +23,7 @@ use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;

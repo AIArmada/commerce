@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
 use AIArmada\Docs\Runtime\PaymentRelationModel;
+use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Support\DocPdfPath;
@@ -71,7 +72,8 @@ use Throwable;
  * @property string|null $pdf_fingerprint
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read DocTemplate|null $template
+ * @property-read RelatedDocTemplate|null $template
+ * @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate
  * @property-read Collection<int, DocStatusHistory> $statusHistories
  * @property-read Collection<int, RelatedDocPayment> $payments
  * @phpstan-type RelatedDocPayment \AIArmada\Docs\Features\Payments\Models\DocPayment
@@ -140,11 +142,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<DocTemplate, $this>
+     * @return BelongsTo<RelatedDocTemplate, $this>
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(DocTemplate::class, 'doc_template_id');
+        return $this->belongsTo(app(TemplateRelationModel::class)->template(), 'doc_template_id');
     }
 
     /**

@@ -44,7 +44,7 @@ keywords:
 ## Key surfaces
 - Versioning feature: `Features/Versioning` owns document version writes; use `Contracts/DocumentVersions` for capture and restore.
 - Numbering feature: `Features/Numbering` owns sequence configuration and counters; document creation uses `Contracts/DocumentSequence`.
-- Models: `Doc`, `Features/Approvals/Models/DocApproval`, `DocEInvoiceSubmission`, `Features/Delivery/Models/DocEmail`, `Features/Delivery/Models/DocEmailTemplate`, `Features/Payments/Models/DocPayment`, `DocSequence`, `Features/Delivery/Models/DocShareLink`, `DocStatusHistory`, `DocTemplate`, `Features/Versioning/Models/DocVersion`, `Features/Approvals/Models/DocWorkflow`, `Features/Approvals/Models/DocWorkflowStep`, `SequenceNumber`
+- Models: `Doc`, `Features/Approvals/Models/DocApproval`, `DocEInvoiceSubmission`, `Features/Delivery/Models/DocEmail`, `Features/Delivery/Models/DocEmailTemplate`, `Features/Payments/Models/DocPayment`, `DocSequence`, `Features/Delivery/Models/DocShareLink`, `DocStatusHistory`, `Features/Templates/Models/DocTemplate`, `Features/Versioning/Models/DocVersion`, `Features/Approvals/Models/DocWorkflow`, `Features/Approvals/Models/DocWorkflowStep`, `SequenceNumber`
 - Actions/Services: `Features/Delivery/Actions/DocEmailService`, `Features/Payments/Actions/RecordDocPayment`, `Services/DocRenderService`, `Services/DocService`, `Services/DocTotals`, `Features/Delivery/Queries/DueDocReminders`, `Services/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
 - Config `docs.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `docs`, `doc_templates`, `doc_share_links`, `doc_status_histories`, `doc_payments`, `doc_email_templates`
 

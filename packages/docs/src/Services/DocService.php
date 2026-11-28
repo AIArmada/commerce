@@ -12,7 +12,7 @@ use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
@@ -32,6 +32,8 @@ use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
+ * @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate
+ *
  * Core document management service.
  *
  * Handles document creation, updates, PDF generation, payments, versioning, and conversions.
@@ -84,7 +86,7 @@ final class DocService
 
             $template = $this->resolveTemplateSelection($docType, $data->docTemplateId, $data->templateSlug);
 
-            if ($template instanceof DocTemplate) {
+            if ($template !== null) {
                 app(DocRenderService::class)->validateDocPayload($template, $data->body, $data->items);
             }
 
@@ -226,7 +228,7 @@ final class DocService
                     isset($docData['template_slug']) ? (string) $docData['template_slug'] : null,
                 );
 
-                if ($template instanceof DocTemplate) {
+                if ($template !== null) {
                     $docData['doc_template_id'] = $template->id;
                     app(DocRenderService::class)->validateDocPayload(
                         $template,
@@ -303,11 +305,11 @@ final class DocService
 
             unset($attributes['template_slug']);
 
-            if ($slugProvided && $template instanceof DocTemplate) {
+            if ($slugProvided && $template !== null) {
                 $attributes['doc_template_id'] = $template->id;
             }
 
-            if ($template instanceof DocTemplate) {
+            if ($template !== null) {
                 app(DocRenderService::class)->validateDocPayload(
                     $template,
                     $attributes['body'] ?? self::normalizeBody($doc->body),
@@ -810,14 +812,15 @@ final class DocService
         return config("docs.defaults.{$key}", $fallback);
     }
 
-    protected function resolveTemplateSelection(string $docType, ?string $templateId = null, ?string $templateSlug = null): ?DocTemplate
+    /** @return RelatedDocTemplate|null */
+    protected function resolveTemplateSelection(string $docType, ?string $templateId = null, ?string $templateSlug = null): ?Model
     {
         $query = $this->getTemplateQuery()->where('doc_type', $docType);
 
         if ($templateId !== null && $templateId !== '') {
             $template = config('docs.owner.enabled', false)
                 ? OwnerWriteGuard::findOrFailForOwner(
-                    DocTemplate::class,
+                    app(TemplateRelationModel::class)->template(),
                     $templateId,
                     owner: $this->resolveOwner(),
                     includeGlobal: (bool) config('docs.owner.include_global', false),
@@ -825,7 +828,7 @@ final class DocService
                 )
                 : $query->find($templateId);
 
-            if (! $template instanceof DocTemplate || $template->doc_type !== $docType) {
+            if ($template === null || $template->doc_type !== $docType) {
                 throw ValidationException::withMessages([
                     'doc_template_id' => __('Invalid template selection for this document type.'),
                 ]);
@@ -837,7 +840,7 @@ final class DocService
         if ($templateSlug !== null && $templateSlug !== '') {
             $template = $query->where('slug', $templateSlug)->first();
 
-            if (! $template instanceof DocTemplate) {
+            if ($template === null) {
                 throw ValidationException::withMessages([
                     'template_slug' => __('Invalid template selection for this document type.'),
                 ]);
@@ -866,11 +869,11 @@ final class DocService
     /**
      * Get template query builder with owner scoping applied.
      *
-     * @return Builder<DocTemplate>
+     * @return Builder<RelatedDocTemplate>
      */
     protected function getTemplateQuery(): Builder
     {
-        $query = DocTemplate::query();
+        $query = app(TemplateRelationModel::class)->template()::query();
 
         if (! config('docs.owner.enabled', false)) {
             return $query;

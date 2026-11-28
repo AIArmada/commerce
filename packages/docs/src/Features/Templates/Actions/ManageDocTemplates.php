@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentTemplates;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 

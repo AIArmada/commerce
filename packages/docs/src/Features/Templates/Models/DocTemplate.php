@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Templates\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -10,6 +10,8 @@ use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Docs\Database\Factories\DocTemplateFactory;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +41,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 final class DocTemplate extends Model implements Auditable
 {
     use HasCommerceAudit;
+    /** @use HasFactory<DocTemplateFactory> */
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -57,6 +60,11 @@ final class DocTemplate extends Model implements Auditable
         'layout',
         'settings',
     ];
+
+    protected static function newFactory(): DocTemplateFactory
+    {
+        return DocTemplateFactory::new();
+    }
 
     public function getTable(): string
     {

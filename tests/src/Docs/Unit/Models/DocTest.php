@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables;
 
 use AIArmada\Docs\Contracts\DocumentTemplates;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;

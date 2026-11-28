@@ -14,7 +14,7 @@ use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Contracts\DocumentTemplates;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;

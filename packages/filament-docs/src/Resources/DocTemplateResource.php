@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\CreateDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\EditDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\ListDocTemplates;

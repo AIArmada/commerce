@@ -14,17 +14,19 @@ use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
+/** @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate */
 final class DocRenderService
 {
     public function __construct(
@@ -37,7 +39,8 @@ final class DocRenderService
         return $this->renderWithTemplate($doc, $audience, $this->resolveTemplate($doc));
     }
 
-    private function renderWithTemplate(Doc $doc, RenderAudience $audience, ?DocTemplate $template): HtmlString
+    /** @param RelatedDocTemplate|null $template */
+    private function renderWithTemplate(Doc $doc, RenderAudience $audience, ?Model $template): HtmlString
     {
         $doc->loadMissing('docable');
 
@@ -131,7 +134,8 @@ final class DocRenderService
         return [$html, $options, $fingerprint];
     }
 
-    public function validateDocPayload(DocTemplate $template, ?array $body, array $items): void
+    /** @param RelatedDocTemplate $template */
+    public function validateDocPayload(Model $template, ?array $body, array $items): void
     {
         $layout = $template->layout ?? [];
         $usesBody = TemplateBlockRegistry::hasBlock($layout, DocTemplateBlockType::RichBody);
@@ -150,7 +154,8 @@ final class DocRenderService
         }
     }
 
-    private function resolvePdfOptions(Doc $doc, ?DocTemplate $template): PdfRenderOptions
+    /** @param RelatedDocTemplate|null $template */
+    private function resolvePdfOptions(Doc $doc, ?Model $template): PdfRenderOptions
     {
         $defaults = [
             'format' => (string) config('docs.pdf.format', 'a4'),
@@ -413,7 +418,8 @@ final class DocRenderService
         return "<footer class=\"doc-footer\">{$text}</footer>";
     }
 
-    private function resolveTemplate(Doc $doc): ?DocTemplate
+    /** @return RelatedDocTemplate|null */
+    private function resolveTemplate(Doc $doc): ?Model
     {
         if ($doc->doc_template_id !== null) {
             return $this->templateQueryForDoc($doc)->where('doc_type', $doc->doc_type)->whereKey($doc->doc_template_id)->first();
@@ -426,11 +432,11 @@ final class DocRenderService
     }
 
     /**
-     * @return Builder<DocTemplate>
+     * @return Builder<RelatedDocTemplate>
      */
     private function templateQueryForDoc(Doc $doc): Builder
     {
-        $query = DocTemplate::query();
+        $query = app(TemplateRelationModel::class)->template()::query();
 
         if (! config('docs.owner.enabled', false)) {
             return $query;

@@ -29,7 +29,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\DocStatusHistory;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant as GrowthVariant;

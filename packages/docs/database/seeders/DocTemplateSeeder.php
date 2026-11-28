@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Database\Seeders;
 
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Database\Seeder;
 

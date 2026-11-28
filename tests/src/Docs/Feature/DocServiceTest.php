@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;

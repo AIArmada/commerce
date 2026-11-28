@@ -31,7 +31,7 @@ Layouts are validated by `TemplateBlockRegistry` before save and again before re
 ## Creating Templates
 
 ```php
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 
 $template = DocTemplate::create([
