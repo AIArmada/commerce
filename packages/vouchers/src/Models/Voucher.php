@@ -75,10 +75,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read string|null $owner_display_name
  * @property-read int|null $remaining_uses
  * @property-read string $value_label
- * @property-read int $wallet_entries_count
- * @property-read int $wallet_claimed_count
- * @property-read int $wallet_redeemed_count
- * @property-read int $wallet_available_count
  * @property-read Model|null $promotion
  */
 class Voucher extends Model implements Auditable
@@ -495,46 +491,6 @@ class Voucher extends Model implements Auditable
         $currency = (string) ($this->getAttribute('currency') ?? config('vouchers.default_currency', 'MYR'));
 
         return MoneyFormatter::formatMinor($value, $currency);
-    }
-
-    /**
-     * Get the total number of wallet entries for this voucher.
-     */
-    public function getWalletEntriesCountAttribute(): int
-    {
-        $count = $this->attributes['wallet_entries_count'] ?? null;
-
-        return $count !== null ? (int) $count : $this->walletEntries()->count();
-    }
-
-    /**
-     * Get the number of claimed wallet entries.
-     */
-    public function getWalletClaimedCountAttribute(): int
-    {
-        $count = $this->attributes['wallet_claimed_count'] ?? null;
-
-        return $count !== null ? (int) $count : $this->walletEntries()->whereNotNull('claimed_at')->count();
-    }
-
-    /**
-     * Get the number of redeemed wallet entries.
-     */
-    public function getWalletRedeemedCountAttribute(): int
-    {
-        $count = $this->attributes['wallet_redeemed_count'] ?? null;
-
-        return $count !== null ? (int) $count : $this->walletEntries()->whereNotNull('redeemed_at')->count();
-    }
-
-    /**
-     * Get the number of available (not redeemed) wallet entries.
-     */
-    public function getWalletAvailableCountAttribute(): int
-    {
-        $count = $this->attributes['wallet_available_count'] ?? null;
-
-        return $count !== null ? (int) $count : $this->walletEntries()->whereNull('redeemed_at')->count();
     }
 
     public function getPromotionSourceIdAttribute(): ?string

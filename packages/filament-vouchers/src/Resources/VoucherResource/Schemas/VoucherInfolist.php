@@ -10,6 +10,7 @@ use AIArmada\FilamentAffiliates\Features\Programs\Api\ProgramAdminLinks;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\TextEntry;
@@ -252,30 +253,40 @@ final class VoucherInfolist
 
         $components[] = Section::make('Wallet Statistics')
             ->description('Vouchers saved to user wallets for future use')
-            ->schema([
-                Grid::make(4)
-                    ->schema([
-                        TextEntry::make('wallet_entries_count')
-                            ->label('Total in Wallets')
-                            ->badge()
-                            ->color('primary'),
+            ->schema(static function (?Voucher $record = null): array {
+                $counts = $record === null
+                    ? ['total' => 0, 'available' => 0, 'claimed' => 0, 'redeemed' => 0]
+                    : app(WalletStatistics::class)->forVoucher((string) $record->getKey());
 
-                        TextEntry::make('wallet_available_count')
-                            ->label('Available')
-                            ->badge()
-                            ->color('success'),
+                return [
+                    Grid::make(4)
+                        ->schema([
+                            TextEntry::make('wallet_entries_count')
+                                ->label('Total in Wallets')
+                                ->state($counts['total'])
+                                ->badge()
+                                ->color('primary'),
 
-                        TextEntry::make('wallet_claimed_count')
-                            ->label('Claimed')
-                            ->badge()
-                            ->color('warning'),
+                            TextEntry::make('wallet_available_count')
+                                ->label('Available')
+                                ->state($counts['available'])
+                                ->badge()
+                                ->color('success'),
 
-                        TextEntry::make('wallet_redeemed_count')
-                            ->label('Redeemed')
-                            ->badge()
-                            ->color('danger'),
-                    ]),
-            ]);
+                            TextEntry::make('wallet_claimed_count')
+                                ->label('Claimed')
+                                ->state($counts['claimed'])
+                                ->badge()
+                                ->color('warning'),
+
+                            TextEntry::make('wallet_redeemed_count')
+                                ->label('Redeemed')
+                                ->state($counts['redeemed'])
+                                ->badge()
+                                ->color('danger'),
+                        ]),
+                ];
+            });
 
         $components[] = Section::make('Description')
             ->schema([
