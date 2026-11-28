@@ -22,11 +22,10 @@ final class TransferOrganizationOwnershipAction
 
     public function handle(Organization $organization, Model $actor, Model $newOwner): Organization
     {
-        app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
-
         if ($actor->is($newOwner)) {
             return DB::transaction(function () use ($actor, $organization): Organization {
                 $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+                app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
 
                 $owners = $organization->ownerMember()->lockForUpdate()->get();
 
@@ -46,6 +45,7 @@ final class TransferOrganizationOwnershipAction
 
         return DB::transaction(function () use ($actor, $newOwner, $organization): Organization {
             $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+            app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
 
             $owners = $organization->ownerMember()->lockForUpdate()->get();
             $target = $organization->members()->lockForUpdate()->whereKey($newOwner->getKey())->first();
@@ -60,7 +60,7 @@ final class TransferOrganizationOwnershipAction
                 throw new RuntimeException('The new owner must already be an organization member.');
             }
 
-            if ($target->getMorphClass() !== $newOwner->getMorphClass()) {
+            if (! $newOwner->exists || ! $target->is($newOwner) || ! is_a($newOwner, $target::class)) {
                 throw new InvalidArgumentException('The new owner must use the organization member model.');
             }
 
