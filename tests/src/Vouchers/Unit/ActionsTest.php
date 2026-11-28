@@ -8,19 +8,19 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -388,9 +388,9 @@ describe('RecordVoucherUsage Action', function (): void {
             Money::MYR(500)
         );
 
-        expect($usage)->toBeInstanceOf(VoucherUsage::class)
-            ->and($usage->voucher_id)->toBe($voucher->id)
-            ->and($usage->discount_amount)->toBe(500)
+        expect($usage)->toBeInstanceOf(VoucherUsageData::class)
+            ->and($usage->voucherId)->toBe($voucher->id)
+            ->and($usage->discountAmount)->toBe(500)
             ->and($usage->currency)->toBe('MYR');
 
         $voucher->refresh();
@@ -429,14 +429,14 @@ describe('RecordVoucherUsage Action', function (): void {
             Money::MYR(1000),
             'mobile_app',
             ['order_id' => 'order-123'],
-            $user,
+            EloquentRecordReference::fromModel($user),
             'Applied during checkout'
         );
 
         expect($usage->channel)->toBe('mobile_app')
             ->and($usage->metadata)->toBe(['order_id' => 'order-123'])
-            ->and($usage->redeemed_by_type)->toBe('user')
-            ->and($usage->redeemed_by_id)->toBe('redeemer-123')
+            ->and($usage->redeemedByType)->toBe('user')
+            ->and($usage->redeemedById)->toBe('redeemer-123')
             ->and($usage->notes)->toBe('Applied during checkout');
     });
 
@@ -445,7 +445,7 @@ describe('RecordVoucherUsage Action', function (): void {
         $action->handle('NON-EXISTENT-USAGE', Money::MYR(100));
     })->throws(VoucherNotFoundException::class);
 
-    it('accepts pre-loaded voucher model', function (): void {
+    it('accepts exact voucher identifier', function (): void {
         $voucher = Voucher::create([
             'code' => 'PRELOAD-USAGE',
             'name' => 'Preload Usage Voucher',
@@ -463,10 +463,10 @@ describe('RecordVoucherUsage Action', function (): void {
             null,
             null,
             null,
-            $voucher
+            $voucher->id
         );
 
-        expect($usage->voucher_id)->toBe($voucher->id);
+        expect($usage->voucherId)->toBe($voucher->id);
 
         $voucher->refresh();
         expect($voucher->applied_count)->toBe(5);

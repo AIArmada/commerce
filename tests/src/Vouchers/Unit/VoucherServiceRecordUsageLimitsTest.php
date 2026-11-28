@@ -52,6 +52,8 @@ it('enforces usage_limit_per_user during recordUsage', function (): void {
 
     $user = new class extends Model
     {
+        public $exists = true;
+
         protected $table = 'users';
 
         public function getMorphClass()

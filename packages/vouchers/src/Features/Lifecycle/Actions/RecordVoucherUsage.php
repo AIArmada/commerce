@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherUsageSnapshot;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
-use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -45,19 +46,15 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
         Money $discountAmount,
         ?string $channel = null,
         ?array $metadata = null,
-        ?Model $redeemedBy = null,
+        ?RecordReference $redeemedBy = null,
         ?string $notes = null,
-        ?VoucherModel $voucherModel = null
-    ): VoucherUsage {
-        if ($redeemedBy !== null && (string) $redeemedBy->getKey() === '') {
-            throw ValidationException::withMessages(['redeemed_by' => 'The redeemer must have an identity.']);
-        }
-
-        return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
+        ?string $voucherId = null
+    ): VoucherUsageData {
+        return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherId): VoucherUsageData {
             $query = $this->voucherQuery()->where('code', $this->normalizeCode($code));
 
-            if ($voucherModel !== null) {
-                $query->whereKey($voucherModel->getKey());
+            if ($voucherId !== null) {
+                $query->whereKey($voucherId);
             }
 
             $lockedVoucher = $query->lockForUpdate()->first();
@@ -72,9 +69,9 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
             $assignee = $this->resolveAssignee($lockedVoucher);
 
             if ($assignee !== null
-                && (! $redeemedBy instanceof Model
-                    || $redeemedBy->getMorphClass() !== $assignee['type']
-                    || (string) $redeemedBy->getKey() !== $assignee['id'])
+                && ($redeemedBy === null
+                    || $redeemedBy->type !== $assignee['type']
+                    || $redeemedBy->id !== $assignee['id'])
             ) {
                 throw InvalidVoucherException::assignedToAnother($lockedVoucher->code);
             }
@@ -88,8 +85,8 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                     ->first();
 
                 if ($existingUsage instanceof VoucherUsage) {
-                    $sameRedeemer = $existingUsage->redeemed_by_type === $redeemedBy?->getMorphClass()
-                        && (string) $existingUsage->redeemed_by_id === (string) $redeemedBy?->getKey();
+                    $sameRedeemer = $existingUsage->redeemed_by_type === $redeemedBy?->type
+                        && (string) $existingUsage->redeemed_by_id === (string) $redeemedBy?->id;
                     $sameAmount = (string) $existingUsage->discount_amount === (string) $discountAmount->getAmount();
                     $sameCurrency = mb_strtoupper($existingUsage->currency) === mb_strtoupper($discountAmount->getCurrency()->getCurrency());
 
@@ -101,7 +98,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                         ]);
                     }
 
-                    return $existingUsage;
+                    return VoucherUsageSnapshot::fromModel($existingUsage);
                 }
             }
             if ($lockedVoucher->isExpired() || $lockedVoucher->status instanceof Expired) {
@@ -146,8 +143,8 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
 
             if ($redeemedBy !== null && $lockedVoucher->usage_limit_per_user !== null) {
                 $currentUserUses = VoucherUsage::where('voucher_id', $lockedVoucher->id)
-                    ->where('redeemed_by_type', $redeemedBy->getMorphClass())
-                    ->where('redeemed_by_id', $redeemedBy->getKey())
+                    ->where('redeemed_by_type', $redeemedBy->type)
+                    ->where('redeemed_by_id', $redeemedBy->id)
                     ->count();
 
                 if ($currentUserUses >= $lockedVoucher->usage_limit_per_user) {
@@ -163,8 +160,8 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 'channel' => $channel ?? 'web',
                 'metadata' => $metadata,
                 'target_definition' => $lockedVoucher->target_definition,
-                'redeemed_by_type' => $redeemedBy?->getMorphClass(),
-                'redeemed_by_id' => $redeemedBy === null ? null : (string) $redeemedBy->getKey(),
+                'redeemed_by_type' => $redeemedBy?->type,
+                'redeemed_by_id' => $redeemedBy === null ? null : $redeemedBy->id,
                 'notes' => $notes,
                 'used_at' => CarbonImmutable::now(),
             ];
@@ -180,7 +177,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 );
 
             if (! $usage->wasRecentlyCreated) {
-                return $usage;
+                return VoucherUsageSnapshot::fromModel($usage);
             }
             if ($lockedVoucher->usage_limit !== null) {
                 $newUsageCount = $currentUses + 1;
@@ -190,9 +187,10 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 }
             }
 
-            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), VoucherUsageSnapshot::fromModel($usage)));
+            $snapshot = VoucherUsageSnapshot::fromModel($usage);
+            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), $snapshot));
 
-            return $usage;
+            return $snapshot;
         });
     }
 

@@ -8,6 +8,7 @@ declare(strict_types=1);
 // before. Usage recording also refuses expired/revoked vouchers, so an
 // unused revocation cannot be followed by a late use.
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
@@ -113,7 +114,7 @@ it('leaves unmarked commercial vouchers untouched by the assignee check', functi
     // Unattributed usage on an unmarked voucher still records.
     $usage = RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: ['idempotency_key' => 'open-1']);
 
-    expect($usage->redeemed_by_id)->toBeNull();
+    expect($usage->redeemedById)->toBeNull();
 });
 
 it('records usage on assigned vouchers only for the assignee', function (): void {
@@ -125,7 +126,7 @@ it('records usage on assigned vouchers only for the assignee', function (): void
         $voucher->code,
         Money::MYR(100),
         metadata: ['idempotency_key' => 'forbid-1'],
-        redeemedBy: $stranger,
+        redeemedBy: EloquentRecordReference::fromModel($stranger),
     ))->toThrow(InvalidVoucherException::class, 'another account');
 
     expect(fn () => RecordVoucherUsage::run(
@@ -140,10 +141,10 @@ it('records usage on assigned vouchers only for the assignee', function (): void
         $voucher->code,
         Money::MYR(100),
         metadata: ['idempotency_key' => 'allow-1'],
-        redeemedBy: $assignee,
+        redeemedBy: EloquentRecordReference::fromModel($assignee),
     );
 
-    expect((string) $usage->redeemed_by_id)->toBe((string) $assignee->getKey());
+    expect((string) $usage->redeemedById)->toBe((string) $assignee->getKey());
 });
 
 it('refuses usage on expired and revoked vouchers', function (): void {
@@ -217,13 +218,13 @@ it('rejects an idempotency key replayed for a different redeemer', function (): 
     $secondRedeemer = assigneeUser();
     $metadata = ['idempotency_key' => 'same-redemption-key'];
 
-    RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: $metadata, redeemedBy: $firstRedeemer);
+    RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: $metadata, redeemedBy: EloquentRecordReference::fromModel($firstRedeemer));
 
     expect(fn () => RecordVoucherUsage::run(
         $voucher->code,
         Money::MYR(100),
         metadata: $metadata,
-        redeemedBy: $secondRedeemer,
+        redeemedBy: EloquentRecordReference::fromModel($secondRedeemer),
     ))->toThrow(ValidationException::class);
 });
 

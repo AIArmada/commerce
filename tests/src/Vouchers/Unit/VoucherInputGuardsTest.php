@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
@@ -228,7 +229,7 @@ describe('usage recording guards', function (): void {
         $first = guardVoucher();
         $second = guardVoucher();
 
-        expect(fn () => RecordVoucherUsage::run($first->code, Money::MYR(100), voucherModel: $second))
+        expect(fn () => RecordVoucherUsage::run($first->code, Money::MYR(100), voucherId: $second->id))
             ->toThrow(VoucherNotFoundException::class);
 
         expect(VoucherUsage::query()->whereIn('voucher_id', [$first->id, $second->id])->count())->toBe(0);
@@ -238,7 +239,7 @@ describe('usage recording guards', function (): void {
         $voucher = guardVoucher(['usage_limit_per_user' => 0]);
         $user = guardWalletUser();
 
-        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: $user))
+        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: EloquentRecordReference::fromModel($user)))
             ->toThrow(VoucherUsageLimitException::class);
     });
 
@@ -254,8 +255,8 @@ describe('usage recording guards', function (): void {
     it('rejects an identified redemption without a redeemer key', function (): void {
         $voucher = guardVoucher(['usage_limit_per_user' => 1]);
 
-        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: new GuardWalletUser))
-            ->toThrow(ValidationException::class);
+        expect(fn () => app(VoucherService::class)->recordUsage($voucher->code, Money::MYR(100), redeemedBy: new GuardWalletUser))
+            ->toThrow(InvalidArgumentException::class);
 
         expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(0);
     });

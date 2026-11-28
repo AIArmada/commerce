@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
-use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 final class RedeemVoucher implements VoucherRedemption
@@ -32,7 +32,7 @@ final class RedeemVoucher implements VoucherRedemption
         Money $discountAmount,
         ?string $reference = null,
         ?array $metadata = null,
-        ?Model $redeemedBy = null,
+        ?RecordReference $redeemedBy = null,
         ?string $notes = null
     ): void {
         $voucher = $this->voucherQuery()
@@ -57,7 +57,7 @@ final class RedeemVoucher implements VoucherRedemption
             metadata: array_merge($metadata ?? [], ['reference' => $reference]),
             redeemedBy: $redeemedBy,
             notes: $notes,
-            voucherModel: $voucher
+            voucherId: $voucher->id
         );
     }
 
@@ -81,7 +81,9 @@ final class RedeemVoucher implements VoucherRedemption
             : VoucherType::tryFrom((string) $voucher->type);
 
         $order = $this->resolveOrder($orderId);
-        $redeemedBy = $order?->customer;
+        $redeemedBy = $order !== null && $order->customer_type !== null && $order->customer_id !== null
+            ? new RecordReference((string) $order->customer_type, (string) $order->customer_id)
+            : null;
 
         // Calculate the discount amount based on voucher type
         $discount = $discountAmount ?? match ($voucherType) {
@@ -120,7 +122,7 @@ final class RedeemVoucher implements VoucherRedemption
             channel: 'checkout',
             metadata: $metadata,
             redeemedBy: $redeemedBy,
-            voucherModel: $voucher
+            voucherId: $voucher->id
         );
     }
 

@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use Akaunting\Money\Money;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -85,9 +86,9 @@ final class ManualRedeemVoucherAction extends Action
                 discountAmount: $discount,
                 channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
                 metadata: ['manual_by' => $user?->id, 'reference' => $data['reference'] ?? null],
-                redeemedBy: $user,
+                redeemedBy: EloquentRecordReference::fromModel($user),
                 notes: $data['notes'] ?? null,
-                voucherModel: $record,
+                voucherId: $record->id,
             );
 
             Notification::make()

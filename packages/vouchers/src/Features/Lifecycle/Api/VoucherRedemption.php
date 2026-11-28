@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Runtime;
+namespace AIArmada\Vouchers\Features\Lifecycle\Api;
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Model;
 
 interface VoucherRedemption
 {
@@ -15,7 +15,7 @@ interface VoucherRedemption
         Money $discountAmount,
         ?string $reference = null,
         ?array $metadata = null,
-        ?Model $redeemedBy = null,
+        ?RecordReference $redeemedBy = null,
         ?string $notes = null,
     ): void;
 

@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Runtime;
+namespace AIArmada\Vouchers\Features\Lifecycle\Api;
 
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Model;
 
 interface VoucherUsageRecorder
 {
@@ -17,8 +16,8 @@ interface VoucherUsageRecorder
         Money $discountAmount,
         ?string $channel = null,
         ?array $metadata = null,
-        ?Model $redeemedBy = null,
+        ?RecordReference $redeemedBy = null,
         ?string $notes = null,
-        ?Voucher $voucherModel = null,
-    ): VoucherUsage;
+        ?string $voucherId = null,
+    ): VoucherUsageData;
 }
