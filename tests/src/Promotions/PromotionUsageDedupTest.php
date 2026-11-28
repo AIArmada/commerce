@@ -48,6 +48,8 @@ function persistedOrderWithPromotion(User $owner, Promotion $promotion, mixed $a
             'metadata' => ['checkout_session_id' => $session->id],
         ]);
         $order->save();
+        $session->order_id = (string) $order->getKey();
+        $session->save();
 
         return $order;
     });
@@ -130,3 +132,26 @@ it('does not consume promotion usage for an invalid allocated amount', function 
     expect($promotion->fresh()->usage_count)->toBe(0)
         ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
 })->with([0, -1, '1000', null, 1.5, true]);
+
+it('rejects checkout allocations from another order belonging to the same owner', function (): void {
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $original = persistedOrderWithPromotion($owner, $promotion);
+    $other = persistedOrderWithPromotion($owner, $promotion);
+
+    OwnerContext::withOwner($owner, function () use ($other, $original): void {
+        $other->metadata = ['checkout_session_id' => $original->metadata['checkout_session_id']];
+        $other->save();
+    });
+
+    $action = app(RecordPromotionFulfillmentUsage::class);
+    $action->handle($other, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($other->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+
+    $action->handle($original, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(1)
+        ->and($original->fresh()->metadata['promotions_usage_counted'])->toBe([$promotion->id]);
+});

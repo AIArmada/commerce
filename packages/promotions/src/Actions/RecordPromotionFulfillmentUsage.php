@@ -48,6 +48,15 @@ final readonly class RecordPromotionFulfillmentUsage
             return;
         }
 
+        if ($session->order_id !== (string) $order->getKey()) {
+            $this->skip('checkout session is not linked to the order', [
+                'order_id' => $order->getKey(),
+                'session_id' => $sessionId,
+            ]);
+
+            return;
+        }
+
         $allocations = $session->discount_data['allocations'] ?? [];
 
         if (! is_array($allocations) || $allocations === []) {

@@ -109,6 +109,8 @@ function orderWithPromotion(User $owner, Promotion $promotion): Order
         'metadata' => ['checkout_session_id' => $session->id],
     ]);
     OwnerContext::withOwner($owner, static fn (): mixed => $order->save());
+    $session->order_id = (string) $order->getKey();
+    OwnerContext::withOwner($owner, static fn (): mixed => $session->save());
 
     return $order;
 }
