@@ -7,14 +7,15 @@ namespace AIArmada\References\Actions;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Models\Reference;
+use AIArmada\References\Persistence\ReferenceContributorLinks;
 use InvalidArgumentException;
-use RuntimeException;
 
 final readonly class SyncReferenceContributors
 {
     public function __construct(
         private LockReferenceForWrite $lock = new LockReferenceForWrite,
         private ValidateContributorIdentity $identity = new ValidateContributorIdentity,
+        private ReferenceContributorLinks $links = new ReferenceContributorLinks,
     ) {}
 
     /**
@@ -28,38 +29,30 @@ final readonly class SyncReferenceContributors
             throw new InvalidArgumentException('Unknown reference contributor role.');
         }
 
-        $contributorType = $this->identity->type($contributorType);
-
         if (! $reference->exists) {
             throw new InvalidArgumentException('Contributors can only be synced on a persisted reference.');
         }
 
-        $wanted = [];
-
-        foreach ($contributorIds as $contributorId) {
-            $id = mb_trim($contributorId);
-
-            if ($id === '') {
-                continue;
-            }
-
-            $wanted[$this->identity->id($id)] = true;
-        }
-
-        $reference->getConnection()->transaction(function () use ($reference, $role, $contributorType, $wanted): void {
+        $reference->getConnection()->transaction(function () use ($reference, $role, $contributorType, $contributorIds): void {
             $locked = $this->lock->handle($reference);
 
             if ($role === ReferenceContributorRole::Author && $locked->record_kind !== ReferenceRecordKind::Work) {
                 throw new InvalidArgumentException('Authors can only be stored on works; editions and parts inherit them.');
             }
 
+            $targets = $this->identity->canonicalizeTargets(
+                $contributorType,
+                array_values(array_filter($contributorIds, static fn (string $id): bool => mb_trim($id) !== '')),
+            );
+            $wanted = array_fill_keys($targets['ids'], true);
             $existing = $locked->contributorsForRole($role)->get();
+            $remove = [];
 
             foreach ($existing as $contributor) {
-                if ($contributor->contributor_type !== $contributorType || ! isset($wanted[$contributor->contributor_id])) {
-                    if (! $contributor->delete()) {
-                        throw new RuntimeException('Contributor deletion was cancelled.');
-                    }
+                $id = mb_strtolower((string) $contributor->getKey());
+
+                if ($contributor->contributor_type !== $targets['type'] || ! isset($wanted[$contributor->contributor_id])) {
+                    $remove[] = $id;
 
                     continue;
                 }
@@ -67,17 +60,8 @@ final readonly class SyncReferenceContributors
                 unset($wanted[$contributor->contributor_id]);
             }
 
-            foreach (array_keys($wanted) as $id) {
-                $contributor = $locked->contributors()->create([
-                    'contributor_type' => $contributorType,
-                    'contributor_id' => $id,
-                    'role' => $role,
-                ]);
-
-                if (! $contributor->exists) {
-                    throw new RuntimeException('Contributor creation was cancelled.');
-                }
-            }
+            $this->links->deleteIds($locked, $remove);
+            $this->links->insertIds($locked, $role, $targets['type'], array_keys($wanted));
         });
 
         $reference->unsetRelation('contributors');

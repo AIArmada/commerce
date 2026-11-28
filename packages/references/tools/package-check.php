@@ -40,12 +40,24 @@ if ($unknownOptions !== []) {
 }
 
 $options = getopt('', ['root:', 'json', 'diff-base:']);
-$root = realpath($options['root'] ?? dirname(__DIR__));
-$autoload = $root === false ? null : $root . '/vendor/autoload.php';
-if ($root !== false && ! is_file($autoload)) {
-    $autoload = dirname($root, 2) . '/vendor/autoload.php';
+$packageRoot = realpath(__DIR__ . '/..');
+$rootOption = $options['root'] ?? null;
+$root = is_string($rootOption) && $rootOption !== '' ? realpath($rootOption) : $packageRoot;
+if ($root === false || $packageRoot === false) {
+    fwrite(STDERR, "Unable to resolve the package root.\n");
+    exit(2);
 }
-if ($autoload === null || ! is_file($autoload)) {
+
+$autoload = null;
+foreach ([$root . '/vendor/autoload.php', $packageRoot . '/vendor/autoload.php', dirname($packageRoot, 2) . '/vendor/autoload.php'] as $candidate) {
+    if (is_file($candidate)) {
+        $autoload = $candidate;
+
+        break;
+    }
+}
+
+if ($autoload === null) {
     fwrite(STDERR, "Run composer install (including dev dependencies) first.\n");
     exit(2);
 }
@@ -60,15 +72,43 @@ if (! class_exists(ParserFactory::class)) {
 $diffBase = is_string($options['diff-base'] ?? null) ? mb_trim($options['diff-base']) : null;
 $changedFiles = null;
 if ($diffBase !== null && $diffBase !== '') {
-    $cmd = sprintf('git -C %s diff --name-only --diff-filter=ACMRT %s 2>/dev/null', escapeshellarg($root), escapeshellarg($diffBase));
+    $gitRoot = [];
+    $gitRootCode = 0;
+    exec(sprintf('git -C %s rev-parse --show-toplevel 2>/dev/null', escapeshellarg($root)), $gitRoot, $gitRootCode);
+
+    if ($gitRootCode !== 0 || $gitRoot === []) {
+        fwrite(STDERR, "Unable to resolve the git root for '{$root}'.\n");
+        exit(2);
+    }
+
+    $gitRootPath = str_replace('\\', '/', mb_trim($gitRoot[0]));
+    $packagePath = str_replace('\\', '/', $root);
+    $packageRelative = mb_trim(mb_substr($packagePath, mb_strlen($gitRootPath)), '/');
+
     $out = [];
     $code = 0;
-    exec($cmd, $out, $code);
+    exec(sprintf('git -C %s diff --name-only --diff-filter=ACMRT %s 2>/dev/null', escapeshellarg($gitRootPath), escapeshellarg($diffBase)), $out, $code);
+
     if ($code !== 0) {
         fwrite(STDERR, "Unable to compute git diff against '{$diffBase}'.\n");
         exit(2);
     }
-    $changedFiles = array_flip(array_map(static fn (string $p): string => str_replace('\\', '/', mb_trim($p)), $out));
+
+    $changedFiles = [];
+
+    foreach ($out as $path) {
+        $path = str_replace('\\', '/', mb_trim($path));
+
+        if ($packageRelative !== '') {
+            if (! str_starts_with($path, $packageRelative . '/')) {
+                continue;
+            }
+
+            $path = mb_substr($path, mb_strlen($packageRelative) + 1);
+        }
+
+        $changedFiles[$path] = true;
+    }
 }
 
 $findings = [];
@@ -92,15 +132,23 @@ try {
         || ! in_array($config['layout'] ?? null, ['single', 'modular'], true)
         || ! is_string($config['namespace'] ?? null)
         || mb_trim($config['namespace']) === ''
-        || ! is_array($config['exceptions'] ?? null)) {
+        || ! is_string($config['sourceDir'] ?? null)
+        || mb_trim($config['sourceDir']) === ''
+        || ! is_array($config['exceptions'] ?? null)
+        || (isset($config['antiSlop']) && ! is_array($config['antiSlop']))) {
         throw new RuntimeException('Invalid tools/architecture.json package schema.');
+    }
+
+    $sourceDir = mb_trim($config['sourceDir'], '/');
+
+    if (! is_dir($root . '/' . $sourceDir)) {
+        throw new RuntimeException("Configured sourceDir '{$sourceDir}' does not exist.");
     }
 
     $layout = $config['layout'];
     $pkgNs = mb_trim($config['namespace'], '\\');
     $pkgPrefix = $pkgNs . '\\';
-    $sourceDir = mb_trim((string) ($config['sourceDir'] ?? 'src'), '/');
-    $antiSlop = is_array($config['antiSlop'] ?? null) ? $config['antiSlop'] : [];
+    $antiSlop = $config['antiSlop'] ?? [];
 
     $features = [];
     $owners = [];
@@ -162,7 +210,9 @@ try {
         $sourceFeature = ($layout === 'modular' && $inSrc && preg_match('~^Features/([^/]+)/~', $srcRel, $m)) ? $m[1] : null;
         $isFeatureApi = $sourceFeature !== null && str_contains($srcRel, '/Api/');
         $isPublicContract = $isContractOrData || $isFeatureApi;
-        $isFeatureModel = $sourceFeature !== null && str_contains($srcRel, '/Models/');
+        $isModel = $inSrc && ($layout === 'modular'
+            ? preg_match('~^Features/[^/]+/Models/~', $srcRel) === 1
+            : str_starts_with($srcRel, 'Models/'));
         $applyAntiSlop = ($changedFiles === null) || isset($changedFiles[$relative]) || $sourceFeature !== null || $isPlatform || $isContractOrData;
 
         $expectedClass = $inSrc
@@ -193,7 +243,7 @@ try {
                 );
             }
 
-            if ($isFeatureModel && $class instanceof Node\Stmt\Class_ && ! $class->isAbstract()) {
+            if ($isModel && $class instanceof Node\Stmt\Class_ && ! $class->isAbstract()) {
                 $hasTableOrGetter = false;
                 foreach ($class->getProperties() as $property) {
                     foreach ($property->props as $prop) {
@@ -249,13 +299,13 @@ try {
             }
 
             if ($isPublicContract) {
-                if (str_starts_with($target, 'Illuminate\\Database\\Eloquent\\') || str_starts_with($target, 'Illuminate\\Http\\')) {
+                if (str_starts_with($target, 'Illuminate\\')) {
                     $report(
                         'contract-leak',
                         $relative,
                         $line,
                         $target,
-                        'Public Contracts/Data/Api must not expose Eloquent or Illuminate\\Http runtime types. Use immutable DTOs, enums, or scalar IDs.'
+                        'Public Contracts/Data/Api must not expose Illuminate runtime types. Use immutable DTOs, enums, or scalar IDs.'
                     );
                 }
                 if (str_starts_with($target, $pkgPrefix)

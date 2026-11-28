@@ -51,7 +51,7 @@ return new class extends Migration
             $table->foreignUuid('reference_id')->index();
             $table->string('contributor_type');
             $table->foreignUuid('contributor_id');
-            $table->string('role', 20)->default('author')->index();
+            $table->string('role', 20)->index();
             $table->timestampsTz();
 
             $table->unique(['reference_id', 'role', 'contributor_type', 'contributor_id'], 'reference_contributors_identity_unique');

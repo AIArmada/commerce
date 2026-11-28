@@ -11,6 +11,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
+use RuntimeException;
 
 /** @implements Rule<Node\Expr> */
 final class PackageOwnedWriteRule implements Rule
@@ -21,30 +22,56 @@ final class PackageOwnedWriteRule implements Rule
 
     private string $pkgNs = '';
 
+    private string $projectRoot;
+
     /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
     private array $catalog = ['features' => [], 'owners' => [], 'writes' => [], 'extensions' => []];
 
-    public function __construct(private readonly string $projectRoot)
+    public function __construct()
     {
-        $cfgPath = mb_rtrim($projectRoot, '/') . '/tools/architecture.json';
-        if (is_file($cfgPath)) {
-            $cfg = json_decode((string) file_get_contents($cfgPath), true);
-            if (is_array($cfg)) {
-                $this->layout = ($cfg['layout'] ?? 'single') === 'modular' ? 'modular' : 'single';
-                $this->sourceDir = mb_trim((string) ($cfg['sourceDir'] ?? 'src'), '/');
-                $this->pkgNs = mb_trim((string) ($cfg['namespace'] ?? ''), '\\');
-            }
+        $this->projectRoot = dirname(__DIR__, 2);
+        $cfgPath = $this->projectRoot . '/tools/architecture.json';
+
+        if (! is_file($cfgPath)) {
+            throw new RuntimeException("Missing {$cfgPath}.");
         }
 
-        if ($this->layout === 'modular' && $this->pkgNs !== '') {
+        $cfg = json_decode((string) file_get_contents($cfgPath), true, 512, JSON_THROW_ON_ERROR);
+
+        if (! is_array($cfg)
+            || ($cfg['schema'] ?? null) !== 1
+            || ($cfg['kind'] ?? null) !== 'package'
+            || ! in_array($cfg['layout'] ?? null, ['single', 'modular'], true)
+            || ! is_string($cfg['namespace'] ?? null)
+            || mb_trim($cfg['namespace']) === ''
+            || ! is_string($cfg['sourceDir'] ?? null)
+            || mb_trim($cfg['sourceDir']) === ''
+            || ! is_array($cfg['exceptions'] ?? null)
+            || (isset($cfg['antiSlop']) && ! is_array($cfg['antiSlop']))) {
+            throw new RuntimeException('Invalid tools/architecture.json package schema.');
+        }
+
+        $this->layout = $cfg['layout'];
+        $this->sourceDir = mb_trim($cfg['sourceDir'], '/');
+        $this->pkgNs = mb_trim($cfg['namespace'], '\\');
+
+        if (! is_dir($this->projectRoot . '/' . $this->sourceDir)) {
+            throw new RuntimeException("Configured sourceDir '{$this->sourceDir}' does not exist.");
+        }
+
+        if ($this->layout === 'modular') {
             $catalogClass = $this->pkgNs . '\\Platform\\FeatureCatalog';
-            $catalogFile = mb_rtrim($projectRoot, '/') . '/' . $this->sourceDir . '/Platform/FeatureCatalog.php';
+            $catalogFile = $this->projectRoot . '/' . $this->sourceDir . '/Platform/FeatureCatalog.php';
+
             if (! class_exists($catalogClass) && is_file($catalogFile)) {
                 require_once $catalogFile;
             }
-            if (class_exists($catalogClass)) {
-                $this->catalog = $catalogClass::scan($projectRoot, $this->pkgNs, $this->sourceDir);
+
+            if (! class_exists($catalogClass)) {
+                throw new RuntimeException("Modular layout requires {$catalogClass} at {$this->sourceDir}/Platform/FeatureCatalog.php.");
             }
+
+            $this->catalog = $catalogClass::scan($this->projectRoot, $this->pkgNs, $this->sourceDir);
         }
     }
 
@@ -67,15 +94,16 @@ final class PackageOwnedWriteRule implements Rule
 
         $method = mb_strtolower($node->name->toString());
         $type = $node instanceof Node\Expr\StaticCall
-            ? ($node->class instanceof Node\Name ? new ObjectType($scope->resolveName($node->class)) : $scope->getType($node->class))
+            ? $this->resolveStaticCallType($node, $scope)
             : $scope->getType($node->var);
 
         $dbMethods = [
-            'save', 'savequietly', 'saveorfail', 'push', 'pushquietly',
+            'save', 'savequietly', 'saveorfail', 'saveorignore', 'push', 'pushquietly',
             'create', 'createquietly', 'forcecreate', 'forcecreatequietly',
-            'update', 'updatequietly', 'updateorcreate', 'firstorcreate', 'createorfirst',
-            'delete', 'deletequietly', 'destroy', 'forcedestroy', 'forcedelete', 'restore',
-            'increment', 'decrement', 'touch', 'insert', 'insertgetid', 'insertorignore', 'upsert', 'truncate',
+            'update', 'updatequietly', 'updateorfail', 'updateorcreate', 'firstorcreate', 'createorfirst',
+            'updateorinsert', 'insertorignore', 'insertusing',
+            'delete', 'deletequietly', 'deleteorfail', 'destroy', 'forcedestroy', 'forcedelete', 'restore',
+            'increment', 'decrement', 'touch', 'insert', 'insertgetid', 'upsert', 'truncate',
             'attach', 'detach', 'sync', 'syncwithoutdetaching', 'toggle', 'statement', 'unprepared', 'affectingstatement',
         ];
         $storeMethods = [
@@ -107,7 +135,13 @@ final class PackageOwnedWriteRule implements Rule
         }
 
         $file = str_replace('\\', '/', $scope->getFile());
-        $relative = mb_ltrim(mb_substr($file, mb_strlen(str_replace('\\', '/', $this->projectRoot))), '/');
+        $root = str_replace('\\', '/', $this->projectRoot);
+
+        if (! str_starts_with($file, $root . '/')) {
+            return [];
+        }
+
+        $relative = mb_substr($file, mb_strlen($root) + 1);
 
         if (! str_starts_with($relative, $this->sourceDir . '/') || str_contains($relative, '/Database/Migrations/')) {
             return [];
@@ -169,6 +203,30 @@ final class PackageOwnedWriteRule implements Rule
         }
 
         return [];
+    }
+
+    private function resolveStaticCallType(Node\Expr\StaticCall $node, Scope $scope): Type
+    {
+        if (! $node->class instanceof Node\Name) {
+            return $scope->getType($node->class);
+        }
+
+        $name = mb_strtolower($node->class->toString());
+        $class = $scope->getClassReflection();
+
+        if ($class !== null && in_array($name, ['self', 'static'], true)) {
+            return new ObjectType($class->getName());
+        }
+
+        if ($class !== null && $name === 'parent') {
+            $parent = $class->getParentClass();
+
+            if ($parent !== null) {
+                return new ObjectType($parent->getName());
+            }
+        }
+
+        return new ObjectType($scope->resolveName($node->class));
     }
 
     /** @param list<string> $bases */

@@ -54,6 +54,7 @@ jobs:
               - 'packages/filament-engagement/**'
               - 'packages/filament-contacting/**'
               - 'packages/filament-feedback/**'
+              - 'packages/references/**'
               - '.github/workflows/ci.yml'
             tests:
               - '**/*.php'

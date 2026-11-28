@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Actions\SyncReferenceContributors;
+use AIArmada\References\Actions\ValidateContributorIdentity;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
@@ -12,7 +13,17 @@ use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+
+final class ReferenceConstructorTrap extends Model
+{
+    public function __construct(array $attributes = [])
+    {
+        throw new RuntimeException('Contributor type canonicalization executed the model constructor.');
+    }
+}
 
 beforeEach(function (): void {
     config()->set('references.owner.enabled', true);
@@ -300,4 +311,116 @@ test('direct contributor writes cannot bypass reference owner authorization', fu
     )))->toThrow(AuthorizationException::class);
 
     expect(OwnerContext::withOwner($owner, fn (): int => $work->contributors()->count()))->toBe(1);
+});
+
+test('direct contributor writes require an explicit role even when events are suppressed', function (): void {
+    $author = makeContributorUser('contrib-role-required@example.test');
+    $work = makeWork();
+    $edition = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Role Required Edition',
+        'record_kind' => ReferenceRecordKind::Edition,
+        'parent_id' => $work->getKey(),
+        'edition_number' => 1,
+    ]);
+
+    $missingRole = new ReferenceContributor([
+        'contributor_type' => $author->getMorphClass(),
+        'contributor_id' => $author->getKey(),
+    ]);
+    $missingRole->reference_id = $edition->getKey();
+
+    expect(fn (): bool => $missingRole->save())
+        ->toThrow(InvalidArgumentException::class, 'role');
+
+    $quietAuthor = new ReferenceContributor([
+        'contributor_type' => $author->getMorphClass(),
+        'contributor_id' => $author->getKey(),
+        'role' => ReferenceContributorRole::Author,
+    ]);
+    $quietAuthor->reference_id = $edition->getKey();
+
+    expect(fn (): bool => $quietAuthor->saveQuietly())
+        ->toThrow(InvalidArgumentException::class, 'works');
+
+    expect(ReferenceContributor::query()->count())->toBe(0);
+});
+
+test('owner-scoped contributor targets must be visible in the current scope', function (): void {
+    $ownerA = makeContributorUser('contributor-scope-a@example.test');
+    $ownerB = makeContributorUser('contributor-scope-b@example.test');
+
+    $work = OwnerContext::withOwner($ownerA, fn (): Reference => makeWork('Scoped Contributor Work'));
+    $foreignTarget = OwnerContext::withOwner($ownerB, fn (): Reference => makeWork('Foreign Contributor Target'));
+    $localTarget = OwnerContext::withOwner($ownerA, fn (): Reference => makeWork('Local Contributor Target'));
+
+    $action = new SyncReferenceContributors;
+
+    expect(fn (): Reference => OwnerContext::withOwner($ownerA, fn (): Reference => $action->handle(
+        $work,
+        ReferenceContributorRole::Editor,
+        Reference::class,
+        [(string) $foreignTarget->getKey()],
+    )))->toThrow(InvalidArgumentException::class, 'outside the current owner scope');
+
+    OwnerContext::withOwner($ownerA, fn (): Reference => $action->handle(
+        $work,
+        ReferenceContributorRole::Editor,
+        Reference::class,
+        [(string) $localTarget->getKey()],
+    ));
+
+    expect(OwnerContext::withOwner($ownerA, fn (): array => $work->contributorsForRole(ReferenceContributorRole::Editor)->pluck('contributor_id')->all()))
+        ->toBe([(string) $localTarget->getKey()]);
+});
+
+test('sync keeps query counts bounded and independent of contributor count', function (): void {
+    $users = [];
+
+    foreach (range(1, 5) as $index) {
+        $users[] = makeContributorUser('contributor-bounded-' . $index . '@example.test');
+    }
+
+    $work = makeWork();
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    (new SyncReferenceContributors)->handle(
+        $work,
+        ReferenceContributorRole::Editor,
+        User::class,
+        array_map(static fn (User $user): string => (string) $user->getKey(), $users),
+    );
+
+    $queries = collect(DB::getQueryLog());
+
+    expect($queries->count())->toBeLessThanOrEqual(6)
+        ->and($work->contributorsForRole(ReferenceContributorRole::Editor)->count())->toBe(5);
+});
+
+test('canonicalizes contributor types without executing model constructors', function (): void {
+    expect((new ValidateContributorIdentity)->type(ReferenceConstructorTrap::class))
+        ->toBe(ReferenceConstructorTrap::class);
+});
+
+test('rejects malformed contributor reference ids before querying references', function (): void {
+    $author = makeContributorUser('contributor-reference-id@example.test');
+    $contributor = new ReferenceContributor([
+        'reference_id' => 'not-a-uuid',
+        'contributor_type' => $author->getMorphClass(),
+        'contributor_id' => $author->getKey(),
+        'role' => ReferenceContributorRole::Author,
+    ]);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    expect(fn (): bool => $contributor->save())
+        ->toThrow(InvalidArgumentException::class, 'reference_id');
+
+    expect(collect(DB::getQueryLog())->contains(
+        fn (array $query): bool => in_array('not-a-uuid', $query['bindings'], true),
+    ))->toBeFalse();
 });

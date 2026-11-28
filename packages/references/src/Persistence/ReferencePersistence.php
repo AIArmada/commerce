@@ -14,6 +14,11 @@ abstract class ReferencePersistence extends Model
         return $this->saveReference(fn (): bool => parent::save($options));
     }
 
+    public function saveOrIgnore(array $options = [], array | string | null $uniqueBy = null): bool
+    {
+        return $this->saveReference(fn (): bool => parent::saveOrIgnore($options, $uniqueBy));
+    }
+
     /**
      * @param  Closure(): bool  $save
      */

@@ -1,7 +1,10 @@
 parameters:
     customRulesetUsed: true
+    configDirectories:
+        - ../config
     paths:
         - ../src
+        - ../config
     excludePaths:
         analyse:
             - ../database/migrations/*
@@ -11,7 +14,5 @@ parameters:
 services:
     -
         class: PackageArchitecture\StaticAnalysis\PackageOwnedWriteRule
-        arguments:
-            projectRoot: %currentWorkingDirectory%
         tags:
             - phpstan.rules.rule

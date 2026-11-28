@@ -9,19 +9,39 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use ReflectionClass;
+use Throwable;
 
 final readonly class ValidateContributorIdentity
 {
     public function type(string $type): string
     {
         $type = mb_trim($type);
-        $class = Relation::getMorphedModel($type) ?? $type;
 
-        if (! is_subclass_of($class, Model::class) || ! (new ReflectionClass($class))->isInstantiable()) {
+        if ($type === '') {
             throw new InvalidArgumentException('Reference contributor type must identify a concrete Eloquent model.');
         }
 
-        return (new $class)->getMorphClass();
+        $class = Relation::getMorphedModel($type) ?? $type;
+        $class = mb_ltrim($class, '\\');
+
+        if (! class_exists($class)) {
+            throw new InvalidArgumentException('Reference contributor type must identify a concrete Eloquent model.');
+        }
+
+        $reflection = new ReflectionClass($class);
+
+        if (! $reflection->isSubclassOf(Model::class) || ! $reflection->isInstantiable()) {
+            throw new InvalidArgumentException('Reference contributor type must identify a concrete Eloquent model.');
+        }
+
+        try {
+            /** @var Model $model */
+            $model = $reflection->newInstanceWithoutConstructor();
+
+            return $model->getMorphClass();
+        } catch (Throwable $exception) {
+            throw new InvalidArgumentException('Reference contributor type must identify a concrete Eloquent model.', previous: $exception);
+        }
     }
 
     public function id(string $id): string
@@ -33,5 +53,49 @@ final readonly class ValidateContributorIdentity
         }
 
         return $id;
+    }
+
+    /**
+     * @param  list<string>  $ids
+     * @return array{type: string, ids: list<string>}
+     */
+    public function canonicalizeTargets(string $type, array $ids): array
+    {
+        $type = $this->type($type);
+        $normalized = [];
+
+        foreach ($ids as $id) {
+            $normalized[$this->id($id)] = true;
+        }
+
+        $normalized = array_keys($normalized);
+
+        if ($normalized === []) {
+            return ['type' => $type, 'ids' => []];
+        }
+
+        $class = Relation::getMorphedModel($type) ?? $type;
+        $reflection = new ReflectionClass($class);
+
+        try {
+            /** @var Model $model */
+            $model = $reflection->newInstance();
+        } catch (Throwable $exception) {
+            throw new InvalidArgumentException('Reference contributor type must identify a constructible Eloquent model.', previous: $exception);
+        }
+
+        $found = $model->newQuery()
+            ->whereKey($normalized)
+            ->pluck($model->getKeyName())
+            ->map(static fn (mixed $key): string => mb_strtolower((string) $key))
+            ->all();
+
+        $missing = array_values(array_diff($normalized, $found));
+
+        if ($missing !== []) {
+            throw new InvalidArgumentException('Reference contributor target is missing or outside the current owner scope: ' . $missing[0]);
+        }
+
+        return ['type' => $type, 'ids' => $normalized];
     }
 }

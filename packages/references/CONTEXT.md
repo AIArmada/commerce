@@ -41,8 +41,9 @@ keywords:
   intentionally global installation.
 
 ## Key surfaces
-- Actions: `SyncReferenceContributors`, `TransitionReferenceStatus`, `DeleteReference`
+- Actions: `SyncReferenceContributors`, `TransitionReferenceStatus`, `DeleteReference`, `LockReferenceTree`
 - Models: `Reference`, `ReferenceContributor`
+- Persistence: `ReferencePersistence`, `ReferenceContributorPersistence`, `ReferenceContributorLinks`
 - Config `references.php`: `database` (`table_prefix`, `json_column_type`, `tables.references`), `owner` (`enabled`, `include_global`, `auto_assign_on_create`), `slug` (`source`, `max_length`), `media.disk`
 
 ## Docs map

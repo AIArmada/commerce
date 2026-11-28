@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\References\Models;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\References\Actions\DeleteReference;
@@ -22,8 +25,10 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
@@ -67,8 +72,6 @@ class Reference extends ReferencePersistence implements HasMedia
     use HasSlugWithUuids;
     use InteractsWithMedia;
 
-    protected $table = 'references';
-
     protected static string $ownerScopeConfigKey = 'references.owner';
 
     protected $fillable = [
@@ -97,15 +100,6 @@ class Reference extends ReferencePersistence implements HasMedia
 
     protected $attributes = ['record_kind' => 'work', 'status' => 'draft'];
 
-    protected static function booted(): void
-    {
-        static::saving(function (Reference $reference): void {
-            $reference->validateFields();
-            $reference->validateParentHierarchy();
-            $reference->syncPublishedAt();
-        });
-    }
-
     protected function saveReference(Closure $save): bool
     {
         return (new SaveReference)->handle($this, $save);
@@ -120,9 +114,22 @@ class Reference extends ReferencePersistence implements HasMedia
         );
     }
 
+    public function prepareForCascadeDeletion(): static
+    {
+        $this->deletePreservingMedia = true;
+
+        return $this;
+    }
+
     public function getTable(): string
     {
-        return (string) config('references.database.tables.references', $this->table);
+        if (is_string($this->table) && $this->table !== '') {
+            return $this->table;
+        }
+
+        $table = config('references.database.tables.references');
+
+        return is_string($table) && $table !== '' ? $table : 'references';
     }
 
     public function getSlugOptions(): SlugOptions
@@ -231,12 +238,14 @@ class Reference extends ReferencePersistence implements HasMedia
      */
     public function effectiveContributorReference(): static
     {
-        if ((string) ($this->getAttributes()['record_kind'] ?? '') === ReferenceRecordKind::Work->value) {
-            return $this;
+        $record = $this->resolvePersistedReference();
+
+        if ($this->isWorkKind($record)) {
+            return $record;
         }
 
-        $seen = [(string) $this->getKey()];
-        $cursor = $this;
+        $seen = [(string) $record->getKey()];
+        $cursor = $record;
 
         for ($depth = 0; $depth < 10; $depth++) {
             $parentId = $cursor->parent_id;
@@ -246,9 +255,7 @@ class Reference extends ReferencePersistence implements HasMedia
             }
 
             $seen[] = $parentId;
-
-            /** @var static|null $parent */
-            $parent = $this->newQuery()->whereKey($parentId)->first();
+            $parent = $this->resolveRelatedRecord($parentId, $cursor);
 
             if (! $parent instanceof static) {
                 break;
@@ -256,12 +263,12 @@ class Reference extends ReferencePersistence implements HasMedia
 
             $cursor = $parent;
 
-            if ((string) ($parent->getAttributes()['record_kind'] ?? '') === ReferenceRecordKind::Work->value) {
+            if ($this->isWorkKind($parent)) {
                 return $parent;
             }
         }
 
-        return $this;
+        return $record;
     }
 
     /**
@@ -271,9 +278,15 @@ class Reference extends ReferencePersistence implements HasMedia
      */
     public function effectiveContributors(ReferenceContributorRole | string $role): Collection
     {
-        $reference = $this->newQuery()->whereKey($this->getKey())->firstOrFail();
+        $reference = $this->effectiveContributorReference();
 
-        return $reference->effectiveContributorReference()->contributorsForRole($role)->with('contributor')->get();
+        /** @var Collection<int, ReferenceContributor> $contributors */
+        $contributors = $reference->contributorsForRole($role)
+            ->withoutGlobalScope('referenceOwner')
+            ->with('contributor')
+            ->get();
+
+        return $contributors;
     }
 
     public function scopePublished(Builder $query): Builder
@@ -306,9 +319,50 @@ class Reference extends ReferencePersistence implements HasMedia
             ->withResponsiveImages();
     }
 
+    public function prepareForPersistence(): void
+    {
+        $config = static::ownerScopeConfig();
+
+        if ($config->enabled) {
+            if ($this->exists) {
+                static::guardOwnedOwnerWrite($this, $config, 'save');
+                static::guardGlobalOwnerWrite($this, $config, 'save');
+            } else {
+                static::assignOwnerOnCreate($this, $config);
+            }
+        }
+
+        $this->validateFields();
+
+        if (! $this->exists && ($this->getAttribute('slug') === null || $this->getAttribute('slug') === '')) {
+            $this->generateSlugOnCreate();
+        }
+
+        $this->validateHierarchyState();
+        $this->syncPublishedAt();
+    }
+
     private function validateFields(): void
     {
         $raw = $this->getAttributes();
+
+        $type = $raw['type'] ?? null;
+
+        if (! is_string($type) || ReferenceType::tryFrom($type) === null) {
+            throw ValidationException::withMessages(['type' => 'Invalid reference type.']);
+        }
+
+        $status = $raw['status'] ?? null;
+
+        if (! is_string($status) || ReferenceStatus::tryFrom($status) === null) {
+            throw ValidationException::withMessages(['status' => 'Invalid reference status.']);
+        }
+
+        $title = $raw['title'] ?? null;
+
+        if (! is_string($title) || mb_trim($title) === '' || mb_strlen($title) > 255) {
+            throw ValidationException::withMessages(['title' => 'The title is required and must be at most 255 characters.']);
+        }
 
         $kind = $raw['record_kind'] ?? null;
 
@@ -416,11 +470,23 @@ class Reference extends ReferencePersistence implements HasMedia
         }
     }
 
+    private function validateHierarchyState(): void
+    {
+        if (! $this->exists) {
+            $this->validateParentHierarchy();
+
+            return;
+        }
+
+        if ($this->isDirty('parent_id') || $this->isDirty('record_kind')) {
+            $this->validateParentHierarchy();
+        }
+    }
+
     private function validateParentHierarchy(): void
     {
         $parentId = $this->getAttribute('parent_id');
-
-        $kind = (string) $this->getAttributes()['record_kind'];
+        $kind = (string) ($this->getAttributes()['record_kind'] ?? '');
 
         if ($this->exists && $this->isDirty('record_kind')) {
             $allowedChildren = match ($kind) {
@@ -446,8 +512,10 @@ class Reference extends ReferencePersistence implements HasMedia
             return;
         }
 
+        $this->assertParentUuid($parentId);
+
         /** @var Reference|null $parent */
-        $parent = $this->newQuery()->whereKey($parentId)->lockForUpdate()->first();
+        $parent = $this->newQuery()->withoutOwnerScope()->whereKey($parentId)->first();
 
         if ($parent === null) {
             throw ValidationException::withMessages(['parent_id' => 'Invalid parent_id: reference not found or inaccessible.']);
@@ -470,22 +538,34 @@ class Reference extends ReferencePersistence implements HasMedia
             throw ValidationException::withMessages(['parent_id' => 'Editions must belong to a work; parts must belong to a work or edition.']);
         }
 
-        if (! (bool) config('references.owner.enabled', false)) {
+        $config = static::ownerScopeConfig();
+
+        if (! $config->enabled) {
             return;
         }
 
-        $parentGlobal = $parent->owner_type === null && $parent->owner_id === null;
-        $includeGlobal = (bool) config('references.owner.include_global', false);
+        [$selfType, $selfId] = $this->ownerTuple($this);
+        [$parentType, $parentIdValue] = $this->ownerTuple($parent);
 
-        [$selfType, $selfId] = $this->effectiveOwnerTuple();
+        if (($selfType === null) !== ($selfId === null) || ($parentType === null) !== ($parentIdValue === null)) {
+            throw ValidationException::withMessages(['parent_id' => 'Reference owner tuple is malformed.']);
+        }
 
-        $sameOwner = $selfType === $parent->owner_type
-            && ($selfId === null || $parent->owner_id === null
-                ? $selfId === $parent->owner_id
-                : (string) $selfId === (string) $parent->owner_id);
+        $parentGlobal = $parentType === null;
+        $sameOwner = $selfType === $parentType
+            && ($selfId === null || $parentIdValue === null
+                ? $selfId === $parentIdValue
+                : (string) $selfId === (string) $parentIdValue);
 
-        if (! $sameOwner && ! ($parentGlobal && $includeGlobal)) {
+        if (! $sameOwner && ! ($parentGlobal && $config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal())) {
             throw ValidationException::withMessages(['parent_id' => 'Cross-tenant write blocked: reference parent does not belong to the same owner.']);
+        }
+    }
+
+    private function assertParentUuid(mixed $parentId): void
+    {
+        if (! is_string($parentId) || ! Str::isUuid($parentId)) {
+            throw ValidationException::withMessages(['parent_id' => 'Invalid parent_id: must be a UUID.']);
         }
     }
 
@@ -512,8 +592,7 @@ class Reference extends ReferencePersistence implements HasMedia
 
             $seen[] = $cursorParentId;
 
-            /** @var Reference|null $cursor */
-            $cursor = $this->newQuery()->whereKey($cursorParentId)->first();
+            $cursor = $this->resolveRelatedRecord($cursorParentId, $cursor);
 
             if ($cursor === null) {
                 break;
@@ -534,26 +613,144 @@ class Reference extends ReferencePersistence implements HasMedia
         }
     }
 
-    /**
-     * @return array{0: string|null, 1: mixed}
-     */
-    private function effectiveOwnerTuple(): array
+    private function resolvePersistedReference(): static
     {
-        if ($this->owner_type !== null && $this->owner_id !== null) {
-            return [$this->owner_type, $this->owner_id];
-        }
+        $key = $this->getKey();
 
-        if ($this->exists) {
-            return [$this->owner_type, $this->owner_id];
+        if (! $this->exists || ! is_string($key) || ! Str::isUuid($key)) {
+            throw new InvalidArgumentException('A persisted reference UUID is required.');
         }
 
         $config = static::ownerScopeConfig();
-        $owner = $config->autoAssignOnCreate ? OwnerContext::resolveConfigured($config) : null;
+        $attributes = $this->getAttributes();
+        $hasOwnerTuple = array_key_exists($config->ownerTypeColumn, $attributes)
+            && array_key_exists($config->ownerIdColumn, $attributes);
 
-        if ($owner === null) {
-            return [null, null];
+        if ($hasOwnerTuple) {
+            [$ownerType, $ownerId] = $this->ownerTuple($this);
+        } else {
+            $record = $this->newQueryWithoutScopes()->whereKey($key)->first();
+
+            if (! $record instanceof static) {
+                throw (new ModelNotFoundException)->setModel(static::class, $key);
+            }
+
+            [$ownerType, $ownerId] = $this->ownerTuple($record);
         }
 
-        return [$owner->getMorphClass(), $owner->getKey()];
+        $resolved = $this->scopedRecord($key, $config, $ownerType, $ownerId);
+
+        if (! $resolved instanceof static) {
+            throw (new ModelNotFoundException)->setModel(static::class, $key);
+        }
+
+        return $resolved;
+    }
+
+    private function scopedRecord(string $key, OwnerScopeConfig $config, ?string $ownerType, string | int | null $ownerId): ?static
+    {
+        if (($ownerType === null) !== ($ownerId === null)) {
+            throw new InvalidArgumentException('Reference owner tuple is malformed: owner type and owner id must both be present or both be null.');
+        }
+
+        $query = $this->newQueryWithoutScopes()->whereKey($key);
+
+        if (! $config->enabled) {
+            /** @var static|null $record */
+            $record = $query->first();
+
+            return $record;
+        }
+
+        if ($ownerType === null) {
+            $globalAllowed = OwnerContext::isExplicitGlobal()
+                || ($config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal() && OwnerContext::resolveConfigured($config) !== null);
+
+            if (! $globalAllowed) {
+                return null;
+            }
+
+            /** @var static|null $record */
+            $record = $query
+                ->whereNull($config->ownerTypeColumn)
+                ->whereNull($config->ownerIdColumn)
+                ->first();
+
+            return $record;
+        }
+
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+
+        /** @var static|null $record */
+        $record = OwnerQuery::applyToEloquentBuilder(
+            $query,
+            $owner,
+            false,
+            $config->ownerTypeColumn,
+            $config->ownerIdColumn,
+        )->first();
+
+        return $record;
+    }
+
+    private function resolveRelatedRecord(string $parentId, Reference $child): ?static
+    {
+        if (! Str::isUuid($parentId)) {
+            throw new InvalidArgumentException('Reference parent_id must be a UUID.');
+        }
+
+        /** @var static|null $parent */
+        $parent = $this->newQueryWithoutScopes()->whereKey($parentId)->first();
+
+        if (! $parent instanceof static) {
+            return null;
+        }
+
+        $config = static::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return $parent;
+        }
+
+        [$childType, $childId] = $this->ownerTuple($child);
+        [$parentType, $parentIdValue] = $this->ownerTuple($parent);
+
+        if (($childType === null) !== ($childId === null) || ($parentType === null) !== ($parentIdValue === null)) {
+            throw new InvalidArgumentException('Reference owner tuple is malformed: owner type and owner id must both be present or both be null.');
+        }
+
+        if ($parentType === null) {
+            if ($childType === null) {
+                return $parent;
+            }
+
+            return $config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal() ? $parent : null;
+        }
+
+        if ($childType === null) {
+            return null;
+        }
+
+        return $childType === $parentType && (string) $childId === (string) $parentIdValue ? $parent : null;
+    }
+
+    private function isWorkKind(Reference $reference): bool
+    {
+        return (string) ($reference->getAttributes()['record_kind'] ?? '') === ReferenceRecordKind::Work->value;
+    }
+
+    /**
+     * @return array{0: string|null, 1: string|int|null}
+     */
+    private function ownerTuple(Reference $reference): array
+    {
+        $config = static::ownerScopeConfig();
+        $ownerType = $reference->getAttribute($config->ownerTypeColumn);
+        $ownerId = $reference->getAttribute($config->ownerIdColumn);
+
+        return [
+            $ownerType === null ? null : (string) $ownerType,
+            $ownerId,
+        ];
     }
 }
