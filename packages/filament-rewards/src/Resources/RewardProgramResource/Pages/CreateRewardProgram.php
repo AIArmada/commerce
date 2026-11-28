@@ -7,7 +7,6 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardProgram;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +28,7 @@ class CreateRewardProgram extends CreateRecord
             $program = CreateRewardProgramAction::run(
                 (string) ($data['family_key'] ?? ''),
                 (string) ($data['title'] ?? ''),
-                RewardProgramMode::from((string) ($data['mode'] ?? '')),
+                (string) ($data['mode'] ?? ''),
                 self::resolveOwner($data),
                 null,
                 (string) ($data['purpose'] ?? ''),
@@ -86,6 +85,7 @@ class CreateRewardProgram extends CreateRecord
         $message = $exception->getMessage();
 
         return match (true) {
+            $message === 'Unknown program mode.' => 'mode',
             str_starts_with($message, 'Family key '),
             str_starts_with($message, 'Program family already exists.') => 'family_key',
             str_starts_with($message, 'Owned programs require') => 'owner_record_id',

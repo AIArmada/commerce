@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Commands;
 
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
-use AIArmada\Rewards\Models\RewardPointLot;
+use AIArmada\Rewards\Actions\ExpireDueRewardPointLotsAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Throwable;
@@ -16,7 +15,7 @@ final class ExpireRewardPointLotsCommand extends Command
 
     protected $description = 'Expire due point lots and release their reservations as expiry movements.';
 
-    public function handle(ExpireRewardPointsAction $expire): int
+    public function handle(ExpireDueRewardPointLotsAction $expire): int
     {
         $asOf = $this->option('as-of');
         $at = CarbonImmutable::now('UTC');
@@ -31,29 +30,11 @@ final class ExpireRewardPointLotsCommand extends Command
             }
         }
 
-        $scopes = RewardPointLot::query()
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', $at)
-            ->whereNull('expired_at')
-            ->distinct()
-            ->get(['recipient_type', 'recipient_id', 'family_key', 'unit']);
+        $result = $expire->handle($at);
+        $movements = $result['movements'];
+        $scopeCount = $result['scopes'];
 
-        $movements = 0;
-
-        foreach ($scopes as $scope) {
-            $movements += count($expire->handle(
-                (string) $scope->recipient_type,
-                (string) $scope->recipient_id,
-                (string) $scope->family_key,
-                (string) $scope->unit,
-                $at,
-                'lot-expiry',
-                'system',
-                null,
-            ));
-        }
-
-        $this->info("Expired {$movements} lot movements across {$scopes->count()} scopes.");
+        $this->info("Expired {$movements} lot movements across {$scopeCount} scopes.");
 
         return self::SUCCESS;
     }

@@ -121,7 +121,8 @@ final readonly class ExpireRewardPointsAction
             ->whereIn('lot_id', $lots->map(fn (RewardPointLot $lot): string => (string) $lot->getKey())->all())
             ->orderBy('id')
             ->lockForUpdate()
-            ->get();
+            ->get()
+            ->groupBy('lot_id');
 
         $created = [];
 
@@ -130,7 +131,7 @@ final readonly class ExpireRewardPointsAction
                 continue;
             }
 
-            $lotMovements = $movements->where('lot_id', (string) $lot->getKey());
+            $lotMovements = $movements->get((string) $lot->getKey(), new \Illuminate\Database\Eloquent\Collection);
             $remainder = RewardPointLedger::unreservedResidual($lot, $lotMovements);
 
             if ($remainder < 0) {
