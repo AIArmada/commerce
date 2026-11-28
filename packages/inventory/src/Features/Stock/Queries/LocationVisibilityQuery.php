@@ -16,4 +16,11 @@ final class LocationVisibilityQuery implements LocationVisibility
             ->whereKey($locationId)
             ->exists();
     }
+
+    public function isWritable(string $locationId): bool
+    {
+        return InventoryOwnerScope::forMutation(InventoryLocation::query())
+            ->whereKey($locationId)
+            ->exists();
+    }
 }

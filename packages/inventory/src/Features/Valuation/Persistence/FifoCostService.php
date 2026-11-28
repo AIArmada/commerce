@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -39,9 +39,7 @@ final class FifoCostService
             }
 
             if ($locationId !== null) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -49,9 +47,7 @@ final class FifoCostService
             }
 
             if ($batchId !== null) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryBatch::query())
-                    ->whereKey($batchId)
-                    ->exists();
+                $isAllowed = app(BatchIdentity::class)->matchesWritableBatch($batchId, $model->getMorphClass(), (string) $model->getKey(), $locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid batch for current owner');
@@ -90,11 +86,12 @@ final class FifoCostService
         }
 
         return DB::transaction(function () use ($model, $quantity, $locationId): array {
-            $query = InventoryOwnerScope::applyToLocationQuery(
+            $query = InventoryOwnerScope::forMutation(
                 InventoryCostLayer::query()
                     ->forModel($model)
                     ->withRemainingQuantity()
                     ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                     ->fifoOrder()
             );
 
@@ -108,9 +105,7 @@ final class FifoCostService
 
             if ($locationId !== null) {
                 if (InventoryOwnerScope::isEnabled()) {
-                    $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                        ->whereKey($locationId)
-                        ->exists();
+                    $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid location for current owner');
@@ -164,6 +159,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -176,9 +172,7 @@ final class FifoCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -211,6 +205,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -224,9 +219,7 @@ final class FifoCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -266,6 +259,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -279,9 +273,7 @@ final class FifoCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -304,6 +296,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -317,9 +310,7 @@ final class FifoCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -342,6 +333,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -354,9 +346,7 @@ final class FifoCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');

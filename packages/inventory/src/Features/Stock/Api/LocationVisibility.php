@@ -7,4 +7,6 @@ namespace AIArmada\Inventory\Features\Stock\Api;
 interface LocationVisibility
 {
     public function isVisible(string $locationId): bool;
+
+    public function isWritable(string $locationId): bool;
 }

@@ -15,6 +15,27 @@ describe('WeightedAverageCostService', function (): void {
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
 
+    it('does not mix or consume cost layers in another currency', function (): void {
+        config(['inventory.defaults.currency' => 'MYR']);
+        $foreign = InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity' => 10,
+            'remaining_quantity' => 10,
+            'unit_cost_minor' => 900,
+            'total_cost_minor' => 9000,
+            'currency' => 'USD',
+            'costing_method' => CostingMethod::WeightedAverage,
+        ]);
+
+        $this->service->recordPurchase($this->item, 5, 100, $this->location->id);
+        expect($this->service->calculateValuation($this->item, $this->location->id)['value'])->toBe(500)
+            ->and($this->service->consume($this->item, 8, $this->location->id)['consumed'])->toBe(5)
+            ->and($foreign->fresh()->remaining_quantity)->toBe(10)
+            ->and($foreign->fresh()->unit_cost_minor)->toBe(900);
+    });
+
     it('rejects negative costs and non-positive quantities', function (): void {
         expect(fn () => $this->service->recordPurchase($this->item, 0, 500, $this->location->id))
             ->toThrow(InvalidArgumentException::class)

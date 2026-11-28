@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -111,8 +112,8 @@ final class InventoryCostLayer extends Model implements Auditable
                     throw new AuthorizationException('Batch location does not match cost layer location.');
                 }
 
-                if (($resolvedOwnerType !== null || $resolvedOwnerId !== null)
-                    && ($resolvedOwnerType !== $batch->owner_type || $resolvedOwnerId !== $batch->owner_id)) {
+                if ($ownerResolvedFromRelation
+                    && ($resolvedOwnerType !== $batch->owner_type || (string) $resolvedOwnerId !== (string) $batch->owner_id)) {
                     throw new AuthorizationException('Owner mismatch between cost layer location and batch.');
                 }
 
@@ -248,6 +249,10 @@ final class InventoryCostLayer extends Model implements Auditable
      */
     public function consume(int $quantity): int
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Consumption quantity must be positive.');
+        }
+
         $consumed = min($quantity, $this->remaining_quantity);
 
         $this->update([

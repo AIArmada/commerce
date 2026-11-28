@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -41,9 +41,7 @@ final class WeightedAverageCostService
                 }
 
                 if ($locationId !== null) {
-                    $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                        ->whereKey($locationId)
-                        ->exists();
+                    $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid location for current owner');
@@ -51,9 +49,7 @@ final class WeightedAverageCostService
                 }
 
                 if ($batchId !== null) {
-                    $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryBatch::query())
-                        ->whereKey($batchId)
-                        ->exists();
+                    $isAllowed = app(BatchIdentity::class)->matchesWritableBatch($batchId, $model->getMorphClass(), (string) $model->getKey(), $locationId);
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid batch for current owner');
@@ -62,7 +58,7 @@ final class WeightedAverageCostService
             }
 
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
-            $currentValuation = $this->calculateValuation($model, $locationId);
+            $currentValuation = $this->valuation($model, $locationId, true);
 
             $totalQuantity = $currentValuation['quantity'] + $quantity;
             $totalValue = $currentValuation['value'] + ($quantity * $unitCostMinor);
@@ -108,7 +104,7 @@ final class WeightedAverageCostService
 
         return DB::transaction(function () use ($model, $quantity, $locationId): array {
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
-            $valuation = $this->calculateValuation($model, $locationId);
+            $valuation = $this->valuation($model, $locationId, true);
 
             if ($valuation['quantity'] < $quantity) {
                 $quantity = $valuation['quantity'];
@@ -116,11 +112,12 @@ final class WeightedAverageCostService
 
             $unitCost = $valuation['average_cost'];
 
-            $query = InventoryOwnerScope::applyToLocationQuery(
+            $query = InventoryOwnerScope::forMutation(
                 InventoryCostLayer::query()
                     ->forModel($model)
                     ->withRemainingQuantity()
                     ->usingMethod(CostingMethod::WeightedAverage)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                     ->orderBy('layer_date', 'asc')
             );
 
@@ -134,9 +131,7 @@ final class WeightedAverageCostService
 
             if ($locationId !== null) {
                 if (InventoryOwnerScope::isEnabled()) {
-                    $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                        ->whereKey($locationId)
-                        ->exists();
+                    $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid location for current owner');
@@ -173,11 +168,19 @@ final class WeightedAverageCostService
      */
     public function calculateValuation(Model $model, ?string $locationId = null): array
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        return $this->valuation($model, $locationId, false);
+    }
+
+    /** @return array{quantity: int, value: int, average_cost: int} */
+    private function valuation(Model $model, ?string $locationId, bool $forMutation): array
+    {
+        $scope = $forMutation ? InventoryOwnerScope::forMutation(...) : InventoryOwnerScope::applyToLocationQuery(...);
+        $query = $scope(
             InventoryCostLayer::query()
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -190,9 +193,7 @@ final class WeightedAverageCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = $forMutation ? app(LocationVisibility::class)->isWritable($locationId) : app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -230,7 +231,7 @@ final class WeightedAverageCostService
     {
         return DB::transaction(function () use ($model, $locationId): int {
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
-            $valuation = $this->calculateValuation($model, $locationId);
+            $valuation = $this->valuation($model, $locationId, true);
 
             if ($valuation['quantity'] === 0) {
                 return 0;
@@ -252,6 +253,7 @@ final class WeightedAverageCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -264,9 +266,7 @@ final class WeightedAverageCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -284,11 +284,12 @@ final class WeightedAverageCostService
      */
     private function updateExistingLayers(Model $model, int $newAverageCost, ?string $locationId = null): void
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryCostLayer::query()
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
+                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -301,9 +302,7 @@ final class WeightedAverageCostService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
