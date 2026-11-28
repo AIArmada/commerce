@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Data\RewardPayoutInstruction;
 
 /**
  * Cash payout execution boundary.
@@ -26,21 +26,21 @@ interface RewardPayoutExecutor
      * executor serves amount, fee, currency, and destination exactly as
      * frozen on the request.
      */
-    public function submit(RewardPayoutRequest $request): RewardPayoutExecution;
+    public function submit(RewardPayoutInstruction $request): RewardPayoutExecution;
 
     /**
      * Ask the provider to cancel a submitted operation. True ONLY when the
      * provider confirms the cancel; false, unsupported, or uncertain keeps
      * the request, its reservation, and its original operation intact.
      */
-    public function cancel(RewardPayoutRequest $request): bool;
+    public function cancel(RewardPayoutInstruction $request): bool;
 
     /**
      * Read the provider-side status for reconciliation. Returns the raw
      * provider status string; core maps completed/failed families and
      * keeps anything else as-is with the original operation intact.
      */
-    public function status(RewardPayoutRequest $request): string;
+    public function status(RewardPayoutInstruction $request): string;
 
     /**
      * Settle the provider-side ledger after core has proven an outcome
@@ -49,5 +49,5 @@ interface RewardPayoutExecutor
      *
      * @param  array<string, mixed>  $context  outcome evidence (references, stamps).
      */
-    public function settle(RewardPayoutRequest $request, string $externalStatus, array $context = []): void;
+    public function settle(RewardPayoutInstruction $request, string $externalStatus, array $context = []): void;
 }

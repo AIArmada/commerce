@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Data\RewardPayoutInstruction;
 use OutOfBoundsException;
 
 /**
@@ -27,7 +27,7 @@ final class ScriptedPayoutExecutor implements RewardPayoutExecutor
     /** @var list<array{0: string, 1: string}> */
     public array $settled = [];
 
-    public function submit(RewardPayoutRequest $request): RewardPayoutExecution
+    public function submit(RewardPayoutInstruction $request): RewardPayoutExecution
     {
         if ($this->executions === []) {
             throw new OutOfBoundsException('No scripted payout execution remains.');
@@ -36,18 +36,18 @@ final class ScriptedPayoutExecutor implements RewardPayoutExecutor
         return array_shift($this->executions);
     }
 
-    public function cancel(RewardPayoutRequest $request): bool
+    public function cancel(RewardPayoutInstruction $request): bool
     {
         return $this->cancelConfirmed;
     }
 
-    public function status(RewardPayoutRequest $request): string
+    public function status(RewardPayoutInstruction $request): string
     {
         return $this->providerStatus;
     }
 
-    public function settle(RewardPayoutRequest $request, string $externalStatus, array $context = []): void
+    public function settle(RewardPayoutInstruction $request, string $externalStatus, array $context = []): void
     {
-        $this->settled[] = [(string) $request->getKey(), $externalStatus];
+        $this->settled[] = [(string) $request->id, $externalStatus];
     }
 }

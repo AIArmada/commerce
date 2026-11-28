@@ -6,6 +6,7 @@ namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
@@ -121,7 +122,7 @@ final readonly class SubmitRewardPayoutAction
 
                 // Provider call outside every transaction. The mutex (not
                 // a transaction) spans it.
-                $outcome = app(RewardPayoutExecutor::class)->submit($fresh);
+                $outcome = app(RewardPayoutExecutor::class)->submit(RewardPayoutInstructionMapper::fromRequest($fresh));
 
                 return $this->recordOutcome($requestId, $outcome, $actorType, $actorId, $actorRole, $decided);
             });

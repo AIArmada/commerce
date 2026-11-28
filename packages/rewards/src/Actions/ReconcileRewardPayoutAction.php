@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;
@@ -87,7 +88,7 @@ final readonly class ReconcileRewardPayoutAction
 
                 // Provider query outside every transaction, under the
                 // send mutex.
-                $status = app(RewardPayoutExecutor::class)->status($gated);
+                $status = app(RewardPayoutExecutor::class)->status(RewardPayoutInstructionMapper::fromRequest($gated));
                 $status = mb_strtolower(mb_trim($status));
 
                 return $this->apply($requestId, $status, $actorType, $actorId, $actorRole, $decided);
@@ -245,7 +246,7 @@ final readonly class ReconcileRewardPayoutAction
     private function settlePackage(RewardPayoutRequest $row, string $externalStatus): void
     {
         app(RewardPayoutExecutor::class)->settle(
-            $row,
+            RewardPayoutInstructionMapper::fromRequest($row),
             $externalStatus,
             ['reference' => (string) ($row->provider_reference ?? $row->first_reference)]
         );

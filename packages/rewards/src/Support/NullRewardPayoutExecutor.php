@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Support;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Data\RewardPayoutInstruction;
 use InvalidArgumentException;
 
 /**
@@ -16,22 +16,22 @@ use InvalidArgumentException;
  */
 final class NullRewardPayoutExecutor implements RewardPayoutExecutor
 {
-    public function submit(RewardPayoutRequest $request): RewardPayoutExecution
+    public function submit(RewardPayoutInstruction $request): RewardPayoutExecution
     {
         throw new InvalidArgumentException('Payout execution is disabled: no RewardPayoutExecutor is bound.');
     }
 
-    public function cancel(RewardPayoutRequest $request): bool
+    public function cancel(RewardPayoutInstruction $request): bool
     {
         throw new InvalidArgumentException('Payout execution is disabled: no RewardPayoutExecutor is bound.');
     }
 
-    public function status(RewardPayoutRequest $request): string
+    public function status(RewardPayoutInstruction $request): string
     {
         throw new InvalidArgumentException('Payout execution is disabled: no RewardPayoutExecutor is bound.');
     }
 
-    public function settle(RewardPayoutRequest $request, string $externalStatus, array $context = []): void
+    public function settle(RewardPayoutInstruction $request, string $externalStatus, array $context = []): void
     {
         throw new InvalidArgumentException('Payout execution is disabled: no RewardPayoutExecutor is bound.');
     }

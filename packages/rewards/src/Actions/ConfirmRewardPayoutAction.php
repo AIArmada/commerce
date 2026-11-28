@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;
@@ -133,7 +134,7 @@ final readonly class ConfirmRewardPayoutAction
                     // then the budget spend. The executor records the
                     // outcome; it never invents one.
                     app(RewardPayoutExecutor::class)->settle(
-                        $locked,
+                        RewardPayoutInstructionMapper::fromRequest($locked),
                         'completed',
                         ['reference' => $bankReference, 'status' => 'manual-confirmed']
                     );

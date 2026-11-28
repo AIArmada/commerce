@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;
@@ -138,7 +139,7 @@ final readonly class CancelRewardPayoutAction
 
         // Provider call outside every transaction, under the send mutex.
         try {
-            return app(RewardPayoutExecutor::class)->cancel($row) === true;
+            return app(RewardPayoutExecutor::class)->cancel(RewardPayoutInstructionMapper::fromRequest($row)) === true;
         } catch (Throwable) {
             return false;
         }
@@ -185,7 +186,7 @@ final readonly class CancelRewardPayoutAction
                 // Provider settlement through the bound executor; the
                 // executor records the outcome and never invents one.
                 app(RewardPayoutExecutor::class)->settle(
-                    $row,
+                    RewardPayoutInstructionMapper::fromRequest($row),
                     'cancelled',
                     ['reference' => (string) ($row->provider_reference ?? $row->first_reference)]
                 );

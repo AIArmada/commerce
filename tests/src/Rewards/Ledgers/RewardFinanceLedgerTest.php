@@ -27,6 +27,7 @@ use AIArmada\Rewards\Actions\WriteOffRewardRecoveryAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Data\RewardPayoutInstruction;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
@@ -388,7 +389,21 @@ it('refuses an unparseable expiry timestamp', function (): void {
 });
 
 it('fails closed when no payout executor is bound', function (): void {
-    $request = new RewardPayoutRequest;
+    $request = new RewardPayoutInstruction(
+        id: 'request',
+        awardId: 'award',
+        programId: 'program',
+        payeeId: 'payee',
+        currency: 'MYR',
+        amountMinor: 100,
+        feeMinor: 0,
+        feePayer: 'program',
+        processor: 'manual',
+        operationKey: 'operation',
+        firstReference: 'reference',
+        payeeSnapshot: [],
+        status: 'approved',
+    );
     $executor = new NullRewardPayoutExecutor;
 
     expect(fn () => $executor->submit($request))->toThrow(InvalidArgumentException::class, 'no RewardPayoutExecutor is bound')
