@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

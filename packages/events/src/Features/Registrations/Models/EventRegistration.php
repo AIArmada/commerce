@@ -12,7 +12,7 @@ use AIArmada\Events\Features\Registrations\States\RegistrationStatus\Registratio
 use AIArmada\Events\Features\Registrations\States\RegistrationStatus\Waitlisted;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\ScopesByEventOwner;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;

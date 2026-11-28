@@ -9,7 +9,7 @@ use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Collection;

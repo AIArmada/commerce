@@ -7,7 +7,7 @@ namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\Pages;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Filament\Actions\ViewAction;

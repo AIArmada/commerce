@@ -20,7 +20,7 @@ use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Ticketing\Data\TicketTypeData;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

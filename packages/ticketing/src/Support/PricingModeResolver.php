@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Support;
 
 use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Collection;
 
 final class PricingModeResolver

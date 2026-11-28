@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

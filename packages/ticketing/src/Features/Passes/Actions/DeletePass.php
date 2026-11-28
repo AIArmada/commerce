@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 final readonly class DeletePass
 {

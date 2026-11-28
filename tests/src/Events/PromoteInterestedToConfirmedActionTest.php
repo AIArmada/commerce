@@ -11,7 +11,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', true);

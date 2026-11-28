@@ -111,7 +111,7 @@ which own the allowed transitions, actor recording, and reason requirements. Con
 pass's current status first:
 
 ```bash
-php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->status->getValue();'
+php artisan tinker --execute '$pass = \AIArmada\Ticketing\Features\Passes\Models\Pass::find("pass-uuid"); echo $pass->status->getValue();'
 ```
 
 A pass status in `used`, `revoked`, `voided`, or `expired` is terminal and will not accept

@@ -12,8 +12,8 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;

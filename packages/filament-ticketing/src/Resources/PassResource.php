@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;

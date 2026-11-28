@@ -21,7 +21,7 @@ use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use Illuminate\Support\Facades\Event;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassTransferWriter;
 use AIArmada\Ticketing\Features\Passes\Policies\PassTransferPolicy;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;

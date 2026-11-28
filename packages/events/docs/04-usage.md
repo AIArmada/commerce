@@ -917,7 +917,7 @@ pipeline alongside products.
 
 ```php
 use AIArmada\Events\Features\Commerce\Actions\AddEventTicketTypeToCartAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 $ticketType = TicketType::query()->findOrFail($ticketTypeId);
 

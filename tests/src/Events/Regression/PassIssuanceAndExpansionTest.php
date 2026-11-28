@@ -13,8 +13,8 @@ use AIArmada\Events\Features\Registrations\Actions\CreateEventComponentRegistrat
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketTypeComponent;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeComponent;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

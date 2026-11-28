@@ -11,7 +11,7 @@ use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\Tic
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeProductsRelationManager;
 use AIArmada\FilamentTicketing\Schemas\TicketTypeFormSchema;
 use AIArmada\FilamentTicketing\Tables\TicketTypeTable;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use BackedEnum;
 use Filament\Actions\ViewAction;

@@ -7,7 +7,7 @@ use AIArmada\Ticketing\Events\PassCancelled;
 use AIArmada\Ticketing\Events\PassExpired;
 use AIArmada\Ticketing\Events\PassRevoked;
 use AIArmada\Ticketing\Events\PassVoided;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 

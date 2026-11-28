@@ -7,7 +7,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\AddTicketTypeToCartAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('adds required variant merchandise with the real variant identity and reconciles repeated ticket additions', function (): void {

@@ -37,7 +37,7 @@ use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

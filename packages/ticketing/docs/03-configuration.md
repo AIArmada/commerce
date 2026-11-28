@@ -219,7 +219,7 @@ $maxSize = config('ticketing.transfers.bulk_max_size'); // 100
 Models automatically resolve table names from config:
 
 ```php
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 $table = (new Pass)->getTable(); // Uses config value
 ```

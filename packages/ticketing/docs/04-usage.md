@@ -11,8 +11,8 @@ Any Eloquent model can sell tickets by implementing `TicketableInterface`:
 ```php
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -164,7 +164,7 @@ Each pass receives:
 
 ```php
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 
 $newHolder = PassHolder::make([
     'name' => 'Charlie',
@@ -292,7 +292,7 @@ lives on the pass's current `PassHolder` row, not on the pass itself:
 
 ```php
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Support\Facades\Mail;
 
 class EmailPassDeliveryService implements PassDeliveryServiceInterface

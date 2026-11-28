@@ -18,7 +18,7 @@ use AIArmada\Events\Features\Registrations\Api\RegistrationSummary;
 use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\LifecyclePolicy;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;

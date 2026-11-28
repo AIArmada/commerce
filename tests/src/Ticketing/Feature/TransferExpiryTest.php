@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use Carbon\CarbonImmutable;
 
 it('blocks transfer at and after the deadline without scheduled cleanup', function (): void {

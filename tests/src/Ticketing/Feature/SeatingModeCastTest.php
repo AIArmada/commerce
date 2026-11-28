@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 beforeEach(function (): void {

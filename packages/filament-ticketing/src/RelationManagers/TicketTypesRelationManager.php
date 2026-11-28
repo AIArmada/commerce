@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\FilamentTicketing\Schemas\TicketTypeFormSchema;
 use AIArmada\FilamentTicketing\Tables\TicketTypeTable;
 use Filament\Actions\CreateAction;

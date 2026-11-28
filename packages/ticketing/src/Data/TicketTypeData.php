@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Data;
 
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
 

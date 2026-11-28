@@ -9,7 +9,7 @@ use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;

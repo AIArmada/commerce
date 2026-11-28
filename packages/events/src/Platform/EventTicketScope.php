@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Platform;
 
 use AIArmada\Events\Data\EventRegistrationScopeData;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 
 final class EventTicketScope

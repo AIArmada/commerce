@@ -6,8 +6,8 @@ namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Model;
 

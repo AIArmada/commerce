@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\Ticketing\Models\PassTransfer;
+use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Tables;

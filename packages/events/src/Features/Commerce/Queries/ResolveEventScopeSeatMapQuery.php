@@ -6,7 +6,7 @@ namespace AIArmada\Events\Features\Commerce\Queries;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Database\Eloquent\Model;
 
 final class ResolveEventScopeSeatMapQuery

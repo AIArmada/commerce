@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 

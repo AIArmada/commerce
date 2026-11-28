@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Services;
 
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Notifications\TicketNotification;
 use Illuminate\Support\Facades\Notification;
 

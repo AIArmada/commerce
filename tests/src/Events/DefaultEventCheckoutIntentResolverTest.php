@@ -12,7 +12,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Commerce\Queries\DefaultEventCheckoutIntentResolver;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {

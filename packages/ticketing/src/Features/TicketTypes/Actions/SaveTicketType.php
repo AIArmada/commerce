@@ -9,7 +9,7 @@ use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;

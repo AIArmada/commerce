@@ -8,7 +8,7 @@ use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 

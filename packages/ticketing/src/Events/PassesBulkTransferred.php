@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Events;
 
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Events\Dispatchable;

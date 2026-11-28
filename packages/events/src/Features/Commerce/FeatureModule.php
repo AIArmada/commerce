@@ -37,7 +37,7 @@ use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Events\OrderRefundFailed;
 use AIArmada\Ticketing\Events\PassIssued;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use RuntimeException;

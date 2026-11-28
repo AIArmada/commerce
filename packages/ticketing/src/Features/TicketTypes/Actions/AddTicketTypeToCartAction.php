@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use Carbon\CarbonImmutable;

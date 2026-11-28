@@ -6,9 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
-use AIArmada\Ticketing\Models\PassTransfer;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
 use Illuminate\Auth\Access\AuthorizationException;
 
 function createUserHolder(string $name, string $email): User

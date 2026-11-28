@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Policies;
 
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\User;
 

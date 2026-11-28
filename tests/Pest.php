@@ -35,8 +35,8 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Filament\Notifications\NotificationMailbox;
 use Illuminate\Support\Facades\DB;
 

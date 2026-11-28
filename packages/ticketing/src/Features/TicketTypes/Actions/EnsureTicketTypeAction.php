@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 

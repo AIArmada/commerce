@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\States\Revoked;
 
 final readonly class RevokePassAction

@@ -14,8 +14,8 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Str;
 
 if (! function_exists('createMixedScopeOrderItem')) {

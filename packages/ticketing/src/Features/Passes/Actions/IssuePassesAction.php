@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;

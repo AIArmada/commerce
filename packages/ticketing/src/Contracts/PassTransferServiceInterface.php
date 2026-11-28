@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Contracts;
 
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 
 interface PassTransferServiceInterface
 {

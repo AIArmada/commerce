@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Models;
+namespace AIArmada\Ticketing\Features\TicketTypes\Models;
+
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;

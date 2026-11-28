@@ -11,7 +11,7 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 it('issues passes for registration items', function (): void {
     $event = Event::factory()->create();
