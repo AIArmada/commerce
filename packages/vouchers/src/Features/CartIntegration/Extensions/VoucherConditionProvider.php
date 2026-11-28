@@ -13,7 +13,7 @@ use AIArmada\Cart\Runtime\ConditionProviderInterface;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 
 /**
@@ -31,7 +31,7 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
     private const int PRIORITY = 100;
 
     public function __construct(
-        private VoucherServiceInterface $voucherService
+        private VoucherValidation $validator
     ) {}
 
     /**
@@ -51,7 +51,7 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
                 continue;
             }
 
-            $validationResult = $this->voucherService->validate($code, $cart);
+            $validationResult = $this->validator->validate($code, $cart);
             $snapshot = $validationResult->getDetail('voucher');
 
             if (! $validationResult->isValid || ! is_array($snapshot)
@@ -89,7 +89,7 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
             return false;
         }
 
-        $validationResult = $this->voucherService->validate($code, $cart);
+        $validationResult = $this->validator->validate($code, $cart);
 
         return $validationResult->matchesVoucher($voucherId)
             && $validationResult->matchesTerms($condition->getAttribute('voucher_data'));

@@ -51,3 +51,11 @@ arch('wallet persistence and actions do not import lifecycle implementation clas
         'AIArmada\Vouchers\Features\Lifecycle\Queries',
         'AIArmada\Vouchers\Features\Lifecycle\Persistence',
     ]);
+
+arch('cart integration depends on feature validation APIs instead of the broad voucher service')
+    ->expect('AIArmada\\Vouchers\\Features\\CartIntegration')
+    ->not->toUse([
+        'AIArmada\\Vouchers\\Facades\\Voucher',
+        'AIArmada\\Vouchers\\Runtime\\VoucherServiceInterface',
+        'AIArmada\\Vouchers\\Services\\VoucherService',
+    ]);

@@ -13,13 +13,13 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
-use AIArmada\Vouchers\Services\VoucherService;
 use Mockery;
 
 beforeEach(function (): void {
-    $this->voucherService = Mockery::mock(VoucherService::class);
-    $this->provider = new VoucherConditionProvider($this->voucherService);
+    $this->validator = Mockery::mock(VoucherValidation::class);
+    $this->provider = new VoucherConditionProvider($this->validator);
 });
 
 afterEach(function (): void {
@@ -117,7 +117,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
     it('skips voucher when not found in service', function (): void {
         $cart = createCartForVoucherConditionTest(['voucher_codes' => ['INVALID']]);
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('INVALID', $cart)
             ->once()
             ->andReturn(createInvalidValidationResult('Voucher not found.'));
@@ -129,7 +129,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
 
     it('skips voucher when validation fails', function (): void {
         $cart = createCartForVoucherConditionTest(['voucher_codes' => ['EXPIRED']]);
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('EXPIRED', $cart)
             ->once()
             ->andReturn(createInvalidValidationResult('Voucher has expired'));
@@ -147,7 +147,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
             value: 1000, // 10% = 1000 basis points
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('SAVE10', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -169,7 +169,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
             value: 2000, // $20.00 = 2000 cents
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('FIXED20', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -188,7 +188,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
             value: 0,
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('FREESHIP', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -204,12 +204,12 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
         $voucher1 = createVoucherData(code: 'SAVE10', type: VoucherType::Percentage, value: 1000); // 10%
         $voucher2 = createVoucherData(code: 'FIXED5', type: VoucherType::Fixed, value: 500); // $5.00
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('SAVE10', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher1));
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('FIXED5', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher2));
@@ -232,7 +232,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
             currency: 'EUR'
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('TEST', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -254,7 +254,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
         $cart = createCartForVoucherConditionTest(['voucher_codes' => ['PERCENT']]);
         $voucher = createVoucherData(code: 'PERCENT', type: VoucherType::Percentage, value: 1000); // 10%
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('PERCENT', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -272,7 +272,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
         $cart = createCartForVoucherConditionTest(['voucher_codes' => ['SHIP']]);
         $voucher = createVoucherData(code: 'SHIP', type: VoucherType::FreeShipping, value: 0);
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('SHIP', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -318,7 +318,7 @@ describe('VoucherConditionProvider validate', function (): void {
             value: '-10%'
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(createValidValidationResult(createVoucherData(code: 'VALID')));
@@ -342,7 +342,7 @@ describe('VoucherConditionProvider validate', function (): void {
             value: '-10%'
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('EXPIRED', $cart)
             ->once()
             ->andReturn(createInvalidValidationResult('Voucher expired'));
@@ -359,17 +359,17 @@ describe('VoucherConditionProvider edge cases', function (): void {
 
         $validVoucher = createVoucherData(code: 'VALID', type: VoucherType::Percentage, value: 1000); // 10%
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('NOTFOUND', $cart)
             ->once()
             ->andReturn(createInvalidValidationResult('Voucher not found.'));
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(createValidValidationResult($validVoucher));
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('INVALID', $cart)
             ->once()
             ->andReturn(createInvalidValidationResult());
@@ -389,7 +389,7 @@ describe('VoucherConditionProvider edge cases', function (): void {
             value: 2550, // $25.50 = 2550 cents
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('DECIMAL', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -409,7 +409,7 @@ describe('VoucherConditionProvider edge cases', function (): void {
             value: 1250, // 12.5% = 1250 basis points
         );
 
-        $this->voucherService->shouldReceive('validate')
+        $this->validator->shouldReceive('validate')
             ->with('PERCENT', $cart)
             ->once()
             ->andReturn(createValidValidationResult($voucher));
@@ -424,7 +424,7 @@ describe('VoucherConditionProvider edge cases', function (): void {
 it('does not recreate a removed metadata voucher or duplicate normalized codes', function (): void {
     $cart = createCartForVoucherConditionTest(['voucher_codes' => ['SAVE10', ' save10 ']]);
     $voucher = createVoucherData();
-    $this->voucherService->shouldReceive('validate')->with('SAVE10', $cart)->once()->andReturn(createValidValidationResult($voucher));
+    $this->validator->shouldReceive('validate')->with('SAVE10', $cart)->once()->andReturn(createValidValidationResult($voucher));
 
     $conditions = $this->provider->getConditionsFor($cart);
     expect($conditions)->toHaveCount(1);
@@ -438,7 +438,7 @@ it('rejects a provider condition when the same code resolves to another voucher'
     $selected = createVoucherData(id: 'selected');
     $replacement = createVoucherData(id: 'replacement');
 
-    $this->voucherService->shouldReceive('validate')->with('SAVE10', $cart)->twice()->andReturn(
+    $this->validator->shouldReceive('validate')->with('SAVE10', $cart)->twice()->andReturn(
         createValidValidationResult($selected),
         createValidValidationResult($replacement),
     );
@@ -462,7 +462,7 @@ it('rejects provider conditions without voucher identity before validation', fun
         value: '-10%',
     );
 
-    $this->voucherService->shouldNotReceive('validate');
+    $this->validator->shouldNotReceive('validate');
 
     expect($this->provider->validate($condition, $cart))->toBeFalse();
 });
@@ -472,7 +472,7 @@ it('rejects a provider condition when discount terms change for the same voucher
     $selected = createVoucherData(value: 1000);
     $updated = createVoucherData(value: 500);
 
-    $this->voucherService->shouldReceive('validate')->with('SAVE10', $cart)->twice()->andReturn(
+    $this->validator->shouldReceive('validate')->with('SAVE10', $cart)->twice()->andReturn(
         createValidValidationResult($selected),
         createValidValidationResult($updated),
     );

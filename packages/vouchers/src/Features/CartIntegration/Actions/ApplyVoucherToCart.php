@@ -10,9 +10,9 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,7 +32,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
     ): VoucherCondition {
         $code = $this->normalizeCode($code);
 
-        $validationResult = Voucher::validate($code, $cart);
+        $validationResult = app(VoucherValidation::class)->validate($code, $cart);
         if (! $validationResult->isValid) {
             throw new InvalidVoucherException(
                 "Voucher '{$code}' cannot be applied: {$validationResult->reason}"

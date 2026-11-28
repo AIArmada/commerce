@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
-use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
@@ -213,7 +213,7 @@ trait InteractsWithVouchers
 
         foreach ($this->getAppliedVouchers() as $voucherCondition) {
             $code = $voucherCondition->getVoucherCode();
-            $validationResult = Voucher::validate($code, $this->getUnderlyingCart());
+            $validationResult = app(VoucherValidation::class)->validate($code, $this->getUnderlyingCart());
 
             if (! $validationResult->matchesTerms($voucherCondition->getVoucher()->toArray())) {
                 $this->removeVoucher($code);

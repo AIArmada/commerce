@@ -8,7 +8,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\CartWithVouchers;
@@ -24,6 +24,8 @@ beforeEach(function (): void {
     }
 
     Cart::clear();
+    $this->validator = Mockery::mock(VoucherValidation::class);
+    app()->instance(VoucherValidation::class, $this->validator);
 });
 
 afterEach(function (): void {
@@ -41,7 +43,7 @@ it('proxies voucher interactions via cart manager wrapper', function (): void {
         'status' => 'active',
     ]);
 
-    Voucher::shouldReceive('validate')
+    $this->validator->shouldReceive('validate')
         ->atLeast()
         ->once()
         ->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
@@ -64,7 +66,7 @@ it('rejects vouchers when stacking is disabled even if auto replacement is enabl
         'currency' => 'USD',
     ]);
 
-    Voucher::shouldReceive('validate')->once()->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
+    $this->validator->shouldReceive('validate')->once()->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->setStackingPolicy(new StackingPolicy(
@@ -92,12 +94,12 @@ it('removes a cart voucher when its code resolves to a different voucher identit
         'id' => 'replacement-voucher',
     ]);
 
-    Voucher::shouldReceive('validate')
+    $this->validator->shouldReceive('validate')
         ->once()
         ->ordered()
         ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
 
-    Voucher::shouldReceive('validate')
+    $this->validator->shouldReceive('validate')
         ->once()
         ->ordered()
         ->andReturn(VoucherValidationResult::valid(['voucher' => $replacement->toArray()]));
@@ -124,12 +126,12 @@ it('removes an applied voucher when its discount terms change without changing i
         'value' => 50,
     ]);
 
-    Voucher::shouldReceive('validate')
+    $this->validator->shouldReceive('validate')
         ->once()
         ->ordered()
         ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
 
-    Voucher::shouldReceive('validate')
+    $this->validator->shouldReceive('validate')
         ->once()
         ->ordered()
         ->andReturn(VoucherValidationResult::valid(['voucher' => $updated->toArray()]));
