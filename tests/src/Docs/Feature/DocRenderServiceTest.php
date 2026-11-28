@@ -258,3 +258,37 @@ it('retries PDF publication if document content changes while the driver is rend
     expect(Storage::disk('local')->get($path))->toBe('fresh PDF')
         ->and($renderer->storePdf($doc))->toBe($path);
 });
+
+it('rejects ambiguous relative rich-content URLs before rendering links and images', function (string $url): void {
+    $renderer = new \AIArmada\Docs\Rendering\TiptapJsonRenderer;
+
+    $html = $renderer->render([
+        'type' => 'doc',
+        'content' => [
+            ['type' => 'image', 'attrs' => ['src' => $url]],
+            ['type' => 'text', 'text' => 'Link', 'marks' => [['type' => 'link', 'attrs' => ['href' => $url]]]],
+        ],
+    ])->toHtml();
+
+    expect($html)->toBe('Link');
+})->with([
+    'backslash authority' => '/\\example.test/image.png',
+    'tab in authority' => "/\t/example.test/image.png",
+    'newline in authority' => "/\n/example.test/image.png",
+    'space in path' => '/images/my image.png',
+    'protocol-relative' => '//example.test/image.png',
+]);
+
+it('preserves unambiguous root-relative rich-content links and images', function (): void {
+    $renderer = new \AIArmada\Docs\Rendering\TiptapJsonRenderer;
+
+    $html = $renderer->render([
+        'type' => 'doc',
+        'content' => [
+            ['type' => 'image', 'attrs' => ['src' => '/images/my%20image.png']],
+            ['type' => 'text', 'text' => 'Link', 'marks' => [['type' => 'link', 'attrs' => ['href' => '/documents/123']]]],
+        ],
+    ])->toHtml();
+
+    expect($html)->toContain('src="/images/my%20image.png"', 'href="/documents/123"');
+});

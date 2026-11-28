@@ -209,7 +209,7 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
 
     private function isSafeUrl(string $url): bool
     {
-        if ($url === '') {
+        if ($url === '' || str_contains($url, '\\') || preg_match('/[\x00-\x20\x7f]/', $url) === 1) {
             return false;
         }
 
