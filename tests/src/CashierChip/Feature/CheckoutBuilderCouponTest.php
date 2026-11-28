@@ -6,7 +6,6 @@ use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +30,7 @@ final class CheckoutBuilderCouponVoucherService extends VoucherService
         ?array $metadata = null,
         ?Model $redeemedBy = null,
         ?string $notes = null,
-        ?VoucherModel $voucherModel = null,
+        ?string $voucherId = null,
     ): void {}
 }
 
