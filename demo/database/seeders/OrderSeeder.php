@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\PendingPayment;
@@ -34,7 +33,7 @@ final class OrderSeeder extends Seeder
             $user = $users->random();
             /** @var class-string<\AIArmada\Orders\States\OrderStatus> $status */
             $status = $orderStatuses[array_rand($orderStatuses)];
-            $itemCount = rand(1, 4);
+            $itemCount = rand(1, min(4, $products->count()));
             $orderProducts = $products->random($itemCount);
 
             $subtotal = 0;
@@ -58,7 +57,7 @@ final class OrderSeeder extends Seeder
                 ];
             }
 
-            $discountTotal = rand(0, 1) ? rand(500, 5000) : 0;
+            $discountTotal = rand(0, 1) ? min($subtotal, rand(500, 5000)) : 0;
             $taxTotal = (int) round($subtotal * 0.06); // 6% SST
             $shippingTotal = rand(0, 1) ? rand(500, 2000) : 0;
             $grandTotal = $subtotal - $discountTotal + $taxTotal + $shippingTotal;
@@ -79,7 +78,7 @@ final class OrderSeeder extends Seeder
 
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
-                'status' => $status,
+                'status' => PendingPayment::class,
                 'customer_type' => $user->getMorphClass(),
                 'customer_id' => $user->getKey(),
                 'subtotal' => $subtotal,
@@ -88,21 +87,25 @@ final class OrderSeeder extends Seeder
                 'shipping_total' => $shippingTotal,
                 'grand_total' => $grandTotal,
                 'currency' => 'MYR',
+            ]);
+
+            $admin = app(OrderAdministration::class);
+            $admin->addAddress((string) $order->getKey(), $address, 'billing');
+            $admin->addAddress((string) $order->getKey(), $address, 'shipping');
+
+            foreach ($items as $itemData) {
+                $admin->addItem((string) $order->getKey(), $itemData);
+            }
+
+            // Historical demo fixtures are deliberately seeded without firing
+            // live payment and fulfillment integrations.
+            $order->forceFill([
+                'status' => $status,
                 'paid_at' => in_array($status, [Processing::class, Shipped::class, Delivered::class], true) ? fake()->dateTimeBetween('-29 days', 'now') : null,
                 'shipped_at' => in_array($status, [Shipped::class, Delivered::class], true) ? fake()->dateTimeBetween('-20 days', 'now') : null,
                 'delivered_at' => $status === Delivered::class ? fake()->dateTimeBetween('-10 days', 'now') : null,
                 'canceled_at' => $status === Canceled::class ? fake()->dateTimeBetween('-5 days', 'now') : null,
-            ]);
-
-            app(CreateOrder::class)->addAddress($order, $address, 'billing');
-            app(CreateOrder::class)->addAddress($order, $address, 'shipping');
-
-            foreach ($items as $itemData) {
-                OrderItem::create([
-                    ...$itemData,
-                    'order_id' => $order->id,
-                ]);
-            }
+            ])->saveQuietly();
         }
     }
 }

@@ -116,9 +116,9 @@ Yes. Orders hard-requires `aiarmada/addressing` and uses `HasAddresses`,
 ### Example
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Contracts\OrderAdministration;
 
-app(CreateOrder::class)->addAddress($order, $addressData, 'shipping');
+app(OrderAdministration::class)->addAddress((string) $order->getKey(), $addressData, 'shipping');
 
 $shipping = $order->primaryAddress('shipping');
 ```

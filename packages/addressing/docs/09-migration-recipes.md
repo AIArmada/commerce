@@ -149,9 +149,9 @@ Orders store one fresh addressing `Address` copy per order and type, created
 at order time and attached through `HasAddresses`.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Contracts\OrderAdministration;
 
-app(CreateOrder::class)->addAddress($order, [
+app(OrderAdministration::class)->addAddress((string) $order->getKey(), [
     'first_name' => 'Demo',
     'last_name' => 'Buyer',
     'line1' => '1 Jalan Demo',
