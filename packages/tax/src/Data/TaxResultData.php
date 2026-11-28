@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Data;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
-use Throwable;
 
 final readonly class TaxResultData
 {
@@ -68,14 +68,17 @@ final readonly class TaxResultData
 
     public function getMoney(): Money
     {
-        $currency = preg_match('/^[A-Z]{3}$/', mb_strtoupper($this->currency)) === 1
-            ? mb_strtoupper($this->currency)
-            : (string) config('tax.defaults.currency', 'MYR');
+        $currency = mb_strtoupper($this->currency);
+        $currencies = Currency::getCurrencies();
 
-        try {
-            return Money::{$currency}($this->taxAmount);
-        } catch (Throwable) {
-            return Money::MYR($this->taxAmount);
+        if (! isset($currencies[$currency])) {
+            $currency = mb_strtoupper((string) config('tax.defaults.currency', 'MYR'));
         }
+
+        if (! isset($currencies[$currency])) {
+            $currency = 'MYR';
+        }
+
+        return Money::{$currency}($this->taxAmount);
     }
 }
