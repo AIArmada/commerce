@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Facades;
 
 use AIArmada\Docs\Data\DocData;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocVersion;
 use AIArmada\Docs\Services\DocService;

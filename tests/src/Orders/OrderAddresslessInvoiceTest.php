@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;

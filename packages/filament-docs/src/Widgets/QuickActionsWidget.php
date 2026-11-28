@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\FilamentDocs\Pages\AgingReportPage;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use Filament\Actions\Action;

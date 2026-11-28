@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Documents\Actions;
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 

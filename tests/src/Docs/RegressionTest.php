@@ -8,7 +8,7 @@ use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocPreviewController;
 use AIArmada\Docs\Enums\DocPaymentStatus;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\DeliverDocEmail;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;

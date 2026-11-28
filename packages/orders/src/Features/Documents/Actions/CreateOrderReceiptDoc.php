@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Documents\Actions;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;

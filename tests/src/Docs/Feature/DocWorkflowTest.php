@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocWorkflow;
 use AIArmada\Docs\Models\DocWorkflowStep;

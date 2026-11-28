@@ -6,7 +6,7 @@ namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\DocData;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

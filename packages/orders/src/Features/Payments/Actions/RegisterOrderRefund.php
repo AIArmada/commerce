@@ -191,6 +191,11 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         });
     }
 
+    public function reserveForCancellation(string $orderId, string $reason): void
+    {
+        $this->createCancellationReservations(Order::query()->findOrFail($orderId), $reason);
+    }
+
     /**
      * Reserve the remaining refundable balance as pending refunds when an
      * order is canceled.
@@ -204,11 +209,6 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
      *
      * @return list<OrderRefund>
      */
-    public function reserveForCancellation(string $orderId, string $reason): void
-    {
-        $this->createCancellationReservations(Order::query()->findOrFail($orderId), $reason);
-    }
-
     public function createCancellationReservations(Order $order, string $reason): array
     {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);

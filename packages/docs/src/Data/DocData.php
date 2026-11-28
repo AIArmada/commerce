@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Data;
 
-use AIArmada\Docs\Enums\DocType;
 use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;

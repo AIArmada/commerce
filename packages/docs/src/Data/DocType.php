@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Enums;
+namespace AIArmada\Docs\Data;
 
 /**
  * Document types supported by the docs package.

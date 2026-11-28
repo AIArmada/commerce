@@ -9,7 +9,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Bus;

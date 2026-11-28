@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\FilamentDocs\Support\DocPermissions;
