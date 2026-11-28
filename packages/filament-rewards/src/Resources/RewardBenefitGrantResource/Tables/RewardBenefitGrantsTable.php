@@ -13,7 +13,7 @@ use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RecordRewardBenefitRecallAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -35,7 +35,7 @@ class RewardBenefitGrantsTable
                 TextColumn::make('grant_key')->label('Grant')->searchable(),
                 TextColumn::make('item_title')
                     ->label('Benefit')
-                    ->state(fn (RewardBenefitGrant $record): string => (string) (RewardBenefitItem::query()->whereKey((string) $record->item_id)->value('title') ?? $record->item_id)),
+                    ->state(fn (RewardBenefitGrant $record): string => (string) (app(RewardBenefitDirectoryApi::class)->title((string) $record->item_id) ?? $record->item_id)),
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(fn (RewardBenefitGrant $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id))
@@ -50,6 +50,7 @@ class RewardBenefitGrantsTable
                     'reserved' => 'Reserved',
                     'issued' => 'Issued',
                     'consumed' => 'Consumed',
+                    'cancelled' => 'Cancelled',
                     'revoked' => 'Revoked',
                     'expired' => 'Expired',
                 ]),

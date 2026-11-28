@@ -32,6 +32,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitDirectoryApi;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
@@ -993,4 +994,23 @@ it('requests and fulfills a cash award through the awards table', function (): v
         ->assertHasNoTableActionErrors();
 
     expect($award->refresh()->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('restricts benefit directory lookups to the active program owner', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $item = OwnerContext::withOwner($owner, function (): RewardBenefitItem {
+        $program = RewardProgram::factory()->ofMode(RewardProgramMode::Benefit)->create();
+
+        return RewardBenefitItem::factory()->create([
+            'program_id' => $program->getKey(),
+            'title' => 'Scoped catalog item',
+        ]);
+    });
+
+    $directory = app(RewardBenefitDirectoryApi::class);
+
+    expect(OwnerContext::withOwner($owner, fn (): ?string => $directory->title((string) $item->getKey())))->toBe('Scoped catalog item')
+        ->and(OwnerContext::withOwner($other, fn (): ?string => $directory->title((string) $item->getKey())))->toBeNull();
 });
