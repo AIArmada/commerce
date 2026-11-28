@@ -174,6 +174,7 @@ final class TaxExemptionsTable
                         ->label('Renew')
                         ->icon(Heroicon::OutlinedArrowPath)
                         ->color('warning')
+                        ->visible(fn (TaxExemption $record): bool => $record->isApproved())
                         ->form([
                             DatePicker::make('new_expires_at')
                                 ->label('New Expiry Date')

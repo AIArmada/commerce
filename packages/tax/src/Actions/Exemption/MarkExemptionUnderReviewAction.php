@@ -8,6 +8,7 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\UnderReviewState;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class MarkExemptionUnderReviewAction
 {
@@ -17,6 +18,10 @@ final readonly class MarkExemptionUnderReviewAction
             $locked = TaxOwnerScope::lockWritable(TaxExemption::query(), [$exemption->getKey()])->firstOrFail();
             $exemption->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
             $exemption->status->transitionTo(UnderReviewState::class);
+
+            if ($exemption->isDirty('status')) {
+                throw new RuntimeException('Tax exemption state transition was cancelled.');
+            }
 
             return $exemption;
         });

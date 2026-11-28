@@ -9,6 +9,7 @@ use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class ApproveExemptionAction
 {
@@ -19,6 +20,10 @@ final readonly class ApproveExemptionAction
             $exemption->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
             $exemption->verified_at ??= CarbonImmutable::now();
             $exemption->status->transitionTo(ApprovedState::class);
+
+            if ($exemption->isDirty('status')) {
+                throw new RuntimeException('Tax exemption state transition was cancelled.');
+            }
 
             return $exemption;
         });

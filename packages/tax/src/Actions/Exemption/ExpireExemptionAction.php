@@ -8,6 +8,7 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\ExpiredState;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class ExpireExemptionAction
 {
@@ -17,6 +18,10 @@ final readonly class ExpireExemptionAction
             $locked = TaxOwnerScope::lockWritable(TaxExemption::query(), [$exemption->getKey()])->firstOrFail();
             $exemption->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
             $exemption->status->transitionTo(ExpiredState::class);
+
+            if ($exemption->isDirty('status')) {
+                throw new RuntimeException('Tax exemption state transition was cancelled.');
+            }
 
             return $exemption;
         });
