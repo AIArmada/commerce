@@ -419,3 +419,8 @@ it('rejects stale batch allocation plans after a batch changes location', functi
         ->and($batch->fresh()->quantity_reserved)->toBe(0)
         ->and($batch->fresh()->location_id)->toBe($destination->id);
 });
+
+it('rejects nonpositive requested quantities in allocation plans', function (int $quantity): void {
+    expect(fn () => $this->service->getFefoAllocationPlan($this->product, $quantity))
+        ->toThrow(InvalidArgumentException::class, 'Quantity must be positive');
+})->with([0, -1]);

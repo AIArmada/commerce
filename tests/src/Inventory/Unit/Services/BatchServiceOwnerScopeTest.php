@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -223,4 +224,27 @@ it('rejects direct batch creation in a tenant-visible global location', function
         'location_id' => $fixture['locationGlobal']->id,
         'batch_number' => 'DIRECT-GLOBAL-WRITE',
     ]))->toThrow(AuthorizationException::class);
+});
+
+it('excludes visible global batches from tenant allocation plans and availability', function (): void {
+    $fixture = makeOwnerScopedBatchServiceFixture();
+    $sku = $fixture['sku'];
+
+    $owned = $fixture['service']->createBatch($sku, 'OWNED-ALLOC', $fixture['locationA']->id, 5);
+
+    setBatchServiceOwnerResolver(null);
+    $global = OwnerContext::withOwner(null, fn (): InventoryBatch => app(BatchService::class)
+        ->createBatch($sku, 'GLOBAL-ALLOC', $fixture['locationGlobal']->id, 100));
+
+    setBatchServiceOwnerResolver($fixture['ownerA']);
+    $lookup = app(BatchLookupService::class);
+    $allocation = app(BatchAllocationService::class);
+
+    expect($lookup->findByBatchNumber('GLOBAL-ALLOC')?->id)->toBe($global->id)
+        ->and($lookup->getTotalAvailable($sku))->toBe(5)
+        ->and($allocation->checkAvailability($sku, 6))->toBeFalse()
+        ->and($allocation->getFefoAllocationPlan($sku, 6)['available'])->toBeFalse()
+        ->and($allocation->allocateFefo($sku, 5)[0]['batch']->id)->toBe($owned->id)
+        ->and(fn () => $allocation->allocateFifo($sku, 1, $fixture['locationGlobal']->id))
+        ->toThrow(InvalidArgumentException::class);
 });

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -16,10 +15,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class BatchAllocationService implements BatchReservationBalances
+final readonly class BatchAllocationService implements BatchReservationBalances
 {
     public function __construct(
-        private readonly BatchLookupService $batches
+        private BatchLookupService $batches
     ) {}
 
     /**
@@ -50,7 +49,7 @@ final class BatchAllocationService implements BatchReservationBalances
         }
 
         if (InventoryOwnerScope::isEnabled() && $locationId !== null) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+            $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                 ->whereKey($locationId)
                 ->exists();
 
@@ -209,6 +208,10 @@ final class BatchAllocationService implements BatchReservationBalances
      */
     public function getFefoAllocationPlan(Model $model, int $quantity, ?string $locationId = null): array
     {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
         $batches = $this->batches->getAllocatableBatches($model, $locationId);
         $totalAvailable = $batches->sum(fn (InventoryBatch $b): int => $b->available);
 
@@ -273,15 +276,11 @@ final class BatchAllocationService implements BatchReservationBalances
             return [];
         }
 
-        $query = InventoryBatch::query();
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            $query->forOwner($owner, false);
-        }
-
-        $batches = $query->whereKey(array_keys($quantities))->orderBy('id')->lockForUpdate()->get();
+        $batches = InventoryOwnerScope::forMutation(InventoryBatch::query())
+            ->whereKey(array_keys($quantities))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
 
         if ($batches->count() !== count($quantities)) {
             throw new InvalidArgumentException('One or more batches are not accessible for current owner');

@@ -64,12 +64,12 @@ final readonly class BatchLookupService
     /** @return Builder<InventoryBatch> */
     private function allocatableQuery(Model $model, ?string $locationId): Builder
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryBatch::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->allocatable()
-                ->whereHas('location', fn (Builder $location): Builder => InventoryOwnerScope::applyToLocationQuery($location)->where('is_active', true))
+                ->whereHas('location', fn (Builder $location): Builder => InventoryOwnerScope::forMutation($location)->where('is_active', true))
         );
 
         if ($locationId !== null) {
