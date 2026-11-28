@@ -10,157 +10,68 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\Enums\TargetingMode;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Throwable;
 
 final class VoucherValidator implements VoucherValidation
 {
-    use QueriesVouchers;
-    use ResolvesVoucherAssignee;
+    use NormalizesVoucherCodes;
 
     public function __construct(
-        private readonly TargetingEngineInterface $targetingEngine
+        private readonly TargetingEngineInterface $targetingEngine,
+        private readonly VoucherEligibility $eligibility,
     ) {}
 
     public function validate(string $code, mixed $cart): VoucherValidationResult
     {
         $code = $this->normalizeCode($code);
-
-        // Find voucher
-        $voucher = $this->voucherQuery()
-            ->where('code', $code)
-            ->first();
-
-        if (! $voucher) {
-            return VoucherValidationResult::invalid('Voucher not found.');
-        }
-
         $cartCurrency = $cart instanceof Cart
             ? $cart->getCheckoutCurrency()
             : (is_array($cart) ? ($cart['currency'] ?? null) : null);
 
-        if ($cartCurrency !== null
-            && (! is_string($cartCurrency) || mb_strtoupper(mb_trim($cartCurrency)) !== mb_strtoupper($voucher->currency))) {
-            return VoucherValidationResult::invalid('Voucher currency does not match the cart currency.');
+        $user = $this->getUser();
+        $eligibility = $this->eligibility->validate(
+            $code,
+            $cartCurrency,
+            $user?->getMorphClass(),
+            $user === null ? null : (string) $user->getKey(),
+        );
+
+        if (! $eligibility->isValid) {
+            return $eligibility;
         }
 
-        // Recipient-bound vouchers refuse every other account. Unmarked
-        // vouchers skip this check entirely.
-        try {
-            $assignee = $this->resolveAssignee($voucher);
-        } catch (InvalidVoucherException $exception) {
-            return VoucherValidationResult::invalid($exception->getMessage());
+        $snapshot = $eligibility->getDetail('voucher');
+
+        if (! is_array($snapshot)) {
+            return VoucherValidationResult::invalid('Voucher not found.');
         }
 
-        if ($assignee !== null) {
-            $user = $this->getUser();
-
-            if (! $user instanceof Model
-                || $user->getMorphClass() !== $assignee['type']
-                || (string) $user->getKey() !== $assignee['id']
-            ) {
-                return VoucherValidationResult::invalid('This voucher is assigned to another account.');
-            }
-        }
-
-        // Check start date (before status check, as time-based validations are more specific)
-        if (! $voucher->hasStarted()) {
-            return VoucherValidationResult::invalid(
-                'Voucher is not yet available.',
-                ['starts_at' => $voucher->starts_at]
-            );
-        }
-
-        // Check expiry (before status check, as time-based validations are more specific)
-        if ($voucher->isExpired()) {
-            return VoucherValidationResult::invalid(
-                'Voucher has expired.',
-                ['expires_at' => $voucher->expires_at]
-            );
-        }
-
-        // Check status (after time-based checks)
-        if (! $voucher->isActive()) {
-            if ($voucher->status instanceof Paused) {
-                return VoucherValidationResult::invalid('Voucher is paused.');
-            }
-
-            if ($voucher->status instanceof Expired) {
-                return VoucherValidationResult::invalid('Voucher has expired.');
-            }
-
-            if ($voucher->status instanceof Depleted) {
-                return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
-            }
-
-            return VoucherValidationResult::invalid('Voucher is not active.');
-        }
-
-        // Check global usage limit
-        if (config('vouchers.validation.check_global_limit', true)) {
-            if (! $voucher->hasUsageLimitRemaining()) {
-                return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
-            }
-        }
-
-        // Check per-user usage limit. Redemption requires an identified customer,
-        // so validation must not approve a customer-limited voucher for a guest.
-        if ($voucher->usage_limit_per_user !== null) {
-            $user = $this->getUser();
-
-            if ($voucher->usage_limit_per_user === 0) {
-                return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
-            }
-
-            if ($user === null) {
-                return VoucherValidationResult::invalid('Sign in to use this voucher.');
-            }
-
-            if (config('vouchers.validation.check_user_limit', true)) {
-                $usageCount = VoucherUsage::query()
-                    ->where('voucher_id', $voucher->id)
-                    ->where('redeemed_by_type', $user->getMorphClass())
-                    ->where('redeemed_by_id', $user->getKey())
-                    ->count();
-
-                if ($usageCount >= $voucher->usage_limit_per_user) {
-                    return VoucherValidationResult::invalid(
-                        'You have already used this voucher the maximum number of times.'
-                    );
-                }
-            }
-        }
+        $voucher = VoucherData::fromArray($snapshot);
 
         // Check minimum cart value
-        if (config('vouchers.validation.check_min_cart_value', true) && $voucher->min_cart_value) {
+        if (config('vouchers.validation.check_min_cart_value', true) && $voucher->minCartValue) {
             $cartTotal = $this->getCartTotal($cart);
 
-            if ($cartTotal < $voucher->min_cart_value) {
-                $formattedMinValue = MoneyFormatter::formatMinor($voucher->min_cart_value, (string) ($voucher->currency ?? config('vouchers.default_currency', 'MYR')));
+            if ($cartTotal < $voucher->minCartValue) {
+                $formattedMinValue = MoneyFormatter::formatMinor($voucher->minCartValue, $voucher->currency);
 
                 Log::info('Voucher min cart value check failed', [
                     'code' => $code,
                     'cartTotal' => $cartTotal,
-                    'min_cart_value' => $voucher->min_cart_value,
+                    'min_cart_value' => $voucher->minCartValue,
                 ]);
 
                 return VoucherValidationResult::invalid(
                     "Minimum cart value of {$formattedMinValue} required.",
-                    ['min_cart_value' => $voucher->min_cart_value, 'current_cart_value' => $cartTotal]
+                    ['min_cart_value' => $voucher->minCartValue, 'current_cart_value' => $cartTotal]
                 );
             }
         }
@@ -173,7 +84,7 @@ final class VoucherValidator implements VoucherValidation
             }
         }
 
-        return VoucherValidationResult::valid(['voucher' => VoucherSnapshot::fromModel($voucher)->toArray()]);
+        return VoucherValidationResult::valid(['voucher' => $voucher->toArray()]);
     }
 
     protected function getUser(): ?Model
@@ -181,17 +92,6 @@ final class VoucherValidator implements VoucherValidation
         $user = Auth::user();
 
         return $user instanceof Model ? $user : null;
-    }
-
-    protected function getUserIdentifier(): string
-    {
-        $userId = Auth::id();
-
-        if ($userId !== null) {
-            return (string) $userId;
-        }
-
-        return (string) Session::getId();
     }
 
     protected function getCartTotal(mixed $cart): int
@@ -224,9 +124,9 @@ final class VoucherValidator implements VoucherValidation
     /**
      * Validate voucher targeting rules against the cart context.
      */
-    protected function validateTargeting(Voucher $voucher, mixed $cart): VoucherValidationResult
+    protected function validateTargeting(VoucherData $voucher, mixed $cart): VoucherValidationResult
     {
-        $targetingData = $this->parseTargetingDefinition($voucher->target_definition);
+        $targetingData = $this->parseTargetingDefinition($voucher->targetDefinition);
 
         if ($targetingData === null) {
             return VoucherValidationResult::valid();
