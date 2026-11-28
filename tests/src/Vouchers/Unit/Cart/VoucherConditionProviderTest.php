@@ -314,14 +314,14 @@ describe('VoucherConditionProvider validate', function (): void {
                 'phase' => ConditionPhase::CART_SUBTOTAL->value,
                 'application' => ConditionApplication::AGGREGATE->value,
             ],
-            attributes: ['voucher_code' => 'VALID'],
+            attributes: ['voucher_code' => 'VALID', 'voucher_id' => 'voucher-123'],
             value: '-10%'
         );
 
         $this->voucherService->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
-            ->andReturn(createValidValidationResult());
+            ->andReturn(createValidValidationResult(createVoucherData(code: 'VALID')));
 
         $result = $this->provider->validate($condition, $cart);
 
@@ -338,7 +338,7 @@ describe('VoucherConditionProvider validate', function (): void {
                 'phase' => ConditionPhase::CART_SUBTOTAL->value,
                 'application' => ConditionApplication::AGGREGATE->value,
             ],
-            attributes: ['voucher_code' => 'EXPIRED'],
+            attributes: ['voucher_code' => 'EXPIRED', 'voucher_id' => 'voucher-123'],
             value: '-10%'
         );
 
@@ -431,4 +431,38 @@ it('does not recreate a removed metadata voucher or duplicate normalized codes',
 
     $cart->setMetadata('voucher_codes', []);
     expect($this->provider->validate($conditions[0], $cart))->toBeFalse();
+});
+
+it('rejects a provider condition when the same code resolves to another voucher', function (): void {
+    $cart = createCartForVoucherConditionTest(['voucher_codes' => ['SAVE10']]);
+    $selected = createVoucherData(id: 'selected');
+    $replacement = createVoucherData(id: 'replacement');
+
+    $this->voucherService->shouldReceive('validate')->with('SAVE10', $cart)->twice()->andReturn(
+        createValidValidationResult($selected),
+        createValidValidationResult($replacement),
+    );
+
+    $condition = $this->provider->getConditionsFor($cart)[0];
+
+    expect($this->provider->validate($condition, $cart))->toBeFalse();
+});
+
+it('rejects provider conditions without voucher identity before validation', function (): void {
+    $cart = createCartForVoucherConditionTest(['voucher_codes' => ['SAVE10']]);
+    $condition = new CartCondition(
+        name: 'voucher_SAVE10',
+        type: 'voucher',
+        target: [
+            'scope' => ConditionScope::CART->value,
+            'phase' => ConditionPhase::CART_SUBTOTAL->value,
+            'application' => ConditionApplication::AGGREGATE->value,
+        ],
+        attributes: ['voucher_code' => 'SAVE10'],
+        value: '-10%',
+    );
+
+    $this->voucherService->shouldNotReceive('validate');
+
+    expect($this->provider->validate($condition, $cart))->toBeFalse();
 });

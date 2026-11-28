@@ -81,15 +81,17 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
         }
 
         $code = $condition->getAttribute('voucher_code');
+        $voucherId = $condition->getAttribute('voucher_id');
 
-        if (! is_string($code) || ! in_array($this->normalizeCode($code), $this->metadataCodes($cart), true)
+        if (! is_string($code) || ! is_string($voucherId) || $voucherId === ''
+            || ! in_array($this->normalizeCode($code), $this->metadataCodes($cart), true)
             || $this->hasDirectCondition($cart, $this->normalizeCode($code))) {
             return false;
         }
 
         $validationResult = $this->voucherService->validate($code, $cart);
 
-        return $validationResult->isValid;
+        return $validationResult->matchesVoucher($voucherId);
     }
 
     /** @return list<string> */
