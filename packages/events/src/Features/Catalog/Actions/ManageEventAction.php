@@ -50,6 +50,11 @@ final readonly class ManageEventAction
                 'registration_mode', 'issue_passes_for_free', 'metadata',
             ]));
 
+            if ($eventId === null) {
+                $event->visibility = Event::PUBLIC;
+                $event->delivery_mode = Event::DELIVERY_PHYSICAL;
+            }
+
             $event->fill($attributes);
 
             if (blank($event->title) || blank($event->slug)) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Contracts\EventImportScopeValidator;
+use AIArmada\Events\Features\Catalog\Actions\ImportEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
@@ -36,7 +37,8 @@ final class EventSessionImporter extends Importer
                 ->rules(['required', 'uuid'])
                 ->label('Event ID'),
             ImportColumn::make('event_occurrence_id')
-                ->rules(['nullable', 'uuid'])
+                ->requiredMapping()
+                ->rules(['required', 'uuid'])
                 ->label('Occurrence ID'),
             ImportColumn::make('title')
                 ->requiredMapping()
@@ -102,6 +104,11 @@ final class EventSessionImporter extends Importer
     private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
     {
         app(EventImportScopeValidator::class)->validate($eventId, $occurrenceId, $this->resolveImportUser(), 'update');
+    }
+
+    public function saveRecord(): void
+    {
+        $this->record = app(ImportEventSessionAction::class)->handle($this->data, $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string

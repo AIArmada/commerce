@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -62,12 +63,13 @@ final class CreateEventSessionAction
             $slug = $this->uniqueSlugInEvent((string) $event->getKey(), $slugBase);
 
             $sortOrder = blank($attributes['sort_order'] ?? null)
-                ? (int) EventSession::query()
+                ? (int) ModelResolver::sessionClass()::query()
                     ->where('event_occurrence_id', $occurrence->getKey())
                     ->max('sort_order') + 1
                 : (int) $attributes['sort_order'];
 
-            $session = EventSession::query()->create([
+            /** @var EventSession $session */
+            $session = ModelResolver::sessionClass()::query()->create([
                 'event_id' => $event->getKey(),
                 'event_occurrence_id' => $occurrence->getKey(),
                 'title' => $title,
@@ -130,7 +132,7 @@ final class CreateEventSessionAction
     {
         $base = $slug === '' ? 'session' : $slug;
 
-        $query = EventSession::query()
+        $query = ModelResolver::sessionClass()::query()
             ->withoutOwnerScope()
             ->where('event_id', $eventId);
 
@@ -164,7 +166,7 @@ final class CreateEventSessionAction
             $suffix++;
         }
 
-        while (EventSession::query()->withoutOwnerScope()->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
+        while (ModelResolver::sessionClass()::query()->withoutOwnerScope()->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
             $candidate = $base . '-' . $suffix;
             $suffix++;
         }

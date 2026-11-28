@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Contracts\EventImportScopeValidator;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
@@ -12,6 +13,7 @@ use Closure;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use LogicException;
@@ -61,6 +63,7 @@ final class EventRegistrationImporter extends Importer
                         }
                     },
                 ])
+                ->fillRecordUsing(static function (): void {})
                 ->label('Status'),
             ImportColumn::make('source')
                 ->requiredMapping()
@@ -98,22 +101,6 @@ final class EventRegistrationImporter extends Importer
         $this->authorizeRecordCreate();
         $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
 
-        $record = $this->record;
-        $status = $this->data['status'] ?? null;
-
-        if (! $record instanceof EventRegistration || ! is_string($status)) {
-            throw ValidationException::withMessages([
-                'status' => 'A valid registration status is required.',
-            ]);
-        }
-
-        try {
-            $record->initializeStatus($status);
-        } catch (InvalidArgumentException | LogicException $exception) {
-            throw ValidationException::withMessages([
-                'status' => $exception->getMessage(),
-            ]);
-        }
     }
 
     protected function beforeUpdate(): void
@@ -134,6 +121,31 @@ final class EventRegistrationImporter extends Importer
     private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
     {
         app(EventImportScopeValidator::class)->validate($eventId, $occurrenceId, $this->resolveImportUser(), 'manageAdmissions');
+    }
+
+    public function saveRecord(): void
+    {
+        $data = Arr::only($this->data, ['event_id', 'event_occurrence_id', 'registration_type', 'status', 'source', 'total_participants', 'total_amount', 'currency']);
+
+        foreach (['total_participants', 'total_amount'] as $field) {
+            if (isset($data[$field])) {
+                $value = filter_var($data[$field], FILTER_VALIDATE_INT);
+
+                if ($value === false) {
+                    throw ValidationException::withMessages([$field => 'An integer is required.']);
+                }
+
+                $data[$field] = $value;
+            }
+        }
+
+        try {
+            $registrationId = app(RegistrationServiceInterface::class)->register($data);
+        } catch (InvalidArgumentException | LogicException $exception) {
+            throw ValidationException::withMessages(['status' => $exception->getMessage()]);
+        }
+
+        $this->record = static::getModel()::query()->findOrFail($registrationId);
     }
 
     public static function getCompletedNotificationBody(Import $import): string
