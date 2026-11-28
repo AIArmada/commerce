@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;
@@ -693,7 +694,8 @@ describe('Order Model', function (): void {
             // Check items were created correctly
             expect($order->items)->toHaveCount(2);
 
-            $order->recalculateTotals();
+            app(OrderAdministration::class)->recalculateTotals((string) $order->getKey());
+            $order->refresh();
 
             // OrderItem automatically calculates total = (quantity * unit_price) + tax_amount
             // Subtotal: (1 * 5000) + (1 * 3000) = 8000

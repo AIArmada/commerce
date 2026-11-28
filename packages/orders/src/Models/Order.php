@@ -399,26 +399,6 @@ class Order extends Model implements Auditable
         return $this->items()->sum('quantity');
     }
 
-    /**
-     * Recompute subtotal, tax, and grand totals from the order lines.
-     *
-     * The order-level discount_total is the authoritative total discount: it
-     * already includes any per-line discount_amount breakdown (both cart
-     * intake paths fold line discounts into it), so the line breakdown is
-     * informational here and must not be subtracted a second time.
-     */
-    public function recalculateTotals(): self
-    {
-        $subtotal = (int) $this->items()->sum(DB::raw('quantity * unit_price'));
-        $taxTotal = (int) $this->items()->sum('tax_amount');
-
-        $this->subtotal = $subtotal;
-        $this->tax_total = $taxTotal;
-        $this->grand_total = $subtotal + $taxTotal + $this->shipping_total - $this->discount_total;
-
-        return $this;
-    }
-
     public function getAuditThreshold(): int
     {
         return (int) config('orders.audit.threshold', $this->getAuditThresholdFromTrait());

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
@@ -62,7 +63,7 @@ it('treats the order discount as already including line discounts', function ():
         'currency' => 'MYR',
     ]);
 
-    $order->recalculateTotals()->save();
+    app(OrderAdministration::class)->recalculateTotals((string) $order->getKey());
 
     expect($order->refresh()->grand_total)->toBe(12100);
 });
@@ -102,4 +103,32 @@ it('rejects order line arithmetic overflow', function (): void {
 
     $item = new OrderItem(['quantity' => 1, 'unit_price' => PHP_INT_MAX, 'discount_amount' => 0, 'tax_amount' => 1]);
     expect(fn (): int => $item->calculateTotal())->toThrow(InvalidArgumentException::class, 'total exceeds');
+});
+
+it('floors over-discounted order totals at zero and rejects unfolded line discounts', function (): void {
+    $order = Order::create([
+        'order_number' => 'ORD-TOTAL-GUARD-' . uniqid(),
+        'status' => Created::class,
+        'currency' => 'MYR',
+        'discount_total' => 200,
+    ]);
+
+    OrderItem::create([
+        'order_id' => $order->getKey(),
+        'name' => 'Discounted item',
+        'quantity' => 1,
+        'unit_price' => 100,
+        'discount_amount' => 100,
+        'currency' => 'MYR',
+    ]);
+
+    $administration = app(OrderAdministration::class);
+    $administration->recalculateTotals((string) $order->getKey());
+
+    expect($order->refresh()->grand_total)->toBe(0);
+
+    $order->update(['discount_total' => 50]);
+
+    expect(fn () => $administration->recalculateTotals((string) $order->getKey()))
+        ->toThrow(InvalidArgumentException::class, 'Line discounts must be included');
 });

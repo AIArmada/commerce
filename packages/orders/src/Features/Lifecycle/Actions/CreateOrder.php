@@ -211,7 +211,7 @@ final readonly class CreateOrder
 
     /**
      * Per-line discount_amount is an informational breakdown: the order-level
-     * discount_total is authoritative (see Order::recalculateTotals), so the
+     * discount_total is authoritative (see OrderAdministration::recalculateTotals), so the
      * caller must have folded line discounts into it. Reject payloads where
      * the breakdown exceeds the folded total instead of silently dropping
      * the difference from the grand total.

@@ -11,7 +11,6 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 
@@ -29,7 +28,7 @@ final readonly class ManageOrders implements OrderAdministration
 
         for ($attempt = 1; ; $attempt++) {
             try {
-                return DB::transaction(fn (): string => (string) Order::query()->create([
+                return (new Order)->getConnection()->transaction(fn (): string => (string) Order::query()->create([
                     'status' => Created::class,
                     'currency' => config('orders.currency.default', 'MYR'),
                     'notes' => $notes,
@@ -53,7 +52,7 @@ final readonly class ManageOrders implements OrderAdministration
             }
         }
 
-        DB::transaction(function () use ($orderId, $attributes): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId, $attributes): void {
             $order = $this->lockOrder($orderId);
 
             if ($order->isFinal()) {
@@ -76,14 +75,40 @@ final readonly class ManageOrders implements OrderAdministration
 
     public function recalculateTotals(string $orderId): void
     {
-        DB::transaction(function () use ($orderId): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId): void {
             $order = $this->lockOrder($orderId);
 
             if (! $order->canBeModified() || $order->payments()->exists()) {
                 throw new LogicException('Only unpaid editable orders can recalculate totals.');
             }
 
-            $order->recalculateTotals()->save();
+            // The order discount already includes line discounts. Aggregate
+            // all three values together so the breakdown is checked against
+            // the same snapshot used for the total.
+            $totals = $order->items()->toBase()
+                ->selectRaw('COALESCE(SUM(quantity * unit_price), 0) AS subtotal')
+                ->selectRaw('COALESCE(SUM(tax_amount), 0) AS tax_total')
+                ->selectRaw('COALESCE(SUM(discount_amount), 0) AS line_discount')
+                ->first();
+
+            $subtotal = $this->minorUnits($totals->subtotal ?? 0);
+            $tax = $this->minorUnits($totals->tax_total ?? 0);
+            $lineDiscount = $this->minorUnits($totals->line_discount ?? 0);
+            $shipping = $this->minorUnits($order->shipping_total);
+            $discount = $this->minorUnits($order->discount_total);
+
+            if ($lineDiscount > $discount) {
+                throw new InvalidArgumentException('Line discounts must be included in the order discount total.');
+            }
+
+            if ($subtotal > PHP_INT_MAX - $tax || $subtotal + $tax > PHP_INT_MAX - $shipping) {
+                throw new InvalidArgumentException('Order totals exceed the supported integer range.');
+            }
+
+            $order->subtotal = $subtotal;
+            $order->tax_total = $tax;
+            $order->grand_total = max(0, $subtotal + $tax + $shipping - $discount);
+            $order->save();
         });
     }
 
@@ -92,7 +117,7 @@ final readonly class ManageOrders implements OrderAdministration
         $orderIds = array_values(array_unique($orderIds));
         sort($orderIds, SORT_STRING);
 
-        DB::transaction(function () use ($orderIds): void {
+        (new Order)->getConnection()->transaction(function () use ($orderIds): void {
             foreach ($orderIds as $orderId) {
                 $order = $this->lockOrder($orderId);
                 if ((! $order->status->equals(Created::class) && ! $order->status->equals(PendingPayment::class))
@@ -105,6 +130,24 @@ final readonly class ManageOrders implements OrderAdministration
                 }
             }
         });
+    }
+
+    private function minorUnits(mixed $value): int
+    {
+        if (is_int($value) && $value >= 0) {
+            return $value;
+        }
+
+        if (is_string($value) && ctype_digit($value)) {
+            $digits = ltrim($value, '0');
+            $maximum = (string) PHP_INT_MAX;
+
+            if (strlen($digits) < strlen($maximum) || (strlen($digits) === strlen($maximum) && strcmp($digits, $maximum) <= 0)) {
+                return (int) $value;
+            }
+        }
+
+        throw new InvalidArgumentException('Order totals must be nonnegative integers within the supported range.');
     }
 
     private function lockOrder(string $orderId): Order
