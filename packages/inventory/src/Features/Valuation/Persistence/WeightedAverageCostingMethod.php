@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -35,6 +36,6 @@ final readonly class WeightedAverageCostingMethod
     {
         $valuation = $this->service->calculateValuation($model, $locationId);
 
-        return $valuation['average_cost'] * $quantity;
+        return CostArithmetic::multiply($quantity, $valuation['average_cost']);
     }
 }

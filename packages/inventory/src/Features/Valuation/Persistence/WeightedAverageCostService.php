@@ -205,8 +205,8 @@ final class WeightedAverageCostService
         }
 
         $totals = $query->selectRaw('COALESCE(SUM(remaining_quantity), 0) as total_quantity, COALESCE(SUM(remaining_quantity * unit_cost_minor), 0) as total_value')->firstOrFail();
-        $totalQuantity = (int) $totals->getAttribute('total_quantity');
-        $totalValue = (int) $totals->getAttribute('total_value');
+        $totalQuantity = CostArithmetic::fromDatabase($totals->getAttribute('total_quantity'));
+        $totalValue = CostArithmetic::fromDatabase($totals->getAttribute('total_value'));
 
         return [
             'quantity' => $totalQuantity,

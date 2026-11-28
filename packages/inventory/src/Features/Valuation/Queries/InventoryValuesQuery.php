@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Features\Valuation\Queries;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Valuation\Api\InventoryValues;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -22,15 +23,15 @@ final readonly class InventoryValuesQuery implements InventoryValues
             $total = 0;
 
             foreach ($this->standard->rows($currency) as $row) {
-                $total += $row['total_value'];
+                $total = CostArithmetic::add($total, $row['total_value']);
             }
 
             return $total;
         }
 
-        return (int) $this->layers($method, $currency)
+        return CostArithmetic::fromDatabase($this->layers($method, $currency)
             ->toBase()
-            ->sum(DB::raw('remaining_quantity * unit_cost_minor'));
+            ->sum(DB::raw('remaining_quantity * unit_cost_minor')));
     }
 
     public function byLocation(CostingMethod $method, string $currency): array
@@ -39,7 +40,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
             $values = [];
 
             foreach ($this->standard->rows($currency) as $row) {
-                $values[$row['location_id']] = ($values[$row['location_id']] ?? 0) + $row['total_value'];
+                $values[$row['location_id']] = CostArithmetic::add($values[$row['location_id']] ?? 0, $row['total_value']);
             }
 
             return $values;
@@ -51,7 +52,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
             ->selectRaw('location_id, SUM(remaining_quantity * unit_cost_minor) AS total_value')
             ->groupBy('location_id')
             ->pluck('total_value', 'location_id')
-            ->map(static fn ($value): int => (int) $value)
+            ->map(static fn ($value): int => CostArithmetic::fromDatabase($value))
             ->all();
     }
 
@@ -76,8 +77,8 @@ final readonly class InventoryValuesQuery implements InventoryValues
             ->map(static fn ($row): array => [
                 'inventoryable_type' => (string) $row->inventoryable_type,
                 'inventoryable_id' => (string) $row->inventoryable_id,
-                'total_value' => (int) $row->total_value,
-                'overall_value' => (int) $row->overall_value,
+                'total_value' => CostArithmetic::fromDatabase($row->total_value),
+                'overall_value' => CostArithmetic::fromDatabase($row->overall_value),
             ])
             ->values()
             ->all();
@@ -113,7 +114,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
                 ->get();
 
             foreach ($rows as $row) {
-                $values[$row->inventoryable_type][$row->inventoryable_id][$row->location_id] = (int) $row->total_value;
+                $values[$row->inventoryable_type][$row->inventoryable_id][$row->location_id] = CostArithmetic::fromDatabase($row->total_value);
             }
         }
 
@@ -135,8 +136,8 @@ final readonly class InventoryValuesQuery implements InventoryValues
                 continue;
             }
 
-            $grouped[$type][$id] = ($grouped[$type][$id] ?? 0) + $value;
-            $total += $value;
+            $grouped[$type][$id] = CostArithmetic::add($grouped[$type][$id] ?? 0, $value);
+            $total = CostArithmetic::add($total, $value);
         }
 
         $items = [];

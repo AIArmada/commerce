@@ -35,6 +35,27 @@ final class CostArithmetic
         return $left + $right;
     }
 
+    public static function fromDatabase(mixed $value): int
+    {
+        if (is_int($value) && $value >= 0) {
+            return $value;
+        }
+
+        if (! is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1) {
+            throw new OverflowException('Inventory aggregate is not a supported non-negative integer.');
+        }
+
+        $digits = ltrim($value, '0');
+        $maximum = (string) PHP_INT_MAX;
+
+        if (strlen($digits) > strlen($maximum)
+            || (strlen($digits) === strlen($maximum) && strcmp($digits, $maximum) > 0)) {
+            throw new OverflowException('Inventory aggregate exceeds the supported integer range.');
+        }
+
+        return (int) $value;
+    }
+
     public static function average(int $value, int $quantity): int
     {
         if ($value < 0 || $quantity < 0) {

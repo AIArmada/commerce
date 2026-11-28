@@ -18,3 +18,10 @@ it('rejects overflowing inventory arithmetic before conversion to float', functi
         ->and(fn () => CostArithmetic::multiply(-1, 1))->toThrow(InvalidArgumentException::class)
         ->and(CostArithmetic::multiply(PHP_INT_MAX, 1))->toBe(PHP_INT_MAX);
 });
+
+it('rejects database aggregates that exceed the integer range or lose precision', function (): void {
+    expect(CostArithmetic::fromDatabase((string) PHP_INT_MAX))->toBe(PHP_INT_MAX)
+        ->and(CostArithmetic::fromDatabase('000'))->toBe(0)
+        ->and(fn () => CostArithmetic::fromDatabase((string) PHP_INT_MAX . '0'))->toThrow(OverflowException::class)
+        ->and(fn () => CostArithmetic::fromDatabase((float) PHP_INT_MAX))->toThrow(OverflowException::class);
+});

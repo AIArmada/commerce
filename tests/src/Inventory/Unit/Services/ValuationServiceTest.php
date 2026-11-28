@@ -165,6 +165,25 @@ describe('getLocationValuation', function (): void {
 });
 
 describe('getTotalValuation', function (): void {
+    it('counts unpriced standard-cost stock consistently in product and aggregate valuation', function (): void {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 0,
+        ]);
+
+        expect($this->service->calculateValuation($this->product, CostingMethod::Standard)['quantity'])->toBe(10)
+            ->and($this->service->getTotalValuation(CostingMethod::Standard))->toBe([
+                'total_quantity' => 10,
+                'total_value' => 0,
+                'sku_count' => 1,
+                'location_count' => 1,
+            ])
+            ->and($this->service->createSnapshot(CostingMethod::Standard)->total_quantity)->toBe(10);
+    });
+
     it('calculates total valuation across all locations', function (): void {
         $location2 = InventoryLocation::factory()->create(['is_active' => true]);
 

@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Features\Valuation\Persistence;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use RuntimeException;
@@ -41,14 +42,14 @@ final readonly class StandardCostingMethod
             inventoryableId: (string) $model->getKey(),
             includeUnpriced: true,
         ) as $row) {
-            $quantity += $row['quantity'];
-            $value += $row['total_value'];
+            $quantity = CostArithmetic::add($quantity, $row['quantity']);
+            $value = CostArithmetic::add($value, $row['total_value']);
         }
 
         return [
             'quantity' => $quantity,
             'value' => $value,
-            'average_cost' => $quantity > 0 ? (int) round($value / $quantity) : 0,
+            'average_cost' => CostArithmetic::average($value, $quantity),
         ];
     }
 
@@ -61,6 +62,6 @@ final readonly class StandardCostingMethod
     {
         $unitCost = $this->service->getCurrentCostValue($model);
 
-        return $unitCost !== null ? $unitCost * $quantity : 0;
+        return CostArithmetic::multiply($quantity, $unitCost ?? 0);
     }
 }

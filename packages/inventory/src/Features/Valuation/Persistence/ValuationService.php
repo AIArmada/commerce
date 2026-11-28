@@ -9,6 +9,7 @@ use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -144,9 +145,7 @@ final class ValuationService
             'snapshot_date' => $snapshotDate,
             'total_quantity' => $valuation['total_quantity'],
             'total_value_minor' => $valuation['total_value'],
-            'average_unit_cost_minor' => $valuation['total_quantity'] > 0
-                ? (int) round($valuation['total_value'] / $valuation['total_quantity'])
-                : 0,
+            'average_unit_cost_minor' => CostArithmetic::average($valuation['total_value'], $valuation['total_quantity']),
             'currency' => config('inventory.defaults.currency', 'MYR'),
             'sku_count' => $valuation['sku_count'],
             'variance_from_previous_minor' => $variance,
@@ -257,9 +256,7 @@ final class ValuationService
                 'location_name' => $location['name'],
                 'quantity' => $valuation['total_quantity'],
                 'value' => $valuation['total_value'],
-                'average_cost' => $valuation['total_quantity'] > 0
-                    ? (int) round($valuation['total_value'] / $valuation['total_quantity'])
-                    : 0,
+                'average_cost' => CostArithmetic::average($valuation['total_value'], $valuation['total_quantity']),
             ];
         }
 
@@ -296,7 +293,7 @@ final class ValuationService
         $currency = (string) config('inventory.defaults.currency', 'MYR');
 
         if ($method === CostingMethod::Standard) {
-            $rows = app(StandardStockValuesQuery::class)->rows($currency, locationId: $locationId, exactOwner: $exactOwner);
+            $rows = app(StandardStockValuesQuery::class)->rows($currency, locationId: $locationId, exactOwner: $exactOwner, includeUnpriced: true);
         } else {
             $query = $exactOwner
                 ? InventoryOwnerScope::forMutation(InventoryCostLayer::query())
@@ -317,8 +314,8 @@ final class ValuationService
                     'inventoryable_type' => (string) $row->inventoryable_type,
                     'inventoryable_id' => (string) $row->inventoryable_id,
                     'location_id' => $row->location_id === null ? null : (string) $row->location_id,
-                    'quantity' => (int) $row->quantity,
-                    'total_value' => (int) $row->total_value,
+                    'quantity' => CostArithmetic::fromDatabase($row->quantity),
+                    'total_value' => CostArithmetic::fromDatabase($row->total_value),
                 ]);
         }
 
@@ -330,8 +327,8 @@ final class ValuationService
 
         foreach ($rows as $row) {
             $type = $row['inventoryable_type'];
-            $quantity += $row['quantity'];
-            $value += $row['total_value'];
+            $quantity = CostArithmetic::add($quantity, $row['quantity']);
+            $value = CostArithmetic::add($value, $row['total_value']);
             $skus[$type][$row['inventoryable_id']] = true;
 
             if ($row['location_id'] !== null) {
@@ -339,8 +336,8 @@ final class ValuationService
             }
 
             $breakdown[$type] ??= ['units' => 0, 'value' => 0];
-            $breakdown[$type]['units'] += $row['quantity'];
-            $breakdown[$type]['value'] += $row['total_value'];
+            $breakdown[$type]['units'] = CostArithmetic::add($breakdown[$type]['units'], $row['quantity']);
+            $breakdown[$type]['value'] = CostArithmetic::add($breakdown[$type]['value'], $row['total_value']);
         }
 
         return [
