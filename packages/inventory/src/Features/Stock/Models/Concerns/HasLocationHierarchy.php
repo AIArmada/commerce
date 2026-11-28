@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Traits;
+namespace AIArmada\Inventory\Features\Stock\Models\Concerns;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -55,7 +55,7 @@ trait HasLocationHierarchy
             return new Collection;
         }
 
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        return $this->hierarchyQuery()
             ->where('path', 'like', $this->path . '/%')
             ->orderBy('depth')
             ->orderBy('name')
@@ -80,7 +80,7 @@ trait HasLocationHierarchy
             return new Collection;
         }
 
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        return $this->hierarchyQuery()
             ->whereIn('id', $ancestorIds)
             ->orderBy('depth')
             ->get();
@@ -101,7 +101,7 @@ trait HasLocationHierarchy
 
         $rootId = explode('/', $this->path)[0];
 
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        return $this->hierarchyQuery()
             ->whereKey($rootId)
             ->first();
     }
@@ -119,7 +119,7 @@ trait HasLocationHierarchy
      */
     public function isLeaf(): bool
     {
-        return $this->children()->count() === 0;
+        return ! $this->children()->exists();
     }
 
     /**
@@ -131,7 +131,7 @@ trait HasLocationHierarchy
             return false;
         }
 
-        return str_starts_with($location->path, $this->path . '/');
+        return $this->sharesHierarchyOwner($location) && str_starts_with($location->path, $this->path . '/');
     }
 
     /**
@@ -147,7 +147,9 @@ trait HasLocationHierarchy
      */
     public function isSiblingOf(InventoryLocation $location): bool
     {
-        return $this->parent_id === $location->parent_id && $this->id !== $location->id;
+        return $this->sharesHierarchyOwner($location)
+            && $this->parent_id === $location->parent_id
+            && $this->id !== $location->id;
     }
 
     /**
@@ -157,11 +159,31 @@ trait HasLocationHierarchy
      */
     public function getSiblings(): Collection
     {
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        return $this->hierarchyQuery()
             ->where('parent_id', $this->parent_id)
             ->where('id', '!=', $this->id)
             ->orderBy('name')
             ->get();
+    }
+
+    /** @return Builder<InventoryLocation> */
+    private function hierarchyQuery(): Builder
+    {
+        $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+
+        if (! InventoryOwnerScope::isEnabled()) {
+            return $query;
+        }
+
+        return $query->where('owner_type', $this->owner_type)
+            ->where('owner_id', $this->owner_id);
+    }
+
+    private function sharesHierarchyOwner(InventoryLocation $location): bool
+    {
+        return ! InventoryOwnerScope::isEnabled()
+            || ($this->owner_type === $location->owner_type
+                && (string) $this->owner_id === (string) $location->owner_id);
     }
 
     /**
