@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardRecoveryGuard;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +61,7 @@ final readonly class SettleRewardRecoveryAction
 
         // The program is the tenant boundary: prove the recovery's award's
         // program is in the current owner scope before any lock.
-        RewardProgramGuard::findRecoveryOrFail($recoveryId);
+        RewardRecoveryGuard::findOrFail($recoveryId);
 
         return DB::transaction(function () use ($recoveryId, $recoveryEvidence, $actorType, $actorId, $actorRole, $decided): RewardRecovery {
             $locked = RewardRecovery::query()->whereKey($recoveryId)->lockForUpdate()->first();

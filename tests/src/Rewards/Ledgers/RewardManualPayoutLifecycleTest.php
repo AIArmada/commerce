@@ -20,6 +20,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
 use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;
@@ -36,7 +37,6 @@ use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChec
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardAwardEntry;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

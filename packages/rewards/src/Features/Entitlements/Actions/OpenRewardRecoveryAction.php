@@ -7,9 +7,9 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -71,6 +71,10 @@ final readonly class OpenRewardRecoveryAction
 
         $payoutIdEarly = $payoutRequest;
         $grantIdEarly = $grant;
+        if ($payoutIdEarly !== null && $grantIdEarly !== null) {
+            throw new InvalidArgumentException('Recovery cannot refer to both a payout and a benefit grant.');
+        }
+
         $benefitUnit = ! $hasCash && ! $hasPoints && $grantIdEarly !== null && $kindEnum === RewardRecoveryKind::Dispute;
 
         if ($hasCash && $hasPoints) {
@@ -127,16 +131,27 @@ final readonly class OpenRewardRecoveryAction
             $decided,
             $recoveryKey,
         ): RewardRecovery {
-            $replay = RewardRecovery::query()->where('recovery_key', $recoveryKey)->lockForUpdate()->first();
-
-            if ($replay instanceof RewardRecovery) {
-                return $replay;
-            }
-
             $awardRow = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();
 
             if (! $awardRow instanceof RewardAward) {
                 throw new InvalidArgumentException('Unknown reward award.');
+            }
+
+            $replay = RewardRecovery::query()->where('recovery_key', $recoveryKey)->lockForUpdate()->first();
+
+            if ($replay instanceof RewardRecovery) {
+                if ($replay->award_id !== $awardId
+                    || $replay->kind !== $kindEnum
+                    || $replay->payout_request_id !== $payoutId
+                    || $replay->grant_id !== $grantId
+                    || $replay->amount_minor !== $amountMinor
+                    || $replay->currency !== $currency
+                    || $replay->points !== $points
+                    || $replay->unit !== $unit) {
+                    throw new InvalidArgumentException('Recovery identity is already bound to different terms.');
+                }
+
+                return $replay;
             }
 
             if ($payoutId !== null) {

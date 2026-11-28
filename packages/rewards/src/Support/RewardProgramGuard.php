@@ -10,7 +10,6 @@ use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardRecovery;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
@@ -148,25 +147,6 @@ final class RewardProgramGuard
 
         if (! $resolved instanceof RewardAppeal) {
             throw new InvalidArgumentException('Unknown reward appeal.');
-        }
-
-        self::findAwardOrFail((string) $resolved->award_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the recovery and prove its award's program is in the
-     * current owner scope.
-     */
-    public static function findRecoveryOrFail(RewardRecovery | string $recovery): RewardRecovery
-    {
-        $id = $recovery instanceof RewardRecovery ? (string) $recovery->getKey() : $recovery;
-
-        $resolved = RewardRecovery::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardRecovery) {
-            throw new InvalidArgumentException('Unknown reward recovery.');
         }
 
         self::findAwardOrFail((string) $resolved->award_id);

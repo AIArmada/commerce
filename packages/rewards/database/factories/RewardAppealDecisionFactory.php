@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
-use AIArmada\Rewards\Models\RewardAppealDecision;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

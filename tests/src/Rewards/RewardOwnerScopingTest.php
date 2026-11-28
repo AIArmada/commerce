@@ -25,13 +25,13 @@ use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
@@ -584,4 +584,15 @@ it('refuses foreign adjustment resolution and linked adjustment creation', funct
 
     expect($adjustment->refresh()->resolved_at)->toBeNull()
         ->and(RewardAdjustment::query()->where('operation_key', 'guard-adjustment:foreign')->exists())->toBeFalse();
+});
+
+it('rejects recovery replay with conflicting frozen terms', function (): void {
+    [$ownerA, , , , , $award, $recovery, $staff] = guardCrossTenantFixture('guard-recovery-replay');
+
+    expect(fn () => OwnerContext::withOwner($ownerA, static fn () => OpenRewardRecoveryAction::run(
+        $award, 'dispute', null, null, null, null, 101, 'pts',
+        'user', $staff, 'staff', 'consume-audit',
+    )))->toThrow(InvalidArgumentException::class, 'different terms');
+
+    expect($recovery->refresh()->points)->toBe(100);
 });

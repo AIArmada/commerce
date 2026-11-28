@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardRecoveryResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Tables\RewardRecoveriesTable;
-use AIArmada\Rewards\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;

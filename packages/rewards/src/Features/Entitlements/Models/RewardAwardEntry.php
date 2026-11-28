@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Entitlements\Models;
 
-use AIArmada\Rewards\Database\Factories\RewardAppealDecisionFactory;
+use AIArmada\Rewards\Database\Factories\RewardAwardEntryFactory;
+use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,11 +15,13 @@ use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
- * Append-only appeal decision (override evidence). Never updated or deleted.
+ * Append-only award decision entry. One row per transition (seq), carrying
+ * actor/reason/evidence plus the source operation id for replay detection.
+ * Never updated or deleted.
  *
  * @property array<string, mixed>|null $evidence
  * @property string $id
- * @property string $appeal_id
+ * @property string $award_id
  * @property int $seq
  * @property string $from_status
  * @property string $to_status
@@ -27,25 +30,26 @@ use LogicException;
  * @property string $actor_role
  * @property string $reason
  * @property array|null $evidence
+ * @property string|null $source_operation_id
  * @property CarbonImmutable $decided_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read RewardAppeal $appeal
+ * @property-read RewardAward $award
  */
-class RewardAppealDecision extends Model
+class RewardAwardEntry extends Model
 {
-    /** @use HasFactory<RewardAppealDecisionFactory> */
+    /** @use HasFactory<RewardAwardEntryFactory> */
     use HasFactory;
 
     use HasUuids;
 
     public function getTable(): string
     {
-        return config('rewards.database.tables.appeal_decisions', 'reward_appeal_decisions');
+        return config('rewards.database.tables.award_entries', 'reward_award_entries');
     }
 
     protected $fillable = [
-        'appeal_id',
+        'award_id',
         'seq',
         'from_status',
         'to_status',
@@ -54,6 +58,7 @@ class RewardAppealDecision extends Model
         'actor_role',
         'reason',
         'evidence',
+        'source_operation_id',
         'decided_at',
     ];
 
@@ -67,26 +72,26 @@ class RewardAppealDecision extends Model
     }
 
     /**
-     * @return BelongsTo<RewardAppeal, $this>
+     * @return BelongsTo<RewardAward, $this>
      */
-    public function appeal(): BelongsTo
+    public function award(): BelongsTo
     {
-        return $this->belongsTo(RewardAppeal::class, 'appeal_id');
+        return $this->belongsTo(RewardAward::class, 'award_id');
     }
 
     protected static function booted(): void
     {
         static::updating(static function (): void {
-            throw new LogicException('Reward appeal decisions are append-only.');
+            throw new LogicException('Reward award entries are append-only.');
         });
 
         static::deleting(static function (): void {
-            throw new LogicException('Reward appeal decisions cannot be deleted.');
+            throw new LogicException('Reward award entries cannot be deleted.');
         });
     }
 
-    protected static function newFactory(): RewardAppealDecisionFactory
+    protected static function newFactory(): RewardAwardEntryFactory
     {
-        return RewardAppealDecisionFactory::new();
+        return RewardAwardEntryFactory::new();
     }
 }

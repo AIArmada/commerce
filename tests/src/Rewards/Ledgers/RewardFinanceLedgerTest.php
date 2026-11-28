@@ -28,6 +28,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
@@ -46,7 +47,6 @@ use AIArmada\Rewards\Features\Points\Queries\PointLedgerRewardReservationResolve
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardPublishAssembler;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
