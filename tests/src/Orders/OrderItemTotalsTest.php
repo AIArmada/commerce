@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -88,7 +89,8 @@ it('builds invoice documents for orders carrying line discounts', function (): v
         'currency' => 'MYR',
     ]);
 
-    $doc = app(CreateOrderInvoiceDoc::class)->execute($order, 'txn_docs_disc', 'stripe');
+    $docId = app(CreateOrderInvoiceDoc::class)->execute($order, 'txn_docs_disc', 'stripe');
+    $doc = Doc::query()->findOrFail($docId);
 
     expect($doc)->not->toBeNull()
         ->and($doc->total_minor)->toBe(12100);

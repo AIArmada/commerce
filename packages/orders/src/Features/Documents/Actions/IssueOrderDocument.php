@@ -14,12 +14,10 @@ final readonly class IssueOrderDocument implements OrderDocuments
     {
         $order = Order::query()->findOrFail($orderId);
 
-        $document = match ($type) {
+        return match ($type) {
             'invoice' => app(CreateOrderInvoiceDoc::class)->execute($order, $transactionId, $gateway),
             'receipt' => app(CreateOrderReceiptDoc::class)->execute($order, $transactionId, $gateway),
             default => throw new InvalidArgumentException("Unsupported order document type [{$type}]."),
         };
-
-        return $document === null ? null : (string) $document->getKey();
     }
 }

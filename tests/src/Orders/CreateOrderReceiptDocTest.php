@@ -11,7 +11,7 @@ use AIArmada\Orders\Models\Order;
 it('creates a receipt document for a paid order', function (): void {
     $order = receiptDocumentOrder('receipt-test');
 
-    $receipt = app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_123', 'chip');
+    $receipt = Doc::query()->findOrFail(app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_123', 'chip'));
 
     expect($receipt->doc_type)->toBe(DocType::Receipt->value)
         ->and($receipt->docable_type)->toBe($order->getMorphClass())
@@ -27,7 +27,7 @@ it('returns the existing receipt document when one already exists', function ():
     $firstReceipt = app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_abc', 'chip');
     $secondReceipt = app(CreateOrderReceiptDoc::class)->execute($order->fresh(['items', 'addresses']) ?? $order, 'txn_receipt_abc', 'chip');
 
-    expect((string) $secondReceipt->getKey())->toBe((string) $firstReceipt->getKey())
+    expect($secondReceipt)->toBe($firstReceipt)
         ->and(Doc::query()
             ->where('docable_type', $order->getMorphClass())
             ->where('docable_id', $order->getKey())

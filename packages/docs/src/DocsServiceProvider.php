@@ -65,8 +65,6 @@ final class DocsServiceProvider extends PackageServiceProvider
             );
         });
 
-        // Bind interface to implementation
-        $this->app->alias(DocService::class, DocServiceInterface::class);
         $this->app->alias(DocService::class, 'doc');
     }
 

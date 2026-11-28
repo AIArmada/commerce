@@ -7,7 +7,7 @@ namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Carbon\CarbonImmutable;
@@ -108,14 +108,9 @@ trait BuildsOrderDocs
         );
     }
 
-    protected function findExistingDoc(Order $order, DocType $docType): ?Doc
+    protected function findExistingDoc(Order $order, DocType $docType): ?string
     {
-        return Doc::query()
-            ->forOwner(OwnerContext::resolve(), false)
-            ->where('docable_type', $order->getMorphClass())
-            ->where('docable_id', $order->getKey())
-            ->where('doc_type', $docType->value)
-            ->first();
+        return app(DocServiceInterface::class)->findForSubject($order->getMorphClass(), (string) $order->getKey(), $docType->value);
     }
 
     protected function runWithinOrderOwnerScope(Order $order, callable $callback): mixed

@@ -6,7 +6,8 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
@@ -43,11 +44,12 @@ it('keeps a digital order addressless through persistence snapshot and invoice r
         ->and($snapshot?->primaryAddress('shipping'))->toBeNull()
         ->and(Address::query()->count())->toBe(0);
 
-    $invoice = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
+    $invoiceId = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
         $snapshot,
         'txn-digital-order',
         'chip',
     ));
+    $invoice = Doc::query()->findOrFail($invoiceId);
 
     expect($invoice)->not->toBeNull()
         ->and($invoice?->doc_type)->toBe(DocType::Invoice->value);
@@ -126,11 +128,12 @@ it('renders canonical customer and address data, then omits the block after deta
         return $order->fresh(['items', 'addresses']) ?? $order;
     });
 
-    $invoice = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
+    $invoiceId = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
         $order,
         'txn-addressful-order',
         'chip',
     ));
+    $invoice = Doc::query()->findOrFail($invoiceId);
 
     expect($invoice)->not->toBeNull()
         ->and($invoice?->customer_data)->toMatchArray([
@@ -203,11 +206,12 @@ it('falls back to the primary shipping address for document customer data', func
         return $order->fresh(['addresses']) ?? $order;
     });
 
-    $invoice = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
+    $invoiceId = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
         $order,
         'txn-shipping-fallback',
         'chip',
     ));
+    $invoice = Doc::query()->findOrFail($invoiceId);
 
     expect($invoice?->customer_data)->toMatchArray([
         'name' => 'Shipping Fallback',

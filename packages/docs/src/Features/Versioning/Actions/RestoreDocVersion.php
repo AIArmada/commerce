@@ -26,6 +26,6 @@ final readonly class RestoreDocVersion
             throw (new ModelNotFoundException)->setModel(DocVersion::class, [$versionId]);
         }
 
-        $this->documents->update($doc, $version->snapshot, $summary ?? "Restored version {$version->version_number}");
+        $this->documents->update((string) $doc->getKey(), $version->snapshot, $summary ?? "Restored version {$version->version_number}");
     }
 }

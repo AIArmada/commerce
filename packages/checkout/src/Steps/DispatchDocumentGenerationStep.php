@@ -33,7 +33,7 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
     public function canSkip(CheckoutSession $session): bool
     {
         // Skip if docs package is not available
-        if (! interface_exists(DocServiceInterface::class)) {
+        if (! app()->bound(DocServiceInterface::class)) {
             return true;
         }
 

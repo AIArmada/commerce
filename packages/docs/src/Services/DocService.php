@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
-use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
@@ -39,7 +38,7 @@ use InvalidArgumentException;
  *
  * Handles document creation, updates, PDF generation, payments, versioning, and conversions.
  */
-final class DocService implements DocServiceInterface
+final class DocService
 {
     public function __construct(
         protected DocumentNumberRegistry $numberRegistry,

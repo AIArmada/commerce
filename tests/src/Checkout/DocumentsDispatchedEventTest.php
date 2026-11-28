@@ -22,6 +22,7 @@ describe('DocumentsDispatched event', function (): void {
 
         $createdDocumentTypes = [];
         $docService = mock(DocServiceInterface::class);
+        $docService->shouldReceive('findForSubject')->twice()->andReturnNull();
         $docService->shouldReceive('create')
             ->twice()
             ->withArgs(function (DocData $data) use (&$createdDocumentTypes): bool {
@@ -29,7 +30,7 @@ describe('DocumentsDispatched event', function (): void {
 
                 return in_array($data->docType, [DocType::Invoice->value, DocType::Receipt->value], true);
             })
-            ->andReturnUsing(fn (DocData $data): Doc => new Doc(['doc_type' => $data->docType]));
+            ->andReturn('test-document-id');
         app()->instance(DocServiceInterface::class, $docService);
 
         $order = checkoutDocumentGenerationOrder('action-routing');

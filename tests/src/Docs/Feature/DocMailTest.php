@@ -6,7 +6,6 @@ use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
-use AIArmada\Docs\Services\DocService;
 use Illuminate\Mail\Attachment;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,10 +32,10 @@ test('it builds PDF attachments from the configured storage disk', function (): 
     ]);
 
     $docService = Mockery::mock(DocServiceInterface::class);
-    app()->instance(DocService::class, $docService);
+    app()->instance(DocServiceInterface::class, $docService);
     $docService->shouldReceive('generatePdf')
         ->once()
-        ->withArgs(fn (Doc $mailDoc, bool $save): bool => $mailDoc->is($doc) && $save === true)
+        ->with((string) $doc->getKey(), true)
         ->andReturn('docs/test.pdf');
     $docService->shouldReceive('resolveStorageDiskForDocType')
         ->once()

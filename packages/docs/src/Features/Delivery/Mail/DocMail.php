@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailable;
@@ -77,15 +77,15 @@ final class DocMail extends Mailable
         }
 
         try {
-            $docService = app(DocService::class);
+            $docService = app(DocServiceInterface::class);
             $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
 
             $pdfPath = $this->doc->pdf_path;
 
             if ($pdfPath === null || ! Storage::disk($disk)->exists($pdfPath)) {
-                $owner = OwnerContext::fromTypeAndId($this->doc->owner_type, $this->doc->owner_id);
+                $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
 
-                $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf($this->doc, save: true));
+                $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));
             }
 
             $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));

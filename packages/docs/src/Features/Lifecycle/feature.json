@@ -3,7 +3,8 @@
   "name": "Lifecycle",
   "owns": {
     "table:docs": [
-      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments",
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\DocumentOperations"
     ],
     "table:docs_status_histories": [
       "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
