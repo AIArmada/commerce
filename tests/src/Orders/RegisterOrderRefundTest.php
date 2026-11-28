@@ -145,6 +145,37 @@ describe('RegisterOrderRefund', function (): void {
             ->and($refund[0]->fresh()->hasProviderSubmissionStarted())->toBeTrue();
     });
 
+
+    it('does not correlate the payment reference as a refund reference after trimming', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-REF-CORRELATE-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'transaction_id' => 'payment-reference',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $refund = $action->createPending($order, 5000, 'correlation-key', 'Partial refund')[0];
+
+        expect($action->correlateProviderReference($refund, ' payment-reference ', 'payment-reference'))->toBeTrue()
+            ->and($refund->fresh()->metadata['provider_refund_id'] ?? null)->toBeNull()
+            ->and($action->correlateProviderReference($refund, ' refund-reference ', 'payment-reference'))->toBeTrue()
+            ->and($refund->fresh()->metadata['provider_refund_id'])->toBe('refund-reference')
+            ->and($action->correlateProviderReference($refund, 'refund-reference', 'payment-reference'))->toBeTrue()
+            ->and($action->correlateProviderReference($refund, 'another-reference', 'payment-reference'))->toBeFalse();
+    });
+
     it('does not create another refund after a transaction has failed', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-REF-FAILED-' . uniqid(),

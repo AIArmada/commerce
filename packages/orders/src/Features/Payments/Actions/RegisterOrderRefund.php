@@ -362,11 +362,12 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
 
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        if ($providerRefundId === null || mb_trim($providerRefundId) === '' || $providerRefundId === $relatedPaymentId) {
+        $providerRefundId = $providerRefundId === null ? null : mb_trim($providerRefundId);
+        $relatedPaymentId = $relatedPaymentId === null ? null : mb_trim($relatedPaymentId);
+
+        if ($providerRefundId === null || $providerRefundId === '' || $providerRefundId === $relatedPaymentId) {
             return true;
         }
-
-        $providerRefundId = mb_trim($providerRefundId);
 
         return $order->getConnection()->transaction(function () use ($refund, $providerRefundId): bool {
             $lockedOrder = $this->lockOrderRow($refund);
