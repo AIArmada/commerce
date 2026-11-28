@@ -156,6 +156,18 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
                 ->orderBy('id')
                 ->get();
 
+            if ($existing->isEmpty()) {
+                $matched = $lockedOrder->refunds()->where('transaction_id', $transactionId)->first();
+
+                if ($matched instanceof OrderRefund) {
+                    $existing = $lockedOrder->refunds()
+                        ->where('allocation_key', $matched->allocation_key)
+                        ->orderBy('created_at')
+                        ->orderBy('id')
+                        ->get();
+                }
+            }
+
             if ($existing->isNotEmpty()) {
                 /** @var OrderRefund $existingRefund */
                 $existingRefund = $existing->first();

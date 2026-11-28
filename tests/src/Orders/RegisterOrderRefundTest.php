@@ -228,6 +228,16 @@ it('does not refund again when a provider has replaced the original request tran
     $action->execute($order, 3000, 'original-request', 'Refund');
     $action->execute($order, 3000, 'provider-reference', 'Refund');
 
+    $replayed = $action->createPending($order, 3000, 'provider-reference', 'Refund');
+
+    expect($replayed)->toHaveCount(1)
+        ->and($replayed[0]->getKey())->toBe($pending[0]->getKey())
+        ->and($replayed[0]->isCompleted())->toBeTrue()
+        ->and($action->claimPendingSubmission($replayed[0]))->toBeFalse();
+
+    expect(fn () => $action->createPending($order, 2000, 'provider-reference', 'Conflicting refund'))
+        ->toThrow(DomainException::class, 'amount does not match');
+
     expect($order->refunds()->count())->toBe(1)
         ->and($order->refresh()->getTotalRefunded())->toBe(3000);
 
