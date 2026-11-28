@@ -12,7 +12,7 @@ final readonly class DeletePriceList
     public function execute(PriceList $list): bool
     {
         return DB::transaction(function () use ($list): bool {
-            $locked = PriceList::query()->whereKey($list->getKey())->lockForUpdate()->firstOrFail();
+            $locked = PriceList::query()->forOwner()->whereKey($list->getKey())->lockForUpdate()->firstOrFail();
 
             return (bool) $locked->delete();
         });

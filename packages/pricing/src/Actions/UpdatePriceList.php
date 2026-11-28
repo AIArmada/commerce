@@ -13,7 +13,7 @@ final readonly class UpdatePriceList
     public function execute(PriceList $priceList, array $attributes): PriceList
     {
         return DB::transaction(function () use ($priceList, $attributes): PriceList {
-            $record = PriceList::query()->whereKey($priceList->getKey())->lockForUpdate()->firstOrFail();
+            $record = PriceList::query()->forOwner()->whereKey($priceList->getKey())->lockForUpdate()->firstOrFail();
             $record->update($attributes);
 
             return $record;

@@ -19,7 +19,8 @@ final readonly class EnsureListPrice
         string $currency,
     ): Price {
         return DB::transaction(function () use ($priceList, $priceableType, $priceableId, $amount, $compareAmount, $currency): Price {
-            $price = Price::query()->createOrFirst(
+            $priceList = PriceList::query()->forOwner()->whereKey($priceList->getKey())->lockForUpdate()->firstOrFail();
+            $price = Price::query()->forOwner()->createOrFirst(
                 [
                     'price_list_id' => $priceList->getKey(),
                     'priceable_type' => $priceableType,
@@ -33,7 +34,7 @@ final readonly class EnsureListPrice
                 ],
             );
 
-            $price = Price::query()->whereKey($price->getKey())->lockForUpdate()->firstOrFail();
+            $price = Price::query()->forOwner()->whereKey($price->getKey())->lockForUpdate()->firstOrFail();
             $price->fill([
                 'amount' => $amount,
                 'compare_amount' => $compareAmount,
