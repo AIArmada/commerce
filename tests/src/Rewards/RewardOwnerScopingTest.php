@@ -590,8 +590,18 @@ it('rejects recovery replay with conflicting frozen terms', function (): void {
     [$ownerA, , , , , $award, $recovery, $staff] = guardCrossTenantFixture('guard-recovery-replay');
 
     expect(fn () => OwnerContext::withOwner($ownerA, static fn () => OpenRewardRecoveryAction::run(
-        $award, 'dispute', null, null, null, null, 101, 'pts',
-        'user', $staff, 'staff', 'consume-audit',
+        $award,
+        'dispute',
+        null,
+        null,
+        null,
+        null,
+        101,
+        'pts',
+        'user',
+        $staff,
+        'staff',
+        'consume-audit',
     )))->toThrow(InvalidArgumentException::class, 'different terms');
 
     expect($recovery->refresh()->points)->toBe(100);
