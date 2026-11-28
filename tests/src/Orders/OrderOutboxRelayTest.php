@@ -25,6 +25,7 @@ use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -565,7 +566,7 @@ it('rejects invalid relay batch limits', function (): void {
     expect(fn () => app(RelayOrderOutbox::class)->execute(0))
         ->toThrow(InvalidArgumentException::class);
 
-    $this->app->make(\Illuminate\Contracts\Console\Kernel::class)->registerCommand(new RelayOrderOutboxCommand);
+    $this->app->make(Kernel::class)->registerCommand(new RelayOrderOutboxCommand);
 
     $this->artisan('orders:outbox-relay', ['--limit' => 'invalid'])
         ->assertExitCode(2);
