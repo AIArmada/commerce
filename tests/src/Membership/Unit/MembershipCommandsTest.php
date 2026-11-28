@@ -6,7 +6,7 @@ use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\MembershipServiceProvider;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Support\Facades\Artisan;
 
@@ -17,7 +17,7 @@ beforeEach(function (): void {
 });
 
 it('syncs all membership roles via service', function (): void {
-    $service = app(MembershipRoleSyncService::class);
+    $service = app(SyncMembershipRolesAction::class);
 
     foreach (MemberRole::cases() as $role) {
         expect(Role::where('name', $role->spatieRoleName())->exists())->toBeFalse();
@@ -33,7 +33,7 @@ it('syncs all membership roles via service', function (): void {
 });
 
 it('reconciles permissions additively unless pruning is requested', function (): void {
-    $service = app(MembershipRoleSyncService::class);
+    $service = app(SyncMembershipRolesAction::class);
     $record = $service->ensureExists(MemberRole::Admin);
     $role = Role::query()->findOrFail($record->id);
     $externalPermission = Permission::findOrCreate('membership.external', 'web');

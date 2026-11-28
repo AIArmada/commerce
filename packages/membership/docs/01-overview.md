@@ -17,7 +17,7 @@ title: Membership Overview
 
 - Models `MembershipApplication`, `MembershipInvitation` (both `HasOwner`-scoped), and the host-extensible `MembershipPivot`
 - Actions `ApplyForMembershipAction`, `ApproveMembershipApplicationAction`, `RejectMembershipApplicationAction`, `CancelMembershipApplicationAction`, `InviteMemberAction`, `AcceptInvitationAction`, `RevokeInvitationAction`, `AddMemberAction`, `RemoveMemberAction`, `ChangeMemberRoleAction`
-- `Services\MembershipRoleSyncService` — pivot → Spatie team-role sync
+- `Services\SyncMembershipRolesAction` — pivot → Spatie team-role sync
 - `Channels\InvitationChannelManager` — registry for invitation channels and recipient verifiers
 - Contracts `InvitationChannel` and `InvitationRecipientVerifier`; plugin point for new delivery integrations
 - Config `membership.php`: `database`, `invitations` (token length, expiry, default channel, channel/verifier classes), `pivot`, `role_mapping`, `role_permissions`, `owner`, `features`
@@ -30,7 +30,7 @@ title: Membership Overview
 
 ## Role synchronization policy
 
-`MembershipRoleSyncService` is the bridge between the domain `MemberRole` and
+`SyncMembershipRolesAction` is the bridge between the domain `MemberRole` and
 the mapped Spatie role. Membership owns the mapped role assignment for a
 member in a subject scope; `authz` owns the role and permission APIs.
 

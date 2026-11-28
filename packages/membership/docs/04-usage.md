@@ -124,7 +124,7 @@ the verifier returns false, acceptance fails with
 accepts a caller-supplied identity string as proof and never degrades an
 invitation into a bearer-only token.
 
-When a member is added, `MembershipRoleSyncService` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
+When a member is added, `SyncMembershipRolesAction` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
 
 The role-definition reconciliation is additive by default. Run
 `php artisan membership:sync-roles --prune` only when permissions removed from

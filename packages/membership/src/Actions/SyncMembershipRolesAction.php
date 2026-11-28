@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Membership\Services;
+namespace AIArmada\Membership\Actions;
 
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
@@ -32,7 +32,7 @@ use Spatie\Permission\PermissionRegistrar;
  * membership-owned assignment; independent grants must use a different role
  * name. Other team assignments are preserved.
  */
-final class MembershipRoleSyncService
+final class SyncMembershipRolesAction
 {
     /**
      * @param  class-string<Model>|null  $subjectClass
@@ -81,7 +81,7 @@ final class MembershipRoleSyncService
         $this->inSubjectTeam($subject, function (int | string | null $teamId) use ($role, $subject, $user): void {
             $spatieRole = $this->ensureExists(
                 role: $role,
-                teamId: $teamId,
+                teamId: $teamId === null ? null : (string) $teamId,
                 subjectClass: $subject::class,
                 guardName: Guard::getDefaultName($user),
             );

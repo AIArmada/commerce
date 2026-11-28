@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Console\Commands;
 
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use Illuminate\Console\Command;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -16,7 +16,7 @@ final class SyncRolesCommand extends Command
 
     protected $description = 'Reconcile membership roles into Spatie permission roles.';
 
-    public function handle(MembershipRoleSyncService $syncService): int
+    public function handle(SyncMembershipRolesAction $syncService): int
     {
         $count = $syncService->syncAll(
             prune: (bool) $this->option('prune'),

@@ -55,7 +55,7 @@ The shipped `config/membership.php` top-level keys, with their default values:
 
 ## Role permissions
 
-- `role_permissions` lists permission names granted when `MembershipRoleSyncService` ensures a role
+- `role_permissions` lists permission names granted when `SyncMembershipRolesAction` ensures a role
 - `owner => ['*']` expands to every permission registered for the default guard
 - Non-wildcard entries are prefixed with the subject class basename in snake case (for example `Team` → `team.update`) when a subject is available
 - Apps should override `role_permissions` rather than hard-coding host permission names in the package

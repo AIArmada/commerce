@@ -7,7 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -34,10 +34,18 @@ final class AddMemberAction
     {
         app(MembershipSubjectGuard::class)->validate($subject);
 
-        /** @phpstan-ignore method.notFound */
-        $existingMember = $subject->members()->whereKey($user->getKey())->first();
+        DB::transaction(function () use ($subject, $user, $role): void {
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-        $this->persist($subject, $user, $role, $existingMember);
+            /** @phpstan-ignore method.notFound */
+            $existingMember = $subject->members()->whereKey($user->getKey())->first();
+
+            $this->persist($subject, $user, $role, $existingMember, false);
+        });
+
+        if (app()->bound(MembershipHook::class)) {
+            app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
+        }
     }
 
     /**
@@ -91,10 +99,10 @@ final class AddMemberAction
                     : null;
 
                 if ($oldRole !== null && $oldRole !== $role) {
-                    app(MembershipRoleSyncService::class)->revokeFromUser($subject, $user, $oldRole);
+                    app(SyncMembershipRolesAction::class)->revokeFromUser($subject, $user, $oldRole);
                 }
 
-                app(MembershipRoleSyncService::class)->assignToUser($subject, $user, $role);
+                app(SyncMembershipRolesAction::class)->assignToUser($subject, $user, $role);
             });
         } catch (QueryException $exception) {
             if (! $this->isMembershipUniquenessViolation($exception, $membershipTable)) {

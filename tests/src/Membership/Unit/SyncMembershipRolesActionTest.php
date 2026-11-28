@@ -7,7 +7,7 @@ use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Database\Schema\Blueprint;
@@ -18,7 +18,7 @@ uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
     request()->attributes->remove(OwnerContext::REQUEST_KEY);
-    $this->service = app(MembershipRoleSyncService::class);
+    $this->service = app(SyncMembershipRolesAction::class);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->user = User::query()->create([
         'name' => 'User',

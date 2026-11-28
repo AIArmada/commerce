@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
@@ -70,7 +70,7 @@ final class TransferOrganizationOwnershipAction
             $members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]);
             $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]);
 
-            $roleSync = app(MembershipRoleSyncService::class);
+            $roleSync = app(SyncMembershipRolesAction::class);
             $roleSync->revokeFromUser($organization, $currentOwner, MemberRole::Owner);
             $roleSync->assignToUser($organization, $currentOwner, MemberRole::Admin);
 
