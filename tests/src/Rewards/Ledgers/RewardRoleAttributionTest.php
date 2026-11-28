@@ -13,7 +13,7 @@ use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Jobs\EvaluateRewardEntitlementJob;
+use AIArmada\Rewards\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;

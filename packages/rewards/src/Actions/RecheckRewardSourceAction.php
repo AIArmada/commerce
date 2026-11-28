@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Jobs;
+namespace AIArmada\Rewards\Actions;
 
-use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
@@ -14,56 +12,13 @@ use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardSourceFact;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use InvalidArgumentException;
 
-/**
- * Rechecks awards after a source correction lands.
- *
- * The host dispatches this job with the business key when its own
- * correction store records a correction; core re-reads the current fact
- * through the reader boundary and acts only when the fact is no longer
- * current. When the key has no readable fact (a correction recorded
- * without full attribution rows), the bound correction-key source is
- * consulted instead so the tainted key still settles. Correction wins
- * races with queued evaluation: unfulfilled
- * awards on the corrected source move to rejected (held/pending_review)
- * or reversed (approved) with the correction as evidence. Fulfilled
- * awards are NEVER auto-reversed here — post-fulfillment value needs the
- * authorized recovery/settlement workflow, not a silent reversal.
- * Milestone contributions on the source are invalidated so cycles
- * re-evaluate.
- */
-final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, ShouldQueue
+final readonly class RecheckRewardSourceAction
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
-    public int $tries = 3;
-
     public function __construct(
-        public readonly string $businessKey,
+        private string $businessKey,
     ) {}
-
-    public function uniqueId(): string
-    {
-        return 'reward-recheck:' . $this->businessKey;
-    }
-
-    /**
-     * @return list<int>
-     */
-    public function backoff(): array
-    {
-        return [30, 120, 300];
-    }
 
     public function handle(
         RewardSourceFactReader $reader,
@@ -105,8 +60,7 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
                 RewardAwardStatus::PendingReview->value,
                 RewardAwardStatus::Approved->value,
             ])
-            ->orderBy('id')
-            ->get();
+            ->lazyById();
 
         foreach ($awards as $award) {
             /** @var RewardAward $award */
@@ -115,8 +69,6 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
                 : RewardAwardStatus::Rejected;
 
             try {
-                // Queue workers resolve no ambient owner: run the transition
-                // under the owning program's own owner.
                 RewardProgramGuard::withProgramOwner((string) $award->program_id, static function () use ($transition, $award, $to, $evidence): void {
                     $transition->handle(
                         $award,
@@ -129,9 +81,6 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
                     );
                 });
             } catch (InvalidArgumentException $exception) {
-                // A concurrent operator/system transition already moved the
-                // award out of the expected state; anything else is a real
-                // failure and must retry.
                 if (str_starts_with($exception->getMessage(), 'Invalid award transition')) {
                     continue;
                 }
@@ -143,13 +92,10 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
         $contributions = RewardMilestoneContribution::query()
             ->where('source_business_key', $this->businessKey)
             ->whereNull('revoked_at')
-            ->orderBy('id')
-            ->get();
+            ->with('cycle')
+            ->lazyById();
 
         foreach ($contributions as $contribution) {
-            // The action is idempotent on revoked_at under the cycle lock.
-            // Run it under the cycle's program owner — queue workers resolve
-            // no ambient owner.
             RewardProgramGuard::withProgramOwner(
                 (string) ($contribution->cycle?->program_id ?? ''),
                 static fn () => $invalidate->handle(

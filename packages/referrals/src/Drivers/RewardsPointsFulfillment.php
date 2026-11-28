@@ -17,7 +17,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
     {
         $readerClass = 'AIArmada\\Rewards\\Contracts\\RewardSourceFactReader';
         $factClass = 'AIArmada\\Rewards\\Support\\RewardSourceFact';
-        $jobClass = 'AIArmada\\Rewards\\Jobs\\EvaluateRewardEntitlementJob';
+        $jobClass = 'AIArmada\\Rewards\\EntryPoints\\Jobs\\EvaluateRewardEntitlementJob';
         $awardClass = 'AIArmada\\Rewards\\Models\\RewardAward';
         /** @var class-string $roleClass */
         $roleClass = 'AIArmada\\Rewards\\Enums\\RewardBeneficiaryRole';

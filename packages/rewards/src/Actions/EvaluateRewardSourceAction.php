@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Jobs;
+namespace AIArmada\Rewards\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
@@ -16,66 +14,17 @@ use AIArmada\Rewards\Support\RewardEvaluationCandidates;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardSourceFact;
 use Carbon\CarbonImmutable;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use InvalidArgumentException;
 
-/**
- * Evaluates one committed source fact against every active program.
- *
- * Dispatched after commit by the share receipt/correction/claim writers.
- * Unique-until-processing per business key collapses duplicate dispatches
- * while still allowing genuine re-evaluation after claim or correction.
- * Transient kernel refusals (`Refused: ...` — no enrollment, unclaimed
- * guest, paused program, cap race losers) are skipped per candidate; any
- * other failure throws and retries. Queue workers resolve no ambient
- * owner, so the program scan widens and each candidate (and its milestone
- * recording) runs under the owning program's own owner context. An owner
- * that is already resolved keeps the scan scoped to it, so a synchronous
- * in-tenant dispatch cannot reach another tenant's programs. Awarded facts
- * additionally record milestone contributions declared by the applicable
- * version.
- *
- * Callers may narrow the evaluation to one (recipient, role, family)
- * tuple — the scoped form used by the referrals points rail, where one
- * frozen side of one business fact must be evaluated in isolation. A
- * scoped dispatch takes part in its own uniqueness window so queued
- * scoped and unscoped evaluations of the same fact never collapse into
- * each other.
- */
-final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessing, ShouldQueue
+final readonly class EvaluateRewardSourceAction
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
-    public int $tries = 3;
-
     public function __construct(
-        public readonly string $businessKey,
-        public readonly ?string $onlyRecipientId = null,
-        public readonly ?RewardBeneficiaryRole $onlyRole = null,
-        public readonly ?string $onlyRecipientType = null,
-        public readonly ?string $onlyFamilyKey = null,
+        private string $businessKey,
+        private ?string $onlyRecipientId = null,
+        private ?RewardBeneficiaryRole $onlyRole = null,
+        private ?string $onlyRecipientType = null,
+        private ?string $onlyFamilyKey = null,
     ) {}
-
-    public function uniqueId(): string
-    {
-        return 'reward-eval:' . $this->businessKey . $this->scopeSuffix();
-    }
-
-    /**
-     * @return list<int>
-     */
-    public function backoff(): array
-    {
-        return [30, 120, 300];
-    }
 
     public function handle(RewardSourceFactReader $reader, EvaluateRewardEntitlementAction $evaluate): void
     {
@@ -88,13 +37,6 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
         $now = CarbonImmutable::now('UTC');
         $recipientType = $this->onlyRecipientType ?? $this->recipientType();
 
-        // System enumeration only when nothing ambient scopes the run: the
-        // queue worker and the console resolve no owner, so the scan widens
-        // past the ambient scope and every candidate is then evaluated under
-        // its own program's owner. When an owner IS resolved — including an
-        // explicit-global context — the scan stays scoped exactly as it was,
-        // so a synchronous in-tenant dispatch (the referrals points rail)
-        // can never reach another tenant's programs.
         $systemEnumeration = ! OwnerContext::hasOverride() && OwnerContext::resolve() === null;
 
         foreach (RewardEvaluationCandidates::for($fact, $now, systemEnumeration: $systemEnumeration) as $candidate) {
@@ -145,20 +87,6 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
         return ($this->onlyRecipientId === null || $candidate['recipient_id'] === $this->onlyRecipientId)
             && ($this->onlyRole === null || $candidate['role'] === $this->onlyRole)
             && ($this->onlyFamilyKey === null || $candidate['program']->family_key === $this->onlyFamilyKey);
-    }
-
-    private function scopeSuffix(): string
-    {
-        if ($this->onlyRecipientId === null && $this->onlyRole === null && $this->onlyRecipientType === null && $this->onlyFamilyKey === null) {
-            return '';
-        }
-
-        return ':' . implode('|', [
-            $this->onlyRecipientType ?? '',
-            $this->onlyRecipientId ?? '',
-            $this->onlyRole?->value ?? '',
-            $this->onlyFamilyKey ?? '',
-        ]);
     }
 
     private function recipientType(): string
@@ -221,9 +149,6 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
                     $fact->snapshot(),
                 );
             } catch (InvalidArgumentException $exception) {
-                // Candidate pre-filtering narrows routine mismatches, but
-                // eligibility can still change between the read and write.
-                // Skip that milestone and keep evaluating later definitions.
                 if (str_starts_with($exception->getMessage(), 'Refused:')) {
                     continue;
                 }

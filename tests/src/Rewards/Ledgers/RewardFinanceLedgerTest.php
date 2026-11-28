@@ -36,7 +36,7 @@ use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Jobs\EvaluateRewardEntitlementJob;
+use AIArmada\Rewards\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardPointLot;
