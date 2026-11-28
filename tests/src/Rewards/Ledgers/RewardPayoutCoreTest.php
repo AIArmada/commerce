@@ -24,6 +24,7 @@ use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
@@ -346,4 +347,25 @@ it('refuses stale or mismatched payee registrations without replacing the curren
 
     expect($replacement->refresh()->status)->toBe(RewardPayeeStatus::Verified)
         ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(4);
+});
+
+it('selects only verified payees belonging to the scoped award recipient', function (): void {
+    [, $award, $memberId, $staff] = payoutHarness('pay-select');
+    $awardId = (string) $award->getKey();
+    $verified = RewardPayee::query()->where('recipient_id', $memberId)->where('status', RewardPayeeStatus::Verified)->firstOrFail();
+    $pending = RewardPayee::factory()->create(['recipient_id' => $memberId]);
+    $foreign = RewardPayee::factory()->create([
+        'recipient_id' => (string) Str::uuid(),
+        'status' => RewardPayeeStatus::Verified,
+        'verified_at' => now(),
+        'verified_by' => $staff,
+    ]);
+
+    $selection = app(RewardPayeeSelectionApi::class);
+
+    expect($selection->optionsForAward($awardId))->toBe([(string) $verified->getKey() => 'manual — Manual handoff'])
+        ->and($selection->methodForAward($awardId, (string) $verified->getKey()))->toBe('manual')
+        ->and($selection->methodForAward($awardId, (string) $pending->getKey()))->toBeNull()
+        ->and($selection->methodForAward($awardId, (string) $foreign->getKey()))->toBeNull()
+        ->and($selection->optionsForAward((string) Str::uuid()))->toBe([]);
 });

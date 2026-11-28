@@ -7,15 +7,14 @@ namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\ReverseRewardFulfillmentAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
-use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -149,17 +148,19 @@ class RewardAwardsTable
                     ->action(function (RewardAward $record, array $data, RequestRewardPayoutAction $request): void {
                         $staff = self::authorize($record, 'requestPayout');
 
-                        $payee = RewardPayee::query()->whereKey((string) ($data['payee_id'] ?? ''))->first();
-
-                        if (! $payee instanceof RewardPayee) {
-                            throw ValidationException::withMessages(['payee_id' => 'Select a verified destination.']);
-                        }
+                        $payeeId = (string) ($data['payee_id'] ?? '');
 
                         try {
+                            $method = app(RewardPayeeSelectionApi::class)->methodForAward((string) $record->getKey(), $payeeId);
+
+                            if ($method === null) {
+                                throw new InvalidArgumentException('Select a verified destination.');
+                            }
+
                             $request->handle(
                                 (string) $record->getKey(),
-                                $payee,
-                                (string) $payee->method,
+                                $payeeId,
+                                $method,
                                 (string) ($data['fee_payer'] ?? 'program'),
                                 'user',
                                 (string) $staff->getAuthIdentifier(),
@@ -235,16 +236,7 @@ class RewardAwardsTable
      */
     private static function verifiedPayeeOptions(RewardAward $record): array
     {
-        return RewardPayee::query()
-            ->where('recipient_type', (string) $record->recipient_type)
-            ->where('recipient_id', (string) $record->recipient_id)
-            ->where('status', RewardPayeeStatus::Verified->value)
-            ->orderByDesc('verified_at')
-            ->get()
-            ->mapWithKeys(static fn (RewardPayee $payee): array => [
-                (string) $payee->getKey() => (string) $payee->method . ' — ' . (string) $payee->account_display,
-            ])
-            ->all();
+        return app(RewardPayeeSelectionApi::class)->optionsForAward((string) $record->getKey());
     }
 
     private static function reverse(
