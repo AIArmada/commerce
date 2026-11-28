@@ -14,9 +14,9 @@ use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContribu
 use AIArmada\Rewards\Features\Entitlements\Actions\RevokeRewardBadgeAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

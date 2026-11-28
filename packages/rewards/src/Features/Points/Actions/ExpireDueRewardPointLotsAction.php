@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Points\Actions;
 
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
-use AIArmada\Rewards\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use Carbon\CarbonImmutable;
 
 final readonly class ExpireDueRewardPointLotsAction
