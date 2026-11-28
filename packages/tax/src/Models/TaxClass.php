@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Models;
 
+use AIArmada\Tax\Actions\ReassignDeletedTaxClassRatesAction;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -104,50 +105,8 @@ class TaxClass extends Model implements Auditable
             self::assertSlugIsUnique($class);
         });
 
-        static::deleting(function (self $class): void {
-            if (config('tax.features.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-
-                if ($owner === null) {
-                    if ($class->owner_type !== null || $class->owner_id !== null) {
-                        throw new AuthorizationException('Cannot delete owned tax classes without an owner context.');
-                    }
-                } elseif (! $class->belongsToOwner($owner)) {
-                    throw new AuthorizationException('Cannot delete tax classes outside the current owner scope.');
-                }
-            }
-
-            $query = TaxRate::query()
-                ->withoutOwnerScope()
-                ->where('tax_class', $class->slug);
-
-            if ($class->owner_type === null && $class->owner_id === null) {
-                $query
-                    ->whereNull('owner_type')
-                    ->whereNull('owner_id');
-            } else {
-                $query
-                    ->where('owner_type', $class->owner_type)
-                    ->where('owner_id', $class->owner_id);
-            }
-
-            $replacementClassSlug = static::query()
-                ->withoutOwnerScope()
-                ->whereKeyNot($class->getKey())
-                ->when(
-                    $class->owner_type === null && $class->owner_id === null,
-                    fn (Builder $builder): Builder => $builder
-                        ->whereNull('owner_type')
-                        ->whereNull('owner_id'),
-                    fn (Builder $builder): Builder => $builder
-                        ->where('owner_type', $class->owner_type)
-                        ->where('owner_id', $class->owner_id),
-                )
-                ->orderByDesc('is_default')
-                ->orderBy('position')
-                ->value('slug');
-
-            $query->update(['tax_class' => $replacementClassSlug ?? 'standard']);
+        static::deleting(static function (TaxClass $class): void {
+            app(ReassignDeletedTaxClassRatesAction::class)->execute($class);
         });
     }
 

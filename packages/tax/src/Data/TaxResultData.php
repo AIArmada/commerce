@@ -6,10 +6,9 @@ namespace AIArmada\Tax\Data;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Akaunting\Money\Money;
-use Spatie\LaravelData\Data;
 use Throwable;
 
-class TaxResultData extends Data
+final readonly class TaxResultData
 {
     /**
      * @param  array<int, array{name: string, rate: int, amount: int, is_compound: bool}>  $breakdown

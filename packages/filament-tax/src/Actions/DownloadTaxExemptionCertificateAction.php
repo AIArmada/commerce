@@ -19,16 +19,16 @@ final class DownloadTaxExemptionCertificateAction
         try {
             $visible = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
                 ->whereKey($exemption->getKey())
-                ->exists();
+                ->first();
         } catch (AuthorizationException) {
-            $visible = false;
+            $visible = null;
         }
 
-        if (! $visible) {
+        if (! $visible instanceof TaxExemption) {
             throw new NotFoundHttpException('Certificate document not found.');
         }
 
-        $path = $exemption->document_path;
+        $path = $visible->document_path;
 
         if (! $path) {
             throw new NotFoundHttpException('No certificate document found.');

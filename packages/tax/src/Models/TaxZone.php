@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Models;
 
+use AIArmada\Tax\Actions\CascadeTaxZoneDeletionAction;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -255,51 +256,8 @@ class TaxZone extends Model implements Auditable
             self::assertCodeIsUnique($zone);
         });
 
-        static::deleting(function (TaxZone $zone): void {
-            if (config('tax.features.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-
-                if ($owner === null) {
-                    if ($zone->owner_type !== null || $zone->owner_id !== null) {
-                        throw new AuthorizationException('Cannot delete owned tax zones without an owner context.');
-                    }
-                } elseif (! $zone->belongsToOwner($owner)) {
-                    throw new AuthorizationException('Cannot delete tax zones outside the current owner scope.');
-                }
-
-                if ($zone->owner_type === null && $zone->owner_id === null) {
-                    $hasOwnedRates = TaxRate::query()
-                        ->withoutOwnerScope()
-                        ->where('zone_id', $zone->id)
-                        ->whereNotNull('owner_type')
-                        ->whereNotNull('owner_id')
-                        ->exists();
-
-                    if ($hasOwnedRates) {
-                        throw new AuthorizationException('Cannot delete a global tax zone while owned rates exist.');
-                    }
-
-                    TaxRate::query()
-                        ->withoutOwnerScope()
-                        ->where('zone_id', $zone->id)
-                        ->whereNull('owner_type')
-                        ->whereNull('owner_id')
-                        ->delete();
-
-                    return;
-                }
-
-                TaxRate::query()
-                    ->withoutOwnerScope()
-                    ->where('zone_id', $zone->id)
-                    ->where('owner_type', $zone->owner_type)
-                    ->where('owner_id', $zone->owner_id)
-                    ->delete();
-
-                return;
-            }
-
-            $zone->rates()->delete();
+        static::deleting(static function (TaxZone $zone): void {
+            app(CascadeTaxZoneDeletionAction::class)->execute($zone);
         });
 
         static::saved(static function (): void {
