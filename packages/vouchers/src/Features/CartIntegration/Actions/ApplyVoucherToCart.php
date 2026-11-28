@@ -11,7 +11,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
-use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
+use AIArmada\Vouchers\Features\CartIntegration\Queries\ReadCartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
@@ -26,9 +26,9 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
     public function handle(
         Cart $cart,
         string $code,
-        ?StackingPolicyInterface $policy = null,
         int $order = 100,
         ?string $expectedVoucherId = null,
+        ?StackingPolicyInterface $policy = null,
     ): VoucherCondition {
         $code = $this->normalizeCode($code);
 
@@ -39,7 +39,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             );
         }
 
-        $applied = app(CartVoucherConditions::class)->forCart($cart);
+        $applied = app(ReadCartVoucherConditions::class)->forCart($cart);
 
         if (isset($applied[$code])) {
             throw new InvalidVoucherException(

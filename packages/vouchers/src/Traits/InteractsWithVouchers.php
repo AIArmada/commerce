@@ -8,8 +8,8 @@ use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
-use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
-use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Queries\ReadCartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
@@ -63,7 +63,7 @@ trait InteractsWithVouchers
      */
     public function applyVoucher(string $code, int $order = 100): self
     {
-        app(CartVoucherApplicator::class)->handle($this->getUnderlyingCart(), $code, $this->getStackingPolicy(), $order);
+        app(ApplyVoucherToCart::class)->handle($this->getUnderlyingCart(), $code, order: $order, policy: $this->getStackingPolicy());
 
         return $this;
     }
@@ -118,7 +118,7 @@ trait InteractsWithVouchers
     public function getVoucherCondition(string $code): ?VoucherCondition
     {
         $normalized = $this->normalizeVoucherCode($code);
-        $conditions = app(CartVoucherConditions::class)->forCart($this->getUnderlyingCart());
+        $conditions = app(ReadCartVoucherConditions::class)->forCart($this->getUnderlyingCart());
 
         return $conditions[$normalized] ?? null;
     }
@@ -130,7 +130,7 @@ trait InteractsWithVouchers
      */
     public function getAppliedVouchers(): array
     {
-        return array_values(app(CartVoucherConditions::class)->forCart($this->getUnderlyingCart()));
+        return array_values(app(ReadCartVoucherConditions::class)->forCart($this->getUnderlyingCart()));
     }
 
     /**

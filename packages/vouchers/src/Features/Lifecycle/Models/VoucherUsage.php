@@ -85,7 +85,7 @@ final class VoucherUsage extends Model implements Auditable
      */
     public function redeemedBy(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo('redeemedBy', 'redeemed_by_type', 'redeemed_by_id');
     }
 
     public function isManual(): bool

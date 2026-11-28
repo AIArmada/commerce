@@ -1683,7 +1683,7 @@ it('keeps voucher replay and reversal inside the reward owner when include-globa
         ],
     ]));
 
-    $context = OwnerContext::withOwner($owner, fn (): ReferralRewardContext => ReferralRewardContextMapper::map($reward, $qualified->qualification_business_key));
+    $context = OwnerContext::withOwner($owner, fn (): ReferralRewardContext => ReferralRewardContextMapper::map($reward, $qualified->invite->qualification_business_key));
     $otherOwner = $this->newOwner();
     $issued = OwnerContext::withOwner($otherOwner, fn (): ReferralFulfillmentResult => app(VouchersReferralFulfillment::class)->fulfill($context));
 

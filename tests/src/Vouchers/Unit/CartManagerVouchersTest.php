@@ -95,14 +95,11 @@ it('removes a cart voucher when its code resolves to a different voucher identit
     ]);
 
     $this->validator->shouldReceive('validate')
-        ->once()
-        ->ordered()
-        ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
-
-    $this->validator->shouldReceive('validate')
-        ->once()
-        ->ordered()
-        ->andReturn(VoucherValidationResult::valid(['voucher' => $replacement->toArray()]));
+        ->twice()
+        ->andReturn(
+            VoucherValidationResult::valid(['voucher' => $original->toArray()]),
+            VoucherValidationResult::valid(['voucher' => $replacement->toArray()]),
+        );
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->applyVoucher('REUSED');
@@ -127,14 +124,11 @@ it('removes an applied voucher when its discount terms change without changing i
     ]);
 
     $this->validator->shouldReceive('validate')
-        ->once()
-        ->ordered()
-        ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
-
-    $this->validator->shouldReceive('validate')
-        ->once()
-        ->ordered()
-        ->andReturn(VoucherValidationResult::valid(['voucher' => $updated->toArray()]));
+        ->twice()
+        ->andReturn(
+            VoucherValidationResult::valid(['voucher' => $original->toArray()]),
+            VoucherValidationResult::valid(['voucher' => $updated->toArray()]),
+        );
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->applyVoucher('CHANGED');

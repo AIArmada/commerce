@@ -45,7 +45,7 @@ test('can add voucher to wallet using trait', function (): void {
 
     expect($walletEntry)->toBeInstanceOf(VoucherWallet::class)
         ->and($walletEntry->voucher_id)->toBe($voucher->id)
-        ->and($walletEntry->holder_id)->toBe($user->id)
+        ->and($walletEntry->holder_id)->toBe((string) $user->id)
         ->and($walletEntry->holder_type)->toBe($user->getMorphClass())
         ->and($walletEntry->claimed_at)->not->toBeNull();
 });

@@ -20,6 +20,6 @@ trait HasVoucherUsage
      */
     public function voucherUsages(): MorphMany
     {
-        return $this->morphMany(VoucherUsage::class, 'redeemedBy');
+        return $this->morphMany(VoucherUsage::class, 'redeemed_by');
     }
 }

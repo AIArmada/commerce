@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Runtime\PromotionServiceInterface;
+use AIArmada\Promotions\Services\PromotionService;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
@@ -174,6 +175,8 @@ it('resolves applicable code promotions through the promotion service', function
 });
 
 it('evaluates minimum purchase and total unit quantity against the checkout snapshot', function (): void {
+    app()->bind(PromotionServiceInterface::class, PromotionService::class);
+
     $session = new CheckoutSession;
     $session->id = 'session-promotions-targeting';
     $session->subtotal = 10000;
