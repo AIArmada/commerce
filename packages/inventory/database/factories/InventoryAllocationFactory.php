@@ -23,7 +23,11 @@ class InventoryAllocationFactory extends Factory
             'inventoryable_type' => 'App\\Models\\Product',
             'inventoryable_id' => $this->faker->uuid(),
             'location_id' => InventoryLocation::factory(),
-            'level_id' => InventoryLevel::factory(),
+            'level_id' => fn (array $attributes): string => InventoryLevel::query()->firstOrCreate([
+                'inventoryable_type' => $attributes['inventoryable_type'],
+                'inventoryable_id' => $attributes['inventoryable_id'],
+                'location_id' => $attributes['location_id'],
+            ], ['quantity_on_hand' => 100])->id,
             'cart_id' => $this->faker->uuid(),
             'quantity' => $this->faker->numberBetween(1, 10),
             'expires_at' => now()->addMinutes(config('inventory.allocation_ttl_minutes', 30)),

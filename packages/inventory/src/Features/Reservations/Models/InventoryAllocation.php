@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryAllocationFactory;
+use AIArmada\Inventory\Features\Stock\Api\StockIdentity;
+use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -209,51 +212,43 @@ final class InventoryAllocation extends Model implements Auditable
     protected static function booted(): void
     {
         static::saving(function (InventoryAllocation $allocation): void {
+            if ($allocation->quantity <= 0) {
+                throw new InvalidArgumentException('Allocation quantity must be positive.');
+            }
+
+            if (! app(StockIdentity::class)->matchesWritableLevel(
+                $allocation->level_id,
+                $allocation->inventoryable_type,
+                $allocation->inventoryable_id,
+                $allocation->location_id,
+            )) {
+                throw new AuthorizationException('Inventory allocation does not match a writable stock level.');
+            }
+
+            if ($allocation->batch_id !== null && ! app(BatchIdentity::class)->matchesWritableBatch(
+                $allocation->batch_id,
+                $allocation->inventoryable_type,
+                $allocation->inventoryable_id,
+                $allocation->location_id,
+            )) {
+                throw new AuthorizationException('Inventory allocation does not match a writable batch.');
+            }
+
             if (! InventoryOwnerScope::isEnabled()) {
                 return;
             }
 
-            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($allocation->location_id)
-                ->first();
-
-            if ($location === null) {
-                throw new AuthorizationException('Invalid location for current owner context.');
-            }
-
-            $level = InventoryLevel::query()
-                ->whereKey($allocation->level_id)
-                ->first();
-
-            if ($level === null) {
-                throw new AuthorizationException('Invalid inventory level for current owner context.');
-            }
-
-            if ($level->location_id !== $allocation->location_id) {
-                throw new AuthorizationException('Inventory allocation location does not match inventory level location.');
-            }
-
-            if ($allocation->batch_id !== null) {
-                $batch = InventoryBatch::query()
-                    ->whereKey($allocation->batch_id)
-                    ->first();
-
-                if ($batch === null) {
-                    throw new AuthorizationException('Invalid inventory batch for current owner context.');
-                }
-
-                if ($batch->location_id !== $allocation->location_id) {
-                    throw new AuthorizationException('Inventory allocation batch does not match allocation location.');
-                }
-            }
+            $owner = InventoryOwnerScope::resolveOwner();
+            $ownerType = $owner?->getMorphClass();
+            $ownerId = $owner?->getKey();
 
             if (($allocation->owner_type !== null || $allocation->owner_id !== null)
-                && ($allocation->owner_type !== $location->owner_type || $allocation->owner_id !== $location->owner_id)) {
+                && ($allocation->owner_type !== $ownerType || (string) $allocation->owner_id !== (string) $ownerId)) {
                 throw new AuthorizationException('Owner mismatch between inventory allocation and location.');
             }
 
-            $allocation->owner_type = $location->owner_type;
-            $allocation->owner_id = $location->owner_id;
+            $allocation->owner_type = $ownerType;
+            $allocation->owner_id = $ownerId;
         });
     }
 
