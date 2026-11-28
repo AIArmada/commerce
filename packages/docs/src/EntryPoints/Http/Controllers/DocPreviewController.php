@@ -57,6 +57,18 @@ final class DocPreviewController
             }
         }
 
-        return response($renderer->renderHtml($docModel, RenderAudience::AdminPreview)->toHtml());
+        $render = fn (): string => $renderer->renderHtml($docModel, RenderAudience::AdminPreview)->toHtml();
+
+        $html = $ownerEnabled && ! $docModel->hasOwner() && ! OwnerContext::isExplicitGlobal()
+            ? OwnerContext::withOwner(null, $render)
+            : $render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'private, no-store',
+            'Referrer-Policy' => 'no-referrer',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
+        ]);
     }
 }

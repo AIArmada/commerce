@@ -38,7 +38,11 @@ it('renders authenticated online previews without an existing pdf', function ():
     $this->actingAs($user)
         ->get(route('filament-docs.documents.view', ['doc' => $doc->getKey()]))
         ->assertSuccessful()
-        ->assertSee('INV-PREVIEW');
+        ->assertSee('INV-PREVIEW')
+        ->assertHeader('Cache-Control', 'no-store, private')
+        ->assertHeader('Referrer-Policy', 'no-referrer')
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 
     expect($doc->fresh()->pdf_path)->toBeNull();
 });
