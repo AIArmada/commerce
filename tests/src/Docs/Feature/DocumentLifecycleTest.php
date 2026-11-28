@@ -114,3 +114,12 @@ it('does not mark a refunded document as overdue or cancelled', function (): voi
         ->and($doc->refresh()->status->equals(Refunded::class))->toBeTrue()
         ->and($doc->statusHistories()->count())->toBe(0);
 });
+
+it('rejects direct deletion of documents with a terminal financial status', function (): void {
+    foreach ([Paid::class, Refunded::class] as $status) {
+        $doc = Doc::factory()->create(['status' => $status, 'paid_at' => null]);
+
+        expect(fn () => $doc->delete())->toThrow(LogicException::class, 'payment or e-invoice evidence')
+            ->and(Doc::query()->find($doc->getKey()))->not->toBeNull();
+    }
+});

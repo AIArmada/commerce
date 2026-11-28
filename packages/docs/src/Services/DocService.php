@@ -18,9 +18,6 @@ use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Paid;
-use AIArmada\Docs\States\PartiallyPaid;
-use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
@@ -708,12 +705,7 @@ final class DocService
             return;
         }
 
-        if (! $doc->status->equals(Paid::class)
-            && ! $doc->status->equals(PartiallyPaid::class)
-            && ! $doc->status->equals(Refunded::class)
-            && $doc->paid_at === null
-            && ! $doc->payments()->exists()
-            && ! $doc->eInvoiceSubmission()->exists()) {
+        if (! $doc->hasFinancialEvidence()) {
             return;
         }
 

@@ -18,6 +18,7 @@ use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Refunded;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
@@ -218,6 +220,16 @@ final class Doc extends Model implements Auditable
         return $this->status->isPayable();
     }
 
+    public function hasFinancialEvidence(): bool
+    {
+        return $this->isPaid()
+            || $this->status->equals(PartiallyPaid::class)
+            || $this->status->equals(Refunded::class)
+            || $this->paid_at !== null
+            || $this->payments()->withoutOwnerScope()->exists()
+            || $this->eInvoiceSubmission()->withoutOwnerScope()->exists();
+    }
+
     public function delete(): ?bool
     {
         return $this->getConnection()->transaction(function (): ?bool {
@@ -233,13 +245,15 @@ final class Doc extends Model implements Auditable
     protected static function booted(): void
     {
         self::deleting(function (Doc $doc): void {
+            if ($doc->hasFinancialEvidence()) {
+                throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
+            }
+
             $doc->statusHistories()->delete();
-            $doc->payments()->delete();
             $doc->versions()->delete();
             $doc->emails()->delete();
             $doc->approvals()->delete();
             $doc->shareLinks()->delete();
-            $doc->eInvoiceSubmission?->delete();
             $id = (string) $doc->getKey();
             $type = $doc->doc_type;
             $path = $doc->pdf_path;

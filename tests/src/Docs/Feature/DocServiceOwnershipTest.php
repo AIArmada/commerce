@@ -11,7 +11,6 @@ use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -156,14 +155,22 @@ test('payment recording and document deletion reject mismatched financial eviden
             'owner_id' => $other->getKey(),
         ]);
 
-        expect(fn () => $recorder->record($docId, $payment))
+        // Simulate an inconsistent document state without hiding the financial evidence.
+        $doc->forceFill(['status' => Sent::class, 'paid_at' => null])->save();
+
+        expect(fn () => app(DocService::class)->update($doc, ['currency' => 'USD']))
+            ->toThrow(InvalidArgumentException::class, 'financial terms cannot change')
+            ->and(fn () => $doc->delete())
+            ->toThrow(LogicException::class, 'payment or e-invoice evidence')
+            ->and(fn () => $recorder->record($docId, $payment))
             ->toThrow(LogicException::class, 'ownership is inconsistent')
             ->and(fn () => $recorder->record($docId, ['amount_minor' => 75, 'payment_method' => 'cash']))
             ->toThrow(LogicException::class, 'ownership is inconsistent')
             ->and(fn () => app(DocumentLifecycle::class)->delete([$docId]))
             ->toThrow(LogicException::class, 'payment or e-invoice evidence');
 
-        expect($doc->refresh()->status->equals(PartiallyPaid::class))->toBeTrue()
+        expect($doc->refresh()->status->equals(Sent::class))->toBeTrue()
+            ->and($doc->currency)->toBe('MYR')
             ->and($doc->payments()->withoutOwnerScope()->count())->toBe(1);
     });
 });
