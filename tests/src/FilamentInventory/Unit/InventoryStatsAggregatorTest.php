@@ -10,8 +10,8 @@ use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 

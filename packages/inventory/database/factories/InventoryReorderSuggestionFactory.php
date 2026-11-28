@@ -75,7 +75,7 @@ final class InventoryReorderSuggestionFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'status' => ReorderSuggestionStatus::Ordered,
-            'purchase_order_id' => $this->faker->uuid(),
+            'order_id' => $this->faker->uuid(),
             'ordered_at' => now(),
         ]);
     }

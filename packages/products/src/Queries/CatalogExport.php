@@ -68,7 +68,7 @@ final readonly class CatalogExport
                     $value = "'" . $value;
                 }
 
-                $row[] = $value;
+                $row[] = is_string($value) || is_int($value) || is_float($value) ? $value : null;
             }
 
             return $row;

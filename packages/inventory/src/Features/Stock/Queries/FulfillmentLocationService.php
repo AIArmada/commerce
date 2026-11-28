@@ -215,10 +215,14 @@ final class FulfillmentLocationService
             });
 
         return $requirements->groupBy('key')->map(static function (Collection $items): array {
-            $first = $items->first();
-            $first['quantity'] = (int) $items->sum('quantity');
+            /** @var array{model: Model, quantity: int, key: string} $first */
+            $first = $items->firstOrFail();
 
-            return $first;
+            return [
+                'model' => $first['model'],
+                'quantity' => (int) $items->sum('quantity'),
+                'key' => $first['key'],
+            ];
         })->values();
     }
 

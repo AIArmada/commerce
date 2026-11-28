@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Integrations;
 
-use AIArmada\Inventory\Cart\CompositeComponents;
+use AIArmada\Inventory\Features\Reservations\Queries\CompositeComponents;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

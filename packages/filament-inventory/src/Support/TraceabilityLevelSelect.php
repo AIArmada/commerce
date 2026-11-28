@@ -16,7 +16,7 @@ final class TraceabilityLevelSelect
         return Select::make('inventory_level_id')
             ->label('Inventory item and location')
             ->visibleOn('create')
-            ->requiredOn('create')
+            ->required(fn (string $operation): bool => $operation === 'create')
             ->dehydrated(fn (string $operation): bool => $operation === 'create')
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::query()
