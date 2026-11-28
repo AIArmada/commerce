@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Persistence;
 
 use AIArmada\Rewards\Models\RewardPointOperation;
 use InvalidArgumentException;

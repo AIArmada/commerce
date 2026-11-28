@@ -11,7 +11,7 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardApprovalLocks;
+use AIArmada\Rewards\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

@@ -27,7 +27,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\RewardBenefitStockLedger;
+use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

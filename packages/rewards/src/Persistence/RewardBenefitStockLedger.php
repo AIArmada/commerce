@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Persistence;
+
+use AIArmada\Rewards\Support\RewardLedgerEntries;
 
 use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;

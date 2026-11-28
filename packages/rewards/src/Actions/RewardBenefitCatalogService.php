@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Actions;
+
+use AIArmada\Rewards\Support\RewardFinancialReadinessAssessment;
+use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;

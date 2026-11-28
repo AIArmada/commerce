@@ -28,7 +28,7 @@ use AIArmada\Rewards\Support\NullRewardGratitudePlanner;
 use AIArmada\Rewards\Support\NullRewardReadinessChecker;
 use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardBenefitCatalogService;
+use AIArmada\Rewards\Actions\RewardBenefitCatalogService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

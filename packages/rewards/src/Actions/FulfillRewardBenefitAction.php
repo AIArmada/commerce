@@ -14,7 +14,7 @@ use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardBenefitStockLedger;
+use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardProgramGuard;

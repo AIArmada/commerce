@@ -12,7 +12,7 @@ use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointLedger;
-use AIArmada\Rewards\Support\RewardPointOperationAuthority;
+use AIArmada\Rewards\Persistence\RewardPointOperationAuthority;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;

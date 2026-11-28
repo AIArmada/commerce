@@ -8,7 +8,7 @@ use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardBenefitStockLedger;
+use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

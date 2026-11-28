@@ -11,7 +11,7 @@ use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\RewardBenefitStockLedger;
+use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardProgramGuard;
