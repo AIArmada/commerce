@@ -21,6 +21,7 @@ use AIArmada\Cashier\Drivers\Chip\ChipSubscription;
 use AIArmada\Cashier\Drivers\Chip\ChipSubscriptionBuilder;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
+use AIArmada\Cashier\Support\VerifiedWebhookPayload;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
@@ -511,7 +512,7 @@ class ChipGateway extends AbstractGateway
             return app(WebhookService::class)->verifySignature($request);
         } catch (Throwable $e) {
             Log::error('CHIP webhook verification failed', [
-                'error' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
             return false;
@@ -531,6 +532,10 @@ class ChipGateway extends AbstractGateway
     {
         if ($rawPayload !== null && ! $this->verifyWebhookSignature($rawPayload, $headers)) {
             throw WebhookVerificationException::invalidSignature($this->name());
+        }
+
+        if ($rawPayload !== null) {
+            $payload = VerifiedWebhookPayload::decode($this->name(), $rawPayload);
         }
 
         $event = $payload['event_type'] ?? null;

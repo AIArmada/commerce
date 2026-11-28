@@ -9,6 +9,7 @@ use AIArmada\Cashier\Events\WebhookReceived;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\ActionGuard;
+use AIArmada\Cashier\Support\VerifiedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -35,6 +36,10 @@ final class SyncWebhook
 
         if ($rawPayload !== null && ! $gatewayInstance->verifyWebhookSignature($rawPayload, $headers)) {
             throw WebhookVerificationException::invalidSignature($gatewayName);
+        }
+
+        if ($rawPayload !== null) {
+            $payload = VerifiedWebhookPayload::decode($gatewayName, $rawPayload);
         }
 
         WebhookReceived::dispatch($gatewayName, $payload);

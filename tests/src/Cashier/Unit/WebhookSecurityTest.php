@@ -44,14 +44,15 @@ describe('Webhook signature enforcement', function (): void {
         Event::assertNotDispatched(WebhookHandled::class);
     });
 
-    it('passes the raw body through once verified', function (): void {
+    it('uses only the verified raw body for events and dispatch', function (): void {
         $payload = ['type' => 'payment_intent.succeeded', 'data' => []];
         $headers = ['Stripe-Signature' => 't=1,v1=valid'];
-        $raw = '{"type":"payment_intent.succeeded"}';
+        $raw = '{"type":"payment_intent.succeeded","data":{"id":"signed"}}';
+        $verifiedPayload = ['type' => 'payment_intent.succeeded', 'data' => ['id' => 'signed']];
 
         $gatewayMock = Mockery::mock(GatewayContract::class);
         $gatewayMock->shouldReceive('verifyWebhookSignature')->once()->with($raw, $headers)->andReturnTrue();
-        $gatewayMock->shouldReceive('handleWebhook')->once()->with($payload, $headers, $raw)->andReturnNull();
+        $gatewayMock->shouldReceive('handleWebhook')->once()->with($verifiedPayload, $headers, $raw)->andReturnNull();
 
         Cashier::shouldReceive('gateway')->once()->with('stripe')->andReturn($gatewayMock);
 
@@ -59,7 +60,22 @@ describe('Webhook signature enforcement', function (): void {
 
         SyncWebhook::run('stripe', $payload, $headers, $raw);
 
-        Event::assertDispatched(WebhookReceived::class);
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->payload === $verifiedPayload);
+    });
+
+    it('rejects malformed signed JSON before publishing events', function (): void {
+        $raw = 'not-json';
+        $gateway = Mockery::mock(GatewayContract::class);
+        $gateway->shouldReceive('verifyWebhookSignature')->once()->with($raw, [])->andReturnTrue();
+        $gateway->shouldNotReceive('handleWebhook');
+        Cashier::shouldReceive('gateway')->once()->with('stripe')->andReturn($gateway);
+
+        Event::fake();
+
+        expect(fn () => SyncWebhook::run('stripe', ['type' => 'forged'], [], $raw))
+            ->toThrow(WebhookVerificationException::class);
+
+        Event::assertNotDispatched(WebhookReceived::class);
     });
 
     it('verifies the raw Stripe body before reaching the Cashier controller', function (): void {
