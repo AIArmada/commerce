@@ -212,7 +212,7 @@ it('bounds due reads and excludes expired reminders from active state', function
 });
 
 it('does not report successful reminder delivery when no delivery listener is registered', function (): void {
-    $this->app->instance(Dispatcher::class, new \Illuminate\Events\Dispatcher($this->app));
+    $this->app->instance(Dispatcher::class, new Illuminate\Events\Dispatcher($this->app));
 
     $reminder = $this->manager->setReminder($this->recipient, $this->subject, 'before_start', [
         'remind_at' => now()->subMinute(),
