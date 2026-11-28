@@ -33,7 +33,7 @@ The `aiarmada/orders` package owns order records, order lifecycle transitions, p
 
 - **Models** — order, order items, addresses, payments, refunds, and notes
 - **Actions** — `CreateOrder`, `CreateOrderFromCart`, `OrderCanceled`, `OrderCompleted`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus invoice/receipt doc generation
-- **Services** — `OrderService` (public service API delegating to Actions)
+- **Contracts** — `OrderServiceInterface`, `OrderAdministration`, `OrderPaymentConfirmation`, `OrderRefunds`, `OrderFulfillment`, and `OrderDocuments`
 - **State machine** — order state classes and transitions
 - **Events** — lifecycle events including `OrderCreated`, `OrderPaid`, `OrderCanceled`, `OrderCancelInitiated`, `OrderProcessingStarted`
 - **Transitions** — state transition classes (`PaymentConfirmed`, `OrderCanceled`, `OrderCompleted`, etc.)
@@ -83,8 +83,8 @@ The Orders package provides a complete order management system for e-commerce ap
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                       OrderService                           │
-│  (Compatibility facade delegating to Actions)                │
+│                    Public Contracts                         │
+│  (Scalar IDs and immutable data)                             │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -118,8 +118,8 @@ packages/orders/
 │   ├── lang/               # Translations
 │   └── views/              # Invoice templates
 └── src/
-    ├── Actions/            # 10+ Actions (canonical orchestration API)
-    │   └── Concerns/       # Action helper traits
+    ├── Features/           # Lifecycle, Payments, Documents, Outbox
+    ├── Platform/           # Feature registration and extensions
     ├── Contracts/          # Service & Handler interfaces
     ├── Enums/              # PaymentStatus, RefundStatus, OrderItemStatus
     ├── Events/             # 13+ lifecycle events
@@ -128,10 +128,8 @@ packages/orders/
     ├── EntryPoints/Listeners/ # Inventory deduction, invoice creation
     ├── Models/             # Eloquent models
     ├── Policies/           # Authorization policies
-    ├── Services/           # OrderService (public service API)
     ├── States/             # Order state classes
-    ├── Support/            # OrderHandlerRegistrar and helpers
-    └── Transitions/        # State transition classes
+    └── Support/            # OrderHandlerRegistrar and helpers
 ```
 
 ## Requirements
