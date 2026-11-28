@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Platform\FeatureCatalog;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
 use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
@@ -104,4 +105,16 @@ test('artisan commands are registered', function (): void {
     )
         ->and(app(ApplyRewardSourceCorrectionsCommand::class))->toBeInstanceOf(ApplyRewardSourceCorrectionsCommand::class)
         ->and(app(ExpireRewardPointLotsCommand::class))->toBeInstanceOf(ExpireRewardPointLotsCommand::class);
+});
+
+it('declares exactly one feature owner for every default rewards table', function (): void {
+    $catalog = FeatureCatalog::scan(dirname(__DIR__, 3) . '/packages/rewards', 'AIArmada\\Rewards');
+    $tables = config('rewards.database.tables');
+
+    expect(array_keys($catalog['features']))->toHaveCount(7)
+        ->and(array_keys($catalog['owners']))->toHaveCount(count($tables));
+
+    foreach (array_keys($tables) as $key) {
+        expect($catalog['owners'])->toHaveKey('table:reward_' . $key);
+    }
 });

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "kind": "package",
-  "layout": "single",
+  "layout": "modular",
   "namespace": "AIArmada\\Rewards",
   "sourceDir": "src",
   "antiSlop": {

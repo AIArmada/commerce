@@ -10,7 +10,7 @@
     "table:reward_program_versions": [
       "AIArmada\\Rewards\\Features\\Programs\\Actions\\PublishRewardProgramVersionAction"
     ],
-    "table:reward_program_publications": [
+    "table:reward_version_publications": [
       "AIArmada\\Rewards\\Features\\Programs\\Actions\\PublishRewardProgramVersionAction"
     ]
   },
