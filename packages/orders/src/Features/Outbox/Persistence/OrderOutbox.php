@@ -130,7 +130,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
 
                 // Preserve staging order and skip rows already claimed or delivered
                 // by a relay worker before the after-commit callback ran.
-                foreach (array_unique($ids) as $id) {
+                foreach (array_unique(array_filter($ids)) as $id) {
                     $row = $rows->get($id);
                     if (! $row instanceof OrderOutboxMessage || ! in_array($row->event_class, OrderOutboxMessage::REPLAYABLE_EVENTS, true)) {
                         continue;

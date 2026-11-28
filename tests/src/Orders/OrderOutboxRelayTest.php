@@ -595,3 +595,21 @@ it('skips previously relayed rows during live dispatch', function (): void {
 
     expect(array_column(outboxRelayRows(), 'status'))->toBe([OutboxStatus::Relayed->value, OutboxStatus::Relayed->value]);
 });
+
+it('leaves a claimed outbox row to its relay worker', function (): void {
+    $order = makeOutboxRelayOrder('ORD-RELAY-CLAIMED');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    $claimed = insertOutboxRelayRow($order, [
+        'event_class' => OrderProcessingStarted::class,
+        'status' => OutboxStatus::Relaying->value,
+        'claimed_at' => CarbonImmutable::now(),
+    ]);
+
+    app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$claimed], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertNotDispatched(OrderFulfillmentRequired::class);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Relaying->value);
+});
