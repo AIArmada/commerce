@@ -273,3 +273,37 @@ it('prevents badges-mode programs from granting points through milestones', func
     expect((new RewardRuleValidator)->errors($rules, RewardProgramMode::Badges, 'own-family'))
         ->toContain('Milestone [0] reward type [points] is not allowed in program mode [badges].');
 });
+
+it('reports malformed enum inputs without coercing non-string values', function (): void {
+    $rules = RewardCoreTestFixtures::rules();
+    $rules['eligibility']['min_verification'] = ['accepted'];
+    $rules['components'] = [
+        [
+            'type' => 'points',
+            'variants' => [[
+                'outcomes' => ['attendance'],
+                'roles' => ['participant'],
+                'min_verification' => ['accepted'],
+                'first_only' => false,
+                'points' => 5,
+                'unit' => 'pts',
+            ]],
+        ],
+        ['type' => ['cash']],
+    ];
+    $rules['milestones'] = [[
+        'key' => 'malformed-tier',
+        'outcomes' => ['attendance'],
+        'roles' => ['participant'],
+        'min_verification' => ['accepted'],
+        'target_count' => 1,
+        'window_days' => 30,
+        'reward' => ['type' => ['points']],
+    ]];
+
+    expect((new RewardRuleValidator)->errors($rules, RewardProgramMode::Points, 'own-family'))
+        ->toContain('Eligibility min_verification must be a known verification level.')
+        ->toContain('Component variant [component:0:variant:0] min_verification must be a known verification level.')
+        ->toContain('Milestone [0] min_verification must be a known verification level.')
+        ->toContain('Milestone [0] reward type must be recognition, points, or badge; cash/benefit settlement is WP6 scope.');
+});
