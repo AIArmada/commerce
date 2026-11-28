@@ -55,7 +55,7 @@ use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusActi
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Queries\RewardReadinessMapper;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionReadinessMapper;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -580,7 +580,7 @@ it('requires funding for every cash variant currency before activation', functio
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
         (string) $ready->getKey(),
-        RewardReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
+        RewardVersionReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()
@@ -643,7 +643,7 @@ it('requires catalog items for every benefit variant key before activation', fun
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
         (string) $ready->getKey(),
-        RewardReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
+        RewardVersionReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()
