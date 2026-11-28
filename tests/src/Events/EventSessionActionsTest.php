@@ -21,6 +21,8 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->event = Event::factory()->create();
@@ -672,7 +674,7 @@ it('ignores direct event reassignment when updating a session', function (): voi
 it('does not dispatch session creation when the surrounding transaction rolls back', function (): void {
     Illuminate\Support\Facades\Event::fake([EventSessionCreated::class]);
 
-    expect(fn () => Illuminate\Support\Facades\DB::transaction(function (): void {
+    expect(fn () => DB::transaction(function (): void {
         app(CreateEventSessionAction::class)->handle($this->occurrence, ['title' => 'Rolled back session']);
 
         Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
@@ -708,7 +710,7 @@ it('rejects duplicate session slugs within an event but allows reuse across even
     $update = app(UpdateEventSessionAction::class);
 
     expect(fn () => $update->handle($second, ['slug' => $first->slug]))
-        ->toThrow(Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect($second->refresh()->slug)->toBe('second-session')
         ->and($update->handle($other, ['slug' => $first->slug])['session']->slug)->toBe($first->slug);
@@ -723,7 +725,7 @@ it('does not dispatch session lifecycle events from rolled back transactions', f
         'status' => 'scheduled',
     ]);
 
-    expect(fn () => Illuminate\Support\Facades\DB::transaction(function () use ($session): void {
+    expect(fn () => DB::transaction(function () use ($session): void {
         $session->cancel('Cancelled inside transaction');
 
         Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCancelled::class);

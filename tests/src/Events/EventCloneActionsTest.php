@@ -5,19 +5,23 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCloneService;
+use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventContentsAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\DefaultEventCloneService;
 use AIArmada\Events\Features\Catalog\Actions\SaveEventTemplateAction;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventInvolvement;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Venues\Models\EventLocation;
+use AIArmada\Events\Platform\ExtensionRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -498,7 +502,7 @@ it('rejects cloning a session into an occurrence belonging to another event', fu
     expect(fn () => app(CloneEventSessionAction::class)->handle($session, [
         'event_id' => $otherEvent->id,
         'clone_children' => false,
-    ]))->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    ]))->toThrow(ModelNotFoundException::class);
 
     expect(EventSession::query()->where('event_id', $otherEvent->id)->exists())->toBeFalse();
 });
@@ -529,14 +533,14 @@ it('rejects invalid time overrides when cloning a session', function (): void {
 
 it('rolls back the cloned event if a scope extension fails', function (): void {
     $event = Event::factory()->create();
-    $cloner = Mockery::mock(AIArmada\Events\Contracts\EventScopeCloner::class);
+    $cloner = Mockery::mock(EventScopeCloner::class);
     $cloner->shouldReceive('cloneForScope')->once()->andThrow(new RuntimeException('Extension failed'));
-    app()->instance(AIArmada\Events\Contracts\EventScopeCloner::class, $cloner);
+    app()->instance(EventScopeCloner::class, $cloner);
 
-    $registry = new AIArmada\Events\Platform\ExtensionRegistry(app(), [
-        'events.clone-scope' => [AIArmada\Events\Contracts\EventScopeCloner::class],
+    $registry = new ExtensionRegistry(app(), [
+        'events.clone-scope' => [EventScopeCloner::class],
     ]);
-    $service = new AIArmada\Events\Features\Catalog\Actions\DefaultEventCloneService(
+    $service = new DefaultEventCloneService(
         app(CloneEventAction::class),
         app(CloneEventOccurrenceAction::class),
         app(CloneEventSessionAction::class),
@@ -566,7 +570,7 @@ it('rejects mismatched occurrence scopes before copying contents', function (): 
         $other->id,
         sourceOccurrenceId: $occurrence->id,
         targetOccurrenceId: $occurrence->id,
-    ))->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    ))->toThrow(ModelNotFoundException::class);
 });
 
 it('uses the configured event model when cloning', function (): void {

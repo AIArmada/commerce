@@ -9,6 +9,7 @@ use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -111,7 +112,7 @@ it('dispatches occurrence creation only after the surrounding transaction commit
     Illuminate\Support\Facades\Event::fake([EventOccurrenceCreated::class]);
     $event = Event::factory()->create();
 
-    $occurrence = Illuminate\Support\Facades\DB::transaction(function () use ($event): EventOccurrence {
+    $occurrence = DB::transaction(function () use ($event): EventOccurrence {
         $occurrence = app(CreateEventOccurrenceAction::class)->handle($event, ['title' => 'Committed occurrence']);
 
         Illuminate\Support\Facades\Event::assertNotDispatched(EventOccurrenceCreated::class);
@@ -126,7 +127,7 @@ it('does not dispatch occurrence creation when the surrounding transaction rolls
     Illuminate\Support\Facades\Event::fake([EventOccurrenceCreated::class]);
     $event = Event::factory()->create();
 
-    expect(fn () => Illuminate\Support\Facades\DB::transaction(function () use ($event): void {
+    expect(fn () => DB::transaction(function () use ($event): void {
         app(CreateEventOccurrenceAction::class)->handle($event, ['title' => 'Rolled back occurrence']);
 
         throw new RuntimeException('Rollback occurrence');
