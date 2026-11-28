@@ -273,7 +273,7 @@ final class EventSessionResource extends Resource
                             ->hiddenOn('edit')
                             ->required(),
                         TextInput::make('title')->required()->maxLength(255),
-                        TextInput::make('slug')->maxLength(255)->unique(ignoreRecord: true),
+                        TextInput::make('slug')->maxLength(255),
                         Textarea::make('summary')->rows(3),
                         Textarea::make('description')->rows(5),
                         DateTimePicker::make('starts_at')

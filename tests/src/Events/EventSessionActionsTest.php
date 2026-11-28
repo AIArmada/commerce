@@ -683,3 +683,33 @@ it('does not dispatch session creation when the surrounding transaction rolls ba
     expect(EventSession::query()->where('event_occurrence_id', $this->occurrence->id)->where('slug', 'rolled-back-session')->exists())->toBeFalse();
     Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
 });
+
+it('inherits occurrence visibility when session visibility is cleared', function (): void {
+    $this->occurrence->update(['visibility' => 'private']);
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'visibility' => 'public',
+    ]);
+
+    $result = app(UpdateEventSessionAction::class)->handle($session, ['visibility' => null]);
+
+    expect($result['session']->visibility)->toBe('private');
+});
+
+it('rejects duplicate session slugs within an event but allows reuse across events', function (): void {
+    $action = app(CreateEventSessionAction::class);
+    $first = $action->handle($this->occurrence, ['title' => 'First session']);
+    $second = $action->handle($this->occurrence, ['title' => 'Second session']);
+    $otherEvent = Event::factory()->create();
+    $otherOccurrence = EventOccurrence::factory()->create(['event_id' => $otherEvent->id]);
+    $other = $action->handle($otherOccurrence, ['title' => 'Other session']);
+
+    $update = app(UpdateEventSessionAction::class);
+
+    expect(fn () => $update->handle($second, ['slug' => $first->slug]))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    expect($second->refresh()->slug)->toBe('second-session')
+        ->and($update->handle($other, ['slug' => $first->slug])['session']->slug)->toBe($first->slug);
+});

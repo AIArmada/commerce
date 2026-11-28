@@ -37,7 +37,7 @@ final class UpdateEventOccurrenceAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            EventWriteGuard::findOrFail((string) $occurrence->getAttribute('event_id'));
+            $event = EventWriteGuard::findOrFail((string) $occurrence->getAttribute('event_id'));
 
             $original = $occurrence->getRawOriginal();
 
@@ -77,6 +77,10 @@ final class UpdateEventOccurrenceAction
 
             if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
                 throw new InvalidArgumentException('Occurrence end time must be after the start time.');
+            }
+
+            if (array_key_exists('visibility', $allowed) && blank($allowed['visibility'])) {
+                $allowed['visibility'] = $event->getAttribute('visibility') ?: 'public';
             }
 
             $statusValue = $allowed['status'] ?? null;

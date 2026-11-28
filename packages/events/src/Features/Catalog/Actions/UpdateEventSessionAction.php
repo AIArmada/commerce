@@ -10,8 +10,10 @@ use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as
 use AIArmada\Events\Features\Changes\Api\ChangesApi;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class UpdateEventSessionAction
@@ -34,7 +36,7 @@ final class UpdateEventSessionAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            EventWriteGuard::findOrFail((string) $session->getAttribute('event_id'));
+            $event = EventWriteGuard::findOrFail((string) $session->getAttribute('event_id'));
 
             $original = $session->getRawOriginal();
 
@@ -81,6 +83,25 @@ final class UpdateEventSessionAction
 
             if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
                 throw new InvalidArgumentException('Session end time must be after the start time.');
+            }
+
+            if (array_key_exists('visibility', $allowed) && blank($allowed['visibility'])) {
+                $allowed['visibility'] = $session->occurrence?->visibility ?: ($event->getAttribute('visibility') ?: 'public');
+            }
+
+            if (array_key_exists('slug', $allowed) && ! blank($allowed['slug']) && $allowed['slug'] !== $session->slug) {
+                $event->newQuery()->whereKey($event->getKey())->lockForUpdate()->firstOrFail();
+
+                $duplicate = ModelResolver::sessionClass()::query()
+                    ->withoutOwnerScope()
+                    ->where('event_id', $session->event_id)
+                    ->whereKeyNot($session->getKey())
+                    ->where('slug', $allowed['slug'])
+                    ->exists();
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages(['slug' => 'This slug is already used by a session in this event.']);
+                }
             }
 
             $statusValue = $allowed['status'] ?? null;

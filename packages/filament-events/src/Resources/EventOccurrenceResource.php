@@ -256,7 +256,7 @@ final class EventOccurrenceResource extends Resource
                             ->hiddenOn('edit')
                             ->required(),
                         TextInput::make('title')->required()->maxLength(255),
-                        TextInput::make('slug')->maxLength(255)->unique(ignoreRecord: true),
+                        TextInput::make('slug')->maxLength(255),
                         DateTimePicker::make('starts_at')->required(),
                         DateTimePicker::make('ends_at')->required(),
                         TextInput::make('timezone')

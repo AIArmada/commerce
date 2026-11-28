@@ -135,3 +135,12 @@ it('does not dispatch occurrence creation when the surrounding transaction rolls
     expect(EventOccurrence::query()->where('event_id', $event->id)->where('slug', 'rolled-back-occurrence')->exists())->toBeFalse();
     Illuminate\Support\Facades\Event::assertNotDispatched(EventOccurrenceCreated::class);
 });
+
+it('inherits the event visibility when an occurrence visibility is cleared', function (): void {
+    $event = Event::factory()->create(['visibility' => 'private']);
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id, 'visibility' => 'public']);
+
+    $result = app(UpdateEventOccurrenceAction::class)->handle($occurrence, ['visibility' => null]);
+
+    expect($result['occurrence']->visibility)->toBe('private');
+});
