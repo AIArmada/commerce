@@ -68,7 +68,7 @@ final readonly class OrderFulfillmentOperations implements OrderFulfillment
 
     private function resolve(string $orderId): Order
     {
-        $order = Order::query()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         return $order;

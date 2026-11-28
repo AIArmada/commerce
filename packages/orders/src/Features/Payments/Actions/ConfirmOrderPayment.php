@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Models\Order;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class ConfirmOrderPayment implements OrderPaymentConfirmation
@@ -19,13 +18,13 @@ final readonly class ConfirmOrderPayment implements OrderPaymentConfirmation
 
     public function confirm(string $orderId, string $transactionId, string $gateway, int $amount, array $metadata = []): void
     {
-        $this->payments->execute(Order::query()->findOrFail($orderId), $transactionId, $gateway, $amount, $metadata);
+        $this->payments->execute(Order::query()->forOwner()->findOrFail($orderId), $transactionId, $gateway, $amount, $metadata);
     }
 
     public function confirmCheckout(string $orderId, string $transactionId, string $gateway, int $amount, string $currency, array $metadata = []): void
     {
-        DB::transaction(function () use ($orderId, $transactionId, $gateway, $amount, $currency, $metadata): void {
-            $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+        (new Order)->getConnection()->transaction(function () use ($orderId, $transactionId, $gateway, $amount, $currency, $metadata): void {
+            $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
             if ((int) $order->grand_total !== $amount || MoneyFormatter::normalizeCurrency($order->currency) !== MoneyFormatter::normalizeCurrency($currency)) {
@@ -38,8 +37,8 @@ final readonly class ConfirmOrderPayment implements OrderPaymentConfirmation
 
     public function settleOutstanding(string $orderId, string $transactionId, string $gateway): void
     {
-        DB::transaction(function () use ($orderId, $transactionId, $gateway): void {
-            $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+        (new Order)->getConnection()->transaction(function () use ($orderId, $transactionId, $gateway): void {
+            $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
             $existing = $order->payments()

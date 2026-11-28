@@ -15,7 +15,7 @@ final readonly class IssueOrderDocument implements OrderDocuments
 
     public function issue(string $orderId, string $type, string $transactionId, string $gateway): ?string
     {
-        $order = Order::query()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         return match ($type) {

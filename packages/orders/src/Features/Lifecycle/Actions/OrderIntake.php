@@ -57,7 +57,7 @@ final readonly class OrderIntake implements OrderServiceInterface
 
     public function find(string $orderId): ?OrderIntakeData
     {
-        $order = Order::query()->find($orderId);
+        $order = Order::query()->forOwner()->find($orderId);
 
         if ($order === null) {
             return null;

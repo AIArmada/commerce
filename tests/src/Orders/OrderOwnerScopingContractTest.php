@@ -9,8 +9,15 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Orders\Contracts\OrderAdministration;
+use AIArmada\Orders\Contracts\OrderDocuments;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\PendingPayment;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -196,4 +203,33 @@ it('verifies removing an owner from an unsaved model is allowed', function (): v
 
 it('prevents cross-tenant access', function (): void {
     $this->test_cross_tenant_access_prevented();
+});
+
+it('excludes globally visible orders from tenant-local mutation and intake contracts', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Contract tenant']);
+    $global = OwnerContext::withOwner(null, fn (): Order => Order::factory()->create([
+        'status' => PendingPayment::class,
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Order::query()->find($global->id))->not->toBeNull()
+            ->and(app(OrderServiceInterface::class)->find($global->id))->toBeNull();
+
+        expect(fn () => app(OrderAdministration::class)->updateNotes($global->id, ['notes' => 'foreign']))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderPaymentConfirmation::class)->confirm($global->id, 'foreign-payment', 'manual', 1000))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderFulfillment::class)->cancel($global->id, 'foreign cancellation'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderDocuments::class)->issue($global->id, 'invoice', 'foreign-payment', 'manual'))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($global): void {
+        expect($global->refresh()->status)->toBeInstanceOf(PendingPayment::class)
+            ->and($global->payments()->count())->toBe(0)
+            ->and(app(OrderServiceInterface::class)->find($global->id)?->id)->toBe($global->id);
+    });
 });

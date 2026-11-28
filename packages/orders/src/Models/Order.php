@@ -27,7 +27,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -314,7 +313,7 @@ class Order extends Model implements Auditable
         $this->allowUnsafeDelete = $force;
 
         try {
-            return DB::transaction(function (): ?bool {
+            return $this->getConnection()->transaction(function (): ?bool {
                 if ($this->exists) {
                     $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
                     $this->refresh();

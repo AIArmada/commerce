@@ -65,12 +65,12 @@ final readonly class ManageOrders implements OrderAdministration
 
     public function addItem(string $orderId, array $itemData): string
     {
-        return (string) $this->orders->addItem(Order::query()->findOrFail($orderId), $itemData)->getKey();
+        return (string) $this->orders->addItem(Order::query()->forOwner()->findOrFail($orderId), $itemData)->getKey();
     }
 
     public function addAddress(string $orderId, array $addressData, string $type): void
     {
-        $this->orders->addAddress(Order::query()->findOrFail($orderId), $addressData, $type);
+        $this->orders->addAddress(Order::query()->forOwner()->findOrFail($orderId), $addressData, $type);
     }
 
     public function recalculateTotals(string $orderId): void
@@ -152,7 +152,7 @@ final readonly class ManageOrders implements OrderAdministration
 
     private function lockOrder(string $orderId): Order
     {
-        $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         return $order;
