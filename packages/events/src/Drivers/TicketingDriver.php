@@ -21,6 +21,8 @@ use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\States\Activated;
+use AIArmada\Ticketing\States\Issued;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -99,7 +101,7 @@ final class TicketingDriver implements EventTicketingDriver
         $revoked = 0;
 
         foreach ($passes as $pass) {
-            if ($pass->isValid()) {
+            if ($pass->status instanceof Issued || $pass->status instanceof Activated) {
                 $this->revokePass->handle($pass, $reason ?? 'Registration terminal');
                 $revoked++;
             }
@@ -118,7 +120,7 @@ final class TicketingDriver implements EventTicketingDriver
         $revoked = 0;
 
         foreach ($passes as $pass) {
-            if (! $pass->isValid()) {
+            if (! ($pass->status instanceof Issued || $pass->status instanceof Activated)) {
                 continue;
             }
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
@@ -11,6 +12,7 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 it('issues passes for registration items', function (): void {
@@ -77,3 +79,40 @@ it('prefers session seat maps over event seat maps', function (): void {
 
     expect($pass->seatAllocations()->first()?->seat_id)->toBe($sessionSeat->id);
 });
+
+it('revokes unused passes and releases their seats even when the registration is already terminal', function (string $status, bool $byIds): void {
+    $event = Event::factory()->create();
+    $ticketType = createEventTicketType($event);
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->getKey(),
+        'status' => $status,
+    ]);
+    $pass = Pass::factory()->create([
+        'ticketable_type' => $event->getMorphClass(),
+        'ticketable_id' => $event->getKey(),
+        'ticket_type_id' => $ticketType->getKey(),
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'activated',
+    ]);
+
+    $allocation = SeatAllocation::factory()->create([
+        'allocated_to_type' => $pass->getMorphClass(),
+        'allocated_to_id' => $pass->getKey(),
+    ]);
+
+    $driver = app(EventTicketingDriver::class);
+    $revoke = fn (): int => $byIds
+        ? $driver->revokePassesByIds([(string) $pass->getKey()], 'Registration terminal')
+        : $driver->revokePasses($registration->getMorphClass(), (string) $registration->getKey(), 'Registration terminal');
+
+    expect($pass->isValid())->toBeFalse()
+        ->and($revoke())->toBe(1)
+        ->and((string) $pass->fresh()->status)->toBe('revoked')
+        ->and($allocation->fresh()->status)->toBe('released')
+        ->and($revoke())->toBe(0);
+})->with([
+    'refunded registration' => ['refunded', false],
+    'cancelled registration' => ['cancelled', false],
+    'refund by pass ids' => ['refunded', true],
+]);
