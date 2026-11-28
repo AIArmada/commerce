@@ -111,6 +111,8 @@ interface InvoiceContract extends Arrayable, Jsonable
      */
     public function customer(): mixed;
 
+    public function customerId(): ?string;
+
     /**
      * Get the hosted invoice URL.
      */

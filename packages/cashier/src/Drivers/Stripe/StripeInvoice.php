@@ -208,6 +208,14 @@ class StripeInvoice implements InvoiceContract
         return $this->getStripeInvoice()->customer;
     }
 
+    public function customerId(): ?string
+    {
+        $customer = $this->customer();
+        $id = is_string($customer) ? $customer : data_get($customer, 'id');
+
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+
     /**
      * Get the hosted invoice URL.
      */

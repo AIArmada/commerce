@@ -210,6 +210,11 @@ class ChipInvoice implements InvoiceContract
         return $this->purchase->client;
     }
 
+    public function customerId(): ?string
+    {
+        return $this->purchase->getClientId();
+    }
+
     /**
      * Get the hosted invoice URL.
      */

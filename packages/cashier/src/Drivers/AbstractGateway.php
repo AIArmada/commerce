@@ -14,6 +14,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -333,7 +334,21 @@ abstract class AbstractGateway implements GatewayContract
      */
     final public function findInvoice(BillableContract $billable, string $invoiceId): ?InvoiceContract
     {
-        return $this->retrieveInvoice($invoiceId);
+        ActionGuard::assertBillableInScope($billable);
+
+        $invoice = $this->retrieveInvoice($invoiceId);
+
+        if ($invoice === null) {
+            return null;
+        }
+
+        $customerId = $billable->gatewayId($this->name());
+
+        if ($customerId === null || $customerId === '' || $invoice->customerId() !== $customerId) {
+            return null;
+        }
+
+        return $invoice;
     }
 
     /**
