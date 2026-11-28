@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
@@ -252,4 +254,24 @@ it('refunds a captured reservation only for its bound recipient and reservation'
 
     expect(RewardPointMovement::query()->where('kind', 'refund')->count())->toBe(1)
         ->and(RewardPointLedger::balancesFor($type, $recipient, $family, $unit, $at)->available)->toBe(25);
+});
+
+it('binds submission replays to the recorded reference and timestamps delivery', function (): void {
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+    $sending = RewardReservationSubmissionStatus::Sending->value;
+    $delivered = RewardReservationSubmissionStatus::Delivered->value;
+
+    $first = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-a', $at);
+
+    expect(fn () => MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-b', $at))
+        ->toThrow(InvalidArgumentException::class, 'different reference');
+
+    $replay = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-a', $at);
+    expect($replay->getKey())->toBe($first->getKey());
+
+    $resolved = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $delivered, 'receipt-a', $at->addMinute());
+    expect($resolved->resolved_at?->equalTo($at->addMinute()))->toBeTrue();
+
+    expect(fn () => MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', RewardReservationSubmissionStatus::Failed->value, null, $at))
+        ->toThrow(InvalidArgumentException::class, 'terminal');
 });

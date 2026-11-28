@@ -6,13 +6,13 @@ namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -144,8 +144,8 @@ final readonly class FulfillRewardBenefitAction
         app(RewardPointsApi::class)->markSubmission(
             (string) $grant->reservation_key,
             (string) $grant->fulfillment_adapter === 'coupon'
-                ? RewardPointReservationSubmission::STATUS_SUBMITTED
-                : RewardPointReservationSubmission::STATUS_DELIVERED,
+                ? RewardReservationSubmissionStatus::Submitted->value
+                : RewardReservationSubmissionStatus::Delivered->value,
             $externalRef,
             $decided,
         );

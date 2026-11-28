@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
@@ -27,7 +28,6 @@ use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
@@ -325,7 +325,7 @@ it('D2 blocks reversal on unknown reservations without partial effects', functio
     // Genuinely unknown external status: the hold was handed to external
     // fulfillment. (An unmarked hold is known-unsubmitted under the real
     // resolver and voids cleanly; see the attested cases above.)
-    MarkRewardReservationSubmittedAction::run('rsv:d2u-1', RewardPointReservationSubmission::STATUS_SENDING, 'ext-d2u-1');
+    MarkRewardReservationSubmittedAction::run('rsv:d2u-1', RewardReservationSubmissionStatus::Sending->value, 'ext-d2u-1');
 
     $entriesBefore = $award->entries()->count();
     $movementsBefore = RewardPointMovement::query()->count();
@@ -594,7 +594,7 @@ it('D2 keeps milestone invalidation atomic with attested reservations', function
 
     // Genuinely unknown external status: the hold was handed to external
     // fulfillment, so no attestation can void it.
-    MarkRewardReservationSubmittedAction::run('rsv:d2mi-1', RewardPointReservationSubmission::STATUS_SENDING, 'ext-d2mi-1');
+    MarkRewardReservationSubmittedAction::run('rsv:d2mi-1', RewardReservationSubmissionStatus::Sending->value, 'ext-d2mi-1');
 
     $contribution = RewardMilestoneContribution::query()->where('source_business_key', 'src-d2mi-1')->firstOrFail();
 

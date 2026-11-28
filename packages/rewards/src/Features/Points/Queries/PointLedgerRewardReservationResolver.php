@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Points\Queries;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
+use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
 
 /**
  * Production reservation attestation over the submission registry.
@@ -40,7 +41,7 @@ final class PointLedgerRewardReservationResolver implements RewardReservationRes
             return true;
         }
 
-        return (string) $submission->getAttribute('status') === RewardPointReservationSubmission::STATUS_FAILED
+        return (string) $submission->getAttribute('status') === RewardReservationSubmissionStatus::Failed->value
             && $submission->getAttribute('resolved_at') !== null;
     }
 }

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
+use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,7 @@ class RewardPointReservationSubmissionFactory extends Factory
     {
         return [
             'reservation_key' => 'res-' . Str::lower(Str::random(12)),
-            'status' => RewardPointReservationSubmission::STATUS_SENDING,
+            'status' => RewardReservationSubmissionStatus::Sending->value,
             'reference' => null,
             'submitted_at' => now('UTC'),
             'resolved_at' => null,

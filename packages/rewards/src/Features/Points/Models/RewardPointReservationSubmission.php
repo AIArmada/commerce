@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Points\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardPointReservationSubmissionFactory;
 use Carbon\CarbonImmutable;
@@ -38,16 +38,6 @@ class RewardPointReservationSubmission extends Model
 
     use HasUuids;
 
-    public const string STATUS_SENDING = 'sending';
-
-    public const string STATUS_SUBMITTED = 'submitted';
-
-    public const string STATUS_UNKNOWN = 'unknown';
-
-    public const string STATUS_DELIVERED = 'delivered';
-
-    public const string STATUS_FAILED = 'failed';
-
     public function getTable(): string
     {
         return config('rewards.database.tables.point_reservation_submissions', 'reward_point_reservation_submissions');
@@ -72,20 +62,6 @@ class RewardPointReservationSubmission extends Model
         return [
             'submitted_at' => 'immutable_datetime',
             'resolved_at' => 'immutable_datetime',
-        ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    public static function statuses(): array
-    {
-        return [
-            self::STATUS_SENDING,
-            self::STATUS_SUBMITTED,
-            self::STATUS_UNKNOWN,
-            self::STATUS_DELIVERED,
-            self::STATUS_FAILED,
         ];
     }
 

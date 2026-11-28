@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -79,7 +79,7 @@ final readonly class CancelRewardBenefitGrantAction
 
                 app(RewardPointsApi::class)->markSubmission(
                     (string) $locked->reservation_key,
-                    RewardPointReservationSubmission::STATUS_FAILED,
+                    RewardReservationSubmissionStatus::Failed->value,
                     (string) $locked->grant_key,
                     $decided,
                 );

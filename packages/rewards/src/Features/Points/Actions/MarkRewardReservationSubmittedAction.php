@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
+use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -53,7 +53,7 @@ final readonly class MarkRewardReservationSubmittedAction
     ): RewardPointReservationSubmission {
         RewardOperationKeys::assertValid($reservationKey);
 
-        if (! in_array($status, RewardPointReservationSubmission::statuses(), true)) {
+        if (RewardReservationSubmissionStatus::tryFrom($status) === null) {
             throw new InvalidArgumentException('Unknown reservation submission status.');
         }
 
@@ -66,7 +66,7 @@ final readonly class MarkRewardReservationSubmittedAction
             : CarbonImmutable::parse($at)->setTimezone('UTC');
 
         return DB::transaction(function () use ($reservationKey, $status, $reference, $stamped): RewardPointReservationSubmission {
-            $hasLedgerPieces = $status !== RewardPointReservationSubmission::STATUS_FAILED
+            $hasLedgerPieces = $status !== RewardReservationSubmissionStatus::Failed->value
                 ? $this->lockReservationLots($reservationKey)
                 : false;
 
@@ -85,26 +85,30 @@ final readonly class MarkRewardReservationSubmittedAction
                     'status' => $status,
                     'reference' => $reference,
                     'submitted_at' => $stamped,
-                    'resolved_at' => $status === RewardPointReservationSubmission::STATUS_FAILED ? $stamped : null,
+                    'resolved_at' => in_array($status, [RewardReservationSubmissionStatus::Failed->value, RewardReservationSubmissionStatus::Delivered->value], true) ? $stamped : null,
                 ]);
             }
 
             $current = (string) $existing->getAttribute('status');
 
             if ($current === $status) {
+                if ($reference !== null && $reference !== $existing->reference) {
+                    throw new InvalidArgumentException('Submission replay is bound to a different reference.');
+                }
+
                 return $existing;
             }
 
             $terminal = [
-                RewardPointReservationSubmission::STATUS_DELIVERED,
-                RewardPointReservationSubmission::STATUS_FAILED,
+                RewardReservationSubmissionStatus::Delivered->value,
+                RewardReservationSubmissionStatus::Failed->value,
             ];
 
             if (in_array($current, $terminal, true)) {
                 throw new InvalidArgumentException("Reservation submission [{$reservationKey}] is terminal [{$current}]; refusing [{$status}].");
             }
 
-            if ($status === RewardPointReservationSubmission::STATUS_FAILED) {
+            if (in_array($status, $terminal, true)) {
                 $existing->forceFill([
                     'status' => $status,
                     'reference' => $reference ?? $existing->getAttribute('reference'),
@@ -132,9 +136,7 @@ final readonly class MarkRewardReservationSubmittedAction
     {
         $lotIds = RewardPointMovement::query()
             ->where('reservation_key', $reservationKey)
-            ->orderBy('id')
-            ->get()
-            ->map(static fn (RewardPointMovement $movement): string => (string) $movement->lot_id)
+            ->pluck('lot_id')
             ->unique()
             ->values()
             ->all();
@@ -143,9 +145,7 @@ final readonly class MarkRewardReservationSubmittedAction
             return false;
         }
 
-        foreach (RewardLedgerLockOrder::sorted($lotIds) as $lotId) {
-            RewardPointLot::query()->whereKey($lotId)->lockForUpdate()->first();
-        }
+        RewardPointLot::query()->whereIn('id', $lotIds)->orderBy('id')->lockForUpdate()->get();
 
         return true;
     }

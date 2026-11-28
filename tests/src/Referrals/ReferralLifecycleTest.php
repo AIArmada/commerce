@@ -43,6 +43,7 @@ use AIArmada\Referrals\Support\ReferralRewardSpecValidator;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
@@ -56,7 +57,6 @@ use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusActi
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
@@ -658,7 +658,7 @@ it('blocks the referral reversal when the rewards award cannot be reversed', fun
         );
         MarkRewardReservationSubmittedAction::run(
             'rsv:referral-blocked-1',
-            RewardPointReservationSubmission::STATUS_SENDING,
+            RewardReservationSubmissionStatus::Sending->value,
             'ext-referral-blocked-1',
         );
     });

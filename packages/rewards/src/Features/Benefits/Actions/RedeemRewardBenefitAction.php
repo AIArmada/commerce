@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
@@ -11,7 +12,6 @@ use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
@@ -280,7 +280,7 @@ final readonly class RedeemRewardBenefitAction
         // the handoff mark commits atomically with the reservation.
         app(RewardPointsApi::class)->markSubmission(
             $reservationKey,
-            RewardPointReservationSubmission::STATUS_SENDING,
+            RewardReservationSubmissionStatus::Sending->value,
             $grantKey,
             $decided,
         );

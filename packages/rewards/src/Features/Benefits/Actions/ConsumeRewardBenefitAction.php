@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -87,7 +87,7 @@ final readonly class ConsumeRewardBenefitAction
             ) {
                 app(RewardPointsApi::class)->markSubmission(
                     (string) $locked->reservation_key,
-                    RewardPointReservationSubmission::STATUS_DELIVERED,
+                    RewardReservationSubmissionStatus::Delivered->value,
                     (string) $locked->external_ref,
                     $decided,
                 );
