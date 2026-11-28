@@ -9,6 +9,10 @@ use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\States\Cancelled;
+use AIArmada\Inventory\States\Expired;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -73,7 +77,7 @@ final class BackorderService
             throw new InvalidArgumentException('Fulfillment quantity must be positive.');
         }
 
-        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->fulfill($quantity));
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $this->fulfillLocked($locked, $quantity));
     }
 
     /**
@@ -85,7 +89,7 @@ final class BackorderService
             throw new InvalidArgumentException('Cancellation quantity must be positive.');
         }
 
-        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->cancel($quantity, $reason));
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $this->cancelLocked($locked, $quantity, $reason));
     }
 
     /**
@@ -208,7 +212,7 @@ final class BackorderService
                 $needed = $backorder->quantityRemaining();
                 $fulfillQty = min($needed, $remaining);
 
-                if ($fulfillQty > 0 && $backorder->fulfill($fulfillQty)) {
+                if ($fulfillQty > 0 && $this->fulfillLocked($backorder, $fulfillQty)) {
                     $totalFulfilled += $fulfillQty;
                     $remaining -= $fulfillQty;
                     $backordersUpdated++;
@@ -227,11 +231,11 @@ final class BackorderService
      */
     public function escalateOverdue(): int
     {
-        $overdue = $this->getOverdueBackorders();
+        $overdue = InventoryOwnerScope::forMutation(InventoryBackorder::query())->overdue()->byPriority()->get();
         $escalated = 0;
 
         foreach ($overdue as $backorder) {
-            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->isOverdue() && $locked->priority !== BackorderPriority::Urgent && $locked->escalate())) {
+            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->isOverdue() && $locked->priority !== BackorderPriority::Urgent && $this->escalateLocked($locked))) {
                 $escalated++;
             }
         }
@@ -246,18 +250,16 @@ final class BackorderService
     {
         $cutoff = CarbonImmutable::now()->subDays($daysOld);
 
-        $oldBackordersQuery = InventoryBackorder::query()
+        $oldBackordersQuery = InventoryOwnerScope::forMutation(InventoryBackorder::query())
             ->whereIn('status', InventoryBackorder::openStatuses())
             ->where('requested_at', '<', $cutoff);
-
-        $this->applyOwnerScopeToBackorderQuery($oldBackordersQuery);
 
         $oldBackorders = $oldBackordersQuery->get();
 
         $expired = 0;
 
         foreach ($oldBackorders as $backorder) {
-            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->requested_at < $cutoff && $locked->expire())) {
+            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->requested_at < $cutoff && $this->expireLocked($locked))) {
                 $expired++;
             }
         }
@@ -347,6 +349,104 @@ final class BackorderService
         $this->applyOwnerScopeToBackorderQuery($query);
 
         return (int) $query->value('total');
+    }
+
+    public function expire(InventoryBackorder $backorder): bool
+    {
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $this->expireLocked($locked));
+    }
+
+    public function escalate(InventoryBackorder $backorder): bool
+    {
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $this->escalateLocked($locked));
+    }
+
+    /**
+     * Fulfill a portion of the backorder.
+     */
+    private function fulfillLocked(InventoryBackorder $backorder, int $quantity): bool
+    {
+        if (! $backorder->canFulfill()) {
+            return false;
+        }
+
+        $quantity = min($quantity, $backorder->quantityRemaining());
+
+        $newFulfilled = $backorder->quantity_fulfilled + $quantity;
+        $newStatus = $newFulfilled >= $backorder->quantity_requested - $backorder->quantity_cancelled
+            ? Fulfilled::class
+            : PartiallyFulfilled::class;
+
+        return $backorder->update([
+            'quantity_fulfilled' => $newFulfilled,
+            'status' => $newStatus,
+            'fulfilled_at' => $newStatus === Fulfilled::class ? CarbonImmutable::now() : null,
+        ]);
+    }
+
+    /**
+     * Cancel a portion or all of the backorder.
+     */
+    private function cancelLocked(InventoryBackorder $backorder, ?int $quantity, ?string $reason): bool
+    {
+        if (! $backorder->canCancel() || $backorder->quantityRemaining() <= 0) {
+            return false;
+        }
+
+        $quantity = $quantity ?? $backorder->quantityRemaining();
+        $quantity = min($quantity, $backorder->quantityRemaining());
+
+        $newCancelled = $backorder->quantity_cancelled + $quantity;
+        $remaining = $backorder->quantity_requested - $backorder->quantity_fulfilled - $newCancelled;
+
+        $newStatus = $remaining <= 0
+            ? Cancelled::class
+            : $backorder->status;
+
+        $metadata = $backorder->metadata ?? [];
+        if ($reason) {
+            $metadata['cancellation_reason'] = $reason;
+        }
+
+        return $backorder->update([
+            'quantity_cancelled' => $newCancelled,
+            'status' => $newStatus,
+            'cancelled_at' => $newStatus === Cancelled::class ? CarbonImmutable::now() : null,
+            'metadata' => $metadata,
+        ]);
+    }
+
+    /**
+     * Mark as expired.
+     */
+    private function expireLocked(InventoryBackorder $backorder): bool
+    {
+        if (! $backorder->isOpen()) {
+            return false;
+        }
+
+        return $backorder->update([
+            'status' => Expired::class,
+            'cancelled_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    /**
+     * Escalate priority.
+     */
+    private function escalateLocked(InventoryBackorder $backorder): bool
+    {
+        if (! $backorder->isOpen() || $backorder->priority === BackorderPriority::Urgent) {
+            return false;
+        }
+
+        $newPriority = match ($backorder->priority) {
+            BackorderPriority::Low => BackorderPriority::Normal,
+            BackorderPriority::Normal => BackorderPriority::High,
+            BackorderPriority::High, BackorderPriority::Urgent => BackorderPriority::Urgent,
+        };
+
+        return $backorder->update(['priority' => $newPriority]);
     }
 
     /** @param callable(InventoryBackorder): bool $operation */

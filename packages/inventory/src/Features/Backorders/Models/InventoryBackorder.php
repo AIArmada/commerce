@@ -12,9 +12,6 @@ use AIArmada\Inventory\Database\Factories\InventoryBackorderFactory;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\States\BackorderStatus;
-use AIArmada\Inventory\States\Cancelled;
-use AIArmada\Inventory\States\Expired;
-use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -243,90 +240,6 @@ final class InventoryBackorder extends Model implements Auditable
     public function canCancel(): bool
     {
         return $this->status->canCancel();
-    }
-
-    /**
-     * Fulfill a portion of the backorder.
-     */
-    public function fulfill(int $quantity): bool
-    {
-        if (! $this->canFulfill()) {
-            return false;
-        }
-
-        $quantity = min($quantity, $this->quantityRemaining());
-
-        $newFulfilled = $this->quantity_fulfilled + $quantity;
-        $newStatus = $newFulfilled >= $this->quantity_requested - $this->quantity_cancelled
-            ? Fulfilled::class
-            : PartiallyFulfilled::class;
-
-        return $this->update([
-            'quantity_fulfilled' => $newFulfilled,
-            'status' => $newStatus,
-            'fulfilled_at' => $newStatus === Fulfilled::class ? CarbonImmutable::now() : null,
-        ]);
-    }
-
-    /**
-     * Cancel a portion or all of the backorder.
-     */
-    public function cancel(?int $quantity = null, ?string $reason = null): bool
-    {
-        if (! $this->canCancel()) {
-            return false;
-        }
-
-        $quantity = $quantity ?? $this->quantityRemaining();
-        $quantity = min($quantity, $this->quantityRemaining());
-
-        $newCancelled = $this->quantity_cancelled + $quantity;
-        $remaining = $this->quantity_requested - $this->quantity_fulfilled - $newCancelled;
-
-        $newStatus = $remaining <= 0
-            ? Cancelled::class
-            : $this->status;
-
-        $metadata = $this->metadata ?? [];
-        if ($reason) {
-            $metadata['cancellation_reason'] = $reason;
-        }
-
-        return $this->update([
-            'quantity_cancelled' => $newCancelled,
-            'status' => $newStatus,
-            'cancelled_at' => $newStatus === Cancelled::class ? CarbonImmutable::now() : null,
-            'metadata' => $metadata,
-        ]);
-    }
-
-    /**
-     * Mark as expired.
-     */
-    public function expire(): bool
-    {
-        if (! $this->isOpen()) {
-            return false;
-        }
-
-        return $this->update([
-            'status' => Expired::class,
-            'cancelled_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    /**
-     * Escalate priority.
-     */
-    public function escalate(): bool
-    {
-        $newPriority = match ($this->priority) {
-            BackorderPriority::Low => BackorderPriority::Normal,
-            BackorderPriority::Normal => BackorderPriority::High,
-            BackorderPriority::High, BackorderPriority::Urgent => BackorderPriority::Urgent,
-        };
-
-        return $this->update(['priority' => $newPriority]);
     }
 
     protected function casts(): array

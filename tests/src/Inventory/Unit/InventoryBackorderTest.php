@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
 use AIArmada\Inventory\States\Cancelled;
 use AIArmada\Inventory\States\Expired;
 use AIArmada\Inventory\States\Fulfilled;
@@ -210,7 +211,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->fulfill(5);
+        $result = app(BackorderService::class)->fulfill($backorder, 5);
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(5);
@@ -229,7 +230,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->fulfill(10);
+        $result = app(BackorderService::class)->fulfill($backorder, 10);
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(10);
@@ -249,7 +250,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->fulfill(5);
+        $result = app(BackorderService::class)->fulfill($backorder, 5);
 
         expect($result)->toBeFalse();
     });
@@ -266,7 +267,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->cancel(5, 'Customer request');
+        $result = app(BackorderService::class)->cancel($backorder, 5, 'Customer request');
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_cancelled)->toBe(5);
@@ -285,7 +286,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->cancel(10);
+        $result = app(BackorderService::class)->cancel($backorder, 10);
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_cancelled)->toBe(10);
@@ -305,7 +306,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->cancel(5);
+        $result = app(BackorderService::class)->cancel($backorder, 5);
 
         expect($result)->toBeFalse();
     });
@@ -322,7 +323,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->expire();
+        $result = app(BackorderService::class)->expire($backorder);
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->status)->toBeInstanceOf(Expired::class);
@@ -341,7 +342,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $backorder->expire();
+        $result = app(BackorderService::class)->expire($backorder);
 
         expect($result)->toBeFalse();
     });
@@ -358,7 +359,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $result = $lowPriority->escalate();
+        $result = app(BackorderService::class)->escalate($lowPriority);
 
         expect($result)->toBeTrue();
         expect($lowPriority->fresh()->priority)->toBe(BackorderPriority::Normal);
@@ -376,7 +377,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $normalPriority->escalate();
+        app(BackorderService::class)->escalate($normalPriority);
 
         expect($normalPriority->fresh()->priority)->toBe(BackorderPriority::High);
     });
@@ -393,7 +394,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $highPriority->escalate();
+        app(BackorderService::class)->escalate($highPriority);
 
         expect($highPriority->fresh()->priority)->toBe(BackorderPriority::Urgent);
     });
@@ -410,7 +411,7 @@ describe('InventoryBackorder', function (): void {
             'requested_at' => now(),
         ]);
 
-        $urgentPriority->escalate();
+        app(BackorderService::class)->escalate($urgentPriority);
 
         expect($urgentPriority->fresh()->priority)->toBe(BackorderPriority::Urgent);
     });
