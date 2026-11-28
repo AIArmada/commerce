@@ -7,12 +7,14 @@ namespace AIArmada\FilamentVouchers\Actions;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherBatchIssuer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 final class BulkGenerateVouchersAction extends Action
@@ -39,7 +41,7 @@ final class BulkGenerateVouchersAction extends Action
         $this->form([
             TextInput::make('count')
                 ->label('Number of Vouchers')
-                ->numeric()
+                ->integer()
                 ->minValue(1)
                 ->maxValue(100)
                 ->required()
@@ -79,12 +81,18 @@ final class BulkGenerateVouchersAction extends Action
 
             TextInput::make('usage_limit')
                 ->label('Usage Limit per Voucher')
-                ->numeric()
+                ->integer()
                 ->minValue(1)
                 ->default(1),
         ]);
 
         $this->action(function (array $data): void {
+            Validator::make($data, [
+                'count' => ['required', 'integer', 'min:1', 'max:100'],
+                'type' => ['required', Rule::enum(VoucherType::class)],
+                'usage_limit' => ['nullable', 'integer', 'min:1'],
+            ])->validate();
+
             $count = (int) $data['count'];
             $type = VoucherType::from($data['type']);
 

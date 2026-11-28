@@ -53,3 +53,15 @@ it('tolerates a missing prefix without crashing', function (): void {
 
     expect(Voucher::query()->where('name', 'like', 'NoPrefix #%')->count())->toBe(1);
 });
+
+it('rejects fractional counts, invalid voucher types and nonintegral usage limits before creating records', function (array $overrides): void {
+    expect(fn () => bulkGenerate(bulkPayload(['name' => 'Invalid Batch', ...$overrides])))
+        ->toThrow(ValidationException::class);
+
+    expect(Voucher::query()->where('name', 'like', 'Invalid Batch #%')->exists())->toBeFalse();
+})->with([
+    'fractional count' => [['count' => '1.5']],
+    'fractional usage limit' => [['usage_limit' => '2.5']],
+    'zero usage limit' => [['usage_limit' => 0]],
+    'unknown type' => [['type' => 'not-a-voucher-type']],
+]);

@@ -6,8 +6,8 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherBatchIssuer;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +23,7 @@ final readonly class GenerateVoucherBatch implements VoucherBatchIssuer
         }
 
         if (config('vouchers.owner.enabled', false)) {
-            OwnerContext::assertResolvedOrExplicitGlobal(OwnerContext::resolve(), 'Bulk voucher generation requires an owner context or explicit global context.');
+            OwnerContext::assertResolvedOrExplicitGlobal(OwnerContext::resolveConfigured(Voucher::ownerScopeConfig()), 'Bulk voucher generation requires an owner context or explicit global context.');
         }
 
         $prefix = mb_strtoupper(mb_trim($prefix));
