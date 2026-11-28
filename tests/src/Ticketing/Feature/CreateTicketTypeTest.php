@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;

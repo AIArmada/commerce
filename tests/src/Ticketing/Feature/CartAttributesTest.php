@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Ticketing\Actions\AddTicketTypeToCartAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\AddTicketTypeToCartAction;
 use AIArmada\Ticketing\Models\TicketType;
 use Tests\Support\Cart\InMemoryStorage;
 

@@ -10,7 +10,7 @@ use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Data\EventCartLineData;
 use AIArmada\Events\Platform\CommerceIntegration;
-use AIArmada\Ticketing\Actions\AutoAddRequiredTicketBundlesAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\AutoAddRequiredTicketBundlesAction;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;

@@ -706,7 +706,7 @@ semantics.
 ## Managing Ticket Types
 
 ```php
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 
 $ticketType = app(EnsureTicketTypeAction::class)->handle($occurrence, [
     'name' => 'Early Bird',
@@ -1378,7 +1378,7 @@ step.
 ## Ticketing DTOs and delivery
 
 ```php
-use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Ticketing\Data\PassData;
 use AIArmada\Ticketing\Data\TicketTypeData;
 

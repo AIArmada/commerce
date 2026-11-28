@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
@@ -12,7 +12,7 @@ use AIArmada\Ticketing\Models\TicketTypeProduct;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
-final class AutoAddRequiredTicketBundlesAction
+final readonly class AutoAddRequiredTicketBundlesAction
 {
     public function handle(Cart $cart, TicketType $ticketType): void
     {
@@ -24,7 +24,7 @@ final class AutoAddRequiredTicketBundlesAction
             return;
         }
 
-        $ticketType->loadMissing('requiredBundleProducts.product', 'requiredBundleProducts.variant');
+        $ticketType->load('requiredBundleProducts.product', 'requiredBundleProducts.variant');
 
         /** @var Collection<int, TicketTypeProduct> $bundles */
         $bundles = $ticketType->requiredBundleProducts;
@@ -37,7 +37,7 @@ final class AutoAddRequiredTicketBundlesAction
                 continue;
             }
 
-            $lineId = $this->lineIdentifier($ticketType, $bundle, $target);
+            $lineId = $this->lineIdentifier($ticketType, $target);
             $expectedLineIds[$lineId] = true;
             $requiredQuantity = max(0, (int) $bundle->quantity * $ticketLine->quantity);
 
@@ -66,7 +66,7 @@ final class AutoAddRequiredTicketBundlesAction
         $this->removeUnexpectedBundlesFor($cart, $ticketType, $expectedLineIds);
     }
 
-    private function lineIdentifier(TicketType $ticketType, TicketTypeProduct $bundle, Buyable $target): string
+    private function lineIdentifier(TicketType $ticketType, Buyable $target): string
     {
         $type = $target instanceof Model
             ? $target->getMorphClass()

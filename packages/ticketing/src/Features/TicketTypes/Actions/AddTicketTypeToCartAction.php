@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
@@ -13,11 +13,10 @@ use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class AddTicketTypeToCartAction
+final readonly class AddTicketTypeToCartAction
 {
-    use AsAction;
+    public function __construct(private AutoAddRequiredTicketBundlesAction $bundles) {}
 
     private const array RESERVED_ATTRIBUTE_KEYS = [
         'purchasable_type',
@@ -26,6 +25,10 @@ final class AddTicketTypeToCartAction
         'participants',
         'inventoryable_type',
         'inventoryable_id',
+        'bundle_source',
+        'bundle_parent_line_id',
+        'bundle_ticket_type_id',
+        'bundle_ticket_type_product_id',
     ];
 
     /** @param array<int, array<string, mixed>> $participants */
@@ -40,6 +43,8 @@ final class AddTicketTypeToCartAction
         if ($quantity < 1) {
             throw new InvalidArgumentException('Quantity must be at least 1.');
         }
+
+        $ticketType = TicketType::query()->whereKey($ticketType->getKey())->firstOrFail();
 
         $status = $ticketType->status instanceof TicketTypeStatus
             ? $ticketType->status->value
@@ -57,6 +62,10 @@ final class AddTicketTypeToCartAction
             : null;
 
         $existingQuantity = $existingItem !== null ? $existingItem->quantity : 0;
+        if ($quantity > PHP_INT_MAX - $existingQuantity) {
+            throw new InvalidArgumentException('Ticket quantity exceeds the supported range.');
+        }
+
         $totalQuantity = $existingQuantity + $quantity;
 
         if ($ticketType->min_quantity !== null && $totalQuantity < $ticketType->min_quantity) {
@@ -111,7 +120,7 @@ final class AddTicketTypeToCartAction
         $cartItem = $this->addOrUpdateCartItem($cart, $ticketType, $totalQuantity, $mergedAttributes);
 
         if (TicketingIntegration::productsAvailable()) {
-            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType);
+            $this->bundles->handle($cart, $ticketType);
         }
 
         return $cartItem;

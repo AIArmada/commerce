@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 
-final class EnsureTicketTypeAction
+final readonly class EnsureTicketTypeAction
 {
     /** @param array<string, mixed> $attributes */
     public function handle(Model $ticketable, array $attributes = []): TicketType
@@ -45,22 +45,17 @@ final class EnsureTicketTypeAction
 
         if ($ticketType->isDirty() || ! $ticketType->exists) {
             try {
-                $ticketType->save();
-            } catch (QueryException $exception) {
-                if (! self::isUniqueViolation($exception) || $ticketType->exists) {
+                $ticketType->getConnection()->transaction(fn (): bool => $ticketType->save());
+            } catch (UniqueConstraintViolationException $exception) {
+                if ($ticketType->exists) {
                     throw $exception;
                 }
 
-                // Concurrent ensure won the insert; return the winner.
-                return TicketType::query()->where($lookup)->firstOrFail();
+                return TicketType::query()->where($lookup)->first() ?? throw $exception;
             }
         }
 
         return $ticketType;
     }
 
-    private static function isUniqueViolation(QueryException $exception): bool
-    {
-        return in_array($exception->getCode(), ['23000', '23505'], true);
-    }
 }

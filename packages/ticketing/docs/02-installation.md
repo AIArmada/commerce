@@ -81,7 +81,7 @@ These packages are detected at runtime — no hard coupling required:
 Verify the package is working:
 
 ```bash
-php artisan tinker --execute 'app(\AIArmada\Ticketing\Actions\EnsureTicketTypeAction::class)::class;'
+php artisan tinker --execute 'app(\AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction::class)::class;'
 ```
 
 Or check that migrations ran:

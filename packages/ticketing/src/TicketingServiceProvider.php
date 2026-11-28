@@ -33,7 +33,6 @@ final class TicketingServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(TicketableTypeRegistry::class);
         $this->app->singleton(PassDeliveryServiceInterface::class, function ($app) {
             return config('ticketing.notifications.ticket.enabled', true)
                 ? $app->make(DefaultPassDeliveryService::class)

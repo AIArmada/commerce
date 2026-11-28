@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "TicketTypes",
+  "owns": {
+    "table:ticket_types": [
+      "AIArmada\\Ticketing\\Features\\TicketTypes\\Actions\\EnsureTicketTypeAction"
+    ]
+  },
+  "extensions": {}
+}

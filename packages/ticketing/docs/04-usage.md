@@ -64,7 +64,7 @@ The `TicketableInterface` requires four methods:
 Use `EnsureTicketTypeAction` to create or update a ticket type:
 
 ```php
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 
 $ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
     'name' => 'General Admission',
@@ -375,7 +375,7 @@ Event::listen(function (PassTransferred $event): void {
 ## Canonical DTOs and component expansion
 
 ```php
-use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Ticketing\Data\PassData;
 use AIArmada\Ticketing\Data\TicketTypeData;
 
