@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Models;
 
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 
 function postcodeTestAddress(string $postcode): AddressData
 {

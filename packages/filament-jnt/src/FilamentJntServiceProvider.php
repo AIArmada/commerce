@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt;
 
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;

@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Services;
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Data\TrackingStatus;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\InTransit;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -61,12 +61,12 @@ describe('Tracking event batch deduplication', function (): void {
         $trackingData = new TrackingData(
             trackingNumber: 'TEST-BATCH-1',
             status: TrackingStatus::InTransit,
-            events: collect([
+            events: [
                 new TrackingEventData(code: 'picked-up', description: 'Picked up', timestamp: $seenAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'in-transit', description: 'In transit', timestamp: $firstNewAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'in-transit', description: 'In transit', timestamp: $firstNewAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'arrived', description: 'Arrived', timestamp: $secondNewAt, normalizedStatus: TrackingStatus::InTransit),
-            ]),
+            ],
         );
 
         $dedupSelects = 0;

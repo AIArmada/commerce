@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\ShipShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\CarrierOperationResult;
-use AIArmada\Shipping\Enums\DriverCapability;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentOperation;
+use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\Shipped;
 
 describe('ShipShipment Action', function (): void {
     it('ships a pending shipment via driver', function (): void {
@@ -112,7 +113,7 @@ describe('ShipShipment Action', function (): void {
         expect($shipped->status)->toBeInstanceOf(Shipped::class);
     });
 
-    it('reuses existing pending operation on retry', function (): void {
+    it('blocks shipment creation until an ambiguous operation is reconciled', function (ShipmentOperationStatus $status): void {
         $shipment = Shipment::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
@@ -132,31 +133,49 @@ describe('ShipShipment Action', function (): void {
         ShipmentOperation::create([
             'shipment_id' => $shipment->id,
             'operation_type' => 'create',
-            'status' => ShipmentOperationStatus::Pending->value,
+            'status' => $status->value,
             'reference' => $shipment->reference,
             'operation_started_at' => now(),
         ]);
 
-        $mockResult = CarrierOperationResult::succeeded(
-            trackingNumber: 'TRACK-RETRY-001',
-            carrierReference: 'CARRIER-001',
-        );
+        $manager = Mockery::mock(ShippingManager::class);
+        $manager->shouldNotReceive('driver');
 
-        $mockDriver = Mockery::mock(ShippingDriverInterface::class);
-        $mockDriver->shouldReceive('createShipment')->andReturn($mockResult);
-        $mockDriver->shouldReceive('supports')->with(DriverCapability::LabelGeneration)->andReturn(false);
+        expect(fn () => (new ShipShipment($manager))->handle($shipment))
+            ->toThrow(ShipmentCreationFailedException::class, 'Reconcile the existing carrier operation');
+
+        expect($shipment->operations()->count())->toBe(1);
+        expect($shipment->refresh()->status)->toBeInstanceOf(Pending::class);
+    })->with([ShipmentOperationStatus::Pending, ShipmentOperationStatus::Unknown]);
+
+    it('does not retry a carrier timeout and records an unknown outcome', function (): void {
+        $shipment = Shipment::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'reference' => 'TEST-SHIP-TIMEOUT',
+            'carrier_code' => 'null',
+            'status' => Pending::class,
+            'origin_address' => [
+                'name' => 'Origin', 'phone' => '123', 'line1' => '123 St',
+                'postcode' => '12345', 'country' => 'US',
+            ],
+            'destination_address' => [
+                'name' => 'Dest', 'phone' => '456', 'line1' => '456 St',
+                'postcode' => '67890', 'country' => 'US',
+            ],
+        ]);
+
+        $driver = Mockery::mock(ShippingDriverInterface::class);
+        $driver->shouldReceive('createShipment')->once()->andThrow(new RuntimeException('Carrier timeout'));
 
         $manager = Mockery::mock(ShippingManager::class);
-        $manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
+        $manager->shouldReceive('driver')->once()->with('null')->andReturn($driver);
 
         $action = new ShipShipment($manager);
-        $shipped = $action->handle($shipment);
 
-        $operations = ShipmentOperation::where('shipment_id', $shipment->id)
-            ->where('operation_type', 'create')
-            ->get();
-
-        expect($operations)->toHaveCount(1);
-        expect($shipped->status)->toBeInstanceOf(Shipped::class);
+        expect(fn () => $action->handle($shipment))->toThrow(RuntimeException::class, 'Carrier timeout');
+        expect($shipment->operations()->sole()->status())->toBe(ShipmentOperationStatus::Unknown);
+        expect(fn () => $action->handle($shipment))->toThrow(ShipmentCreationFailedException::class);
+        expect($shipment->operations()->count())->toBe(1);
     });
 });

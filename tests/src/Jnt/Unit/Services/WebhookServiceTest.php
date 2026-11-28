@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 

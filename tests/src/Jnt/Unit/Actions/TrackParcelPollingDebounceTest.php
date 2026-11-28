@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Actions\Tracking\TrackParcel;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
+use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
 use AIArmada\Jnt\Services\JntExpressService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Http;
 function makeJntPollingTestService(): JntExpressService
 {
     return new JntExpressService(
+        transportFactory: app(CarrierTransportFactory::class),
         customerCode: 'TESTCUST',
         password: 'test-password',
         config: [
@@ -34,13 +36,13 @@ function makeJntPollingTestService(): JntExpressService
     );
 }
 
-function fakeJntTrackingResponse(): array
+function fakeJntTrackingResponse(string $trackingNumber = 'TRK-POLLING'): array
 {
     return [
         'code' => '1',
         'msg' => 'Success',
         'data' => [
-            'billCode' => 'TRK-POLLING',
+            'billCode' => $trackingNumber,
             'txlogisticId' => 'ORDER-POLLING',
             'details' => [],
         ],
@@ -63,7 +65,7 @@ it('debounces repeated TrackParcel polling within the configured window', functi
 
 it('polls again after the debounce window expires', function (): void {
     Http::fake([
-        '*/api/logistics/trace' => Http::response(fakeJntTrackingResponse()),
+        '*/api/logistics/trace' => Http::response(fakeJntTrackingResponse('TRK-POLLING-EXPIRY')),
     ]);
 
     $now = CarbonImmutable::parse('2026-09-12 00:00:00');

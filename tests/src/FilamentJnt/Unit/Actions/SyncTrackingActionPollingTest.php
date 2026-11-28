@@ -5,10 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\JntStatusMapper;
-use AIArmada\Jnt\Services\JntTrackingService;
 use Illuminate\Support\Facades\Http;
 
 uses(FilamentJntTestCase::class);
@@ -38,6 +39,7 @@ it('debounces repeated SyncTrackingAction carrier polling within the configured 
         JntTrackingService::class,
         new JntTrackingService(
             new JntExpressService(
+                transportFactory: app(CarrierTransportFactory::class),
                 customerCode: 'TESTCUST',
                 password: 'test-password',
                 config: [

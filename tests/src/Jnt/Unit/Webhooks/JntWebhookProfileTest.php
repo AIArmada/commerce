@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
 use Illuminate\Http\Request;
 
 describe('JntWebhookProfile', function (): void {
@@ -58,6 +58,20 @@ describe('JntWebhookProfile', function (): void {
         $profile->shouldProcess($request);
     })->throws(JntValidationException::class);
 
+    it('enforces byte limits for multibyte payloads', function (): void {
+        $content = json_encode(['billCode' => 'JNT123', 'details' => [], 'pad' => '收件'], JSON_UNESCAPED_UNICODE);
+        config()->set('jnt.webhooks.max_biz_content_bytes', mb_strlen($content, 'UTF-8'));
+        $request = Request::create('/webhook', 'POST', ['bizContent' => $content]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    });
+
+    it('rejects malformed identifiers before queueing', function (): void {
+        $request = Request::create('/webhook', 'POST', ['bizContent' => json_encode(['billCode' => ['invalid'], 'details' => []])]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    });
+
     it('throws when details is not an array', function (): void {
         $request = Request::create('/webhook', 'POST', [
             'bizContent' => json_encode([
@@ -70,4 +84,13 @@ describe('JntWebhookProfile', function (): void {
 
         $profile->shouldProcess($request);
     })->throws(JntValidationException::class);
+    it('rejects blank tracking identifiers and non-object tracking details', function (array $payload): void {
+        $request = Request::create('/webhook', 'POST', ['bizContent' => json_encode($payload)]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    })->with([
+        'blank identifier' => [['billCode' => '   ', 'details' => []]],
+        'scalar detail' => [['billCode' => 'JNT123', 'details' => ['malformed']]],
+        'list detail' => [['billCode' => 'JNT123', 'details' => [['malformed']]]],
+    ]);
 });

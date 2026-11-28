@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\BatchRateLimiter;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Api\BulkShipmentOperations;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -29,12 +29,13 @@ class SyncTrackingAction extends Action
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('syncTracking', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {
-                    $aggregator = app(TrackingAggregator::class);
-                    $updatedShipment = $aggregator->syncTracking($record);
+                    $operations = app(ShipmentOperations::class);
+                    $operations->syncTracking((string) $record->getKey());
+                    $record->refresh();
 
                     Notification::make()
                         ->title('Tracking Updated')
-                        ->body("Status: {$updatedShipment->status->label()}")
+                        ->body("Status: {$record->status->label()}")
                         ->success()
                         ->send();
                 } catch (Throwable $e) {
@@ -75,8 +76,6 @@ class SyncTrackingAction extends Action
                     return;
                 }
 
-                $aggregator = app(TrackingAggregator::class);
-
                 $trackableShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
                         && $record->tracking_number !== null
@@ -93,26 +92,11 @@ class SyncTrackingAction extends Action
                     return;
                 }
 
-                $byCarrier = $trackableShipments->groupBy('carrier_code');
-                $successCount = 0;
-                $failCount = 0;
-
-                foreach ($byCarrier as $carrierCode => $shipments) {
-                    $results = BatchRateLimiter::forCarrier($carrierCode)
-                        ->execute(
-                            $shipments,
-                            fn (Shipment $shipment) => $aggregator->syncTracking($shipment),
-                            'sync_tracking'
-                        );
-
-                    foreach ($results as $result) {
-                        if ($result['success']) {
-                            $successCount++;
-                        } else {
-                            $failCount++;
-                        }
-                    }
-                }
+                $result = app(BulkShipmentOperations::class)->syncTracking(
+                    $trackableShipments->map(fn (Shipment $shipment): string => (string) $shipment->getKey())->values()->all(),
+                );
+                $successCount = $result->succeeded;
+                $failCount = $result->failed;
 
                 if ($successCount > 0) {
                     Notification::make()

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntOrderParcel;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderParcel;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('jnt order aggregate models are auditable and activity loggable', function (): void {

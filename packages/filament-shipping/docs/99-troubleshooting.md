@@ -84,7 +84,7 @@ Common causes:
 
 Debug:
 ```php
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 
 $service = app(ShipmentService::class);
 
@@ -123,8 +123,8 @@ Once a shipment is Shipped or beyond, it cannot be cancelled through the UI.
 
 Debug:
 ```php
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
 
 // Check data exists
 Shipment::whereState('status', Pending::class)->count();

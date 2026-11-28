@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Spatie\LaravelData\Data;
+use InvalidArgumentException;
 
 /**
  * Data Transfer Object for waybill printing responses.
@@ -13,15 +13,15 @@ use Spatie\LaravelData\Data;
  * either base64-encoded PDF content (single parcel) or a URL to
  * download the PDF (multi-parcel).
  */
-class PrintWaybillData extends Data
+final readonly class PrintWaybillData
 {
     public function __construct(
-        public readonly string $orderId,
-        public readonly ?string $trackingNumber = null,
-        public readonly ?string $base64Content = null,
-        public readonly ?string $urlContent = null,
-        public readonly bool $isMultiParcel = false,
-        public readonly ?string $templateName = null,
+        public string $orderId,
+        public ?string $trackingNumber = null,
+        public ?string $base64Content = null,
+        public ?string $urlContent = null,
+        public bool $isMultiParcel = false,
+        public ?string $templateName = null,
     ) {}
 
     /**
@@ -31,11 +31,14 @@ class PrintWaybillData extends Data
      */
     public static function fromApiArray(array $data): self
     {
-        // J&T returns different data for single vs multi-parcel
-        // Single parcel: base64EncodeContent
-        // Multi-parcel: urlContent
-        $hasBase64 = isset($data['base64EncodeContent']) && ! empty($data['base64EncodeContent']);
-        $hasUrl = isset($data['urlContent']) && ! empty($data['urlContent']);
+        foreach (['txlogisticId', 'orderId', 'billCode', 'trackingNumber', 'base64EncodeContent', 'urlContent', 'templateName'] as $field) {
+            if (isset($data[$field]) && ! is_string($data[$field])) {
+                throw new InvalidArgumentException("Invalid {$field}: expected a string.");
+            }
+        }
+
+        $hasBase64 = isset($data['base64EncodeContent']) && $data['base64EncodeContent'] !== '';
+        $hasUrl = isset($data['urlContent']) && $data['urlContent'] !== '';
 
         return new self(
             orderId: $data['txlogisticId'] ?? $data['orderId'] ?? '',
@@ -81,33 +84,6 @@ class PrintWaybillData extends Data
     }
 
     /**
-     * Save PDF to file system.
-     *
-     * @param  string  $path  Absolute path where PDF should be saved
-     * @return bool True if save was successful, false otherwise
-     */
-    public function savePdf(string $path): bool
-    {
-        if (! $this->hasBase64Content()) {
-            return false;
-        }
-
-        $pdfContent = base64_decode((string) $this->base64Content, true);
-
-        if ($pdfContent === false) {
-            return false;
-        }
-
-        // Ensure directory exists
-        $directory = dirname($path);
-        if (! is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        return file_put_contents($path, $pdfContent) !== false;
-    }
-
-    /**
      * Get decoded PDF content.
      *
      * @return string|null Binary PDF content or null if not available
@@ -132,7 +108,7 @@ class PrintWaybillData extends Data
     {
         $content = $this->getPdfContent();
 
-        return $content !== null ? mb_strlen($content) : null;
+        return $content !== null ? mb_strlen($content, '8bit') : null;
     }
 
     /**
