@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\CompleteOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCompleted;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
 use AIArmada\Orders\States\Processing;
@@ -23,9 +23,7 @@ describe('CompleteOrder', function (): void {
             'grand_total' => 10000,
         ]);
 
-        $action = new CompleteOrder;
-
-        $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, ['source' => 'manual']));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderCompleted($order, ['source' => 'manual']))->handle());
 
         expect($result)->toBe($order);
         expect($order->status)->toBeInstanceOf(Completed::class);
@@ -43,9 +41,7 @@ describe('CompleteOrder', function (): void {
             'metadata' => ['existing' => 'value'],
         ]);
 
-        $action = new CompleteOrder;
-
-        $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, ['note' => 'All good']));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderCompleted($order, ['note' => 'All good']))->handle());
 
         expect($result->metadata)->toHaveKey('existing');
         expect($result->metadata['completion']['metadata']['note'])->toBe('All good');

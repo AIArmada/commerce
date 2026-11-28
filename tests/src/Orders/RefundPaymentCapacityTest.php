@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\CancelOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
@@ -412,7 +412,7 @@ it('routes cancellation reservations through the shared allocator after a split 
     $settled = $action->createPending($order, 3000, 'ord04-cancel-refund', 'Partial return', [], $first);
     $action->completePending($settled[0], 'ord04-cancel-provider');
 
-    app(CancelOrder::class)->execute($order->refresh(), 'Customer request');
+    (new OrderCanceled($order->refresh(), 'Customer request'))->handle();
 
     $order->refresh();
 

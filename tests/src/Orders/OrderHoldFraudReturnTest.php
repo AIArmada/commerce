@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\FlagOrderAsFraud;
-use AIArmada\Orders\Actions\HoldOrder;
-use AIArmada\Orders\Actions\ReleaseOrderHold;
-use AIArmada\Orders\Actions\ReturnOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHeld;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHoldReleased;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderReturned;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\Delivered;
@@ -35,7 +35,7 @@ describe('HoldOrder', function (): void {
     it('places a processing order on hold and records held_at', function (): void {
         $order = makeOrder(Processing::class);
 
-        $result = OwnerContext::withOwner(null, fn (): Order => (new HoldOrder)->execute($order, 'Manual review', 'admin@test.com'));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderHeld($order, 'Manual review', 'admin@test.com'))->handle());
 
         expect($result->status)->toBeInstanceOf(OnHold::class);
         expect($result->held_at)->not->toBeNull();
@@ -46,7 +46,7 @@ describe('HoldOrder', function (): void {
     it('throws when the order cannot be placed on hold', function (): void {
         $order = makeOrder(Created::class);
 
-        expect(fn (): Order => (new HoldOrder)->execute($order, 'Too early'))
+        expect(fn (): Order => (new OrderHeld($order, 'Too early'))->handle())
             ->toThrow(RuntimeException::class, 'cannot be placed on hold');
     });
 });
@@ -54,9 +54,9 @@ describe('HoldOrder', function (): void {
 describe('ReleaseOrderHold', function (): void {
     it('releases a held order back to processing and clears held_at', function (): void {
         $order = makeOrder(Processing::class);
-        OwnerContext::withOwner(null, fn (): Order => (new HoldOrder)->execute($order, 'Review'));
+        OwnerContext::withOwner(null, fn (): Order => (new OrderHeld($order, 'Review'))->handle());
 
-        $result = OwnerContext::withOwner(null, fn (): Order => (new ReleaseOrderHold)->execute($order->refresh(), 'Approved'));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderHoldReleased($order->refresh(), 'Approved'))->handle());
 
         expect($result->status)->toBeInstanceOf(Processing::class);
         expect($result->held_at)->toBeNull();
@@ -66,7 +66,7 @@ describe('ReleaseOrderHold', function (): void {
     it('throws when the order is not on hold', function (): void {
         $order = makeOrder(Processing::class);
 
-        expect(fn (): Order => (new ReleaseOrderHold)->execute($order))
+        expect(fn (): Order => (new OrderHoldReleased($order))->handle())
             ->toThrow(RuntimeException::class, 'is not on hold');
     });
 });
@@ -75,7 +75,7 @@ describe('FlagOrderAsFraud', function (): void {
     it('flags a processing order as fraud and records flagged_at', function (): void {
         $order = makeOrder(Processing::class);
 
-        $result = OwnerContext::withOwner(null, fn (): Order => (new FlagOrderAsFraud)->execute($order, 'Chargeback pattern', 'risk@test.com'));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderFlaggedAsFraud($order, 'Chargeback pattern', 'risk@test.com'))->handle());
 
         expect($result->status)->toBeInstanceOf(Fraud::class);
         expect($result->flagged_at)->not->toBeNull();
@@ -85,7 +85,7 @@ describe('FlagOrderAsFraud', function (): void {
     it('throws when the order cannot be flagged', function (): void {
         $order = makeOrder(Created::class);
 
-        expect(fn (): Order => (new FlagOrderAsFraud)->execute($order, 'Nope'))
+        expect(fn (): Order => (new OrderFlaggedAsFraud($order, 'Nope'))->handle())
             ->toThrow(RuntimeException::class, 'cannot be flagged as fraud');
     });
 });
@@ -94,7 +94,7 @@ describe('ReturnOrder', function (): void {
     it('marks a delivered order as returned and records returned_at', function (): void {
         $order = makeOrder(Delivered::class);
 
-        $result = OwnerContext::withOwner(null, fn (): Order => (new ReturnOrder)->execute($order, 'Damaged goods'));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderReturned($order, 'Damaged goods'))->handle());
 
         expect($result->status)->toBeInstanceOf(Returned::class);
         expect($result->returned_at)->not->toBeNull();
@@ -104,7 +104,7 @@ describe('ReturnOrder', function (): void {
     it('throws when the order cannot be returned', function (): void {
         $order = makeOrder(Processing::class);
 
-        expect(fn (): Order => (new ReturnOrder)->execute($order))
+        expect(fn (): Order => (new OrderReturned($order))->handle())
             ->toThrow(RuntimeException::class, 'cannot be returned');
     });
 });

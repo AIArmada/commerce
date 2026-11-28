@@ -46,6 +46,26 @@ final readonly class OrderFulfillmentOperations implements OrderFulfillment
         new OrderCanceled($this->resolve($orderId), $reason, $canceledBy)->handle();
     }
 
+    public function hold(string $orderId, string $reason, ?string $heldBy = null): void
+    {
+        new OrderHeld($this->resolve($orderId), $reason, $heldBy)->handle();
+    }
+
+    public function releaseHold(string $orderId, ?string $reason = null, ?string $releasedBy = null): void
+    {
+        new OrderHoldReleased($this->resolve($orderId), $reason, $releasedBy)->handle();
+    }
+
+    public function flagFraud(string $orderId, string $reason, ?string $flaggedBy = null): void
+    {
+        new OrderFlaggedAsFraud($this->resolve($orderId), $reason, $flaggedBy)->handle();
+    }
+
+    public function returnOrder(string $orderId, ?string $reason = null, ?string $returnedBy = null): void
+    {
+        new OrderReturned($this->resolve($orderId), $reason, $returnedBy)->handle();
+    }
+
     private function resolve(string $orderId): Order
     {
         $order = Order::query()->findOrFail($orderId);

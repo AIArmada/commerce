@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Orders\OrdersEngineTestCase;
-use AIArmada\Orders\Actions\CancelOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -73,7 +73,7 @@ function ordersEnginePayOutcome(string $orderId, string $transactionId, int $amo
 function ordersEngineCancelOutcome(Order $order, string $reason): array
 {
     try {
-        $result = app(CancelOrder::class)->execute($order, $reason);
+        $result = (new OrderCanceled($order, $reason))->handle();
 
         return [
             'ok' => true,

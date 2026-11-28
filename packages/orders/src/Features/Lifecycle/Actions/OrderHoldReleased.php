@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderHoldReleased as OrderHoldReleasedEvent;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\OnHold;
 use AIArmada\Orders\States\Processing;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -18,6 +21,8 @@ use Spatie\ModelStates\Transition;
  */
 final class OrderHoldReleased extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
         private ?string $reason = null,
@@ -26,9 +31,16 @@ final class OrderHoldReleased extends Transition
 
     public function handle(): Order
     {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
         return DB::transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+            if (! $this->order->status instanceof OnHold) {
+                throw new RuntimeException("Order {$this->order->order_number} is not on hold.");
+            }
 
             $this->order->status->transitionTo(Processing::class);
             $this->order->held_at = null;

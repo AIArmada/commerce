@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\PackageShipmentVerifier;
@@ -14,6 +15,8 @@ use AIArmada\Orders\States\Canceled;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use RuntimeException;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -25,6 +28,8 @@ use Spatie\ModelStates\Transition;
  */
 final class OrderCanceled extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
         private string $reason,
@@ -34,11 +39,22 @@ final class OrderCanceled extends Transition
 
     public function handle(): Order
     {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
         return DB::transaction(function (): Order {
             $this->order->newQuery()
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
             $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+            if (! $this->order->canBeCanceled()) {
+                throw new RuntimeException("Order {$this->order->order_number} cannot be canceled in its current state.");
+            }
+
+            if (mb_trim($this->reason) === '') {
+                throw new InvalidArgumentException('A cancellation reason is required.');
+            }
             if (app()->bound(PackageShipmentVerifier::class) && app(PackageShipmentVerifier::class)->hasActivePackageShipment((string) $this->order->getKey())) {
                 throw new DomainException('Cancel any unshipped package shipments before canceling the order. Shipped units must be returned.');
             }

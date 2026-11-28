@@ -18,4 +18,12 @@ interface OrderFulfillment
     public function confirmFree(string $orderId): void;
 
     public function cancel(string $orderId, string $reason, ?string $canceledBy = null): void;
+
+    public function hold(string $orderId, string $reason, ?string $heldBy = null): void;
+
+    public function releaseHold(string $orderId, ?string $reason = null, ?string $releasedBy = null): void;
+
+    public function flagFraud(string $orderId, string $reason, ?string $flaggedBy = null): void;
+
+    public function returnOrder(string $orderId, ?string $reason = null, ?string $returnedBy = null): void;
 }

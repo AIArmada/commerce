@@ -150,25 +150,24 @@ existing reservations, and a failed request stays failed.
 ### Cancellation & Completion
 
 ```php
-use AIArmada\Orders\Actions\CancelOrder;
-use AIArmada\Orders\Actions\CompleteOrder;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
 // Cancel
-app(CancelOrder::class)->execute(
-    order: $order,
+app(OrderFulfillment::class)->cancel(
+    orderId: (string) $order->getKey(),
     reason: 'Customer requested cancellation',
     canceledBy: (string) auth()->id(),
 );
 
 // Complete (marks as completed)
-app(CompleteOrder::class)->execute($order);
+app(OrderFulfillment::class)->complete((string) $order->getKey());
 ```
 
 Cancelling an order that has received money reserves its remaining refundable balance as pending refunds in the same transaction: `RegisterOrderRefund::createCancellationReservations()` allocates across the completed payments in FIFO order, never beyond each payment's own remaining amount and never more than total paid minus settled and pending refunds. Reservations use the stable identity `cancel:{order}:{payment}` in `allocation_key`, so retried or concurrent cancellations cannot double-reserve; never-paid orders reserve nothing. See the [state machine](05-state-machine.md) for the transition contract.
 
 ### Deleting Orders (Prefer Cancel/Refund)
 
-Prefer `CancelOrder` / `RegisterOrderRefund` over deleting. `Order::delete()` refuses paid or final orders with a `LogicException`; pass `delete(force: true)` only for an explicit administrative retention override. Deletes run in a transaction that removes items, payments, refunds, and notes and detaches addresses.
+Prefer `OrderFulfillment::cancel()` / `OrderRefunds::processRefund()` over deleting. `Order::delete()` refuses paid or final orders with a `LogicException`; pass `delete(force: true)` only for an explicit administrative retention override. Deletes run in a transaction that removes items, payments, refunds, and notes and detaches addresses.
 
 ```php
 use AIArmada\Orders\Models\Order;

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\CancelOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\PendingPayment;
@@ -23,9 +23,7 @@ describe('CancelOrder', function (): void {
             'grand_total' => 10000,
         ]);
 
-        $action = new CancelOrder;
-
-        $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, 'Customer request', 'admin@test.com'));
+        $result = OwnerContext::withOwner(null, fn (): Order => (new OrderCanceled($order, 'Customer request', 'admin@test.com'))->handle());
 
         expect($result)->toBe($order);
         expect($order->status)->toBeInstanceOf(Canceled::class);
@@ -44,9 +42,19 @@ describe('CancelOrder', function (): void {
             'cancellation_reason' => 'Already canceled',
         ]);
 
-        $action = new CancelOrder;
-
-        expect(fn () => $action->execute($order, 'Double cancel'))
+        expect(fn () => (new OrderCanceled($order, 'Double cancel'))->handle())
             ->toThrow(RuntimeException::class, 'cannot be canceled');
     });
+});
+
+it('rejects cancellation when a stale order was already canceled', function (): void {
+    $order = Order::factory()->create(['status' => PendingPayment::class]);
+    $stale = Order::query()->findOrFail($order->getKey());
+
+    (new OrderCanceled($order, 'First cancellation'))->handle();
+
+    expect(fn () => (new OrderCanceled($stale, 'Stale cancellation'))->handle())
+        ->toThrow(RuntimeException::class, 'cannot be canceled');
+    expect($order->fresh()->cancellation_reason)->toBe('First cancellation')
+        ->and($order->orderNotes()->count())->toBe(1);
 });

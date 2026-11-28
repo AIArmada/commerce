@@ -32,7 +32,7 @@ The `aiarmada/orders` package owns order records, order lifecycle transitions, p
 ## Main models services or surfaces
 
 - **Models** — order, order items, addresses, payments, refunds, and notes
-- **Actions** — `CreateOrder`, `CreateOrderFromCart`, `CancelOrder`, `CompleteOrder`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus invoice/receipt doc generation
+- **Actions** — `CreateOrder`, `CreateOrderFromCart`, `OrderCanceled`, `OrderCompleted`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus invoice/receipt doc generation
 - **Services** — `OrderService` (public service API delegating to Actions)
 - **State machine** — order state classes and transitions
 - **Events** — lifecycle events including `OrderCreated`, `OrderPaid`, `OrderCanceled`, `OrderCancelInitiated`, `OrderProcessingStarted`
@@ -75,8 +75,8 @@ The Orders package provides a complete order management system for e-commerce ap
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       Actions (Canonical)                    │
-│  CreateOrder  CreateOrderFromCart  CancelOrder               │
-│  CompleteOrder  RegisterOrderPayment  RegisterOrderRefund    │
+│  CreateOrder  CreateOrderFromCart  OrderCanceled               │
+│  OrderCompleted  RegisterOrderPayment  RegisterOrderRefund    │
 │  DetermineOrderDocumentType  CreateOrderInvoiceDoc           │
 │  CreateOrderReceiptDoc  GenerateInvoice                      │
 └─────────────────────────────────────────────────────────────┘
