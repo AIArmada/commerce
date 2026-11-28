@@ -44,14 +44,7 @@ if ($order->status->canTransitionTo(Processing::class)) {
 
 **Cause**: Totals weren't recalculated after modifying items.
 
-**Solution**: Always call `recalculateTotals()` after modifying items:
-
-```php
-$service = app(OrderServiceInterface::class);
-
-$service->addItem($order, [...]);
-$service->recalculateTotals($order);
-```
+**Solution**: Supply complete items and consistent minor-unit totals through the order intake contract. Do not modify settled order items directly.
 
 ### Invoice generation fails
 

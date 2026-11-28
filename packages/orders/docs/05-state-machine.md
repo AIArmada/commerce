@@ -239,7 +239,7 @@ $order->status->transitionTo(Returned::class, new OrderReturned(
 
 `Processing|Delivered|Completed|Canceled|Returned → Refunded`
 
-`OrderServiceInterface::processRefund()` is documented for the returned-items path, but
+`OrderRefunds::processRefund()` is documented for the returned-items path, but
 the transition itself is allowed from every one of those source states.
 
 ```php
@@ -310,27 +310,27 @@ use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
 $order = (new RefundCompleted($refund, 'ref_789'))->handle();
 ```
 
-## Using OrderService
-
-The recommended way to transition states is through `OrderService`:
+## Using public lifecycle contracts
 
 ```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderRefunds;
 
-// Preferred approach
-$service = app(OrderServiceInterface::class);
+$orderId = (string) $order->getKey();
+app(OrderPaymentConfirmation::class)->confirm($orderId, 'txn_123', 'stripe', 9900);
 
-$service->confirmPayment($order, 'txn_123', 'stripe', 9900);
-$service->ship($order, 'DHL', 'DHL123');
-$service->confirmDelivery($order);
-$service->complete($order);
-$service->cancel($order, 'Customer requested', auth()->id());
+$fulfillment = app(OrderFulfillment::class);
+$fulfillment->ship($orderId, 'DHL', 'DHL123');
+$fulfillment->confirmDelivery($orderId);
+$fulfillment->complete($orderId);
 
-// processRefund() takes transactionId as the 3rd argument and reason as the 4th.
-// Both are required — a 3-argument call is an ArgumentCountError. Pass a payment
-// (6th argument) to attribute the whole amount to that received payment.
-$service->processRefund($order, 5000, 'ref_789', 'Returned items');
-$service->processRefund($order, 5000, 'ref_790', 'Returned items', payment: $payment);
+// For a cancellable order:
+$fulfillment->cancel($orderId, 'Customer requested', (string) auth()->id());
+
+// For an eligible refund:
+app(OrderRefunds::class)->processRefund($orderId, 5000, 'ref_789', 'Returned items');
+// Specify paymentId to attribute a refund to a particular receipt.
 ```
 
 ## Custom State Logic

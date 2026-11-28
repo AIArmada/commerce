@@ -177,41 +177,27 @@ $order->delete(); // throws on paid/final orders
 $order->delete(force: true); // admin retention override only
 ```
 
-## OrderService (Compatibility)
+## Public contracts
 
-The `OrderServiceInterface` is a public service contract that delegates to Actions:
+Inject the relevant contract instead of importing an internal feature action. Order intake accepts scalar identifiers and returns an immutable `OrderIntakeData` snapshot.
 
-```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
-
-class CheckoutController
-{
-    public function __construct(
-        private OrderServiceInterface $orderService
-    ) {}
-}
-```
-
-Available through the service:
-
-| Method | Delegates To |
-|--------|-------------|
-| `createOrder()` | `CreateOrder` |
-| `createFromCart()` | `CreateOrderFromCart` |
-| `cancel()` | `OrderCanceled` transition |
-| `confirmPayment()` | `RegisterOrderPayment` |
-| `confirmFreeOrder()` | `FreeOrderConfirmed` transition |
-| `processRefund()` | `RegisterOrderRefund` |
-| `ship()` | `ShipmentCreated` transition |
-| `confirmDelivery()` | `DeliveryConfirmed` transition |
-| `complete()` | `OrderCompleted` transition |
+| Contract | Operations |
+| --- | --- |
+| `OrderServiceInterface` | Create from supplied data or a cart ID; find an order snapshot |
+| `OrderPaymentConfirmation` | Confirm payments, reconcile checkout payments, settle the outstanding balance |
+| `OrderRefunds` | Process and reserve refunds, claim submission, complete or fail reservations |
+| `OrderFulfillment` | Ship, confirm delivery, complete, cancel and confirm free orders |
+| `OrderAdministration` | Create drafts, edit notes and delete eligible unpaid drafts |
+| `OrderMetadataWriter` | Merge metadata under a row lock |
+| `OrderNotes` | Add, edit and remove notes |
+| `OrderDocuments` | Issue persisted invoices and receipts |
 
 ### Confirming free orders
 
 ```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-$order = $orderService->confirmFreeOrder($order); // Created/PendingPayment → Processing
+app(OrderFulfillment::class)->confirmFree((string) $order->getKey());
 ```
 
 Use this only for orders with `grand_total <= 0` and `paid_total === 0`. Paid, partially paid, and balance-owing Processing orders are rejected with `InvalidArgumentException`; held, canceled, or failed orders throw the `OrderNotAwaitingPayment` subclass. On success the order moves to Processing and stock deduction is scheduled after commit; no payment record, `paid_at`, or `OrderPaid` event is produced. See the [state machine](05-state-machine.md) for the full contract and known limitations.
@@ -314,9 +300,9 @@ A unit can have one pending refund request at a time. Replaying the same request
 Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. `ship()` runs the `ShipmentCreated` transition, which records the carrier and tracking number in order metadata. Carrier API operations go through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract, which the shipping package binds in the container when installed.
 
 ```php
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-app(OrderService::class)->ship($order, 'DHL', 'TRACK123');
+app(OrderFulfillment::class)->ship((string) $order->getKey(), 'DHL', 'TRACK123');
 ```
 
 Addresses are normalized through the canonical `AIArmada\Addressing\Contracts\AddressNormalizer`; contact fields stay in address metadata. Each `addAddress()` call attaches one fresh `Address` copy per order and type, and additionally writes an immutable `AddressSnapshot` (`order_billing` / `order_shipping`) when `orders.address_snapshots.enabled` is set. `status` is always a Spatie `AIArmada\Orders\States\OrderStatus` instance (see `05-state-machine.md`).
@@ -409,16 +395,17 @@ Use `CreateOrderInvoiceDoc` when you want to create a Docs record for a paid ord
 Automatic `OrderPaid` invoice generation is disabled by default. Turn on `orders.integrations.docs.enabled` only when you want that event listener to create persisted Docs invoices automatically.
 
 ```php
-use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 
-$invoice = app(CreateOrderInvoiceDoc::class)->execute(
-    order: $order,
+$invoiceId = app(OrderDocuments::class)->issue(
+    orderId: (string) $order->getKey(),
+    type: 'invoice',
     transactionId: 'txn_abc123',
     gateway: 'chip',
 );
 ```
 
-The action re-enters the order's owner scope automatically and creates a Docs invoice only when one does not already exist for that order.
+The contract requires the current owner scope to match the order and creates a Docs invoice only when one does not already exist for that order.
 
 ### Persisted Receipt Documents
 
@@ -427,10 +414,11 @@ Use `CreateOrderReceiptDoc` when payment confirmation should also create a recei
 Checkout-driven receipt generation is also opt-in from the checkout package side; manual action usage remains available regardless of the listener defaults.
 
 ```php
-use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 
-$receipt = app(CreateOrderReceiptDoc::class)->execute(
-    order: $order,
+$receiptId = app(OrderDocuments::class)->issue(
+    orderId: (string) $order->getKey(),
+    type: 'receipt',
     transactionId: 'txn_abc123',
     gateway: 'chip',
 );

@@ -97,8 +97,7 @@ public function register(): void
 ],
 ```
 
-Your `OrderServiceInterface` implementation should return your custom order
-model and handle item/address creation in `createOrder()`.
+Your `OrderServiceInterface` implementation must return `OrderIntakeData` and resolve scalar order, cart and customer identifiers. Bind `OrderPaymentConfirmation`, `OrderFulfillment`, and `OrderMetadataWriter` as well, using the same owner scope and persistent order identity.
 
 ## Service Provider
 

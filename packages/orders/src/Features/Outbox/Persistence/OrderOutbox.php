@@ -43,7 +43,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
 
         // The row belongs to the order's owner, not to whoever happens to
         // hold the ambient context (webhook, console, queue).
-        return OwnerContext::withOwner($order->owner, static fn (): string => OrderOutboxMessage::query()->create([
+        return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id), static fn (): string => OrderOutboxMessage::query()->create([
             'order_id' => $order->getKey(),
             'owner_type' => $order->owner_type,
             'owner_id' => $order->owner_id,
@@ -99,7 +99,8 @@ final readonly class OrderOutbox implements OrderOutboxWriter
             if (! $locked instanceof Order
                 || $locked->status instanceof Canceled
                 || $locked->status instanceof Refunded
-                || $locked->status instanceof Fraud) {
+                || $locked->status instanceof Fraud
+                || ($locked->hasOwner() && $locked->owner === null)) {
                 return;
             }
 

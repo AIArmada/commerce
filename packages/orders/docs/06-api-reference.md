@@ -156,8 +156,7 @@ $item->purchasable(): MorphTo
 
 ### Order addresses
 
-Orders carry no local address model. `CreateOrder::addAddress()` (via
-`OrderServiceInterface`) stores one fresh addressing `Address` copy per order
+Orders carry no local address model. The order intake action stores one fresh addressing `Address` copy per order
 and type, with contact fields under `metadata.order_contact`. Resolve them
 through `HasAddresses`: `primaryAddress('billing')`,
 `primaryAddress('shipping')`, `addressesOfType($type)`. When
@@ -281,9 +280,17 @@ $status->isFinal(): bool  // true for Delivered/Returned/Canceled
 
 ### OrderServiceInterface
 
+Order intake returns `AIArmada\Orders\Data\OrderIntakeData` (id, orderNumber, grandTotal, currency, paidTotal), never an Eloquent model.
+
 ```php
 interface OrderServiceInterface
 {
+    /**
+     * @param array<string, mixed> $orderData
+     * @param array<array<string, mixed>> $items
+     * @param array<string, mixed>|null $billingAddress
+     * @param array<string, mixed>|null $shippingAddress
+     */
     public function createOrder(
         array $orderData,
         array $items,
@@ -291,74 +298,41 @@ interface OrderServiceInterface
         ?array $shippingAddress = null,
         ?string $intakeSource = null,
         ?string $intakeId = null,
-    ): Order;
+    ): OrderIntakeData;
 
+    /**
+     * @param array<string, mixed>|null $billingAddress
+     * @param array<string, mixed>|null $shippingAddress
+     */
     public function createFromCart(
-        Cart|CartManagerInterface $cart,
-        Model $customer,
+        string $cartId,
+        string $customerType,
+        string $customerId,
         ?array $billingAddress = null,
         ?array $shippingAddress = null,
         ?string $intakeSource = null,
         ?string $intakeId = null,
         ?string $sessionId = null,
-    ): Order;
+    ): OrderIntakeData;
 
-    public function addItem(Order $order, array $itemData): OrderItem;
-    public function addAddress(Order $order, array $addressData, string $type): void;
-    public function cancel(Order $order, string $reason, ?string $canceledBy = null): Order;
-
-    public function confirmPayment(
-        Order $order,
-        string $transactionId,
-        string $gateway,
-        int $amount,
-        array $metadata = [],
-    ): Order;
-
-    public function confirmFreeOrder(Order $order): Order;
-
-    public function ship(
-        Order $order,
-        string $carrier,
-        string $trackingNumber,
-        ?string $shipmentId = null,
-        array $metadata = [],
-    ): Order;
-
-    public function confirmDelivery(Order $order, array $metadata = []): Order;
-    public function complete(Order $order, array $metadata = []): Order;
-
-    // transactionId is the 3rd argument, reason the 4th — both required.
-    // Pass a payment to attribute the whole refund to that received payment.
-    public function processRefund(
-        Order $order,
-        int $amount,
-        string $transactionId,
-        string $reason,
-        array $metadata = [],
-        ?OrderPayment $payment = null,
-    ): Order;
-
-    // Returns one pending refund per allocated payment
-    public function createPendingRefund(
-        Order $order,
-        int $amount,
-        string $transactionId,
-        string $reason,
-        array $metadata = [],
-        ?OrderPayment $payment = null,
-    ): array;
-
-    public function claimPendingRefundSubmission(OrderRefund $refund): bool;
-    public function completePendingRefund(OrderRefund $refund, ?string $transactionId = null): Order;
-    public function failPendingRefund(OrderRefund $refund, string $reason): OrderRefund;
-
-    public function recalculateTotals(Order $order): Order;
+    public function find(string $orderId): ?OrderIntakeData;
 }
 ```
 
-> **info**
-> `confirmPayment()` accepts partial payments: each call records one payment with its actual amount under the idempotent `(gateway, transactionId)` identity. The order stays `PendingPayment` until the accepted payments cover the stored total; only the settling payment transitions it to `Processing`, stamps `paid_at`, and stages fulfillment. New identities are rejected outside the payable states (`Created` / `PendingPayment`), while a recorded identity replays idempotently from any state.
+### Lifecycle and payment contracts
+
+All identifiers are strings. All monetary amounts are integer minor units. Use the following contracts in the current owner context.
+
+| Contract | Methods |
+| --- | --- |
+| `OrderPaymentConfirmation` | `confirm`, `confirmCheckout`, `settleOutstanding` |
+| `OrderRefunds` | `processRefund`, `createPendingRefund`, `claimPendingRefundSubmission`, `completePendingRefund`, `failPendingRefund` |
+| `OrderFulfillment` | `ship`, `confirmDelivery`, `complete`, `confirmFree`, `cancel` |
+| `OrderAdministration` | `createDraft`, `updateNotes`, `deleteDrafts` |
+| `OrderMetadataWriter` | `merge` |
+| `OrderDocuments` | `issue` |
+
+Payment confirmation supports partial payments and idempotent replay. Checkout confirmation additionally verifies the locked order total and currency. Pending refunds return a list of allocation IDs.
 
 ### FulfillmentHandler
 
