@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Governance;
 
+use AIArmada\Events\Contracts\EventApprovalWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventSubmissionConverter;
+use AIArmada\Events\Features\Governance\Actions\DefaultEventApprovalWorkflow;
 use AIArmada\Events\Features\Governance\Actions\DefaultEventModerationWorkflow;
 use AIArmada\Events\Features\Governance\Actions\DefaultEventSubmissionConverter;
 use AIArmada\Events\Features\Governance\Api\GovernanceApi;
@@ -29,6 +31,7 @@ final class FeatureModule implements FeatureModuleContract
         $this->defaultModelConfig('approval_request', EventApprovalRequest::class);
         $this->defaultModelConfig('management_assignment', EventManagementAssignment::class);
 
+        $app->bind(EventApprovalWorkflow::class, DefaultEventApprovalWorkflow::class);
         $app->singleton(EventModerationWorkflow::class, DefaultEventModerationWorkflow::class);
         $app->bind(EventSubmissionConverter::class, DefaultEventSubmissionConverter::class);
         $app->bind(GovernanceApi::class, EloquentGovernanceApi::class);

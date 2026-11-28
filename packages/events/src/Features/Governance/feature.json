@@ -15,6 +15,7 @@
       "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteSubmissionDependents"
     ],
     "table:event_approval_requests": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DefaultEventApprovalWorkflow",
       "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
     ],
     "table:event_management_assignments": [
