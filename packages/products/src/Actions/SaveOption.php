@@ -9,6 +9,7 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SaveOption
 {
@@ -18,7 +19,13 @@ final readonly class SaveOption
         return DB::transaction(function () use ($product, $attributes): Option {
             $parent = $this->lockProduct($product);
 
-            return $parent->options()->create(Arr::except($attributes, ['id', 'product_id', 'owner_type', 'owner_id']));
+            $created = $parent->options()->create(Arr::except($attributes, ['id', 'product_id', 'owner_type', 'owner_id']));
+
+            if (! $created->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
+            return $created;
         });
     }
 
@@ -28,7 +35,9 @@ final readonly class SaveOption
         return DB::transaction(function () use ($product, $record, $attributes): Option {
             $parent = $this->lockProduct($product);
             $locked = $parent->options()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
-            $locked->update(Arr::except($attributes, ['id', 'product_id', 'owner_type', 'owner_id']));
+            if (! $locked->update(Arr::except($attributes, ['id', 'product_id', 'owner_type', 'owner_id']))) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
 
             return $locked;
         });

@@ -9,6 +9,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class UpdateProductStatus
 {
@@ -43,7 +44,9 @@ final readonly class UpdateProductStatus
                 ProductStatus::Draft => $this->transitionToDraft($locked),
             };
 
-            $locked->save();
+            if (! $locked->save()) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
 
             return $locked;
         }, 3);

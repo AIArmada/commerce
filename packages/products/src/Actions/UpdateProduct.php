@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class UpdateProduct
 {
@@ -28,7 +29,9 @@ final readonly class UpdateProduct
             }
 
             $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
-            $locked->update(Arr::except($data, ['id', 'owner_type', 'owner_id']));
+            if (! $locked->update(Arr::except($data, ['id', 'owner_type', 'owner_id']))) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
 
             return $locked->refresh();
         }, 3);

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Attribute;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class SaveAttribute
 {
@@ -24,7 +25,13 @@ final readonly class SaveAttribute
                 $data['owner_id'] = $owner?->getKey();
             }
 
-            return Attribute::query()->create($data);
+            $created = Attribute::query()->create($data);
+
+            if (! $created->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
+            return $created;
         });
     }
 
@@ -42,7 +49,9 @@ final readonly class SaveAttribute
 
             $locked = $query->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
             $data = Arr::except($attributes, ['id', 'owner_type', 'owner_id', 'groups']);
-            $locked->update($data);
+            if (! $locked->update($data)) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
 
             return $locked;
         }, 3);

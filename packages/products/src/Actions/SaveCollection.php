@@ -9,6 +9,7 @@ use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Illuminate\Validation\ValidationException;
 
 final readonly class SaveCollection
@@ -28,7 +29,13 @@ final readonly class SaveCollection
 
             $this->validateCategoryConditions($data);
 
-            return Collection::query()->create($data);
+            $created = Collection::query()->create($data);
+
+            if (! $created->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
+            return $created;
         });
     }
 
@@ -47,7 +54,9 @@ final readonly class SaveCollection
             $locked = $query->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
             $data = Arr::except($attributes, ['id', 'owner_type', 'owner_id', 'products']);
             $this->validateCategoryConditions($data);
-            $locked->update($data);
+            if (! $locked->update($data)) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
 
             return $locked;
         }, 3);

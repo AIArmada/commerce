@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class CreateProduct
 {
@@ -28,7 +29,13 @@ final readonly class CreateProduct
                 $data['owner_id'] = $owner?->getKey();
             }
 
-            return Product::query()->create($data);
+            $created = Product::query()->create($data);
+
+            if (! $created->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
+            return $created;
         }, 3);
     }
 
