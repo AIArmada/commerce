@@ -34,7 +34,7 @@ final readonly class VerifyRewardPayeeAction
     use AsAction;
 
     /**
-     * @param  array<string, mixed>|null  $evidence
+     * @param  array<string, mixed>|null  $evidence  When verified_from_registration_id is supplied, the referenced pending registration must match the destination.
      */
     public function handle(
         string $recipientType,
@@ -113,6 +113,21 @@ final readonly class VerifyRewardPayeeAction
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
+
+            if (array_key_exists('verified_from_registration_id', $evidence ?? [])) {
+                $registrationId = $evidence['verified_from_registration_id'];
+
+                $registration = is_string($registrationId)
+                    ? $prior->first(fn (RewardPayee $row): bool => (string) $row->getKey() === $registrationId)
+                    : null;
+
+                if (! $registration instanceof RewardPayee
+                    || $registration->status !== RewardPayeeStatus::Pending
+                    || $registration->account_ref !== $accountRef
+                    || $registration->account_display !== $accountDisplay) {
+                    throw new InvalidArgumentException('Payee verification requires the matching current pending registration.');
+                }
+            }
 
             foreach ($prior as $row) {
                 $row->forceFill([

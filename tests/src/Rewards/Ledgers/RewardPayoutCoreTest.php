@@ -8,6 +8,7 @@ use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
+use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
@@ -276,4 +277,45 @@ it('refuses recipient-owned payout submission and cancellation', function (): vo
         ->toThrow(InvalidArgumentException::class, 'Recipient-owned payout cancellation is prohibited.');
 
     expect($request->refresh()->status)->toBe(RewardPayoutRequestStatus::Requested);
+});
+
+it('refuses stale or mismatched payee registrations without replacing the current destination', function (): void {
+    $memberId = (string) Str::uuid();
+    $staff = RewardLedgerFixtures::staffId();
+
+    $verified = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-live', 'Live destination', 'user', $staff, 'staff');
+    $old = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $memberId, 'member');
+    $current = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $memberId, 'member');
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $staff, 'staff',
+        ['verified_from_registration_id' => (string) $old->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $staff, 'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect($verified->refresh()->status)->toBe(RewardPayeeStatus::Verified)
+        ->and($old->refresh()->status)->toBe(RewardPayeeStatus::Superseded)
+        ->and($current->refresh()->status)->toBe(RewardPayeeStatus::Pending)
+        ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(3);
+
+    $replacement = VerifyRewardPayeeAction::run(
+        'user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $staff, 'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    );
+
+    expect($replacement->status)->toBe(RewardPayeeStatus::Verified)
+        ->and($verified->refresh()->status)->toBe(RewardPayeeStatus::Superseded)
+        ->and($current->refresh()->status)->toBe(RewardPayeeStatus::Superseded);
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $staff, 'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect($replacement->refresh()->status)->toBe(RewardPayeeStatus::Verified)
+        ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(4);
 });
