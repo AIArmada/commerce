@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
@@ -21,7 +22,7 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardAwardEntry;
 use AIArmada\Rewards\Models\RewardCapCounter;
@@ -588,7 +589,7 @@ final readonly class TransitionRewardAwardAction
             }
 
             if ($minimum instanceof RewardVerificationLevel
-                && ! $fact->verification->satisfiesFor($minimum, $fact->outcome)
+                && ! $fact->verification->satisfiesFor($minimum, $fact->outcome, RewardModerationPolicyQuery::outcomes())
             ) {
                 throw new InvalidArgumentException("Refused: contributor [{$key}] is verification_insufficient under the frozen policy; the milestone cannot fulfill until its correction is processed.");
             }
@@ -748,6 +749,7 @@ final readonly class TransitionRewardAwardAction
             ),
             requestedComponent: $award->component,
             decisionTime: $decision,
+            moderatedOutcomes: RewardModerationPolicyQuery::outcomes(),
         );
 
         $verdict = (app(RewardPreviewEvaluator::class))->evaluate($context);

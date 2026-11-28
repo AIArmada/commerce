@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
@@ -689,7 +690,7 @@ final readonly class RecordRewardMilestoneContributionAction
         $minimum = RewardVerificationLevel::tryFrom((string) ($milestone['min_verification'] ?? $eligibility['min_verification'] ?? ''));
 
         if ($minimum instanceof RewardVerificationLevel
-            && ! $fact->verification->satisfiesFor($minimum, $outcome)
+            && ! $fact->verification->satisfiesFor($minimum, $outcome, RewardModerationPolicyQuery::outcomes())
         ) {
             throw new InvalidArgumentException('Refused: contributing fact verification is below the published minimum.');
         }

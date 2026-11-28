@@ -9,11 +9,10 @@ use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Data\RewardPreviewResult;
 
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 
 /**
  * Pure deterministic qualification preview.
@@ -179,7 +178,7 @@ final readonly class RewardPreviewEngine implements RewardPreviewEvaluator
             : ($eligibility['min_verification'] ?? '');
         $minimum = RewardVerificationLevel::tryFrom((string) $minimumSource) ?? RewardVerificationLevel::ModeratedApproved;
 
-        if (! $fixture->verification->satisfiesFor($minimum, $fixture->outcome)) {
+        if (! $fixture->verification->satisfiesFor($minimum, $fixture->outcome, $context->moderatedOutcomes)) {
             $add(RewardPreviewReason::VerificationInsufficient, 'Verification [' . $fixture->verification->value . '] does not satisfy [' . $minimum->value . '] for outcome [' . $fixture->outcome . ']; accepted registration is never verified attendance and moderation only vouches for allowlisted outcomes.');
 
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);

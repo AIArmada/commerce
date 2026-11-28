@@ -10,7 +10,7 @@ use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Support\RewardRuleValidator;
@@ -152,10 +152,10 @@ it('rejects unknown beneficiary roles instead of silently defaulting', function 
 });
 
 it('applies per-kind verification without letting moderation vouch for attendance', function (): void {
-    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'contribution'))->toBeTrue();
-    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance'))->toBeFalse();
-    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::Accepted, 'registration'))->toBeFalse();
-    expect(RewardVerificationLevel::StaffVerified->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance'))->toBeTrue();
+    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'contribution', ['contribution']))->toBeTrue();
+    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance', ['contribution']))->toBeFalse();
+    expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::Accepted, 'registration', ['contribution']))->toBeFalse();
+    expect(RewardVerificationLevel::StaffVerified->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance', ['contribution']))->toBeTrue();
 
     [$program, $memberId] = c4Harness('core-c4-verify');
     $member = ['member_type' => 'user', 'member_id' => $memberId];

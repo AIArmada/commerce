@@ -23,7 +23,7 @@ use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
@@ -469,6 +470,7 @@ final readonly class EvaluateRewardEntitlementAction
             ),
             requestedComponent: $component,
             decisionTime: $decision,
+            moderatedOutcomes: RewardModerationPolicyQuery::outcomes(),
         );
 
         $policy = ($this->policyEngine ?? app(RewardPreviewEvaluator::class))->evaluate($context);

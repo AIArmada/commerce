@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
@@ -199,6 +200,7 @@ final readonly class PreviewRewardQualificationAction
             fixture: $facts,
             requestedComponent: $component,
             decisionTime: $decision,
+            moderatedOutcomes: RewardModerationPolicyQuery::outcomes(),
         );
 
         return ($this->evaluator ?? app(RewardPreviewEvaluator::class))->evaluate($context);

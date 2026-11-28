@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Enums;
+namespace AIArmada\Rewards\Data;
 
 enum RewardVerificationLevel: string
 {
@@ -37,16 +37,15 @@ enum RewardVerificationLevel: string
      * unrelated outcome kinds. A moderated contribution qualifies as a
      * contribution but does not magically confer other verification.
      */
-    public function satisfiesFor(self $minimum, string $outcome): bool
+    /** @param list<string> $moderatedOutcomes */
+    public function satisfiesFor(self $minimum, string $outcome, array $moderatedOutcomes): bool
     {
         if ($minimum === self::Unverified) {
             return true;
         }
 
         if ($this === self::ModeratedApproved) {
-            $moderated = config('rewards.moderated_outcomes', []);
-
-            if (! is_array($moderated) || ! in_array($outcome, $moderated, true)) {
+            if (! in_array($outcome, $moderatedOutcomes, true)) {
                 return false;
             }
         }

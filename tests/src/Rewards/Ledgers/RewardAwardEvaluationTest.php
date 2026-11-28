@@ -17,7 +17,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

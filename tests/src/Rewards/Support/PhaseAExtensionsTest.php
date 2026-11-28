@@ -8,7 +8,7 @@ use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Fulfillment\VouchersRewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Models\RewardBenefitGrant;

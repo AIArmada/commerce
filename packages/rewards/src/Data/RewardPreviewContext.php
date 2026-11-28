@@ -27,6 +27,7 @@ final readonly class RewardPreviewContext
     /**
      * @param  array<string, mixed>  $versionRules  Frozen validated rules snapshot.
      * @param  list<string>  $versionComponents  Enabled component values.
+     * @param  list<string>  $moderatedOutcomes  Outcomes for which moderation is authoritative.
      * @param  list<string>  $compatibleWith  Frozen stacking allowlist of the applicable version.
      */
     public function __construct(
@@ -50,5 +51,6 @@ final readonly class RewardPreviewContext
         public RewardPreviewFixture $fixture,
         public RewardComponent $requestedComponent,
         public CarbonImmutable $decisionTime,
+        public array $moderatedOutcomes,
     ) {}
 }

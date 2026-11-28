@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Data\RewardSourceFact;
 
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
@@ -178,7 +179,7 @@ final class RewardEvaluationCandidates
                     $minimum = RewardVerificationLevel::tryFrom((string) ($milestone['min_verification'] ?? ''));
 
                     if (! $minimum instanceof RewardVerificationLevel
-                        || ! $fact->verification->satisfiesFor($minimum, $fact->outcome)
+                        || ! $fact->verification->satisfiesFor($minimum, $fact->outcome, RewardModerationPolicyQuery::outcomes())
                         || (($milestone['first_only'] ?? false) && ! $fact->isFirstTime)) {
                         continue;
                     }

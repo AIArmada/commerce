@@ -19,7 +19,7 @@ use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardCapCounter;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
