@@ -7,4 +7,6 @@ description: Develop integrations with cashier using its Dune package boundaries
 
 Cashier is the unified billing abstraction for Stripe and CHIP. Resolve gateways through the Cashier facade and GatewayContract; concrete SDK adapters live under Drivers. Use Actions for billing operations, Queries for subscription reads, and EntryPoints for CLI commands. Scope billable records to the current owner before payment or subscription changes. Never trust unsigned HTTP webhook payloads; replay only gateway-fetched events.
 
+Use InvoiceContract::customerId() to compare customer identity; findInvoice() enforces both the requested billable and owner scope. Refunds must authorize the payment before any provider mutation.
+
 Read the package documentation and tests for current APIs. Verify changed behavior using the monorepo Pest suite and the package architecture checks.

@@ -442,19 +442,55 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
         $invoiceParameters = is_array($parameters) ? $parameters : [];
         $limit = min(201, max(1, (int) ($invoiceParameters['limit'] ?? self::DEFAULT_LIST_LIMIT)));
         unset($invoiceParameters['include_pending']);
-        $invoiceParameters['limit'] = min(100, $limit);
+        if (! $includePending) {
+            if (isset($invoiceParameters['status']) && $invoiceParameters['status'] !== 'paid') {
+                return collect();
+            }
 
-        $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending, $invoiceParameters]);
-
-        if (! is_iterable($rawInvoices)) {
-            return collect();
+            $invoiceParameters['status'] = 'paid';
         }
 
-        /** @var iterable<int, mixed> $rawInvoices */
-        $invoices = collect($rawInvoices)
-            ->take($limit)
-            ->map(fn ($invoice) => new StripeInvoice($invoice instanceof CashierInvoice ? $invoice : $invoice->asStripeInvoice()))
-            ->values();
+        $cursorKey = isset($invoiceParameters['ending_before']) ? 'ending_before' : 'starting_after';
+        $invoices = collect();
+
+        while ($invoices->count() < $limit) {
+            $pageSize = min(100, $limit - $invoices->count());
+            $invoiceParameters['limit'] = $pageSize;
+
+            $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending, $invoiceParameters]);
+
+            if (! is_iterable($rawInvoices)) {
+                break;
+            }
+
+            /** @var iterable<int, mixed> $rawInvoices */
+            $page = collect($rawInvoices)
+                ->take($pageSize)
+                ->map(fn ($invoice) => new StripeInvoice($invoice instanceof CashierInvoice ? $invoice : $invoice->asStripeInvoice()))
+                ->values();
+
+            if ($page->isEmpty()) {
+                break;
+            }
+
+            $cursor = ($cursorKey === 'ending_before' ? $page->first() : $page->last())?->id();
+
+            if ($cursor === null || $cursor === ($invoiceParameters[$cursorKey] ?? null)) {
+                break;
+            }
+
+            $invoices = $cursorKey === 'ending_before'
+                ? $page->concat($invoices)
+                : $invoices->concat($page);
+
+            if ($page->count() < $pageSize) {
+                break;
+            }
+
+            $invoiceParameters[$cursorKey] = $cursor;
+        }
+
+        $invoices = $invoices->values();
 
         /** @var Collection<int, InvoiceContract> $invoices */
         return $invoices;
