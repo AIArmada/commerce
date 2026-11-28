@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Features\Stock\EntryPoints\Health\LowStockCheck;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Stock\EntryPoints\Health\LowStockCheck;
 use Spatie\Health\Enums\Status;
 
 beforeEach(function (): void {
