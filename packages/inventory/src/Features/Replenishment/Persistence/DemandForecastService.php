@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -42,9 +42,7 @@ final class DemandForecastService
             }
 
             if ($locationId !== null) {
-                $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -130,9 +128,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -182,9 +178,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -243,9 +237,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -295,9 +287,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -368,9 +358,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');
@@ -438,9 +426,7 @@ final class DemandForecastService
 
         if ($locationId !== null) {
             if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
+                $isAllowed = app(LocationVisibility::class)->isVisible($locationId);
 
                 if (! $isAllowed) {
                     throw new InvalidArgumentException('Invalid location for current owner');

@@ -7,8 +7,8 @@ namespace AIArmada\Inventory\Features\Backorders\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Stock\Api\StockAvailability;
 use AIArmada\Inventory\States\Cancelled;
 use AIArmada\Inventory\States\Expired;
 use AIArmada\Inventory\States\Fulfilled;
@@ -44,7 +44,7 @@ final class BackorderService
         $this->assertOwnerContext();
 
         if ($locationId !== null && InventoryOwnerScope::isEnabled()) {
-            $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)->whereKey($locationId)->exists();
+            $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
             if (! $isAllowed) {
                 throw new InvalidArgumentException('Invalid location for current owner');
@@ -185,7 +185,7 @@ final class BackorderService
 
             if ($locationId !== null) {
                 if (InventoryOwnerScope::isEnabled()) {
-                    $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)->whereKey($locationId)->exists();
+                    $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid location for current owner');
@@ -310,19 +310,25 @@ final class BackorderService
 
         $backorders = $backordersQuery->get();
 
-        return $backorders->filter(function ($backorder): bool {
-            $query = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLevel::query()
-                    ->where('inventoryable_type', $backorder->inventoryable_type)
-                    ->where('inventoryable_id', $backorder->inventoryable_id)
-            );
+        $items = $backorders->map(static fn (InventoryBackorder $backorder): array => [
+            'type' => $backorder->inventoryable_type,
+            'id' => $backorder->inventoryable_id,
+        ])->values()->all();
 
-            if ($backorder->location_id !== null) {
-                $query->where('location_id', $backorder->location_id);
-            }
+        $totals = [];
+        $locations = [];
 
-            // Sum sellable units per location; a deficit elsewhere cannot consume this stock.
-            $available = (int) $query->sum(DB::raw('CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END'));
+        foreach (app(StockAvailability::class)->byItem($items) as $row) {
+            $key = serialize([$row['type'], $row['id']]);
+            $totals[$key] = ($totals[$key] ?? 0) + $row['available'];
+            $locations[$key][$row['location_id']] = $row['available'];
+        }
+
+        return $backorders->filter(static function (InventoryBackorder $backorder) use ($totals, $locations): bool {
+            $key = serialize([$backorder->inventoryable_type, $backorder->inventoryable_id]);
+            $available = $backorder->location_id === null
+                ? ($totals[$key] ?? 0)
+                : ($locations[$key][$backorder->location_id] ?? 0);
 
             return $available >= $backorder->quantityRemaining();
         });

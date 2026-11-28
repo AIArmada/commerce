@@ -12,7 +12,7 @@ use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +35,7 @@ final class ReplenishmentService
     public function generateSuggestions(?string $locationId = null): Collection
     {
         if ($locationId !== null && InventoryOwnerScope::isEnabled()) {
-            $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query()->whereKey($locationId))->exists();
+            $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
 
             if (! $isAllowed) {
                 throw new InvalidArgumentException('Invalid location for current owner');

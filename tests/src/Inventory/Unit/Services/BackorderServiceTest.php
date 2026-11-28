@@ -12,6 +12,7 @@ use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 describe('BackorderService', function (): void {
     beforeEach(function (): void {
@@ -320,4 +321,49 @@ describe('BackorderService', function (): void {
         // (10-2-0) + (20-5-3) = 8 + 12 = 20
         expect($total)->toBe(20);
     });
+});
+
+it('batches backorder availability by item and excludes inactive locations', function (): void {
+    config()->set('inventory.owner.enabled', false);
+
+    $service = new BackorderService;
+    $item = InventoryItem::create(['name' => 'Batched Backorder Item']);
+    $other = InventoryItem::create(['name' => 'Unstocked Backorder Item']);
+    $active = InventoryLocation::factory()->create(['is_active' => true]);
+    $inactive = InventoryLocation::factory()->create(['is_active' => false]);
+
+    foreach ([[$active, 10], [$inactive, 100]] as [$location, $quantity]) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => $quantity,
+            'quantity_reserved' => 0,
+        ]);
+    }
+
+    $expected = [];
+
+    foreach (range(1, 20) as $index) {
+        $expected[] = $service->create($item, 5, $active->id)->id;
+    }
+
+    $expected[] = $service->create($item, 10)->id;
+    $service->create($item, 11);
+    $service->create($item, 1, $inactive->id);
+    $service->create($other, 1);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $actual = $service->getFulfillableBackorders()->modelKeys();
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($actual)->toEqualCanonicalizing($expected)
+        ->and(count($queries))->toBeLessThanOrEqual(3);
 });
