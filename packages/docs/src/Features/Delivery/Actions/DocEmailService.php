@@ -305,8 +305,11 @@ final class DocEmailService implements DocumentEmailSender
             return;
         }
 
-        app(DeliverDocEmail::class)->execute((string) $email->getKey(), $docId, (bool) config('docs.email.attach_pdf', true));
-        $email->refresh();
+        $attachPdf = (bool) config('docs.email.attach_pdf', true);
+        $email->getConnection()->afterCommit(static function () use ($email, $docId, $attachPdf): void {
+            app(DeliverDocEmail::class)->execute((string) $email->getKey(), $docId, $attachPdf);
+            $email->refresh();
+        });
     }
 
     private function displayName(mixed $value, string $fallback): string

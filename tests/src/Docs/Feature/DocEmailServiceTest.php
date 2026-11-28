@@ -14,6 +14,8 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -340,4 +342,26 @@ it('normalizes recipient details and handles malformed document names', function
     expect($email->recipient_email)->toBe('customer@example.com')
         ->and($email->recipient_name)->toBe('Customer')
         ->and($email->status)->toBe(EmailStatus::Sent);
+});
+
+it('does not send a synchronous email before the surrounding transaction commits', function (): void {
+    Mail::fake();
+    $doc = Doc::factory()->create();
+    $service = app(DocEmailService::class);
+
+    expect(fn () => $doc->getConnection()->transaction(function () use ($doc, $service): void {
+        $email = $service->send($doc, 'customer@example.com');
+
+        expect($email->status)->toBe(EmailStatus::Queued);
+        Mail::assertNothingSent();
+
+        throw new RuntimeException('Rollback email');
+    }))->toThrow(RuntimeException::class, 'Rollback email');
+
+    Mail::assertNothingSent();
+    expect($doc->emails()->count())->toBe(0);
+
+    $email = $service->send($doc, 'customer@example.com');
+    Mail::assertSent(DocMail::class, 1);
+    expect($email->status)->toBe(EmailStatus::Sent);
 });
