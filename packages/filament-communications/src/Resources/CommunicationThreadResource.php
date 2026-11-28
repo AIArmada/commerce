@@ -6,7 +6,7 @@ namespace AIArmada\Filament\Communications\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\ThreadStatus;
-use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Filament\Communications\RelationManagers\CommunicationsRelationManager;
 use AIArmada\Filament\Communications\Resources\CommunicationThreadResource\Pages;
 use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;

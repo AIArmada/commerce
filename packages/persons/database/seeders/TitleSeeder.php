@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Seeders;
 
 use AIArmada\Persons\Enums\TitleUsagePosition;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use Illuminate\Database\Seeder;
 
 final class TitleSeeder extends Seeder

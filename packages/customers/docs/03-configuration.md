@@ -147,7 +147,7 @@ $table->index('is_guest');
 // Segments table: owner_scope is retained as a legacy database guard.
 // Segment model code enforces the authoritative owner tuple plus slug.
 $table->unique(['owner_scope', 'slug']);
-$table->index(['is_active', 'priority']);
+$table->index(['deactivated_at', 'priority']);
 $table->index('type');
 ```
 

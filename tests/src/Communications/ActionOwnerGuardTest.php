@@ -4,15 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Actions\CancelCommunicationAction;
-use AIArmada\Communications\Actions\CancelCommunicationDeliveryAction;
-use AIArmada\Communications\Actions\CompleteDeliveryAttemptAction;
-use AIArmada\Communications\Actions\RecalculateCommunicationStatusAction;
-use AIArmada\Communications\Actions\RecordNotificationSendingAction;
-use AIArmada\Communications\Actions\RecordProviderEventAction;
-use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
-use AIArmada\Communications\Actions\RetryCommunicationDeliveryAction;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationEventSource;
@@ -20,12 +12,24 @@ use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
+use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationFailureAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSentAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\RedactDeliveryPayloadAction;
+use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationEvent;
-use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -182,15 +186,17 @@ function actionGuardRun(
             $communication->id,
             $delivery->id,
         ),
+        'notification-sent' => app(RecordNotificationSentAction::class)->handle($communication->id, $delivery->id),
+        'notification-failed' => app(RecordNotificationFailureAction::class)->handle($communication->id, $delivery->id, 'failure'),
         'retry-delivery' => app(RetryCommunicationDeliveryAction::class)->handle($delivery->id),
         'cancel-delivery' => app(CancelCommunicationDeliveryAction::class)->handle($delivery->id),
         'complete-attempt' => app(CompleteDeliveryAttemptAction::class)->handle($attempt->id),
         'recalculate-status' => app(RecalculateCommunicationStatusAction::class)->handle($communication->id),
         'redact-content' => app(RedactCommunicationPayloadAction::class)->handleContent($content->id),
-        'redact-delivery' => app(RedactCommunicationPayloadAction::class)->handleDelivery($delivery->id),
-        'redact-attempt' => app(RedactCommunicationPayloadAction::class)->handleAttempt($attempt->id),
-        'redact-event' => app(RedactCommunicationPayloadAction::class)->handleEvent($event->id),
-        'attach-reference' => app(AttachCommunicationReferenceAction::class)->handle(
+        'redact-delivery' => app(RedactDeliveryPayloadAction::class)->handleDelivery($delivery->id),
+        'redact-attempt' => app(RedactDeliveryPayloadAction::class)->handleAttempt($attempt->id),
+        'redact-event' => app(RedactDeliveryPayloadAction::class)->handleEvent($event->id),
+        'attach-reference' => app(CommunicationReferenceWriter::class)->handle(
             $communication->id,
             'events',
             'event-123',
@@ -216,9 +222,11 @@ function actionGuardAssertPassed(
             ->and($result->attempt_number)->toBe(2),
         'cancel-delivery' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Cancelled),
         'complete-attempt' => expect($attempt->fresh()->responded_at)->not->toBeNull(),
-        'recalculate-status' => expect($result->id)->toBe($communication->id),
+        'recalculate-status' => expect($communication->fresh()->status)->toBe(CommunicationStatus::Processing),
+        'notification-sent' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sent),
+        'notification-failed' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Failed),
         'redact-content', 'redact-delivery', 'redact-attempt', 'redact-event' => expect($result->id)->not->toBeNull(),
-        'attach-reference' => expect($result->communication_id)->toBe($communication->id),
+        'attach-reference' => expect(CommunicationReference::query()->findOrFail($result)->communication_id)->toBe($communication->id),
         'cancel-communication' => expect($communication->fresh()->status)->toBe(CommunicationStatus::Cancelled),
         default => throw new InvalidArgumentException("Unknown guard case [{$case}]."),
     };
@@ -231,6 +239,8 @@ function actionGuardCases(): array
         'provider-event-via-attempt' => ['provider-event-via-attempt'],
         'provider-event-via-communication' => ['provider-event-via-communication'],
         'notification-sending' => ['notification-sending'],
+        'notification-sent' => ['notification-sent'],
+        'notification-failed' => ['notification-failed'],
         'retry-delivery' => ['retry-delivery'],
         'cancel-delivery' => ['cancel-delivery'],
         'complete-attempt' => ['complete-attempt'],

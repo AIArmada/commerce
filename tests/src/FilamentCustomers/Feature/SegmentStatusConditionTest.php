@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 
 beforeEach(function (): void {
     // Owner-disabled on purpose: matchingCustomersQuery() resolves the
@@ -28,7 +28,6 @@ it('honors the adapter-stored value_status condition shape when matching custome
         'slug' => 'suspended-only-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => true,
-        'is_active' => true,
         'conditions' => [['field' => 'status', 'value_status' => 'suspended']],
     ]);
 
@@ -39,8 +38,7 @@ it('honors the adapter-stored value_status condition shape when matching custome
         'slug' => 'active-only-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => true,
-        'is_active' => true,
-        'conditions' => [['field' => 'status', 'value_status' => 'active']],
+        'conditions' => [['field' => 'status', 'value_boolean' => false, 'value_status' => 'active']],
     ]);
 
     expect($activeOnly->countMatchingCustomers())->toBe(1);

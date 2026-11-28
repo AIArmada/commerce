@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-
-final class ResolvedDestinationData extends Data
+final readonly class ResolvedDestinationData
 {
     public function __construct(
-        public readonly string $destination,
-        public readonly string $channel,
-        public readonly string $ciphertext,
-        public readonly string $hash,
-        public readonly string $hint,
+        public string $destination,
+        public string $channel,
+        public string $ciphertext,
+        public string $hash,
+        public string $hint,
     ) {}
 }

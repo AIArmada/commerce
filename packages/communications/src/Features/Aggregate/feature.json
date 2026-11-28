@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "name": "Aggregate",
+  "owns": {
+    "table:communications": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CancelCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RecalculateCommunicationStatusAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ReceiveInboundCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationAggregateAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateInboxCommunication",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ManageScheduledCommunications",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CleanupCommunicationDependents",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationBatchAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationThreadAction"
+    ],
+    "table:communication_recipients": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AddCommunicationRecipientAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CaptureRecipientContent",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CleanupCommunicationDependents"
+    ],
+    "table:communication_references": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AttachCommunicationReferenceAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CleanupCommunicationDependents"
+    ],
+    "table:communication_batches": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateCommunicationBatchAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationBatchAction"
+    ],
+    "table:communication_threads": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ResolveCommunicationThreadAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationThreadAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Persistence\\CommunicationThreadIdentityIndexes"
+    ],
+    "table:communication_contents": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RenderCommunicationContentAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CaptureRecipientContent",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CleanupCommunicationDependents",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RedactCommunicationPayloadAction"
+    ],
+    "table:communication_attachments": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationAggregateAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CleanupCommunicationDependents"
+    ]
+  },
+  "extensions": {}
+}

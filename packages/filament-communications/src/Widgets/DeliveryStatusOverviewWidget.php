@@ -7,10 +7,9 @@ namespace AIArmada\Filament\Communications\Widgets;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 final class DeliveryStatusOverviewWidget extends StatsOverviewWidget
 {
@@ -59,46 +58,50 @@ final class DeliveryStatusOverviewWidget extends StatsOverviewWidget
             'filament-communications.delivery-overview.totals',
             60,
             function (): array {
-                $baseQuery = OwnerUiScope::apply(CommunicationDelivery::query(), includeGlobal: false);
-                $row = DB::query()
-                    ->selectSub((clone $baseQuery)->whereIn('status', [
-                        DeliveryStatus::Pending,
-                        DeliveryStatus::Scheduled,
-                        DeliveryStatus::Queued,
-                        DeliveryStatus::Sending,
-                    ])->selectRaw('COUNT(*)'), 'pending')
-                    ->selectSub((clone $baseQuery)->whereIn('status', [
-                        DeliveryStatus::Sent,
-                        DeliveryStatus::Accepted,
-                        DeliveryStatus::Received,
-                    ])->selectRaw('COUNT(*)'), 'sent')
-                    ->selectSub((clone $baseQuery)->whereIn('status', [
-                        DeliveryStatus::Delivered,
-                        DeliveryStatus::Opened,
-                        DeliveryStatus::Read,
-                        DeliveryStatus::Clicked,
-                        DeliveryStatus::Replied,
-                    ])->selectRaw('COUNT(*)'), 'delivered')
-                    ->selectSub((clone $baseQuery)->whereIn('status', [
-                        DeliveryStatus::Failed,
-                        DeliveryStatus::Bounced,
-                        DeliveryStatus::Complained,
-                        DeliveryStatus::Expired,
-                    ])->selectRaw('COUNT(*)'), 'failed')
-                    ->selectSub((clone $baseQuery)->whereIn('status', [
-                        DeliveryStatus::Suppressed,
-                        DeliveryStatus::Unsubscribed,
-                        DeliveryStatus::Cancelled,
-                    ])->selectRaw('COUNT(*)'), 'suppressed')
-                    ->first();
+                $model = new CommunicationDelivery;
+                $counts = OwnerUiScope::apply(CommunicationDelivery::query(), includeGlobal: false)
+                    ->select('status', $model->getConnection()->raw('COUNT(*) as aggregate'))
+                    ->groupBy('status')
+                    ->pluck('aggregate', 'status');
 
-                return [
-                    'pending' => (int) ($row->pending ?? 0),
-                    'sent' => (int) ($row->sent ?? 0),
-                    'delivered' => (int) ($row->delivered ?? 0),
-                    'failed' => (int) ($row->failed ?? 0),
-                    'suppressed' => (int) ($row->suppressed ?? 0),
+                $totals = [
+                    'pending' => 0,
+                    'sent' => 0,
+                    'delivered' => 0,
+                    'failed' => 0,
+                    'suppressed' => 0,
                 ];
+
+                foreach ($counts as $status => $count) {
+                    $bucket = match ($status) {
+                        DeliveryStatus::Pending->value,
+                        DeliveryStatus::Scheduled->value,
+                        DeliveryStatus::Queued->value,
+                        DeliveryStatus::Sending->value => 'pending',
+                        DeliveryStatus::Sent->value,
+                        DeliveryStatus::Accepted->value,
+                        DeliveryStatus::Received->value => 'sent',
+                        DeliveryStatus::Delivered->value,
+                        DeliveryStatus::Opened->value,
+                        DeliveryStatus::Read->value,
+                        DeliveryStatus::Clicked->value,
+                        DeliveryStatus::Replied->value => 'delivered',
+                        DeliveryStatus::Failed->value,
+                        DeliveryStatus::Bounced->value,
+                        DeliveryStatus::Complained->value,
+                        DeliveryStatus::Expired->value => 'failed',
+                        DeliveryStatus::Suppressed->value,
+                        DeliveryStatus::Unsubscribed->value,
+                        DeliveryStatus::Cancelled->value => 'suppressed',
+                        default => null,
+                    };
+
+                    if ($bucket !== null) {
+                        $totals[$bucket] += (int) $count;
+                    }
+                }
+
+                return $totals;
             }
         );
     }

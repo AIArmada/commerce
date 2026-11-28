@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Factories;
 
 use AIArmada\Persons\Enums\AffiliationType;
-use AIArmada\Persons\Models\Affiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
