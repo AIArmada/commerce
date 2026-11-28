@@ -85,14 +85,12 @@ registrations.
 ```php
 'transfers' => [
     'bulk_max_size' => env('TICKETING_BULK_TRANSFER_MAX', 100),
-    'expiry_grace_period' => env('TICKETING_TRANSFER_EXPIRY_GRACE', 0),
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
 | `bulk_max_size` | Maximum passes per bulk transfer operation |
-| `expiry_grace_period` | Additional minutes after transfer window closes during which transfers are still allowed |
 
 ## Issuance Settings
 
@@ -197,7 +195,6 @@ TICKETING_JSON_COLUMN_TYPE=jsonb
 TICKETING_CURRENCY=MYR
 TICKETING_PASS_NO_PREFIX=PASS-
 TICKETING_BULK_TRANSFER_MAX=100
-TICKETING_TRANSFER_EXPIRY_GRACE=0
 TICKETING_FROM_ADDRESS=tickets@example.com
 TICKETING_FROM_NAME=Ticketing
 TICKETING_AUTO_ISSUE_PASSES=true

@@ -163,7 +163,7 @@ Each pass receives:
 ### Single Transfer
 
 ```php
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\PassHolder;
 
 $newHolder = PassHolder::make([
@@ -208,14 +208,14 @@ if ($transferService->canTransfer($pass)) {
 
 A pass can transfer when `Pass::isValid()` is `true` and it is not past
 `transfer_expires_at`. `transfer_expires_at` is populated from the ticketable's
-`transferWindowEndsAt()` (plus `ticketing.transfers.expiry_grace_period`).
+`transferWindowEndsAt()`. The deadline remains stored after expiry; null means no configured deadline.
 
 ## Bulk Transfer
 
 Transfer multiple passes at once:
 
 ```php
-use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
 
 $result = app(BulkTransferPassesAction::class)->handle(
     passIds: [$pass1->getKey(), $pass2->getKey(), $pass3->getKey()],

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 

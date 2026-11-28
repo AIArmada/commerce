@@ -2,21 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class TransferPassToHolderAction
+final readonly class TransferPassToHolderAction
 {
-    use AsAction;
+    public function __construct(private PassTransferServiceInterface $transfers) {}
 
     public function handle(
         Pass $pass,
@@ -25,14 +23,20 @@ final class TransferPassToHolderAction
         ?string $reason = null,
         ?Model $authorizedBy = null,
     ): PassHolder {
-        if ($authorizedBy !== null) {
-            Gate::forUser($authorizedBy)->authorize('transfer', $pass);
-        }
+        return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $holderAttributes, $reason, $authorizedBy): PassHolder {
+            $lockedPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
 
-        return DB::transaction(function () use ($pass, $newHolder, $holderAttributes, $reason) {
-            $resolvedHolder = $this->resolveHolder($pass, $newHolder, $holderAttributes);
+            if (! $lockedPass instanceof Pass) {
+                throw new \Illuminate\Auth\Access\AuthorizationException('The pass is not accessible in the current owner scope.');
+            }
 
-            return app(PassTransferServiceInterface::class)->transfer($pass, $resolvedHolder, $reason);
+            if ($authorizedBy !== null) {
+                Gate::forUser($authorizedBy)->authorize('transfer', $lockedPass);
+            }
+
+            $resolvedHolder = $this->resolveHolder($lockedPass, $newHolder, $holderAttributes);
+
+            return $this->transfers->transfer($lockedPass, $resolvedHolder, $reason);
         });
     }
 

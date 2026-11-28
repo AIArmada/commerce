@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Passes",
+  "owns": {
+    "table:ticket_pass_holders": [
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter"
+    ],
+    "table:ticket_pass_transfers": [
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter"
+    ]
+  },
+  "extensions": {}
+}

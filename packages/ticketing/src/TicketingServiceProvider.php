@@ -6,7 +6,6 @@ namespace AIArmada\Ticketing;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
-use AIArmada\Ticketing\EntryPoints\Console\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
@@ -19,32 +18,31 @@ use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassCancelled;
 use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassExpired;
 use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassRevoked;
 use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassVoided;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Policies\PassTransferPolicy;
 use AIArmada\Ticketing\Services\DefaultPassDeliveryService;
 use AIArmada\Ticketing\Services\DefaultPassIssuer;
-use AIArmada\Ticketing\Services\DefaultPassTransferService;
 use AIArmada\Ticketing\Services\NullPassDeliveryService;
 use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
+use AIArmada\Ticketing\Platform\ExtensionRegistry;
+use AIArmada\Ticketing\Platform\FeatureCatalog;
+use AIArmada\Ticketing\Platform\FeatureModule;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class TicketingServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
             ->name('ticketing')
             ->hasConfigFile()
             ->runsMigrations()
-            ->discoversMigrations()
-            ->hasCommands([
-                ExpireTransfersCommand::class,
-            ]);
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void
@@ -56,20 +54,28 @@ final class TicketingServiceProvider extends PackageServiceProvider
                 ? $app->make(DefaultPassDeliveryService::class)
                 : $app->make(NullPassDeliveryService::class);
         });
-        $this->app->bind(PassTransferServiceInterface::class, DefaultPassTransferService::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid ticketing feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     public function packageBooted(): void
     {
-        $this->registerTransferPolicy();
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
         $this->registerOrderFulfillment();
         $this->registerSeatReleaseListeners();
-        $this->registerSchedule();
-    }
-
-    private function registerTransferPolicy(): void
-    {
-        Gate::policy(Pass::class, PassTransferPolicy::class);
     }
 
     private function registerOrderFulfillment(): void
@@ -93,14 +99,6 @@ final class TicketingServiceProvider extends PackageServiceProvider
         Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
         Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
         Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
-    }
-
-    private function registerSchedule(): void
-    {
-        $this->app->booted(function (): void {
-            $schedule = $this->app->make(Schedule::class);
-            $schedule->command(ExpireTransfersCommand::class)->hourly();
-        });
     }
 
     /** @return array<int, string> */

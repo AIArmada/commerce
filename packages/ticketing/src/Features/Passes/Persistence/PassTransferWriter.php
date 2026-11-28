@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Services;
+namespace AIArmada\Ticketing\Features\Passes\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
-final class DefaultPassTransferService implements PassTransferServiceInterface
+final readonly class PassTransferWriter implements PassTransferServiceInterface
 {
     public function transfer(Pass $pass, PassHolder $newHolder, ?string $reason = null): PassHolder
     {
@@ -25,6 +25,7 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
         }
 
         $this->assertHolderBelongsToPass($pass, $newHolder);
+        \AIArmada\Ticketing\Support\HolderAttributesValidator::validateAttributes($newHolder->getAttributes());
 
         return DB::transaction(function () use ($pass, $newHolder, $reason) {
             $freshPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
@@ -32,6 +33,8 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
             if (! $freshPass instanceof Pass) {
                 throw new AuthorizationException('The pass is not accessible in the current owner scope.');
             }
+
+            $this->assertHolderBelongsToPass($freshPass, $newHolder);
 
             if (! $this->canTransfer($freshPass)) {
                 throw new RuntimeException('Pass cannot be transferred in its current state.');
@@ -113,7 +116,7 @@ final class DefaultPassTransferService implements PassTransferServiceInterface
             return false;
         }
 
-        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->isAfter($pass->transfer_expires_at)) {
+        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->greaterThanOrEqualTo($pass->transfer_expires_at)) {
             return false;
         }
 

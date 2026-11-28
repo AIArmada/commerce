@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;

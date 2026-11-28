@@ -26,7 +26,6 @@ return [
     'allowed_ticketable_types' => [],
     'transfers' => [
         'bulk_max_size' => env('TICKETING_BULK_TRANSFER_MAX', 100),
-        'expiry_grace_period' => env('TICKETING_TRANSFER_EXPIRY_GRACE', 0),
     ],
     'issuance' => [
         'max_quantity' => env('TICKETING_MAX_ISSUE_QUANTITY', 500),

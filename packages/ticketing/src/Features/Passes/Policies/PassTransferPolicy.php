@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Policies;
+namespace AIArmada\Ticketing\Features\Passes\Policies;
 
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
@@ -16,7 +16,7 @@ final class PassTransferPolicy
             return false;
         }
 
-        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->isAfter($pass->transfer_expires_at)) {
+        if ($pass->transfer_expires_at !== null && CarbonImmutable::now()->greaterThanOrEqualTo($pass->transfer_expires_at)) {
             return false;
         }
 
@@ -28,9 +28,9 @@ final class PassTransferPolicy
 
         if ($holder->holder_type !== null && $holder->holder_id !== null) {
             return $holder->holder_type === $user->getMorphClass()
-                && $holder->holder_id === $user->getKey();
+                && (string) $holder->holder_id === (string) $user->getKey();
         }
 
-        return true;
+        return false;
     }
 }

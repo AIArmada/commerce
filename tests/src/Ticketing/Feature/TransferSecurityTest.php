@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
@@ -214,4 +214,37 @@ it('rejects model holders outside the configured allow-list', function (): void 
 
     expect(fn () => app(TransferPassToHolderAction::class)->handle($pass, $otherPass))
         ->toThrow(InvalidArgumentException::class, 'not allowed');
+});
+
+it('does not authorize an arbitrary user to transfer an unlinked holder', function (): void {
+    $intruder = createUserHolder('Unlinked Intruder', 'unlinked-intruder@example.com');
+    $pass = Pass::factory()->create();
+    PassHolder::factory()->create([
+        'pass_id' => $pass->getKey(),
+        'holder_type' => null,
+        'holder_id' => null,
+        'is_current' => true,
+    ]);
+
+    expect(fn () => app(TransferPassToHolderAction::class)->handle(
+        $pass,
+        PassHolder::factory()->make(),
+        authorizedBy: $intruder,
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('reauthorizes a transfer against the current holder rather than a stale relation', function (): void {
+    $original = createUserHolder('Original Holder', 'original-holder@example.com');
+    $replacement = createUserHolder('Replacement Holder', 'replacement-holder@example.com');
+    $pass = Pass::factory()->create();
+    linkPassToUser($pass, $original);
+    $pass->load('holder');
+
+    app(TransferPassToHolderAction::class)->handle($pass->fresh(), $replacement);
+
+    expect(fn () => app(TransferPassToHolderAction::class)->handle(
+        $pass,
+        PassHolder::factory()->make(),
+        authorizedBy: $original,
+    ))->toThrow(AuthorizationException::class);
 });

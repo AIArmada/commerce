@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
@@ -15,11 +15,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class BulkTransferPassesAction
+final readonly class BulkTransferPassesAction
 {
-    use AsAction;
+    public function __construct(private TransferPassToHolderAction $transfer) {}
 
     /** @param array<int, string> $passIds */
     public function handle(
@@ -40,7 +39,8 @@ final class BulkTransferPassesAction
         }
 
         $requestedPassIds = array_values(array_unique($passIds));
-        $passes = Pass::query()->whereIn('id', $requestedPassIds)->get();
+        return DB::transaction(function () use ($requestedPassIds, $newHolder, $reason, $holderAttributes, $authorizedBy): Collection {
+        $passes = Pass::query()->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
         $missingPassIds = array_values(array_diff($requestedPassIds, $passes->modelKeys()));
 
         if ($missingPassIds !== []) {
@@ -49,18 +49,16 @@ final class BulkTransferPassesAction
 
         $this->assertSingleOwner($passes);
 
-        return DB::transaction(function () use ($passes, $newHolder, $reason, $holderAttributes, $authorizedBy) {
             $previousHolders = PassHolder::query()
                 ->whereIn('pass_id', $passes->modelKeys())
                 ->where('is_current', true)
                 ->get();
 
-            $action = resolve(TransferPassToHolderAction::class);
             $newHolders = new Collection;
 
             foreach ($passes as $pass) {
                 $newHolders->push(
-                    $action->handle($pass, $this->holderForPass($newHolder), $holderAttributes, $reason, $authorizedBy)
+                    $this->transfer->handle($pass, $this->holderForPass($newHolder), $holderAttributes, $reason, $authorizedBy)
                 );
             }
 
