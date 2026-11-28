@@ -12,7 +12,6 @@ use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Models\PassTransfer;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -27,7 +26,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         $this->assertHolderBelongsToPass($pass, $newHolder);
         \AIArmada\Ticketing\Support\HolderAttributesValidator::validateAttributes($newHolder->getAttributes());
 
-        return DB::transaction(function () use ($pass, $newHolder, $reason) {
+        return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $reason) {
             $freshPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
 
             if (! $freshPass instanceof Pass) {
@@ -46,7 +45,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
             // passes bind their own owner explicitly below, and the owner
             // guards fail closed when the ambient context does not match.
             if ($freshPass->owner_type === null && $freshPass->owner_id === null) {
-                return OwnerContext::withOwner(null, fn (): PassHolder => $this->transferLocked($pass, $freshPass, $newHolder, $reason));
+                return OwnerContext::withOwner(null, fn (): PassHolder => $this->transferLocked($freshPass, $newHolder, $reason));
             }
 
             return $this->transferLocked($pass, $freshPass, $newHolder, $reason);
@@ -57,7 +56,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
      * Execute the holder switch. The pass row must already be locked; the
      * lock serializes concurrent transfers of the same pass.
      */
-    private function transferLocked(Pass $pass, Pass $freshPass, PassHolder $newHolder, ?string $reason): PassHolder
+    private function transferLocked(Pass $freshPass, PassHolder $newHolder, ?string $reason): PassHolder
     {
         // The new holder arrives unsaved and non-current. Persist it as
         // non-current first so the previous-holder lookup below can only
@@ -94,6 +93,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         }
 
         $newHolder->is_current = true;
+        $newHolder->transferred_at = null;
         $newHolder->save();
 
         $transfer = new PassTransfer;
@@ -105,7 +105,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         $transfer->owner_id = $freshPass->owner_id;
         $transfer->save();
 
-        event(new PassTransferred($pass, $previousHolder ?? $newHolder, $newHolder, $reason));
+        $freshPass->getConnection()->afterCommit(fn () => event(new PassTransferred($freshPass, $previousHolder ?? $newHolder, $newHolder, $reason)));
 
         return $newHolder;
     }

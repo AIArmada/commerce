@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\EntryPoints\Listeners;
+namespace AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners;
 
 use AIArmada\Ticketing\Events\PassTransferred;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;

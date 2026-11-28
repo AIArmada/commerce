@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\EntryPoints\Jobs;
+namespace AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
+use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,10 +45,14 @@ final class BulkSendTransferNotificationsJob implements OwnerScopedJob, ShouldQu
             fn ($holder): string => (string) $holder->pass_id
         );
 
-        $this->event->passes->loadMissing('holder');
+        $currentHolders = PassHolder::query()
+            ->whereIn('id', $this->event->newHolders->modelKeys())
+            ->where('is_current', true)
+            ->get()
+            ->keyBy('pass_id');
 
         foreach ($this->event->passes as $pass) {
-            $holder = $pass->holder;
+            $holder = $currentHolders->get((string) $pass->getKey());
 
             if ($holder === null || blank($holder->email)) {
                 continue;

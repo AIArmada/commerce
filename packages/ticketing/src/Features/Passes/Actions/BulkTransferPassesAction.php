@@ -6,14 +6,13 @@ namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
-use AIArmada\Ticketing\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class BulkTransferPassesAction
@@ -39,15 +38,16 @@ final readonly class BulkTransferPassesAction
         }
 
         $requestedPassIds = array_values(array_unique($passIds));
-        return DB::transaction(function () use ($requestedPassIds, $newHolder, $reason, $holderAttributes, $authorizedBy): Collection {
-        $passes = Pass::query()->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
-        $missingPassIds = array_values(array_diff($requestedPassIds, $passes->modelKeys()));
 
-        if ($missingPassIds !== []) {
-            throw (new ModelNotFoundException)->setModel(Pass::class, $missingPassIds);
-        }
+        return (new Pass)->getConnection()->transaction(function () use ($requestedPassIds, $newHolder, $reason, $holderAttributes, $authorizedBy): Collection {
+            $passes = Pass::query()->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
+            $missingPassIds = array_values(array_diff($requestedPassIds, $passes->modelKeys()));
 
-        $this->assertSingleOwner($passes);
+            if ($missingPassIds !== []) {
+                throw (new ModelNotFoundException)->setModel(Pass::class, $missingPassIds);
+            }
+
+            $this->assertSingleOwner($passes);
 
             $previousHolders = PassHolder::query()
                 ->whereIn('pass_id', $passes->modelKeys())
@@ -62,7 +62,7 @@ final readonly class BulkTransferPassesAction
                 );
             }
 
-            $event = new PassesBulkTransferred($passes, $newHolders->first(), $reason, previousHolders: $previousHolders);
+            $event = new PassesBulkTransferred($passes, $newHolders, $reason, previousHolders: $previousHolders);
             $ownerType = $passes->first()?->owner_type;
             $ownerId = $passes->first()?->owner_id;
 

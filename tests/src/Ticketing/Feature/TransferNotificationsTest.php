@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Events\PassTransferred;
-use AIArmada\Ticketing\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
-use AIArmada\Ticketing\EntryPoints\Listeners\SendTransferNotifications;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\SendTransferNotifications;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;
@@ -37,6 +37,7 @@ it('attributes each bulk email to that pass previous holder', function (): void 
     $owner = User::query()->firstOrFail();
     $event = new PassesBulkTransferred(
         Pass::query()->whereIn('id', [$passA->getKey(), $passB->getKey()])->get(),
+        newHolders: PassHolder::query()->whereIn('pass_id', [$passA->getKey(), $passB->getKey()])->where('is_current', true)->get(),
         previousHolders: PassHolder::query()
             ->whereIn('id', [$previousA->getKey(), $previousB->getKey()])
             ->get(),
@@ -74,6 +75,7 @@ it('loads bulk notification holders in one query', function (): void {
     $owner = User::query()->firstOrFail();
     $event = new PassesBulkTransferred(
         Pass::query()->whereIn('id', $passes->modelKeys())->get(),
+        newHolders: PassHolder::query()->whereIn('pass_id', $passes->modelKeys())->where('is_current', true)->get(),
     );
 
     $job = new BulkSendTransferNotificationsJob(
@@ -124,4 +126,28 @@ it('sends both transfer emails when holder emails are present', function (): voi
         PassTransferredToNewHolderNotification::class,
         fn (PassTransferredToNewHolderNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool => ($notifiable->routes['mail'] ?? null) === 'new-holder-2@example.com'
     );
+});
+
+it('does not send a stale transfer notification to a subsequent holder', function (): void {
+    Notification::fake();
+
+    $pass = Pass::factory()->create();
+    $recipient = PassHolder::factory()->create(['pass_id' => $pass->getKey(), 'is_current' => true]);
+    $event = new PassesBulkTransferred(
+        Pass::query()->whereKey($pass->getKey())->get(),
+        PassHolder::query()->whereKey($recipient->getKey())->get(),
+    );
+
+    $recipient->update(['is_current' => false]);
+    PassHolder::factory()->create(['pass_id' => $pass->getKey(), 'is_current' => true]);
+
+    $owner = User::query()->firstOrFail();
+
+    (new BulkSendTransferNotificationsJob(
+        event: $event,
+        ownerType: $owner->getMorphClass(),
+        ownerId: $owner->getKey(),
+    ))->handle();
+
+    Notification::assertNothingSent();
 });

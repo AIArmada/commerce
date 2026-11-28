@@ -9,7 +9,7 @@ use AIArmada\Ticketing\Models\PassHolder;
 use Carbon\CarbonImmutable;
 
 it('blocks transfer at and after the deadline without scheduled cleanup', function (): void {
-    $deadline = CarbonImmutable::now()->addHour();
+    $deadline = CarbonImmutable::now()->startOfSecond()->addHour();
     $pass = Pass::factory()->create(['transfer_expires_at' => $deadline]);
 
     $this->travelTo($deadline);
