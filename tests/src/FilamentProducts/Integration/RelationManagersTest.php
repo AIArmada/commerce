@@ -14,6 +14,8 @@ use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 
 uses(TestCase::class);
@@ -48,6 +50,8 @@ it('executes option manage_values action to create/update/delete values', functi
     ]);
 
     $manager = app(OptionsRelationManager::class);
+    invade($manager)->ownerRecord = $product;
+    Gate::shouldReceive('authorize')->once()->with('update', $product)->andReturn(Response::allow());
 
     expect($manager->form(Schema::make()))->toBeInstanceOf(Schema::class);
 

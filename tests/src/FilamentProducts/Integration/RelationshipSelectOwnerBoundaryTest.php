@@ -102,6 +102,7 @@ it('rejects forged cross-owner ids before every catalog relationship sync', func
 
         try {
             $component->saveRelationshipsBeforeChildren();
+            $component->saveRelationships();
 
             $this->fail("Field [{$field}] of [{$resource}] accepted a forged id.");
         } catch (ValidationException $exception) {

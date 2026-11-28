@@ -8,6 +8,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -47,6 +48,11 @@ final class TransferInventory
         }
 
         return DB::transaction(function () use ($model, $fromLocationId, $toLocationId, $quantity, $note, $userId, $occurredAt): InventoryMovement {
+            if (InventoryOwnerScope::isEnabled()
+                && InventoryOwnerScope::forMutation(InventoryLocation::query())->whereIn('id', [$fromLocationId, $toLocationId])->count() !== 2) {
+                throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
+            }
+
             // Create the destination before taking both stock locks, then
             // acquire the rows in the same order for either transfer direction.
             $this->levels->getOrCreate($model, $toLocationId);
