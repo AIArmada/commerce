@@ -11,11 +11,13 @@ use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointInput;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -153,49 +155,7 @@ final readonly class RefundRewardPointsAction
         string $actorType,
         ?string $actorId,
     ): array {
-        // Preview the linked debit without locks: debits and lots are
-        // append-only/immutable, so the scope derivation is stable and every
-        // mutation below re-reads under lock.
-        $preview = RewardPointMovement::query()
-            ->where('aggregate_operation_key', $linkedAggregateKey)
-            ->where('kind', RewardPointMovementKind::Debit)
-            ->orderBy('lot_id')
-            ->get();
-
-        if ($preview->isEmpty()) {
-            throw new InvalidArgumentException('Refund requires a prior debit aggregate; no new value is minted.');
-        }
-
-        $previewLotIds = array_values(array_unique($preview->map(
-            static fn (RewardPointMovement $movement): string => (string) $movement->lot_id
-        )->all()));
-
-        sort($previewLotIds);
-
-        $previewLots = RewardPointLot::query()
-            ->whereIn('id', $previewLotIds)
-            ->orderBy('id')
-            ->get();
-
-        if ($previewLots->count() !== count($previewLotIds)) {
-            throw new InvalidArgumentException('Linked debit lot is missing.');
-        }
-
-        $scope = $previewLots->first();
-
-        if (! $scope instanceof RewardPointLot) {
-            throw new InvalidArgumentException('Linked debit lot is missing.');
-        }
-
-        foreach ($previewLots as $lot) {
-            if ((string) $lot->recipient_type !== (string) $scope->recipient_type
-                || (string) $lot->recipient_id !== (string) $scope->recipient_id
-                || (string) $lot->family_key !== (string) $scope->family_key
-                || (string) $lot->unit !== (string) $scope->unit
-            ) {
-                throw new InvalidArgumentException('Linked debit spans multiple recipients, families, or units; refusing incoherent refund.');
-            }
-        }
+        [$previewLotIds, $previewLots, $scope] = $this->authorizedDebitLots($linkedAggregateKey);
 
         // Operation identity before locks: concurrent refunds under the same
         // key — even against different linked debits — serialize here.
@@ -421,6 +381,67 @@ final readonly class RefundRewardPointsAction
         return mb_stripos($exception->getMessage(), 'deadlock') !== false;
     }
 
+    /** @return array{list<string>, Collection<int, RewardPointLot>, RewardPointLot} */
+    private function authorizedDebitLots(string $linkedAggregateKey): array
+    {
+        // Preview the linked debit without locks: debits and lots are
+        // append-only/immutable, so the scope derivation is stable and every
+        // mutation below re-reads under lock.
+        $preview = RewardPointMovement::query()
+            ->where('aggregate_operation_key', $linkedAggregateKey)
+            ->where('kind', RewardPointMovementKind::Debit)
+            ->orderBy('lot_id')
+            ->get();
+
+        if ($preview->isEmpty()) {
+            throw new InvalidArgumentException('Refund requires a prior debit aggregate; no new value is minted.');
+        }
+
+        $previewLotIds = array_values(array_unique($preview->map(
+            static fn (RewardPointMovement $movement): string => (string) $movement->lot_id
+        )->all()));
+
+        sort($previewLotIds);
+
+        $previewLots = RewardPointLot::query()
+            ->whereIn('id', $previewLotIds)
+            ->orderBy('id')
+            ->get();
+
+        if ($previewLots->count() !== count($previewLotIds)) {
+            throw new InvalidArgumentException('Linked debit lot is missing.');
+        }
+
+        $scope = $previewLots->first();
+
+        if (! $scope instanceof RewardPointLot) {
+            throw new InvalidArgumentException('Linked debit lot is missing.');
+        }
+
+        foreach ($previewLots as $lot) {
+            if ((string) $lot->recipient_type !== (string) $scope->recipient_type
+                || (string) $lot->recipient_id !== (string) $scope->recipient_id
+                || (string) $lot->family_key !== (string) $scope->family_key
+                || (string) $lot->unit !== (string) $scope->unit
+            ) {
+                throw new InvalidArgumentException('Linked debit spans multiple recipients, families, or units; refusing incoherent refund.');
+            }
+        }
+
+        $awards = app(RewardAwardLockApi::class);
+        $programs = app(RewardProgramLockApi::class);
+
+        foreach ($previewLots->pluck('award_id')->filter()->unique() as $awardId) {
+            $awards->assertAwardInScopeWhenExists((string) $awardId);
+        }
+
+        foreach ($previewLots->pluck('program_id')->filter()->unique() as $programId) {
+            $programs->assertProgramInScopeWhenExists((string) $programId);
+        }
+
+        return [$previewLotIds, $previewLots, $scope];
+    }
+
     /**
      * Outside-transaction terms for winner verification: the recipient scope
      * is derived from the linked debit's immutable lots, exactly as the
@@ -430,19 +451,7 @@ final readonly class RefundRewardPointsAction
      */
     private function winnerTerms(string $linkedAggregateKey, int $points): array
     {
-        $debit = RewardPointMovement::query()
-            ->where('aggregate_operation_key', $linkedAggregateKey)
-            ->where('kind', RewardPointMovementKind::Debit)
-            ->orderBy('lot_id')
-            ->first();
-
-        $lot = $debit instanceof RewardPointMovement
-            ? RewardPointLot::query()->whereKey((string) $debit->lot_id)->first()
-            : null;
-
-        if (! $lot instanceof RewardPointLot) {
-            throw new InvalidArgumentException('Refund requires a prior debit aggregate; no new value is minted.');
-        }
+        [, , $lot] = $this->authorizedDebitLots($linkedAggregateKey);
 
         return [
             'recipient_type' => (string) $lot->recipient_type,

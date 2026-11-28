@@ -37,6 +37,8 @@ use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
@@ -694,4 +696,41 @@ it('refuses to lock awards from another owner when resolving refund reversal sta
     ))->toThrow(AuthorizationException::class);
 
     expect($award->fresh()->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('refuses new refunds and replay of refunds from a foreign program', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+
+    $program = OwnerContext::withOwner($ownerA, static fn (): RewardProgram => RewardProgram::factory()->create());
+
+    OwnerContext::withOwner($ownerA, static function () use ($program, $recipient, $at): void {
+        CreditRewardPointsAction::run(
+            'user', $recipient, $program->family_key, 'pts', 50, $at,
+            null, null, (string) $program->getKey(), 'credit:scope-refund-replay',
+        );
+        DebitRewardPointsAction::run('user', $recipient, $program->family_key, 'pts', 20, 'debit:scope-refund-replay', 'spend', null, $at);
+        RefundRewardPointsAction::run('refund:scope-refund-replay', 'debit:scope-refund-replay', 10, 'return', $at);
+    });
+
+    $lotCount = RewardPointLot::query()->count();
+
+    foreach (['refund:scope-refund-replay', 'refund:scope-refund-foreign-new'] as $key) {
+        expect(fn () => OwnerContext::withOwner(
+            $ownerB,
+            static fn (): array => RefundRewardPointsAction::run($key, 'debit:scope-refund-replay', 10, 'return', $at),
+        ))->toThrow(AuthorizationException::class);
+    }
+
+    expect(RewardPointLot::query()->count())->toBe($lotCount);
+
+    $replay = OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => RefundRewardPointsAction::run('refund:scope-refund-replay', 'debit:scope-refund-replay', 10, 'return', $at),
+    );
+
+    expect($replay)->toHaveCount(1)
+        ->and(RewardPointLot::query()->count())->toBe($lotCount);
 });
