@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -12,6 +11,7 @@ use AIArmada\Membership\Actions\ApplyForMembershipAction;
 use AIArmada\Membership\Actions\ApproveMembershipApplicationAction;
 use AIArmada\Membership\Actions\CancelMembershipApplicationAction;
 use AIArmada\Membership\Actions\ChangeMemberRoleAction;
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;

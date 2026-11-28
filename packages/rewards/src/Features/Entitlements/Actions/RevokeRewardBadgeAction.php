@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
-use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
-
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;

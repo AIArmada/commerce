@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Data;
 
-
 final readonly class RewardPreviewResult
 {
     /**

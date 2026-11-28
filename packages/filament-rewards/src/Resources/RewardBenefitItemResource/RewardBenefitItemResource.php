@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables\RewardBenefitItemsTable;
-use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use BackedEnum;
 use Filament\Resources\Resource;

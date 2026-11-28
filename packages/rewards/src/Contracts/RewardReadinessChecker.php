@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use AIArmada\Rewards\Data\RewardReadinessAssessment;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 
 /**
  * Readiness checks for the program lifecycle.

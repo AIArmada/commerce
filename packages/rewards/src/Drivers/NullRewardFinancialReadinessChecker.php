@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Drivers;
 
-use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
-
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Data\RewardAwardSnapshot;
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 
 /**
  * Truthful null financial readiness: no funding, payee, or fulfillment

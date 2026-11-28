@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
-use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAdjustmentStatus;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Data\RewardBeneficiaryRole;
-use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Data\RewardVerificationLevel;
+use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Support\RewardOperationKeys;

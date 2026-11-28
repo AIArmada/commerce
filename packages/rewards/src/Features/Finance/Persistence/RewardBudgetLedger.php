@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Finance\Persistence;
 
-use AIArmada\Rewards\Persistence\RewardUniqueViolation;
-
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;

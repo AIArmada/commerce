@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
-use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;

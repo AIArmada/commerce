@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardAwardResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Schemas\RewardAwardInfolist;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables\RewardAwardsTable;
-use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardAward;
 use BackedEnum;
 use Filament\Resources\Resource;

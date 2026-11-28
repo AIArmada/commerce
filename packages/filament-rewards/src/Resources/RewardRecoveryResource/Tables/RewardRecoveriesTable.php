@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
+use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
-use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Models\RewardRecovery;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;

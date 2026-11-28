@@ -14,7 +14,7 @@ use AIArmada\Rewards\Data\RewardPreviewResult;
 interface RewardPreviewEvaluator
 {
     /**
-     * @param array<string, mixed> $rules
+     * @param  array<string, mixed>  $rules
      * @return array{configuration: array<string, mixed>, is_variant: bool}|null
      */
     public function resolveComponentConfiguration(array $rules, string $component, string $outcome, string $role): ?array;

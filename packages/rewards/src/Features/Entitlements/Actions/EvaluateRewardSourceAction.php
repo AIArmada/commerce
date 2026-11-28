@@ -8,11 +8,11 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;
 use AIArmada\Rewards\Support\RewardProgramGuard;
-use AIArmada\Rewards\Data\RewardSourceFact;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

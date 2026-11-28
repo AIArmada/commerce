@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Models\RewardAward;

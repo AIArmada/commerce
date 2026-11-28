@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Programs\Actions;
 
-use AIArmada\Rewards\Persistence\RewardUniqueViolation;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\QueryException;
@@ -109,5 +109,4 @@ final readonly class CreateRewardProgramAction
 
         return [$ownerType, $ownerId];
     }
-
 }

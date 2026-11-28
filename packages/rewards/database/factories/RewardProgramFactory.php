@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

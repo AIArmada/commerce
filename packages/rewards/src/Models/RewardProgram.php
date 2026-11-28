@@ -6,9 +6,9 @@ namespace AIArmada\Rewards\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Database\Factories\RewardProgramFactory;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Data\RewardProgramStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

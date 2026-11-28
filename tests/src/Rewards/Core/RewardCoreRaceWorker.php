@@ -7,8 +7,8 @@ declare(strict_types=1);
 // immediately when merely included, so test runners never execute it.
 
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreWorkerDb;
 use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use Carbon\CarbonImmutable;

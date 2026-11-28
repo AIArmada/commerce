@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Finance\Queries;
 
-use AIArmada\Rewards\Data\RewardReadinessAssessment;
-
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Data\RewardReadinessAssessment;
 use AIArmada\Rewards\Data\RewardVersionSnapshot;
+use AIArmada\Rewards\Models\RewardFundingEntry;
 
 /**
  * Real program-lifecycle readiness backed by funded finance adapters.

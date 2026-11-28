@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Drivers;
 
-use AIArmada\Rewards\Data\RewardSourceFact;
-
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardSourceFact;
 
 /**
  * Default source reader: unknown for every key.

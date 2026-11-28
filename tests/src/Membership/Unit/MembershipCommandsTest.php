@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\MembershipServiceProvider;
-use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Support\Facades\Artisan;
 

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
-use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

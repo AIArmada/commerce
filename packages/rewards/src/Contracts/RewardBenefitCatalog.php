@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Contracts;
 
 use AIArmada\Rewards\Data\RewardAwardSnapshot;
-use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use Carbon\CarbonImmutable;
 
 /**

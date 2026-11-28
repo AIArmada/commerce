@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardPayoutResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Tables\RewardPayoutsTable;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use BackedEnum;
 use Filament\Resources\Resource;

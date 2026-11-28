@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Actions;
 
-use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Actions\SyncMembershipRolesAction;
+use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;

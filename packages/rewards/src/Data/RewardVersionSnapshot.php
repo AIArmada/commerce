@@ -7,8 +7,8 @@ namespace AIArmada\Rewards\Data;
 final readonly class RewardVersionSnapshot
 {
     /**
-     * @param list<string> $componentTypes
-     * @param array<string, mixed> $rules
+     * @param  list<string>  $componentTypes
+     * @param  array<string, mixed>  $rules
      */
     public function __construct(
         public string $id,

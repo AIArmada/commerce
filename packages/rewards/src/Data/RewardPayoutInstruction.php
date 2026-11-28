@@ -7,8 +7,8 @@ namespace AIArmada\Rewards\Data;
 final readonly class RewardPayoutInstruction
 {
     /**
-     * @param array<string, mixed> $payeeSnapshot
-     * @param array<string, mixed>|null $evidence
+     * @param  array<string, mixed>  $payeeSnapshot
+     * @param  array<string, mixed>|null  $evidence
      */
     public function __construct(
         public string $id,

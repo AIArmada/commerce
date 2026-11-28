@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardFraudResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables\RewardFraudTable;
-use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardAward;
 use BackedEnum;
 use Filament\Resources\Resource;

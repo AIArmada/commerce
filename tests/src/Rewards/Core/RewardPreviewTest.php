@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardPreviewDecision;
+use AIArmada\Rewards\Data\RewardPreviewFixture;
+use AIArmada\Rewards\Data\RewardPreviewReason;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Data\RewardPreviewDecision;
-use AIArmada\Rewards\Data\RewardPreviewReason;
-use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

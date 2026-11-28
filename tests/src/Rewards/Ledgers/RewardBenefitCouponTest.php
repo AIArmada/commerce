@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
-use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardFundingResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages\ListRewardFunding;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables\RewardFundingTable;
-use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use BackedEnum;
 use Filament\Resources\Resource;

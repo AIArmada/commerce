@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardEnrollmentPeriod;

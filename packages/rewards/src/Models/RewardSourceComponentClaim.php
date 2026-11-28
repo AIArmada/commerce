@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Models;
 
-use AIArmada\Rewards\Database\Factories\RewardSourceComponentClaimFactory;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Database\Factories\RewardSourceComponentClaimFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

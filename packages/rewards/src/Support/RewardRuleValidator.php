@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Support;
 
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use InvalidArgumentException;
 
 /**

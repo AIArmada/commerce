@@ -2,34 +2,34 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
+use AIArmada\Rewards\Contracts\RewardReadinessChecker;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
+use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
+use AIArmada\Rewards\Enums\RewardBenefitStockKind;
+use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Benefits\Actions\CancelRewardBenefitGrantAction;
 use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Benefits\Actions\ExpireRewardBenefitGrantAction;
 use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RecordRewardBenefitRecallAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RedeemRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
-use AIArmada\Rewards\Contracts\RewardReadinessChecker;
-use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Data\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
-use AIArmada\Rewards\Enums\RewardBenefitStockKind;
-use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -498,17 +498,41 @@ it('rejects a stock movement replay against a different catalog item', function 
     $at = CarbonImmutable::now();
 
     $movement = RewardBenefitStockLedger::append(
-        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $first->getKey(), 1, null, 'user', $staff, 'staff', $at,
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $first->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
     );
 
     $replay = RewardBenefitStockLedger::append(
-        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $first->getKey(), 1, null, 'user', $staff, 'staff', $at,
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $first->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
     );
 
     expect($replay->getKey())->toBe($movement->getKey());
 
     expect(fn () => RewardBenefitStockLedger::append(
-        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $second->getKey(), 1, null, 'user', $staff, 'staff', $at,
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $second->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
     ))->toThrow(InvalidArgumentException::class, 'different terms');
 
     expect(RewardBenefitStockLedger::balances($second)['available'])->toBe(5);

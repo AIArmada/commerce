@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;

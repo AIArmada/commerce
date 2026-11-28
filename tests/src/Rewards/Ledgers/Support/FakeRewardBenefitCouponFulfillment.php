@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Tests\Ledgers\Support;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Data\RewardCouponGrant;
 use AIArmada\Rewards\Data\RewardCouponTerms;
+use AIArmada\Rewards\Models\RewardBenefitGrant;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -68,7 +69,7 @@ final class FakeRewardBenefitCouponFulfillment implements RewardBenefitCouponFul
         $this->revoked[$code] = true;
     }
 
-    public function recordUsage(\AIArmada\Rewards\Models\RewardBenefitGrant $grant): void
+    public function recordUsage(RewardBenefitGrant $grant): void
     {
         $code = $this->issued[(string) $grant->grant_key] ?? null;
 

@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
-use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
-use AIArmada\Rewards\Data\RewardSourceFact;
-
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
