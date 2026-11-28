@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Events\LowInventoryDetected;
+use AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 

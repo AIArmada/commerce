@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\OutOfInventory;
+use AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected;
+use AIArmada\Inventory\Features\Stock\Events\OutOfInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;

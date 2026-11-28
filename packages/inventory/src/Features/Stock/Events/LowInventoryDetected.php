@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Events;
+namespace AIArmada\Inventory\Features\Stock\Events;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;

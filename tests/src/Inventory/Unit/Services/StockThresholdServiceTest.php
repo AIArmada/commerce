@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\MaxStockExceeded;
-use AIArmada\Inventory\Events\OutOfInventory;
-use AIArmada\Inventory\Events\SafetyStockBreached;
-use AIArmada\Inventory\Events\StockRestored;
+use AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected;
+use AIArmada\Inventory\Features\Stock\Events\MaxStockExceeded;
+use AIArmada\Inventory\Features\Stock\Events\OutOfInventory;
+use AIArmada\Inventory\Features\Stock\Events\SafetyStockBreached;
+use AIArmada\Inventory\Features\Stock\Events\StockRestored;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Persistence\StockThresholdService;
