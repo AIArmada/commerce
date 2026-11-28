@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Products\Enums\ProductStatus;
@@ -106,7 +107,7 @@ final class ProductTaxShowcaseSeeder extends Seeder
             ->get();
 
         if ($locations->isEmpty()) {
-            $locations = collect([InventoryLocation::getOrCreateDefault()]);
+            $locations = collect([app(SaveInventoryLocation::class)->getOrCreateDefault()]);
         }
 
         $perLocationQuantity = max(1, (int) ceil($quantityOnHand / max(1, $locations->count())));

@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Features\Stock\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
@@ -128,28 +127,6 @@ final class InventoryLocation extends Model implements Auditable
         'current_utilization',
         'metadata',
     ];
-
-    /**
-     * Get or create the default location for simple setups.
-     */
-    public static function getOrCreateDefault(): self
-    {
-        if (InventoryOwnerScope::isEnabled()) {
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                InventoryOwnerScope::resolveOwner(),
-                'InventoryLocation::getOrCreateDefault() requires an owner context or explicit global context.',
-            );
-        }
-
-        return InventoryOwnerScope::forMutation(self::query())->firstOrCreate(
-            ['code' => self::DEFAULT_LOCATION_CODE],
-            [
-                'name' => 'Default Location',
-                'is_active' => true,
-                'priority' => 100,
-            ]
-        );
-    }
 
     /**
      * Get the table associated with the model.

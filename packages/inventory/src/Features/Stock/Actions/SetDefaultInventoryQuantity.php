@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +28,7 @@ final readonly class SetDefaultInventoryQuantity
         }
 
         DB::transaction(function () use ($item, $quantity): void {
-            $location = InventoryLocation::getOrCreateDefault();
+            $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
             $level = $this->inventory->getOrCreateLevel($item, $location->id);
 
             $level = InventoryOwnerScope::forMutation(InventoryLevel::query())

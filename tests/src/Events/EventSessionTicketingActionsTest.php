@@ -17,8 +17,8 @@ use AIArmada\Events\Features\Commerce\Actions\FinalizeOccurredEventOrdersAction;
 use AIArmada\Events\Features\Commerce\Actions\StartOccurrenceCheckoutAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Ticketing\Data\TicketTypeData;
 use AIArmada\Ticketing\Models\TicketType;
@@ -67,7 +67,7 @@ it('ensures ticket types for sessions', function (): void {
 });
 
 it('syncs session ticket quotas to the default inventory location', function (): void {
-    $defaultLocation = InventoryLocation::getOrCreateDefault();
+    $defaultLocation = app(SaveInventoryLocation::class)->getOrCreateDefault();
 
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create([

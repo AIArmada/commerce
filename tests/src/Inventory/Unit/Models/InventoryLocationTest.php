@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
@@ -40,7 +41,7 @@ describe('InventoryLocation', function (): void {
     });
 
     it('is default', function (): void {
-        $defaultLocation = InventoryLocation::getOrCreateDefault();
+        $defaultLocation = app(SaveInventoryLocation::class)->getOrCreateDefault();
         $regularLocation = InventoryLocation::factory()->create(['code' => 'REGULAR']);
 
         expect($defaultLocation->isDefault())->toBeTrue();
@@ -85,14 +86,14 @@ describe('InventoryLocation', function (): void {
     });
 
     it('get or create default', function (): void {
-        $default = InventoryLocation::getOrCreateDefault();
+        $default = app(SaveInventoryLocation::class)->getOrCreateDefault();
 
         expect($default)->toBeInstanceOf(InventoryLocation::class);
         expect($default->code)->toBe(InventoryLocation::DEFAULT_LOCATION_CODE);
         expect($default->is_active)->toBeTrue();
 
         // Calling again should return same location
-        $default2 = InventoryLocation::getOrCreateDefault();
+        $default2 = app(SaveInventoryLocation::class)->getOrCreateDefault();
         expect($default2->id)->toBe($default->id);
     });
 
@@ -110,12 +111,31 @@ describe('InventoryLocation', function (): void {
             }
         });
 
-        expect(fn () => InventoryLocation::getOrCreateDefault())
-            ->toThrow(RuntimeException::class, 'InventoryLocation::getOrCreateDefault() requires an owner context or explicit global context.');
+        expect(fn () => app(SaveInventoryLocation::class)->getOrCreateDefault())
+            ->toThrow(RuntimeException::class, 'Default location creation requires an owner context or explicit global context.');
 
-        $default = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::getOrCreateDefault());
+        $default = OwnerContext::withOwner(null, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
 
         expect($default->isDefault())->toBeTrue();
+    });
+
+    it('creates distinct owned default locations even with automatic owner assignment disabled', function (): void {
+        config([
+            'inventory.owner.enabled' => true,
+            'inventory.owner.include_global' => true,
+            'inventory.owner.auto_assign_on_create' => false,
+        ]);
+
+        $firstOwner = InventoryItem::create(['name' => 'First Owner']);
+        $secondOwner = InventoryItem::create(['name' => 'Second Owner']);
+
+        $first = OwnerContext::withOwner($firstOwner, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
+        $second = OwnerContext::withOwner($secondOwner, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
+
+        expect($first->belongsToOwner($firstOwner))->toBeTrue()
+            ->and($second->belongsToOwner($secondOwner))->toBeTrue()
+            ->and($first->id)->not->toBe($second->id)
+            ->and(OwnerContext::withOwner($firstOwner, fn (): string => app(SaveInventoryLocation::class)->getOrCreateDefault()->id))->toBe($first->id);
     });
 
     it('owner columns are not mass assignable', function (): void {

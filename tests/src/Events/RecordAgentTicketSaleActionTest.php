@@ -6,8 +6,8 @@ use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -16,7 +16,7 @@ beforeEach(function (): void {
 });
 
 it('blocks agent ticket sales when the scope does not have enough capacity', function (): void {
-    $defaultLocation = InventoryLocation::getOrCreateDefault();
+    $defaultLocation = app(SaveInventoryLocation::class)->getOrCreateDefault();
 
     $event = Event::factory()->paid()->create();
     $occurrence = EventOccurrence::factory()->create([

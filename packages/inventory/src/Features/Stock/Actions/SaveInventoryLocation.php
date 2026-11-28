@@ -8,11 +8,40 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 final readonly class SaveInventoryLocation
 {
+    public function getOrCreateDefault(): InventoryLocation
+    {
+        if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                InventoryOwnerScope::resolveOwner(),
+                'Default location creation requires an owner context or explicit global context.',
+            );
+        }
+
+        $query = $this->ownedQuery()->where('code', InventoryLocation::DEFAULT_LOCATION_CODE);
+        $existing = (clone $query)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        try {
+            return $this->create([
+                'code' => InventoryLocation::DEFAULT_LOCATION_CODE,
+                'name' => 'Default Location',
+                'is_active' => true,
+                'priority' => 100,
+            ]);
+        } catch (UniqueConstraintViolationException $exception) {
+            return $query->first() ?? throw $exception;
+        }
+    }
+
     /** @param array<string, mixed> $attributes */
     public function create(array $attributes): InventoryLocation
     {
