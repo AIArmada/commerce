@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Queries;
+namespace AIArmada\Inventory\Features\Reservations\Queries;
 
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Orders\Models\OrderItem;
@@ -32,10 +32,11 @@ final class InventoryDemandResolver
     public static function forCart(iterable $items): array
     {
         $demand = [];
+        $resolved = [];
 
         foreach ($items as $item) {
             if ($item instanceof CartItem) {
-                self::addCartItem($demand, $item);
+                self::addCartItem($demand, $item, $resolved);
             }
         }
 
@@ -53,6 +54,7 @@ final class InventoryDemandResolver
     public static function forOrder(iterable $items): array
     {
         $demand = [];
+        $resolved = [];
 
         foreach ($items as $item) {
             $components = CompositeComponents::fromOrderItem($item);
@@ -63,7 +65,7 @@ final class InventoryDemandResolver
                 continue;
             }
 
-            self::addComponents($demand, $components, $item->quantity, (string) $item->getKey(), $item->name);
+            self::addComponents($demand, $components, $item->quantity, (string) $item->getKey(), $item->name, $resolved);
         }
 
         return self::sorted($demand);
@@ -75,13 +77,14 @@ final class InventoryDemandResolver
      *     quantity: int,
      *     sources: array<string, array{name: string, quantity: int}>
      * }>  $demand
+     * @param  array<string, Model|null>  $resolved
      */
-    private static function addCartItem(array &$demand, CartItem $item): void
+    private static function addCartItem(array &$demand, CartItem $item, array &$resolved): void
     {
         $components = CompositeComponents::fromCartItem($item);
 
         if ($components !== null) {
-            self::addComponents($demand, $components, (int) $item->quantity, (string) $item->id, $item->name);
+            self::addComponents($demand, $components, (int) $item->quantity, (string) $item->id, $item->name, $resolved);
 
             return;
         }
@@ -130,6 +133,7 @@ final class InventoryDemandResolver
      *     sources: array<string, array{name: string, quantity: int}>
      * }>  $demand
      * @param  list<Component>  $components
+     * @param  array<string, Model|null>  $resolved
      */
     private static function addComponents(
         array &$demand,
@@ -137,6 +141,7 @@ final class InventoryDemandResolver
         int $packageQuantity,
         string $sourceId,
         string $sourceName,
+        array &$resolved,
     ): void {
         if ($packageQuantity <= 0) {
             return;
@@ -147,7 +152,8 @@ final class InventoryDemandResolver
                 continue;
             }
 
-            $model = CompositeComponents::resolveInventoryModel($component);
+            $key = $component['inventoryable_type'] . ':' . $component['inventoryable_id'];
+            $model = $resolved[$key] ??= CompositeComponents::resolveInventoryModel($component);
 
             if (! $model instanceof Model) {
                 throw new RuntimeException('Inventory for a composite component could not be resolved.');

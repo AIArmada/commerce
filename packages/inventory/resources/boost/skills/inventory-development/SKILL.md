@@ -12,3 +12,5 @@ Serial lifecycle mutations belong to `AIArmada\Inventory\Features\Traceability\P
 Use `AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService` for batch lookup, allocatable batches and total available quantities; use `ExpiryMonitorService` for expiry queries and `Actions\ProcessExpiredBatches` for expiration mutations. `BatchService` owns batch lifecycle writes.
 
 A located serial must match its batch's inventory identity and location. Batch transfers cannot strand located serials, and serial transfers and returns must retain the batch location. Do not implicitly reassign serials or discard traceability links.
+
+Composite cart and order stock demand belongs to `AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver`. The feature resolves frozen component snapshots and aggregates demand by actual inventory identity before allocating or deducting stock.

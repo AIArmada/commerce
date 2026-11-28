@@ -11,7 +11,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
-use AIArmada\Inventory\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
