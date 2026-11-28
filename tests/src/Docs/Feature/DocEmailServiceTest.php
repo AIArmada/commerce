@@ -198,7 +198,7 @@ test('it generates tracked link url', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $emailService = app(DocEmailService::class);
+    $emailService = app(TrackDocEmail::class);
     $originalUrl = 'https://example.com/document';
     $trackedUrl = $emailService->getTrackedLinkUrl($email, $originalUrl);
 
