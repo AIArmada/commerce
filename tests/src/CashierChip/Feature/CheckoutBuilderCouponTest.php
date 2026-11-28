@@ -17,9 +17,11 @@ final class CheckoutBuilderCouponVoucherService extends VoucherService
 {
     public function __construct(private readonly VoucherData $voucher) {}
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
-        return $code === $this->voucher->code ? $this->voucher : null;
+        return ($voucherId !== null ? $voucherId === $this->voucher->id : $code === $this->voucher->code)
+            ? $this->voucher
+            : null;
     }
 
     public function recordUsage(

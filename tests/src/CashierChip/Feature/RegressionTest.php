@@ -38,8 +38,18 @@ final class RepairFakeVoucherService extends VoucherService
     /** @param array<string, VoucherData> $vouchersByCode */
     public function __construct(private array $vouchersByCode) {}
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
+        if ($voucherId !== null) {
+            foreach ($this->vouchersByCode as $voucher) {
+                if ($voucher->id === $voucherId) {
+                    return $voucher;
+                }
+            }
+
+            return null;
+        }
+
         return $this->vouchersByCode[$code] ?? null;
     }
 

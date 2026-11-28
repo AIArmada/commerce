@@ -255,8 +255,18 @@ final class FakeVoucherService extends VoucherService
         $this->vouchersByCode = $vouchersByCode;
     }
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
+        if ($voucherId !== null) {
+            foreach ($this->vouchersByCode as $voucher) {
+                if ($voucher->id === $voucherId) {
+                    return $voucher;
+                }
+            }
+
+            return null;
+        }
+
         return $this->vouchersByCode[$code] ?? null;
     }
 
