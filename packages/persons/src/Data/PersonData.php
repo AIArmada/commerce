@@ -4,38 +4,41 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Enums\Gender;
-use AIArmada\Persons\Enums\PersonStatus;
-use AIArmada\Persons\Models\Person;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
+use JsonSerializable;
 
-final class PersonData extends Data
+final readonly class PersonData implements JsonSerializable
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $name,
-        public readonly string | null | Optional $family_name,
-        public readonly string | null | Optional $middle_name,
-        public readonly string | null | Optional $gender,
-        public readonly string | null | Optional $nationality_country_id,
-        public readonly string | null | Optional $slug,
-        public readonly string | null | Optional $status,
-        public readonly string $formatted_name,
+        public string $id,
+        public string $name,
+        public ?string $family_name,
+        public ?string $middle_name,
+        public ?string $gender,
+        public ?string $nationality_country_id,
+        public ?string $slug,
+        public ?string $status,
+        public string $formatted_name,
     ) {}
 
-    public static function fromPerson(Person $person): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        return new self(
-            id: $person->id,
-            name: $person->name,
-            family_name: $person->family_name,
-            middle_name: $person->middle_name,
-            gender: $person->gender instanceof Gender ? $person->gender->value : null,
-            nationality_country_id: $person->nationality_country_id,
-            slug: $person->slug,
-            status: $person->status instanceof PersonStatus ? $person->status->value : null,
-            formatted_name: $person->formatted_name,
-        );
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'family_name' => $this->family_name,
+            'middle_name' => $this->middle_name,
+            'gender' => $this->gender,
+            'nationality_country_id' => $this->nationality_country_id,
+            'slug' => $this->slug,
+            'status' => $this->status,
+            'formatted_name' => $this->formatted_name,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

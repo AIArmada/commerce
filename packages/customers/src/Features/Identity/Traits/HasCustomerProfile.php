@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Customers\Features\Identity\Traits;
+
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Models\Customer;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+
+/**
+ * Trait to be used on User models to provide customer profile functionality.
+ *
+ * @mixin Model
+ *
+ * @property string $email
+ * @property string|null $name
+ * @property string|null $phone
+ * @property-read Customer|null $customerProfile
+ */
+trait HasCustomerProfile
+{
+    /**
+     * Get the customer profile for this user.
+     *
+     * @return HasOne<Customer, $this>
+     */
+    public function customerProfile(): HasOne
+    {
+        return $this->hasOne(Customer::class, 'user_id');
+    }
+
+    /**
+     * Get or create the customer profile for this user.
+     */
+    public function getOrCreateCustomerProfile(): Customer
+    {
+        if (! $this->exists || $this->getKey() === null) {
+            throw new InvalidArgumentException('A persisted user is required to create a customer profile.');
+        }
+
+        $customer = $this->customerProfile()->first();
+
+        if ($customer instanceof Customer) {
+            return $customer;
+        }
+
+        $normalizer = app(CustomerProfileNormalizer::class);
+        $email = $normalizer->normalizeEmail($this->email) ?? '';
+
+        if ($email === '') {
+            throw new InvalidArgumentException('User email is required to create a customer profile.');
+        }
+
+        [$firstName, $lastName] = $normalizer->splitName($this->name, 'User');
+
+        try {
+            $customer = app(CreateCustomer::class)->execute(
+                $email,
+                ['first_name' => $firstName, 'last_name' => $lastName, 'phone' => $this->phone],
+                [],
+                $this,
+                false,
+            );
+            $this->unsetRelation('customerProfile');
+
+            return $customer;
+        } catch (UniqueConstraintViolationException) {
+            $this->unsetRelation('customerProfile');
+
+            $existing = $this->customerProfile()->first();
+
+            if ($existing instanceof Customer) {
+                return $existing;
+            }
+
+            throw ValidationException::withMessages([
+                'user_id' => 'A customer profile already exists for this user.',
+            ]);
+        }
+    }
+
+    /**
+     * Check if user has a customer profile.
+     */
+    public function hasCustomerProfile(): bool
+    {
+        return $this->customerProfile()->exists();
+    }
+
+    /**
+     * Check if customer accepts marketing.
+     */
+    public function acceptsMarketing(): bool
+    {
+        $customerProfile = $this->customerProfile()->first();
+
+        if (! $customerProfile instanceof Customer) {
+            return false;
+        }
+
+        return $customerProfile->accepts_marketing;
+    }
+
+    /**
+     * Get the customer's default shipping address.
+     */
+    public function getDefaultShippingAddress(): ?Address
+    {
+        $customerProfile = $this->customerProfile()->first();
+
+        if (! $customerProfile instanceof Customer) {
+            return null;
+        }
+
+        return $customerProfile->primaryAddress('shipping');
+    }
+
+    /**
+     * Get the customer's default billing address.
+     */
+    public function getDefaultBillingAddress(): ?Address
+    {
+        $customerProfile = $this->customerProfile()->first();
+
+        if (! $customerProfile instanceof Customer) {
+            return null;
+        }
+
+        return $customerProfile->primaryAddress('billing');
+    }
+}

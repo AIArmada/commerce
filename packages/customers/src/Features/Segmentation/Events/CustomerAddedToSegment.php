@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Customers\Features\Segmentation\Events;
+
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+final class CustomerAddedToSegment
+{
+    use Dispatchable;
+    use SerializesModels;
+
+    public function __construct(
+        public Customer $customer,
+        public Segment $segment
+    ) {}
+}

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Database\Factories;
 
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

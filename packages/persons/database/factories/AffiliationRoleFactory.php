@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Database\Factories;
 
-use AIArmada\Persons\Models\AffiliationRole;
+use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

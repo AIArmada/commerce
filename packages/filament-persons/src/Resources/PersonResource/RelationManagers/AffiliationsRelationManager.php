@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Persons\Models\Affiliation;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Actions\CreateAction;
@@ -49,30 +52,27 @@ class AffiliationsRelationManager extends RelationManager
         }
 
         $query = self::scopedInstitutionQuery($class);
+        $model = $query->getModel();
+        $labelColumn = self::institutionLabelColumn();
+        $searchColumns = self::institutionSearchColumns($labelColumn);
         $trimmedSearch = $search !== null ? mb_trim($search) : '';
 
         if ($trimmedSearch !== '') {
-            /** @var Model $modelInstance */
-            $modelInstance = new $class;
-            $connection = $modelInstance->getConnection();
-            $columns = $connection->getSchemaBuilder()->getColumnListing($modelInstance->getTable());
-            $searchableColumns = array_values(array_intersect(['name', 'title', 'label'], $columns));
+            $grammar = $query->getQuery()->getGrammar();
+            $operator = ConnectionDriver::name($query->getConnection()) === 'pgsql' ? 'ILIKE' : 'LIKE';
+            $pattern = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $trimmedSearch) . '%';
 
-            if ($searchableColumns === []) {
-                return [];
-            }
-
-            $grammar = $connection->getQueryGrammar();
-            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], mb_strtolower($trimmedSearch));
-            $like = '%' . $escaped . '%';
-
-            $query->where(static function (Builder $builder) use ($searchableColumns, $grammar, $like): void {
-                foreach ($searchableColumns as $index => $column) {
+            $query->where(static function (Builder $builder) use ($grammar, $model, $operator, $pattern, $searchColumns): void {
+                foreach ($searchColumns as $index => $column) {
                     $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
-                    $builder->{$method}('LOWER(' . $grammar->wrap($column) . ') LIKE ?', [$like]);
+                    $wrapped = $grammar->wrap($model->qualifyColumn($column));
+                    $builder->{$method}($wrapped . ' ' . $operator . " ? ESCAPE '!'", [$pattern]);
                 }
             });
         }
+
+        $query->orderBy($model->qualifyColumn($labelColumn))
+            ->orderBy($model->qualifyColumn($model->getKeyName()));
 
         /** @var array<string, string> $options */
         $options = $query->limit(max(1, min($limit, 500)))->get()->mapWithKeys(
@@ -107,19 +107,74 @@ class AffiliationsRelationManager extends RelationManager
     {
         $query = $class::query();
 
-        if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
-            $config = $class::ownerScopeConfig();
-
-            return OwnerQuery::applyToEloquentBuilder(
-                $query->withoutGlobalScope(OwnerScope::class),
-                OwnerContext::resolve(),
-                $config->includeGlobal,
-                $config->ownerTypeColumn,
-                $config->ownerIdColumn,
-            );
+        if (! method_exists($class, 'ownerScopeConfig')) {
+            return $query;
         }
 
-        return $query;
+        $config = $class::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return $query;
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return OwnerQuery::applyToEloquentBuilder(
+            $query->withoutGlobalScope(OwnerScope::class),
+            $owner,
+            $config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
+            $config->ownerTypeColumn,
+            $config->ownerIdColumn,
+        );
+    }
+
+    private static function institutionLabelColumn(): string
+    {
+        return self::columnIdentifier(
+            config('filament-persons.resources.institution.label_column', 'name'),
+            'resources.institution.label_column',
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function institutionSearchColumns(string $labelColumn): array
+    {
+        $configured = config('filament-persons.resources.institution.search_columns');
+
+        if ($configured === null) {
+            return [$labelColumn];
+        }
+
+        if (! is_array($configured)) {
+            throw new InvalidArgumentException('filament-persons.resources.institution.search_columns must be a list of plain column identifiers.');
+        }
+
+        if ($configured === []) {
+            return [$labelColumn];
+        }
+
+        $columns = [];
+
+        foreach ($configured as $column) {
+            $columns[] = self::columnIdentifier($column, 'resources.institution.search_columns');
+        }
+
+        return array_values(array_unique($columns));
+    }
+
+    private static function columnIdentifier(mixed $column, string $key): string
+    {
+        if (! is_string($column) || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                'filament-persons.%s must be a plain column identifier.',
+                $key,
+            ));
+        }
+
+        return $column;
     }
 
     public function form(Schema $schema): Schema
@@ -190,6 +245,7 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->using(fn (array $data): Affiliation => app(SaveAffiliation::class)->create($this->getOwnerRecord(), $data))
                     ->mutateFormDataUsing(function (array $data): array {
                         $this->assertInstitutionReference($data);
 
@@ -198,12 +254,14 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->using(fn (Affiliation $record, array $data): Affiliation => app(SaveAffiliation::class)->update($this->getOwnerRecord(), $record, $data))
                     ->mutateFormDataUsing(function (array $data): array {
                         $this->assertInstitutionReference($data);
 
                         return $data;
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->using(fn (Affiliation $record): bool => app(SaveAffiliation::class)->delete($this->getOwnerRecord(), $record)),
             ]);
     }
 
@@ -233,12 +291,10 @@ class AffiliationsRelationManager extends RelationManager
 
     private static function institutionLabel(Model $model): string
     {
-        foreach (['name', 'title', 'label'] as $attribute) {
-            $value = $model->getAttribute($attribute);
+        $value = $model->getAttribute(self::institutionLabelColumn());
 
-            if (is_string($value) && $value !== '') {
-                return $value;
-            }
+        if ($value !== null && $value !== '') {
+            return (string) $value;
         }
 
         return (string) $model->getKey();

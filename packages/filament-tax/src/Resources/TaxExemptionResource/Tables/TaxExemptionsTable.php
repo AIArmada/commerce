@@ -36,7 +36,7 @@ final class TaxExemptionsTable
                     ->searchable()
                     ->sortable()
                     ->placeholder('N/A')
-                    ->description(fn (TaxExemption $record): ?string => $record->exemptable_type === 'AIArmada\\Customers\\Models\\CustomerGroup' ? 'Group' : null),
+                    ->description(fn (TaxExemption $record): ?string => $record->exemptable_type === 'AIArmada\\Customers\\Features\\Segmentation\\Models\\CustomerGroup' ? 'Group' : null),
 
                 TextColumn::make('certificate_number')
                     ->label('Certificate #')

@@ -11,7 +11,7 @@ use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
+use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Models\Customer;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;

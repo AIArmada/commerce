@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Database\Seeders;
 
-use AIArmada\Persons\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use Illuminate\Database\Seeder;
 
 final class TitleCategorySeeder extends Seeder

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\FilamentPersons\Resources\TitleResource;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -81,7 +81,6 @@ it('does not match customers across tenant boundary', function (): void {
     $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Marketing Segment A',
         'slug' => 'marketing-segment-a-' . uniqid(),
-        'is_active' => true,
         'is_automatic' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -113,7 +112,6 @@ it('prevents cross-tenant segment membership changes', function (): void {
     $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Segment A',
         'slug' => 'segment-a-' . uniqid(),
-        'is_active' => true,
         'is_automatic' => false,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -127,7 +125,10 @@ it('prevents cross-tenant segment membership changes', function (): void {
 
     expect($service->addToSegment($customerB, $segmentA))->toBeFalse();
 
-    $service->evaluateCustomer($customerB);
+    expect(fn () => OwnerContext::withOwner($ownerA, fn () => $service->evaluateCustomer($customerB)))
+        ->toThrow(AuthorizationException::class);
+
+    OwnerContext::withOwner($ownerB, fn () => $service->evaluateCustomer($customerB));
 
     expect($customerB->segments()->whereKey($segmentA->getKey())->exists())->toBeFalse();
 });
