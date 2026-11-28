@@ -319,3 +319,25 @@ test('queued document email delivery waits for the database commit', function ()
         && $job->docEmailId === (string) $email->getKey()
         && $job->docId === (string) $doc->getKey());
 });
+
+it('rejects unsafe rendered email headers before persisting an email', function (): void {
+    $doc = Doc::factory()->create();
+    $service = app(DocEmailService::class);
+
+    expect(fn () => $service->send($doc, 'customer@example.com', subjectOverride: "Invoice\r\nBcc: other@example.com"))
+        ->toThrow(InvalidArgumentException::class)
+        ->and($doc->emails()->count())->toBe(0);
+});
+
+it('normalizes recipient details and handles malformed document names', function (): void {
+    $doc = Doc::factory()->create([
+        'company_data' => ['name' => ['unexpected']],
+        'customer_data' => ['name' => ['unexpected']],
+    ]);
+
+    $email = app(DocEmailService::class)->send($doc, ' customer@example.com ', ' Customer ');
+
+    expect($email->recipient_email)->toBe('customer@example.com')
+        ->and($email->recipient_name)->toBe('Customer')
+        ->and($email->status)->toBe(EmailStatus::Sent);
+});

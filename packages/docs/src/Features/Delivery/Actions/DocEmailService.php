@@ -62,6 +62,8 @@ final class DocEmailService implements DocumentEmailSender
         ?string $bodyOverride = null,
         array $metadata = [],
     ): DocEmail {
+        $recipientEmail = mb_trim($recipientEmail);
+        $recipientName = $recipientName === null ? null : mb_trim($recipientName);
         $this->assertValidRecipient($recipientEmail, $recipientName);
 
         if (config('docs.owner.enabled', false)) {
@@ -90,6 +92,10 @@ final class DocEmailService implements DocumentEmailSender
         $body = $bodyOverride
             ?? $template?->renderBody($templateVars)
             ?? $this->getDefaultBody($doc);
+
+        if (mb_trim($subject) === '' || mb_strlen($subject) > 255 || preg_match('/[\x00-\x1f\x7f]/', $subject) === 1) {
+            throw new InvalidArgumentException('Document email subject must be nonempty, at most 255 characters, and contain no control characters.');
+        }
 
         // Create email record
         $email = OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocEmail => $doc->emails()->create([
@@ -189,8 +195,8 @@ final class DocEmailService implements DocumentEmailSender
             'total' => MoneyFormatter::decimalFromMinor($doc->total_minor, $doc->currency),
             'total_formatted' => MoneyFormatter::formatMinor($doc->total_minor, $doc->currency),
             'currency' => $doc->currency,
-            'company_name' => $doc->company_data['name'] ?? config('docs.company.name'),
-            'customer_name' => $doc->customer_data['name'] ?? 'Valued Customer',
+            'company_name' => $this->displayName($doc->company_data['name'] ?? null, $this->displayName(config('docs.company.name'), '')),
+            'customer_name' => $this->displayName($doc->customer_data['name'] ?? null, 'Valued Customer'),
         ], $additional);
     }
 
@@ -210,7 +216,7 @@ final class DocEmailService implements DocumentEmailSender
     private function getDefaultBody(Doc $doc): string
     {
         $type = ucfirst(str_replace('_', ' ', $doc->doc_type));
-        $company = $doc->company_data['name'] ?? config('docs.company.name');
+        $company = $this->displayName($doc->company_data['name'] ?? null, $this->displayName(config('docs.company.name'), ''));
         $formattedTotal = MoneyFormatter::formatMinor($doc->total_minor, $doc->currency);
 
         return "Dear Customer,\n\nPlease find attached {$type} #{$doc->doc_number}.\n\nTotal: {$formattedTotal}\n\nThank you for your business.\n\n{$company}";
@@ -235,6 +241,11 @@ final class DocEmailService implements DocumentEmailSender
         $email->refresh();
     }
 
+    private function displayName(mixed $value, string $fallback): string
+    {
+        return is_string($value) && mb_trim($value) !== '' ? mb_trim($value) : $fallback;
+    }
+
     private function assertValidRecipient(string $recipientEmail, ?string $recipientName): void
     {
         $email = mb_trim($recipientEmail);
@@ -243,7 +254,7 @@ final class DocEmailService implements DocumentEmailSender
             throw new InvalidArgumentException('Document email recipient must be a valid email address.');
         }
 
-        if ($recipientName !== null && ($recipientName === '' || mb_strlen($recipientName) > 255)) {
+        if ($recipientName !== null && ($recipientName === '' || mb_strlen($recipientName) > 255 || preg_match('/[\x00-\x1f\x7f]/', $recipientName) === 1)) {
             throw new InvalidArgumentException('Document email recipient name must be a non-empty string up to 255 characters.');
         }
     }

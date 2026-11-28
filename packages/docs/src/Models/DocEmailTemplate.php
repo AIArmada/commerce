@@ -96,12 +96,19 @@ final class DocEmailTemplate extends Model implements Auditable
      */
     protected function renderTemplate(string $template, array $variables): string
     {
-        foreach ($variables as $key => $value) {
-            $template = str_replace('{{' . $key . '}}', (string) $value, $template);
-            $template = str_replace('{{ ' . $key . ' }}', (string) $value, $template);
-        }
+        // Substitute each placeholder once. A value containing another
+        // placeholder is data, not a second template.
+        return preg_replace_callback('/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/u', static function (array $matches) use ($variables): string {
+            $key = $matches[1];
 
-        return $template;
+            if (! array_key_exists($key, $variables)) {
+                return $matches[0];
+            }
+
+            $value = $variables[$key];
+
+            return is_scalar($value) || $value === null ? (string) $value : '';
+        }, $template) ?? $template;
     }
 
     /**

@@ -38,3 +38,19 @@ it('allows same slug across different owners and blocks duplicate slug for same 
     expect(fn (): mixed => OwnerContext::withOwner($ownerA, static fn (): DocEmailTemplate => $createTemplate('Owner A Duplicate')))
         ->toThrow(QueryException::class);
 });
+
+it('renders email placeholders in one pass and handles malformed values', function (): void {
+    $template = new DocEmailTemplate([
+        'subject' => '{{ customer_name }} {{ doc_number }}',
+        'body' => '{{customer_name}} {{ malformed }} {{ unknown }}',
+    ]);
+
+    $variables = [
+        'customer_name' => '{{doc_number}}',
+        'doc_number' => 'INV-123',
+        'malformed' => ['unexpected'],
+    ];
+
+    expect($template->renderSubject($variables))->toBe('{{doc_number}} INV-123')
+        ->and($template->renderBody($variables))->toBe('{{doc_number}}  {{ unknown }}');
+});
