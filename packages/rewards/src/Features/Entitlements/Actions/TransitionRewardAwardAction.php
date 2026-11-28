@@ -22,6 +22,7 @@ use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
@@ -31,9 +32,6 @@ use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardAwardEntry;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardProgramVersion;
@@ -796,20 +794,7 @@ final readonly class TransitionRewardAwardAction
 
     private function coveringJoinedAt(string $enrollmentId, CarbonImmutable $decision): ?CarbonImmutable
     {
-        $period = RewardEnrollmentPeriod::query()
-            ->where('enrollment_id', $enrollmentId)
-            ->where('joined_at', '<=', $decision)
-            ->where(function ($query) use ($decision): void {
-                $query->whereNull('left_at')->orWhere('left_at', '>', $decision);
-            })
-            ->orderByDesc('joined_at')
-            ->first();
-
-        if (! $period instanceof RewardEnrollmentPeriod) {
-            return null;
-        }
-
-        return CarbonImmutable::parse($period->joined_at)->setTimezone('UTC');
+        return app(RewardEnrollmentConsentApi::class)->coveringJoinedAt($enrollmentId, $decision);
     }
 
     /**
@@ -833,40 +818,23 @@ final readonly class TransitionRewardAwardAction
             return null;
         }
 
-        $enrollment = RewardEnrollment::query()
-            ->where('program_id', (string) $award->program_id)
-            ->where('member_type', (string) $award->recipient_type)
-            ->where('member_id', (string) $award->recipient_id)
-            ->orderByDesc('enrolled_at')
-            ->first();
+        $consent = app(RewardEnrollmentConsentApi::class)->findConsent(
+            (string) $award->program_id,
+            (string) $award->recipient_type,
+            (string) $award->recipient_id,
+            $materialHash,
+            $decision,
+        );
 
-        if (! $enrollment instanceof RewardEnrollment) {
-            return null;
-        }
-
-        $joinedAt = $this->coveringJoinedAt((string) $enrollment->getKey(), $decision);
-
-        if ($joinedAt === null) {
-            return null;
-        }
-
-        $acceptance = RewardEnrollmentAcceptance::query()
-            ->where('enrollment_id', $enrollment->getKey())
-            ->where('accepted_at', '<=', $decision)
-            ->where('material_terms_hash', $materialHash)
-            ->orderByDesc('accepted_at')
-            ->orderByDesc('seq')
-            ->first();
-
-        if (! $acceptance instanceof RewardEnrollmentAcceptance) {
+        if ($consent === null) {
             return null;
         }
 
         return [
-            'id' => (string) $acceptance->getKey(),
-            'hash' => (string) $acceptance->material_terms_hash,
-            'accepted_at' => CarbonImmutable::parse($acceptance->accepted_at)->setTimezone('UTC'),
-            'joined_at' => $joinedAt,
+            'id' => $consent->acceptanceId,
+            'hash' => $consent->materialHash,
+            'accepted_at' => $consent->acceptedAt,
+            'joined_at' => $consent->joinedAt,
             'via_override' => true,
         ];
     }

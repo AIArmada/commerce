@@ -16,15 +16,14 @@ use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsent;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
@@ -357,52 +356,15 @@ final readonly class EvaluateRewardEntitlementAction
             }
         }
 
-        $enrollment = RewardEnrollment::query()
-            ->where('program_id', $lockedProgram->getKey())
-            ->where('member_type', $recipientType)
-            ->where('member_id', $recipientId)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $enrollment instanceof RewardEnrollment) {
-            throw new InvalidArgumentException('Refused: enrollment_missing for this recipient.');
-        }
-
-        $activePeriod = RewardEnrollmentPeriod::query()
-            ->where('enrollment_id', $enrollment->getKey())
-            ->where('joined_at', '<=', $decision)
-            ->where(function ($query) use ($decision): void {
-                $query->whereNull('left_at')->orWhere('left_at', '>', $decision);
-            })
-            ->orderByDesc('joined_at')
-            ->lockForUpdate()
-            ->first();
-
-        if (! $activePeriod instanceof RewardEnrollmentPeriod) {
-            throw new InvalidArgumentException('Refused: enrollment_left stops new qualification; accrued obligations keep frozen terms.');
-        }
-
-        $relevantJoinedAt = CarbonImmutable::parse($activePeriod->joined_at)->setTimezone('UTC');
-
-        $coveringAcceptance = RewardEnrollmentAcceptance::query()
-            ->where('enrollment_id', $enrollment->getKey())
-            ->where('accepted_at', '<=', $decision)
-            ->where('material_terms_hash', (string) $version->material_terms_hash)
-            ->orderByDesc('accepted_at')
-            ->orderByDesc('seq')
-            ->lockForUpdate()
-            ->first();
-
-        if (! $coveringAcceptance instanceof RewardEnrollmentAcceptance) {
-            $hasPrior = RewardEnrollmentAcceptance::query()
-                ->where('enrollment_id', $enrollment->getKey())
-                ->where('accepted_at', '<=', $decision)
-                ->exists();
-
-            throw new InvalidArgumentException($hasPrior
-                ? 'Refused: acceptance_stale_material_change requires prospective reacceptance first.'
-                : 'Refused: acceptance_missing covers no terms at the decision time.');
-        }
+        $coveringAcceptance = app(RewardEnrollmentConsentApi::class)->requireConsent(
+            (string) $lockedProgram->getKey(),
+            $recipientType,
+            $recipientId,
+            (string) $version->material_terms_hash,
+            $decision,
+        );
+        $enrollment = $coveringAcceptance->enrollmentId;
+        $relevantJoinedAt = $coveringAcceptance->joinedAt;
 
         $liveVerdict = $this->liveSourceVerdict($firstRead, $role, $recipientId);
 
@@ -443,9 +405,9 @@ final readonly class EvaluateRewardEntitlementAction
             compatibleWith: $compatible,
             enrollmentExists: true,
             enrollmentActiveAtDecision: true,
-            acceptanceId: (string) $coveringAcceptance->getKey(),
-            acceptanceMaterialHash: (string) $coveringAcceptance->material_terms_hash,
-            acceptanceAcceptedAt: CarbonImmutable::parse($coveringAcceptance->accepted_at)->setTimezone('UTC'),
+            acceptanceId: $coveringAcceptance->acceptanceId,
+            acceptanceMaterialHash: $coveringAcceptance->materialHash,
+            acceptanceAcceptedAt: $coveringAcceptance->acceptedAt,
             hasPriorAcceptance: true,
             relevantPeriodJoinedAt: $relevantJoinedAt,
             fixture: new RewardPreviewFixture(
@@ -766,8 +728,8 @@ final readonly class EvaluateRewardEntitlementAction
         RewardProgram $program,
         RewardProgramVersion $version,
         array $rules,
-        RewardEnrollment $enrollment,
-        RewardEnrollmentAcceptance $acceptance,
+        string $enrollment,
+        RewardEnrollmentConsent $acceptance,
         string $recipientType,
         string $recipientId,
         RewardBeneficiaryRole $role,
@@ -892,8 +854,8 @@ final readonly class EvaluateRewardEntitlementAction
         string $sourceBusinessKey,
         CarbonImmutable $decision,
         RewardSourceFact $fact,
-        ?RewardEnrollment $enrollment,
-        ?RewardEnrollmentAcceptance $acceptance,
+        ?string $enrollment,
+        ?RewardEnrollmentConsent $acceptance,
         array $reasons,
         string $actorType,
         ?string $actorId,
@@ -929,7 +891,7 @@ final readonly class EvaluateRewardEntitlementAction
         array $rules,
         RewardProgramVersion $version,
         RewardComponent $component,
-        ?RewardEnrollmentAcceptance $acceptance,
+        ?RewardEnrollmentConsent $acceptance,
         RewardSourceFact $fact,
         ?array $componentConfigOverride = null,
     ): array {
@@ -961,12 +923,12 @@ final readonly class EvaluateRewardEntitlementAction
                 // decision basis as an approved one.
                 'components' => [$componentConfig],
             ],
-            'consent' => $acceptance instanceof RewardEnrollmentAcceptance
+            'consent' => $acceptance instanceof RewardEnrollmentConsent
                 ? [
-                    'acceptance_id' => (string) $acceptance->getKey(),
-                    'accepted_at' => CarbonImmutable::parse($acceptance->accepted_at)->setTimezone('UTC')->toIso8601String(),
-                    'material_terms_hash' => (string) $acceptance->material_terms_hash,
-                    'terms_label' => (string) $acceptance->terms_label,
+                    'acceptance_id' => $acceptance->acceptanceId,
+                    'accepted_at' => $acceptance->acceptedAt->toIso8601String(),
+                    'material_terms_hash' => $acceptance->materialHash,
+                    'terms_label' => $acceptance->termsLabel,
                 ]
                 : ['status' => 'unresolved'],
             'source' => $fact->snapshot(),
@@ -982,8 +944,8 @@ final readonly class EvaluateRewardEntitlementAction
         RewardProgram $program,
         RewardProgramVersion $version,
         array $rules,
-        ?RewardEnrollment $enrollment,
-        ?RewardEnrollmentAcceptance $acceptance,
+        ?string $enrollment,
+        ?RewardEnrollmentConsent $acceptance,
         string $recipientType,
         string $recipientId,
         RewardBeneficiaryRole $role,
@@ -1004,8 +966,8 @@ final readonly class EvaluateRewardEntitlementAction
         $award = RewardAward::query()->create([
             'program_id' => $program->getKey(),
             'policy_version_id' => $version->getKey(),
-            'enrollment_id' => $enrollment?->getKey(),
-            'acceptance_id' => $acceptance?->getKey(),
+            'enrollment_id' => $enrollment,
+            'acceptance_id' => $acceptance?->acceptanceId,
             'recipient_type' => $recipientType,
             'recipient_id' => $recipientId,
             'beneficiary_role' => $role,
