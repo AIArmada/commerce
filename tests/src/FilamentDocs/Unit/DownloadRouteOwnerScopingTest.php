@@ -49,20 +49,20 @@ it('allows same-tenant document routes and blocks cross-tenant document routes',
         'password' => bcrypt('password'),
     ]);
 
-    Storage::disk('local')->put('docs/a.pdf', 'pdf-bytes');
-    Storage::disk('local')->put('docs/b.pdf', 'pdf-bytes');
-
     $docA = OwnerContext::withOwner($ownerA, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => "INV/2025\n0001",
-        'pdf_path' => 'docs/a.pdf',
     ]));
 
     $docB = OwnerContext::withOwner($ownerB, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => 'INV/2025 0002',
-        'pdf_path' => 'docs/b.pdf',
     ]));
+
+    OwnerContext::withOwner($ownerA, fn () => $docA->forceFill(['pdf_path' => 'docs/' . $docA->id . '.pdf'])->save());
+    OwnerContext::withOwner($ownerB, fn () => $docB->forceFill(['pdf_path' => 'docs/' . $docB->id . '.pdf'])->save());
+    Storage::disk('local')->put('docs/' . $docA->id . '.pdf', 'pdf-bytes');
+    Storage::disk('local')->put('docs/' . $docB->id . '.pdf', 'pdf-bytes');
 
     $this->actingAs($ownerA);
 

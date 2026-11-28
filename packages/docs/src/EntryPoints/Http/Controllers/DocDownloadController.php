@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -59,12 +60,22 @@ final class DocDownloadController
         $disk = app(DocService::class)->resolveStorageDiskForDocType($docModel->doc_type);
         $storage = Storage::disk($disk);
 
-        if ($docModel->pdf_path === null || ! $storage->exists($docModel->pdf_path)) {
+        $expectedPath = DocPdfPath::forDocument($docModel->doc_type, (string) $docModel->getKey());
+
+        if ($docModel->pdf_path !== $expectedPath || ! $storage->exists($expectedPath)) {
+            if ($ownerEnabled && ! $docModel->hasOwner() && ! OwnerContext::isExplicitGlobal()) {
+                $content = OwnerContext::withOwner(null, fn (): string => $renderer->renderPdf($docModel));
+
+                return response()->streamDownload(static fn () => print($content), $this->generateFilename($docModel), [
+                    'Content-Type' => 'application/pdf',
+                ]);
+            }
+
             $renderer->storePdf($docModel);
             $docModel->refresh();
         }
 
-        if ($docModel->pdf_path === null || ! $storage->exists($docModel->pdf_path)) {
+        if ($docModel->pdf_path !== $expectedPath || ! $storage->exists($expectedPath)) {
             throw new NotFoundHttpException('PDF file not found.');
         }
 

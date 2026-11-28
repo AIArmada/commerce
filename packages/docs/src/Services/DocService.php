@@ -23,6 +23,7 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocTypeKey;
+use AIArmada\Docs\Support\DocPdfPath;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -478,7 +479,7 @@ final class DocService
     {
         $docType = $doc->doc_type ?? 'invoice';
 
-        if ($doc->pdf_path && Storage::disk($this->resolveStorageDisk($docType))->exists($doc->pdf_path)) {
+        if ($doc->pdf_path === DocPdfPath::forDocument($docType, (string) $doc->getKey()) && Storage::disk($this->resolveStorageDisk($docType))->exists($doc->pdf_path)) {
             return $doc->pdf_path;
         }
 

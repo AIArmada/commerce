@@ -54,9 +54,9 @@ test('generatePdf creates and stores pdf', function (): void {
 
     $path = $this->service->generatePdf($doc);
 
-    expect($path)->toBe('docs/INV-001.pdf');
-    Storage::disk('docs')->assertExists('docs/INV-001.pdf');
-    expect($doc->fresh()->pdf_path)->toBe('docs/INV-001.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
+    Storage::disk('docs')->assertExists('docs/' . $doc->id . '.pdf');
+    expect($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('generatePdf sanitizes doc_number to prevent path traversal', function (): void {
@@ -79,9 +79,9 @@ test('generatePdf sanitizes doc_number to prevent path traversal', function (): 
 
     $path = $this->service->generatePdf($doc);
 
-    expect($path)->toBe('docs/INV-evil.pdf');
-    Storage::disk('docs')->assertExists('docs/INV-evil.pdf');
-    expect($doc->fresh()->pdf_path)->toBe('docs/INV-evil.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
+    Storage::disk('docs')->assertExists('docs/' . $doc->id . '.pdf');
+    expect($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('downloadPdf returns existing path if exists', function (): void {
@@ -91,15 +91,15 @@ test('downloadPdf returns existing path if exists', function (): void {
         'doc_type' => 'invoice',
         'doc_number' => 'INV-001',
     ]);
-    $doc->forceFill(['pdf_path' => 'docs/INV-001.pdf'])->save();
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
 
-    Storage::disk('docs')->put('docs/INV-001.pdf', 'dummy content');
+    Storage::disk('docs')->put('docs/' . $doc->id . '.pdf', 'dummy content');
 
     // Should NOT call generatePdf (Pdf facade)
     Pdf::shouldReceive('html')->never();
 
     $path = $this->service->downloadPdf($doc);
-    expect($path)->toBe('docs/INV-001.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('downloadPdf generates pdf if missing', function (): void {
@@ -110,7 +110,7 @@ test('downloadPdf generates pdf if missing', function (): void {
         'doc_number' => 'INV-002',
     ]);
     // pdf_path might be set but file missing
-    $doc->forceFill(['pdf_path' => 'docs/INV-002.pdf'])->save();
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
 
     // File content missing in storage
 
@@ -125,7 +125,7 @@ test('downloadPdf generates pdf if missing', function (): void {
     Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
     $path = $this->service->downloadPdf($doc);
-    expect($path)->toBe('docs/INV-002.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('markAsSent marks doc as sent', function (): void {

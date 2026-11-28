@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -313,7 +314,7 @@ final class Doc extends Model implements Auditable
      */
     public function deleteStoredPdf(): void
     {
-        if ($this->pdf_path === null || $this->pdf_path === '') {
+        if ($this->pdf_path !== DocPdfPath::forDocument($this->doc_type, (string) $this->getKey())) {
             return;
         }
 

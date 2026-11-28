@@ -13,7 +13,7 @@ $docService = app(DocService::class);
 
 // Generate and save to disk
 $pdfPath = $docService->generatePdf($document, save: true);
-// Returns the disk-relative path, e.g. "docs/INV-2501-000001.pdf"
+// Returns the disk-relative path, e.g. "docs/<document-uuid>.pdf"
 // (path prefix comes from docs.storage.path or docs.types.{type}.storage.path)
 
 // Generate without saving (returns PDF content)
@@ -78,6 +78,8 @@ $document = $docService->create(DocData::from([
 ```
 
 ## Storage Configuration
+
+Stored PDF filenames use the immutable document UUID, not the invoice number, so equal numbers across owners cannot overwrite one another. Customer download filenames still use the document number.
 
 Configure global defaults in `config/docs.php`:
 

@@ -7,6 +7,7 @@ namespace AIArmada\Docs\Features\Delivery\Mail;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use Illuminate\Bus\Queueable;
@@ -82,7 +83,7 @@ final class DocMail extends Mailable
 
             $pdfPath = $this->doc->pdf_path;
 
-            if ($pdfPath === null || ! Storage::disk($disk)->exists($pdfPath)) {
+            if ($pdfPath !== DocPdfPath::forDocument($this->doc->doc_type, (string) $this->doc->getKey()) || ! Storage::disk($disk)->exists($pdfPath)) {
                 $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
 
                 $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));

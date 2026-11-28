@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
@@ -15,6 +16,7 @@ use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
@@ -85,10 +88,16 @@ final class DocRenderService
 
     public function storePdf(Doc $doc): string
     {
-        $path = $this->generatePdfPath($doc);
+        if (config('docs.owner.enabled', false)) {
+            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
+        }
+
+        $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
         $disk = $this->resolveStorageDisk($doc->doc_type ?? 'invoice');
 
-        Storage::disk($disk)->put($path, $this->renderPdf($doc));
+        if (! Storage::disk($disk)->put($path, $this->renderPdf($doc))) {
+            throw new RuntimeException('Document PDF could not be stored.');
+        }
 
         $doc->forceFill(['pdf_path' => $path])->save();
 
@@ -97,6 +106,10 @@ final class DocRenderService
 
     public function createShareLink(Doc $doc, ShareLinkData $data): DocShareLink
     {
+        if (config('docs.owner.enabled', false)) {
+            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
+        }
+
         $plainToken = Str::random(48);
 
         $shareLink = OwnerContext::withOwner($doc->owner, function () use ($data, $doc, $plainToken): DocShareLink {
@@ -134,15 +147,17 @@ final class DocRenderService
         }
 
         try {
-            $owner = OwnerContext::fromTypeAndId($shareLink->owner_type, $shareLink->owner_id);
+            $owner = OwnerContext::fromTypeAndIdOrFail($shareLink->owner_type, $shareLink->owner_id);
         } catch (Throwable) {
             throw new NotFoundHttpException('Document link not found.');
         }
 
         return OwnerContext::withOwner($owner, function () use ($shareLink): DocShareLink {
-            $doc = Doc::query()->find($shareLink->doc_id);
+            $doc = Doc::query()->forOwner()->find($shareLink->doc_id);
 
-            if (! $doc instanceof Doc) {
+            if (! $doc instanceof Doc
+                || $doc->owner_type !== $shareLink->owner_type
+                || (string) $doc->owner_id !== (string) $shareLink->owner_id) {
                 throw new NotFoundHttpException('Document link not found.');
             }
 
@@ -482,49 +497,5 @@ final class DocRenderService
         }
 
         return config('docs.storage.disk', 'local');
-    }
-
-    private function resolveStoragePath(string $docType): string
-    {
-        $key = DocTypeKey::sanitize($docType);
-
-        if ($key !== null) {
-            $path = config("docs.types.{$key}.storage.path");
-
-            if (is_string($path) && $path !== '') {
-                return $path;
-            }
-        }
-
-        return config('docs.storage.path', 'docs');
-    }
-
-    private function generatePdfPath(Doc $doc): string
-    {
-        $basePath = mb_trim($this->resolveStoragePath($doc->doc_type ?? 'invoice'), '/');
-        $filename = $this->normalizePdfFilename($doc);
-
-        return $basePath === '' ? $filename : "{$basePath}/{$filename}";
-    }
-
-    private function normalizePdfFilename(Doc $doc): string
-    {
-        $raw = str_replace(['/', '\\'], '-', (string) ($doc->doc_number ?: $doc->getKey()));
-        $sanitized = (string) preg_replace('/[^A-Za-z0-9._-]+/', '-', $raw);
-        $sanitized = mb_trim($sanitized, " .-_/\t\n\r\0\x0B");
-
-        while (str_contains($sanitized, '..')) {
-            $sanitized = str_replace('..', '.', $sanitized);
-        }
-
-        $sanitized = str_replace('.', '-', $sanitized);
-        $sanitized = (string) preg_replace('/[-_]{2,}/', '-', $sanitized);
-        $sanitized = mb_trim($sanitized, '-_ ');
-
-        if ($sanitized === '') {
-            $sanitized = (string) $doc->getKey();
-        }
-
-        return Str::limit($sanitized, 120, '') . '.pdf';
     }
 }

@@ -34,7 +34,7 @@ it('generates a missing pdf before download', function (): void {
     $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
 
     expect($response->getStatusCode())->toBe(200)
-        ->and($doc->fresh()->pdf_path)->toBe('docs/INV-ON-DEMAND.pdf');
+        ->and($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 it('regenerates when pdf file does not exist on disk', function (): void {
@@ -65,13 +65,12 @@ it('downloads a document pdf with a safe filename', function (): void {
     config()->set('docs.storage.disk', 'local');
     Storage::fake('local');
 
-    Storage::disk('local')->put('docs/inv.pdf', 'pdf-bytes');
-
     $doc = Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => "INV/2025\n0001",
-        'pdf_path' => 'docs/inv.pdf',
     ]);
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
+    Storage::disk('local')->put('docs/' . $doc->id . '.pdf', 'pdf-bytes');
 
     $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
 

@@ -451,8 +451,8 @@ test('mail attachments reuse an existing stored pdf', function (): void {
     Storage::fake('local');
 
     $doc = Doc::factory()->create(['doc_type' => 'invoice', 'doc_number' => 'INV-REUSE-1']);
-    $doc->forceFill(['pdf_path' => 'docs/reused.pdf'])->save();
-    Storage::disk('local')->put('docs/reused.pdf', 'pdf-bytes');
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
+    Storage::disk('local')->put('docs/' . $doc->id . '.pdf', 'pdf-bytes');
 
     $docEmail = DocEmail::query()->create([
         'doc_id' => $doc->id,
@@ -553,12 +553,12 @@ test('deleting a doc removes its stored pdf', function (): void {
     Storage::fake('local');
 
     $doc = Doc::factory()->create(['doc_type' => 'invoice']);
-    $doc->forceFill(['pdf_path' => 'docs/orphan.pdf'])->save();
-    Storage::disk('local')->put('docs/orphan.pdf', 'pdf-bytes');
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
+    Storage::disk('local')->put('docs/' . $doc->id . '.pdf', 'pdf-bytes');
 
     $doc->delete();
 
-    Storage::disk('local')->assertMissing('docs/orphan.pdf');
+    Storage::disk('local')->assertMissing('docs/' . $doc->id . '.pdf');
 });
 
 // --- sequential version numbers ---
@@ -666,7 +666,7 @@ test('caller pdf options are constrained to safe values', function (): void {
 
     Pdf::shouldReceive('html')->once()->andReturn($pdfBuilder);
 
-    expect(app(DocService::class)->generatePdf($doc))->toBe('docs/INV-PDFOPT-1.pdf');
+    expect(app(DocService::class)->generatePdf($doc))->toBe('docs/' . $doc->id . '.pdf');
 });
 
 // --- Cache sanity for the sequence lock path ---

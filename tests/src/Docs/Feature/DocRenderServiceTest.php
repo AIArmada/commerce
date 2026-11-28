@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
@@ -11,6 +13,7 @@ use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -145,4 +148,19 @@ it('captures immutable share expiration dates', function (): void {
     expect($date->format('Y-m-d'))->toBe('2026-11-29');
 
     expect($data->expiresAt?->format('Y-m-d'))->toBe('2026-11-28');
+});
+
+it('does not issue a share link for a document owned by another tenant', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create());
+
+    OwnerContext::withOwner($other, function () use ($doc): void {
+        expect(fn () => app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+            allowedActions: [ShareLinkAction::View],
+        )))->toThrow(AuthorizationException::class);
+    });
 });
