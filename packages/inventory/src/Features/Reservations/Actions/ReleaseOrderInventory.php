@@ -97,7 +97,7 @@ final class ReleaseOrderInventory
             return;
         }
 
-        DB::transaction(function () use ($event, $order, $operation): void {
+        DB::transaction(function () use ($event, $operation): void {
             $operation = InventoryOwnerScope::forMutation(
                 InventoryOperation::query()
                     ->whereKey($operation->id)
