@@ -509,7 +509,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
     });
 
     $asOf = CarbonImmutable::now('UTC')->addMinute();
-    $spendableBefore = RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf);
+    $spendableBefore = OwnerContext::withOwner($owner, fn () => RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf));
 
     expect($spendableBefore->available)->toBe(10);
 
@@ -565,7 +565,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
             ->where('source_business_key', $businessKey)
             ->whereIn('status', [RewardAwardStatus::Held, RewardAwardStatus::PendingReview, RewardAwardStatus::Approved, RewardAwardStatus::Fulfilled])
             ->exists())->toBeFalse()
-        ->and(RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf)->available)->toBe(0)
+        ->and(OwnerContext::withOwner($owner, fn () => RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf))->available)->toBe(0)
         ->and($reversed->metadata['rewards_reversal'])->toBe('verified_corrections_sweep')
         ->and($orphanContribution->fresh()->revoked_at)->toBeNull();
 });

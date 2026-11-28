@@ -99,14 +99,17 @@ final class RewardPointLedger
         $lotMovements = $movements->filter(
             fn (RewardPointMovement $movement): bool => (string) $movement->lot_id === (string) $lot->getKey()
         );
-        $linked = $lotMovements
-            ->filter(fn (RewardPointMovement $movement): bool => $movement->linked_movement_id !== null)
-            ->map(fn (RewardPointMovement $movement): string => (string) $movement->linked_movement_id)
-            ->all();
+        $linked = [];
+
+        foreach ($lotMovements as $movement) {
+            if ($movement->linked_movement_id !== null) {
+                $linked[(string) $movement->linked_movement_id] = true;
+            }
+        }
 
         return (int) $lotMovements
             ->filter(fn (RewardPointMovement $movement): bool => $movement->kind === RewardPointMovementKind::Reserve)
-            ->reject(fn (RewardPointMovement $movement): bool => in_array((string) $movement->getKey(), $linked, true))
+            ->reject(fn (RewardPointMovement $movement): bool => isset($linked[(string) $movement->getKey()]))
             ->sum('delta');
     }
 
