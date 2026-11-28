@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
@@ -85,7 +85,7 @@ final readonly class ConsumeRewardBenefitAction
             if ($locked->reservation_key !== null
                 && (string) $locked->fulfillment_adapter === 'coupon'
             ) {
-                MarkRewardReservationSubmittedAction::run(
+                app(RewardPointsApi::class)->markSubmission(
                     (string) $locked->reservation_key,
                     RewardPointReservationSubmission::STATUS_DELIVERED,
                     (string) $locked->external_ref,

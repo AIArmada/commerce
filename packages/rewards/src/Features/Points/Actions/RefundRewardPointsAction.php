@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
@@ -68,8 +69,8 @@ final readonly class RefundRewardPointsAction
     ): array {
         RewardOperationKeys::assertValid($refundOperationKey);
         RewardOperationKeys::assertValid($linkedAggregateKey);
-        CreditRewardPointsAction::assertActor($actorType, $actorId);
-        CreditRewardPointsAction::assertReason($reason);
+        RewardPointInput::assertActor($actorType, $actorId);
+        RewardPointInput::assertReason($reason);
 
         if ($points < 1) {
             throw new InvalidArgumentException('Refund points must be a positive integer.');

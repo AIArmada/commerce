@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
-use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
-use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardPointOperation;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
@@ -237,7 +234,7 @@ final readonly class RedeemRewardBenefitAction
         $total = ((int) $itemRow->cost_points) * $quantity;
         $unit = (string) $itemRow->cost_unit;
 
-        ReserveRewardPointsAction::run(
+        app(RewardPointsApi::class)->reserve(
             $recipientType,
             $recipientId,
             $familyKey,
@@ -281,7 +278,7 @@ final readonly class RedeemRewardBenefitAction
 
         // Lots are held by this transaction; pending pieces exist, so
         // the handoff mark commits atomically with the reservation.
-        MarkRewardReservationSubmittedAction::run(
+        app(RewardPointsApi::class)->markSubmission(
             $reservationKey,
             RewardPointReservationSubmission::STATUS_SENDING,
             $grantKey,
@@ -312,25 +309,13 @@ final readonly class RedeemRewardBenefitAction
             || (int) $winner->quantity !== $quantity
             || (string) $winner->fulfillment_adapter !== $adapter;
 
-        $operation = null;
-
-        if ($winner->reservation_key !== null) {
-            $query = RewardPointOperation::query()
-                ->where('kind', RewardPointOperationAuthority::KIND_RESERVE)
-                ->where('operation_key', (string) $winner->reservation_key);
-
-            $operation = $insideTransaction
-                ? $query->lockForUpdate()->first()
-                : $query->first();
-        }
-
-        if (! $operation instanceof RewardPointOperation) {
-            $mismatch = true;
-        } elseif ((string) $operation->family_key !== $familyKey
-            || (string) $operation->recipient_type !== $recipientType
-            || (string) $operation->recipient_id !== $recipientId
-            || (string) $operation->unit === ''
-        ) {
+        if ($winner->reservation_key === null || ! app(RewardPointsApi::class)->reservationMatches(
+            (string) $winner->reservation_key,
+            $familyKey,
+            $recipientType,
+            $recipientId,
+            $insideTransaction,
+        )) {
             $mismatch = true;
         }
 

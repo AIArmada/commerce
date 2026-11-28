@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
@@ -53,11 +54,11 @@ final readonly class DebitRewardPointsAction
         string $actorType = 'system',
         ?string $actorId = null,
     ): array {
-        CreditRewardPointsAction::assertRecipient($recipientType, $recipientId);
-        CreditRewardPointsAction::assertFamily($familyKey);
-        CreditRewardPointsAction::assertUnit($unit);
-        CreditRewardPointsAction::assertActor($actorType, $actorId);
-        CreditRewardPointsAction::assertReason($reason);
+        RewardPointInput::assertRecipient($recipientType, $recipientId);
+        RewardPointInput::assertFamily($familyKey);
+        RewardPointInput::assertUnit($unit);
+        RewardPointInput::assertActor($actorType, $actorId);
+        RewardPointInput::assertReason($reason);
         RewardOperationKeys::assertValid($operationKey);
 
         if ($reservationKey !== null) {

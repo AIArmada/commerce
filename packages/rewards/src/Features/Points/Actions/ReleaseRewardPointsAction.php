@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
@@ -41,8 +42,8 @@ final readonly class ReleaseRewardPointsAction
         ?string $actorId = null,
     ): array {
         RewardOperationKeys::assertValid($reservationKey);
-        CreditRewardPointsAction::assertActor($actorType, $actorId);
-        CreditRewardPointsAction::assertReason($reason);
+        RewardPointInput::assertActor($actorType, $actorId);
+        RewardPointInput::assertReason($reason);
 
         $occurred = $occurredAt === null
             ? CarbonImmutable::now('UTC')

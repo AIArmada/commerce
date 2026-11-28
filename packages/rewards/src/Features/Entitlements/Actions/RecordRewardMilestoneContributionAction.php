@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
@@ -13,7 +14,6 @@ use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
-use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
@@ -93,9 +93,9 @@ final readonly class RecordRewardMilestoneContributionAction
     ): array {
         RewardProgramGuard::findProgramOrFail($programId);
 
-        CreditRewardPointsAction::assertRecipient($recipientType, $recipientId);
-        CreditRewardPointsAction::assertFamily($familyKey);
-        CreditRewardPointsAction::assertActor($actorType, $actorId);
+        RewardPointInput::assertRecipient($recipientType, $recipientId);
+        RewardPointInput::assertFamily($familyKey);
+        RewardPointInput::assertActor($actorType, $actorId);
         RewardMilestoneCycleIdentity::assertDefinition($milestoneKey, $targetCount, $windowDays);
 
         $component = $rewardComponent instanceof RewardComponent ? $rewardComponent : RewardComponent::tryFrom($rewardComponent);
@@ -293,7 +293,7 @@ final readonly class RecordRewardMilestoneContributionAction
             throw new InvalidArgumentException('Milestone points require a unit.');
         }
 
-        CreditRewardPointsAction::assertUnit($unit);
+        RewardPointInput::assertUnit($unit);
 
         return ['type' => 'points', 'points' => $points, 'unit' => $unit];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
@@ -25,8 +26,6 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
-use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
-use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardAwardEntry;
 use AIArmada\Rewards\Models\RewardCapCounter;
@@ -1266,7 +1265,7 @@ final readonly class TransitionRewardAwardAction
                 }
             }
 
-            CreditRewardPointsAction::run(
+            app(RewardPointsApi::class)->credit(
                 (string) $award->recipient_type,
                 (string) $award->recipient_id,
                 $award->family_key,
@@ -1372,13 +1371,14 @@ final readonly class TransitionRewardAwardAction
         string $reason,
         CarbonImmutable $decided,
     ): void {
-        (new ClawBackAwardPointsAction($this->reservationResolver))->handle(
+        app(RewardPointsApi::class)->clawBack(
             (string) $award->getKey(),
             $actorType,
             $actorId,
             $actorRole,
             $reason,
             $decided,
+            $this->reservationResolver,
         );
     }
 

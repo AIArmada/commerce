@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
-use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
@@ -167,7 +167,7 @@ final readonly class RevokeRewardBenefitGrantAction
                 continue;
             }
 
-            RefundRewardPointsAction::run(
+            app(RewardPointsApi::class)->refund(
                 "refund:{$aggregateKey}:revoke",
                 $aggregateKey,
                 $points,

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
-use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
@@ -35,8 +35,8 @@ final readonly class RevokeRewardBadgeAction
         string $reason,
         ?CarbonInterface $revokedAt = null,
     ): ?RewardBadgeGrant {
-        CreditRewardPointsAction::assertRecipient($recipientType, $recipientId);
-        CreditRewardPointsAction::assertFamily($familyKey);
+        RewardPointInput::assertRecipient($recipientType, $recipientId);
+        RewardPointInput::assertFamily($familyKey);
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);
 

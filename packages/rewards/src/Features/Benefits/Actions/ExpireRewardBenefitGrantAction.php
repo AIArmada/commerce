@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
-use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
-use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
@@ -71,7 +70,7 @@ final readonly class ExpireRewardBenefitGrantAction
             }
 
             if ($locked->reservation_key !== null) {
-                ReleaseRewardPointsAction::run(
+                app(RewardPointsApi::class)->release(
                     (string) $locked->reservation_key,
                     'benefit-expired',
                     $decided,
@@ -79,7 +78,7 @@ final readonly class ExpireRewardBenefitGrantAction
                     $actorId,
                 );
 
-                MarkRewardReservationSubmittedAction::run(
+                app(RewardPointsApi::class)->markSubmission(
                     (string) $locked->reservation_key,
                     RewardPointReservationSubmission::STATUS_FAILED,
                     (string) $locked->grant_key,

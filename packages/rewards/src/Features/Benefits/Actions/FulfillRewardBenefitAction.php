@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
-use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointLot;
@@ -184,7 +183,7 @@ final readonly class FulfillRewardBenefitAction
             throw new InvalidArgumentException('Grant reservation spans families or units; refusing to fulfill.');
         }
 
-        DebitRewardPointsAction::run(
+        app(RewardPointsApi::class)->debit(
             (string) $grant->recipient_type,
             (string) $grant->recipient_id,
             $familyKey,
@@ -198,7 +197,7 @@ final readonly class FulfillRewardBenefitAction
             $actorId,
         );
 
-        MarkRewardReservationSubmittedAction::run(
+        app(RewardPointsApi::class)->markSubmission(
             (string) $grant->reservation_key,
             (string) $grant->fulfillment_adapter === 'coupon'
                 ? RewardPointReservationSubmission::STATUS_SUBMITTED
