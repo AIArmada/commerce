@@ -60,7 +60,7 @@ it('rejects missing, empty, relative, and malformed fixture timestamps without g
         c4Fixture(['occurred_at' => 'not-a-date']),
         c4Fixture(['occurred_at' => '2026-07-10']),
     ] as $index => $bad) {
-        expect(fn () => PreviewRewardQualificationAction::run($program, RewardComponent::Points, $bad, $decision))
+        expect(fn () => PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, $bad, $decision))
             ->toThrow(InvalidArgumentException::class, 'explicit absolute timestamp', "case {$index}");
     }
 });
@@ -84,22 +84,22 @@ it('rejects unclaimed, unattributed, bot, cancelled, and invalid sources', funct
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $guest = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['is_claimed_identity' => false]), $decision, $member);
+    $guest = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['is_claimed_identity' => false]), $decision, $member);
     expect($guest->reasons)->toBe([RewardPreviewReason::GuestUnclaimed]);
 
-    $unattributed = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['is_attributed' => false]), $decision, $member);
+    $unattributed = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['is_attributed' => false]), $decision, $member);
     expect($unattributed->reasons)->toBe([RewardPreviewReason::LateAttributionRefused]);
 
-    $bot = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['is_bot' => true]), $decision, $member);
+    $bot = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['is_bot' => true]), $decision, $member);
     expect($bot->reasons)->toBe([RewardPreviewReason::SourceBotExcluded]);
 
-    $cancelled = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['is_cancelled' => true]), $decision, $member);
+    $cancelled = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['is_cancelled' => true]), $decision, $member);
     expect($cancelled->reasons)->toBe([RewardPreviewReason::SourceCancelled]);
 
-    $invalid = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['is_valid_source' => false]), $decision, $member);
+    $invalid = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['is_valid_source' => false]), $decision, $member);
     expect($invalid->reasons)->toBe([RewardPreviewReason::SourceInvalid]);
 
-    $self = PreviewRewardQualificationAction::run($program, RewardComponent::Points, c4Fixture(['actor_id' => 'same', 'sharer_id' => 'same']), $decision, $member);
+    $self = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, c4Fixture(['actor_id' => 'same', 'sharer_id' => 'same']), $decision, $member);
     expect($self->reasons)->toBe([RewardPreviewReason::SelfCreditExcluded]);
 });
 
@@ -112,7 +112,7 @@ it('lets actor-bound beneficiary roles earn unattributed evidence while sharer-b
 
     foreach (['recipient', 'sharer'] as $role) {
         $refused = PreviewRewardQualificationAction::run(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             c4Fixture([...$unattributed, 'beneficiary_role' => $role]),
             $decision,
@@ -125,7 +125,7 @@ it('lets actor-bound beneficiary roles earn unattributed evidence while sharer-b
 
     foreach (['participant', 'purchaser', 'staff'] as $role) {
         $eligible = PreviewRewardQualificationAction::run(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             c4Fixture([...$unattributed, 'beneficiary_role' => $role]),
             $decision,
@@ -143,7 +143,7 @@ it('rejects unknown beneficiary roles instead of silently defaulting', function 
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
     expect(fn () => PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c4Fixture(['beneficiary_role' => 'moderator']),
         $decision,
@@ -162,7 +162,7 @@ it('applies per-kind verification without letting moderation vouch for attendanc
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
     $mismatch = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c4Fixture(['outcome' => 'attendance', 'verification' => 'moderated_approved']),
         $decision,
@@ -172,7 +172,7 @@ it('applies per-kind verification without letting moderation vouch for attendanc
     expect($mismatch->reasons)->toBe([RewardPreviewReason::VerificationInsufficient]);
 
     $submission = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c4Fixture(['source_business_key' => 'share-outcome:contribution:c4-2', 'outcome' => 'contribution', 'verification' => 'moderated_approved']),
         $decision,

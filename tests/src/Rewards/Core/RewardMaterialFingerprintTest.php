@@ -28,7 +28,7 @@ it('blocks new earning on rule-only material change while old references stay im
 
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $eligible = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-1',
@@ -59,7 +59,7 @@ it('blocks new earning on rule-only material change while old references stay im
     expect($v2->material_terms_hash)->not->toBe($v1->material_terms_hash);
 
     $stale = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-2',
@@ -87,7 +87,7 @@ it('blocks new earning on rule-only material change while old references stay im
     EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
 
     $fresh = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-3',

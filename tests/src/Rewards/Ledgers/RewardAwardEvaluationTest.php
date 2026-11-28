@@ -158,7 +158,7 @@ it('lets a matching activity variant loosen program eligibility and keeps previe
         CarbonImmutable::parse('2026-06-15T00:00:00Z'),
     );
     $preview = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => $fact->sourceBusinessKey,

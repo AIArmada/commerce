@@ -443,7 +443,7 @@ class ViewRewardProgram extends ViewRecord
 
                 try {
                     $result = $preview->handle(
-                        $this->programRecord(),
+                        (string) $this->programRecord()->getKey(),
                         RewardComponent::from((string) $data['component']),
                         [
                             'source_business_key' => 'fixture:preview:' . (string) $data['outcome'],

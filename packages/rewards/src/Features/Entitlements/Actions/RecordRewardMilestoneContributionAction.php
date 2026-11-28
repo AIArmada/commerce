@@ -17,8 +17,8 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
@@ -26,7 +26,6 @@ use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
 use AIArmada\Rewards\Support\RewardPointInput;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
-use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -369,49 +368,22 @@ final readonly class RecordRewardMilestoneContributionAction
         ?string $actorId,
         CarbonImmutable $windowStart,
     ): array {
-        $program = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();
+        $programs = app(RewardProgramLockApi::class);
+        $program = $programs->readProgram($programId, lock: true);
 
-        if (! $program instanceof RewardProgram) {
-            throw new InvalidArgumentException('Unknown reward program.');
-        }
-
-        if ($program->family_key !== $familyKey) {
+        if ($program->familyKey !== $familyKey) {
             throw new InvalidArgumentException('Milestone family must match the program family; cross-program definitions never mix.');
         }
 
-        if ($program->status->value !== 'active') {
+        if ($program->status !== 'active') {
             throw new InvalidArgumentException('Refused: program_not_active stops new milestone qualification.');
         }
 
         $factOccurred = $firstRead->occurredAt->setTimezone('UTC');
 
-        /** @var list<RewardProgramVersion> $versions */
-        $versions = RewardProgramVersion::query()
-            ->where('program_id', $program->getKey())
-            ->orderBy('version')
-            ->get()
-            ->all();
+        $version = $programs->effectivePolicy($programId, $factOccurred->toIso8601String());
 
-        $timeline = array_map(static fn (RewardProgramVersion $version): array => [
-            'id' => (string) $version->getKey(),
-            'version' => (int) $version->version,
-            'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
-        ], $versions);
-
-        $applicable = RewardVersionResolver::resolveAt($timeline, $factOccurred);
-        $version = null;
-
-        if ($applicable !== null) {
-            foreach ($versions as $candidate) {
-                if ((string) $candidate->getKey() === $applicable['id']) {
-                    $version = $candidate;
-
-                    break;
-                }
-            }
-        }
-
-        if (! $version instanceof RewardProgramVersion) {
+        if ($version === null) {
             throw new InvalidArgumentException('Refused: version_missing has no published version at the earning time.');
         }
 
@@ -431,10 +403,10 @@ final readonly class RecordRewardMilestoneContributionAction
         $this->assertOutcomeCompatible($version, $published, $outcomeEnum, $firstRead, $role);
 
         $coveringAcceptance = app(RewardEnrollmentConsentApi::class)->requireMilestoneConsent(
-            (string) $program->getKey(),
+            $program->id,
             $recipientType,
             $recipientId,
-            (string) $version->material_terms_hash,
+            $version->materialTermsHash,
             $factOccurred,
         );
 
@@ -547,7 +519,7 @@ final readonly class RecordRewardMilestoneContributionAction
 
         $award = RewardAward::query()->create([
             'program_id' => $programId,
-            'policy_version_id' => $version->getKey(),
+            'policy_version_id' => $version->id,
             'enrollment_id' => $coveringAcceptance->enrollmentId,
             'acceptance_id' => $coveringAcceptance->acceptanceId,
             'recipient_type' => $recipientType,
@@ -559,8 +531,8 @@ final readonly class RecordRewardMilestoneContributionAction
             'status' => RewardAwardStatus::Approved,
             'amount_snapshot' => $reward,
             'policy_snapshot' => [
-                'policy_version_id' => (string) $version->getKey(),
-                'policy_version' => (int) $version->version,
+                'policy_version_id' => $version->id,
+                'policy_version' => $version->version,
                 'milestone_key' => $milestoneKey,
                 'target_count' => $targetCount,
                 'window_days' => $windowDays,
@@ -615,7 +587,7 @@ final readonly class RecordRewardMilestoneContributionAction
     /**
      * @return array<string, mixed>|null
      */
-    private function publishedDefinition(RewardProgramVersion $version, string $milestoneKey): ?array
+    private function publishedDefinition(RewardPolicySnapshot $version, string $milestoneKey): ?array
     {
         $milestones = $version->rules['milestones'] ?? null;
 
@@ -633,7 +605,7 @@ final readonly class RecordRewardMilestoneContributionAction
     }
 
     private function assertOutcomeCompatible(
-        RewardProgramVersion $version,
+        RewardPolicySnapshot $version,
         array $milestone,
         string $outcome,
         RewardSourceFact $fact,

@@ -88,10 +88,10 @@ it('approves the happy path with fixture-labeled deterministic output', function
     $action = app(PreviewRewardQualificationAction::class);
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $first = $action->handle($program, RewardComponent::Points, previewFixture(), $decision, [
+    $first = $action->handle((string) $program->getKey(), RewardComponent::Points, previewFixture(), $decision, [
         'member_type' => 'user', 'member_id' => $memberId,
     ]);
-    $second = $action->handle($program, RewardComponent::Points, previewFixture(), $decision, [
+    $second = $action->handle((string) $program->getKey(), RewardComponent::Points, previewFixture(), $decision, [
         'member_type' => 'user', 'member_id' => $memberId,
     ]);
 
@@ -107,7 +107,7 @@ it('rejects non-active programs and missing versions', function (): void {
     [$program] = RewardCoreTestFixtures::seedVersionedProgram('core-prev-draft');
 
     $result = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -119,7 +119,7 @@ it('rejects non-active programs and missing versions', function (): void {
     [$active, $windowMemberId] = previewHarness([], 'core-prev-window');
 
     $missing = PreviewRewardQualificationAction::run(
-        $active,
+        (string) $active->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-05-01T00:00:00Z']),
         CarbonImmutable::parse('2026-05-15T00:00:00Z'),
@@ -128,7 +128,7 @@ it('rejects non-active programs and missing versions', function (): void {
     expect($missing->reasons)->toBe([RewardPreviewReason::VersionMissing]);
 
     $early = PreviewRewardQualificationAction::run(
-        $active,
+        (string) $active->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-01-01T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -143,13 +143,13 @@ it('rejects disallowed outcomes, categories, and weak verification', function ()
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $outcome = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['outcome' => 'person_follow']), $decision, $member);
+    $outcome = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['outcome' => 'person_follow']), $decision, $member);
     expect($outcome->reasons)->toBe([RewardPreviewReason::OutcomeNotAllowlisted]);
 
-    $category = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['category' => 'other']), $decision, $member);
+    $category = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['category' => 'other']), $decision, $member);
     expect($category->reasons)->toBe([RewardPreviewReason::CategoryNotAllowlisted]);
 
-    $verification = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['category' => 'family-night', 'verification' => 'unverified']), $decision, $member);
+    $verification = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['category' => 'family-night', 'verification' => 'unverified']), $decision, $member);
     expect($verification->reasons)->toBe([RewardPreviewReason::VerificationInsufficient]);
 });
 
@@ -158,10 +158,10 @@ it('never treats accepted registration as staff-verified attendance', function (
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $accepted = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['verification' => 'accepted']), $decision, $member);
+    $accepted = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['verification' => 'accepted']), $decision, $member);
     expect($accepted->reasons)->toBe([RewardPreviewReason::VerificationInsufficient]);
 
-    $verified = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['verification' => 'staff_verified']), $decision, $member);
+    $verified = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['verification' => 'staff_verified']), $decision, $member);
     expect($verified->decision)->toBe(RewardPreviewDecision::Eligible);
 });
 
@@ -170,13 +170,13 @@ it('excludes self credit, unclaimed guests, and recurring evidence when first-on
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $recurring = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['is_first_time' => false]), $decision, $member);
+    $recurring = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['is_first_time' => false]), $decision, $member);
     expect($recurring->reasons)->toBe([RewardPreviewReason::RecurringExcluded]);
 
-    $self = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['actor_id' => 'same', 'sharer_id' => 'same']), $decision, $member);
+    $self = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['actor_id' => 'same', 'sharer_id' => 'same']), $decision, $member);
     expect($self->reasons)->toBe([RewardPreviewReason::SelfCreditExcluded]);
 
-    $guest = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['is_claimed_identity' => false]), $decision, $member);
+    $guest = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['is_claimed_identity' => false]), $decision, $member);
     expect($guest->reasons)->toBe([RewardPreviewReason::GuestUnclaimed]);
 });
 
@@ -184,14 +184,14 @@ it('requires active enrollment with current acceptance at decision time', functi
     [$program, $memberId, $enrollment] = previewHarness([], 'core-prev-enroll');
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $missing = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(), $decision, [
+    $missing = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(), $decision, [
         'member_type' => 'user', 'member_id' => (string) Str::uuid(),
     ]);
     expect($missing->reasons)->toBe([RewardPreviewReason::EnrollmentMissing]);
 
     LeaveRewardProgramAction::run($enrollment, 'bye', CarbonImmutable::parse('2026-07-06T00:00:00Z'));
 
-    $left = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(), $decision, [
+    $left = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(), $decision, [
         'member_type' => 'user', 'member_id' => $memberId,
     ]);
     expect($left->reasons)->toBe([RewardPreviewReason::EnrollmentLeft]);
@@ -220,7 +220,7 @@ it('blocks new qualification after material terms change until reacceptance', fu
     );
 
     $stale = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-08-10T00:00:00Z']),
         $decision,
@@ -232,7 +232,7 @@ it('blocks new qualification after material terms change until reacceptance', fu
     EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
 
     $fresh = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-08-10T00:00:00Z']),
         $decision,
@@ -246,7 +246,7 @@ it('applies the published preclaim lookback without historical replay', function
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
     $inside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-06-20T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -255,7 +255,7 @@ it('applies the published preclaim lookback without historical replay', function
     expect($inside->decision)->toBe(RewardPreviewDecision::Eligible);
 
     $outside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-06-01T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -264,7 +264,7 @@ it('applies the published preclaim lookback without historical replay', function
     expect($outside->reasons)->toBe([RewardPreviewReason::OutsidePreclaimLookback]);
 
     $unattributed = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-06-20T00:00:00Z', 'is_attributed' => false]),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -273,7 +273,7 @@ it('applies the published preclaim lookback without historical replay', function
     expect($unattributed->reasons)->toBe([RewardPreviewReason::LateAttributionRefused]);
 
     $actorBound = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-06-20T00:00:00Z', 'is_attributed' => false, 'beneficiary_role' => 'participant']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -283,7 +283,7 @@ it('applies the published preclaim lookback without historical replay', function
         ->and($actorBound->reasons)->toContain(RewardPreviewReason::Ok);
 
     $future = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         previewFixture(['occurred_at' => '2026-07-12T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -297,23 +297,23 @@ it('holds ambiguous evidence and rejects stacking conflicts', function (): void 
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
-    $hold = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['is_ambiguous_device' => true]), $decision, $member);
+    $hold = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['is_ambiguous_device' => true]), $decision, $member);
     expect($hold->decision)->toBe(RewardPreviewDecision::Hold)
         ->and($hold->reasons)->toBe([RewardPreviewReason::HoldRequired]);
 
-    $stack = PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['claimed_family_keys' => ['other-family']]), $decision, $member);
+    $stack = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['claimed_family_keys' => ['other-family']]), $decision, $member);
     expect($stack->reasons)->toBe([RewardPreviewReason::StackingConflict]);
 
-    $component = PreviewRewardQualificationAction::run($program, RewardComponent::Cash, previewFixture(), $decision, $member);
+    $component = PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Cash, previewFixture(), $decision, $member);
     expect($component->reasons)->toBe([RewardPreviewReason::ComponentNotEnabled]);
 });
 
 it('rejects malformed fixture input without guessing', function (): void {
     [$program] = previewHarness([], 'core-prev-bad');
 
-    expect(fn () => PreviewRewardQualificationAction::run($program, RewardComponent::Points, ['outcome' => 'attendance'], CarbonImmutable::parse('2026-07-11T00:00:00Z')))
+    expect(fn () => PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, ['outcome' => 'attendance'], CarbonImmutable::parse('2026-07-11T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'source_business_key');
 
-    expect(fn () => PreviewRewardQualificationAction::run($program, RewardComponent::Points, previewFixture(['outcome' => 'nope']), CarbonImmutable::parse('2026-07-11T00:00:00Z')))
+    expect(fn () => PreviewRewardQualificationAction::run((string) $program->getKey(), RewardComponent::Points, previewFixture(['outcome' => 'nope']), CarbonImmutable::parse('2026-07-11T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'allowlisted');
 });

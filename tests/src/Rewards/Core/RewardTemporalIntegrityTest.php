@@ -139,7 +139,7 @@ it('gates gap facts by the relevant period and published lookback', function ():
     ];
 
     $inside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         array_merge($base, ['occurred_at' => '2026-06-17T00:00:00Z']),
         CarbonImmutable::parse('2026-06-26T00:00:00Z'),
@@ -149,7 +149,7 @@ it('gates gap facts by the relevant period and published lookback', function ():
     expect($inside->decision)->toBe(RewardPreviewDecision::Eligible);
 
     $outside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         array_merge($base, ['occurred_at' => '2026-05-01T00:00:00Z']),
         CarbonImmutable::parse('2026-06-26T00:00:00Z'),

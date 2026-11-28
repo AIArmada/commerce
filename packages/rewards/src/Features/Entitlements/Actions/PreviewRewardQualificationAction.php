@@ -12,12 +12,10 @@ use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Data\RewardPreviewResult;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
-use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use InvalidArgumentException;
@@ -45,14 +43,12 @@ final readonly class PreviewRewardQualificationAction
      * @param  array{member_type: string, member_id: string}|null  $member
      */
     public function handle(
-        RewardProgram | string $program,
+        string $programId,
         RewardComponent | string $requestedComponent,
         array | RewardPreviewFixture $fixture,
         CarbonInterface $decisionTime,
         ?array $member = null,
     ): RewardPreviewResult {
-        RewardProgramGuard::findProgramOrFail($program);
-
         $component = $requestedComponent instanceof RewardComponent
             ? $requestedComponent
             : RewardComponent::tryFrom($requestedComponent);
@@ -64,42 +60,10 @@ final readonly class PreviewRewardQualificationAction
         $facts = $fixture instanceof RewardPreviewFixture ? $fixture : $this->fixtureFromArray($fixture);
         $decision = CarbonImmutable::parse($decisionTime)->setTimezone('UTC');
 
-        $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
-        $loaded = RewardProgram::query()->whereKey($programId)->first();
-
-        if (! $loaded instanceof RewardProgram) {
-            throw new InvalidArgumentException('Unknown reward program.');
-        }
-
-        /** @var list<RewardProgramVersion> $versions */
-        $versions = RewardProgramVersion::query()
-            ->where('program_id', $loaded->getKey())
-            ->orderBy('version')
-            ->get()
-            ->all();
-
-        $timeline = array_map(static fn (RewardProgramVersion $version): array => [
-            'id' => (string) $version->getKey(),
-            'version' => (int) $version->version,
-            'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
-        ], $versions);
-
-        $applicable = RewardVersionResolver::resolveAt($timeline, $decision);
-        $applicableVersion = null;
-
-        if ($applicable !== null) {
-            foreach ($versions as $version) {
-                if ((string) $version->getKey() === $applicable['id']) {
-                    $applicableVersion = $version;
-
-                    break;
-                }
-            }
-        }
-
-        $rules = $applicableVersion instanceof RewardProgramVersion
-            ? $applicableVersion->rules
-            : [];
+        $programs = app(RewardProgramLockApi::class);
+        $loaded = $programs->readProgram($programId);
+        $applicableVersion = $programs->effectivePolicy($programId, $decision->toIso8601String());
+        $rules = $applicableVersion?->rules ?? [];
 
         $components = [];
         $rawComponents = $rules['components'] ?? [];
@@ -112,8 +76,8 @@ final readonly class PreviewRewardQualificationAction
             }
         }
 
-        $compatible = $applicableVersion instanceof RewardProgramVersion
-            ? array_values(array_filter($applicableVersion->compatible_with, is_string(...)))
+        $compatible = $applicableVersion !== null
+            ? array_values(array_filter($applicableVersion->compatibleWith, is_string(...)))
             : [];
 
         $consent = null;
@@ -124,24 +88,24 @@ final readonly class PreviewRewardQualificationAction
             }
 
             $consent = app(RewardEnrollmentConsentApi::class)->previewConsent(
-                (string) $loaded->getKey(),
+                $loaded->id,
                 $member['member_type'],
                 $member['member_id'],
-                $applicableVersion instanceof RewardProgramVersion ? (string) $applicableVersion->material_terms_hash : null,
+                $applicableVersion !== null ? $applicableVersion->materialTermsHash : null,
                 $decision,
             );
         }
 
         $context = new RewardPreviewContext(
-            programFamilyKey: $loaded->family_key,
-            programStatus: $loaded->status,
-            versionFound: $applicableVersion instanceof RewardProgramVersion,
-            versionId: $applicableVersion instanceof RewardProgramVersion ? (string) $applicableVersion->getKey() : null,
-            versionNumber: $applicableVersion instanceof RewardProgramVersion ? (int) $applicableVersion->version : null,
+            programFamilyKey: $loaded->familyKey,
+            programStatus: RewardProgramStatus::from($loaded->status),
+            versionFound: $applicableVersion !== null,
+            versionId: $applicableVersion !== null ? $applicableVersion->id : null,
+            versionNumber: $applicableVersion !== null ? $applicableVersion->version : null,
             versionRules: $rules,
             versionComponents: $components,
-            versionMaterialHash: $applicableVersion instanceof RewardProgramVersion ? (string) $applicableVersion->material_terms_hash : '',
-            versionEffectiveFrom: $applicableVersion instanceof RewardProgramVersion ? CarbonImmutable::parse($applicableVersion->effective_from)->setTimezone('UTC') : null,
+            versionMaterialHash: $applicableVersion !== null ? $applicableVersion->materialTermsHash : '',
+            versionEffectiveFrom: $applicableVersion !== null ? CarbonImmutable::parse($applicableVersion->effectiveFrom)->setTimezone('UTC') : null,
             compatibleWith: $compatible,
             enrollmentExists: $consent !== null,
             enrollmentActiveAtDecision: $consent?->activeAtDecision ?? false,

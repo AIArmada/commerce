@@ -74,7 +74,7 @@ it('keeps v1 consent valid after advance v2 acceptance before the effective boun
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
     $v1Decision = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(),
         CarbonImmutable::parse('2026-07-25T00:00:00Z'),
@@ -84,7 +84,7 @@ it('keeps v1 consent valid after advance v2 acceptance before the effective boun
     expect($v1Decision->decision)->toBe(RewardPreviewDecision::Eligible);
 
     $v2Decision = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(['source_business_key' => 'share-outcome:attendance:c2-2', 'occurred_at' => '2026-08-04T00:00:00Z']),
         CarbonImmutable::parse('2026-08-05T00:00:00Z'),
@@ -111,7 +111,7 @@ it('applies decision-time policy with lookback for pre-claim sources across a ma
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
     $inside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(['source_business_key' => 'share-outcome:attendance:c2-3', 'occurred_at' => '2026-06-20T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -121,7 +121,7 @@ it('applies decision-time policy with lookback for pre-claim sources across a ma
     expect($inside->decision)->toBe(RewardPreviewDecision::Eligible);
 
     $outside = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(['source_business_key' => 'share-outcome:attendance:c2-4', 'occurred_at' => '2026-05-01T00:00:00Z']),
         CarbonImmutable::parse('2026-07-11T00:00:00Z'),
@@ -147,7 +147,7 @@ it('resolves exact effective boundaries by decision time', function (): void {
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
     $before = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(['occurred_at' => '2026-07-31T12:00:00Z']),
         CarbonImmutable::parse('2026-07-31T23:59:59Z'),
@@ -158,7 +158,7 @@ it('resolves exact effective boundaries by decision time', function (): void {
         ->and($before->applicableVersionId)->toBe((string) $v1->getKey());
 
     $at = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         c2Fixture(['occurred_at' => '2026-08-01T00:00:00Z']),
         CarbonImmutable::parse('2026-08-01T00:00:00Z'),
