@@ -398,10 +398,8 @@ it('reports actual adjustment direction and shipment velocity from stock actions
         ->and($adjustment['total_negative'])->toBe(20)
         ->and($adjustment['net_adjustment'])->toBe(-20);
 
-    $velocity = $this->report->getMovementVelocity(
-        CarbonImmutable::now()->subDays(10),
-        CarbonImmutable::now(),
-    );
+    $end = CarbonImmutable::now()->addSecond();
+    $velocity = $this->report->getMovementVelocity($end->subDays(10), $end);
 
     expect($velocity['shipments_per_day'])->toBe(1.0)
         ->and($velocity['days_of_stock_at_current_rate'])->toBe(70.0);

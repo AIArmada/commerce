@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Console;
 
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\ExpiredReservations;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationOwnerBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -33,12 +32,9 @@ final class CleanupExpiredAllocationsCommand extends Command
 
         $this->info('Cleaning up expired inventory allocations...');
 
-        $runner = new OwnerBatchRunner(
-            InventoryLocation::class,
-            ['enabled' => 'inventory.owner.enabled'],
-        );
+        $runner = app(LocationOwnerBatch::class);
 
-        $runner->run(function () use ($allocationService, $reservationService, $isDryRun): void {
+        $runner->forEach(function () use ($allocationService, $reservationService, $isDryRun): void {
             $this->processScoped($allocationService, $reservationService, $isDryRun);
         });
 

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationOwnerBatch;
 use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use Carbon\CarbonImmutable;
 use Exception;
@@ -46,16 +45,13 @@ final class CreateValuationSnapshotCommand extends Command
         $this->info('Creating valuation snapshots...');
         $this->info("Costing method: {$method->label()}");
 
-        $runner = new OwnerBatchRunner(
-            InventoryLocation::class,
-            ['enabled' => 'inventory.owner.enabled'],
-        );
+        $runner = app(LocationOwnerBatch::class);
 
         $result = $runner->forEach(function () use ($valuationService, $method, $date): int {
             return $this->createSnapshot($valuationService, $method, null, $date);
         });
 
-        $failed = $result->contains(static fn (int $r): bool => $r !== self::SUCCESS);
+        $failed = in_array(self::FAILURE, $result, true);
 
         return $failed ? self::FAILURE : self::SUCCESS;
     }
