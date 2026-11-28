@@ -8,9 +8,10 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
+use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -71,7 +72,7 @@ test('voucher lookup can be refreshed after an out-of-band provider update', fun
 });
 
 test('voucher lookup cache keeps owner and global scopes separate', function (): void {
-    $cache = app(VoucherLookup::class);
+    $cache = app(VoucherLookupCache::class);
     $ownerA = new class extends Model
     {
         public function getMorphClass(): string
@@ -131,6 +132,17 @@ test('voucher lookup cache keeps owner and global scopes separate', function ():
         ->and($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
         ->toBe('Owner A')
         ->and($cache->remember('SHARED-CODE', null, false, fn (): VoucherData => $globalVoucher)?->name)
+        ->toBe('Global');
+
+    config()->set('vouchers.owner.enabled', true);
+
+    app(VoucherLookupInvalidation::class)->forgetIdentity('SHARED-CODE', 'test-owner', 'owner-a', DB::connection()->getName());
+
+    expect($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
+        ->toBe('Owner B')
+        ->and($cache->remember('SHARED-CODE', $ownerB, false, fn (): VoucherData => $ownerVoucher)?->name)
+        ->toBe('Owner B')
+        ->and($cache->remember('SHARED-CODE', null, false, fn (): VoucherData => $ownerVoucher)?->name)
         ->toBe('Global');
 });
 

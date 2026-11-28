@@ -13,7 +13,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDepletion;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
@@ -586,10 +586,11 @@ class Voucher extends Model implements Auditable
     protected static function booted(): void
     {
         self::saving(function (Voucher $voucher): void {
-            if ($voucher->exists && $voucher->isDirty('code')) {
-                app(VoucherLookup::class)->forgetForVoucher(
-                    $voucher,
+            if ($voucher->exists && $voucher->isDirty(['code', 'owner_type', 'owner_id'])) {
+                $voucher->invalidateLookup(
                     (string) $voucher->getRawOriginal('code'),
+                    $voucher->getRawOriginal('owner_type'),
+                    $voucher->getRawOriginal('owner_id'),
                 );
             }
 
@@ -611,7 +612,7 @@ class Voucher extends Model implements Auditable
         });
 
         self::saved(function (Voucher $voucher): void {
-            app(VoucherLookup::class)->forgetForVoucher($voucher);
+            $voucher->invalidateLookup($voucher->code, $voucher->owner_type, $voucher->owner_id);
         });
 
         self::creating(function (Voucher $voucher): void {
@@ -621,8 +622,18 @@ class Voucher extends Model implements Auditable
         });
 
         self::deleted(function (Voucher $voucher): void {
-            app(VoucherLookup::class)->forgetForVoucher($voucher);
+            $voucher->invalidateLookup($voucher->code, $voucher->owner_type, $voucher->owner_id);
         });
+    }
+
+    private function invalidateLookup(string $code, ?string $ownerType, string | int | null $ownerId): void
+    {
+        app(VoucherLookupInvalidation::class)->forgetIdentity(
+            $code,
+            $ownerType,
+            $ownerId === null ? null : (string) $ownerId,
+            $this->getConnection()->getName(),
+        );
     }
 
     protected function casts(): array

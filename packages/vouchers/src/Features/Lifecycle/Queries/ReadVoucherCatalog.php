@@ -10,8 +10,8 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 
 final class ReadVoucherCatalog implements VoucherCatalog
@@ -19,7 +19,7 @@ final class ReadVoucherCatalog implements VoucherCatalog
     use QueriesVouchers;
     use ResolvesVoucherAssignee;
 
-    public function __construct(private readonly VoucherLookup $lookupCache) {}
+    public function __construct(private readonly VoucherLookupCache $lookupCache) {}
 
     public function connectionName(): string
     {

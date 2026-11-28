@@ -22,6 +22,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDepletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherExpiry;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
@@ -33,7 +34,6 @@ use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherEligibility;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherUsageHistory;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -45,7 +45,8 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(VoucherRedemption::class, RedeemVoucher::class);
         $app->bind(VoucherCreator::class, CreateVoucher::class);
         $app->singleton(AffiliateIntegrationRegistrar::class);
-        $app->singleton(VoucherLookup::class, VoucherLookupCache::class);
+        $app->singleton(VoucherLookupCache::class);
+        $app->bind(VoucherLookupInvalidation::class, VoucherLookupCache::class);
         $app->singleton(VoucherCatalog::class, ReadVoucherCatalog::class);
         $app->bind(VoucherEligibility::class, ReadVoucherEligibility::class);
         $app->bind(VoucherUsageHistory::class, ReadVoucherUsageHistory::class);
