@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Pricing\Queries\OwnerScopedPricingReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +18,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -151,25 +151,7 @@ class Price extends Model implements Auditable
                 throw new AuthorizationException('Price list is not accessible in the current owner scope.');
             }
 
-            $type = $price->priceable_type;
-            $type = is_string($type) ? (Relation::getMorphedModel($type) ?? $type) : null;
-
-            if ($owner !== null && is_string($type) && class_exists($type) && is_a($type, Model::class, true)) {
-                $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);
-
-                if ($usesHasOwner) {
-                    /** @var Builder<Model> $query */
-                    $query = $type::query();
-
-                    $exists = $query
-                        ->whereKey($price->priceable_id)
-                        ->exists();
-
-                    if (! $exists) {
-                        throw new AuthorizationException('Priceable entity is not accessible in the current owner scope.');
-                    }
-                }
-            }
+            OwnerScopedPricingReference::assertAccessible($price->priceable_type, $price->priceable_id, $price->owner_type, $price->owner_id, 'Priceable entity');
         });
     }
 

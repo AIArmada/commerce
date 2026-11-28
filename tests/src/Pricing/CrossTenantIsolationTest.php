@@ -319,3 +319,44 @@ it('rejects tenant price and tier writes into a visible global price list', func
     expect(Price::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0)
         ->and(PriceTier::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0);
 });
+
+it('rejects global prices and tiers referencing tenant-owned records', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => true,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $owner = User::query()->create(['name' => 'Tenant Target', 'email' => 'pricing-global-reference@example.com', 'password' => 'secret']);
+    $owned = OwnerContext::withOwner($owner, fn (): PriceList => PriceList::query()->create([
+        'name' => 'Private Target', 'slug' => 'private-global-target', 'currency' => 'MYR',
+    ]));
+
+    OwnerContext::withOwner(null, function () use ($owned): void {
+        $global = PriceList::query()->create(['name' => 'Global List', 'slug' => 'global-reference-list', 'currency' => 'MYR']);
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $owned->getMorphClass(),
+            'priceable_id' => $owned->id,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $global->id,
+            'tierable_type' => $owned->getMorphClass(),
+            'tierable_id' => $owned->id,
+            'min_quantity' => 2,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        $price = Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $global->getMorphClass(),
+            'priceable_id' => $global->id,
+            'amount' => 100,
+        ]);
+
+        expect($price->exists)->toBeTrue();
+    });
+});
