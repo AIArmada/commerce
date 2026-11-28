@@ -37,11 +37,11 @@ Passing a model that does not implement the required marker fails at the manager
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Followable;
-use AIArmada\Engagement\Traits\CanFollow;
-use AIArmada\Engagement\Traits\HasFollowers;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
 
 // Actor model implements CanInteract and uses CanFollow
 class User extends Model implements CanInteract { use CanFollow; }
@@ -50,44 +50,44 @@ class User extends Model implements CanInteract { use CanFollow; }
 class Speaker extends Model implements Followable { use HasFollowers; }
 
 // Follow a speaker
-$follow = app(EngagementManager::class)->follow($user, $speaker);
+$follow = app(ManageInteractionsAction::class)->follow($user, $speaker);
 
 // Unfollow
-app(EngagementManager::class)->unfollow($user, $speaker);
+app(ManageInteractionsAction::class)->unfollow($user, $speaker);
 
 // Mute/unmute notifications from a follow
-app(EngagementManager::class)->muteFollow($user, $speaker);
-app(EngagementManager::class)->unmuteFollow($user, $speaker);
+app(ManageInteractionsAction::class)->muteFollow($user, $speaker);
+app(ManageInteractionsAction::class)->unmuteFollow($user, $speaker);
 
 // Check state
-$resolver = app(EngagementStateResolver::class);
+$resolver = app(ReadsInteractionState::class);
 $resolver->isFollowing($user, $speaker);  // bool
 ```
 
-Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never deletes rows — it transitions statuses.
+Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never deletes rows — it transitions statuses. `FollowRemoved` is dispatched only when an `active` follow becomes `unfollowed`; unfollowing an already muted follow clears `muted_at` without emitting a second removal event or decrementing the active-follower counter again.
 
 ## Bookmarking
 
 ```php
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Traits\CanBookmark;
-use AIArmada\Engagement\Traits\HasBookmarks;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanBookmark;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasBookmarks;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 class User extends Model implements CanInteract { use CanBookmark; }
 class Event extends Model implements Bookmarkable { use HasBookmarks; }
 
 // Bookmark an event
-$bookmark = app(EngagementManager::class)->bookmark($user, $event);
+$bookmark = app(ManageInteractionsAction::class)->bookmark($user, $event);
 
 // Remove bookmark
-app(EngagementManager::class)->removeBookmark($user, $event);
+app(ManageInteractionsAction::class)->removeBookmark($user, $event);
 
 // Archive bookmark
-app(EngagementManager::class)->archiveBookmark($user, $event);
+app(ManageInteractionsAction::class)->archiveBookmark($user, $event);
 
 // Create collections
 $collection = OwnerContext::withOwner($tenant, fn () => BookmarkCollection::create([
@@ -96,34 +96,34 @@ $collection = OwnerContext::withOwner($tenant, fn () => BookmarkCollection::crea
 ]));
 
 // Organize bookmarks into collections
-app(EngagementManager::class)->addBookmarkToCollection($user, $bookmark, $collection);
-app(EngagementManager::class)->removeBookmarkFromCollection($user, $bookmark, $collection);
+app(ManageInteractionsAction::class)->addBookmarkToCollection($user, $bookmark, $collection);
+app(ManageInteractionsAction::class)->removeBookmarkFromCollection($user, $bookmark, $collection);
 ```
 
 ## Responding (RSVP)
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Respondable;
-use AIArmada\Engagement\Traits\CanRespond;
-use AIArmada\Engagement\Traits\HasResponses;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanRespond;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasResponses;
 
 class User extends Model implements CanInteract { use CanRespond; }
 class Occurrence extends Model implements Respondable { use HasResponses; }
 
 // RSVP with a response type
-app(EngagementManager::class)->respond($user, $occurrence, 'going');
+app(ManageInteractionsAction::class)->respond($user, $occurrence, 'going');
 
 // Change response
-app(EngagementManager::class)->respond($user, $occurrence, 'maybe');
+app(ManageInteractionsAction::class)->respond($user, $occurrence, 'maybe');
 
 // Cancel response
-app(EngagementManager::class)->cancelResponse($user, $occurrence);
+app(ManageInteractionsAction::class)->cancelResponse($user, $occurrence);
 
 // Check current response
-$response = $resolver->responseFor($user, $occurrence);
+$response = app(ReadsInteractionState::class)->responseFor($user, $occurrence);
 ```
 
 Common response types: `interested`, `going`, `maybe`, `not_going`. The response type is a free-form string — define your own enum or constants.
@@ -132,26 +132,26 @@ Common response types: `interested`, `going`, `maybe`, `not_going`. The response
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Reactable;
-use AIArmada\Engagement\Traits\CanReact;
-use AIArmada\Engagement\Traits\HasReactions;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanReact;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasReactions;
 
 class User extends Model implements CanInteract { use CanReact; }
 class Recording extends Model implements Reactable { use HasReactions; }
 
 // React to a recording
-app(EngagementManager::class)->react($user, $recording, 'like');
+app(ManageInteractionsAction::class)->react($user, $recording, 'like');
 
 // Remove reaction
-app(EngagementManager::class)->removeReaction($user, $recording);
+app(ManageInteractionsAction::class)->removeReaction($user, $recording);
 
 // Remove specific reaction type
-app(EngagementManager::class)->removeReaction($user, $recording, 'like');
+app(ManageInteractionsAction::class)->removeReaction($user, $recording, 'like');
 
 // Check current reaction
-$reaction = $resolver->reactionFor($user, $recording);
+$reaction = app(ReadsInteractionState::class)->reactionFor($user, $recording);
 ```
 
 Common reaction types: `like`, `love`, `useful`, `support`, `insightful`, `funny`. Free-form string.
@@ -161,15 +161,15 @@ Common reaction types: `like`, `love`, `useful`, `support`, `insightful`, `funny
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Traits\CanSubscribe;
-use AIArmada\Engagement\Traits\HasSubscriptions;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Concerns\CanSubscribe;
+use AIArmada\Engagement\Features\Subscriptions\Concerns\HasSubscriptions;
 
 class User extends Model implements CanInteract { use CanSubscribe; }
 class Event extends Model implements Subscribable { use HasSubscriptions; }
 
 // Subscribe to all online events
-$subscription = app(SubscriptionManager::class)->subscribe(
+$subscription = app(ManageSubscriptionsAction::class)->subscribe(
     subscriber: $user,
     subject: null,              // null = global subscription
     subscriptionType: 'updates',
@@ -180,20 +180,20 @@ $subscription = app(SubscriptionManager::class)->subscribe(
 );
 
 // Subscribe to a specific event's updates
-$subscription = app(SubscriptionManager::class)->subscribe(
+$subscription = app(ManageSubscriptionsAction::class)->subscribe(
     subscriber: $user,
     subject: $event,
     subscriptionType: 'updates',
 );
 
 // Unsubscribe
-app(SubscriptionManager::class)->unsubscribe($user, $event);
+app(ManageSubscriptionsAction::class)->unsubscribe($user, $event);
 
 // Mute a subscription
-app(SubscriptionManager::class)->muteSubscription($subscription);
+app(ManageSubscriptionsAction::class)->muteSubscription($subscription);
 
 // Find subscriptions matching a subject (used by the matching engine)
-$subscriptions = app(SubscriptionManager::class)->matchingSubscriptions(
+$subscriptions = app(ManageSubscriptionsAction::class)->matchingSubscriptions(
     subject: $newEvent,
     trigger: 'event_published',
 );
@@ -223,15 +223,15 @@ class Event extends Model implements HasSubscriptionMatchContext, Subscribable
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Traits\CanSetReminders;
-use AIArmada\Engagement\Traits\HasReminders;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Concerns\CanSetReminders;
+use AIArmada\Engagement\Features\Reminders\Concerns\HasReminders;
 
 class User extends Model implements CanInteract { use CanSetReminders; }
 class Occurrence extends Model implements Remindable { use HasReminders; }
 
 // Set a reminder for an absolute time
-$reminder = app(ReminderManager::class)->setReminder(
+$reminder = app(ManageRemindersAction::class)->setReminder(
     recipient: $user,
     subject: $occurrence,
     reminderType: 'before_start',
@@ -243,7 +243,7 @@ $reminder = app(ReminderManager::class)->setReminder(
 
 // Or schedule it relative to a subject anchor (resolved immediately via
 // Remindable::reminderAnchorTime() minus the offset)
-$reminder = app(ReminderManager::class)->setReminder(
+$reminder = app(ManageRemindersAction::class)->setReminder(
     recipient: $user,
     subject: $occurrence,
     reminderType: 'before_start',
@@ -255,19 +255,70 @@ $reminder = app(ReminderManager::class)->setReminder(
 );
 
 // Cancel reminder
-app(ReminderManager::class)->cancelReminder($user, $occurrence, 'before_start');
+app(ManageRemindersAction::class)->cancelReminder($user, $occurrence, 'before_start');
 
 // The engagement:send-due-reminders command detects due reminders
-$due = app(ReminderManager::class)->dueReminders();
+$due = app(\AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery::class)->execute();
 ```
 
 Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `CommunicationManager` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
-Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
-so overlapping command runs skip reminders already claimed or completed. Direct
-`markSent` and `markFailed` calls only transition pending or scheduled reminders;
-terminal reminders are left unchanged. A dispatch failure marks that reminder
-`failed` with the reason and the command continues with the next one.
+Reminder lifecycle events carry immutable identifiers, not Eloquent instances.
+Each due reminder is claimed with a persisted compare-and-set on the reminder
+row (`claim_token`, `claimed_at`, `claim_expires_at`, and `attempts`).
+Finalization runs in a short owned database transaction; `ReminderDue` is
+dispatched after the claim is committed and before finalization starts, so
+listeners must not rely on an open transaction. Finalization is fenced by the claim token:
+a stale worker whose lease was taken over cannot mark the reminder `sent` or
+`failed`. Leases default to `reminder.claim_ttl` seconds. A crashed worker is
+recovered after the lease expires, and `reminder.max_attempts` bounds repeated
+attempts; an exhausted reminder is marked failed instead of retrying forever.
+A worker that misses a live claim does not spend the batch budget. Cancelling a
+reminder during delivery wins, and the stale delivery cannot overwrite the
+cancelled status. Expired reminders are never claimed.
+
+Delivery is at-least-once across crashes: an external effect can complete before
+finalization records it. `ReminderDue` carries the active `claimToken`; listeners
+must ignore events whose token no longer matches the reminder claim, and the
+communications listener also ignores reminders that are no longer pending,
+scheduled, or unexpired. Custom listeners must treat `$event->reminderId` as
+their idempotency key and handle repeat attempts safely, for example by
+creating a unique delivery ledger row keyed by the reminder ID, handing off to
+an idempotent provider API, and recording completion. The communications
+integration reuses an existing `Communication` with idempotency key
+`engagement-reminder:{reminderId}` and attaches its reference idempotently. The
+duplicate check is enforced by an owner-scoped unique index on
+`communications.idempotency_key`, so retries remain safe even when the
+idempotency cache is flushed or per-process. No integration promises
+exactly-once delivery for arbitrary downstream effects.
+Direct `markSent` and `markFailed` calls only transition pending or scheduled
+reminders; terminal reminders are left unchanged. A dispatch failure marks that reminder `failed`
+with the reason and the command continues with the next one.
+
+A custom listener can make repeats safe with the immutable reminder ID:
+
+```php
+use AIArmada\Engagement\Events\ReminderDue;
+use App\Models\ReminderDelivery;
+
+final class DeliverReminder
+{
+    public function handle(ReminderDue $event): void
+    {
+        $delivery = ReminderDelivery::query()->firstOrCreate(
+            ['reminder_id' => $event->reminderId],
+            ['status' => 'pending'],
+        );
+
+        if ($delivery->status === 'sent') {
+            return;
+        }
+
+        // Hand off $event->reminderId to an idempotent provider API.
+        $delivery->update(['status' => 'sent', 'sent_at' => now()]);
+    }
+}
+```
 
 Setting the same pending reminder twice (same recipient, subject, type, channel,
 and instant) returns the existing row instead of creating a duplicate.
@@ -284,21 +335,21 @@ ever reach the dispatch listener.
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\Shareable;
-use AIArmada\Engagement\Traits\CanShare;
-use AIArmada\Engagement\Traits\HasShares;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanShare;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasShares;
 
 class User extends Model implements CanInteract { use CanShare; }
 class Event extends Model implements Shareable { use HasShares; }
 
 // Share an event to WhatsApp
-$share = app(EngagementManager::class)->share($user, $event, [
+$share = app(ManageInteractionsAction::class)->share($user, $event, [
     'channel' => 'whatsapp',
 ]);
 
 // Share with a custom message
-$share = app(EngagementManager::class)->share($user, $event, [
+$share = app(ManageInteractionsAction::class)->share($user, $event, [
     'channel' => 'telegram',
     'message' => 'Check this out!',
 ]);
@@ -323,9 +374,9 @@ significant.
 ## Working with engagement counters
 
 ```php
-use AIArmada\Engagement\Contracts\EngagementCounterService;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 
-$counter = app(EngagementCounterService::class);
+$counter = app(UpdateEngagementCountersAction::class);
 
 $counter->countFollowers($event);    // int
 $counter->countBookmarks($event);    // int
@@ -349,29 +400,32 @@ from console cron without an ambient owner.
 ## Working with the state resolver
 
 ```php
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 
-$resolver = app(EngagementStateResolver::class);
+$resolver = app(ReadsInteractionState::class);
 
 $isFollowing = $resolver->isFollowing($user, $speaker);
 $isBookmarked = $resolver->isBookmarked($user, $event);
 $response = $resolver->responseFor($user, $occurrence);
 $reaction = $resolver->reactionFor($user, $recording);
-$subscriptions = $resolver->subscriptionsFor($user, $event);
-$reminders = $resolver->remindersFor($user, $occurrence);
+$subscriptions = app(ReadsSubscriptionState::class)->subscriptionsFor($user, $event);
+$reminders = app(ReadsReminderState::class)->remindersFor($user, $occurrence);
 ```
 
 ## Events package adapter and attendance separation
 
 When `aiarmada/events` is installed, the engagement package can bind an `EventEngagementManager` adapter for explicit calls. Event registration remains transactional attendance intent; engagement responses remain social-graph intent. The package does not automatically translate an `Interested` registration or an event-publication event into an engagement response or subscription match.
 
-Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`.
+Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`. Matching runs once per owner partition: tenant-owned subscriptions only match within their own owner context, and global subscriptions only match in the global context. A subject model without owner columns is treated as a global subject and is resolved in each subscription partition.
 
 ```php
-// Sharing a compatible event subject persists a Share record via EngagementManager
-app(EngagementManager::class)->share($user, $event, ['channel' => 'twitter']);
+// Sharing a compatible event subject persists a Share record via ManageInteractionsAction
+app(ManageInteractionsAction::class)->share($user, $event, ['channel' => 'twitter']);
 // → Share record created with status 'created', then 'shared'
-// → ShareCreated and ShareCompleted dispatched
+// → ShareCreated and ShareCompleted dispatched with immutable identity payloads
+// → Share tokens, URLs and destination details are not included in these events
 ```
 
 The `stateFor()` method includes a `share` key with the active share's `id`, `share_url`, `share_token`, `channel`, `status`, and `shared_at`.
@@ -409,3 +463,5 @@ Free-form inputs (types, channels, notes, messages, destinations, metadata) are
 length-validated at the manager boundaries: 255 characters for `string` columns,
 65,535 for `text` columns. Overlong or mistyped values throw
 `InvalidArgumentException` before any policy check or write.
+
+The Events engagement adapter returns detached record arrays for successful writes (including `id` and persisted attributes), or `null` from the null driver. It does not expose Eloquent models across the package boundary.

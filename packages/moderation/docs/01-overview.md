@@ -42,10 +42,8 @@ title: Overview
 
 | Surface | Purpose |
 | --- | --- |
-| `Contracts\BlocksEntity` | Contract for creating block records |
-| `Contracts\RecordsModerationAction` | Contract for recording moderation actions |
-| `Actions\BlockEntityAction` | Default implementation of `BlocksEntity` |
-| `Actions\RecordModerationAction` | Default implementation of `RecordsModerationAction` |
+| `Actions\BlockEntityAction` | Creates or extends active blocks |
+| `Actions\RecordModerationAction` | Records moderation actions |
 | `Models\Block` | Stores block state, expiry, lift metadata, and notes |
 | `Models\ModerationAction` | Stores moderation events and metadata |
 | `Traits\HasBlocks` | Adds `blocks()`, `activeBlocks()`, and `block()` helpers |

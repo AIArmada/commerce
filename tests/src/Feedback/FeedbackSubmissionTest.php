@@ -3,10 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\StartFeedbackResponseAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
@@ -14,11 +10,17 @@ use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use Illuminate\Support\Collection;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Actions\StartFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -35,7 +37,7 @@ it('rejects an invitation issued for another form', function (): void {
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $formB->id,
-            answers: new Collection,
+            answers: [],
             invitationId: $invitation->id,
             isAnonymous: true,
         ),
@@ -57,9 +59,9 @@ it('rejects question ids from another form', function (): void {
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $formB->id,
-            answers: collect([
+            answers: [
                 new SubmittedAnswerData($questionA->id, $questionA->key, 'Injected'),
-            ]),
+            ],
             isAnonymous: true,
         ),
     ))->toThrow(RuntimeException::class, 'outside the selected form');
@@ -78,9 +80,9 @@ it('submits and scores answers inside the current owner scope', function (): voi
     $response = app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $form->id,
-            answers: collect([
+            answers: [
                 new SubmittedAnswerData($question->id, $question->key, 8),
-            ]),
+            ],
             isAnonymous: true,
         ),
     );
@@ -104,7 +106,7 @@ it('reuses one submitted response per respondent', function (): void {
     );
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -129,12 +131,12 @@ it('reuses an open draft when starting twice for a respondent', function (): voi
     $form = publishedFeedbackForm('Draft Reuse Form');
 
     $firstResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
     $secondResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -156,14 +158,14 @@ it('submits an existing open draft', function (): void {
     ]);
     $form = publishedFeedbackForm('Stale Draft Form', isOneResponsePerRespondent: true);
     $startResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     ));
@@ -186,7 +188,7 @@ it('allows multiple submitted responses when one-response mode is disabled', fun
     $form = publishedFeedbackForm('Multiple Response Form');
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -219,7 +221,7 @@ it('returns one submitted response when submissions race', function (): void {
     $form = publishedFeedbackForm('Concurrent Form', isOneResponsePerRespondent: true);
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -261,6 +263,34 @@ it('returns one submitted response when submissions race', function (): void {
     } finally {
         feedbackConcurrencyRestoreDatabase($databasePath, $originalDatabase);
     }
+});
+
+it('isolates anonymous drafts by invitation and never reuses an unbound anonymous draft', function (): void {
+    $form = publishedFeedbackForm('Anonymous Draft Isolation');
+    $start = app(StartFeedbackResponseAction::class);
+
+    $first = $start->execute(formId: $form->id, isAnonymous: true);
+    $second = $start->execute(formId: $form->id, isAnonymous: true);
+
+    expect($first->is($second))->toBeFalse();
+
+    $invitations = [];
+    foreach ([1, 2] as $index) {
+        $invitations[] = FeedbackInvitation::query()->create([
+            'feedback_form_id' => $form->id,
+            'token_hash' => hash('sha256', 'anonymous-draft-' . $index),
+            'status' => FeedbackInvitationStatus::Pending,
+        ]);
+    }
+
+    $draftA = $start->execute(formId: $form->id, invitationId: $invitations[0]->id, isAnonymous: true);
+    $draftB = $start->execute(formId: $form->id, invitationId: $invitations[1]->id, isAnonymous: true);
+    $repeat = $start->execute(formId: $form->id, invitationId: $invitations[0]->id, isAnonymous: true);
+
+    expect($draftA->is($draftB))->toBeFalse()
+        ->and($draftA->feedback_invitation_id)->toBe($invitations[0]->id)
+        ->and($draftB->feedback_invitation_id)->toBe($invitations[1]->id)
+        ->and($repeat->is($draftA))->toBeTrue();
 });
 
 function publishedFeedbackForm(
@@ -431,3 +461,98 @@ function feedbackConcurrencyRestoreDatabase(string $databasePath, string $origin
         unlink($databasePath);
     }
 }
+
+it('rejects a targeted invitation used by a different respondent', function (): void {
+    $form = publishedFeedbackForm('Targeted Invitation');
+    $recipient = User::factory()->create();
+    $other = User::factory()->create();
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', 'targeted-recipient'),
+        'status' => FeedbackInvitationStatus::Pending,
+        'recipient_type' => $recipient->getMorphClass(),
+        'recipient_id' => $recipient->getKey(),
+    ]);
+
+    expect(fn () => app(StartFeedbackResponseAction::class)->execute(
+        formId: $form->id,
+        respondentType: $other->getMorphClass(),
+        respondentId: (string) $other->getKey(),
+        invitationId: $invitation->id,
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('rejects invalid submission answer lists at the DTO boundary', function (): void {
+    expect(fn () => new SubmitFeedbackResponseData('form-id', ['invalid']))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => new SubmitFeedbackResponseData('form-id', ['answer' => new SubmittedAnswerData('question-id', 'key', 'value')]))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('honors the submitted anonymity choice when reusing a draft and extracting a testimonial', function (bool $draftAnonymous, bool $submitAnonymous): void {
+    config()->set('feedback.features.testimonials', true);
+    $respondent = User::factory()->create();
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(
+        name: 'Testimonial Privacy',
+        purpose: 'testimonial_collection',
+        status: 'published',
+        visibility: 'public',
+        isAnonymityOptional: true,
+    ));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'quote',
+        'type' => 'short_text',
+        'label' => 'Quote',
+    ]);
+
+    $draft = app(StartFeedbackResponseAction::class)->execute(
+        formId: $form->id,
+        respondentType: $respondent->getMorphClass(),
+        respondentId: (string) $respondent->getKey(),
+        isAnonymous: $draftAnonymous,
+    );
+
+    $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
+        formId: $form->id,
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'Useful feedback')],
+        respondentType: $respondent->getMorphClass(),
+        respondentId: (string) $respondent->getKey(),
+        isAnonymous: $submitAnonymous,
+    ));
+
+    $testimonial = FeedbackTestimonial::query()->where('feedback_response_id', $response->id)->firstOrFail();
+
+    expect($response->is($draft))->toBeTrue()
+        ->and($response->fresh()->is_anonymous)->toBe($submitAnonymous)
+        ->and($testimonial->respondent_type)->toBe($submitAnonymous ? null : $respondent->getMorphClass())
+        ->and($testimonial->respondent_id)->toBe($submitAnonymous ? null : (string) $respondent->getKey());
+})->with([
+    'anonymous at submission' => [false, true],
+    'identified at submission' => [true, false],
+]);
+
+it('uses a single canonical respondent identity for drafts and submissions', function (): void {
+    $originalMap = Relation::morphMap();
+
+    try {
+        Relation::morphMap(['feedback-test-user' => User::class], false);
+        $respondent = User::factory()->create();
+        $form = publishedFeedbackForm('Canonical Respondent', isOneResponsePerRespondent: true);
+        $start = app(StartFeedbackResponseAction::class);
+        $submit = app(SubmitFeedbackResponseAction::class);
+        $id = (string) $respondent->getKey();
+
+        $draft = $start->execute($form->id, User::class, $id);
+        $sameDraft = $start->execute($form->id, $respondent->getMorphClass(), $id);
+
+        $first = $submit->execute(new SubmitFeedbackResponseData($form->id, [], User::class, $id));
+        $second = $submit->execute(new SubmitFeedbackResponseData($form->id, [], $respondent->getMorphClass(), $id));
+
+        expect($sameDraft->is($draft))->toBeTrue()
+            ->and($first->is($draft))->toBeTrue()
+            ->and($second->is($first))->toBeTrue()
+            ->and($first->respondent_type)->toBe('feedback-test-user');
+    } finally {
+        Relation::morphMap($originalMap, false);
+    }
+});

@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Subscriptions",
+    "owns": {
+        "table:subscriptions": [
+            "AIArmada\\Engagement\\Features\\Subscriptions\\Actions\\ManageSubscriptionsAction"
+        ]
+    },
+    "extensions": {}
+}

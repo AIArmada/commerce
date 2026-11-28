@@ -54,11 +54,14 @@ title: Engagement Overview
 
 | Contract | Default Service | Purpose |
 |---|---|---|
-| `EngagementManager` | `DefaultEngagementManager` | Central facade: follow, bookmark, respond, react, remind, share |
-| `SubscriptionManager` | `DefaultSubscriptionManager` | Subscribe, unsubscribe, mute, match subscriptions |
-| `ReminderManager` | `DefaultReminderManager` | Set, cancel, due reminders, mark sent/failed |
-| `EngagementStateResolver` | `DefaultEngagementStateResolver` | Query state: isFollowing, isBookmarked, responseFor, reactionFor |
-| `EngagementCounterService` | `DefaultEngagementCounterService` | Count followers, bookmarks, responses, reactions |
+| `ManageInteractionsAction` | `ManageInteractionsAction` | Central facade: follow, bookmark, respond, react, share |
+| `ManageSubscriptionsAction` | `ManageSubscriptionsAction` | Subscribe, unsubscribe, mute, match subscriptions |
+| `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, mark sent/failed |
+| `ReadsInteractionState` | `ReadInteractionStateQuery` | Follow, bookmark, response and reaction state |
+| `ReadsSubscriptionState` | `ReadSubscriptionStateQuery` | Bounded active subscription snapshots |
+| `ReadDueRemindersQuery` | `ReadDueRemindersQuery` | Bounded due reminder batch |
+| `ReadsReminderState` | `ReadReminderStateQuery` | Bounded pending reminder snapshots |
+| `UpdateEngagementCountersAction` | `UpdateEngagementCountersAction` | Count followers, bookmarks, responses, reactions |
 | `EngagementPolicyResolver` | `DefaultEngagementPolicyResolver` | Resolve engagement policies per model |
 | `ShareUrlGenerator` | `DefaultShareUrlGenerator` | Generate share URLs for platforms |
 

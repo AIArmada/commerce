@@ -9,8 +9,8 @@ title: Filament Contacting Usage
 In your resource (e.g., `InstitutionResource`), add the relation managers:
 
 ```php
-use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
-use AIArmada\FilamentContacting\RelationManagers\SocialProfilesRelationManager;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\RelationManagers\ContactMethodsRelationManager;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\RelationManagers\SocialProfilesRelationManager;
 use Filament\Resources\Resource;
 
 final class InstitutionResource extends Resource
@@ -28,8 +28,8 @@ final class InstitutionResource extends Resource
 The model must use the core traits:
 
 ```php
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 
 final class Institution extends Model
 {
@@ -96,7 +96,7 @@ Then register the plugin in your Panel provider.
 
 ## Exporting Social Profiles
 
-Ensure `exports` is enabled in config (enabled by default). Export actions appear in the table bulk actions menu.
+Ensure `exports` is enabled in config (enabled by default). Export actions appear in the table bulk actions menu. The bulk action is also authorized server-side: when a policy is registered for `ContactMethod` or `SocialProfile`, the `export` ability is required (falling back to `viewAny` when the policy has no `export` method), and disabling `features.exports` denies the action outright.
 
 ## Show Open URL Actions
 
@@ -109,8 +109,10 @@ text.
 
 Set `features.imports` to `true` to show an import action on the contact method
 and social profile list pages (imports stay hidden while the resource is
-read-only). Every CSV parent reference is resolved through the core contacting
-owner guard before validation, and rows with an invalid reference fail with a
+read-only). The import action is also authorized server-side: when a policy is
+registered for the model, the `create` ability is required before the action can
+run. Every CSV parent reference is resolved through the core contacting owner
+guard before validation, and rows with an invalid reference fail with a
 descriptive reason instead of aborting the import.
 
 Imports are insert-only: each row creates a new record. Re-running an import

@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
-use AIArmada\Feedback\Analytics\CsatCalculator;
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
-use AIArmada\Feedback\Analytics\NpsCalculator;
-use AIArmada\Feedback\Analytics\RatingDistributionCalculator;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use Illuminate\Support\Collection;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 
 it('calculates known NPS, CSAT, distribution, and completion values', function (): void {
     $createForm = app(CreateFeedbackFormAction::class);
@@ -38,9 +34,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     foreach ([10, 8, 5] as $score) {
         $submit->execute(new SubmitFeedbackResponseData(
             formId: $npsForm->id,
-            answers: new Collection([
+            answers: [
                 new SubmittedAnswerData($npsQuestion->id, $npsQuestion->key, $score),
-            ]),
+            ],
             isAnonymous: true,
         ));
     }
@@ -60,9 +56,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     foreach ([5, 3, 2] as $score) {
         $submit->execute(new SubmitFeedbackResponseData(
             formId: $csatForm->id,
-            answers: new Collection([
+            answers: [
                 new SubmittedAnswerData($csatQuestion->id, $csatQuestion->key, $score),
-            ]),
+            ],
             isAnonymous: true,
         ));
     }
@@ -73,9 +69,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
         'is_anonymous' => true,
     ]);
 
-    $analytics = app(FeedbackAnalyticsService::class);
-    $nps = app(NpsCalculator::class)->calculate($npsForm);
-    $csat = app(CsatCalculator::class)->calculate($csatForm);
+    $analytics = app(FeedbackAnalyticsQuery::class);
+    $nps = app(FeedbackAnalyticsQuery::class)->nps($npsForm->id);
+    $csat = app(FeedbackAnalyticsQuery::class)->csat($csatForm->id);
 
     expect($nps->score)->toBe(0)
         ->and($nps->promoterCount)->toBe(1)
@@ -83,9 +79,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
         ->and($nps->detractorCount)->toBe(1)
         ->and($csat->score)->toBe(33.33)
         ->and($csat->average)->toBe(3.33)
-        ->and($analytics->distributionForQuestion($csatForm, 'satisfaction'))
+        ->and($analytics->distributionForQuestion($csatForm->id, 'satisfaction'))
         ->toBe([2 => 1, 3 => 1, 5 => 1])
-        ->and($analytics->completionRate($csatForm))->toBe(75.0);
+        ->and($analytics->completionRate($csatForm->id))->toBe(75.0);
 });
 
 it('keys the dashboard cache by owner', function (): void {
@@ -95,11 +91,11 @@ it('keys the dashboard cache by owner', function (): void {
         'password' => 'secret',
     ]);
 
-    $defaultDashboard = app(FeedbackAnalyticsService::class)->dashboard();
+    $defaultDashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
     $otherDashboard = OwnerContext::withOwner($otherOwner, function (): array {
         app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Other Dashboard Form'));
 
-        return app(FeedbackAnalyticsService::class)->dashboard();
+        return app(FeedbackAnalyticsQuery::class)->dashboard();
     });
 
     expect($defaultDashboard['overview']['total_forms'])->toBe(0)
@@ -150,8 +146,70 @@ it('excludes cross-owner joined answers from rating calculations', function (): 
 
     $distribution = OwnerContext::withOwner(
         $ownerA,
-        fn (): array => app(RatingDistributionCalculator::class)->calculate($form, 'rating'),
+        fn (): array => app(FeedbackAnalyticsQuery::class)->distributionForQuestion($form->id, 'rating'),
     );
 
     expect($distribution)->toBe([5 => 1]);
+});
+
+it('keeps reviewed responses in analytics and dashboard totals', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Reviewed analytics'));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'rating',
+        'type' => 'rating',
+        'label' => 'Rating',
+    ]);
+    $response = FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'status' => 'reviewed',
+        'score' => 5,
+        'submitted_at' => now(),
+        'is_anonymous' => true,
+    ]);
+    FeedbackAnswer::query()->create([
+        'feedback_response_id' => $response->id,
+        'feedback_question_id' => $question->id,
+        'number_value' => 5,
+    ]);
+
+    $analytics = app(FeedbackAnalyticsQuery::class);
+    $dashboard = $analytics->dashboard();
+
+    expect($analytics->completionRate($form->id))->toBe(100.0)
+        ->and($analytics->distributionForQuestion($form->id, 'rating'))->toBe([5 => 1])
+        ->and($dashboard['overview']['submitted_responses'])->toBe(1)
+        ->and(array_sum($dashboard['response_trend']))->toBe(1);
+});
+
+it('returns only bounded comment projections without contact answers or response metadata', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Comment privacy'));
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $response = FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'status' => 'reviewed',
+        'is_anonymous' => true,
+        'ip_address' => '192.0.2.1',
+        'metadata' => ['private' => 'not for dashboard'],
+    ]);
+
+    foreach (['short_text' => 'Useful comment', 'email' => 'private@example.test', 'phone' => '+60123456789'] as $type => $value) {
+        $question = $structure->saveQuestion($form->id, [
+            'key' => $type,
+            'type' => $type,
+            'label' => $type,
+        ]);
+        FeedbackAnswer::query()->create([
+            'feedback_response_id' => $response->id,
+            'feedback_question_id' => $question->id,
+            'text_value' => $value,
+        ]);
+    }
+
+    $analytics = app(FeedbackAnalyticsQuery::class);
+    $comments = $analytics->latestComments($form->id);
+
+    expect($comments)->toHaveCount(1)
+        ->and(array_keys($comments[0]))->toBe(['id', 'text_value'])
+        ->and($comments[0]['text_value'])->toBe('Useful comment')
+        ->and($analytics->latestComments($form->id, 0))->toBe([]);
 });

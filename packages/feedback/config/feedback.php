@@ -24,6 +24,7 @@ return [
         'enabled' => true,
         'auto_assign_on_create' => true,
         'include_global' => false,
+        'include_global_templates' => false,
     ],
 
     'defaults' => [

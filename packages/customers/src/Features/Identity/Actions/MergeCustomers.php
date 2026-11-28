@@ -8,8 +8,8 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Actions\MoveContactMethodAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\MoveSocialProfileAction;
 use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipTransfer;
@@ -19,6 +19,12 @@ use RuntimeException;
 
 final class MergeCustomers
 {
+    public function __construct(
+        private readonly MoveContactMethodAction $moveContactMethod,
+        private readonly MoveSocialProfileAction $moveSocialProfile,
+        private readonly CustomerMembershipTransfer $membershipTransfer,
+    ) {}
+
     public function execute(Customer $target, Customer $source): Customer
     {
         if (! $target->exists || ! $source->exists || $target->is($source)) {
@@ -57,13 +63,12 @@ final class MergeCustomers
                     OwnerWriteGuard::findOrFailForOwner(Customer::class, $target->getKey());
                 }
 
-                // Validate notes before any address, contact or membership mutations.
                 $this->assertNotesShareOwner($source, $target);
 
                 $this->moveAddresses($source, $target);
                 $this->moveContactMethods($source, $target);
                 $this->moveSocialProfiles($source, $target);
-                app(CustomerMembershipTransfer::class)->transfer((string) $source->getKey(), (string) $target->getKey());
+                $this->membershipTransfer->transfer((string) $source->getKey(), (string) $target->getKey());
                 $this->moveNotes($source, $target);
 
                 if (! empty($source->metadata) && empty($target->metadata)) {
@@ -166,14 +171,7 @@ final class MergeCustomers
         $source->loadMissing('contactMethods');
 
         foreach ($source->contactMethods as $contactMethod) {
-            if ($contactMethod->is_primary && $this->targetHasPrimaryContactMethod($target, $contactMethod)) {
-                $contactMethod->is_primary = false;
-            }
-
-            $contactMethod->contactable()->associate($target);
-            if (! $contactMethod->save()) {
-                throw new RuntimeException('Customer merge contact transfer was cancelled.');
-            }
+            $this->moveContactMethod->execute($contactMethod, $target);
         }
     }
 
@@ -182,33 +180,8 @@ final class MergeCustomers
         $source->loadMissing('socialProfiles');
 
         foreach ($source->socialProfiles as $socialProfile) {
-            if ($socialProfile->is_primary && $this->targetHasPrimarySocialProfile($target, $socialProfile)) {
-                $socialProfile->is_primary = false;
-            }
-
-            $socialProfile->socialable()->associate($target);
-            if (! $socialProfile->save()) {
-                throw new RuntimeException('Customer merge social profile transfer was cancelled.');
-            }
+            $this->moveSocialProfile->execute($socialProfile, $target);
         }
-    }
-
-    private function targetHasPrimaryContactMethod(Customer $target, ContactMethod $contactMethod): bool
-    {
-        return $target->contactMethods()
-            ->where('type', $contactMethod->type)
-            ->where('purpose', $contactMethod->purpose)
-            ->where('is_primary', true)
-            ->exists();
-    }
-
-    private function targetHasPrimarySocialProfile(Customer $target, SocialProfile $socialProfile): bool
-    {
-        return $target->socialProfiles()
-            ->where('platform', $socialProfile->platform)
-            ->where('purpose', $socialProfile->purpose)
-            ->where('is_primary', true)
-            ->exists();
     }
 
     private function assertNotesShareOwner(Customer $source, Customer $target): void
@@ -220,7 +193,6 @@ final class MergeCustomers
                 throw new InvalidArgumentException('Cannot merge customers with notes outside the target owner context.');
             }
         }
-
     }
 
     private function moveNotes(Customer $source, Customer $target): void
@@ -264,6 +236,6 @@ final class MergeCustomers
         }
 
         return $source->owner_type === $target->owner_type
-            && $source->owner_id === $target->owner_id;
+            && (string) $source->owner_id === (string) $target->owner_id;
     }
 }

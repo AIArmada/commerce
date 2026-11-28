@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
-use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
 
-final class RecordModerationAction implements RecordsModerationAction
+final readonly class RecordModerationAction
 {
+    public function __construct(private ModerationModelGuard $guard) {}
+
     public function execute(
         Model $actionable,
         ModerationActionType $type,
@@ -35,21 +36,25 @@ final class RecordModerationAction implements RecordsModerationAction
 
         if ($notes !== null) {
             $notes = mb_trim($notes);
-
-            if (mb_strlen($notes) > 10000) {
-                throw new InvalidArgumentException('Moderation notes must not exceed 10000 characters.');
-            }
         }
 
-        $this->assertMetadataWithinLimits($metadata);
-        $this->validateOwnerScopedModel($actionable);
+        $this->guard->validatePayload($notes, $metadata);
+        $this->guard->validateTarget($actionable);
 
         if ($actionedBy !== null) {
-            $this->validateOwnerScopedModel($actionedBy);
+            $this->guard->validateActor($actionedBy);
         }
 
-        return DB::transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
-            return ModerationAction::create([
+        $connection = (new ModerationAction)->getConnection();
+
+        if ($actionable->getConnection() !== $connection) {
+            throw new LogicException('Recording moderation requires a shared database connection with the target.');
+        }
+
+        return $connection->transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
+            $actionable->newQuery()->whereKey($actionable->getKey())->lockForUpdate()->firstOrFail();
+
+            $record = new ModerationAction([
                 'actionable_type' => $actionable->getMorphClass(),
                 'actionable_id' => $actionable->getKey(),
                 'actioned_by_type' => $actionedBy?->getMorphClass(),
@@ -59,45 +64,12 @@ final class RecordModerationAction implements RecordsModerationAction
                 'notes' => $notes,
                 'metadata' => $metadata,
             ]);
+
+            if (! $record->save()) {
+                throw new RuntimeException('The moderation action write was cancelled.');
+            }
+
+            return $record;
         });
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $metadata
-     */
-    private function assertMetadataWithinLimits(?array $metadata): void
-    {
-        if ($metadata === null) {
-            return;
-        }
-
-        if (count($metadata) > 50) {
-            throw new InvalidArgumentException('Moderation metadata must not exceed 50 entries.');
-        }
-
-        $encoded = json_encode($metadata);
-
-        if ($encoded === false || mb_strlen($encoded) > 65535) {
-            throw new InvalidArgumentException('Moderation metadata must not exceed 65535 bytes.');
-        }
-    }
-
-    private function validateOwnerScopedModel(Model $model): void
-    {
-        if (! config('moderation.owner.enabled', true)) {
-            return;
-        }
-
-        if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
-            return;
-        }
-
-        // Non-owner-scoped models are intentionally actionable from any owner
-        // scope: a tenant moderates a shared identity without owning it.
-        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
-            return;
-        }
-
-        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
     }
 }

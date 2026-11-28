@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
@@ -161,8 +161,8 @@ test('NormalizeSocialProfileAction normalizes @handle', function (): void {
         new NormalizesUrl,
     );
 
-    expect($action->execute('facebook', '@TestUser', null)['handle'])->toBe('TestUser');
-    expect($action->execute('facebook', '  @spaced  ', null)['handle'])->toBe('spaced');
+    expect($action->normalize('facebook', '@TestUser', null)['handle'])->toBe('TestUser');
+    expect($action->normalize('facebook', '  @spaced  ', null)['handle'])->toBe('spaced');
 });
 
 test('NormalizeSocialProfileAction extracts handle from URL', function (): void {
@@ -172,7 +172,7 @@ test('NormalizeSocialProfileAction extracts handle from URL', function (): void 
         new NormalizesUrl,
     );
 
-    $r = $action->execute('instagram', null, 'https://instagram.com/user123');
+    $r = $action->normalize('instagram', null, 'https://instagram.com/user123');
     expect($r['handle'])->toBe('user123');
     expect($r['normalized_url'])->toBe('https://instagram.com/user123');
 });
@@ -184,7 +184,7 @@ test('NormalizeSocialProfileAction handles null handle and URL', function (): vo
         new NormalizesUrl,
     );
 
-    $r = $action->execute('other', null, null);
+    $r = $action->normalize('other', null, null);
     expect($r['handle'])->toBeNull();
     expect($r['normalized_url'])->toBeNull();
 });

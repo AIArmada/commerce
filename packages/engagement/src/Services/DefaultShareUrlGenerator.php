@@ -14,6 +14,27 @@ final class DefaultShareUrlGenerator implements ShareUrlGenerator
         $base = method_exists($shareable, 'shareUrl') ? $shareable->shareUrl() : url('/');
         $token = $options['token'] ?? Str::random(32);
 
-        return $base . (str_contains($base, '?') ? '&' : '?') . 'share=' . rawurlencode((string) $token);
+        [$url, $fragment] = array_pad(explode('#', $base, 2), 2, null);
+        [$path, $query] = array_pad(explode('?', $url, 2), 2, '');
+        $parameters = [];
+
+        foreach (explode('&', $query) as $parameter) {
+            if ($parameter === '') {
+                continue;
+            }
+
+            $key = urldecode(explode('=', $parameter, 2)[0]);
+
+            if ($key === 'share' || str_starts_with($key, 'share[')) {
+                continue;
+            }
+
+            $parameters[] = $parameter;
+        }
+
+        $parameters[] = 'share=' . rawurlencode((string) $token);
+
+        return $path . '?' . implode('&', $parameters)
+            . ($fragment === null ? '' : '#' . $fragment);
     }
 }

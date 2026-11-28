@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -20,7 +19,8 @@ return new class extends Migration
             $table->{$jsonColumnType}($column)->nullable();
         };
 
-        Schema::create($tableName, function (Blueprint $table) use ($addJsonColumn): void {
+        $schema = Schema::connection($this->getConnection());
+        $schema->create($tableName, function (Blueprint $table) use ($addJsonColumn): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
 
@@ -56,7 +56,8 @@ return new class extends Migration
             $table->index(['feedback_form_id', 'respondent_type', 'respondent_id']);
         });
 
-        $driver = DB::connection()->getDriverName();
+        $connection = $schema->getConnection();
+        $driver = $connection->getDriverName();
 
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
@@ -66,16 +67,18 @@ return new class extends Migration
         }
 
         $columns = ['feedback_form_id', 'respondent_type', 'respondent_id'];
-        $grammar = DB::connection()->getQueryGrammar();
+        $grammar = $connection->getQueryGrammar();
         $wrappedColumns = implode(', ', array_map($grammar->wrap(...), $columns));
+        $booleanTrue = $driver === 'pgsql' ? 'true' : '1';
 
-        DB::statement(sprintf(
-            'create unique index %s on %s (%s) where %s = \'submitted\' and %s = 1',
+        $connection->statement(sprintf(
+            'create unique index %s on %s (%s) where %s in (\'submitted\', \'reviewed\') and %s = %s',
             $grammar->wrap($indexName),
-            $grammar->wrap($tableName),
+            $grammar->wrapTable($tableName),
             $wrappedColumns,
             $grammar->wrap('status'),
             $grammar->wrap('enforce_respondent_uniqueness'),
+            $booleanTrue,
         ));
     }
 };

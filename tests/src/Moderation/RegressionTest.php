@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -264,4 +265,79 @@ test('restricts actor types when an allowlist is configured', function (): void 
         blockedById: (string) $moderator->getKey(),
         blockedByType: Customer::class,
     ))->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
+});
+
+test('direct moderation actions enforce the actor allowlist', function (): void {
+    $actor = User::create([
+        'name' => 'Unlisted Direct Actor',
+        'email' => 'unlisted-direct-actor@example.com',
+        'password' => 'secret',
+    ]);
+
+    config()->set('moderation.actors.allowed_types', [Customer::class]);
+
+    expect(fn () => app(BlockEntityAction::class)->execute($this->entity, blockedBy: $actor))
+        ->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
+    expect(fn () => app(RecordModerationAction::class)->execute($this->entity, ModerationActionType::Warn, 'Review', actionedBy: $actor))
+        ->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
+});
+
+test('rejects partial moderation actor references instead of dropping attribution', function (): void {
+    expect(fn () => $this->entity->block(blockedByType: User::class))
+        ->toThrow(InvalidArgumentException::class, 'Both moderation actor ID and type are required');
+});
+
+test('rejects stale moderation targets and actors that have been deleted', function (): void {
+    $deleted = RegressionBlockable::create(['name' => 'Deleted target']);
+    $stale = $deleted->fresh();
+    $deleted->delete();
+
+    expect(fn () => app(RecordModerationAction::class)->execute($stale, ModerationActionType::Warn, 'Review'))
+        ->toThrow(ModelNotFoundException::class)
+        ->and(fn () => app(BlockEntityAction::class)->execute($this->entity, blockedBy: $stale))
+        ->toThrow(ModelNotFoundException::class);
+});
+
+test('enforces moderation payload limits on blocks as well as action records', function (): void {
+    expect(fn () => app(BlockEntityAction::class)->execute($this->entity, notes: str_repeat('x', 10001)))
+        ->toThrow(InvalidArgumentException::class, 'must not exceed 10000 characters')
+        ->and(fn () => app(BlockEntityAction::class)->execute($this->entity, metadata: array_fill(0, 51, 'x')))
+        ->toThrow(InvalidArgumentException::class, 'must not exceed 50 entries');
+});
+
+test('rejects already expired blocks without persisting an active record', function (): void {
+    expect(fn () => app(BlockEntityAction::class)->execute(
+        $this->entity,
+        expiresAt: CarbonImmutable::now()->subMinute(),
+    ))->toThrow(InvalidArgumentException::class, 'Block expiry must be in the future');
+
+    expect(Block::query()->count())->toBe(0);
+});
+
+test('does not report success when a block save is cancelled', function (): void {
+    Block::saving(static fn (Block $block): ?bool => $block->notes === 'cancelled' ? false : null);
+
+    try {
+        expect(fn () => app(BlockEntityAction::class)->execute($this->entity, notes: 'cancelled'))
+            ->toThrow(RuntimeException::class, 'creation was cancelled');
+
+        expect(Block::query()->count())->toBe(0);
+    } finally {
+        Block::flushEventListeners();
+        Block::clearBootedModels();
+    }
+});
+
+test('does not report success when a moderation audit write is cancelled', function (): void {
+    ModerationAction::saving(static fn (ModerationAction $record): ?bool => $record->reason === 'cancelled' ? false : null);
+
+    try {
+        expect(fn () => app(RecordModerationAction::class)->execute($this->entity, ModerationActionType::Warn, 'cancelled'))
+            ->toThrow(RuntimeException::class, 'write was cancelled');
+
+        expect(ModerationAction::query()->count())->toBe(0);
+    } finally {
+        ModerationAction::flushEventListeners();
+        ModerationAction::clearBootedModels();
+    }
 });
