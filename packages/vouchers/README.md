@@ -315,7 +315,7 @@ Voucher::getRemainingUses(string $code): int
 // Usage
 Voucher::recordUsage(string $code, Money $discountAmount, ...): void
 Voucher::redeemManually(string $code, Money $discountAmount, ...): void
-Voucher::getUsageHistory(string $code): Collection
+Voucher::getUsageHistory(string $code, int $limit = 100): array
 
 // Wallet
 Voucher::addToWallet(string $code, Model $owner, ?array $metadata = null): VoucherWallet

@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Runtime;
 
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -83,9 +82,9 @@ interface VoucherServiceInterface
     /**
      * Get usage history for a voucher.
      *
-     * @return EloquentCollection<int, VoucherUsage>
+     * @return list<VoucherUsageData>
      */
-    public function getUsageHistory(string $code, int $limit = 100): EloquentCollection;
+    public function getUsageHistory(string $code, int $limit = 100): array;
 
     /**
      * Add a voucher to a user's wallet.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -14,6 +13,7 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherUsageSnapshot;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
@@ -184,18 +184,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 }
             }
 
-            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), new VoucherUsageData(
-                id: $usage->id,
-                voucherId: $usage->voucher_id,
-                discountAmount: $usage->discount_amount,
-                currency: $usage->currency,
-                channel: $usage->channel,
-                redeemedByType: $usage->redeemed_by_type,
-                redeemedById: $usage->redeemed_by_id === null ? null : (string) $usage->redeemed_by_id,
-                usedAt: $usage->used_at,
-                metadata: $usage->metadata,
-                notes: $usage->notes,
-            )));
+            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), VoucherUsageSnapshot::fromModel($usage)));
 
             return $usage;
         });

@@ -116,17 +116,17 @@ $history = Voucher::getUsageHistory('GIFTCARD');
 
 foreach ($history as $usage) {
     echo $usage->channel;           // 'manual'
-    echo $usage->discount_amount;   // 5000 (cents)
+    echo $usage->discountAmount;   // 5000 (cents)
     echo $usage->currency;          // 'MYR'
-    echo $usage->used_at;           // Carbon datetime
+    echo $usage->usedAt;           // immutable datetime
     echo $usage->notes;             // 'In-store purchase'
     
     // Reference is stored in metadata
     echo $usage->metadata['reference']; // 'POS-12345'
     
     // Staff who processed it
-    if ($usage->redeemedBy) {
-        echo $usage->redeemedBy->name;
+    if ($usage->redeemedById !== null) {
+        echo $usage->redeemedById;
     }
 }
 ```

@@ -6,13 +6,14 @@ namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
@@ -20,13 +21,11 @@ use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
-use AIArmada\Vouchers\Runtime\VoucherUsageHistory;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 
 class VoucherService implements VoucherServiceInterface
@@ -139,9 +138,9 @@ class VoucherService implements VoucherServiceInterface
     }
 
     /**
-     * @return EloquentCollection<int, VoucherUsage>
+     * @return list<VoucherUsageData>
      */
-    public function getUsageHistory(string $code, int $limit = 100): EloquentCollection
+    public function getUsageHistory(string $code, int $limit = 100): array
     {
         return app(VoucherUsageHistory::class)->handle($code, $limit);
     }

@@ -5,13 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Services\VoucherService;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -464,9 +464,15 @@ test('voucher service get usage history', function (): void {
 
     $service = app(VoucherService::class);
 
+    $service->recordUsage($voucher->code, \Akaunting\Money\Money::MYR(250), metadata: ['idempotency_key' => 'history-1']);
+
     $history = $service->getUsageHistory('history');
 
-    expect($history)->toBeInstanceOf(Collection::class);
+    expect($history)->toHaveCount(1)
+        ->and($history[0])->toBeInstanceOf(VoucherUsageData::class)
+        ->and($history[0]->voucherId)->toBe($voucher->id)
+        ->and($history[0]->discountAmount)->toBe(250)
+        ->and($history[0]->currency)->toBe('MYR');
 });
 
 test('voucher service get usage history returns empty for non-existent', function (): void {
@@ -474,8 +480,7 @@ test('voucher service get usage history returns empty for non-existent', functio
 
     $history = $service->getUsageHistory('nonexistent');
 
-    expect($history)->toBeInstanceOf(Collection::class)
-        ->and($history->isEmpty())->toBeTrue();
+    expect($history)->toBe([]);
 });
 
 test('voucher service normalize code with uppercase', function (): void {

@@ -207,10 +207,10 @@ their face value.
 Get usage history for a voucher.
 
 ```php
-Voucher::getUsageHistory(string $code): Collection
+Voucher::getUsageHistory(string $code, int $limit = 100): array
 ```
 
-Returns `Collection<VoucherUsage>`.
+Returns `list<VoucherUsageData>`, newest first (default 100, maximum 1,000 records).
 
 ---
 

@@ -69,14 +69,14 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 $history = Voucher::getUsageHistory('SUMMER2024');
 
 foreach ($history as $usage) {
-    echo "Date: " . $usage->used_at->format('d M Y H:i');
-    // discount_amount is integer minor units for $usage->currency
-    echo "Amount: " . MoneyFormatter::formatMinor($usage->discount_amount, $usage->currency);
+    echo "Date: " . $usage->usedAt->format('d M Y H:i');
+    // discountAmount is integer minor units for $usage->currency
+    echo "Amount: " . MoneyFormatter::formatMinor($usage->discountAmount, $usage->currency);
     echo "Currency: " . $usage->currency;
     echo "Channel: " . $usage->channel;
     
-    if ($usage->redeemedBy) {
-        echo "User: " . $usage->redeemedBy->name;
+    if ($usage->redeemedById !== null) {
+        echo $usage->redeemedById;
     }
     
     if ($usage->notes) {
