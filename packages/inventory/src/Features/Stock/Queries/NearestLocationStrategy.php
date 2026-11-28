@@ -127,32 +127,10 @@ final class NearestLocationStrategy
      */
     private function getAvailableLevels(Model $model, AllocationContext $context): Collection
     {
-        $query = $this->eligibleLevels($model, $context)->with('location');
-
-        if ($context->preferLocationIds !== null) {
-            $preferred = array_values($context->preferLocationIds);
-
-            if (count($preferred) > 0) {
-                // Use CASE WHEN so this ordering works in PostgreSQL and SQLite.
-                // Bind parameters to avoid SQL injection.
-                $cases = [];
-                $bindings = [];
-
-                foreach ($preferred as $index => $locationId) {
-                    $cases[] = 'WHEN CAST(location_id AS TEXT) = ? THEN ?';
-                    $bindings[] = (string) $locationId;
-                    $bindings[] = (int) $index;
-                }
-
-                $casesSql = implode(' ', $cases);
-                $orderSql = "CASE {$casesSql} ELSE ? END";
-                $bindings[] = count($preferred);
-
-                $query->orderByRaw($orderSql, $bindings);
-            }
-        }
-
-        return $query->orderBy('id')->get();
+        return $this->eligibleLevels($model, $context)
+            ->with('location')
+            ->orderBy('id')
+            ->get();
     }
 
     /**
@@ -185,27 +163,25 @@ final class NearestLocationStrategy
      */
     private function sortByDistance(Collection $levels, AllocationContext $context): Collection
     {
-        if (! $context->hasOriginCoordinates()) {
-            return $levels->sortBy(function ($level) {
-                return $level->location?->pick_sequence ?? 0;
-            });
-        }
+        $preferred = array_flip(array_values(array_unique($context->preferLocationIds ?? [])));
+        $fallbackRank = count($preferred);
 
-        return $levels->sortBy(function ($level) use ($context) {
+        return $levels->sortBy(function (InventoryLevel $level) use ($context, $preferred, $fallbackRank): array {
             $location = $level->location;
-            if (! $location || $location->coordinate_x === null || $location->coordinate_y === null) {
-                return PHP_FLOAT_MAX;
-            }
+            $rank = $preferred[$level->location_id] ?? $fallbackRank;
+            $distance = $context->hasOriginCoordinates()
+                ? $this->calculateDistance(
+                    $context->originX,
+                    $context->originY,
+                    $context->originZ,
+                    $location?->coordinate_x !== null ? (float) $location->coordinate_x : null,
+                    $location?->coordinate_y !== null ? (float) $location->coordinate_y : null,
+                    $location?->coordinate_z !== null ? (float) $location->coordinate_z : null,
+                )
+                : ($location?->pick_sequence ?? 0);
 
-            return $this->calculateDistance(
-                $context->originX,
-                $context->originY,
-                $context->originZ,
-                (float) $location->coordinate_x,
-                (float) $location->coordinate_y,
-                $location->coordinate_z !== null ? (float) $location->coordinate_z : null
-            );
-        });
+            return [$rank, $distance, $level->id];
+        })->values();
     }
 
     private function calculateDistance(

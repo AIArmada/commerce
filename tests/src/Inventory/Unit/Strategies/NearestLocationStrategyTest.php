@@ -424,6 +424,36 @@ describe('NearestLocationStrategy', function (): void {
         expect($allocations[0]['location_id'])->toBe($locationWithCoords->id);
     });
 
+    it('honors explicit preferred location order before distance and pick sequence', function (): void {
+        $near = InventoryLocation::factory()->create([
+            'coordinate_x' => 1,
+            'coordinate_y' => 1,
+            'pick_sequence' => 1,
+        ]);
+        $far = InventoryLocation::factory()->create([
+            'coordinate_x' => 10,
+            'coordinate_y' => 10,
+            'pick_sequence' => 2,
+        ]);
+
+        foreach ([$near, $far] as $location) {
+            InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $location->id,
+                'quantity_on_hand' => 10,
+                'quantity_reserved' => 0,
+            ]);
+        }
+
+        $preferred = new AllocationContext(originX: 0, originY: 0, preferLocationIds: [$far->id, $near->id]);
+        $withoutOrigin = new AllocationContext(preferLocationIds: [$far->id]);
+
+        expect($this->strategy->allocate($this->item, 1, $preferred)[0]['location_id'])->toBe($far->id)
+            ->and($this->strategy->getRecommendedOrder($this->item, $preferred)->modelKeys())->toBe([$far->id, $near->id])
+            ->and($this->strategy->allocate($this->item, 1, $withoutOrigin)[0]['location_id'])->toBe($far->id);
+    });
+
     it('does not allow SQL injection via preferLocationIds', function (): void {
         $location = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
