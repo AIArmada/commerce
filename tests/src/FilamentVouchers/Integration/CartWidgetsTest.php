@@ -120,7 +120,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $applicator = Mockery::mock(CartVoucherApplicator::class);
     $condition = new VoucherCondition(VoucherSnapshot::fromModel($voucher));
     $applicator->shouldReceive('handle')->once()->with($live, 'OK')->andReturn($condition);
-    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code)->andReturn($condition);
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code, null, 100, (string) $voucher->getKey())->andReturn($condition);
     app()->instance(CartVoucherApplicator::class, $applicator);
 
     $quick->voucherCode = 'OK';
@@ -180,7 +180,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $suggestions->applySuggestion((string) $voucher->getKey());
 
     $applicator = Mockery::mock(CartVoucherApplicator::class);
-    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code)->andThrow(new RuntimeException('Boom'));
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code, null, 100, (string) $voucher->getKey())->andThrow(new RuntimeException('Boom'));
     app()->instance(CartVoucherApplicator::class, $applicator);
 
     $suggestions->applySuggestion((string) $voucher->getKey());
