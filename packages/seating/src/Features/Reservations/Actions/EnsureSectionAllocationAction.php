@@ -25,6 +25,7 @@ final readonly class EnsureSectionAllocationAction
                 ->findOrFail($section->getKey());
 
             $activeCount = SeatAllocation::query()
+                ->withoutOwnerScope()
                 ->where('seat_section_id', $lockedSection->getKey())
                 ->where('status', 'active')
                 ->count();

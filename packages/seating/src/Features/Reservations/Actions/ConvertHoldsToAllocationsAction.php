@@ -12,7 +12,7 @@ use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -60,6 +60,7 @@ final readonly class ConvertHoldsToAllocationsAction
                 }
 
                 if (SeatAllocation::query()
+                    ->withoutOwnerScope()
                     ->where('seat_id', $seat->getKey())
                     ->where('status', 'active')
                     ->exists()) {
@@ -97,8 +98,8 @@ final readonly class ConvertHoldsToAllocationsAction
 
                         return $allocation;
                     });
-                } catch (QueryException $exception) {
-                    if (! $this->isUniqueConstraintViolation($exception)) {
+                } catch (UniqueConstraintViolationException $exception) {
+                    if (! SeatAllocation::query()->withoutOwnerScope()->where('seat_id', $seat->getKey())->where('status', 'active')->exists()) {
                         throw $exception;
                     }
 
@@ -110,10 +111,5 @@ final readonly class ConvertHoldsToAllocationsAction
 
             return $allocations;
         });
-    }
-
-    private function isUniqueConstraintViolation(QueryException $exception): bool
-    {
-        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

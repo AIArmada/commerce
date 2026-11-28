@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
+use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
@@ -274,4 +275,43 @@ it('does not let different owners hold the same shared global seat', function ()
     )))->toThrow(InsufficientSeatsException::class);
 
     expect(SeatHold::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('counts assigned allocations across owners against shared section capacity', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $section = OwnerContext::withOwner(null, function (): SeatSection {
+        $map = SeatMap::factory()->create();
+        $section = SeatSection::factory()->create(['seat_map_id' => $map->id, 'capacity' => 1]);
+        Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+
+        return $section;
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($section): void {
+        $holds = app(EnsureSeatHoldAction::class)->handle(
+            map: $section->seatMap,
+            quantity: 1,
+            mode: SeatingMode::Assigned,
+        );
+
+        app(ConvertHoldsToAllocationsAction::class)->handle(
+            holds: $holds,
+            mode: SeatingMode::Assigned,
+            allocToType: 'pass',
+            allocToId: (string) Str::orderedUuid(),
+        );
+    });
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(EnsureSectionAllocationAction::class)->handle(
+        section: $section,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    )))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::query()->withoutOwnerScope()->count())->toBe(1);
 });
