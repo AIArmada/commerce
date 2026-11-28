@@ -7,9 +7,12 @@ namespace AIArmada\Rewards\Features\Finance\Queries;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutSnapshot;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 
 final readonly class RewardPayoutQuery implements RewardPayoutQueryApi
 {
+    public function __construct(private RewardProgramLockApi $programs) {}
+
     public function forAward(string $awardId, bool $lock = false): ?RewardPayoutSnapshot
     {
         $query = RewardPayoutRequest::query()->where('award_id', $awardId);
@@ -18,6 +21,8 @@ final readonly class RewardPayoutQuery implements RewardPayoutQueryApi
         if (! $request instanceof RewardPayoutRequest) {
             return null;
         }
+
+        $this->programs->assertProgramInScope((string) $request->program_id);
 
         return new RewardPayoutSnapshot(
             (string) $request->getKey(),

@@ -10,9 +10,13 @@ use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
@@ -28,6 +32,8 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
@@ -38,6 +44,7 @@ use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -631,5 +638,41 @@ it('resolves frozen award policies only through scoped program identities', func
         expect($programs->findPolicy($idA, $versionIdA)?->id)->toBe($versionIdA)
             ->and($programs->findPolicy($idA, $versionIdB))->toBeNull()
             ->and(fn () => $programs->findPolicy($idB, $versionIdB))->toThrow(AuthorizationException::class);
+    });
+});
+
+it('refuses foreign payout snapshots and benefit recovery queries', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $award = RewardAward::factory()->create(['program_id' => $program->getKey()]);
+    $payout = RewardPayoutRequest::factory()->create([
+        'program_id' => $program->getKey(),
+        'award_id' => $award->getKey(),
+    ]);
+    $item = RewardBenefitItem::factory()->create(['program_id' => $program->getKey()]);
+    $grant = RewardBenefitGrant::factory()->create([
+        'item_id' => $item->getKey(),
+        'award_id' => $award->getKey(),
+        'status' => RewardBenefitGrantStatus::Consumed,
+    ]);
+    $awardId = (string) $award->getKey();
+    $grantId = (string) $grant->getKey();
+    $payoutQuery = app(RewardPayoutQueryApi::class);
+    $benefitQuery = app(RewardBenefitRecoveryApi::class);
+
+    OwnerContext::withOwner($owner, static function () use ($payoutQuery, $benefitQuery, $awardId, $grantId, $payout): void {
+        expect($payoutQuery->forAward($awardId)?->id)->toBe((string) $payout->getKey());
+
+        DB::transaction(static function () use ($benefitQuery, $awardId, $grantId): void {
+            expect($benefitQuery->consumedGrantsForReversal($awardId))->toHaveCount(1);
+            $benefitQuery->assertGrantBelongsToAward($grantId, $awardId);
+        });
+    });
+
+    OwnerContext::withOwner($other, static function () use ($payoutQuery, $benefitQuery, $awardId, $grantId): void {
+        expect(fn () => $payoutQuery->forAward($awardId))->toThrow(AuthorizationException::class)
+            ->and(fn () => DB::transaction(fn () => $benefitQuery->consumedGrantsForReversal($awardId)))->toThrow(AuthorizationException::class)
+            ->and(fn () => DB::transaction(fn () => $benefitQuery->assertGrantBelongsToAward($grantId, $awardId)))->toThrow(AuthorizationException::class);
     });
 });
