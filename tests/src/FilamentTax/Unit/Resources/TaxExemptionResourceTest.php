@@ -9,7 +9,6 @@ uses(TestCase::class);
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages\CreateTaxExemption;
 use AIArmada\Tax\Models\TaxClass;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\Tax\Models\TaxExemption;
 use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
@@ -17,6 +16,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Component as LivewireComponent;
 
 it('builds tax exemption resource form schema', function (): void {
