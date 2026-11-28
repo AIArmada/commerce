@@ -38,6 +38,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardDecisionHistoryApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
@@ -486,6 +487,8 @@ it('lets staff decide an appeal from the appeals table', function (): void {
         ->assertHasNoTableActionErrors();
 
     expect($appeal->fresh()->status)->toBe(RewardAppealStatus::InReview);
+    $history = app(RewardDecisionHistoryApi::class)->appealHistory((string) $appeal->getKey());
+    expect(array_column($history, 'reason'))->toContain('Reviewing the held evidence.');
     expect(RewardAppeal::query()->whereKey($appeal->getKey())->value('status'))->toBe(RewardAppealStatus::InReview);
 });
 
@@ -740,6 +743,12 @@ it('scopes admin queries to programs visible in the current owner context', func
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
 
     Livewire::actingAs($other)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
+
+    $history = app(RewardDecisionHistoryApi::class);
+
+    expect(OwnerContext::withOwner($owner, fn (): array => $history->awardHistory((string) $award->getKey())))->not->toBeEmpty();
+    expect(fn () => OwnerContext::withOwner($other, fn (): array => $history->awardHistory((string) $award->getKey())))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
 });
 
 it('refuses settling a foreign recovery from the admin table', function (): void {

@@ -6,8 +6,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardAppealResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -92,13 +92,13 @@ class RewardAppealsTable
 
     private static function recipientLabel(RewardAppeal $record): string
     {
-        $award = RewardAward::query()->whereKey((string) $record->award_id)->first();
+        $award = app(RewardAwardLockApi::class)->findAwardDecision((string) $record->award_id);
 
-        if (! $award instanceof RewardAward) {
+        if ($award === null) {
             return '-';
         }
 
-        return RewardAdminPresenter::recipientLabel((string) $award->recipient_type, (string) $award->recipient_id);
+        return RewardAdminPresenter::recipientLabel($award->recipientType, $award->recipientId);
     }
 
     /**
