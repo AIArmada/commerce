@@ -26,21 +26,16 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
     public function record(string $docId, array $paymentData): string
     {
         return DB::transaction(function () use ($docId, $paymentData): string {
-            $owner = config('docs.owner.enabled', false) ? OwnerContext::resolve() : null;
-            $includeGlobal = (bool) config('docs.owner.include_global', false);
-
             if (config('docs.owner.enabled', false)) {
                 OwnerWriteGuard::findOrFailForOwner(
                     Doc::class,
                     $docId,
-                    owner: $owner,
-                    includeGlobal: $includeGlobal,
                     message: 'Document is not available in the current owner scope.',
                 );
             }
 
             $lockedDoc = Doc::query()
-                ->forOwner($owner, $includeGlobal)
+                ->forOwner()
                 ->whereKey($docId)
                 ->lockForUpdate()
                 ->first();

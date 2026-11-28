@@ -270,15 +270,13 @@ final class DocService
             OwnerWriteGuard::findOrFailForOwner(
                 Doc::class,
                 (string) $doc->getKey(),
-                owner: $this->resolveOwner(),
-                includeGlobal: (bool) config('docs.owner.include_global', false),
                 message: 'Document is not available in the current owner scope.',
             );
         }
 
         return $doc->getConnection()->transaction(function () use ($doc, $data, $summary): Doc {
             $doc = $doc->newQuery()
-                ->forOwner(OwnerContext::resolve(), (bool) config('docs.owner.include_global', false))
+                ->forOwner()
                 ->lockForUpdate()
                 ->findOrFail($doc->getKey());
 

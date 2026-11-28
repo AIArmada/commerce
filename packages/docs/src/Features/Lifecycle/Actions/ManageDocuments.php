@@ -83,13 +83,10 @@ final readonly class ManageDocuments implements DocumentLifecycle
 
     private function lockDocument(string $docId): Doc
     {
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
         if (config('docs.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, owner: $owner, includeGlobal: $includeGlobal);
+            OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId);
         }
 
-        return Doc::query()->forOwner($owner, $includeGlobal)->lockForUpdate()->findOrFail($docId);
+        return Doc::query()->forOwner()->lockForUpdate()->findOrFail($docId);
     }
 }

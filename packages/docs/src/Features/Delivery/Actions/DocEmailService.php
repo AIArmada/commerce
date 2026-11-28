@@ -37,7 +37,7 @@ final class DocEmailService implements DocumentEmailSender
         array $metadata = [],
     ): string {
         $doc = config('docs.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, owner: OwnerContext::resolve(), includeGlobal: (bool) config('docs.owner.include_global', false))
+            ? OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId)
             : Doc::query()->findOrFail($docId);
 
         return (string) $this->send(
@@ -72,8 +72,6 @@ final class DocEmailService implements DocumentEmailSender
             $doc = OwnerWriteGuard::findOrFailForOwner(
                 Doc::class,
                 (string) $doc->getKey(),
-                owner: OwnerContext::resolve(),
-                includeGlobal: (bool) config('docs.owner.include_global', false),
             );
         } else {
             $doc = $doc->newQuery()->findOrFail($doc->getKey());

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Features\Payments\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentPaymentEditor;
 use AIArmada\Docs\Models\Doc;
@@ -19,14 +18,11 @@ final readonly class EditDocPayment implements DocumentPaymentEditor
     public function edit(string $docId, string $paymentId, array $data): void
     {
         DB::transaction(function () use ($docId, $paymentId, $data): void {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('docs.owner.include_global', false);
-
             if (config('docs.owner.enabled', false)) {
-                OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, owner: $owner, includeGlobal: $includeGlobal);
+                OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId);
             }
 
-            $doc = Doc::query()->forOwner($owner, $includeGlobal)->lockForUpdate()->findOrFail($docId);
+            $doc = Doc::query()->forOwner()->lockForUpdate()->findOrFail($docId);
             $payment = $doc->payments()->lockForUpdate()->findOrFail($paymentId);
 
             if ($payment->owner_type !== $doc->owner_type || (string) $payment->owner_id !== (string) $doc->owner_id) {

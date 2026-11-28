@@ -14,22 +14,17 @@ final readonly class CreateDocVersion
 {
     public function execute(string $docId, ?string $summary = null): string
     {
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
         if (config('docs.owner.enabled', false)) {
             OwnerWriteGuard::findOrFailForOwner(
                 Doc::class,
                 $docId,
-                owner: $owner,
-                includeGlobal: $includeGlobal,
                 message: 'Document is not available in the current owner scope.',
             );
         }
 
-        return (new Doc)->getConnection()->transaction(function () use ($docId, $summary, $owner, $includeGlobal): string {
+        return (new Doc)->getConnection()->transaction(function () use ($docId, $summary): string {
             $lockedDoc = Doc::query()
-                ->forOwner($owner, $includeGlobal)
+                ->forOwner()
                 ->lockForUpdate()
                 ->findOrFail($docId);
 
