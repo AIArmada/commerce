@@ -23,6 +23,7 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
@@ -34,6 +35,10 @@ uses(CashierChipTestCase::class);
 
 final class RepairFakeVoucherService extends VoucherService
 {
+    public bool $rejectUsage = false;
+
+    public ?string $recordedVoucherId = null;
+
     /** @param array<string, VoucherData> $vouchersByCode */
     public function __construct(private array $vouchersByCode) {}
 
@@ -61,7 +66,13 @@ final class RepairFakeVoucherService extends VoucherService
         ?Model $redeemedBy = null,
         ?string $notes = null,
         ?string $voucherId = null,
-    ): void {}
+    ): void {
+        $this->recordedVoucherId = $voucherId;
+
+        if ($this->rejectUsage) {
+            throw new RuntimeException('Voucher usage rejected.');
+        }
+    }
 }
 
 function regressionVoucher(string $code, string $status, array $metadata = []): VoucherData
@@ -642,4 +653,41 @@ it('excludes paused subscriptions from active queries and entitlement checks eve
         ->and($subscription->valid())->toBeFalse()
         ->and(Subscription::query()->whereActive()->whereKey($subscription->getKey())->exists())->toBeFalse()
         ->and($user->subscribed('paused-trial'))->toBeFalse();
+});
+
+it('rolls back subscription coupon changes when voucher usage is rejected and records exact voucher identity on success', function (): void {
+    $voucher = regressionVoucher('SUB200', 'active');
+    $service = new RepairFakeVoucherService(['SUB200' => $voucher]);
+    $this->app->instance(VoucherService::class, $service);
+    $catalog = Mockery::mock(VoucherCatalog::class);
+    $catalog->shouldReceive('connectionName')->andReturn(DB::connection()->getName());
+    $this->app->instance(VoucherCatalog::class, $catalog);
+
+    $user = $this->createUser(['chip_id' => 'cli_coupon_atomic']);
+    $subscription = $this->createTrustedSubscription($user, [
+        'type' => 'default',
+        'chip_id' => 'sub_coupon_atomic',
+        'chip_status' => SubscriptionStatus::Active,
+        'chip_price' => 'price_monthly',
+        'quantity' => 1,
+    ]);
+    $this->createTrustedSubscriptionItem($subscription, [
+        'chip_id' => 'item_coupon_atomic',
+        'chip_product' => 'prod',
+        'chip_price' => 'price_monthly',
+        'quantity' => 1,
+        'unit_amount' => 1000,
+    ]);
+
+    $service->rejectUsage = true;
+
+    expect(fn () => $subscription->applyCoupon('SUB200'))->toThrow(RuntimeException::class, 'Voucher usage rejected.')
+        ->and($subscription->fresh()->coupon_id)->toBeNull();
+
+    $service->rejectUsage = false;
+    $subscription->applyCoupon('SUB200');
+
+    expect($subscription->coupon_id)->toBe('SUB200')
+        ->and($subscription->coupon_discount)->toBe(200)
+        ->and($service->recordedVoucherId)->toBe($voucher->id);
 });
