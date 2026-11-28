@@ -49,6 +49,21 @@ final readonly class ManageRewardPoints implements RewardPointsApi
         RefundRewardPointsAction::run($refundOperationKey, $linkedAggregateKey, $points, $reason, $occurredAt, $actorType, $actorId);
     }
 
+    public function refundCapture(string $reservationKey, string $recipientType, string $recipientId, string $captureOperationKey, string $refundOperationKey, string $reason, CarbonInterface $occurredAt, string $actorType, ?string $actorId): void
+    {
+        $capture = RewardPointOperationAuthority::find(RewardPointOperationAuthority::KIND_DEBIT, $captureOperationKey);
+
+        if ($capture === null
+            || $capture->reservation_key !== $reservationKey
+            || $capture->recipient_type !== $recipientType
+            || $capture->recipient_id !== $recipientId
+        ) {
+            throw new InvalidArgumentException('Grant capture is missing or belongs to a different reservation or recipient.');
+        }
+
+        RefundRewardPointsAction::run($refundOperationKey, $captureOperationKey, $capture->points, $reason, $occurredAt, $actorType, $actorId);
+    }
+
     public function markSubmission(string $reservationKey, string $status, ?string $reference = null, ?CarbonInterface $at = null): void
     {
         MarkRewardReservationSubmittedAction::run($reservationKey, $status, $reference, $at);

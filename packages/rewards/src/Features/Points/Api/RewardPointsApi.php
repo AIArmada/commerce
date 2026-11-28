@@ -21,6 +21,8 @@ interface RewardPointsApi
 
     public function refund(string $refundOperationKey, string $linkedAggregateKey, int $points, string $reason, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void;
 
+    public function refundCapture(string $reservationKey, string $recipientType, string $recipientId, string $captureOperationKey, string $refundOperationKey, string $reason, CarbonInterface $occurredAt, string $actorType, ?string $actorId): void;
+
     public function markSubmission(string $reservationKey, string $status, ?string $reference = null, ?CarbonInterface $at = null): void;
 
     public function clawBack(string $awardId, string $actorType, ?string $actorId, string $actorRole, string $reason, CarbonInterface $decidedAt, ?RewardReservationResolver $resolver = null): void;

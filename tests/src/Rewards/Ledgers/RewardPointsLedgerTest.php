@@ -9,6 +9,7 @@ use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
@@ -226,4 +227,29 @@ it('rejects foreign reservation capture and replay without spending points', fun
         ->toThrow(InvalidArgumentException::class, 'different recipient, family, or unit');
 
     expect(RewardPointMovement::query()->where('kind', 'debit')->count())->toBe(1);
+});
+
+it('refunds a captured reservation only for its bound recipient and reservation', function (): void {
+    [$type, $recipient, $family, $unit] = pointsIdentity('refund-owner');
+    [, $otherRecipient] = pointsIdentity('refund-foreign');
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+    $api = app(RewardPointsApi::class);
+
+    CreditRewardPointsAction::run($type, $recipient, $family, $unit, 25, $at, null, null, null, 'op:refund-owner');
+    $api->reserve($type, $recipient, $family, $unit, 15, 'rsv:refund-owner', 'hold', $at);
+    $api->capture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'capture', $at, 'system', null);
+
+    expect(fn () => $api->refundCapture('rsv:refund-owner', $type, $otherRecipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null))
+        ->toThrow(InvalidArgumentException::class, 'different reservation or recipient');
+
+    expect(fn () => $api->refundCapture('rsv:other', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null))
+        ->toThrow(InvalidArgumentException::class, 'different reservation or recipient');
+
+    expect(RewardPointMovement::query()->where('kind', 'refund')->count())->toBe(0);
+
+    $api->refundCapture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null);
+    $api->refundCapture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null);
+
+    expect(RewardPointMovement::query()->where('kind', 'refund')->count())->toBe(1)
+        ->and(RewardPointLedger::balancesFor($type, $recipient, $family, $unit, $at)->available)->toBe(25);
 });

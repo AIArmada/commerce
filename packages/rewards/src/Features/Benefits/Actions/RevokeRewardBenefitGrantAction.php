@@ -7,15 +7,11 @@ namespace AIArmada\Rewards\Features\Benefits\Actions;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
-use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -126,56 +122,18 @@ final readonly class RevokeRewardBenefitGrantAction
         string $actorType,
         ?string $actorId,
     ): void {
-        // Canonical lots-before-movements order, matching fulfill and
-        // every point path: lock the touched lots sorted first, then the
-        // capture pieces.
-        $lotIds = RewardPointMovement::query()
-            ->where('kind', RewardPointMovementKind::Debit)
-            ->where('reservation_key', (string) $grant->reservation_key)
-            ->orderBy('id')
-            ->pluck('lot_id')
-            ->map(static fn ($lotId): string => (string) $lotId)
-            ->unique()
-            ->values()
-            ->all();
+        $captureKey = "capture:{$grant->reservation_key}";
 
-        if ($lotIds === []) {
-            throw new InvalidArgumentException('Grant capture is missing; refusing revocation.');
-        }
-
-        foreach (RewardLedgerLockOrder::sorted($lotIds) as $lotId) {
-            RewardPointLot::query()->whereKey($lotId)->lockForUpdate()->first();
-        }
-
-        $capture = RewardPointMovement::query()
-            ->where('kind', RewardPointMovementKind::Debit)
-            ->where('reservation_key', (string) $grant->reservation_key)
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
-        if ($capture->isEmpty()) {
-            throw new InvalidArgumentException('Grant capture is missing; refusing revocation.');
-        }
-
-        $byAggregate = $capture->groupBy(static fn (RewardPointMovement $movement): string => (string) $movement->aggregate_operation_key);
-
-        foreach ($byAggregate as $aggregateKey => $movements) {
-            $points = (int) $movements->sum('delta');
-
-            if ($points <= 0) {
-                continue;
-            }
-
-            app(RewardPointsApi::class)->refund(
-                "refund:{$aggregateKey}:revoke",
-                $aggregateKey,
-                $points,
-                "benefit-revoke:{$reason}",
-                $decided,
-                $actorType,
-                $actorId,
-            );
-        }
+        app(RewardPointsApi::class)->refundCapture(
+            (string) $grant->reservation_key,
+            (string) $grant->recipient_type,
+            (string) $grant->recipient_id,
+            $captureKey,
+            "refund:{$captureKey}:revoke",
+            "benefit-revoke:{$reason}",
+            $decided,
+            $actorType,
+            $actorId,
+        );
     }
 }
