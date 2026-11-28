@@ -104,22 +104,8 @@ final class VouchersTable
 
                 TextColumn::make('condition_target_display')
                     ->label('Target')
-                    ->state(static function (Voucher $record): string {
-                        $metadata = $record->metadata ?? [];
-
-                        return ConditionTargetDisplay::presetLabel(
-                            $record->target_definition
-                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
-                        );
-                    })
-                    ->tooltip(static function (Voucher $record): ?string {
-                        $metadata = $record->metadata ?? [];
-
-                        return ConditionTargetDisplay::dsl(
-                            $record->target_definition
-                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
-                        );
-                    })
+                    ->state(static fn (Voucher $record): string => ConditionTargetDisplay::presetLabel($record->target_definition))
+                    ->tooltip(static fn (Voucher $record): ?string => ConditionTargetDisplay::dsl($record->target_definition))
                     ->badge()
                     ->color('info')
                     ->toggleable(isToggledHiddenByDefault: true),

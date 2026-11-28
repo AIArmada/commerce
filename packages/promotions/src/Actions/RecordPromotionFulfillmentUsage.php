@@ -102,6 +102,8 @@ final readonly class RecordPromotionFulfillmentUsage
             $countedPromotionIds = $this->countedPromotionIds($lockedOrder);
             $previousCount = count($countedPromotionIds);
 
+            $promotionIds = [];
+
             foreach ($allocations as $allocation) {
                 if (! is_array($allocation)) {
                     continue;
@@ -124,6 +126,14 @@ final readonly class RecordPromotionFulfillmentUsage
 
                     continue;
                 }
+                $promotionIds[$promotionId] = true;
+            }
+
+            // Acquire promotion write locks in a stable order across concurrent orders.
+            $promotionIds = array_keys($promotionIds);
+            sort($promotionIds, SORT_STRING);
+
+            foreach ($promotionIds as $promotionId) {
                 if (in_array($promotionId, $countedPromotionIds, true)) {
                     continue;
                 }

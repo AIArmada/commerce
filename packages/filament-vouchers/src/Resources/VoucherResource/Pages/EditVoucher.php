@@ -63,7 +63,7 @@ final class EditVoucher extends EditRecord
     {
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
         $definition = ConditionTargetDisplay::definition(
-            $data['target_definition'] ?? $metadata['target_definition'] ?? null
+            $data['target_definition'] ?? null
         );
 
         $dsl = ConditionTargetDisplay::dsl($definition);

@@ -10,7 +10,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Promotions\Actions\DeletePromotionTargets;
 use AIArmada\Promotions\Actions\IncrementPromotionUsage;
 use AIArmada\Promotions\Database\Factories\PromotionFactory;
 use AIArmada\Promotions\Enums\PromotionType;
@@ -329,7 +328,7 @@ class Promotion extends Model implements Auditable
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = true): Builder
     {
         if (! config('promotions.features.owner.enabled', false)) {
             return $query;
@@ -337,14 +336,8 @@ class Promotion extends Model implements Auditable
 
         $includeGlobal = $includeGlobal && config('promotions.features.owner.include_global', false);
 
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
         /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
         return $scoped;
     }
@@ -568,22 +561,6 @@ class Promotion extends Model implements Auditable
             ) {
                 throw new AuthorizationException('Cannot write promotions outside the current owner scope.');
             }
-        });
-
-        static::deleting(function (Promotion $promotion): void {
-            if (config('promotions.features.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-
-                if ($owner === null) {
-                    if ($promotion->owner_type !== null || $promotion->owner_id !== null) {
-                        throw new AuthorizationException('Cannot delete owned promotions without an owner context.');
-                    }
-                } elseif (! $promotion->belongsToOwner($owner)) {
-                    throw new AuthorizationException('Cannot delete promotions outside the current owner scope.');
-                }
-            }
-
-            app(DeletePromotionTargets::class)->handle($promotion);
         });
     }
 }
