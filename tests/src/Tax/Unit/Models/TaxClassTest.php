@@ -56,6 +56,18 @@ describe('TaxClass', function () use ($bindTaxOwnerForScoping): void {
         ]))->toThrow(ValidationException::class);
     });
 
+    it('keeps the tax class slug stable when editing display details', function (): void {
+        $class = TaxClass::create(['name' => 'Reduced rate', 'slug' => 'reduced']);
+
+        expect(fn () => $class->update(['slug' => 'discounted']))
+            ->toThrow(ValidationException::class);
+
+        $class->refresh()->update(['name' => 'Reduced tax']);
+
+        expect($class->fresh()->slug)->toBe('reduced')
+            ->and($class->fresh()->name)->toBe('Reduced tax');
+    });
+
     it('get default method', function (): void {
         TaxClass::create([
             'name' => 'Standard',

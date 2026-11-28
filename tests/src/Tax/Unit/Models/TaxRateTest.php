@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
 
 describe('TaxRate', function (): void {
@@ -29,6 +31,30 @@ describe('TaxRate', function (): void {
         $this->assertEquals(600, $rate->rate);
         $this->assertEquals('standard', $rate->tax_class);
         $this->assertTrue($rate->is_active);
+    });
+
+    it('rejects invalid rates before they are persisted', function (): void {
+        $zone = TaxZone::factory()->create();
+
+        foreach ([-1, 10001, 12.5, 'invalid'] as $rate) {
+            expect(fn () => TaxRate::create([
+                'zone_id' => $zone->id,
+                'name' => 'Invalid rate',
+                'rate' => $rate,
+            ]))->toThrow(InvalidArgumentException::class);
+        }
+
+        expect(TaxRate::query()->count())->toBe(0);
+    });
+
+    it('rejects missing zones when owner scoping is disabled', function (): void {
+        config(['tax.features.owner.enabled' => false]);
+
+        expect(fn () => TaxRate::create([
+            'zone_id' => (string) Str::uuid(),
+            'name' => 'Orphaned rate',
+            'rate' => 600,
+        ]))->toThrow(AuthorizationException::class);
     });
 
     it('active scope', function (): void {

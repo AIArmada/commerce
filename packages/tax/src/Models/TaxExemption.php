@@ -176,7 +176,6 @@ class TaxExemption extends Model implements Auditable
                     message: 'Exemptable entity is not accessible in the current owner scope.',
                 );
             }
-
         });
     }
 

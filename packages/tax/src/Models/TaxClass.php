@@ -102,7 +102,15 @@ class TaxClass extends Model implements Auditable
                 }
             }
 
-            self::assertSlugIsUnique($class);
+            if ($class->exists && $class->isDirty('slug')) {
+                throw ValidationException::withMessages([
+                    'slug' => 'A tax class slug cannot be changed after creation.',
+                ]);
+            }
+
+            if (! $class->exists) {
+                self::assertSlugIsUnique($class);
+            }
         });
 
         static::deleting(static function (TaxClass $class): void {

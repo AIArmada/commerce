@@ -29,13 +29,18 @@ final class TaxClassForm
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(
-                                fn (SetFormState $set, ?string $state) => $set('slug', Str::slug($state ?? ''))
+                                function (SetFormState $set, ?string $state, string $operation): void {
+                                    if ($operation === 'create') {
+                                        $set('slug', Str::slug($state ?? ''));
+                                    }
+                                }
                             ),
 
                         TextInput::make('slug')
                             ->label('Slug')
                             ->required()
                             ->maxLength(50)
+                            ->disabled(fn (string $operation): bool => $operation !== 'create')
                             ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
                                 $owner = OwnerUiScope::resolveOwner(TaxClass::class);
 
