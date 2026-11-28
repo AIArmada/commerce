@@ -8,6 +8,8 @@ use AIArmada\FilamentRewards\Resources\RewardFundingResource\RewardFundingResour
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingSource;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -16,6 +18,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -44,6 +48,7 @@ class ListRewardFunding extends ListRecords
                 ->action(function (array $data, RecordRewardFundingSourceAction $recorder): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('record', RewardFundingSource::class), 403);
 
                     try {
                         $recorder->handle(
@@ -77,6 +82,7 @@ class ListRewardFunding extends ListRecords
                 ->action(function (array $data, RecordRewardFundingAction $recorder): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('record', [RewardFundingEntry::class, (string) ($data['program_id'] ?? '')]), 403);
 
                     try {
                         $recorder->handle(

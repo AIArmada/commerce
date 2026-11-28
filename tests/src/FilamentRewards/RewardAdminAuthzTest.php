@@ -500,3 +500,37 @@ it('requires catalog retirement authorization inside the handler', function (): 
         ['reason' => 'Retired'],
     ))->toBe(403);
 });
+
+it('checks program operation permissions when executing header actions', function (string $name, string $ability, array $data): void {
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('program-gate-test', RewardProgramMode::Points);
+    Gate::define($ability, static fn (): bool => false);
+
+    $page = Livewire::actingAs($this->staff)
+        ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
+        ->instance();
+
+    $action = $page->getAction($name);
+    expect($action)->toBeInstanceOf(Action::class);
+    $action->data($data);
+
+    expect(fn () => $action->call())->toThrow(HttpException::class);
+})->with([
+    'publish' => ['publish_version', 'publishVersion', []],
+    'transition' => ['transition_status', 'transitionStatus', ['to' => 'ready']],
+    'preview' => ['preview_qualification', 'previewQualification', []],
+]);
+
+it('checks class operation permissions when executing funding and catalog header actions', function (string $pageClass, string $name, string $ability): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    $page = Livewire::actingAs($this->staff)->test($pageClass)->instance();
+    $action = $page->getAction($name);
+    expect($action)->toBeInstanceOf(Action::class);
+    $action->data([]);
+
+    expect(fn () => $action->call())->toThrow(HttpException::class);
+})->with([
+    'funding source' => [ListRewardFunding::class, 'record_source', 'record'],
+    'funding entry' => [ListRewardFunding::class, 'record', 'record'],
+    'catalog creation' => [ListRewardBenefitItems::class, 'create', 'create'],
+]);

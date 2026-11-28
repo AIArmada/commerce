@@ -7,6 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\RewardBenefitItemResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -18,6 +19,8 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -54,6 +57,7 @@ class ListRewardBenefitItems extends ListRecords
                 ->action(function (array $data, CreateRewardBenefitItemAction $create): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('create', [RewardBenefitItem::class, (string) ($data['program_id'] ?? '')]), 403);
 
                     $conditions = array_values(array_filter(array_map(
                         static fn (string $line): string => mb_trim($line),
@@ -76,7 +80,7 @@ class ListRewardBenefitItems extends ListRecords
                             (string) $data['benefit_key'],
                             (string) $data['title'],
                             $conditions,
-                            $data['cost_points'] !== null && $data['cost_points'] !== '' ? (int) $data['cost_points'] : null,
+                            ($data['cost_points'] ?? null) !== null && $data['cost_points'] !== '' ? (int) $data['cost_points'] : null,
                             is_string($data['cost_unit'] ?? null) && $data['cost_unit'] !== '' ? (string) $data['cost_unit'] : null,
                             (bool) ($data['direct_entitlement'] ?? false),
                             (int) $data['capacity'],
