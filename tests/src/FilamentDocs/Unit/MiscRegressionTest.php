@@ -13,6 +13,7 @@ use AIArmada\FilamentDocs\Rendering\DocsRichContentFileAttachmentProvider;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(TestCase::class);
@@ -23,6 +24,13 @@ afterEach(function (): void {
 });
 
 it('duplicates email templates with collision-free slugs and feedback (L3)', function (): void {
+    $user = User::query()->create(['name' => 'Template Editor', 'email' => 'template-editor@example.test', 'password' => bcrypt('password')]);
+    foreach (['document_email_template.create', 'document_email_template.view'] as $ability) {
+        Permission::query()->firstOrCreate(['name' => $ability, 'guard_name' => 'web']);
+        $user->givePermissionTo($ability);
+    }
+    $this->actingAs($user);
+
     $template = DocEmailTemplate::query()->create([
         'name' => 'Welcome',
         'slug' => 'welcome',

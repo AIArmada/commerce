@@ -6,12 +6,12 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Docs\Contracts\DocumentEmailTemplates;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -208,6 +208,7 @@ final class DocEmailTemplateResource extends Resource
                 EditAction::make(),
                 Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
+                    ->authorize(fn (DocEmailTemplate $record): bool => self::canCreate() && self::canView($record))
                     ->action(fn (DocEmailTemplate $record): DocEmailTemplate => self::duplicateTemplate($record)),
             ])
             ->toolbarActions([
@@ -217,11 +218,10 @@ final class DocEmailTemplateResource extends Resource
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'delete'))
                         ->action(function (Collection $records): void {
-                            /** @var Collection<int|string, DocEmailTemplate> $records */
-                            $records->each(function (DocEmailTemplate $record): void {
-                                $record->delete();
-                            });
+                            abort_unless(DocPermissions::allows(DocPermissions::DOCUMENT_EMAIL_TEMPLATE, 'delete'), 403);
+                            app(DocumentEmailTemplates::class)->remove(array_map('strval', $records->modelKeys()));
                         }),
                 ]),
             ]);
@@ -264,12 +264,11 @@ final class DocEmailTemplateResource extends Resource
 
     public static function duplicateTemplate(DocEmailTemplate $record): DocEmailTemplate
     {
-        DocsOwnerScope::assertCanAccessRecord($record, 'Email template not found.');
+        abort_unless(self::canCreate() && self::canView($record), 403);
+        DocsOwnerScope::assertCanMutateRecord($record, 'Email template not found.');
 
-        $copy = $record->replicate();
-        $copy->name = $record->name . ' (Copy)';
-        $copy->slug = self::uniqueDuplicateSlug($record->slug);
-        $copy->save();
+        $id = app(DocumentEmailTemplates::class)->duplicate((string) $record->getKey());
+        $copy = DocEmailTemplate::query()->findOrFail($id);
 
         Notification::make()
             ->title('Email template duplicated')
@@ -277,19 +276,5 @@ final class DocEmailTemplateResource extends Resource
             ->send();
 
         return $copy;
-    }
-
-    private static function uniqueDuplicateSlug(string $slug): string
-    {
-        $base = $slug . '-copy-' . CarbonImmutable::now()->timestamp;
-        $candidate = $base;
-
-        // The database unique is effectively global (see docs package follow-up),
-        // so probe every scope before saving.
-        for ($i = 2; DocEmailTemplate::query()->withoutOwnerScope()->where('slug', $candidate)->exists(); $i++) {
-            $candidate = $base . '-' . $i;
-        }
-
-        return $candidate;
     }
 }

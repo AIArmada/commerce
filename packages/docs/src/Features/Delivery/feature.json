@@ -12,6 +12,9 @@
     ],
     "table:doc_share_links": [
       "AIArmada\\Docs\\Features\\Delivery\\Actions\\ManageDocShareLinks"
+    ],
+    "table:docs_email_templates": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\ManageDocEmailTemplates"
     ]
   },
   "extensions": {}
