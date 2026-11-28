@@ -7,8 +7,10 @@ namespace AIArmada\Seating\Features\Reservations\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
+use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Carbon\CarbonImmutable;
@@ -62,6 +64,10 @@ final readonly class ConvertHoldsToAllocationsAction
                     continue;
                 }
 
+                if ($mode !== SeatingMode::GeneralAdmission) {
+                    $this->assertSectionCapacity($seat);
+                }
+
                 $allocation = DB::transaction(function () use ($lockedHold, $mode, $allocToType, $allocToId, $reference, $seat): SeatAllocation {
                     $allocation = new SeatAllocation([
                         'seat_id' => $lockedHold->seat_id,
@@ -98,6 +104,23 @@ final readonly class ConvertHoldsToAllocationsAction
 
             return $allocations;
         });
+    }
+
+    private function assertSectionCapacity(Seat $seat): void
+    {
+        $section = SeatSection::query()->whereKey($seat->seat_section_id)->lockForUpdate()->firstOrFail();
+
+        $activeCount = SeatAllocation::query()
+            ->withoutOwnerScope()
+            ->where('seat_section_id', $section->getKey())
+            ->where('status', 'active')
+            ->count();
+
+        if ($activeCount >= $section->capacity) {
+            throw new SectionCapacityExceededException(
+                "Section {$section->name} is at capacity ({$section->capacity})."
+            );
+        }
     }
 
     private function hasActiveAllocation(Seat $seat): bool
