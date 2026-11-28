@@ -123,7 +123,8 @@ it('uses native contact methods for registration participant contact data', func
     expect(EventRegistrationParticipantResource::getEloquentQuery()->getEagerLoads())
         ->toHaveKey('contactMethods')
         ->and(EventRegistrationResource::getEloquentQuery()->getEagerLoads())
-        ->toHaveKey('participants.contactMethods');
+        ->toHaveKey('displayParticipant.contactMethods')
+        ->not->toHaveKey('participants.contactMethods');
 });
 
 it('builds the current event resources and relation managers', function (): void {

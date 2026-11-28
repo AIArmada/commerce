@@ -8,6 +8,7 @@ use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Ticketing\Enums\PricingMode;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,8 +23,8 @@ final class EventOccurrenceFactory extends Factory
         return [
             'event_id' => Event::factory(),
             'title' => $this->faker->sentence(3),
-            'starts_at' => now()->addDays(rand(1, 30)),
-            'ends_at' => now()->addDays(rand(1, 30))->addHours(2),
+            'starts_at' => CarbonImmutable::now()->addDays($this->faker->numberBetween(1, 30)),
+            'ends_at' => static fn (array $attributes): CarbonImmutable => CarbonImmutable::parse($attributes['starts_at'])->addHours(2),
             'timezone' => 'UTC',
             'status' => 'scheduled',
             'visibility' => 'public',

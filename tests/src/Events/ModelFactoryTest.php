@@ -51,3 +51,19 @@ it('creates related event models via their default factories', function (): void
     expect(EventTimeExpression::factory()->create()->exists)->toBeTrue();
     expect(EventWalkIn::factory()->create()->exists)->toBeTrue();
 });
+
+it('generates valid occurrence ranges including explicit start overrides', function (): void {
+    $event = Event::factory()->create();
+    $occurrences = EventOccurrence::factory()->count(10)->create(['event_id' => $event->id]);
+
+    foreach ($occurrences as $occurrence) {
+        expect($occurrence->ends_at->equalTo($occurrence->starts_at->addHours(2)))->toBeTrue();
+    }
+
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'starts_at' => '2030-01-01 09:00:00',
+    ]);
+
+    expect($occurrence->ends_at->equalTo($occurrence->starts_at->addHours(2)))->toBeTrue();
+});

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Events\Events\EventSessionUpdated;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
@@ -32,7 +31,7 @@ final class UpdateEventSessionAction
         [$session, $changes, $original] = DB::transaction(function () use ($session, $attributes): array {
             /** @var EventSession $session */
             $session = $session->newQuery()
-                ->withoutGlobalScope(OwnerScope::class)
+                ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
                 ->whereKey($session->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -94,7 +93,7 @@ final class UpdateEventSessionAction
                 $event->newQuery()->whereKey($event->getKey())->lockForUpdate()->firstOrFail();
 
                 $duplicate = ModelResolver::sessionClass()::query()
-                    ->withoutGlobalScope(OwnerScope::class)
+                    ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
                     ->where('event_id', $session->event_id)
                     ->whereKeyNot($session->getKey())
                     ->where('slug', $allowed['slug'])
