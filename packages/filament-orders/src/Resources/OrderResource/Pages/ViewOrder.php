@@ -8,7 +8,7 @@ use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\FilamentOrders\Widgets\OrderTimelineWidget;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
@@ -83,12 +83,12 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderService::class);
+                        $service = app(OrderServiceInterface::class);
                         $service->confirmPayment(
                             $record,
                             $data['transaction_id'],
                             $data['gateway'],
-                            $record->grand_total,
+                            $record->getBalanceDue(),
                         );
 
                         Notification::make()
@@ -154,18 +154,28 @@ class ViewOrder extends ViewRecord
                 })
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderService::class);
+                        $service = app(OrderServiceInterface::class);
 
                         $fulfillmentHandler = $this->getBoundFulfillmentHandler();
                         $carriers = $this->getAvailableCarriers();
 
                         if ($fulfillmentHandler !== null && $carriers !== [] && ! isset($data['tracking_number'])) {
 
-                            $units = [];
-                            foreach ($data['package_units'] ?? [] as $selection) {
-                                [$orderItemId, $ordinal] = explode(':', $selection, 2);
-                                $units[$orderItemId][] = (int) $ordinal;
+                            if (! isset($data['carrier']) || ! array_key_exists($data['carrier'], $carriers)) {
+                                throw new RuntimeException('Select a supported shipping carrier.');
                             }
+
+                            $units = [];
+                            $options = $this->packageUnitOptions($record);
+                            foreach ($data['package_units'] ?? [] as $selection) {
+                                if (! is_string($selection) || ! array_key_exists($selection, $options)) {
+                                    throw new RuntimeException('Invalid package unit selection.');
+                                }
+
+                                [$orderItemId, $ordinal] = explode(':', $selection, 2);
+                                $units[$orderItemId][(int) $ordinal] = (int) $ordinal;
+                            }
+                            $units = array_map('array_values', $units);
 
                             $result = $fulfillmentHandler->createShipment($record, [
                                 'carrier' => $data['carrier'],
@@ -226,7 +236,7 @@ class ViewOrder extends ViewRecord
                 })
                 ->action(function (Order $record): void {
                     try {
-                        $service = app(OrderService::class);
+                        $service = app(OrderServiceInterface::class);
                         $service->confirmDelivery($record);
 
                         Notification::make()
@@ -268,7 +278,7 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderService::class);
+                        $service = app(OrderServiceInterface::class);
                         $metadata = [
                             'source' => 'filament_manual',
                         ];
@@ -318,7 +328,7 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderService::class);
+                        $service = app(OrderServiceInterface::class);
 
                         $canceledBy = Filament::auth()->id();
 
@@ -369,25 +379,15 @@ class ViewOrder extends ViewRecord
     {
         $handler = $this->getBoundFulfillmentHandler();
 
-        if ($handler === null || ! method_exists($handler, 'availableCarriers')) {
+        if ($handler === null) {
             return [];
         }
 
-        $availableCarriers = call_user_func([$handler, 'availableCarriers']);
-
-        if (! is_array($availableCarriers)) {
-            return [];
-        }
+        $availableCarriers = $handler->availableCarriers();
 
         $carriers = [];
 
         foreach ($availableCarriers as $code => $label) {
-            if (is_int($code) && is_string($label)) {
-                $carriers[$label] = $label;
-
-                continue;
-            }
-
             if (is_string($code) && is_string($label) && $code !== '' && $label !== '') {
                 $carriers[$code] = $label;
             }

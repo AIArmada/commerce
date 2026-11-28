@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentPaymentEditor;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
@@ -151,22 +152,9 @@ final class PaymentsRelationManager extends RelationManager
             ]);
         }
 
-        foreach (['amount_minor', 'currency', 'payment_method', 'transaction_id'] as $immutable) {
-            if (array_key_exists($immutable, $data)
-                && (string) $data[$immutable] !== (string) $payment->getAttribute($immutable)) {
-                throw ValidationException::withMessages([
-                    $immutable => __('This field cannot be changed after recording.'),
-                ]);
-            }
-        }
+        app(DocumentPaymentEditor::class)->edit((string) $doc->getKey(), (string) $payment->getKey(), $data);
 
-        $payment->update(array_intersect_key($data, array_flip([
-            'reference',
-            'notes',
-            'paid_at',
-        ])));
-
-        return $payment;
+        return $payment->refresh();
     }
 
     private function getOwnerDoc(): Doc

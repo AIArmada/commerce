@@ -123,6 +123,12 @@ it('keeps recorded payment amounts immutable but allows note edits (H3)', functi
         'payment_method' => 'cash',
     ]))->toThrow(ValidationException::class);
 
+    expect(fn (): DocPayment => PaymentsRelationManager::updatePaymentForDoc($doc, $payment, ['transaction_id' => 'replacement']))
+        ->toThrow(ValidationException::class);
+
+    expect(fn (): DocPayment => PaymentsRelationManager::updatePaymentForDoc($doc, $payment, ['paid_at' => '']))
+        ->toThrow(ValidationException::class);
+
     $updated = PaymentsRelationManager::updatePaymentForDoc($doc, $payment, [
         'amount_minor' => 40,
         'currency' => 'MYR',

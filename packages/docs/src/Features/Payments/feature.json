@@ -3,7 +3,8 @@
   "name": "Payments",
   "owns": {
     "table:docs_payments": [
-      "AIArmada\\Docs\\Features\\Payments\\Actions\\RecordDocPayment"
+      "AIArmada\\Docs\\Features\\Payments\\Actions\\RecordDocPayment",
+      "AIArmada\\Docs\\Features\\Payments\\Actions\\EditDocPayment"
     ]
   },
   "extensions": {}

@@ -25,7 +25,8 @@
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHoldReleased",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderReturned",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
-      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled"
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageOrderNotes"
     ],
     "store:orders-intake": [
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder"
