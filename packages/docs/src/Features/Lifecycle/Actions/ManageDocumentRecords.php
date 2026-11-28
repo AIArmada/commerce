@@ -184,8 +184,14 @@ final readonly class ManageDocumentRecords implements DocumentRecords
      */
     public function createFromType(DocType $type, array $data, ?Model $owner = null): Doc
     {
-        return OwnerContext::withOwner($owner, function () use ($type, $data, $owner): Doc {
-            return (new Doc)->getConnection()->transaction(function () use ($type, $data, $owner): Doc {
+        return $this->createTypedRecord($type, $data, $owner);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createTypedRecord(DocType $type, array $data, ?Model $owner, ?Doc $source = null): Doc
+    {
+        return OwnerContext::withOwner($owner, function () use ($type, $data, $owner, $source): Doc {
+            return (new Doc)->getConnection()->transaction(function () use ($type, $data, $owner, $source): Doc {
                 // Generate document number
                 $docNumber = $this->sequenceManager->nextNumber($type->value);
                 $this->assertDocNumberAvailable($docNumber, $owner);
@@ -199,8 +205,17 @@ final readonly class ManageDocumentRecords implements DocumentRecords
                     'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
                 ]);
 
-                // Calculate totals if items provided
-                if (isset($data['items'])) {
+                // A copy preserves the persisted financial snapshot, including
+                // header-level tax and amounts on documents without line items.
+                if ($source !== null) {
+                    $docData = array_merge($docData, [
+                        'subtotal_minor' => $source->subtotal_minor,
+                        'tax_amount_minor' => $source->tax_amount_minor,
+                        'discount_amount_minor' => $source->discount_amount_minor,
+                        'total_minor' => $source->total_minor,
+                    ]);
+                    $this->assertValidStoredTotals($docData);
+                } elseif (isset($data['items'])) {
                     if (! is_array($data['items'])) {
                         throw new InvalidArgumentException('Document field `items` must be an array.');
                     }
@@ -394,7 +409,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
         }
 
         // Resolve a template for the target document type, not the source type.
-        return $this->createFromType($targetType, [
+        return $this->createTypedRecord($targetType, [
             'docable_type' => $source->docable_type,
             'docable_id' => $source->docable_id,
             'due_date' => $source->due_date,
@@ -413,7 +428,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
                     'doc_type' => $source->doc_type,
                 ],
             ]),
-        ], $owner);
+        ], $owner, $source);
     }
 
     /**
@@ -426,7 +441,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
         $val = $source->doc_type;
         $type = ($val instanceof DocType ? $val : DocType::tryFrom($val)) ?? DocType::Invoice;
 
-        return $this->createFromType($type, [
+        return $this->createTypedRecord($type, [
             'docable_type' => $source->docable_type,
             'docable_id' => $source->docable_id,
             'doc_template_id' => $source->doc_template_id,
@@ -442,7 +457,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
             'metadata' => array_merge($source->metadata ?? [], [
                 'cloned_from' => $source->id,
             ]),
-        ], $owner);
+        ], $owner, $source);
     }
 
     /**
@@ -451,7 +466,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
     private function resolveCopySource(Doc $source, ?Model $owner): array
     {
         if (! config('docs.owner.enabled', false)) {
-            return [$source, $owner];
+            return [$source->newQuery()->findOrFail($source->getKey()), $owner];
         }
 
         $source = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $source->getKey());

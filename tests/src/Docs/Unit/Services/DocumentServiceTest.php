@@ -156,6 +156,8 @@ test('can convert a document', function (): void {
         'doc_type' => DocType::Quotation,
         'doc_number' => 'QUO-123',
         'subtotal_minor' => 100,
+        'tax_amount_minor' => 10,
+        'discount_amount_minor' => 0,
         'total_minor' => 110,
         'items' => [['name' => 'Item 1', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]);
@@ -166,7 +168,8 @@ test('can convert a document', function (): void {
         ->toBeInstanceOf(Doc::class)
         ->doc_type->toBe(DocType::Invoice->value)
         ->subtotal_minor->toBe(100)
-        ->total_minor->toBe(100)
+        ->tax_amount_minor->toBe(10)
+        ->total_minor->toBe(110)
         ->metadata->toHaveKey('converted_from')
         ->metadata->converted_from->doc_number->toBe('QUO-123');
 });
@@ -207,4 +210,27 @@ test('preserves document financial terms after a partial payment while allowing 
         ->and($updated->total_minor)->toBe(100)
         ->and($updated->notes)->toBe('Payment reference confirmed.')
         ->and($updated->status->equals(PartiallyPaid::class))->toBeTrue();
+});
+
+test('cloning and converting itemless documents preserve their financial snapshot', function (): void {
+    $source = Doc::factory()->create([
+        'doc_type' => DocType::Quotation,
+        'currency' => 'MYR',
+        'items' => [],
+        'subtotal_minor' => 1000,
+        'tax_amount_minor' => 60,
+        'discount_amount_minor' => 100,
+        'total_minor' => 960,
+    ]);
+
+    $source->total_minor = 1;
+
+    foreach ([$this->service->clone($source), $this->service->convert($source, DocType::Invoice)] as $copy) {
+        expect($copy->subtotal_minor)->toBe(1000)
+            ->and($copy->tax_amount_minor)->toBe(60)
+            ->and($copy->discount_amount_minor)->toBe(100)
+            ->and($copy->total_minor)->toBe(960)
+            ->and($copy->items)->toBe([])
+            ->and($copy->status->equals(Draft::class))->toBeTrue();
+    }
 });
