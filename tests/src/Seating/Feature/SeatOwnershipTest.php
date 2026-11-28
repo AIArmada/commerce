@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatAllocation;

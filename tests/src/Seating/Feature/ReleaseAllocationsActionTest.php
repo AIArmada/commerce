@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatMap;

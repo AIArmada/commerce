@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\EntryPoints\Console\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;

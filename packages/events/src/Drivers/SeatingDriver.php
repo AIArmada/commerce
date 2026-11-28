@@ -6,10 +6,10 @@ namespace AIArmada\Events\Drivers;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Seating\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Actions\EnsureSeatHoldAction;
-use AIArmada\Seating\Actions\EnsureSectionAllocationAction;
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Actions\ResolveSeatMapForHostAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;

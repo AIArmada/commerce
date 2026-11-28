@@ -38,3 +38,7 @@ arch('seating actions')
 arch('seating exceptions')
     ->expect('AIArmada\Seating\Exceptions')
     ->toExtend('RuntimeException');
+
+arch('seating reservation actions')
+    ->expect('AIArmada\Seating\Features\Reservations\Actions')
+    ->toHaveMethod('handle');

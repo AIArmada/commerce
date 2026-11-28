@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\EntryPoints\Console;
 
-use AIArmada\Seating\Actions\ReleaseExpiredHoldsAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseExpiredHoldsAction;
 use Illuminate\Console\Command;
 
 final class ReleaseExpiredHoldsCommand extends Command

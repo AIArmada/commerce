@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;

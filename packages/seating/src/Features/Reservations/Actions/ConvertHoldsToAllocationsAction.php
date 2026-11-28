@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Actions;
+namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
@@ -15,7 +15,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class ConvertHoldsToAllocationsAction
+final readonly class ConvertHoldsToAllocationsAction
 {
     /**
      * @param  iterable<SeatHold>  $holds

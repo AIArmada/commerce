@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\EntryPoints\Listeners;
 
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\Events\PassRevoked;
 
 final class ReleaseSeatsOnPassRevoked

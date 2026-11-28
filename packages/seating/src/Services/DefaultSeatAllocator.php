@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Services;
 
-use AIArmada\Seating\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Actions;
+namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
@@ -11,7 +11,7 @@ use AIArmada\Seating\Models\SeatSection;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
-class EnsureSectionAllocationAction
+final readonly class EnsureSectionAllocationAction
 {
     public function handle(
         SeatSection $section,
