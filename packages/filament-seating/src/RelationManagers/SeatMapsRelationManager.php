@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentSeating\Resources\SeatMapResource;
+use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
+use AIArmada\Seating\Models\SeatMap;
 use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
 use AIArmada\FilamentSeating\Tables\SeatMapTable;
 use Filament\Actions\CreateAction;
@@ -50,18 +53,28 @@ class SeatMapsRelationManager extends RelationManager
             ->columns(SeatMapTable::columns())
             ->filters(SeatMapTable::filters())
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->visible(fn (): bool => SeatMapResource::canCreate())
+                    ->using(function (array $data): Model {
+                        abort_unless(SeatMapResource::canCreate(), 403);
+
+                        return app(SaveSeatMap::class)->handle($data, host: $this->getOwnerRecord());
+                    }),
             ])
             ->actions([
                 EditAction::make()
-                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
-                    ->before(function (?Model $record): void {
-                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    ->visible(fn (SeatMap $record): bool => SeatMapResource::canEdit($record))
+                    ->using(function (SeatMap $record, array $data): Model {
+                        abort_unless(SeatMapResource::canEdit($record), 403);
+
+                        return app(SaveSeatMap::class)->handle($data, $record, $this->getOwnerRecord());
                     }),
                 DeleteAction::make()
-                    ->visible(fn (?Model $record): bool => $record === null || OwnerUiScope::canMutateRecord($record))
-                    ->before(function (?Model $record): void {
-                        abort_unless($record === null || OwnerUiScope::canMutateRecord($record), 403);
+                    ->visible(fn (SeatMap $record): bool => SeatMapResource::canDelete($record))
+                    ->using(function (SeatMap $record): bool {
+                        abort_unless(SeatMapResource::canDelete($record), 403);
+
+                        return app(DeleteSeatMap::class)->handle($record, $this->getOwnerRecord());
                     }),
             ]);
     }

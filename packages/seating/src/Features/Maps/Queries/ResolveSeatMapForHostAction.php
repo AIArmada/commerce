@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Actions;
+namespace AIArmada\Seating\Features\Maps\Queries;
 
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Models\SeatMap;
 use Illuminate\Database\Eloquent\Model;
 
-class ResolveSeatMapForHostAction
+final readonly class ResolveSeatMapForHostAction
 {
     public function handle(Model $host, SeatingMode $mode): ?SeatMap
     {

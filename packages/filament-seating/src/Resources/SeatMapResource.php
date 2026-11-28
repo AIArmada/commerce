@@ -57,17 +57,17 @@ final class SeatMapResource extends Resource
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('seat-map.create');
+        return FilamentPermission::hasAbility('seat-map.create') && OwnerUiScope::canCreate(SeatMapModel::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('seat-map.update');
+        return FilamentPermission::hasAbility('seat-map.update') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('seat-map.delete');
+        return FilamentPermission::hasAbility('seat-map.delete') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function shouldRegisterNavigation(): bool

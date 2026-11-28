@@ -10,7 +10,7 @@ use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsActi
 use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
-use AIArmada\Seating\Actions\ResolveSeatMapForHostAction;
+use AIArmada\Seating\Features\Maps\Queries\ResolveSeatMapForHostAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;

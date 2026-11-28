@@ -51,6 +51,8 @@ final class SeatMapFormSchema
                 ->schema([
                     Textarea::make('layout_metadata')
                         ->json()
+                        ->formatStateUsing(static fn (mixed $state): ?string => $state === null ? null : json_encode($state, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT))
+                        ->dehydrateStateUsing(static fn (?string $state): mixed => blank($state) ? null : json_decode($state, true, 512, JSON_THROW_ON_ERROR))
                         ->nullable()
                         ->columnSpanFull(),
                 ]),

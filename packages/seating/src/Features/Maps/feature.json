@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "Maps",
+  "owns": {
+    "table:seat_maps": [
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\SaveSeatMap",
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
+    ],
+    "table:seat_sections": [
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
+    ],
+    "table:seats": [
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
+    ]
+  },
+  "extensions": {}
+}
