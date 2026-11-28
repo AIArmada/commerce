@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Programs\Queries;
 
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
@@ -16,34 +16,12 @@ final class RewardVersionResolver
 {
     public static function resolveCurrentForProgram(RewardProgram $program, ?CarbonImmutable $at = null): ?RewardProgramVersion
     {
-        $versions = RewardProgramVersion::query()
+        return RewardProgramVersion::query()
             ->where('program_id', $program->getKey())
-            ->orderBy('version')
-            ->get();
-
-        $timeline = [];
-
-        foreach ($versions as $version) {
-            $timeline[] = [
-                'id' => (string) $version->getKey(),
-                'version' => (int) $version->version,
-                'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
-            ];
-        }
-
-        $applicable = self::resolveAt($timeline, ($at ?? CarbonImmutable::now('UTC'))->setTimezone('UTC'));
-
-        if ($applicable === null) {
-            return null;
-        }
-
-        foreach ($versions as $version) {
-            if ((string) $version->getKey() === $applicable['id']) {
-                return $version;
-            }
-        }
-
-        return null;
+            ->where('effective_from', '<=', ($at ?? CarbonImmutable::now('UTC'))->setTimezone('UTC'))
+            ->orderByDesc('effective_from')
+            ->orderByDesc('version')
+            ->first();
     }
 
     /**

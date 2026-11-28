@@ -16,9 +16,9 @@ use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Queries\RewardCouponMapper;
+use AIArmada\Rewards\Features\Benefits\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
-use AIArmada\Rewards\Support\RewardVersionResolver;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

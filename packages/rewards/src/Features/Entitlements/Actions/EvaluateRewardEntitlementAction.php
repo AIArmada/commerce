@@ -31,7 +31,6 @@ use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Support\RewardCapWindows;
-use AIArmada\Rewards\Support\RewardEvaluationResult;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use Carbon\CarbonImmutable;

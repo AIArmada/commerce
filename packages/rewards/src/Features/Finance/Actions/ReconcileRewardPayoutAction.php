@@ -11,7 +11,7 @@ use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
-use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
+use AIArmada\Rewards\Features\Finance\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

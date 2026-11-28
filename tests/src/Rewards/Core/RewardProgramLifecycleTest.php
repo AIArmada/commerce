@@ -9,7 +9,7 @@ use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardVersionResolver;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionResolver;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

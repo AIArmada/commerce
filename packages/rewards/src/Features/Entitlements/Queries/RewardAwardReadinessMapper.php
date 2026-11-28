@@ -2,24 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Queries;
+namespace AIArmada\Rewards\Features\Entitlements\Queries;
 
 use AIArmada\Rewards\Data\RewardAwardSnapshot;
-use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 
-final readonly class RewardReadinessMapper
+final readonly class RewardAwardReadinessMapper
 {
-    public static function version(?RewardProgramVersion $version): ?RewardVersionSnapshot
-    {
-        return $version === null ? null : new RewardVersionSnapshot(
-            id: (string) $version->getKey(),
-            componentTypes: $version->componentTypes(),
-            rules: $version->rules,
-        );
-    }
-
     public static function award(RewardAward $award): RewardAwardSnapshot
     {
         return new RewardAwardSnapshot(

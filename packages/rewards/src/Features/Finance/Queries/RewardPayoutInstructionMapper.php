@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Queries;
+namespace AIArmada\Rewards\Features\Finance\Queries;
 
 use AIArmada\Rewards\Data\RewardPayoutInstruction;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;

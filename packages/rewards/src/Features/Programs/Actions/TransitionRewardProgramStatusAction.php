@@ -8,7 +8,7 @@ use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Queries\RewardReadinessMapper;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionReadinessMapper;
 use AIArmada\Rewards\Features\Programs\Persistence\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -65,8 +65,8 @@ final readonly class TransitionRewardProgramStatusAction
                     ->first();
 
                 $assessment = $toEnum === RewardProgramStatus::Ready
-                    ? $checker->canMarkReady((string) $locked->getKey(), RewardReadinessMapper::version($latest))
-                    : $checker->canActivate((string) $locked->getKey(), RewardReadinessMapper::version($latest));
+                    ? $checker->canMarkReady((string) $locked->getKey(), RewardVersionReadinessMapper::version($latest))
+                    : $checker->canActivate((string) $locked->getKey(), RewardVersionReadinessMapper::version($latest));
 
                 if (! $assessment->ready) {
                     throw new InvalidArgumentException(

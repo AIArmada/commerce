@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;

@@ -10,7 +10,7 @@ use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitGuard;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
-use AIArmada\Rewards\Queries\RewardCouponMapper;
+use AIArmada\Rewards\Features\Benefits\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

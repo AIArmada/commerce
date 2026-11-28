@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Queries;
+namespace AIArmada\Rewards\Features\Benefits\Queries;
 
 use AIArmada\Rewards\Data\RewardCouponGrant;
 use AIArmada\Rewards\Data\RewardCouponTerms;

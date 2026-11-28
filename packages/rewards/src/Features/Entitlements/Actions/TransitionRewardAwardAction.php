@@ -40,7 +40,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
-use AIArmada\Rewards\Queries\RewardReadinessMapper;
+use AIArmada\Rewards\Features\Entitlements\Queries\RewardAwardReadinessMapper;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
@@ -259,8 +259,8 @@ final readonly class TransitionRewardAwardAction
 
         if ($locked->component->requiresMoneyOrBenefitFulfillment()) {
             $assessment = $toEnum === RewardAwardStatus::Fulfilled
-                ? $checker->canFulfillFinancial(RewardReadinessMapper::award($locked))
-                : $checker->canApproveFinancial(RewardReadinessMapper::award($locked));
+                ? $checker->canFulfillFinancial(RewardAwardReadinessMapper::award($locked))
+                : $checker->canApproveFinancial(RewardAwardReadinessMapper::award($locked));
 
             $entryEvidence['financial_readiness'] = [
                 'ready' => $assessment->ready,
@@ -1359,7 +1359,7 @@ final readonly class TransitionRewardAwardAction
             );
         }
 
-        app(RewardBenefitCatalog::class)->fulfill(RewardReadinessMapper::award($award), $decided);
+        app(RewardBenefitCatalog::class)->fulfill(RewardAwardReadinessMapper::award($award), $decided);
     }
 
     private function reverseConsumedPoints(
