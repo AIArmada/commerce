@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Events\Events\EventSessionCreated;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
@@ -48,7 +49,7 @@ final class CreateEventSessionAction
         return DB::transaction(function () use ($occurrence, $attributes, $title, $startsAt, $endsAt, $slugBase): EventSession {
             /** @var EventOccurrence $occurrence */
             $occurrence = $occurrence->newQuery()
-                ->withoutOwnerScope()
+                ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($occurrence->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -133,7 +134,7 @@ final class CreateEventSessionAction
         $base = $slug === '' ? 'session' : $slug;
 
         $query = ModelResolver::sessionClass()::query()
-            ->withoutOwnerScope()
+            ->withoutGlobalScope(OwnerScope::class)
             ->where('event_id', $eventId);
 
         if (str_contains($base, '\\')) {
@@ -166,7 +167,7 @@ final class CreateEventSessionAction
             $suffix++;
         }
 
-        while (ModelResolver::sessionClass()::query()->withoutOwnerScope()->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
+        while (ModelResolver::sessionClass()::query()->withoutGlobalScope(OwnerScope::class)->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
             $candidate = $base . '-' . $suffix;
             $suffix++;
         }

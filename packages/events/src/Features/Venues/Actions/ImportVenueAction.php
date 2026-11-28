@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Venues\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Contacting\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Features\Venues\Models\Venue;
 use AIArmada\Events\Platform\ModelResolver;
@@ -22,10 +21,7 @@ use LogicException;
 
 final readonly class ImportVenueAction
 {
-    public function __construct(
-        private AddressAttachmentWriter $addresses,
-        private CreateContactMethodAction $contacts,
-    ) {}
+    public function __construct(private AddressAttachmentWriter $addresses) {}
 
     /** @param array<string, mixed> $data */
     public function handle(?string $venueId, array $data, mixed $actor): Venue
@@ -94,7 +90,7 @@ final readonly class ImportVenueAction
                     continue;
                 }
 
-                $this->contacts->execute($venue, new ContactMethodData(
+                $venue->addContactMethod(new ContactMethodData(
                     type: $type,
                     value: mb_trim($value),
                     isPrimary: true,

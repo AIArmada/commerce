@@ -58,5 +58,4 @@ final class DefaultEventCloneService implements EventCloneService
             return (string) $clone->getKey();
         });
     }
-
 }

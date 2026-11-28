@@ -69,7 +69,7 @@ final readonly class ManageEventAction
             }
 
             if ($eventId === null) {
-                $event->status = Event::DRAFT;
+                $event->setAttribute('status', Event::DRAFT);
                 $event->last_state_change_at = CarbonImmutable::now();
             }
 

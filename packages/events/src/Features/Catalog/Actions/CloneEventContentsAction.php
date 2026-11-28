@@ -26,6 +26,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
 final class CloneEventContentsAction
@@ -229,6 +230,10 @@ final class CloneEventContentsAction
         // might still be rolled back by an enclosing database transaction.
         DB::afterCommit(static function () use ($mediaRecords, $target): void {
             foreach ($mediaRecords as $media) {
+                if (! $media instanceof Media) {
+                    continue;
+                }
+
                 try {
                     $media->copy($target, $media->collection_name, $media->disk);
                 } catch (Throwable $exception) {
