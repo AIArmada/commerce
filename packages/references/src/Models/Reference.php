@@ -404,7 +404,7 @@ class Reference extends Model implements HasMedia
 
             $encoded = json_encode($decoded);
 
-            if ($encoded === false || strlen($encoded) > 65535) {
+            if ($encoded === false || mb_strlen($encoded) > 65535) {
                 throw ValidationException::withMessages([$jsonAttribute => sprintf('Invalid %s: payload exceeds 64KB.', $jsonAttribute)]);
             }
         }
