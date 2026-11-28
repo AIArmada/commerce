@@ -10,12 +10,12 @@ use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfillment;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Support\Facades\Event;
 
 function createDedupTicketType(): TicketType

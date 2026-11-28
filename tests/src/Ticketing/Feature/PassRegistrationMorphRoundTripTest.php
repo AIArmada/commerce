@@ -6,10 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Commerce\Actions\RevokePassesForRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
 
 function createRegistrationMorphTicketType(): TicketType
 {

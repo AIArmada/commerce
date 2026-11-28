@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Data\TransferInputData;
 use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
@@ -254,8 +256,8 @@ it('does not allow a stale or foreign holder id to be used through the transfer 
     $second = Pass::factory()->create();
     $holder = PassHolder::factory()->create(['pass_id' => $first->getKey()]);
 
-    expect(fn () => app(\AIArmada\Ticketing\Contracts\PassTransferServiceInterface::class)->transfer(
-        new \AIArmada\Ticketing\Data\TransferInputData(
+    expect(fn () => app(PassTransferServiceInterface::class)->transfer(
+        new TransferInputData(
             pass_id: (string) $second->getKey(),
             existing_holder_id: (string) $holder->getKey(),
         ),

@@ -19,8 +19,8 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

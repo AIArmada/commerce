@@ -6,9 +6,9 @@ namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class IssuePassesForOrderAction

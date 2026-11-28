@@ -17,6 +17,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -134,7 +135,7 @@ it('reports only passes actually revoked', function (): void {
 
     $first = createEventPass($ticketType, $registration);
     createEventPass($ticketType, $registration);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($first, 'Already revoked');
+    app(RevokePassAction::class)->handle($first, 'Already revoked');
 
     $revoked = app(EventTicketingDriver::class)->revokePasses(
         $registration->getMorphClass(),

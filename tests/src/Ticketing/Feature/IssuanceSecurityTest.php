@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
 use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;

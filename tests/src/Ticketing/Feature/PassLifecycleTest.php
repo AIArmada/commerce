@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 use AIArmada\Ticketing\Features\Passes\Actions\UsePassAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,7 +40,7 @@ it('prevents transfer on used pass', function (): void {
 
 it('transitions from issued to cancelled', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction::class)->handle($pass, 'cancelled by organiser');
+    app(CancelPassAction::class)->handle($pass, 'cancelled by organiser');
 
     expect((string) $pass->fresh()->status)->toBe('cancelled')
         ->and($pass->fresh()->status_reason)->toBe('cancelled by organiser');
@@ -45,7 +48,7 @@ it('transitions from issued to cancelled', function (): void {
 
 it('transitions from issued to revoked', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($pass, 'revoked for fraud');
+    app(RevokePassAction::class)->handle($pass, 'revoked for fraud');
 
     expect((string) $pass->fresh()->status)->toBe('revoked');
 });
@@ -59,7 +62,7 @@ it('transitions from activated to used', function (): void {
 
 it('transitions from activated to expired', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction::class)->handle($pass);
+    app(ExpirePassAction::class)->handle($pass);
 
     expect((string) $pass->fresh()->status)->toBe('expired');
 });

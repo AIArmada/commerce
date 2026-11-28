@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
 
