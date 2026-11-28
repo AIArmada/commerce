@@ -6,16 +6,18 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
-use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
@@ -24,7 +26,6 @@ use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use AIArmada\Vouchers\Traits\HasVouchers;
 use Akaunting\Money\Money;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -376,7 +377,7 @@ it('resolves wallet code queries to the tenant voucher ahead of a matching globa
     $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
 
     OwnerContext::withOwner($owner, function () use ($owner, $global, $owned): void {
-        app(WalletClaim::class)->handle($global->code, $owner, voucherId: $global->id);
+        app(WalletClaim::class)->handle($global->code, EloquentRecordReference::fromModel($owner), voucherId: $global->id);
         expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeFalse();
 
         $owner->addVoucherToWallet('WALLET-PRIORITY');
@@ -460,11 +461,24 @@ it('rolls back voucher batch deletion when a selected record is not writable by 
     $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-GLOBAL']));
 
     OwnerContext::withOwner($owner, function () use ($owned, $global): void {
-        expect(fn () => app(VoucherDeletion::class)->handleMany(new Collection([$owned, $global])))
+        expect(fn () => app(VoucherDeletion::class)->handleMany([$owned->id, $global->id]))
             ->toThrow(AuthorizationException::class);
 
         expect(Voucher::query()->whereKey($owned->id)->exists())->toBeTrue();
     });
 
     expect(OwnerContext::withOwner(null, fn () => Voucher::query()->whereKey($global->id)->exists()))->toBeTrue();
+});
+
+it('refuses to claim a wallet voucher using a code that belongs to a different voucher', function (): void {
+    $holder = scopeWalletUser('mismatched-wallet-identity');
+    $first = scopeVoucher();
+    $second = scopeVoucher();
+
+    expect(fn () => app(WalletClaim::class)->handle(
+        $first->code,
+        EloquentRecordReference::fromModel($holder),
+        voucherId: $second->id,
+    ))->toThrow(VoucherNotFoundException::class)
+        ->and($holder->voucherWallets()->count())->toBe(0);
 });

@@ -56,7 +56,10 @@ final class ReadVoucherCatalog implements VoucherCatalog
 
     public function lockForWalletClaim(string $code, ?string $voucherId, string $holderType, string $holderId): string
     {
-        $voucher = $this->voucherIdentityQuery($code, $voucherId)->lockForUpdate()->first();
+        $voucher = $this->voucherIdentityQuery($code, $voucherId)
+            ->where('code', $this->normalizeCode($code))
+            ->lockForUpdate()
+            ->first();
 
         if ($voucher === null) {
             throw VoucherNotFoundException::withCode($code);
