@@ -11,7 +11,7 @@ use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Customers\Concerns\HasCustomerProfile;
+use AIArmada\Customers\Features\Identity\Traits\HasCustomerProfile;
 use AIArmada\FilamentAuthz\Concerns\CanBeImpersonated;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;

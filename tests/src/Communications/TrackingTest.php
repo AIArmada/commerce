@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Actions\RecordTrackingInteractionAction;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationEvent;
-use AIArmada\Communications\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
@@ -41,11 +42,13 @@ test('RecordTrackingInteractionAction handle records interaction with valid toke
 
     $action = app(RecordTrackingInteractionAction::class);
 
-    $event = $action->handle(
+    $eventId = $action->handle(
         tokenId: $token->id,
         interactionType: 'click',
         metadata: ['url' => 'https://example.com'],
     );
+
+    $event = CommunicationEvent::query()->findOrFail($eventId);
 
     expect($event)->toBeInstanceOf(CommunicationEvent::class);
     expect($event->event)->toBe('click');
@@ -57,4 +60,41 @@ test('RecordTrackingInteractionAction handle records interaction with valid toke
     $token->refresh();
     expect($token->first_used_at)->not->toBeNull();
     expect($token->last_used_at)->not->toBeNull();
+});
+
+test('tracking token creation does not return a token when persistence is cancelled', function (): void {
+    $delivery = new CommunicationDelivery;
+    $delivery->communication_id = (string) Str::uuid();
+    $delivery->recipient_id = (string) Str::uuid();
+    $delivery->channel = 'email';
+    $delivery->provider = 'ses';
+    $delivery->status = DeliveryStatus::Sent;
+    $delivery->save();
+
+    CommunicationTrackingToken::creating(static fn (CommunicationTrackingToken $token): bool => $token->delivery_id !== $delivery->id);
+
+    expect(fn () => app(CreateTrackingTokenAction::class)->handle($delivery->id, 'click'))
+        ->toThrow(RuntimeException::class, 'Tracking token creation was cancelled.');
+
+    expect(CommunicationTrackingToken::query()->where('delivery_id', $delivery->id)->exists())->toBeFalse();
+});
+
+test('tracking event cancellation rolls back token usage', function (): void {
+    $delivery = new CommunicationDelivery;
+    $delivery->communication_id = (string) Str::uuid();
+    $delivery->recipient_id = (string) Str::uuid();
+    $delivery->channel = 'email';
+    $delivery->provider = 'ses';
+    $delivery->status = DeliveryStatus::Sent;
+    $delivery->save();
+
+    $created = app(CreateTrackingTokenAction::class)->handle($delivery->id, 'click');
+    CommunicationEvent::creating(static fn (CommunicationEvent $event): bool => $event->delivery_id !== $delivery->id);
+
+    expect(fn () => app(RecordTrackingInteractionAction::class)->handle($created->trackingTokenId, 'click'))
+        ->toThrow(RuntimeException::class, 'Tracking event creation was cancelled.');
+
+    $token = CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId);
+    expect($token->first_used_at)->toBeNull()
+        ->and($token->last_used_at)->toBeNull();
 });

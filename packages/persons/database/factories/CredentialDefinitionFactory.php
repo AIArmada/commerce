@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Factories;
 
 use AIArmada\Persons\Enums\CredentialType;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

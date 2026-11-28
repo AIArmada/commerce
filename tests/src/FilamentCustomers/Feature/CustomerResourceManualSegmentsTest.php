@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -40,7 +40,6 @@ it('syncManualSegments keeps automatic segments and only syncs manual segments f
         'slug' => 'auto-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => true,
-        'is_active' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]));
@@ -50,7 +49,6 @@ it('syncManualSegments keeps automatic segments and only syncs manual segments f
         'slug' => 'manual-keep-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]));
@@ -60,7 +58,6 @@ it('syncManualSegments keeps automatic segments and only syncs manual segments f
         'slug' => 'manual-drop-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]));
@@ -100,7 +97,6 @@ it('syncManualSegments rejects manual segment ids outside the current owner scop
         'slug' => 'owner-a-manual-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]));
@@ -110,7 +106,6 @@ it('syncManualSegments rejects manual segment ids outside the current owner scop
         'slug' => 'owner-b-manual-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]));
@@ -140,7 +135,6 @@ it('syncManualSegments rejects syncing when the customer record is outside curre
         'slug' => 'owner-a-manual-record-check-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]));

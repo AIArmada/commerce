@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Models;
 
 use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
-use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Identity\Api\PersonDependentsCleaner;
+use AIArmada\Persons\Runtime\PersonNameRelationModel;
+use AIArmada\Persons\Runtime\PersonTitleFormatting;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use AIArmada\Persons\Traits\HasAffiliations;
@@ -22,8 +25,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -49,14 +50,17 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property string|null $verified_by
  * @property CarbonImmutable|null $rejected_at
  * @property CarbonImmutable|null $last_state_change_at
- * @property-read EloquentCollection<int, PersonName> $names
+ * @property-read EloquentCollection<int, RelatedPersonName> $names
  * @property-read string $formatted_name
  *
  * Person is the shared, global human-identity root. It deliberately has no
  * owner scope; tenant-owned profiles link to it without changing that rule.
+ *
+ * @phpstan-type RelatedPersonName \AIArmada\Persons\Features\Identity\Models\PersonName
  */
 class Person extends Model implements Sortable
 {
+    use DeletesAtomically;
     use HasAffiliations;
     use HasCredentials;
     use HasFactory;
@@ -106,12 +110,7 @@ class Person extends Model implements Sortable
         });
 
         static::deleting(function (Person $person): void {
-            DB::transaction(function () use ($person): void {
-                $person->names()->chunkById(500, static fn (EloquentCollection $names): mixed => $names->each->delete());
-                $person->titleAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
-                $person->credentialAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
-                $person->affiliations()->chunkById(500, static fn (EloquentCollection $affiliations): mixed => $affiliations->each->delete());
-            });
+            app(PersonDependentsCleaner::class)->cleanup((string) $person->getKey(), $person->getMorphClass());
         });
     }
 
@@ -148,33 +147,11 @@ class Person extends Model implements Sortable
     }
 
     /**
-     * @return HasMany<PersonName, $this>
+     * @return HasMany<RelatedPersonName, $this>
      */
     public function names(): HasMany
     {
-        return $this->hasMany(PersonName::class, 'person_id');
-    }
-
-    /**
-     * Retry slug-unique races once: the saving hook probes for a free slug,
-     * but a concurrent insert can still collide on `persons_slug_unique`.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        try {
-            return parent::save($options);
-        } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23000' || ! str_contains($exception->getMessage(), 'persons_slug_unique')) {
-                throw $exception;
-            }
-
-            $this->slug = null;
-            $this->normalizeIdentityValues();
-
-            return parent::save($options);
-        }
+        return $this->hasMany(app(PersonNameRelationModel::class)->name(), 'person_id');
     }
 
     /**
@@ -276,16 +253,16 @@ class Person extends Model implements Sortable
     private function primaryNameValues(): array
     {
         if ($this->relationLoaded('names')) {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, RelatedPersonName> $names */
             $names = $this->getRelation('names');
         } else {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, RelatedPersonName> $names */
             $names = $this->names()->where('is_primary', true)->get();
         }
 
         return $names
-            ->filter(static fn (PersonName $name): bool => $name->is_primary)
-            ->map(static fn (PersonName $name): string => mb_trim($name->full_name))
+            ->filter(static fn ($name): bool => $name->is_primary)
+            ->map(static fn ($name): string => mb_trim($name->full_name))
             ->filter(static fn (string $name): bool => $name !== '')
             ->values()
             ->all();
@@ -298,55 +275,7 @@ class Person extends Model implements Sortable
      */
     public function getFormattedNameAttribute(): string
     {
-        if ($this->relationLoaded('titleAssignments')) {
-            /** @var EloquentCollection<int, TitleAssignment> $loadedAssignments */
-            $loadedAssignments = $this->getRelation('titleAssignments');
-
-            $hasCompleteTitleGraph = ! $loadedAssignments->contains(
-                static fn (TitleAssignment $assignment): bool => ! $assignment->relationLoaded('title')
-                    || (($title = $assignment->getRelationValue('title')) instanceof Title
-                        && ! $title->relationLoaded('category')),
-            );
-
-            if ($hasCompleteTitleGraph) {
-                $assignments = $loadedAssignments;
-            } else {
-                $assignments = $this->titleAssignments()
-                    ->where('status', AssignmentStatus::Active)
-                    ->with('title.category')
-                    ->get();
-            }
-        } else {
-            $assignments = $this->titleAssignments()
-                ->where('status', AssignmentStatus::Active)
-                ->with('title.category')
-                ->get();
-        }
-
-        /** @var EloquentCollection<int, TitleAssignment> $assignments */
-        $assignments = $assignments
-            ->filter(fn (TitleAssignment $assignment): bool => $assignment->status === AssignmentStatus::Active
-                && $assignment->title !== null
-                && $assignment->title->category !== null)
-            ->values();
-
-        $before = $assignments
-            ->filter(fn (TitleAssignment $a) => $a->title->usage_position === TitleUsagePosition::BeforeName)
-            ->sort($this->compareTitleAssignments(...))
-            ->map(fn (TitleAssignment $a) => $a->title->short_form ?? $a->title->name);
-
-        $after = $assignments
-            ->filter(fn (TitleAssignment $a) => $a->title->usage_position === TitleUsagePosition::AfterName)
-            ->sort($this->compareTitleAssignments(...))
-            ->map(fn (TitleAssignment $a) => $a->title->short_form ?? $a->title->name);
-
-        $name = mb_trim(implode(' ', $before->all()) . ' ' . $this->name);
-
-        if ($after->isNotEmpty()) {
-            $name .= ', ' . implode(', ', $after->all());
-        }
-
-        return mb_trim($name);
+        return app(PersonTitleFormatting::class)->format($this);
     }
 
     /**
@@ -414,20 +343,5 @@ class Person extends Model implements Sortable
                 throw new InvalidArgumentException('Person bio locale maps must contain non-empty string keys and text values.');
             }
         }
-    }
-
-    private function compareTitleAssignments(TitleAssignment $left, TitleAssignment $right): int
-    {
-        $categoryOrder = $left->title->category->sort_order <=> $right->title->category->sort_order;
-
-        if ($categoryOrder !== 0) {
-            return $categoryOrder;
-        }
-
-        $titleOrder = $left->title->sort_order <=> $right->title->sort_order;
-
-        return $titleOrder !== 0
-            ? $titleOrder
-            : ((string) $left->title->getKey() <=> (string) $right->title->getKey());
     }
 }

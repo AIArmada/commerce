@@ -9,13 +9,13 @@ title: Usage Guide
 The package provides action classes for common customer workflows:
 
 ```php
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\LinkCustomerToPerson;
-use AIArmada\Customers\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 
 // Create a new customer
 $customer = app(CreateCustomer::class)->execute(
@@ -58,7 +58,7 @@ $customer = app(MergeCustomers::class)->execute($target, $source);
 `MergeCustomers::execute($target, $source)` requires both customers to share one owner tuple, then moves addresses, contact methods, social profiles, segments, groups, and notes inside a single `DB::transaction()`, deletes the source, and dispatches `CustomerUpdated` for the refreshed target.
 
 ```php
-use AIArmada\Customers\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Events\CustomerUpdated;
 
 $customer = app(MergeCustomers::class)->execute($target, $source);
@@ -159,7 +159,7 @@ When `aiarmada/checkout` and `aiarmada/commerce-support` are installed, this pac
 Use `CustomerResolver` when you need to turn an authenticated user, an existing session customer, and billing/shipping payloads into the best available `Customer` record.
 
 ```php
-use AIArmada\Customers\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
 $customer = app(CustomerResolver::class)->resolve(
     user: auth()->user(),
@@ -312,7 +312,7 @@ $customer->attachAddress(
 ### Set and read defaults
 
 ```php
-use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
+use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 
 app(SetDefaultCustomerAddress::class)->execute($customer, $address, 'shipping');
 
@@ -332,17 +332,17 @@ and global updates/deletes always require explicit global context.
 ## Marketing Preferences
 
 New customers default to `accepts_marketing = false`. Marketing consent is
-opt-in: call `optInMarketing()` (which also stamps `marketing_consented_at`)
+opt-in: call `SaveCustomerDetails::update()` with `accepts_marketing: true` (which also stamps `marketing_consented_at`)
 only after the customer consents.
 
 ### Opt In/Out
 
 ```php
 // Opt in to marketing
-$customer->optInMarketing();
+$customer = app(\AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
 // Opt out of marketing
-$customer->optOutMarketing();
+$customer = app(\AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
 // Check preference
 if ($customer->acceptsMarketing()) {
@@ -367,19 +367,20 @@ $activeSubscribers = Customer::active()
 ### Add Note
 
 ```php
-$note = $customer->notes()->create([
+use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
+
+$note = app(ManageCustomerNote::class)->create($customer, [
     'content' => 'Customer called about delivery',
-    'created_by' => auth()->id(),
     'is_internal' => true, // Staff only
     'is_pinned' => false,
-]);
+], auth()->id());
 ```
 
 ### Pin Important Notes
 
 ```php
-$note->pin();   // Pin to top
-$note->unpin(); // Unpin
+app(ManageCustomerNote::class)->update($customer, $note, ['is_pinned' => true]);
+app(ManageCustomerNote::class)->update($customer, $note, ['is_pinned' => false]);
 ```
 
 ### Query Notes
@@ -403,13 +404,13 @@ $pinnedNotes = $customer->notes()->pinned()->get();
 ### Manual Segment Assignment
 
 ```php
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 $segment = Segment::where('slug', 'vip')->first();
-$customer->segments()->attach($segment->id);
+app(\AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment::class)->execute($customer, $segment);
 
-// Or use sync to replace all segments
-$customer->segments()->sync([
+// Replace manual memberships without changing automatic memberships.
+app(\AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships::class)->forCustomer($customer, [
     $vipSegment->id,
     $loyaltySegment->id,
 ]);
@@ -422,13 +423,13 @@ $customer->segments()->sync([
 $vipCustomers = Customer::inSegment('vip-segment-id')->get();
 
 // Or by segment model
-$vipCustomers = Customer::inSegment($vipSegment)->get();
+$vipCustomers = Customer::inSegment($vipSegment->id)->get();
 ```
 
 ### Using Segmentation Service
 
 ```php
-use AIArmada\Customers\Services\SegmentationService;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 
 $service = app(SegmentationService::class);
 
@@ -461,8 +462,11 @@ path (`Segment::getMatchingCustomers()`, rebuilds) and the in-memory path
 (`SegmentationService::customerMatchesSegment()`, `evaluateCustomer()`).
 Conditions with a missing field, a missing value, or an unknown field match
 nothing in both paths, and an automatic segment with no conditions matches
-nobody. Segment slugs are unique per owner scope; concurrent duplicate
-creates fail with a `ValidationException`, not a database error.
+nobody. Segment lifecycle now uses `deactivated_at` for form state, queries,
+counts, and rebuilds. Replace segment `is_active` filters with `Segment::active()`.
+To deactivate a segment, save a `deactivated_at` timestamp. To reactivate it,
+clear the timestamp. Segment slugs are unique per owner scope; concurrent
+duplicate creates fail with a `ValidationException`, not a database error.
 
 ### Rebuild Segments Command
 
@@ -488,7 +492,8 @@ php artisan customers:rebuild-segments --dry-run
 ### Create Group
 
 ```php
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 
 $group = CustomerGroup::create([
     'name' => 'Corporate Buyers',
@@ -503,19 +508,19 @@ $group = CustomerGroup::create([
 
 ```php
 // Add member
-$group->addMember($customer, 'member');
+app(ManageCustomerGroupMembership::class)->add($group, $customer, 'member');
 
 // Add admin
-$group->addMember($customer, 'admin');
+app(ManageCustomerGroupMembership::class)->add($group, $customer, 'admin');
 
 // Promote to admin
-$group->promoteToAdmin($customer);
+app(ManageCustomerGroupMembership::class)->promote($group, $customer);
 
 // Demote to member
-$group->demoteToMember($customer);
+app(ManageCustomerGroupMembership::class)->demote($group, $customer);
 
 // Remove member
-$group->removeMember($customer);
+app(ManageCustomerGroupMembership::class)->remove($group, $customer);
 ```
 
 ### Check Membership

@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Communications\Contracts;
+
+interface ProviderWebhookRegistrar
+{
+    public function supports(string $provider): bool;
+
+    public function resolveProvider(string $provider): ?string;
+
+    public function getSecret(string $provider): ?string;
+
+    public function getAlgorithm(string $provider): string;
+
+    public function getSignatureHeader(string $provider): string;
+
+    public function normalizeProvider(string $provider): string;
+}

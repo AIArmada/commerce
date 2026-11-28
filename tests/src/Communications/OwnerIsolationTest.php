@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -11,10 +10,11 @@ use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationBatch;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

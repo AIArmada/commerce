@@ -30,8 +30,8 @@ published_at timestamp.
 ## Lifecycle and assignment invariants
 
 ```php
-use AIArmada\Persons\Actions\CreatePersonAction;
-use AIArmada\Persons\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 
 $person = app(CreatePersonAction::class)->execute(['name' => 'Ahmad Rahman']);
@@ -56,22 +56,22 @@ $title = app(ReorderTitleAction::class)->create([
 
 ```php
 use AIArmada\Persons\Enums\PersonNameType;
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Display,
     'full_name' => 'Ahmad Rahman',
     'language_code' => 'en',
     'is_primary' => true,
 ]);
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Religious,
     'full_name' => 'أحمد بن عبد الرحمن',
     'language_code' => 'ar',
 ]);
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Nickname,
     'full_name' => 'Mat',
     'language_code' => 'ms',
@@ -83,8 +83,8 @@ $person->names()->create([
 For reusable orchestration, use the additive core assignment actions:
 
 ```php
-use AIArmada\Persons\Actions\AssignCredentialAction;
-use AIArmada\Persons\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
+use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 
 $titleAssignment = app(AssignTitleAction::class)->execute($person, $prof->id);
 $credentialAssignment = app(AssignCredentialAction::class)->execute($person, $phd->id);
@@ -92,7 +92,7 @@ $credentialAssignment = app(AssignCredentialAction::class)->execute($person, $ph
 
 ```php
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\Title;
 
 // Find a title definition
 $prof = Title::where('name', 'Prof')->first();
@@ -129,7 +129,7 @@ class Institution extends Model
 ## Credentials
 
 ```php
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 
 $phd = CredentialDefinition::firstOrCreate([
     'name' => 'Doctor of Philosophy',
@@ -147,9 +147,10 @@ $person->credentialAssignments()->create([
 
 ```php
 use AIArmada\Persons\Enums\AffiliationType;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 
 // institution_id is validated against the configured institution model
-$affiliation = $person->affiliations()->create([
+$affiliation = app(SaveAffiliation::class)->create($person, [
     'institution_id' => $institutionId,
     'affiliation_type' => AffiliationType::Employee,
     'is_primary' => true,
@@ -166,7 +167,7 @@ $affiliation->roles()->create([
 
 `PersonName::is_primary` is exclusive within `(person_id, name_type,
 language_code)`. `Affiliation::is_primary` is exclusive within its affiliatable
-target. Saving a primary record locks the parent and clears the matching
+target. The owning Actions lock the parent and clear the matching
 siblings, including writes made through Filament relation managers. The
 database backstops are the driver-compatible unique indexes
 `person_names_primary_unique` and `affiliations_primary_unique`. PostgreSQL
@@ -181,7 +182,7 @@ existing shared person explicitly; do not create a person as an implicit side
 effect of checkout or import flows:
 
 ```php
-use AIArmada\Customers\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
 
 $customer = app(LinkCustomerToPerson::class)->execute($customer, $person);
 ```

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Inbox",
+  "owns": {
+    "table:notification_inboxes": [
+      "AIArmada\\Communications\\Features\\Inbox\\Actions\\ManageInboxEntries"
+    ]
+  },
+  "extensions": {}
+}

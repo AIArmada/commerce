@@ -7,7 +7,7 @@ namespace AIArmada\Filament\Communications\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\SuppressionReason;
-use AIArmada\Communications\Models\CommunicationSuppression;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Filament\Communications\Resources\CommunicationSuppressionResource\Pages;
 use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;

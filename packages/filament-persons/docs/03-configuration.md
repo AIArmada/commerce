@@ -26,6 +26,10 @@ return [
             'credential_definition' => 12,
         ],
         'person_relation_managers' => [],
+        'institution' => [
+            'label_column' => 'name',
+            'search_columns' => null,
+        ],
     ],
 ];
 ```
@@ -36,6 +40,13 @@ class names appended to `PersonResource::getRelations()`. `navigation.sort` regi
 navigation builder; `resources.navigation_sort.*` controls item order. All
 values are read at runtime, so panel-specific navigation overrides remain
 possible.
+
+`resources.institution.label_column` selects the institution attribute shown
+in the affiliation picker. It defaults to `name`. `resources.institution.search_columns`
+lists the columns searched by the picker and defaults to the label column when
+omitted or empty. Both values must be plain column identifiers; qualified names
+and expressions are rejected. Point them at the columns supplied by your
+configured `persons.models.institution` model when it does not use `name`.
 
 Publish the configuration when a local copy is needed:
 

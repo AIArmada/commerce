@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
+use AIArmada\CommerceSupport\Support\SettingsMigrationPath;
 use AIArmada\FilamentAffiliates\Contracts\PayoutPdfRenderer;
 use AIArmada\FilamentAffiliates\Drivers\SpatiePayoutPdfRenderer;
 use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
@@ -50,19 +51,7 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
 
     private function registerSettingsMigrationPath(): void
     {
-        $packagePath = __DIR__ . '/../database/settings';
-
-        if (! is_dir($packagePath)) {
-            return;
-        }
-
-        $paths = config('settings.migrations_paths', []);
-
-        if (! in_array($packagePath, $paths, true)) {
-            $paths[] = $packagePath;
-
-            config(['settings.migrations_paths' => $paths]);
-        }
+        SettingsMigrationPath::register($this->app, __DIR__ . '/../database/settings');
     }
 
     public function packageBooted(): void

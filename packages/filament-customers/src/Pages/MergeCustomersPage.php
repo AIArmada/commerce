@@ -7,8 +7,8 @@ namespace AIArmada\FilamentCustomers\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentCustomers\Actions\MergeCustomersAction;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use BackedEnum;
 use Closure;
@@ -63,6 +63,13 @@ final class MergeCustomersPage extends Page implements HasForms
         return (bool) config('filament-customers.features.merge_customers', true);
     }
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Customer::class);
+    }
+
     public function form(Schema $form): Schema
     {
         return $form
@@ -97,6 +104,11 @@ final class MergeCustomersPage extends Page implements HasForms
      */
     protected function searchCustomers(string $search): array
     {
+        $user = Filament::auth()->user();
+        abort_if($user === null, 403);
+        $gate = Gate::forUser($user);
+        $gate->authorize('viewAny', Customer::class);
+
         $query = Customer::query()
             ->tap(fn ($query) => OwnerUiScope::apply($query))
             ->with('contactMethods');
@@ -121,6 +133,7 @@ final class MergeCustomersPage extends Page implements HasForms
             })
             ->limit(20)
             ->get()
+            ->filter(fn (Customer $customer): bool => $gate->allows('view', $customer))
             ->mapWithKeys(fn (Customer $customer): array => [
                 $customer->id => self::labelForCustomer($customer),
             ])
@@ -134,6 +147,10 @@ final class MergeCustomersPage extends Page implements HasForms
         if (! $customer) {
             return '';
         }
+
+        $user = Filament::auth()->user();
+        abort_if($user === null, 403);
+        Gate::forUser($user)->authorize('view', $customer);
 
         return self::labelForCustomer($customer);
     }
@@ -203,8 +220,11 @@ final class MergeCustomersPage extends Page implements HasForms
         Gate::forUser($user)->authorize('update', $source);
         Gate::forUser($user)->authorize('delete', $source);
 
+        $sourceLabel = PrimaryEmailResolver::resolve($source) ?? $source->full_name;
+        $targetLabel = PrimaryEmailResolver::resolve($target) ?? $target->full_name;
+
         try {
-            app(MergeCustomersAction::class)->execute($target, $source);
+            app(MergeCustomers::class)->execute($target, $source);
         } catch (InvalidArgumentException $exception) {
             Notification::make()
                 ->danger()
@@ -214,9 +234,6 @@ final class MergeCustomersPage extends Page implements HasForms
 
             return;
         }
-
-        $sourceLabel = PrimaryEmailResolver::resolve($source) ?? $source->full_name;
-        $targetLabel = PrimaryEmailResolver::resolve($target) ?? $target->full_name;
 
         Notification::make()
             ->success()

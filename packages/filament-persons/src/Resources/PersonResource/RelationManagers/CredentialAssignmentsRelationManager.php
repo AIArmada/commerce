@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
+use AIArmada\Persons\Models\Person;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -19,6 +21,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final class CredentialAssignmentsRelationManager extends RelationManager
 {
@@ -75,6 +78,12 @@ final class CredentialAssignmentsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->using(function (array $data): CredentialAssignment {
+                        $id = (string) $data['credential_id'];
+                        unset($data['credential_id']);
+
+                        return app(AssignCredentialAction::class)->execute($this->person(), $id, $data);
+                    })
                     ->mutateFormDataUsing(function (array $data): array {
                         CredentialDefinition::query()->findOrFail($data['credential_id']);
 
@@ -85,6 +94,7 @@ final class CredentialAssignmentsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->using(fn (CredentialAssignment $record, array $data): CredentialAssignment => app(AssignCredentialAction::class)->update($this->person(), $record, $data))
                     ->mutateFormDataUsing(function (array $data, ?Model $record): array {
                         if (isset($data['credential_id'])) {
                             CredentialDefinition::query()->findOrFail($data['credential_id']);
@@ -94,8 +104,20 @@ final class CredentialAssignmentsRelationManager extends RelationManager
 
                         return $data;
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->using(fn (CredentialAssignment $record): bool => app(AssignCredentialAction::class)->delete($this->person(), $record)),
             ]);
+    }
+
+    private function person(): Person
+    {
+        $record = $this->getOwnerRecord();
+
+        if (! $record instanceof Person) {
+            throw new InvalidArgumentException('Invalid person record.');
+        }
+
+        return $record;
     }
 
     /**

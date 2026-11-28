@@ -16,6 +16,7 @@ use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
 use AIArmada\Commerce\Tests\Affiliates\Engine\AffiliatesEngineTestCase;
+use AIArmada\Commerce\Tests\Communications\Engine\CommunicationsEngineTestCase;
 use AIArmada\Commerce\Tests\CompositeCheckout\CompositeCheckoutTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAddressing\FilamentAddressingTestCase;
@@ -105,7 +106,12 @@ pest()->extend(TestCase::class)->in(
     'src/Shipping',
     'src/Support',
     'src/FilamentCommerceSupport',
-    'src/Communications',
+    // NOTE: 'src/Communications' is bound by file glob (not blanket) so the
+    // engine-race directory can use CommunicationsEngineTestCase (opt-in
+    // PostgreSQL via COMMUNICATIONS_ENGINE_PGSQL_DATABASE) through an in-file
+    // uses() call. New src/Communications test directories MUST be bound
+    // explicitly.
+    'src/Communications/*Test.php',
     'src/FilamentCommunications',
     'src/FilamentPersons',
     'src/Moderation',
@@ -143,6 +149,8 @@ pest()->extend(TestCase::class)->in(
 );
 
 pest()->extend(CartEngineTestCase::class)->in('src/Cart/Feature/Engine');
+
+pest()->extend(CommunicationsEngineTestCase::class)->in('src/Communications/Engine');
 
 pest()->extend(AffiliateNetworkTestCase::class)->in('src/AffiliateNetwork');
 
