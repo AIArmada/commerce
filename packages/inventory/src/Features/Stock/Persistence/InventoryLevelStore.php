@@ -28,7 +28,13 @@ final readonly class InventoryLevelStore
             'location_id' => $locationId,
         ];
 
-        return InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate($identity);
+        $level = InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate($identity);
+
+        if (! $level->exists) {
+            throw new RuntimeException('Inventory level creation was cancelled.');
+        }
+
+        return $level;
     }
 
     public function guardDirectOnHandChange(InventoryLevel $level): void
@@ -74,7 +80,7 @@ final readonly class InventoryLevelStore
 
         $difference = $new - $old;
 
-        InventoryMovement::create([
+        $movement = InventoryMovement::create([
             'inventoryable_type' => $level->inventoryable_type,
             'inventoryable_id' => $level->inventoryable_id,
             'from_location_id' => $difference < 0 ? $level->location_id : null,
@@ -87,5 +93,9 @@ final readonly class InventoryLevelStore
             'note' => sprintf('Direct level update from %d to %d', $old, $new),
             'occurred_at' => CarbonImmutable::now(),
         ]);
+
+        if (! $movement->exists) {
+            throw new RuntimeException('Inventory movement creation was cancelled.');
+        }
     }
 }

@@ -473,3 +473,46 @@ it('rejects changing a persisted stock level identity without affecting balances
         ->and($level->quantity_reserved)->toBe(20)
         ->and(InventoryMovement::query()->count())->toBe($movements);
 });
+
+it('rolls back direct and action-based stock edits when adjustment creation is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Rejected Adjustment']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+    ]);
+
+    $movements = InventoryMovement::query()->count();
+
+    InventoryMovement::creating(static fn (InventoryMovement $movement): bool => $movement->inventoryable_id !== $item->getKey());
+
+    expect(fn () => $level->fresh()->update(['quantity_on_hand' => 90]))
+        ->toThrow(RuntimeException::class, 'movement creation was cancelled')
+        ->and(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 80]))
+        ->toThrow(RuntimeException::class, 'movement creation was cancelled')
+        ->and($level->fresh()->quantity_on_hand)->toBe(100)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('does not report a cancelled operator edit as successful', function (): void {
+    $level = InventoryLevel::factory()->create(['quantity_on_hand' => 100]);
+
+    InventoryLevel::updating(static fn (InventoryLevel $record): bool => $record->getKey() !== $level->getKey());
+
+    expect(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 80]))
+        ->toThrow(RuntimeException::class, 'level update was cancelled')
+        ->and($level->fresh()->quantity_on_hand)->toBe(100);
+});
+
+it('does not return an unpersisted stock level when creation is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Rejected Level']);
+    $location = InventoryLocation::factory()->create();
+
+    InventoryLevel::creating(static fn (InventoryLevel $level): bool => $level->inventoryable_id !== $item->getKey());
+
+    expect(fn () => app(InventoryService::class)->getOrCreateLevel($item, $location->id))
+        ->toThrow(RuntimeException::class, 'level creation was cancelled')
+        ->and(app(InventoryService::class)->getLevel($item, $location->id))->toBeNull();
+});

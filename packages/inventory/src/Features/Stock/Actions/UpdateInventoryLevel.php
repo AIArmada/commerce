@@ -10,6 +10,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class UpdateInventoryLevel
 {
@@ -35,7 +36,9 @@ final readonly class UpdateInventoryLevel
                 throw new InvalidArgumentException('On-hand quantity cannot be less than reserved stock.');
             }
 
-            $record->update($settings);
+            if (! $record->update($settings)) {
+                throw new RuntimeException('Inventory level update was cancelled.');
+            }
 
             return $record;
         });
