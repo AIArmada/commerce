@@ -176,10 +176,15 @@ final readonly class PassIssuer implements PassIssuerInterface
         $pass->created_at = Carbon::instance($context->issuedAt);
         $pass->updated_at = Carbon::instance($context->issuedAt);
 
-        $owner = OwnerContext::resolve();
+        $scope = Pass::ownerScopeConfig();
 
-        if ($owner !== null && config('ticketing.owner.auto_assign_on_create', true)) {
-            $pass->assignOwner($owner);
+        if ($scope->enabled) {
+            $owner = OwnerContext::resolveConfigured($scope);
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+            if ($owner !== null && $scope->autoAssignOnCreate) {
+                $pass->assignOwner($owner);
+            }
         }
 
         if ($ticketable instanceof TicketableInterface) {

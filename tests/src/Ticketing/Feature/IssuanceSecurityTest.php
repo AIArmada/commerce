@@ -161,3 +161,25 @@ it('terminates pass-number generation when the random source repeats indefinitel
 
     expect(Pass::query()->where('ticket_type_id', $ticketType->getKey())->count())->toBe(0);
 });
+
+it('does not assign ambient ownership when ticketing owner scoping is disabled', function (): void {
+    config()->set('ticketing.owner.enabled', false);
+    $owner = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function (): void {
+        $ticketType = createIssuanceTicketType();
+        $ids = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+            ticketTypeId: (string) $ticketType->getKey(),
+            quantity: 2,
+        ));
+
+        $passes = Pass::query()->whereKey($ids)->get();
+
+        expect($passes)->toHaveCount(2);
+
+        foreach ($passes as $pass) {
+            expect($pass->owner_type)->toBeNull()
+                ->and($pass->owner_id)->toBeNull();
+        }
+    });
+});
