@@ -312,7 +312,7 @@ final class DeductOrderInventory
                     locationId: $shipment['location_id'],
                     quantity: $shipment['quantity'],
                     reason: 'order',
-                    reference: $order->order_number,
+                    reference: (string) $order->getKey(),
                     note: sprintf('Order #%s', $order->order_number),
                 );
             }

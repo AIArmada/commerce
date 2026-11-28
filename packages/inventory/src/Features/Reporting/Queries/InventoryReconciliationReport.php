@@ -8,8 +8,6 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\Orders\Models\Order;
-use Illuminate\Support\Facades\Schema;
 
 final class InventoryReconciliationReport
 {
@@ -24,17 +22,8 @@ final class InventoryReconciliationReport
         $completedWithoutMovement = $operations
             ->where('status', InventoryOperation::STATUS_COMPLETED)
             ->filter(function (InventoryOperation $operation): bool {
-                $references = [(string) $operation->order_id];
-                $order = class_exists(Order::class) && Schema::hasTable((new Order)->getTable())
-                    ? Order::query()->find($operation->order_id)
-                    : null;
-
-                if ($order !== null) {
-                    $references[] = (string) $order->order_number;
-                }
-
                 return ! InventoryOwnerScope::applyToLocationQuery(
-                    InventoryMovement::query()->whereIn('reference', array_unique($references))
+                    InventoryMovement::query()->where('reference', $operation->order_id)
                 )->exists();
             })
             ->count();

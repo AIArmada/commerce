@@ -242,3 +242,30 @@ it('does not deduct from an inactive preferred fulfillment location', function (
     expect($this->inventoryService->getLevel($this->mouse, $inactive->id)?->fresh()->quantity_on_hand)->toBe(50)
         ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8);
 });
+
+it('restores only order shipments with the immutable order identity', function (): void {
+    $order = createCompositeInventoryOrder('ORD-IDENTITY-' . uniqid());
+    $order->items()->create([
+        'name' => 'Mouse',
+        'quantity' => 2,
+        'unit_price' => 100,
+        'currency' => 'MYR',
+        'purchasable_type' => $this->mouse->getMorphClass(),
+        'purchasable_id' => $this->mouse->getKey(),
+    ]);
+
+    $this->inventoryService->ship($this->mouse, $this->location->id, 1, 'manual', $order->id);
+    $this->inventoryService->ship($this->mouse, $this->location->id, 1, 'order', $order->order_number);
+
+    app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order));
+
+    expect(InventoryMovement::query()->where('reference', $order->id)->where('reason', 'order')->count())->toBe(1)
+        ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(6);
+
+    $listener = app(ReleaseInventoryFromOrder::class);
+    $event = new InventoryReleaseRequired($order);
+    $listener->handle($event);
+    $listener->handle($event);
+
+    expect($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8);
+});

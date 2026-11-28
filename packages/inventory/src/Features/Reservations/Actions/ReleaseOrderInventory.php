@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Models\Order;
@@ -35,7 +33,6 @@ use InvalidArgumentException;
 final class ReleaseOrderInventory
 {
     public function __construct(
-        private readonly InventoryService $inventoryService,
         private readonly InventoryAllocationService $allocationService,
     ) {}
 
@@ -91,7 +88,7 @@ final class ReleaseOrderInventory
         }
 
         DB::transaction(function () use ($order, $operation): void {
-            $operation = InventoryOwnerScope::applyToLocationQuery(
+            $operation = InventoryOwnerScope::forMutation(
                 InventoryOperation::query()
                     ->whereKey($operation->id)
                     ->lockForUpdate()
@@ -114,7 +111,7 @@ final class ReleaseOrderInventory
 
     private function resolveOrCreateOperation(Order $order, string $kind): InventoryOperation
     {
-        $existing = InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
+        $existing = InventoryOwnerScope::forMutation(InventoryOperation::query())
             ->where('order_id', $order->id)
             ->where('kind', $kind)
             ->first();
@@ -134,7 +131,7 @@ final class ReleaseOrderInventory
                 throw $e;
             }
 
-            return InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
+            return InventoryOwnerScope::forMutation(InventoryOperation::query())
                 ->where('order_id', $order->id)
                 ->where('kind', $kind)
                 ->firstOrFail();
@@ -179,39 +176,15 @@ final class ReleaseOrderInventory
      */
     private function restoreShippedInventory(Order $order): void
     {
-        // Find shipment movements for this order
-        $movements = InventoryOwnerScope::applyToMovementQuery(InventoryMovement::query())
-            ->where('type', MovementType::Shipment->value)
-            ->whereIn('reference', [$order->order_number, $order->getKey()])
-            ->with('inventoryable')
-            ->get();
+        $restored = app(RestoreOrderStock::class)->restore((string) $order->getKey(), $order->order_number);
 
-        if ($movements->isEmpty()) {
-            return;
+        if ($restored > 0) {
+            Log::info('Restored inventory for cancelled order', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'movement_count' => $restored,
+            ]);
         }
-
-        foreach ($movements as $movement) {
-            $locationId = $movement->from_location_id;
-
-            if ($locationId === null) {
-                continue;
-            }
-
-            // Create a return movement to restore stock
-            $this->inventoryService->receive(
-                model: $movement->inventoryable,
-                locationId: $locationId,
-                quantity: $movement->quantity,
-                reason: sprintf('order_cancelled:%s', $order->order_number),
-                note: sprintf('Restored from cancelled order #%s', $order->order_number),
-            );
-        }
-
-        Log::info('Restored inventory for cancelled order', [
-            'order_id' => $order->id,
-            'order_number' => $order->order_number,
-            'movement_count' => $movements->count(),
-        ]);
     }
 
     /**
