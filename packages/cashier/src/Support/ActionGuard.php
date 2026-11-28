@@ -66,18 +66,20 @@ final class ActionGuard
     /**
      * Assert the billable belongs to the currently resolved owner.
      *
-     * No-op when owner mode is disabled or when the billable carries no
-     * owner tuple to enforce. Fails closed otherwise.
+     * Enforce both package-wide and model-specific owner settings.
      *
      * @throws AuthorizationException
      */
     public static function assertBillableInScope(BillableContract $billable): void
     {
-        if (! (bool) config('commerce-support.owner.enabled', false)) {
+        if (! $billable instanceof Model || ! method_exists($billable, 'belongsToOwner')) {
             return;
         }
 
-        if (! $billable instanceof Model || ! method_exists($billable, 'belongsToOwner')) {
+        $ownerEnabled = (bool) config('commerce-support.owner.enabled', false)
+            || (method_exists($billable, 'ownerScopeConfig') && $billable::ownerScopeConfig()->enabled);
+
+        if (! $ownerEnabled) {
             return;
         }
 
@@ -95,10 +97,6 @@ final class ActionGuard
      */
     public static function assertSubscriptionInScope(SubscriptionContract $subscription): void
     {
-        if (! (bool) config('commerce-support.owner.enabled', false)) {
-            return;
-        }
-
         self::assertBillableInScope($subscription->owner());
     }
 

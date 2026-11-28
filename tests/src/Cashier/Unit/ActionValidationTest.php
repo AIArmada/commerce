@@ -132,6 +132,29 @@ describe('Action owner authorization', function (): void {
         ))->toThrow(AuthorizationException::class);
     });
 
+    it('enforces the billable owner configuration independently of the global flag', function (): void {
+        config()->set('commerce-support.owner.enabled', false);
+
+        $user = OwnerContext::withOwner($this->ownerA, fn () => OwnerScopedBillableUser::query()->create([
+            'name' => 'Scoped User',
+            'email' => 'scoped@example.com',
+        ]));
+
+        $subscription = Mockery::mock(SubscriptionContract::class);
+        $subscription->shouldReceive('owner')->andReturn($user);
+        $subscription->shouldNotReceive('cancel');
+
+        expect(fn () => OwnerContext::withOwner(
+            $this->ownerB,
+            fn () => CreatePayment::run($user, 5000, 'pm_test'),
+        ))->toThrow(AuthorizationException::class);
+
+        expect(fn () => OwnerContext::withOwner(
+            $this->ownerB,
+            fn () => CancelSubscription::run($subscription),
+        ))->toThrow(AuthorizationException::class);
+    });
+
     it('blocks cancelling subscriptions outside the current owner', function (): void {
         $user = OwnerContext::withOwner($this->ownerA, fn () => OwnerScopedBillableUser::query()->create([
             'name' => 'Tenant A User',
