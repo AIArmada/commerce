@@ -270,6 +270,8 @@ if ($order->isFullyPaid()) {
 }
 ```
 
+Order intake and item administration enforce a single accounting currency. Equivalent currency aliases are normalized before validation and idempotent replay; mismatched line currencies are rejected.
+
 ### Cached payment/refund totals
 
 `paid_total`, `refunded_total`, and `pending_refunded_total` are cached on the order so balance checks (`getTotalPaid()`, `getTotalRefunded()`, `getRemainingRefundable()`, `getBalanceDue()`, `isFullyPaid()`) never fan out into per-relation sums. The caches are the single source of truth for reads and are kept in sync by `OrderPayment`/`OrderRefund` model events — every write path (transitions, actions, and direct creates) flows through them, so do not assign these columns manually. Recalculate editable, unpaid order totals through `OrderAdministration::recalculateTotals()`. The action uses ex-tax subtotals, validates folded line discounts and floors the grand total at zero.

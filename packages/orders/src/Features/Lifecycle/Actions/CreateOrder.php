@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderCreated;
@@ -20,7 +21,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
@@ -52,6 +52,14 @@ final readonly class CreateOrder
         }
 
         $this->validateTotalsInvariant($orderData);
+        $orderData['currency'] = $this->currency($orderData['currency'] ?? config('orders.currency.default', 'MYR'));
+
+        foreach ($items as $itemData) {
+            $this->validateItemData($itemData);
+            $this->itemCurrency($itemData, $orderData['currency']);
+        }
+
+        $this->validateItemDiscountsFolded($orderData, $items);
 
         if ($intakeSource !== null && $intakeId !== null) {
             // Serialize concurrent creates for the same intake identity. The
@@ -95,12 +103,6 @@ final readonly class CreateOrder
         ?string $intakeSource,
         ?string $intakeId,
     ): Order {
-        foreach ($items as $itemData) {
-            $this->validateItemData($itemData);
-        }
-
-        $this->validateItemDiscountsFolded($orderData, $items);
-
         $hasExplicitOrderNumber = isset($orderData['order_number'])
             && is_string($orderData['order_number'])
             && mb_trim($orderData['order_number']) !== '';
@@ -239,6 +241,33 @@ final readonly class CreateOrder
         }
     }
 
+    private function currency(mixed $value): string
+    {
+        if (! is_string($value) || mb_trim($value) === '') {
+            throw new InvalidArgumentException('A valid order currency is required.');
+        }
+
+        $currency = MoneyFormatter::normalizeCurrency($value);
+
+        if (preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
+            throw new InvalidArgumentException('A three-letter order currency code is required.');
+        }
+
+        return $currency;
+    }
+
+    /** @param array<string, mixed> $itemData */
+    private function itemCurrency(array $itemData, string $orderCurrency): string
+    {
+        $currency = $this->currency($itemData['currency'] ?? $orderCurrency);
+
+        if ($currency !== $this->currency($orderCurrency)) {
+            throw new InvalidArgumentException('Order item currency must match the order currency.');
+        }
+
+        return $currency;
+    }
+
     private function coerceOrderInt(mixed $value, string $field): int
     {
         if (is_int($value)) {
@@ -277,9 +306,9 @@ final readonly class CreateOrder
         // the owner-inherit guard, total calculation, and activity logging that
         // a bulk insert would bypass. Only the final re-read moves outside so
         // the write lock is not held for the follow-up selects.
-        $orderKey = DB::transaction(function () use ($orderData, $items, $billingAddress, $shippingAddress, $intakeSource, $intakeId): string {
+        $orderKey = (new Order)->getConnection()->transaction(function () use ($orderData, $items, $billingAddress, $shippingAddress, $intakeSource, $intakeId): string {
             try {
-                $order = DB::transaction(fn (): Order => Order::create([
+                $order = (new Order)->getConnection()->transaction(fn (): Order => Order::create([
                     'order_number' => $orderData['order_number'] ?? Order::generateOrderNumber(),
                     'intake_source' => $intakeSource,
                     'intake_id' => $intakeId,
@@ -323,7 +352,7 @@ final readonly class CreateOrder
 
             $order->status->transitionTo(PendingPayment::class);
 
-            DB::afterCommit(function () use ($order): void {
+            $order->getConnection()->afterCommit(function () use ($order): void {
                 event(new OrderCreated($order));
             });
 
@@ -346,9 +375,7 @@ final readonly class CreateOrder
             $existing->shipping_total === (int) ($orderData['shipping_total'] ?? 0),
             $existing->tax_total === (int) ($orderData['tax_total'] ?? 0),
             $existing->grand_total === (int) ($orderData['grand_total'] ?? 0),
-            mb_trim(mb_strtoupper((string) $existing->currency)) === mb_trim(mb_strtoupper(
-                (string) ($orderData['currency'] ?? config('orders.currency.default', 'MYR')),
-            )),
+            MoneyFormatter::normalizeCurrency($existing->currency) === $this->currency($orderData['currency'] ?? config('orders.currency.default', 'MYR')),
         ];
 
         if (in_array(false, $matches, true)) {
@@ -441,7 +468,7 @@ final readonly class CreateOrder
             'unit_price' => $this->coerceOrderInt($itemData['unit_price'] ?? 0, 'Order item unit_price'),
             'discount_amount' => $this->coerceOrderInt($itemData['discount_amount'] ?? 0, 'Order item discount_amount'),
             'tax_amount' => $this->coerceOrderInt($itemData['tax_amount'] ?? 0, 'Order item tax_amount'),
-            'currency' => $itemData['currency'] ?? $order->currency,
+            'currency' => $this->itemCurrency($itemData, $order->currency),
             'options' => $itemData['options'] ?? null,
             'metadata' => $itemData['metadata'] ?? null,
         ]);
