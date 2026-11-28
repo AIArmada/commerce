@@ -340,3 +340,45 @@ it('rejects direct tenant location writes with a global parent', function (): vo
         'parent_id' => $global->id,
     ]))->toThrow(AuthorizationException::class, 'Cross-owner location hierarchies are not allowed.');
 });
+
+it('rejects direct stock level and movement creation in a tenant-visible global location', function (): void {
+    config([
+        'inventory.owner.enabled' => true,
+        'inventory.owner.include_global' => true,
+    ]);
+
+    $owner = InventoryItem::create(['name' => 'Writable Location Owner']);
+    $item = InventoryItem::create(['name' => 'Writable Location SKU']);
+
+    $global = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        'code' => 'GLOBAL-READ-ONLY',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($item, $global): void {
+        expect(InventoryLocation::query()->whereKey($global->id)->exists())->toBeTrue();
+
+        expect(fn () => InventoryLevel::query()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $global->id,
+            'quantity_on_hand' => 10,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => InventoryMovement::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'from_location_id' => null,
+            'to_location_id' => $global->id,
+            'quantity' => 10,
+        ]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($item, $global): void {
+        expect(InventoryLevel::query()->where('location_id', $global->id)->count())->toBe(0)
+            ->and(InventoryMovement::query()->where('to_location_id', $global->id)->count())->toBe(0);
+
+        app(InventoryService::class)->receive($item, $global->id, 10);
+
+        expect(app(InventoryService::class)->getTotalAvailable($item))->toBe(10);
+    });
+});

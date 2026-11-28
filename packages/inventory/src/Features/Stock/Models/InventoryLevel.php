@@ -329,7 +329,7 @@ final class InventoryLevel extends Model implements Auditable
                 return;
             }
 
-            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+            $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
                 ->whereKey($level->location_id)
                 ->first();
 

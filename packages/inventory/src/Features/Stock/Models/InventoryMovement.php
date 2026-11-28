@@ -241,7 +241,7 @@ final class InventoryMovement extends Model implements Auditable
             $fromOwnerType = null;
             $fromOwnerId = null;
             if ($movement->from_location_id !== null) {
-                $fromLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $fromLocation = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($movement->from_location_id)
                     ->first();
 
@@ -256,7 +256,7 @@ final class InventoryMovement extends Model implements Auditable
             $toOwnerType = null;
             $toOwnerId = null;
             if ($movement->to_location_id !== null) {
-                $toLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $toLocation = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($movement->to_location_id)
                     ->first();
 

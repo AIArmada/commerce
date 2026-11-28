@@ -37,7 +37,7 @@ trait HasInventory
     {
         $relation = $this->morphMany(InventoryMovement::class, 'inventoryable');
 
-        InventoryOwnerScope::applyToLocationQuery($relation->getQuery())->orderByDesc('occurred_at');
+        InventoryOwnerScope::applyToMovementQuery($relation->getQuery())->orderByDesc('occurred_at');
 
         return $relation;
     }
