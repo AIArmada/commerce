@@ -5,22 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Api\StockKpiMetrics;
 use AIArmada\Inventory\Features\Valuation\Api\InventoryValues;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 /**
  * Calculates key inventory performance indicators.
  */
-final class InventoryKpiService
+final readonly class InventoryKpiService
 {
+    public function __construct(private StockKpiMetrics $stock, private InventoryValues $values) {}
+
     /**
      * Calculate inventory turnover ratio.
      * Formula: COGS / Average Inventory Value
@@ -97,29 +93,15 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        $query = InventoryMovement::query()
-            ->where('inventoryable_type', $inventoryableType)
-            ->where('inventoryable_id', $inventoryableId)
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        $counts = $this->stock->shipments($startDate, $endDate, $inventoryableType, $inventoryableId);
 
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($query);
-        }
+        return $counts['total'] === 0 ? 100.0 : round(($counts['fulfilled'] / $counts['total']) * 100, 2);
 
-        $counts = $query->toBase()
-            ->selectRaw('COUNT(*) AS total')
-            ->selectRaw("COUNT(CASE WHEN reason IS NULL OR reason <> 'partial' THEN 1 END) AS fulfilled")
-            ->first();
-
-        $total = (int) ($counts->total ?? 0);
-
-        return $total === 0 ? 100.0 : round(((int) ($counts->fulfilled ?? 0) / $total) * 100, 2);
     }
 
     /**
      * Calculate stockout rate.
-     * Formula: Days Out of Stock / Total Days × 100
+     * Measures calendar days with recorded shipment-driven depletion, not the duration of stockouts.
      */
     public function calculateStockoutRate(
         string $inventoryableType,
@@ -131,30 +113,15 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        $totalDays = $startDate->diffInDays($endDate);
-        if ($totalDays === 0) {
+        if ($endDate->lt($startDate)) {
             return 0.0;
         }
 
-        if ($locationId !== null) {
-            $this->getScopedLocationOrFail($locationId);
-        }
+        $totalDays = (int) $startDate->startOfDay()->diffInDays($endDate->startOfDay()) + 1;
+        $days = $this->stock->depletionDays($inventoryableType, $inventoryableId, $locationId, $startDate, $endDate);
 
-        // Count days where stock went to zero
-        $stockoutEventsQuery = InventoryMovement::query()
-            ->where('inventoryable_type', $inventoryableType)
-            ->where('inventoryable_id', $inventoryableId)
-            ->when($locationId, fn ($q) => $q->where('from_location_id', $locationId))
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        return round(($days / $totalDays) * 100, 2);
 
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($stockoutEventsQuery);
-        }
-
-        $stockoutEvents = $stockoutEventsQuery->count();
-
-        return round(($stockoutEvents / $totalDays) * 100, 2);
     }
 
     /**
@@ -168,24 +135,10 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        // Count cycle count adjustments
-        $query = InventoryMovement::query()
-            ->where('type', MovementType::Adjustment->value)
-            ->where('reason', 'cycle_count')
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        $counts = $this->stock->cycleCounts($startDate, $endDate);
 
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($query);
-        }
+        return $counts['total'] === 0 ? 100.0 : round(($counts['accurate'] / $counts['total']) * 100, 2);
 
-        $counts = $query->toBase()
-            ->selectRaw('COUNT(*) AS total')
-            ->selectRaw('COUNT(CASE WHEN quantity = 0 THEN 1 END) AS accurate')
-            ->first();
-
-        $total = (int) ($counts->total ?? 0);
-
-        return $total === 0 ? 100.0 : round(((int) ($counts->accurate ?? 0) / $total) * 100, 2);
     }
 
     /**
@@ -219,32 +172,19 @@ final class InventoryKpiService
      */
     public function getDashboardKpis(CostingMethod $method = CostingMethod::Fifo): array
     {
-        $stockLevelsQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->select('inventoryable_type', 'inventoryable_id')
-                ->selectRaw('SUM(CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END) AS available')
-                ->whereHas('location', fn ($query) => $query->where('is_active', true))
-                ->groupBy('inventoryable_type', 'inventoryable_id')
-        );
-
-        $threshold = (int) config('inventory.default_reorder_point', 10);
-        $counts = DB::query()->fromSub($stockLevelsQuery->toBase(), 'grouped_skus')
-            ->selectRaw('COUNT(*) AS total_skus')
-            ->selectRaw('COUNT(CASE WHEN available > 0 AND available <= ? THEN 1 END) AS low_stock', [$threshold])
-            ->selectRaw('COUNT(CASE WHEN available = 0 THEN 1 END) AS out_of_stock')
-            ->first();
-
-        $totalValue = app(InventoryValues::class)->total($method, (string) config('inventory.defaults.currency', 'MYR'));
+        $counts = $this->stock->skuCounts((int) config('inventory.default_reorder_point', 10));
+        $totalValue = $this->values->total($method, (string) config('inventory.defaults.currency', 'MYR'));
+        $turnover = $this->calculateOverallTurnoverRatio();
 
         return [
-            'total_sku_count' => (int) ($counts->total_skus ?? 0),
+            'total_sku_count' => $counts['total_skus'],
             'total_inventory_value' => (int) $totalValue,
-            'average_turnover_ratio' => $this->calculateOverallTurnoverRatio(),
-            'average_days_on_hand' => $this->calculateOverallDaysOnHand(),
+            'average_turnover_ratio' => $turnover,
+            'average_days_on_hand' => $turnover === 0.0 ? 0.0 : round(365 / $turnover, 1),
             'overall_fill_rate' => $this->calculateOverallFillRate(),
             'inventory_accuracy' => $this->calculateInventoryAccuracy(),
-            'low_stock_items' => (int) ($counts->low_stock ?? 0),
-            'out_of_stock_items' => (int) ($counts->out_of_stock ?? 0),
+            'low_stock_items' => $counts['low_stock'],
+            'out_of_stock_items' => $counts['out_of_stock'],
         ];
     }
 
@@ -282,18 +222,8 @@ final class InventoryKpiService
         CarbonImmutable $startDate,
         CarbonImmutable $endDate,
     ): int {
-        // Sum quantity from shipment movements
-        $query = InventoryMovement::query()
-            ->where('inventoryable_type', $inventoryableType)
-            ->where('inventoryable_id', $inventoryableId)
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        return $this->stock->shipments($startDate, $endDate, $inventoryableType, $inventoryableId)['quantity'];
 
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($query);
-        }
-
-        return (int) $query->sum('quantity');
     }
 
     /**
@@ -305,16 +235,8 @@ final class InventoryKpiService
         CarbonImmutable $startDate,
         CarbonImmutable $endDate,
     ): int {
-        // Get current stock level as approximation
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->where('inventoryable_type', $inventoryableType)
-                ->where('inventoryable_id', $inventoryableId)
-        );
+        return $this->stock->onHand($inventoryableType, $inventoryableId);
 
-        $currentStock = (int) $query->sum('quantity_on_hand');
-
-        return $currentStock;
     }
 
     /**
@@ -327,41 +249,14 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subYear();
         $endDate ??= CarbonImmutable::now();
 
-        $totalCogsQuery = InventoryMovement::query()
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($totalCogsQuery);
-        }
-
-        $totalCogs = (int) $totalCogsQuery->sum('quantity');
-
-        $totalInventoryQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query());
-
-        $totalInventory = (int) $totalInventoryQuery->sum('quantity_on_hand');
+        $totalInventory = $this->stock->onHand();
 
         if ($totalInventory === 0) {
             return 0.0;
         }
 
-        return round($totalCogs / $totalInventory, 2);
-    }
+        return round($this->stock->shipments($startDate, $endDate)['quantity'] / $totalInventory, 2);
 
-    /**
-     * Calculate overall days on hand.
-     */
-    private function calculateOverallDaysOnHand(
-        ?CarbonImmutable $startDate = null,
-        ?CarbonImmutable $endDate = null,
-    ): float {
-        $turnover = $this->calculateOverallTurnoverRatio($startDate, $endDate);
-
-        if ($turnover === 0.0) {
-            return 0.0;
-        }
-
-        return round(365 / $turnover, 1);
     }
 
     /**
@@ -374,34 +269,10 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        $query = InventoryMovement::query()
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        $counts = $this->stock->shipments($startDate, $endDate);
 
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($query);
-        }
+        return $counts['total'] === 0 ? 100.0 : round(($counts['fulfilled'] / $counts['total']) * 100, 2);
 
-        $counts = $query->toBase()
-            ->selectRaw('COUNT(*) AS total')
-            ->selectRaw("COUNT(CASE WHEN reason IS NULL OR reason <> 'partial' THEN 1 END) AS fulfilled")
-            ->first();
-
-        $total = (int) ($counts->total ?? 0);
-
-        return $total === 0 ? 100.0 : round(((int) ($counts->fulfilled ?? 0) / $total) * 100, 2);
     }
 
-    private function getScopedLocationOrFail(string $locationId): InventoryLocation
-    {
-        $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
-
-        $location = $query->whereKey($locationId)->first();
-
-        if ($location === null) {
-            throw new InvalidArgumentException('Invalid location for current owner');
-        }
-
-        return $location;
-    }
 }

@@ -17,6 +17,7 @@ use AIArmada\Inventory\Features\Stock\Api\StockExportRows;
 use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;
 use AIArmada\Inventory\Features\Stock\Api\StockIdentity;
+use AIArmada\Inventory\Features\Stock\Api\StockKpiMetrics;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Stock\Queries\AllocationCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\DeductionCandidatesQuery;
@@ -30,6 +31,7 @@ use AIArmada\Inventory\Features\Stock\Queries\StockExportRowsQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockIdentityQuery;
+use AIArmada\Inventory\Features\Stock\Queries\StockKpiMetricsQuery;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Contracts\Foundation\Application;
@@ -54,6 +56,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(StockBalances::class, StockBalancesQuery::class);
         $app->singleton(StockHealth::class, StockHealthQuery::class);
         $app->singleton(StockIdentity::class, StockIdentityQuery::class);
+        $app->singleton(StockKpiMetrics::class, StockKpiMetricsQuery::class);
     }
 
     public function boot(Application $app): void {}

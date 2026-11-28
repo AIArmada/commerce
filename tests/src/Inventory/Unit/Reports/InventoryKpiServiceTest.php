@@ -15,7 +15,7 @@ use Carbon\CarbonImmutable;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->service = new InventoryKpiService;
+    $this->service = app(InventoryKpiService::class);
 });
 
 describe('InventoryKpiService', function (): void {
@@ -382,4 +382,30 @@ it('classifies each SKU by combined sellable stock across active locations', fun
     expect($kpis['total_sku_count'])->toBe(3)
         ->and($kpis['low_stock_items'])->toBe(1)
         ->and($kpis['out_of_stock_items'])->toBe(1);
+});
+
+it('counts only distinct days with recorded stock depletion', function (): void {
+    $start = CarbonImmutable::parse('2026-01-01 00:00:00');
+    $end = CarbonImmutable::parse('2026-01-10 23:59:59');
+
+    foreach ([[10, 5, 2], [5, 0, 3], [4, 0, 3]] as [$before, $after, $day]) {
+        InventoryMovement::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'from_location_id' => $this->location->id,
+            'type' => MovementType::Shipment,
+            'quantity' => $before - $after,
+            'quantity_before' => $before,
+            'quantity_after' => $after,
+            'occurred_at' => $start->addDays($day),
+        ]);
+    }
+
+    expect($this->service->calculateStockoutRate(
+        $this->item->getMorphClass(),
+        $this->item->getKey(),
+        $this->location->id,
+        $start,
+        $end,
+    ))->toBe(10.0);
 });
