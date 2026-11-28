@@ -68,11 +68,6 @@ interface OrderServiceInterface
     public function addAddress(Order $order, array $addressData, string $type): void;
 
     /**
-     * Cancel an order.
-     */
-    public function cancel(Order $order, string $reason, ?string $canceledBy = null): Order;
-
-    /**
      * Confirm payment for an order.
      *
      * Partial payments are supported: the payment is recorded with its
@@ -98,33 +93,6 @@ interface OrderServiceInterface
      * paid timestamp, or OrderPaid event is produced.
      */
     public function confirmFreeOrder(Order $order): Order;
-
-    /**
-     * Mark order as shipped.
-     *
-     * @param  array<string, mixed>  $metadata
-     */
-    public function ship(
-        Order $order,
-        string $carrier,
-        string $trackingNumber,
-        ?string $shipmentId = null,
-        array $metadata = [],
-    ): Order;
-
-    /**
-     * Confirm order delivery.
-     *
-     * @param  array<string, mixed>  $metadata
-     */
-    public function confirmDelivery(Order $order, array $metadata = []): Order;
-
-    /**
-     * Mark order as completed.
-     *
-     * @param  array<string, mixed>  $metadata
-     */
-    public function complete(Order $order, array $metadata = []): Order;
 
     /**
      * Recalculate order totals from items.

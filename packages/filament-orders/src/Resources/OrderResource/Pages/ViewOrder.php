@@ -8,7 +8,8 @@ use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\FilamentOrders\Widgets\OrderTimelineWidget;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
@@ -83,12 +84,11 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderServiceInterface::class);
-                        $service->confirmPayment(
-                            $record,
+                        $service = app(OrderPaymentConfirmation::class);
+                        $service->settleOutstanding(
+                            (string) $record->getKey(),
                             $data['transaction_id'],
                             $data['gateway'],
-                            $record->getBalanceDue(),
                         );
 
                         Notification::make()
@@ -154,7 +154,7 @@ class ViewOrder extends ViewRecord
                 })
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderServiceInterface::class);
+                        $service = app(OrderFulfillment::class);
 
                         $fulfillmentHandler = $this->getBoundFulfillmentHandler();
                         $carriers = $this->getAvailableCarriers();
@@ -190,7 +190,7 @@ class ViewOrder extends ViewRecord
                             // Update order with tracking info from API
                             $carrierName = $this->getCarrierName($data['carrier']);
 
-                            $service->ship($record, $carrierName, $result['tracking_number'] ?? 'PENDING', $result['shipment_id']);
+                            $service->ship((string) $record->getKey(), $carrierName, $result['tracking_number'] ?? 'PENDING', $result['shipment_id']);
 
                             Notification::make()
                                 ->title('Order shipped via ' . $carrierName)
@@ -200,7 +200,7 @@ class ViewOrder extends ViewRecord
                         } else {
                             // Manual tracking input
                             $service->ship(
-                                $record,
+                                (string) $record->getKey(),
                                 $data['carrier'],
                                 $data['tracking_number'],
                             );
@@ -236,8 +236,8 @@ class ViewOrder extends ViewRecord
                 })
                 ->action(function (Order $record): void {
                     try {
-                        $service = app(OrderServiceInterface::class);
-                        $service->confirmDelivery($record);
+                        $service = app(OrderFulfillment::class);
+                        $service->confirmDelivery((string) $record->getKey());
 
                         Notification::make()
                             ->title('Delivery confirmed')
@@ -278,7 +278,7 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderServiceInterface::class);
+                        $service = app(OrderFulfillment::class);
                         $metadata = [
                             'source' => 'filament_manual',
                         ];
@@ -289,7 +289,7 @@ class ViewOrder extends ViewRecord
                             $metadata['note'] = $note;
                         }
 
-                        $service->complete($record, $metadata);
+                        $service->complete((string) $record->getKey(), $metadata);
 
                         Notification::make()
                             ->title('Order completed')
@@ -328,12 +328,12 @@ class ViewOrder extends ViewRecord
                 ])
                 ->action(function (Order $record, array $data): void {
                     try {
-                        $service = app(OrderServiceInterface::class);
+                        $service = app(OrderFulfillment::class);
 
                         $canceledBy = Filament::auth()->id();
 
                         $service->cancel(
-                            $record,
+                            (string) $record->getKey(),
                             $data['reason'],
                             $canceledBy ? (string) $canceledBy : null,
                         );

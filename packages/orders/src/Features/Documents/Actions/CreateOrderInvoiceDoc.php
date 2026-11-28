@@ -29,7 +29,7 @@ final readonly class CreateOrderInvoiceDoc
 
                 return $this->docService->create($this->buildDocData(
                     order: $order,
-                    docType: stringType::Invoice,
+                    docType: DocType::Invoice,
                     transactionId: $transactionId,
                     gateway: $gateway,
                     generatePdf: (bool) config('orders.integrations.docs.generate_pdf', false),

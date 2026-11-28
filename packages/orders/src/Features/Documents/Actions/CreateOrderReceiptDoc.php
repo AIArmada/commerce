@@ -31,7 +31,7 @@ final readonly class CreateOrderReceiptDoc
 
                 return $this->docService->create($this->buildDocData(
                     order: $order,
-                    docType: stringType::Receipt,
+                    docType: DocType::Receipt,
                     transactionId: $transactionId,
                     gateway: $gateway,
                     metadata: [
