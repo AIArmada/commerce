@@ -96,7 +96,7 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             'owner_enabled' => (bool) config('tax.features.owner.enabled', false),
             'owner_type' => $owner?->getMorphClass(),
             'owner_id' => $owner?->getKey(),
-            'include_global' => (bool) config('tax.features.owner.include_global', false),
+            'include_global' => TaxOwnerScope::includesGlobal(),
         ]));
     }
 
@@ -109,6 +109,7 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
         $query = TaxOwnerScope::apply(TaxZone::forAddress($country, $state, $postcode), $context);
 
         return $query
+            ->orderBy('id')
             ->cursor()
             ->first(fn (TaxZone $zone) => $zone->matchesAddress($country, $state, $postcode));
     }

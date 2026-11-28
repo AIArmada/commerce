@@ -58,6 +58,17 @@ class TaxCalculator implements TaxCalculatorInterface
 
         TaxZoneResolved::dispatch($zone, $zoneId, $context);
 
+        if ($zoneId === null) {
+            $context['zone_id'] = $zone->id;
+            $exemption = $this->checkExemption($context);
+
+            if ($exemption !== null) {
+                TaxExemptionApplied::dispatch($exemption, $amountInCents, $zone->id, $context);
+
+                return $this->createExemptResult($exemption, $zone->id, $context);
+            }
+        }
+
         $rates = $this->getRates($taxClass, $zone, (bool) ($context['is_shipping'] ?? false), $context);
 
         if ($rates->isEmpty()) {
@@ -110,7 +121,8 @@ class TaxCalculator implements TaxCalculatorInterface
             ->where('tax_class', $taxClass)
             ->active()
             ->orderBy('is_compound', 'asc')
-            ->orderBy('priority', 'desc');
+            ->orderBy('priority', 'desc')
+            ->orderBy('id');
 
         if ($isShipping) {
             $query->where('is_shipping', true);

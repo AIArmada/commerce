@@ -104,7 +104,7 @@ final class DefaultZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             'owner_enabled' => (bool) config('tax.features.owner.enabled', false),
             'owner_type' => $owner?->getMorphClass(),
             'owner_id' => $owner?->getKey(),
-            'include_global' => (bool) config('tax.features.owner.include_global', false),
+            'include_global' => TaxOwnerScope::includesGlobal(),
         ]));
     }
 }

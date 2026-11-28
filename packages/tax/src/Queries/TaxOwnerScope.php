@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Queries;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -60,8 +61,14 @@ final class TaxOwnerScope
         return OwnerQuery::applyToEloquentBuilder(
             $query->withoutGlobalScope(OwnerScope::class),
             $owner,
-            includeGlobal: (bool) config('tax.features.owner.include_global', false),
+            includeGlobal: self::includesGlobal(),
         );
+    }
+
+    public static function includesGlobal(): bool
+    {
+        return ! OwnerScopeOverride::suppressIncludeGlobal()
+            && (bool) config('tax.features.owner.include_global', false);
     }
 
     /**

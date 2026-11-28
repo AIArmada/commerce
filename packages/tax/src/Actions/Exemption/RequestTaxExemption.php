@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Actions\Exemption;
 
 use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 
 final readonly class RequestTaxExemption
@@ -14,6 +15,8 @@ final readonly class RequestTaxExemption
      */
     public function execute(array $attributes): TaxExemption
     {
+        TaxOwnerScope::resolve([]);
+
         $exemption = new TaxExemption([
             'exemptable_id' => $attributes['exemptable_id'] ?? null,
             'exemptable_type' => $attributes['exemptable_type'] ?? null,

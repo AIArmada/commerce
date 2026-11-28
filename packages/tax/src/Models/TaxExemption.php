@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\ModelStates\HasStates;
@@ -115,10 +116,8 @@ class TaxExemption extends Model implements Auditable
                     throw new AuthorizationException('Cannot write owned tax exemptions without an owner context.');
                 }
 
-                return;
-            }
-
-            if ($exemption->owner_type === null && $exemption->owner_id === null) {
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            } elseif ($exemption->owner_type === null && $exemption->owner_id === null) {
                 if ($exemption->exists) {
                     throw new AuthorizationException('Cannot mutate global tax exemptions without explicit global context.');
                 }
@@ -128,9 +127,13 @@ class TaxExemption extends Model implements Auditable
                 }
             }
 
-            if (! $exemption->belongsToOwner($owner)) {
+            if ($owner !== null && ! $exemption->belongsToOwner($owner)) {
                 throw new AuthorizationException('Cannot write tax exemptions outside the current owner scope.');
             }
+
+            $exemptableClass = is_string($exemption->exemptable_type)
+                ? (Relation::getMorphedModel($exemption->exemptable_type) ?? $exemption->exemptable_type)
+                : null;
 
             if (
                 $exemption->exemptable_id !== null
@@ -141,12 +144,13 @@ class TaxExemption extends Model implements Auditable
                     || $exemption->isDirty('exemptable_id')
                     || ! $exemption->exists
                 )
-                && class_exists($exemption->exemptable_type)
-                && is_a($exemption->exemptable_type, Model::class, true)
-                && in_array(HasOwner::class, class_uses_recursive($exemption->exemptable_type), true)
+                && $exemptableClass !== null
+                && is_a($exemptableClass, Model::class, true)
+                && in_array(HasOwner::class, class_uses_recursive($exemptableClass), true)
+                && (! method_exists($exemptableClass, 'ownerScopeConfig') || $exemptableClass::ownerScopeConfig()->enabled)
             ) {
                 OwnerWriteGuard::findOrFailForOwner(
-                    modelClass: $exemption->exemptable_type,
+                    modelClass: $exemptableClass,
                     id: $exemption->exemptable_id,
                     owner: $owner,
                     includeGlobal: (bool) config('tax.features.owner.include_global', false),
