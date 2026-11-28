@@ -547,19 +547,39 @@ it('refuses foreign adjustment resolution and linked adjustment creation', funct
     [$ownerA, $ownerB, , , , $award, , $staff] = guardCrossTenantFixture('guard-adjustment');
 
     $adjustment = OwnerContext::withOwner($ownerA, static fn () => AppendRewardAdjustmentAction::run(
-        'adjustment', (string) $award->getKey(), null, null, 'guard-adjustment:root',
-        null, 'user', $staff, 'staff', 'audit',
+        'adjustment',
+        (string) $award->getKey(),
+        null,
+        null,
+        'guard-adjustment:root',
+        null,
+        'user',
+        $staff,
+        'staff',
+        'audit',
     ));
 
     $resolver = (string) Str::uuid();
 
     expect(fn () => OwnerContext::withOwner($ownerB, static fn () => app(AppendRewardAdjustmentAction::class)->resolve(
-        $adjustment, 'user', $resolver, 'staff', 'foreign-resolution',
+        $adjustment,
+        'user',
+        $resolver,
+        'staff',
+        'foreign-resolution',
     )))->toThrow(AuthorizationException::class);
 
     expect(fn () => OwnerContext::withOwner($ownerB, static fn () => AppendRewardAdjustmentAction::run(
-        'adjustment', null, null, (string) $adjustment->getKey(), 'guard-adjustment:foreign',
-        null, 'user', $resolver, 'staff', 'foreign-link',
+        'adjustment',
+        null,
+        null,
+        (string) $adjustment->getKey(),
+        'guard-adjustment:foreign',
+        null,
+        'user',
+        $resolver,
+        'staff',
+        'foreign-link',
     )))->toThrow(AuthorizationException::class);
 
     expect($adjustment->refresh()->resolved_at)->toBeNull()
