@@ -157,3 +157,45 @@ it('does not render rich content attachment ids outside the current owner direct
         ->not->toContain($ownerBPath)
         ->not->toContain('secret.png');
 });
+
+it('rejects unsafe raw image and link URLs in the Filament renderer', function (string $url): void {
+    $html = app(FilamentRichContentRenderer::class)->render([
+        'type' => 'doc',
+        'content' => [
+            ['type' => 'image', 'attrs' => ['src' => $url]],
+            ['type' => 'paragraph', 'content' => [
+                ['type' => 'text', 'text' => 'Visible text', 'marks' => [
+                    ['type' => 'link', 'attrs' => ['href' => $url]],
+                ]],
+            ]],
+        ],
+    ])->toHtml();
+
+    expect($html)->toContain('Visible text')->not->toContain('<img', 'href=');
+})->with([
+    'private address' => 'http://127.0.0.1/image.png',
+    'backslash authority' => '/\\example.test/image.png',
+    'control character' => "/\t/example.test/image.png",
+    'protocol-relative' => '//example.test/image.png',
+    'non-HTTP scheme' => 'javascript:alert(1)',
+]);
+
+it('resolves authorized attachment ids without trusting a supplied source URL', function (): void {
+    config()->set('docs.owner.enabled', false);
+    config()->set('docs.storage.disk', 'local');
+    config()->set('docs.storage.rich_content_visibility', 'public');
+    Storage::fake('local');
+
+    $path = DocRichContentStorage::directory() . '/allowed.png';
+    Storage::disk('local')->put($path, 'image');
+
+    $html = app(FilamentRichContentRenderer::class)->render([
+        'type' => 'doc',
+        'content' => [
+            ['type' => 'image', 'attrs' => ['id' => $path, 'src' => 'http://127.0.0.1/secret']],
+            ['type' => 'image', 'attrs' => ['id' => DocRichContentStorage::directory() . '/missing.png', 'src' => '/fallback.png']],
+        ],
+    ])->toHtml();
+
+    expect($html)->toContain('allowed.png')->not->toContain('127.0.0.1', 'fallback.png', 'missing.png');
+});
