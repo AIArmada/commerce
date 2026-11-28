@@ -67,7 +67,7 @@ final class ReferralsServiceProvider extends PackageServiceProvider
             && $this->symbolsExist([
                 'AIArmada\\Rewards\\EntryPoints\\Jobs\\EvaluateRewardEntitlementJob',
                 'AIArmada\\Rewards\\Contracts\\RewardSourceFactReader',
-                'AIArmada\\Rewards\\Support\\RewardSourceFact',
+                'AIArmada\\Rewards\\Data\\RewardSourceFact',
                 'AIArmada\\Rewards\\Models\\RewardAward',
             ])) {
             $this->app->singleton(RewardsPointsFulfillment::class);
