@@ -65,7 +65,7 @@ TaxZone::forOwner($owner, $includeGlobal);   // Owner scoped
 ```
 
 > **info**
-> `forAddress()` filters by country and state in SQL and orders by priority. Postcode patterns are evaluated in PHP, so the `$postcode` argument does not narrow the query — call `matchesAddress()` on each candidate before accepting a zone.
+> `forAddress()` filters by country and state in SQL and orders by priority. Missing state or postcode values exclude restricted zones in SQL. Postcode patterns are evaluated in PHP — call `matchesAddress()` on each candidate before accepting a zone.
 
 ### Methods
 
@@ -91,12 +91,13 @@ TaxZone::factory()->withPriority(10)->create();
 
 ### Postcode Matching
 
-Postcodes support three patterns:
+Postcodes support exact values, ranges and wildcards:
 
 | Pattern | Example | Matches |
 |---------|---------|---------|
 | Exact | `43000` | Only `43000` |
 | Range | `43000-43999` | `43000` through `43999` |
+| Prefixed range | `SW1A1-SW1A9` | `SW1A1` through `SW1A9`; prefixes must match exactly |
 | Wildcard | `43*` | `43000`, `43100`, etc. |
 
 ---

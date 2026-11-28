@@ -32,6 +32,8 @@ describe('TaxZonePostcodeMatching', function (): void {
         $this->assertTrue($zone->matchesAddress('MY', null, '49999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '39999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '50000'));
+        $this->assertFalse($zone->matchesAddress('MY', null, '4@5000'));
+        $this->assertFalse($zone->matchesAddress('MY', null, '45-000'));
     });
 
     it('matches postcode range with non numeric postcodes', function (): void {
@@ -45,6 +47,9 @@ describe('TaxZonePostcodeMatching', function (): void {
 
         $this->assertTrue($zone->matchesAddress('GB', null, 'SW1A5'));
         $this->assertFalse($zone->matchesAddress('GB', null, 'SW2A5'));
+        $this->assertFalse($zone->matchesAddress('GB', null, 'NW1A5'));
+        $this->assertFalse($zone->matchesAddress('GB', null, '15'));
+        $this->assertFalse($zone->matchesAddress('GB', null, 'SW1B5'));
     });
 
     it('matches postcode range with zero start and end', function (): void {

@@ -13,6 +13,7 @@ use AIArmada\Tax\Actions\CascadeTaxZoneDeletionAction;
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
 use AIArmada\Tax\Database\Factories\TaxZoneFactory;
 use AIArmada\Tax\Enums\ZoneType;
+use AIArmada\Tax\Services\PostcodeMatcher;
 use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -144,10 +145,9 @@ class TaxZone extends Model implements Auditable
     }
 
     /**
-     * Candidate prefilter by country/state only. Postcode patterns support
-     * ranges and wildcards that cannot be expressed portably in SQL, so the
-     * $postcode argument is informational here: callers must apply
-     * matchesAddress() to each candidate before accepting a zone.
+     * Prefilter by country/state and reject restricted zones when address
+     * fields are missing. Postcode patterns still require matchesAddress()
+     * to evaluate exact, wildcard and range matches in PHP.
      *
      * @param  Builder<static>  $query
      * @return Builder<static>
@@ -162,12 +162,16 @@ class TaxZone extends Model implements Auditable
                     ->orWhereJsonLength('countries', 0)
                     ->orWhereJsonContains('countries', $country);
             })
-            ->when($state !== null, function (Builder $builder) use ($state): void {
-                $builder->where(function (Builder $inner) use ($state): void {
-                    $inner
-                        ->whereNull('states')
-                        ->orWhereJsonLength('states', 0)
-                        ->orWhereJsonContains('states', $state);
+            ->where(function (Builder $builder) use ($state): void {
+                $builder->whereNull('states')->orWhereJsonLength('states', 0);
+
+                if ($state !== null && mb_trim($state) !== '') {
+                    $builder->orWhereJsonContains('states', $state);
+                }
+            })
+            ->when($postcode === null || mb_trim($postcode) === '', function (Builder $builder): void {
+                $builder->where(function (Builder $inner): void {
+                    $inner->whereNull('postcodes')->orWhereJsonLength('postcodes', 0);
                 });
             })
             ->orderBy('priority', 'desc');
@@ -200,7 +204,7 @@ class TaxZone extends Model implements Auditable
 
             $matches = false;
             foreach ($this->postcodes as $pattern) {
-                if ($this->matchesPostcode($postcode, $pattern)) {
+                if (PostcodeMatcher::matches($postcode, $pattern)) {
                     $matches = true;
 
                     break;
@@ -310,58 +314,5 @@ class TaxZone extends Model implements Auditable
                 'code' => 'The tax zone code has already been taken for this owner.',
             ]);
         }
-    }
-
-    /**
-     * Match postcode against a pattern (supports wildcards and ranges).
-     */
-    protected function matchesPostcode(string $postcode, string $pattern): bool
-    {
-        // Exact match
-        if ($postcode === $pattern) {
-            return true;
-        }
-
-        // Range match (e.g., "10000-19999")
-        if (str_contains($pattern, '-')) {
-            [$start, $end] = explode('-', $pattern, 2);
-
-            if (ctype_digit(mb_trim($start)) && ctype_digit(mb_trim($end))) {
-                if (preg_match('/[A-Za-z]/', $postcode) === 1) {
-                    return false;
-                }
-
-                $digits = preg_replace('/[^0-9]/', '', $postcode);
-
-                if (! is_string($digits) || $digits === '') {
-                    return false;
-                }
-
-                $numericPostcode = (int) $digits;
-
-                return $numericPostcode >= (int) $start && $numericPostcode <= (int) $end;
-            }
-
-            $numericPostcode = (int) preg_replace('/[^0-9]/', '', $postcode);
-
-            $startNumeric = (int) preg_replace('/[^0-9]/', '', $start);
-            $endNumeric = (int) preg_replace('/[^0-9]/', '', $end);
-
-            if ($startNumeric === 0 && $endNumeric === 0) {
-                return false;
-            }
-
-            return $numericPostcode >= $startNumeric && $numericPostcode <= $endNumeric;
-        }
-
-        // Wildcard match (e.g., "100*")
-        if (str_contains($pattern, '*')) {
-            $quoted = preg_quote($pattern, '/');
-            $regex = '/^' . str_replace('\\*', '.*', $quoted) . '$/';
-
-            return (bool) preg_match($regex, $postcode);
-        }
-
-        return false;
     }
 }
