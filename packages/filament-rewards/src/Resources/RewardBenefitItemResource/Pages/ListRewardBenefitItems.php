@@ -6,8 +6,9 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\RewardBenefitItemResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -18,6 +19,8 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -38,7 +41,12 @@ class ListRewardBenefitItems extends ListRecords
                 ->modalHeading('Create benefit catalog item')
                 ->modalDescription('Terms freeze at creation. Take either a point cost or direct entitlement.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => RewardProgram::query()->orderBy('title')->pluck('title', 'id')->all())->required()->searchable(),
+                    Select::make('program_id')
+                        ->label('Program')
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => app(RewardProgramDirectoryApi::class)->options($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) && $value !== '' ? app(RewardProgramDirectoryApi::class)->title($value) : null)
+                        ->required(),
                     TextInput::make('benefit_key')->label('Key (slug)')->required()->maxLength(64),
                     TextInput::make('title')->required()->maxLength(191),
                     Textarea::make('conditions')->label('Conditions (one per line)')->required()->rows(3),
@@ -54,6 +62,7 @@ class ListRewardBenefitItems extends ListRecords
                 ->action(function (array $data, CreateRewardBenefitItemAction $create): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('create', [RewardBenefitItem::class, (string) ($data['program_id'] ?? '')]), 403);
 
                     $conditions = array_values(array_filter(array_map(
                         static fn (string $line): string => mb_trim($line),
@@ -76,12 +85,12 @@ class ListRewardBenefitItems extends ListRecords
                             (string) $data['benefit_key'],
                             (string) $data['title'],
                             $conditions,
-                            $data['cost_points'] !== null && $data['cost_points'] !== '' ? (int) $data['cost_points'] : null,
+                            ($data['cost_points'] ?? null) !== null && $data['cost_points'] !== '' ? (int) $data['cost_points'] : null,
                             is_string($data['cost_unit'] ?? null) && $data['cost_unit'] !== '' ? (string) $data['cost_unit'] : null,
                             (bool) ($data['direct_entitlement'] ?? false),
                             (int) $data['capacity'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             is_string($data['expires_at'] ?? null) && $data['expires_at'] !== '' ? new CarbonImmutable($data['expires_at']) : null,
                             $fulfillmentConfig,

@@ -16,10 +16,18 @@ use AIArmada\FilamentRewards\Resources\RewardPayoutResource\RewardPayoutResource
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\RewardRecoveryResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\GenericUser;
+use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 describe('FilamentRewardsPlugin', function (): void {
@@ -66,6 +74,41 @@ describe('reward resource navigation', function (): void {
 });
 
 describe('RewardAdminPresenter', function (): void {
+    it('denies authenticated users without role support unless explicitly granted staff access', function (): void {
+        $user = new class(['id' => 'roleless-user']) extends GenericUser implements AuthorizableContract
+        {
+            use Authorizable;
+        };
+        auth()->setUser($user);
+
+        expect(RewardAdminPresenter::staffActor())->toBeNull()
+            ->and(RewardProgramResource::canCreate())->toBeFalse();
+
+        Gate::define('reward-staff', static fn (GenericUser $actor): bool => $actor->getAuthIdentifier() === 'roleless-user');
+
+        expect(RewardAdminPresenter::staffActor())->toBe($user)
+            ->and(RewardProgramResource::canCreate())->toBeTrue();
+    });
+
+    it('requires a valid staff identity before exposing decision abilities', function (): void {
+        $user = new class(['id' => '']) extends GenericUser implements AuthorizableContract
+        {
+            use Authorizable;
+        };
+        auth()->setUser($user);
+        Gate::define('reward-staff', static fn (): bool => true);
+
+        expect(RewardAdminPresenter::staffActor())->toBeNull();
+
+        $outsider = User::factory()->create();
+        auth()->setUser($outsider);
+        Gate::define('approve', static fn (): bool => true);
+        Gate::define('submit', static fn (): bool => true);
+
+        expect(RewardAdminPresenter::canDecideAward(new RewardAward, 'approve'))->toBeFalse()
+            ->and(RewardAdminPresenter::canOperatePayout(new RewardAward, 'submit'))->toBeFalse();
+    });
+
     it('serves outcome and currency options from the rewards registry', function (): void {
         expect(RewardAdminPresenter::outcomeOptions())->toBe([
             'contribution' => 'contribution',
@@ -146,5 +189,33 @@ describe('reward admin query scoping', function (): void {
 
         expect($visible)->not->toContain(RewardAwardStatus::Approved->value)
             ->and(RewardFraudResource::getEloquentQuery()->whereKey($held->getKey())->exists())->toBeTrue();
+    });
+});
+
+it('checks program ownership when reading reward stock and budget balances', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $program = OwnerContext::withOwner($owner, fn (): RewardProgram => RewardProgram::factory()->create());
+    $item = RewardBenefitItem::factory()->create(['program_id' => $program->getKey(), 'capacity' => 12]);
+    $budget = app(RewardBudgetReadApi::class);
+    $stock = app(RewardBenefitStockReadApi::class);
+
+    OwnerContext::withOwner($owner, function () use ($budget, $stock, $program, $item): void {
+        expect($budget->balances((string) $program->getKey(), 'MYR'))->toBe([
+            'funded' => 0,
+            'reserved' => 0,
+            'net_spent' => 0,
+            'available' => 0,
+        ])->and($stock->balances((string) $item->getKey()))->toBe([
+            'capacity' => 12,
+            'reserved' => 0,
+            'consumed' => 0,
+            'available' => 12,
+        ]);
+    });
+
+    OwnerContext::withOwner($other, function () use ($budget, $stock, $program, $item): void {
+        expect(fn () => $budget->balances((string) $program->getKey(), 'MYR'))->toThrow(AuthorizationException::class)
+            ->and(fn () => $stock->balances((string) $item->getKey()))->toThrow(AuthorizationException::class);
     });
 });

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "name": "Points",
+  "owns": {
+    "table:reward_point_lots": [
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ClawBackAwardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\CreditRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\DebitRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ExpireRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\RefundRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ReleaseRewardPointsAction"
+    ],
+    "table:reward_point_movements": [
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ClawBackAwardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\CreditRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\DebitRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ExpireRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\RefundRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ReleaseRewardPointsAction",
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\ReserveRewardPointsAction"
+    ],
+    "table:reward_point_operations": [
+      "AIArmada\\Rewards\\Features\\Points\\Persistence\\RewardPointOperationAuthority"
+    ],
+    "table:reward_point_reservation_submissions": [
+      "AIArmada\\Rewards\\Features\\Points\\Actions\\MarkRewardReservationSubmittedAction"
+    ]
+  },
+  "extensions": {}
+}

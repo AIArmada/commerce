@@ -9,6 +9,8 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationRejected;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,8 @@ final class RejectMembershipApplicationAction
 
     public function handle(MembershipApplication $application, Model $reviewer, ?string $note = null): void
     {
+        MembershipUserModel::assertPersisted($reviewer);
+
         $note = $this->normalizeNote($note);
 
         $rejectedApplication = DB::transaction(function () use ($application, $note, $reviewer): MembershipApplication {
@@ -49,11 +53,13 @@ final class RejectMembershipApplicationAction
             return $lockedApplication;
         });
 
-        MembershipApplicationRejected::dispatch($rejectedApplication);
+        DB::afterCommit(static function () use ($rejectedApplication): void {
+            MembershipApplicationRejected::dispatch($rejectedApplication);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyRejected($rejectedApplication);
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifyRejected(MembershipApplicationMapper::snapshot($rejectedApplication));
+            }
+        });
     }
 
     private function normalizeNote(?string $note): ?string

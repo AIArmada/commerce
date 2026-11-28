@@ -2,32 +2,32 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\ClawBackAwardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
-use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardMilestoneCycle;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
+use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
@@ -150,7 +150,7 @@ it('D1 leaves no dispute when a full refund precedes reversal', function (): voi
     expect($again->status)->toBe(RewardAwardStatus::Reversed)
         ->and($again->entries()->count())->toBe($entriesBefore);
 
-    $rerun = ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
+    $rerun = ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
 
     expect($rerun)->toBe(['clawed_points' => 0, 'consumed_points' => 0, 'dispute_id' => null])
         ->and(RewardPointMovement::query()->count())->toBe($movementsBefore)
@@ -257,7 +257,7 @@ it('D1 nets repeat spend and refund cycles', function (): void {
     // A consumed reversal replays onto its single dispute without new rows.
     $movementsBefore = RewardPointMovement::query()->count();
 
-    $rerun = ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
+    $rerun = ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'source-error', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
 
     expect($rerun['dispute_id'])->toBe((string) $dispute->getKey())
         ->and($rerun['clawed_points'])->toBe(0)
@@ -325,7 +325,7 @@ it('D2 blocks reversal on unknown reservations without partial effects', functio
     // Genuinely unknown external status: the hold was handed to external
     // fulfillment. (An unmarked hold is known-unsubmitted under the real
     // resolver and voids cleanly; see the attested cases above.)
-    MarkRewardReservationSubmittedAction::run('rsv:d2u-1', RewardPointReservationSubmission::STATUS_SENDING, 'ext-d2u-1');
+    MarkRewardReservationSubmittedAction::run('rsv:d2u-1', RewardReservationSubmissionStatus::Sending->value, 'ext-d2u-1');
 
     $entriesBefore = $award->entries()->count();
     $movementsBefore = RewardPointMovement::query()->count();
@@ -594,7 +594,7 @@ it('D2 keeps milestone invalidation atomic with attested reservations', function
 
     // Genuinely unknown external status: the hold was handed to external
     // fulfillment, so no attestation can void it.
-    MarkRewardReservationSubmittedAction::run('rsv:d2mi-1', RewardPointReservationSubmission::STATUS_SENDING, 'ext-d2mi-1');
+    MarkRewardReservationSubmittedAction::run('rsv:d2mi-1', RewardReservationSubmissionStatus::Sending->value, 'ext-d2mi-1');
 
     $contribution = RewardMilestoneContribution::query()->where('source_business_key', 'src-d2mi-1')->firstOrFail();
 

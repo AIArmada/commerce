@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use AIArmada\Rewards\Support\RewardRuleValidator;
@@ -32,7 +32,7 @@ test('unknown recipient types are refused before any award freezes', function ()
     $reader->seed(RewardLedgerFixtures::fact('src-registry-recip-1', $memberId));
 
     expect(fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'ghost',
         $memberId,

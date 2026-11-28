@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Drivers\NullRewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionReadinessMapper;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
@@ -51,8 +52,8 @@ it('null readiness rejects cash activation with truthful blockers', function ():
     $checker = new NullRewardReadinessChecker;
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-cash', RewardProgramMode::Cash);
 
-    $ready = $checker->canMarkReady($program, $version);
-    $activate = $checker->canActivate($program, $version);
+    $ready = $checker->canMarkReady((string) $program->getKey(), RewardVersionReadinessMapper::version($version));
+    $activate = $checker->canActivate((string) $program->getKey(), RewardVersionReadinessMapper::version($version));
 
     expect($ready->ready)->toBeTrue()
         ->and($activate->ready)->toBeFalse()
@@ -81,7 +82,7 @@ it('blocks unfunded cash programs from reaching active through transitions', fun
 it('activates points programs structurally without payee claims', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-points-go');
 
-    $assessment = (new NullRewardReadinessChecker)->canActivate($program, $version);
+    $assessment = (new NullRewardReadinessChecker)->canActivate((string) $program->getKey(), RewardVersionReadinessMapper::version($version));
 
     expect($assessment->ready)->toBeTrue();
 

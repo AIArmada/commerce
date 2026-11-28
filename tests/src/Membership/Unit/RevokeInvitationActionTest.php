@@ -74,7 +74,7 @@ it('is idempotent for an already revoked invitation', function (): void {
 });
 
 it('does not revoke an accepted invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter);
+    $this->invitation->transitionTo(InvitationStatus::Accepted, $this->inviter)->save();
 
     expect(fn () => RevokeInvitationAction::make()->handle(
         invitation: $this->invitation,
@@ -85,7 +85,7 @@ it('does not revoke an accepted invitation', function (): void {
 });
 
 it('does not revoke an invitation whose expiry has been materialized', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Expired);
+    $this->invitation->transitionTo(InvitationStatus::Expired)->save();
 
     expect(fn () => RevokeInvitationAction::make()->handle(
         invitation: $this->invitation,

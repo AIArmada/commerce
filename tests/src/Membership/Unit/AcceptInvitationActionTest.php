@@ -13,6 +13,7 @@ use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -99,7 +100,7 @@ it('dispatches MembershipInvitationAccepted event', function (): void {
 });
 
 it('throws on expired invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Expired);
+    $this->invitation->transitionTo(InvitationStatus::Expired)->save();
 
     $this->expectException(RuntimeException::class);
 
@@ -110,7 +111,7 @@ it('throws on expired invitation', function (): void {
 });
 
 it('throws on revoked invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Revoked, $this->inviter);
+    $this->invitation->transitionTo(InvitationStatus::Revoked, $this->inviter)->save();
 
     $this->expectException(RuntimeException::class);
 
@@ -121,7 +122,7 @@ it('throws on revoked invitation', function (): void {
 });
 
 it('throws on already accepted invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Accepted, $this->acceptor);
+    $this->invitation->transitionTo(InvitationStatus::Accepted, $this->acceptor)->save();
 
     $this->expectException(RuntimeException::class);
 
@@ -159,6 +160,20 @@ it('rolls back acceptance when role assignment fails', function (): void {
 
     expect($this->invitation->fresh()->accepted_at)->toBeNull()
         ->and($this->subject->members()->count())->toBe(0);
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    DB::beginTransaction();
+
+    try {
+        AcceptInvitationAction::make()->handle(invitation: $this->invitation, user: $this->acceptor);
+        Event::assertNotDispatched(MembershipInvitationAccepted::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipInvitationAccepted::class);
+    expect($this->invitation->fresh()->accepted_at)->toBeNull();
 });
 
 class MembershipUserWithoutRoles extends Model

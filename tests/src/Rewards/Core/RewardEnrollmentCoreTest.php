@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\LeaveRewardProgramAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\ReacceptRewardTermsAction;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
@@ -25,10 +25,10 @@ it('enrolls with canonical identity plus acceptance and period rows', function (
     $memberId = (string) Str::uuid();
 
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -53,8 +53,8 @@ it('is idempotent for active members under identical frozen terms', function ():
     [$program, $version] = seedVersionedProgram('core-idem');
 
     $memberId = (string) Str::uuid();
-    $first = EnrollRewardMemberAction::run($program, 'user', $memberId, $version);
-    $second = EnrollRewardMemberAction::run($program, 'user', $memberId, $version);
+    $first = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey());
+    $second = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey());
 
     expect((string) $second->getKey())->toBe((string) $first->getKey())
         ->and($second->acceptances()->count())->toBe(1)
@@ -65,7 +65,7 @@ it('appends reacceptance prospectively on material terms change', function (): v
     [$program, $v1] = seedVersionedProgram('core-reacc');
 
     $memberId = (string) Str::uuid();
-    $enrollment = EnrollRewardMemberAction::run($program, 'user', $memberId, $v1);
+    $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v1->getKey());
 
     $terms2 = RewardCoreTestFixtures::terms();
     $terms2['version_label'] = 'draft-2';
@@ -86,7 +86,7 @@ it('appends reacceptance prospectively on material terms change', function (): v
 
     expect($v2->material_terms_hash)->not->toBe($v1->material_terms_hash);
 
-    $reaccepted = EnrollRewardMemberAction::run($program, 'user', $memberId, $v2);
+    $reaccepted = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey());
 
     expect($reaccepted->acceptances()->count())->toBe(2)
         ->and($reaccepted->periods()->count())->toBe(1);
@@ -103,9 +103,9 @@ it('always appends reacceptance rows even for identical terms', function (): voi
     [$program, $version] = seedVersionedProgram('core-reacc-same');
 
     $memberId = (string) Str::uuid();
-    $enrollment = EnrollRewardMemberAction::run($program, 'user', $memberId, $version);
+    $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey());
 
-    $again = ReacceptRewardTermsAction::run($enrollment, $version);
+    $again = ReacceptRewardTermsAction::run($enrollment, (string) $version->getKey());
 
     expect($again->seq)->toBe(2)
         ->and($enrollment->refresh()->acceptances()->count())->toBe(2)
@@ -117,10 +117,10 @@ it('leaves and rejoins with preserved frozen history', function (): void {
 
     $memberId = (string) Str::uuid();
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         null,
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );
@@ -135,10 +135,10 @@ it('leaves and rejoins with preserved frozen history', function (): void {
     $firstLeftAt = CarbonImmutable::parse($left->left_at)->toIso8601String();
 
     $rejoined = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         null,
         CarbonImmutable::parse('2026-07-10T00:00:00Z')
     );
@@ -163,7 +163,7 @@ it('leaves and rejoins with preserved frozen history', function (): void {
 it('rejects non-member identities and foreign policy versions', function (): void {
     [$program, $version] = seedVersionedProgram('core-reject');
 
-    expect(fn () => EnrollRewardMemberAction::run($program, 'guest', (string) Str::uuid(), $version))
+    expect(fn () => EnrollRewardMemberAction::run((string) $program->getKey(), 'guest', (string) Str::uuid(), (string) $version->getKey()))
         ->toThrow(InvalidArgumentException::class, 'no unclaimed-guest');
 
     $other = RewardProgram::factory()->create(['family_key' => 'core-other-' . Str::lower(Str::random(6))]);
@@ -179,14 +179,14 @@ it('rejects non-member identities and foreign policy versions', function (): voi
         $foreignEffective,
     );
 
-    expect(fn () => EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $foreign))
+    expect(fn () => EnrollRewardMemberAction::run((string) $program->getKey(), 'user', (string) Str::uuid(), (string) $foreign->getKey()))
         ->toThrow(InvalidArgumentException::class, 'does not belong');
 });
 
 it('freezes acceptance rows and enrollment identity', function (): void {
     [$program, $version] = seedVersionedProgram('core-frozen');
 
-    $enrollment = EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $version);
+    $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', (string) Str::uuid(), (string) $version->getKey());
     $acceptance = $enrollment->acceptances()->first();
 
     expect(fn () => $acceptance->forceFill(['terms_label' => 'mutated'])->save())->toThrow(LogicException::class);
@@ -211,7 +211,7 @@ it('rejects recognition and cash modes only via their own rules, not enrollment'
         $recEffective,
     );
 
-    $enrollment = EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $version);
+    $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', (string) Str::uuid(), (string) $version->getKey());
 
     expect($enrollment->exists)->toBeTrue()
         ->and(RewardEnrollment::query()->where('program_id', $program->getKey())->count())->toBe(1);

@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Membership\Enums\ApplicationStatus;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +45,8 @@ class MembershipApplication extends Model
         'meta',
     ];
 
+    protected $hidden = ['pending_guard'];
+
     protected static string $ownerScopeConfigKey = 'membership.owner';
 
     protected static bool $ownerScopeEnabledByDefault = true;
@@ -77,13 +80,11 @@ class MembershipApplication extends Model
 
     public function applicant(): BelongsTo
     {
-        /** @phpstan-ignore argument.templateType */
-        return $this->belongsTo(config('auth.providers.users.model'));
+        return $this->belongsTo(MembershipUserModel::resolve());
     }
 
     public function reviewer(): BelongsTo
     {
-        /** @phpstan-ignore argument.templateType */
-        return $this->belongsTo(config('auth.providers.users.model'), 'reviewer_id');
+        return $this->belongsTo(MembershipUserModel::resolve(), 'reviewer_id');
     }
 }

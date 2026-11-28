@@ -5,38 +5,60 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Rewards;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
-use AIArmada\Rewards\Actions\ClawBackAwardPointsAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\LeaveRewardProgramAction;
-use AIArmada\Rewards\Actions\OpenRewardRecoveryAction;
-use AIArmada\Rewards\Actions\ReacceptRewardTermsAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\SettleRewardRecoveryAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardRecovery;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireDueRewardPointLotsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -218,8 +240,8 @@ it('degrades to plain lookups when owner scoping is disabled', function (): void
         'family_key' => 'scope-plain-' . Str::lower(Str::random(6)),
     ]);
 
-    expect(RewardProgramGuard::findProgramOrFail((string) $program->getKey())->getKey())->toBe($program->getKey())
-        ->and(fn () => RewardProgramGuard::findProgramOrFail((string) Str::uuid()))->toThrow(InvalidArgumentException::class, 'Unknown reward program.');
+    expect(app(RewardProgramLockApi::class)->readProgram((string) $program->getKey())->id)->toBe($program->getKey())
+        ->and(fn () => app(RewardProgramLockApi::class)->readProgram((string) Str::uuid()))->toThrow(InvalidArgumentException::class, 'Unknown reward program.');
 });
 
 it('refuses evaluation against a foreign program', function (): void {
@@ -237,7 +259,7 @@ it('refuses evaluation against a foreign program', function (): void {
     expect(fn () => OwnerContext::withOwner(
         $other,
         static fn () => $action->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -376,12 +398,12 @@ it('refuses a foreign clawback and a member-role clawback on the owner award', f
 
     expect(fn () => OwnerContext::withOwner(
         $ownerB,
-        static fn () => ClawBackAwardPointsAction::run($award, 'user', $staff, 'staff', 'consume-audit', $at),
+        static fn () => ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', $staff, 'staff', 'consume-audit', $at),
     ))->toThrow(AuthorizationException::class);
 
     expect(fn () => OwnerContext::withOwner(
         $ownerA,
-        static fn () => ClawBackAwardPointsAction::run($award, 'user', (string) $enrollment->member_id, 'member', 'consume-audit', $at),
+        static fn () => ClawBackAwardPointsAction::run((string) $award->getKey(), 'user', (string) $enrollment->member_id, 'member', 'consume-audit', $at),
     ))->toThrow(InvalidArgumentException::class, 'staff/admin/system identity');
 
     expect(RewardPointLot::query()->where('award_id', $award->getKey())->count())->toBe($lotCount)
@@ -419,7 +441,7 @@ it('refuses foreign leave and reaccept of an enrollment', function (): void {
 
     expect(fn () => OwnerContext::withOwner(
         $ownerB,
-        static fn () => ReacceptRewardTermsAction::run($enrollment, $version, 'member-portal', $at),
+        static fn () => ReacceptRewardTermsAction::run($enrollment, (string) $version->getKey(), 'member-portal', $at),
     ))->toThrow(AuthorizationException::class);
 
     expect($enrollment->refresh()->status)->toBe(RewardEnrollmentStatus::Active)
@@ -540,4 +562,348 @@ it('refuses credit bound to a foreign award or program but allows dangling refer
             $at,
         ),
     );
+});
+
+it('refuses foreign adjustment resolution and linked adjustment creation', function (): void {
+    [$ownerA, $ownerB, , , , $award, , $staff] = guardCrossTenantFixture('guard-adjustment');
+
+    $adjustment = OwnerContext::withOwner($ownerA, static fn () => AppendRewardAdjustmentAction::run(
+        'adjustment',
+        (string) $award->getKey(),
+        null,
+        null,
+        'guard-adjustment:root',
+        null,
+        'user',
+        $staff,
+        'staff',
+        'audit',
+    ));
+
+    $resolver = (string) Str::uuid();
+
+    expect(fn () => OwnerContext::withOwner($ownerB, static fn () => app(AppendRewardAdjustmentAction::class)->resolve(
+        $adjustment,
+        'user',
+        $resolver,
+        'staff',
+        'foreign-resolution',
+    )))->toThrow(AuthorizationException::class);
+
+    expect(fn () => OwnerContext::withOwner($ownerB, static fn () => AppendRewardAdjustmentAction::run(
+        'adjustment',
+        null,
+        null,
+        (string) $adjustment->getKey(),
+        'guard-adjustment:foreign',
+        null,
+        'user',
+        $resolver,
+        'staff',
+        'foreign-link',
+    )))->toThrow(AuthorizationException::class);
+
+    expect($adjustment->refresh()->resolved_at)->toBeNull()
+        ->and(RewardAdjustment::query()->where('operation_key', 'guard-adjustment:foreign')->exists())->toBeFalse();
+});
+
+it('rejects recovery replay with conflicting frozen terms', function (): void {
+    [$ownerA, , , , , $award, $recovery, $staff] = guardCrossTenantFixture('guard-recovery-replay');
+
+    expect(fn () => OwnerContext::withOwner($ownerA, static fn () => OpenRewardRecoveryAction::run(
+        $award,
+        'dispute',
+        null,
+        null,
+        null,
+        null,
+        101,
+        'pts',
+        'user',
+        $staff,
+        'staff',
+        'consume-audit',
+    )))->toThrow(InvalidArgumentException::class, 'different terms');
+
+    expect($recovery->refresh()->points)->toBe(100);
+});
+
+it('resolves frozen award policies only through scoped program identities', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    [$programA, $versionA] = OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => RewardLedgerFixtures::seedActiveEnrolled('guard-policy-a', RewardProgramMode::Points),
+    );
+
+    [$programB, $versionB] = OwnerContext::withOwner(
+        $ownerB,
+        static fn (): array => RewardLedgerFixtures::seedActiveEnrolled('guard-policy-b', RewardProgramMode::Points),
+    );
+
+    $programs = app(RewardProgramLockApi::class);
+    $idA = (string) $programA->getKey();
+    $idB = (string) $programB->getKey();
+    $versionIdA = (string) $versionA->getKey();
+    $versionIdB = (string) $versionB->getKey();
+
+    OwnerContext::withOwner($ownerA, static function () use ($programs, $idA, $idB, $versionIdA, $versionIdB): void {
+        expect($programs->findPolicy($idA, $versionIdA)?->id)->toBe($versionIdA)
+            ->and($programs->findPolicy($idA, $versionIdB))->toBeNull()
+            ->and(fn () => $programs->findPolicy($idB, $versionIdB))->toThrow(AuthorizationException::class);
+    });
+});
+
+it('refuses foreign payout snapshots and benefit recovery queries', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $award = RewardAward::factory()->create(['program_id' => $program->getKey()]);
+    $payout = RewardPayoutRequest::factory()->create([
+        'program_id' => $program->getKey(),
+        'award_id' => $award->getKey(),
+    ]);
+    $item = RewardBenefitItem::factory()->create(['program_id' => $program->getKey()]);
+    $grant = RewardBenefitGrant::factory()->create([
+        'item_id' => $item->getKey(),
+        'award_id' => $award->getKey(),
+        'status' => RewardBenefitGrantStatus::Consumed,
+    ]);
+    $awardId = (string) $award->getKey();
+    $grantId = (string) $grant->getKey();
+    $payoutQuery = app(RewardPayoutQueryApi::class);
+    $benefitQuery = app(RewardBenefitRecoveryApi::class);
+
+    OwnerContext::withOwner($owner, static function () use ($payoutQuery, $benefitQuery, $awardId, $grantId, $payout): void {
+        expect($payoutQuery->forAward($awardId)?->id)->toBe((string) $payout->getKey());
+
+        DB::transaction(static function () use ($benefitQuery, $awardId, $grantId): void {
+            expect($benefitQuery->consumedGrantsForReversal($awardId))->toHaveCount(1);
+            $benefitQuery->assertGrantBelongsToAward($grantId, $awardId);
+        });
+    });
+
+    OwnerContext::withOwner($other, static function () use ($payoutQuery, $benefitQuery, $awardId, $grantId): void {
+        expect(fn () => $payoutQuery->forAward($awardId))->toThrow(AuthorizationException::class)
+            ->and(fn () => DB::transaction(fn () => $benefitQuery->consumedGrantsForReversal($awardId)))->toThrow(AuthorizationException::class)
+            ->and(fn () => DB::transaction(fn () => $benefitQuery->assertGrantBelongsToAward($grantId, $awardId)))->toThrow(AuthorizationException::class);
+    });
+});
+
+it('refuses to lock awards from another owner when resolving refund reversal status', function (): void {
+    [$ownerA, $ownerB, , , , $award] = guardCrossTenantFixture('guard-refund-award-lock');
+    $awardId = (string) $award->getKey();
+    $awards = app(RewardAwardLockApi::class);
+
+    expect(OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => DB::transaction(static fn (): array => $awards->lockAndFindReversedAwards([$awardId, $awardId])),
+    ))->toBe([]);
+
+    expect(fn () => OwnerContext::withOwner(
+        $ownerB,
+        static fn (): array => DB::transaction(static fn (): array => $awards->lockAndFindReversedAwards([$awardId])),
+    ))->toThrow(AuthorizationException::class);
+
+    expect($award->fresh()->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('refuses new refunds and replay of refunds from a foreign program', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+
+    $program = OwnerContext::withOwner($ownerA, static fn (): RewardProgram => RewardProgram::factory()->create());
+
+    OwnerContext::withOwner($ownerA, static function () use ($program, $recipient, $at): void {
+        CreditRewardPointsAction::run(
+            'user',
+            $recipient,
+            $program->family_key,
+            'pts',
+            50,
+            $at,
+            null,
+            null,
+            (string) $program->getKey(),
+            'credit:scope-refund-replay',
+        );
+        DebitRewardPointsAction::run('user', $recipient, $program->family_key, 'pts', 20, 'debit:scope-refund-replay', 'spend', null, $at);
+        RefundRewardPointsAction::run('refund:scope-refund-replay', 'debit:scope-refund-replay', 10, 'return', $at);
+    });
+
+    $lotCount = RewardPointLot::query()->count();
+
+    foreach (['refund:scope-refund-replay', 'refund:scope-refund-foreign-new'] as $key) {
+        expect(fn () => OwnerContext::withOwner(
+            $ownerB,
+            static fn (): array => RefundRewardPointsAction::run($key, 'debit:scope-refund-replay', 10, 'return', $at),
+        ))->toThrow(AuthorizationException::class);
+    }
+
+    expect(RewardPointLot::query()->count())->toBe($lotCount);
+
+    $replay = OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => RefundRewardPointsAction::run('refund:scope-refund-replay', 'debit:scope-refund-replay', 10, 'return', $at),
+    );
+
+    expect($replay)->toHaveCount(1)
+        ->and(RewardPointLot::query()->count())->toBe($lotCount);
+});
+
+it('refuses spending reserving capturing releasing and replaying foreign program points', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $family = $program->family_key;
+
+    OwnerContext::withOwner($owner, static function () use ($program, $recipient, $at, $family): void {
+        CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, $at, null, null, (string) $program->getKey(), 'credit:owner-ledger');
+        DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 10, 'debit:owner-ledger', 'spend', null, $at);
+        ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'reserve:owner-ledger', 'hold', $at);
+    });
+
+    $before = RewardPointMovement::query()->count();
+
+    OwnerContext::withOwner($other, static function () use ($recipient, $family, $at): void {
+        foreach (['debit:owner-ledger', 'debit:foreign-ledger'] as $key) {
+            expect(fn () => DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 10, $key, 'spend', null, $at))
+                ->toThrow(AuthorizationException::class);
+        }
+
+        foreach (['reserve:owner-ledger', 'reserve:foreign-ledger'] as $key) {
+            expect(fn () => ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 20, $key, 'hold', $at))
+                ->toThrow(AuthorizationException::class);
+        }
+
+        expect(fn () => DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'capture:foreign-ledger', 'capture', 'reserve:owner-ledger', $at))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    expect(RewardPointMovement::query()->count())->toBe($before);
+
+    expect(OwnerContext::withOwner($owner, static fn (): array => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at)))
+        ->toHaveCount(1);
+
+    expect(fn () => OwnerContext::withOwner($other, static fn (): array => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at)))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('refuses foreign balance reads and reservation submission transitions', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $family = $program->family_key;
+    $reservation = 'reserve:scope-handoff';
+
+    OwnerContext::withOwner($owner, static function () use ($program, $recipient, $family, $reservation, $at): void {
+        CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, $at, null, null, (string) $program->getKey(), 'credit:scope-handoff');
+        ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 10, $reservation, 'hold', $at);
+
+        expect(RewardPointLedger::balancesFor('user', $recipient, $family, 'pts', $at)->available)->toBe(40);
+        MarkRewardReservationSubmittedAction::run($reservation, 'sending', 'scope-handoff-ref', $at);
+    });
+
+    OwnerContext::withOwner($other, static function () use ($recipient, $family, $reservation, $at): void {
+        expect(fn () => RewardPointLedger::balancesFor('user', $recipient, $family, 'pts', $at))
+            ->toThrow(AuthorizationException::class);
+
+        foreach (['sending', 'submitted', 'delivered', 'failed'] as $status) {
+            expect(fn () => MarkRewardReservationSubmittedAction::run($reservation, $status, 'scope-handoff-ref', $at))
+                ->toThrow(AuthorizationException::class);
+        }
+    });
+
+    expect(RewardPointReservationSubmission::query()->where('reservation_key', $reservation)->value('status'))->toBe('sending');
+
+    OwnerContext::withOwner($owner, static function () use ($reservation, $at): void {
+        MarkRewardReservationSubmittedAction::run($reservation, 'failed', 'scope-handoff-ref', $at);
+    });
+
+    expect(RewardPointReservationSubmission::query()->where('reservation_key', $reservation)->value('status'))->toBe('failed');
+});
+
+it('expires only the current owner lots in a scoped sweep and all owners in system context', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $expiry = $at->addDay();
+    $family = 'expiry-family';
+
+    foreach ([$owner, $other] as $index => $tenant) {
+        OwnerContext::withOwner($tenant, static function () use ($recipient, $at, $expiry, $family, $index): void {
+            $program = RewardProgram::factory()->create(['family_key' => $family . '-' . $index]);
+            CreditRewardPointsAction::run('user', $recipient, $program->family_key, 'pts', 50, $at, $expiry, null, (string) $program->getKey(), 'credit:expiry-owner-' . $index);
+        });
+    }
+
+    $sweep = app(ExpireDueRewardPointLotsAction::class);
+
+    expect(fn () => OwnerContext::withOwner(
+        $owner,
+        static fn (): array => ExpireRewardPointsAction::run('user', $recipient, $family . '-1', 'pts', $expiry),
+    ))->toThrow(AuthorizationException::class);
+
+    expect(OwnerContext::withOwner($owner, static fn (): array => $sweep->handle($expiry))['movements'])->toBe(1)
+        ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(1);
+
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
+
+    expect($sweep->handle($expiry)['movements'])->toBe(1)
+        ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(2)
+        ->and($sweep->handle($expiry)['movements'])->toBe(0);
+});
+
+it('batch validates linked awards while rejecting foreign provenance', function (): void {
+    [$ownerA, $ownerB, , , , $award] = guardCrossTenantFixture('guard-batch-awards');
+
+    $awards = app(RewardAwardLockApi::class);
+    $awardId = (string) $award->getKey();
+    $missingId = (string) Str::uuid();
+
+    OwnerContext::withOwner($ownerA, function () use ($awards, $awardId, $missingId): void {
+        $awards->assertAwardsInScopeWhenExist([$awardId, $missingId, $awardId]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($awards, $missingId): void {
+        $awards->assertAwardsInScopeWhenExist([]);
+        $awards->assertAwardsInScopeWhenExist([$missingId]);
+    });
+
+    expect(fn () => OwnerContext::withOwner(
+        $ownerB,
+        fn () => $awards->assertAwardsInScopeWhenExist([$missingId, $awardId]),
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('bounds program directory searches and treats wildcard characters literally within the owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $literal = OwnerContext::withOwner($owner, static function (): RewardProgram {
+        RewardProgram::factory()->count(26)->create(['title' => 'Directory ordinary']);
+        RewardProgram::factory()->create(['title' => 'Directory 100Xabc']);
+
+        return RewardProgram::factory()->create(['title' => 'Directory 100%_literal']);
+    });
+
+    $foreign = OwnerContext::withOwner($other, static fn (): RewardProgram => RewardProgram::factory()->create(['title' => 'Directory 100%_foreign']));
+    $directory = app(RewardProgramDirectoryApi::class);
+
+    OwnerContext::withOwner($owner, static function () use ($directory, $literal, $foreign): void {
+        expect($directory->options('Directory'))->toHaveCount(25)
+            ->and($directory->options('100%_'))->toBe([(string) $literal->getKey() => $literal->title])
+            ->and($directory->title((string) $foreign->getKey()))->toBeNull();
+    });
 });

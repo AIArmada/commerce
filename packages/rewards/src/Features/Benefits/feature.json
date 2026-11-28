@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "Benefits",
+  "owns": {
+    "table:reward_benefit_items": [
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\CreateRewardBenefitItemAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\RetireRewardBenefitItemAction"
+    ],
+    "table:reward_benefit_grants": [
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\CancelRewardBenefitGrantAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\ConsumeRewardBenefitAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\ExpireRewardBenefitGrantAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\FulfillRewardBenefitAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\RecordRewardBenefitRecallAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\RedeemRewardBenefitAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\RevokeRewardBenefitGrantAction",
+      "AIArmada\\Rewards\\Features\\Benefits\\Actions\\RewardBenefitCatalogService"
+    ],
+    "table:reward_benefit_stock_movements": [
+      "AIArmada\\Rewards\\Features\\Benefits\\Persistence\\RewardBenefitStockLedger"
+    ]
+  },
+  "extensions": {}
+}

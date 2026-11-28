@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Data\RewardCouponGrant;
+use AIArmada\Rewards\Data\RewardCouponTerms;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -25,18 +26,18 @@ final class FakeRewardBenefitCouponFulfillment implements RewardBenefitCouponFul
     /** @var array<string, bool> code => revoked */
     public array $revoked = [];
 
-    public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
+    public function issue(RewardCouponGrant $grant, RewardCouponTerms $item, CarbonImmutable $decided): string
     {
-        $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grant_key), 0, 12));
+        $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grantKey), 0, 12));
 
-        $this->issued[(string) $grant->grant_key] = $code;
+        $this->issued[(string) $grant->grantKey] = $code;
 
         return $code;
     }
 
-    public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
+    public function assertCanonicalUsage(RewardCouponGrant $grant, array $useEvidence): void
     {
-        $code = $this->issued[(string) $grant->grant_key] ?? null;
+        $code = $this->issued[(string) $grant->grantKey] ?? null;
 
         if ($code === null) {
             throw new InvalidArgumentException('No coupon was issued for this grant.');
@@ -53,9 +54,9 @@ final class FakeRewardBenefitCouponFulfillment implements RewardBenefitCouponFul
         }
     }
 
-    public function revoke(RewardBenefitGrant $grant): void
+    public function revoke(RewardCouponGrant $grant): void
     {
-        $code = $this->issued[(string) $grant->grant_key] ?? null;
+        $code = $this->issued[(string) $grant->grantKey] ?? null;
 
         if ($code === null) {
             throw new InvalidArgumentException('No coupon was issued for this grant.');

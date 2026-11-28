@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
-use AIArmada\Rewards\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

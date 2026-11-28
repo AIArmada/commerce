@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\CancelRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\ConsumeRewardBenefitAction;
-use AIArmada\Rewards\Actions\ExpireRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\FulfillRewardBenefitAction;
-use AIArmada\Rewards\Actions\RecordRewardBenefitRecallAction;
-use AIArmada\Rewards\Actions\RevokeRewardBenefitGrantAction;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Actions\CancelRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ExpireRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RecordRewardBenefitRecallAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitDirectoryApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -22,6 +22,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -35,7 +37,7 @@ class RewardBenefitGrantsTable
                 TextColumn::make('grant_key')->label('Grant')->searchable(),
                 TextColumn::make('item_title')
                     ->label('Benefit')
-                    ->state(fn (RewardBenefitGrant $record): string => (string) (RewardBenefitItem::query()->whereKey((string) $record->item_id)->value('title') ?? $record->item_id)),
+                    ->state(fn (RewardBenefitGrant $record): string => (string) (app(RewardBenefitDirectoryApi::class)->title((string) $record->item_id) ?? $record->item_id)),
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(fn (RewardBenefitGrant $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id))
@@ -50,6 +52,7 @@ class RewardBenefitGrantsTable
                     'reserved' => 'Reserved',
                     'issued' => 'Issued',
                     'consumed' => 'Consumed',
+                    'cancelled' => 'Cancelled',
                     'revoked' => 'Revoked',
                     'expired' => 'Expired',
                 ]),
@@ -67,9 +70,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, FulfillRewardBenefitAction $fulfill): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('fulfill', $record), 403);
 
                         try {
-                            $fulfill->handle($record, array_filter(['handoff_reference' => (string) ($data['handoff_reference'] ?? '')]), 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $fulfill->handle($record, array_filter(['handoff_reference' => (string) ($data['handoff_reference'] ?? '')]), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['handoff_reference' => $exception->getMessage()]);
                         }
@@ -90,9 +94,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, ConsumeRewardBenefitAction $consume): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('consume', $record), 403);
 
                         try {
-                            $consume->handle($record, array_filter($data), 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $consume->handle($record, array_filter($data), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['use_reference' => $exception->getMessage()]);
                         }
@@ -111,9 +116,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, CancelRewardBenefitGrantAction $cancel): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('cancel', $record), 403);
 
                         try {
-                            $cancel->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $cancel->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -133,9 +139,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, RecordRewardBenefitRecallAction $recall): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('recordRecall', $record), 403);
 
                         try {
-                            $recall->handle($record, (string) $data['recall_reference'], 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $recall->handle($record, (string) $data['recall_reference'], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['recall_reference' => $exception->getMessage()]);
                         }
@@ -154,9 +161,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, RevokeRewardBenefitGrantAction $revoke): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('revoke', $record), 403);
 
                         try {
-                            $revoke->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $revoke->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -174,9 +182,10 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, ExpireRewardBenefitGrantAction $expire): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('expire', $record), 403);
 
                         try {
-                            $expire->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $expire->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             Notification::make()->title('Expiry refused')->body($exception->getMessage())->danger()->send();
 

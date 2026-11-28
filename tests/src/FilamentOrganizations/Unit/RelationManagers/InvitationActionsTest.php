@@ -71,7 +71,7 @@ it('hides revoke for settled invitations', function (): void {
 
     $pending = app(InviteMemberAction::class)->handle($org, 'pending-one@example.com', MemberRole::Viewer, $owner);
     $revoked = app(InviteMemberAction::class)->handle($org, 'settled-one@example.com', MemberRole::Viewer, $owner);
-    $revoked->transitionStatus(InvitationStatus::Revoked, $owner);
+    $revoked->transitionTo(InvitationStatus::Revoked, $owner)->save();
     $revoked->save();
 
     expect(invitationAction('revoke', $manager)->record($pending)->isVisible())->toBeTrue()

@@ -35,7 +35,7 @@ The program is the tenant boundary. Global (owner-less) programs are platform pr
 Ownership is enforced on host request paths. System paths (queued jobs,
 correction sweeps, artisan commands) run without an ambient owner by
 design and enter each program's owner themselves via
-`RewardProgramGuard::withProgramOwner()`; a `null` owner tuple is treated
+`app(RewardProgramLockApi::class)->withProgramOwner()`; a `null` owner tuple is treated
 as the explicit-global context.
 
 That fan-out applies only when **no** owner is resolved. When an owner is

@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Rewards\Actions\ConsumeRewardBenefitAction;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Actions\FulfillRewardBenefitAction;
-use AIArmada\Rewards\Actions\RevokeRewardBenefitGrantAction;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -25,7 +25,7 @@ function couponHarness(string $prefix): array
     $recipient = User::factory()->create();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'coupon-' . $prefix,
         'Coupon benefit',
         ['Member account in good standing'],

@@ -7,7 +7,9 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Persistence\MembershipUniqueViolation;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
+use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +24,12 @@ final class AddMemberAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly MembershipMembersQuery $members,
+        private readonly MembershipSubjectGuard $subjectGuard,
+        private readonly SyncMembershipRolesAction $roleSync,
+    ) {}
+
     /**
      * Pivot id-column presence by connection and table. Pivot schemas are
      * deploy-time constants, so this never varies within a worker lifecycle.
@@ -32,12 +40,19 @@ final class AddMemberAction
 
     public function handle(Model $subject, Model $user, MemberRole $role): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
-        /** @phpstan-ignore method.notFound */
-        $existingMember = $subject->members()->whereKey($user->getKey())->first();
+        DB::transaction(function () use ($subject, $user, $role): void {
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-        $this->persist($subject, $user, $role, $existingMember);
+            $existingMember = $this->members->find($subject, $user);
+
+            $this->persist($subject, $user, $role, $existingMember, false);
+        });
+
+        if (app()->bound(MembershipHook::class)) {
+            $this->notifyAdded($subject, $user, $role);
+        }
     }
 
     /**
@@ -47,7 +62,7 @@ final class AddMemberAction
      */
     public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
         $this->persist($subject, $user, $role, $existingMember, $notifyAdded);
     }
@@ -59,14 +74,19 @@ final class AddMemberAction
 
     private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
-        /** @phpstan-ignore property.notFound */
-        $existingRole = $existingMember?->pivot?->role;
+        $relation = $this->members->relationForMember($subject, $user);
+
+        if ($existingMember !== null && ! $existingMember->is($user)) {
+            throw new InvalidArgumentException('The resolved membership does not match the requested user.');
+        }
+
+        $existingRole = $this->members->role($existingMember);
         $membershipTable = $this->membershipTable($subject);
 
         try {
-            DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $role, $subject, $user): void {
+            DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $relation, $role, $subject, $user): void {
                 if ($subject instanceof MembershipMutationGuard) {
-                    $subject->assertMemberCanBeAdded($user, $role, $existingMember);
+                    $subject->assertMemberCanBeAdded(MembershipIdentityMapper::fromModel($user), $role->value, MemberRole::fromSpatieRoleName((string) $existingRole)?->value);
                 }
 
                 $pivotData = [
@@ -81,8 +101,7 @@ final class AddMemberAction
                     }
                 }
 
-                /** @phpstan-ignore method.notFound */
-                $subject->members()->syncWithoutDetaching([
+                $relation->syncWithoutDetaching([
                     $user->getKey() => $pivotData,
                 ]);
 
@@ -91,10 +110,10 @@ final class AddMemberAction
                     : null;
 
                 if ($oldRole !== null && $oldRole !== $role) {
-                    app(MembershipRoleSyncService::class)->revokeFromUser($subject, $user, $oldRole);
+                    $this->roleSync->revokeFromUser($subject, $user, $oldRole);
                 }
 
-                app(MembershipRoleSyncService::class)->assignToUser($subject, $user, $role);
+                $this->roleSync->assignToUser($subject, $user, $role);
             });
         } catch (QueryException $exception) {
             if (! $this->isMembershipUniquenessViolation($exception, $membershipTable)) {
@@ -105,13 +124,23 @@ final class AddMemberAction
         }
 
         if ($notifyAdded && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
+            $this->notifyAdded($subject, $user, $role);
         }
+    }
+
+    private function notifyAdded(Model $subject, Model $user, MemberRole $role): void
+    {
+        $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+        $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+        DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $role): void {
+            app(MembershipHook::class)->onMemberAdded($subjectIdentity, $userIdentity, $role->value);
+        });
     }
 
     private function pivotHasIdColumn(Model $subject, string $membershipTable): bool
     {
-        $key = ($subject->getConnectionName() ?? 'default') . '.' . $membershipTable;
+        $key = $subject->getConnection()->getName() . '.' . $subject->getConnection()->getDatabaseName() . '.' . $membershipTable;
 
         return self::$pivotIdColumnCache[$key] ??= $subject->getConnection()
             ->getSchemaBuilder()
@@ -134,7 +163,7 @@ final class AddMemberAction
     {
         $message = mb_strtolower($exception->getMessage());
 
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
+        return MembershipUniqueViolation::matches($exception)
             && (str_contains($message, mb_strtolower($membershipTable))
                 || str_contains($message, 'organization_id') && str_contains($message, 'user_id'));
     }

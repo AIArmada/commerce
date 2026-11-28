@@ -2,31 +2,33 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\CancelRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ReconcileRewardPayoutAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardBudgetMovement;
-use AIArmada\Rewards\Models\RewardPayee;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\CancelRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
+use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Rewards\Tests\Ledgers\Support\ScriptedPayoutExecutor;
@@ -42,15 +44,15 @@ function payoutHarness(string $prefix): array
     $staff = RewardLedgerFixtures::staffId();
     $enrolledAt = CarbonImmutable::parse('2026-06-10T00:00:00Z');
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', $enrolledAt);
     RecordRewardFundingSourceAction::run('src-' . $prefix, 'MYR', 100000, 'user', $staff, 'staff');
-    RecordRewardFundingAction::run($program, 'MYR', 100000, 'src-' . $prefix, 'user', $staff, 'staff');
+    RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 100000, 'src-' . $prefix, 'user', $staff, 'staff');
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-' . $prefix . '-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -102,7 +104,7 @@ it('submits manual payouts as submitted and confirms them with spend', function 
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-1');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -139,11 +141,27 @@ it('submits manual payouts as submitted and confirms them with spend', function 
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe(0);
 });
 
+it('refuses a payout request replay with changed frozen fee responsibility', function (): void {
+    [$program, $award, $memberId, $staff] = payoutHarness('pay-replay-terms');
+    $awardId = (string) $award->getKey();
+    $payee = RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail();
+
+    $first = RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'program', 'user', $staff, 'staff');
+    $replay = RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'program', 'user', $staff, 'staff');
+
+    expect($replay->getKey())->toBe($first->getKey());
+
+    expect(fn () => RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'recipient', 'user', $staff, 'staff'))
+        ->toThrow(InvalidArgumentException::class, 'different frozen terms');
+
+    expect(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe((int) $first->amount_minor);
+});
+
 it('cancels requested payouts directly with release', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-2');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -162,7 +180,7 @@ it('reconciles submitted manual payouts as evidence-only', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-3');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -188,7 +206,7 @@ it('maps executor outcomes honestly without duplicating money', function (): voi
     ]));
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -244,7 +262,7 @@ it('refuses recipient-owned payout submission and cancellation', function (): vo
     [$program, $award, $memberId, $staff] = payoutHarness('pay-own-1');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -260,4 +278,94 @@ it('refuses recipient-owned payout submission and cancellation', function (): vo
         ->toThrow(InvalidArgumentException::class, 'Recipient-owned payout cancellation is prohibited.');
 
     expect($request->refresh()->status)->toBe(RewardPayoutRequestStatus::Requested);
+});
+
+it('refuses stale or mismatched payee registrations without replacing the current destination', function (): void {
+    $memberId = (string) Str::uuid();
+    $staff = RewardLedgerFixtures::staffId();
+
+    $verified = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-live', 'Live destination', 'user', $staff, 'staff');
+    $old = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $memberId, 'member');
+    $current = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $memberId, 'member');
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'manual',
+        'acct-old',
+        'Old registration',
+        'user',
+        $staff,
+        'staff',
+        ['verified_from_registration_id' => (string) $old->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'manual',
+        'acct-old',
+        'Old registration',
+        'user',
+        $staff,
+        'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect($verified->refresh()->status)->toBe(RewardPayeeStatus::Verified)
+        ->and($old->refresh()->status)->toBe(RewardPayeeStatus::Superseded)
+        ->and($current->refresh()->status)->toBe(RewardPayeeStatus::Pending)
+        ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(3);
+
+    $replacement = VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'manual',
+        'acct-new',
+        'Current registration',
+        'user',
+        $staff,
+        'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    );
+
+    expect($replacement->status)->toBe(RewardPayeeStatus::Verified)
+        ->and($verified->refresh()->status)->toBe(RewardPayeeStatus::Superseded)
+        ->and($current->refresh()->status)->toBe(RewardPayeeStatus::Superseded);
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'manual',
+        'acct-new',
+        'Current registration',
+        'user',
+        $staff,
+        'staff',
+        ['verified_from_registration_id' => (string) $current->getKey()],
+    ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
+
+    expect($replacement->refresh()->status)->toBe(RewardPayeeStatus::Verified)
+        ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(4);
+});
+
+it('selects only verified payees belonging to the scoped award recipient', function (): void {
+    [, $award, $memberId, $staff] = payoutHarness('pay-select');
+    $awardId = (string) $award->getKey();
+    $verified = RewardPayee::query()->where('recipient_id', $memberId)->where('status', RewardPayeeStatus::Verified)->firstOrFail();
+    $pending = RewardPayee::factory()->create(['recipient_id' => $memberId]);
+    $foreign = RewardPayee::factory()->create([
+        'recipient_id' => (string) Str::uuid(),
+        'status' => RewardPayeeStatus::Verified,
+        'verified_at' => now(),
+        'verified_by' => $staff,
+    ]);
+
+    $selection = app(RewardPayeeSelectionApi::class);
+
+    expect($selection->optionsForAward($awardId))->toBe([(string) $verified->getKey() => 'manual — Manual handoff'])
+        ->and($selection->methodForAward($awardId, (string) $verified->getKey()))->toBe('manual')
+        ->and($selection->methodForAward($awardId, (string) $pending->getKey()))->toBeNull()
+        ->and($selection->methodForAward($awardId, (string) $foreign->getKey()))->toBeNull()
+        ->and($selection->optionsForAward((string) Str::uuid()))->toBe([]);
 });

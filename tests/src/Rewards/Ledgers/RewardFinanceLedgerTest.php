@@ -6,47 +6,47 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\OpenRewardRecoveryAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
-use AIArmada\Rewards\Actions\RejectRewardPayeeAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\ReverseRewardFulfillmentAction;
-use AIArmada\Rewards\Actions\SettleRewardRecoveryAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
-use AIArmada\Rewards\Actions\WriteOffRewardRecoveryAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardPayoutInstruction;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Drivers\NullRewardPayoutExecutor;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Jobs\EvaluateRewardEntitlementJob;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardRecovery;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardPayoutExecutor;
-use AIArmada\Rewards\Support\PointLedgerRewardReservationResolver;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ReverseRewardFulfillmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RejectRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Queries\PointLedgerRewardReservationResolver;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Support\RewardPublishAssembler;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -54,6 +54,7 @@ use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Rewards\Tests\Ledgers\Support\ScriptedPayoutExecutor;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function financeLedgerProgram(string $prefix, int $fundedMinor = 10000): array
@@ -73,7 +74,7 @@ function financeLedgerProgram(string $prefix, int $fundedMinor = 10000): array
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         $fundedMinor,
         'TREASURY-' . $prefix,
@@ -148,10 +149,10 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -160,7 +161,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     $reader->seed(RewardLedgerFixtures::fact('src-fin-cashrec-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -197,7 +198,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     );
 
     $request = RequestRewardPayoutAction::run(
-        $approved,
+        (string) $approved->getKey(),
         $payee,
         'manual',
         'program',
@@ -285,7 +286,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
 
     $settled = SettleRewardRecoveryAction::run(
         $recovery,
-        ['recovery_proof' => 'BANK-RETURN-1'],
+        ['recovery_proof' => ' BANK-RETURN-1 ', 'actor_id' => 'forged'],
         'user',
         $staff,
         'staff',
@@ -293,6 +294,8 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     );
 
     expect($settled->status)->toBe(RewardRecoveryStatus::Settled)
+        ->and($settled->evidence['settlement']['recovery_proof'])->toBe('BANK-RETURN-1')
+        ->and($settled->evidence['settlement']['actor_id'])->toBe($staff)
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR'))
         ->toBe(['funded' => 10000, 'reserved' => 0, 'net_spent' => 0, 'available' => 10000]);
 
@@ -320,7 +323,8 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
         CarbonImmutable::parse('2026-06-23T00:00:00Z'),
     );
 
-    expect($written->status)->toBe(RewardRecoveryStatus::WrittenOff);
+    expect($written->status)->toBe(RewardRecoveryStatus::WrittenOff)
+        ->and($written->evidence['writeoff']['actor_id'])->toBe($staff);
 });
 
 it('expires due point lots through the operator command, idempotently', function (): void {
@@ -388,7 +392,21 @@ it('refuses an unparseable expiry timestamp', function (): void {
 });
 
 it('fails closed when no payout executor is bound', function (): void {
-    $request = new RewardPayoutRequest;
+    $request = new RewardPayoutInstruction(
+        id: 'request',
+        awardId: 'award',
+        programId: 'program',
+        payeeId: 'payee',
+        currency: 'MYR',
+        amountMinor: 100,
+        feeMinor: 0,
+        feePayer: 'program',
+        processor: 'manual',
+        operationKey: 'operation',
+        firstReference: 'reference',
+        payeeSnapshot: [],
+        status: 'approved',
+    );
     $executor = new NullRewardPayoutExecutor;
 
     expect(fn () => $executor->submit($request))->toThrow(InvalidArgumentException::class, 'no RewardPayoutExecutor is bound')
@@ -510,10 +528,10 @@ it('freezes recovery economics at opening time', function (): void {
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -522,7 +540,7 @@ it('freezes recovery economics at opening time', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-fin-frozen-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -550,4 +568,28 @@ it('freezes recovery economics at opening time', function (): void {
 
     expect(fn () => $recovery->forceFill(['amount_minor' => 1])->save())
         ->toThrow(LogicException::class, 'frozen at opening time');
+});
+
+it('reads a currency budget in one statement with a consistent zero balance for an unused program', function (): void {
+    app()->bind(RewardReadinessChecker::class, FundedRewardReadinessChecker::class);
+    app()->bind(RewardFinancialReadinessChecker::class, FundedRewardFinancialReadinessChecker::class);
+
+    [$program] = financeLedgerProgram('single-budget-read');
+    $id = (string) $program->getKey();
+
+    $connection = DB::connection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $balances = RewardBudgetLedger::balances($id, ' myr ');
+        expect($balances)->toBe(['funded' => 10000, 'reserved' => 0, 'net_spent' => 0, 'available' => 10000])
+            ->and($connection->getQueryLog())->toHaveCount(1);
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
+
+    expect(RewardBudgetLedger::balances((string) Str::uuid(), 'MYR'))
+        ->toBe(['funded' => 0, 'reserved' => 0, 'net_spent' => 0, 'available' => 0]);
 });

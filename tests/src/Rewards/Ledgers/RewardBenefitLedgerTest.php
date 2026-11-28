@@ -2,33 +2,34 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\CancelRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\ConsumeRewardBenefitAction;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ExpireRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\FulfillRewardBenefitAction;
-use AIArmada\Rewards\Actions\RecordRewardBenefitRecallAction;
-use AIArmada\Rewards\Actions\RedeemRewardBenefitAction;
-use AIArmada\Rewards\Actions\RetireRewardBenefitItemAction;
-use AIArmada\Rewards\Actions\RevokeRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\RewardBenefitStockLedger;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Benefits\Actions\CancelRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ExpireRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RecordRewardBenefitRecallAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RedeemRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -48,10 +49,10 @@ function benefitLedgerFundedMember($program, $version, int $points): array
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -88,7 +89,7 @@ it('creates and retires catalog items with frozen terms', function (): void {
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'ebook-credit',
         'E-book credit',
         ['Good standing'],
@@ -105,7 +106,7 @@ it('creates and retires catalog items with frozen terms', function (): void {
         ->and(RewardBenefitStockLedger::balances($item)['available'])->toBe(10);
 
     expect(fn () => CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'bad-both',
         'Bad',
         ['x'],
@@ -130,7 +131,7 @@ it('redeems, fulfills, and consumes a point-funded benefit exactly', function ()
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'workshop-seat',
         'Workshop seat',
         ['Good standing'],
@@ -193,7 +194,7 @@ it('cancels a pending redemption and restores exactly once', function (): void {
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'merch-pack',
         'Merch pack',
         ['Good standing'],
@@ -242,7 +243,7 @@ it('revokes an unused issued grant and refuses revocation after use', function (
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'course-seat',
         'Course seat',
         ['Good standing'],
@@ -357,7 +358,7 @@ it('expires reserved grants past the catalog expiry and restores points and stoc
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'season-pass',
         'Season pass',
         ['Good standing'],
@@ -421,7 +422,7 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     ))->toThrow(InvalidArgumentException::class, 'benefit-catalog-unavailable');
 
     CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'welcome-credit',
         'Welcome credit',
         ['Member account in good standing', 'One redemption per award'],
@@ -439,10 +440,10 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -451,7 +452,7 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     $reader->seed(RewardLedgerFixtures::fact('src-ben-direct-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Benefit,
         'user',
         $memberId,
@@ -487,4 +488,52 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     );
 
     expect($fulfilled->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('rejects a stock movement replay against a different catalog item', function (): void {
+    [$program] = benefitLedgerProgram('ben-stock-key');
+    $staff = RewardLedgerFixtures::staffId();
+    $first = CreateRewardBenefitItemAction::run((string) $program->getKey(), 'first-item', 'First', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $second = CreateRewardBenefitItemAction::run((string) $program->getKey(), 'second-item', 'Second', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $at = CarbonImmutable::now();
+
+    $movement = RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $first->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
+    );
+
+    $replay = RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $first->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
+    );
+
+    expect($replay->getKey())->toBe($movement->getKey());
+
+    expect(fn () => RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve,
+        'stock-key-collision',
+        (string) $second->getKey(),
+        1,
+        null,
+        'user',
+        $staff,
+        'staff',
+        $at,
+    ))->toThrow(InvalidArgumentException::class, 'different terms');
+
+    expect(RewardBenefitStockLedger::balances($second)['available'])->toBe(5);
 });

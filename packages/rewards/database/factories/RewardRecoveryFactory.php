@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

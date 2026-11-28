@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAdjustmentStatus;
-use AIArmada\Rewards\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

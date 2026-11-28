@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
-use AIArmada\Rewards\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

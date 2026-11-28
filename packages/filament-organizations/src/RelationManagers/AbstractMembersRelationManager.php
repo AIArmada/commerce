@@ -6,6 +6,7 @@ namespace AIArmada\FilamentOrganizations\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -14,7 +15,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Foundation\Auth\User;
 
 abstract class AbstractMembersRelationManager extends RelationManager
 {
@@ -92,7 +92,10 @@ abstract class AbstractMembersRelationManager extends RelationManager
 
     abstract protected function removeMember(Model $owner, Model $member): void;
 
-    protected function authorizeMutation(string $ability): void {}
+    protected function authorizeMutation(string $ability): void
+    {
+        abort(403);
+    }
 
     protected function afterMemberMutated(): void {}
 
@@ -101,16 +104,7 @@ abstract class AbstractMembersRelationManager extends RelationManager
      */
     protected function userModelClass(): string
     {
-        $configured = config('auth.providers.users.model');
-
-        if (is_string($configured) && class_exists($configured) && is_subclass_of($configured, Model::class)) {
-            return $configured;
-        }
-
-        /** @var class-string<Model> $fallback */
-        $fallback = User::class;
-
-        return $fallback;
+        return MembershipUserModel::resolve();
     }
 
     /**
@@ -187,6 +181,8 @@ abstract class AbstractMembersRelationManager extends RelationManager
      */
     protected function searchUsers(string $search): array
     {
+        $this->authorizeMutation('add');
+
         $trimmed = mb_trim($search);
         $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($trimmed));
         $userClass = $this->userModelClass();
@@ -209,7 +205,9 @@ abstract class AbstractMembersRelationManager extends RelationManager
 
     protected function getUserOptionLabel(mixed $value): ?string
     {
-        if (! is_string($value) || $value === '') {
+        $this->authorizeMutation('add');
+
+        if ((! is_string($value) && ! is_int($value)) || $value === '') {
             return null;
         }
 

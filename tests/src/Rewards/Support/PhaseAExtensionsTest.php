@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
+use AIArmada\Rewards\Drivers\CompositeRewardSourceFactReader;
+use AIArmada\Rewards\Drivers\VouchersRewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Fulfillment\VouchersRewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\CompositeRewardSourceFactReader;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Queries\RewardCouponMapper;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionResolver;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
-use AIArmada\Rewards\Support\RewardSourceFact;
-use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -128,6 +129,6 @@ test('vouchers reward benefit coupon fulfillment fails closed when voucher terms
         'reserved_at' => CarbonImmutable::now('UTC'),
     ]);
 
-    expect(fn () => (new VouchersRewardBenefitCouponFulfillment)->issue($grant, $item, CarbonImmutable::now('UTC')))
+    expect(fn () => (new VouchersRewardBenefitCouponFulfillment)->issue(RewardCouponMapper::grant($grant), RewardCouponMapper::terms($item), CarbonImmutable::now('UTC')))
         ->toThrow(InvalidArgumentException::class);
 });

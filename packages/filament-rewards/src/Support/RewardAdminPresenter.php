@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Support;
 
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use BackedEnum;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -209,13 +210,19 @@ final class RewardAdminPresenter
             return null;
         }
 
+        $id = $user->getAuthIdentifier();
+
+        if ((! is_string($id) && ! is_int($id)) || mb_trim((string) $id) === '') {
+            return null;
+        }
+
         if (method_exists($user, 'hasAnyRole')) {
             $roles = config('filament-rewards.staff_roles', ['super_admin', 'admin']);
 
             return $user->hasAnyRole(is_array($roles) ? $roles : ['super_admin', 'admin']) ? $user : null;
         }
 
-        return $user;
+        return $user instanceof Authorizable && Gate::forUser($user)->allows('reward-staff') ? $user : null;
     }
 
     public static function staffRole(): string
@@ -229,26 +236,25 @@ final class RewardAdminPresenter
         return 'staff';
     }
 
+    public static function canStewardFraud(): bool
+    {
+        $user = self::staffActor();
+
+        return $user instanceof Authorizable && Gate::forUser($user)->allows('reward-fraud-steward');
+    }
+
     public static function canDecideAward(mixed $award, string $ability): bool
     {
-        $user = auth()->user();
+        $user = self::staffActor();
 
-        if (! $user instanceof Authenticatable) {
-            return false;
-        }
-
-        return Gate::forUser($user)->allows($ability, $award);
+        return $user instanceof Authorizable && Gate::forUser($user)->allows($ability, $award);
     }
 
     public static function canOperatePayout(mixed $request, string $ability): bool
     {
-        $user = auth()->user();
+        $user = self::staffActor();
 
-        if (! $user instanceof Authenticatable) {
-            return false;
-        }
-
-        return Gate::forUser($user)->allows($ability, $request);
+        return $user instanceof Authorizable && Gate::forUser($user)->allows($ability, $request);
     }
 
     public static function recipientLabel(string $recipientType, string $recipientId): string

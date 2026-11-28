@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardPreviewDecision;
-use AIArmada\Rewards\Enums\RewardPreviewReason;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardPreviewDecision;
+use AIArmada\Rewards\Data\RewardPreviewReason;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
@@ -23,11 +24,11 @@ it('blocks new earning on rule-only material change while old references stay im
     $program = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     $memberId = (string) Str::uuid();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v1, 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v1->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
 
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $eligible = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-1',
@@ -58,7 +59,7 @@ it('blocks new earning on rule-only material change while old references stay im
     expect($v2->material_terms_hash)->not->toBe($v1->material_terms_hash);
 
     $stale = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-2',
@@ -78,15 +79,15 @@ it('blocks new earning on rule-only material change while old references stay im
 
     expect($stale->reasons)->toBe([RewardPreviewReason::AcceptanceStaleMaterialChange]);
 
-    $oldAcceptance = $program->enrollments()->where('member_id', $memberId)->first()->acceptances()->orderBy('seq')->first();
+    $oldAcceptance = RewardEnrollment::query()->where('program_id', $program->getKey())->where('member_id', $memberId)->first()->acceptances()->orderBy('seq')->first();
 
     expect($oldAcceptance->material_terms_hash)->toBe($v1->material_terms_hash)
         ->and($oldAcceptance->policy_version_id)->toBe((string) $v1->getKey());
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
 
     $fresh = PreviewRewardQualificationAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         [
             'source_business_key' => 'share-outcome:attendance:c1-3',

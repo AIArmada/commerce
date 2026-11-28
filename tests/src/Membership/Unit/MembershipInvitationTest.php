@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
@@ -132,7 +133,7 @@ it('does not accept an invitation after its expiry deadline', function (): void 
         'expires_at' => now()->subDay(),
     ]);
 
-    expect(fn () => $invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter))
+    expect(fn () => $invitation->transitionTo(InvitationStatus::Accepted, $this->inviter))
         ->toThrow(LogicException::class);
 
     expect($invitation->fresh())
@@ -151,7 +152,7 @@ it('records the actual expiration transition separately from the expiry deadline
     ]);
 
     expect($invitation->expired_at)->toBeNull()
-        ->and($invitation->expireIfDue())->toBeTrue();
+        ->and(ExpireMembershipInvitationAction::run($invitation))->toBeTrue();
 
     expect($invitation->fresh())
         ->status->toBe(InvitationStatus::Expired)
@@ -167,7 +168,7 @@ it('is not valid when accepted', function (): void {
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);
-    $invitation->transitionStatus(InvitationStatus::Accepted, $this->inviter);
+    $invitation->transitionTo(InvitationStatus::Accepted, $this->inviter)->save();
 
     expect($invitation->isValid())->toBeFalse();
 });
@@ -180,7 +181,23 @@ it('is not valid when revoked', function (): void {
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);
-    $invitation->transitionStatus(InvitationStatus::Revoked, $this->inviter);
+    $invitation->transitionTo(InvitationStatus::Revoked, $this->inviter)->save();
 
     expect($invitation->isValid())->toBeFalse();
+});
+
+it('is invalid at the exact expiry deadline', function (): void {
+    $this->freezeTime();
+
+    $invitation = $this->createInvitation([
+        'subject_type' => $this->subject->getMorphClass(),
+        'subject_id' => $this->subject->getKey(),
+        'recipient' => 'deadline@example.com',
+        'role' => 'admin',
+        'invited_by' => $this->inviter->getKey(),
+        'expires_at' => now(),
+    ]);
+
+    expect($invitation->isExpired())->toBeTrue()
+        ->and($invitation->isValid())->toBeFalse();
 });

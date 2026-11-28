@@ -4,21 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
-use AIArmada\Rewards\Models\RewardAppeal;
-use AIArmada\Rewards\Models\RewardAppealDecision;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardAwardEntry;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
-/**
- * Shared append-only entry writers and actor validation for ledger actions.
- *
- * Seq is assigned under the parent row lock (callers hold it); the unique
- * (parent, seq) constraint arbitrates any residual race. Entries are never
- * updated, so history cannot be rewritten by later decisions.
- */
 final class RewardLedgerEntries
 {
     /**
@@ -77,75 +65,5 @@ final class RewardLedgerEntries
         if ($reason === '' || mb_strlen($reason) > 191) {
             throw new InvalidArgumentException('Reason must be a non-empty string up to 191 characters.');
         }
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $evidence
-     */
-    public static function appendAwardEntry(
-        RewardAward $award,
-        string $fromStatus,
-        string $toStatus,
-        string $actorType,
-        ?string $actorId,
-        string $actorRole,
-        string $reason,
-        ?array $evidence,
-        ?string $sourceOperationId,
-        CarbonImmutable $decidedAt,
-    ): RewardAwardEntry {
-        $maxSeq = (int) (RewardAwardEntry::query()
-            ->where('award_id', $award->getKey())
-            ->orderByDesc('seq')
-            ->lockForUpdate()
-            ->value('seq') ?? 0);
-
-        return RewardAwardEntry::query()->create([
-            'award_id' => $award->getKey(),
-            'seq' => $maxSeq + 1,
-            'from_status' => $fromStatus,
-            'to_status' => $toStatus,
-            'actor_type' => $actorType,
-            'actor_id' => $actorId,
-            'actor_role' => $actorRole,
-            'reason' => $reason,
-            'evidence' => $evidence,
-            'source_operation_id' => $sourceOperationId,
-            'decided_at' => $decidedAt,
-        ]);
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $evidence
-     */
-    public static function appendAppealDecision(
-        RewardAppeal $appeal,
-        string $fromStatus,
-        string $toStatus,
-        string $actorType,
-        ?string $actorId,
-        string $actorRole,
-        string $reason,
-        ?array $evidence,
-        CarbonImmutable $decidedAt,
-    ): RewardAppealDecision {
-        $maxSeq = (int) (RewardAppealDecision::query()
-            ->where('appeal_id', $appeal->getKey())
-            ->orderByDesc('seq')
-            ->lockForUpdate()
-            ->value('seq') ?? 0);
-
-        return RewardAppealDecision::query()->create([
-            'appeal_id' => $appeal->getKey(),
-            'seq' => $maxSeq + 1,
-            'from_status' => $fromStatus,
-            'to_status' => $toStatus,
-            'actor_type' => $actorType,
-            'actor_id' => $actorId,
-            'actor_role' => $actorRole,
-            'reason' => $reason,
-            'evidence' => $evidence,
-            'decided_at' => $decidedAt,
-        ]);
     }
 }

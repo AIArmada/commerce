@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use InvalidArgumentException;
 
 /**
@@ -394,7 +394,7 @@ final class RewardRuleValidator
             }
             $roles = $validRoles;
 
-            $minimum = RewardVerificationLevel::tryFrom((string) ($variant['min_verification'] ?? ''));
+            $minimum = RewardVerificationLevel::tryFrom(is_string($variant['min_verification'] ?? null) ? $variant['min_verification'] : '');
             if (! $minimum instanceof RewardVerificationLevel) {
                 $errors[] = "Component variant [{$label}] min_verification must be a known verification level.";
             } elseif (in_array($component, [RewardComponent::Cash, RewardComponent::Benefit], true)
@@ -582,7 +582,7 @@ final class RewardRuleValidator
             }
         }
 
-        $minVerification = RewardVerificationLevel::tryFrom((string) ($eligibility['min_verification'] ?? ''));
+        $minVerification = RewardVerificationLevel::tryFrom(is_string($eligibility['min_verification'] ?? null) ? $eligibility['min_verification'] : '');
         if (! $minVerification instanceof RewardVerificationLevel) {
             $errors[] = 'Eligibility min_verification must be a known verification level.';
         } elseif ($this->componentsInvolveMoneyOrBenefit($components) && ! $minVerification->satisfies(RewardVerificationLevel::StaffVerified)) {
@@ -877,7 +877,7 @@ final class RewardRuleValidator
             }
 
             if (array_key_exists('min_verification', $definition)
-                && ! RewardVerificationLevel::tryFrom((string) $definition['min_verification']) instanceof RewardVerificationLevel
+                && ! RewardVerificationLevel::tryFrom(is_string($definition['min_verification']) ? $definition['min_verification'] : '') instanceof RewardVerificationLevel
             ) {
                 $errors[] = "Milestone [{$index}] min_verification must be a known verification level.";
             }
@@ -906,7 +906,7 @@ final class RewardRuleValidator
                 continue;
             }
 
-            $type = RewardComponent::tryFrom((string) ($reward['type'] ?? ''));
+            $type = RewardComponent::tryFrom(is_string($reward['type'] ?? null) ? $reward['type'] : '');
 
             if (! $type instanceof RewardComponent
                 || ! in_array($type, [RewardComponent::Recognition, RewardComponent::Points, RewardComponent::Badge], true)
@@ -937,7 +937,7 @@ final class RewardRuleValidator
                 continue;
             }
 
-            $enum = RewardComponent::tryFrom((string) ($component['type'] ?? ''));
+            $enum = RewardComponent::tryFrom(is_string($component['type'] ?? null) ? $component['type'] : '');
 
             if ($enum instanceof RewardComponent && $enum->requiresMoneyOrBenefitFulfillment()) {
                 return true;

@@ -7,7 +7,8 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
+use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -17,37 +18,48 @@ final class RemoveMemberAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly MembershipMembersQuery $members,
+        private readonly MembershipSubjectGuard $subjectGuard,
+        private readonly SyncMembershipRolesAction $roleSync,
+    ) {}
+
     public function handle(Model $subject, Model $user): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        $this->subjectGuard->validate($subject);
 
-        /** @phpstan-ignore method.notFound */
-        $member = $subject->members()->whereKey($user->getKey())->first();
+        $role = null;
+        $removed = DB::transaction(function () use ($subject, $user, &$role): bool {
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($member === null) {
-            return;
-        }
+            $member = $this->members->find($subject, $user);
 
-        /** @phpstan-ignore property.notFound */
-        $role = MemberRole::fromSpatieRoleName((string) $member->pivot?->role);
+            if ($member === null) {
+                return false;
+            }
 
-        DB::transaction(function () use ($member, $role, $subject, $user): void {
-            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->first();
+            $role = MemberRole::fromSpatieRoleName((string) $this->members->role($member));
 
             if ($subject instanceof MembershipMutationGuard) {
-                $subject->assertMemberCanBeRemoved($member);
+                $subject->assertMemberCanBeRemoved(MembershipIdentityMapper::fromModel($member), $role?->value);
             }
 
-            /** @phpstan-ignore method.notFound */
-            $subject->members()->detach($user->getKey());
+            $this->members->relation($subject)->detach($user->getKey());
 
             if ($role !== null) {
-                app(MembershipRoleSyncService::class)->revokeFromUser($subject, $user, $role);
+                $this->roleSync->revokeFromUser($subject, $user, $role);
             }
+
+            return true;
         });
 
-        if (app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberRemoved($subject, $user, $role);
+        if ($removed && app()->bound(MembershipHook::class)) {
+            $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+            $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+            DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $role): void {
+                app(MembershipHook::class)->onMemberRemoved($subjectIdentity, $userIdentity, $role?->value);
+            });
         }
     }
 }

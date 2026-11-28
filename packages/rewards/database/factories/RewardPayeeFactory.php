@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
-use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

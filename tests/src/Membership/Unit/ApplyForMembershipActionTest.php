@@ -5,11 +5,16 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\ApplyForMembershipAction;
+use AIArmada\Membership\Actions\CancelMembershipApplicationAction;
+use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
+use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -127,4 +132,66 @@ it('reuses a pending application for the same subject and applicant', function (
             ->count())->toBe(1);
 
     Event::assertDispatchedTimes(MembershipApplicationSubmitted::class, 1);
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    $notifier = Mockery::mock(MembershipApplicationNotifier::class);
+    $notifier->shouldNotReceive('notifySubmitted');
+    app()->instance(MembershipApplicationNotifier::class, $notifier);
+
+    DB::beginTransaction();
+
+    try {
+        ApplyForMembershipAction::make()->handle(subject: $this->subject, user: $this->user, justification: 'Rolled back application.');
+        Event::assertNotDispatched(MembershipApplicationSubmitted::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipApplicationSubmitted::class);
+    expect(MembershipApplication::query()->count())->toBe(0);
+});
+
+it('preserves repeated terminal applications while deduplicating pending applications', function (): void {
+    foreach ([ApplicationStatus::Rejected, ApplicationStatus::Cancelled, ApplicationStatus::Rejected, ApplicationStatus::Cancelled] as $status) {
+        $application = ApplyForMembershipAction::make()->handle($this->subject, $this->user, 'Application for membership.');
+
+        if ($status === ApplicationStatus::Rejected) {
+            RejectMembershipApplicationAction::make()->handle($application, $this->user);
+        } else {
+            CancelMembershipApplicationAction::make()->handle($application, $this->user);
+        }
+
+        expect($application->fresh()->status)->toBe($status);
+    }
+
+    $pending = ApplyForMembershipAction::make()->handle($this->subject, $this->user, 'Another application.');
+    $duplicate = ApplyForMembershipAction::make()->handle($this->subject, $this->user, 'Repeated application.');
+
+    expect($duplicate->is($pending))->toBeTrue()
+        ->and(MembershipApplication::query()->where('status', ApplicationStatus::Rejected)->count())->toBe(2)
+        ->and(MembershipApplication::query()->where('status', ApplicationStatus::Cancelled)->count())->toBe(2)
+        ->and(MembershipApplication::query()->where('status', ApplicationStatus::Pending)->count())->toBe(1);
+});
+
+it('enforces pending application uniqueness directly in the database', function (): void {
+    $pending = ApplyForMembershipAction::make()->handle($this->subject, $this->user, 'First pending application.');
+
+    expect(fn () => DB::transaction(fn () => $this->withMembershipOwner(fn () => $this->createMembershipApplication([
+        'subject_type' => $pending->subject_type,
+        'subject_id' => $pending->subject_id,
+        'applicant_id' => $pending->applicant_id,
+        'status' => ApplicationStatus::Pending,
+        'justification' => 'Direct duplicate.',
+    ]))))->toThrow(UniqueConstraintViolationException::class);
+});
+
+it('refuses applications attributed to a non-user model', function (): void {
+    expect(fn () => ApplyForMembershipAction::make()->handle(
+        subject: $this->subject,
+        user: $this->subject,
+        justification: 'Claiming this entity.',
+    ))->toThrow(InvalidArgumentException::class, 'The actor must be a persisted instance');
+
+    expect($this->subject->applications()->count())->toBe(0);
 });

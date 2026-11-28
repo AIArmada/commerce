@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Tests\Core\Support;
 
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

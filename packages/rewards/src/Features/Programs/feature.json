@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "Programs",
+  "owns": {
+    "table:reward_programs": [
+      "AIArmada\\Rewards\\Features\\Programs\\Actions\\CreateRewardProgramAction",
+      "AIArmada\\Rewards\\Features\\Programs\\Actions\\PublishRewardProgramVersionAction",
+      "AIArmada\\Rewards\\Features\\Programs\\Actions\\TransitionRewardProgramStatusAction"
+    ],
+    "table:reward_program_versions": [
+      "AIArmada\\Rewards\\Features\\Programs\\Actions\\PublishRewardProgramVersionAction"
+    ],
+    "table:reward_version_publications": [
+      "AIArmada\\Rewards\\Features\\Programs\\Actions\\PublishRewardProgramVersionAction"
+    ]
+  },
+  "extensions": {}
+}

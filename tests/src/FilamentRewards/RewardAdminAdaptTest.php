@@ -18,45 +18,50 @@ use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayo
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ListRewardPrograms;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardProgram;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Models\RewardAppeal;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardFundingEntry;
-use AIArmada\Rewards\Models\RewardPayee;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Models\RewardRecovery;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitDirectoryApi;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardDecisionHistoryApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Queries\RewardVersionReadinessMapper;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Exceptions\ActionNotResolvableException;
 use Filament\Notifications\Notification;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -82,7 +87,7 @@ function adminAdaptHeldAward(string $staffId, bool $suspect = false): RewardAwar
     );
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
-    EnrollRewardMemberAction::run($program->refresh(), 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact(
@@ -95,7 +100,7 @@ function adminAdaptHeldAward(string $staffId, bool $suspect = false): RewardAwar
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program->refresh(),
+        (string) $program->getKey(),
         RewardComponent::Recognition,
         'user',
         $memberId,
@@ -126,7 +131,7 @@ function adminAdaptCashSetup(string $staffId): array
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'TREASURY-admin-fin',
@@ -143,10 +148,10 @@ function adminAdaptCashSetup(string $staffId): array
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -156,7 +161,7 @@ function adminAdaptCashSetup(string $staffId): array
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -191,7 +196,7 @@ function adminAdaptCashSetup(string $staffId): array
     );
 
     $request = RequestRewardPayoutAction::run(
-        $approved,
+        (string) $approved->getKey(),
         $payee,
         'manual',
         'program',
@@ -222,7 +227,7 @@ function recordAdminAdaptFunding(RewardProgram $program, string $currency, int $
         $at,
     );
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         $currency,
         $amountMinor,
         $sourceRef,
@@ -485,6 +490,8 @@ it('lets staff decide an appeal from the appeals table', function (): void {
         ->assertHasNoTableActionErrors();
 
     expect($appeal->fresh()->status)->toBe(RewardAppealStatus::InReview);
+    $history = app(RewardDecisionHistoryApi::class)->appealHistory((string) $appeal->getKey());
+    expect(array_column($history, 'reason'))->toContain('Reviewing the held evidence.');
     expect(RewardAppeal::query()->whereKey($appeal->getKey())->value('status'))->toBe(RewardAppealStatus::InReview);
 });
 
@@ -536,7 +543,8 @@ it('renders finance tables and runs record, verify, and approve actions', functi
         ])
         ->assertHasNoTableActionErrors();
 
-    expect($request->fresh()->status->value)->toBe('approved');
+    expect($request->fresh()->status->value)->toBe('approved')
+        ->and($request->fresh()->evidence['approval_reason'])->toBe('Finance review passed; releasing to the payout queue.');
 });
 
 it('requires funding for every cash variant currency before activation', function (): void {
@@ -573,8 +581,8 @@ it('requires funding for every cash variant currency before activation', functio
 
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
-        $ready,
-        $ready->versions()->orderByDesc('version')->firstOrFail(),
+        (string) $ready->getKey(),
+        RewardVersionReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()
@@ -619,7 +627,7 @@ it('requires catalog items for every benefit variant key before activation', fun
     $staffId = RewardLedgerFixtures::staffId();
     $createBenefit = static function (string $key, string $label) use ($program, $staffId): void {
         CreateRewardBenefitItemAction::run(
-            $program,
+            (string) $program->getKey(),
             $key,
             $label,
             ['One verified use'],
@@ -636,8 +644,8 @@ it('requires catalog items for every benefit variant key before activation', fun
     $createBenefit('attendance-pack', 'Attendance Pack');
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
-        $ready,
-        $ready->versions()->orderByDesc('version')->firstOrFail(),
+        (string) $ready->getKey(),
+        RewardVersionReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()
@@ -656,7 +664,7 @@ it('renders catalog, recovery, fraud, and program tables', function (): void {
     $staffId = RewardLedgerFixtures::staffId();
 
     CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'welcome-credit',
         'Welcome credit',
         ['Good standing'],
@@ -706,10 +714,10 @@ it('scopes admin queries to programs visible in the current owner context', func
         ]);
 
         EnrollRewardMemberAction::run(
-            $program,
+            (string) $program->getKey(),
             'user',
             $memberId,
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             CarbonImmutable::parse('2026-06-10T00:00:00Z'),
         );
@@ -718,7 +726,7 @@ it('scopes admin queries to programs visible in the current owner context', func
         $reader->seed(RewardLedgerFixtures::fact('src-scope-admin-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Recognition,
             'user',
             $memberId,
@@ -730,15 +738,43 @@ it('scopes admin queries to programs visible in the current owner context', func
         $award = $result->award;
     });
 
+    $directory = app(RewardProgramDirectoryApi::class);
+    $programId = (string) $program->getKey();
+
+    OwnerContext::withOwner($owner, function () use ($directory, $program, $programId): void {
+        expect($directory->title($programId))->toBe($program->title)
+            ->and($directory->options()[$programId])->toBe($program->title)
+            ->and($directory->versionCount($programId))->toBe(1);
+    });
+
+    OwnerContext::withOwner($other, function () use ($directory, $programId): void {
+        expect($directory->title($programId))->toBeNull()
+            ->and(array_key_exists($programId, $directory->options()))->toBeFalse()
+            ->and($directory->versionCount($programId))->toBe(0)
+            ->and($directory->currentVersion($programId))->toBeNull();
+    });
+
     // Livewire test calls swap the request, which drops the withOwner()
     // override; rebind the resolver so each request resolves its owner.
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+    OwnerContext::withOwner($owner, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
-    Livewire::actingAs($owner)->test(ListRewardAwards::class)->assertCanSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertStatus(200)->assertCanSeeTableRecords([$award]);
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
+    OwnerContext::withOwner($other, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
-    Livewire::actingAs($other)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertStatus(200)->assertCanNotSeeTableRecords([$award]);
+
+    $history = app(RewardDecisionHistoryApi::class);
+
+    expect(OwnerContext::withOwner($owner, fn (): array => $history->awardHistory((string) $award->getKey())))->not->toBeEmpty();
+    expect(fn () => OwnerContext::withOwner($other, fn (): array => $history->awardHistory((string) $award->getKey())))
+        ->toThrow(AuthorizationException::class);
 });
 
 it('refuses settling a foreign recovery from the admin table', function (): void {
@@ -756,7 +792,7 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     $award = OwnerContext::withOwner(
         $owner,
         static fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -777,13 +813,16 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     );
 
     // Owner B's session invokes the settle table action on owner A's
-    // recovery. The recovery table query is award-scoped (RewardFilamentScope),
+    // recovery. The recovery table query is award-scoped (RewardProgramScopeQuery),
     // so the action cannot even resolve for a foreign row — and the
     // action-side guard in SettleRewardRecoveryAction remains the handler-level
     // boundary for any other caller (see RewardOwnerScopingTest).
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
+    OwnerContext::withOwner($other, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
-    expect(fn () => Livewire::actingAs($other)
+    expect(fn () => Livewire::actingAs($this->staff)
         ->test(ListRewardRecoveries::class)
         ->callTableAction('settle', $recovery->getKey(), data: [
             'recovery_proof' => 'BANK-RETURN-1',
@@ -853,7 +892,7 @@ it('requests and fulfills a cash award through the awards table', function (): v
         CarbonImmutable::parse('2026-06-02T00:00:00Z'),
     );
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'TREASURY-admin-reqful',
@@ -871,10 +910,10 @@ it('requests and fulfills a cash award through the awards table', function (): v
     $staffId = (string) $this->staff->getKey();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -884,7 +923,7 @@ it('requests and fulfills a cash award through the awards table', function (): v
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -966,4 +1005,23 @@ it('requests and fulfills a cash award through the awards table', function (): v
         ->assertHasNoTableActionErrors();
 
     expect($award->refresh()->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('restricts benefit directory lookups to the active program owner', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $item = OwnerContext::withOwner($owner, function (): RewardBenefitItem {
+        $program = RewardProgram::factory()->ofMode(RewardProgramMode::Benefit)->create();
+
+        return RewardBenefitItem::factory()->create([
+            'program_id' => $program->getKey(),
+            'title' => 'Scoped catalog item',
+        ]);
+    });
+
+    $directory = app(RewardBenefitDirectoryApi::class);
+
+    expect(OwnerContext::withOwner($owner, fn (): ?string => $directory->title((string) $item->getKey())))->toBe('Scoped catalog item')
+        ->and(OwnerContext::withOwner($other, fn (): ?string => $directory->title((string) $item->getKey())))->toBeNull();
 });

@@ -2,37 +2,37 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Actions\AppendRewardAdjustmentAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Support\RewardOperationKeys;
-use AIArmada\Rewards\Support\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -124,7 +124,7 @@ it('R1 derives fulfillment expiry from frozen terms and never silently perpetuat
     $reader->seed(RewardLedgerFixtures::fact('src-r1d-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -343,7 +343,7 @@ it('R4 records exact prior states through full award and appeal chains', functio
     $reader->seed(RewardLedgerFixtures::fact('src-r4-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -393,7 +393,7 @@ it('R5 refuses approval and fulfillment after source invalidation', function ():
     $reader->seed(RewardLedgerFixtures::fact('src-r5a-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -416,7 +416,7 @@ it('R5 refuses approval and fulfillment after source invalidation', function ():
     $reader2->seed(RewardLedgerFixtures::fact('src-r5b-1', $member2));
 
     $result2 = (new EvaluateRewardEntitlementAction($reader2))->handle(
-        $program2,
+        (string) $program2->getKey(),
         RewardComponent::Points,
         'user',
         $member2,
@@ -445,13 +445,13 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
     $programB = $programB->refresh();
 
     $versionB = $programB->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($programB, 'user', $memberId, $versionB, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $programB->getKey(), 'user', $memberId, (string) $versionB->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-r5c-1', $memberId));
 
     $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $programA,
+        (string) $programA->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -463,7 +463,7 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $second = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $programB,
+        (string) $programB->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -494,7 +494,7 @@ it('R5 keeps held approvals single-claim and single-cap', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-r5e-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -679,7 +679,7 @@ it('R5 refuses overturn when the frozen cap quota is exhausted', function (): vo
     $reader->seed(RewardLedgerFixtures::fact('src-r5f-2', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
     $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -691,7 +691,7 @@ it('R5 refuses overturn when the frozen cap quota is exhausted', function (): vo
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $second = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

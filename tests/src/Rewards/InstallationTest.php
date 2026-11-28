@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Commands\ApplyRewardSourceCorrectionsCommand;
-use AIArmada\Rewards\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
@@ -15,21 +13,24 @@ use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutExecutor;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutMethodCatalog;
+use AIArmada\Rewards\Drivers\MorphRewardRecipientResolver;
+use AIArmada\Rewards\Drivers\NullRewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Drivers\NullRewardCorrectionKeySource;
+use AIArmada\Rewards\Drivers\NullRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Drivers\NullRewardGratitudePlanner;
+use AIArmada\Rewards\Drivers\NullRewardReadinessChecker;
+use AIArmada\Rewards\Drivers\NullRewardReservationResolver;
+use AIArmada\Rewards\Drivers\NullRewardSourceFactReader;
+use AIArmada\Rewards\Features\Benefits\Actions\RewardBenefitCatalogService;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Platform\FeatureCatalog;
 use AIArmada\Rewards\RewardsServiceProvider;
-use AIArmada\Rewards\Support\ManualRewardPayoutExecutor;
-use AIArmada\Rewards\Support\ManualRewardPayoutMethodCatalog;
-use AIArmada\Rewards\Support\MorphRewardRecipientResolver;
-use AIArmada\Rewards\Support\NullRewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Support\NullRewardCorrectionKeySource;
-use AIArmada\Rewards\Support\NullRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardGratitudePlanner;
-use AIArmada\Rewards\Support\NullRewardReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardReservationResolver;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardBenefitCatalogService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 
@@ -104,4 +105,16 @@ test('artisan commands are registered', function (): void {
     )
         ->and(app(ApplyRewardSourceCorrectionsCommand::class))->toBeInstanceOf(ApplyRewardSourceCorrectionsCommand::class)
         ->and(app(ExpireRewardPointLotsCommand::class))->toBeInstanceOf(ExpireRewardPointLotsCommand::class);
+});
+
+it('declares exactly one feature owner for every default rewards table', function (): void {
+    $catalog = FeatureCatalog::scan(dirname(__DIR__, 3) . '/packages/rewards', 'AIArmada\\Rewards');
+    $tables = config('rewards.database.tables');
+
+    expect(array_keys($catalog['features']))->toHaveCount(7)
+        ->and(array_keys($catalog['owners']))->toHaveCount(count($tables));
+
+    foreach (array_keys($tables) as $key) {
+        expect($catalog['owners'])->toHaveKey('table:reward_' . $key);
+    }
 });

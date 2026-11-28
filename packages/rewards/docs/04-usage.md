@@ -9,11 +9,11 @@ All flows run through invokable actions (`lorisleiva/laravel-actions`). Every ex
 ## Create and activate a program
 
 ```php
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use Carbon\CarbonImmutable;
 
@@ -38,15 +38,15 @@ TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 ## Enroll a member and evaluate
 
 ```php
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 
-EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
+EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', $enrolledAt);
 
 $result = EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Recipient, $sourceBusinessKey, $occurredAt,
 );
 
@@ -70,18 +70,18 @@ The beneficiary role names *which identity on the fact earns* and decides whethe
 | `Staff` | fact's actor id **and** actor role `staff` | eligible — the actor's own act |
 
 ```php
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 
 // Sharer-bound (default): the fact must be attributed, or the
 // evaluation freezes a permanent `late_attribution_refused` rejection.
 EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Recipient, $sourceBusinessKey, $occurredAt,
 );
 
 // Actor-bound: the organizer's unattributed attendance still earns.
 EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Participant, $sourceBusinessKey, $occurredAt,
 );
 ```
@@ -144,23 +144,23 @@ context. The host supplies its canonical source reader and binds
 the manual payout executor and method catalog.
 
 ```php
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 
 RecordRewardFundingSourceAction::run('sponsor-2026', 'MYR', 100000, 'user', $staffId, 'staff');
-RecordRewardFundingAction::run($program, 'MYR', 100000, 'sponsor-2026', 'user', $staffId, 'staff');
+RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 100000, 'sponsor-2026', 'user', $staffId, 'staff');
 
 $payee = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $staffId, 'staff');
 
-$request = RequestRewardPayoutAction::run($award, $payee, 'manual', 'program', 'user', $staffId, 'staff');
+$request = RequestRewardPayoutAction::run((string) $award->getKey(), $payee, 'manual', 'program', 'user', $staffId, 'staff');
 
 $request = ApproveRewardPayoutAction::run($request, 'user', $approverId, 'staff', 'looks-good');
 
@@ -202,7 +202,7 @@ configured` instead of storing a destination the host cannot pay.
 ## Corrections sweep
 
 ```php
-use AIArmada\Rewards\Actions\ApplyRewardSourceCorrectionsAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ApplyRewardSourceCorrectionsAction;
 
 $report = ApplyRewardSourceCorrectionsAction::run('user', $staffId, 'staff', $decided, 200, [
     ['business_key' => $key, 'reason' => 'source-correction', 'evidence' => ['business_key' => $key]],
@@ -226,7 +226,7 @@ keys are trusted by design — the caller owns the business meaning of the key.
 System runs (`EvaluateRewardEntitlementJob`, `RecheckRewardAwardsJob`, the
 corrections sweep, and the sweep command) need no ambient owner: every
 unit of work fans out under the owning program's own owner context via
-`RewardProgramGuard::withProgramOwner()`. Global (platform) programs run
+`app(RewardProgramLockApi::class)->withProgramOwner()`. Global (platform) programs run
 under an explicit-global context. A program whose owner row was deleted
 fails per award — the queued job retries/dead-letters, and the sweep
 records a per-award entry in `errors` and continues with the rest.

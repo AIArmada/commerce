@@ -124,7 +124,7 @@ the verifier returns false, acceptance fails with
 accepts a caller-supplied identity string as proof and never degrades an
 invitation into a bearer-only token.
 
-When a member is added, `MembershipRoleSyncService` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
+When a member is added, `SyncMembershipRolesAction` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
 
 The role-definition reconciliation is additive by default. Run
 `php artisan membership:sync-roles --prune` only when permissions removed from
@@ -259,18 +259,21 @@ Acceptance is gated on the date, not the stored status: `isValid()` consults
 `isExpired()`, so a past-due invitation is refused whether or not anything has
 written `expired`. There is no sweep command.
 
-`expireIfDue()` performs the transition on demand and returns whether it did.
+`ExpireMembershipInvitationAction::run($invitation)` performs the transition on demand and returns whether it did.
 `InviteMemberAction` already calls it, which is why re-inviting a past-due
 subject replaces the stale invitation instead of returning it.
 
 ```php
-$invitation->expireIfDue(); // true when it transitioned pending → expired
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
+
+ExpireMembershipInvitationAction::run($invitation); // true when it transitioned pending → expired
 ```
 
 To bulk-normalise rows for reporting, iterate inside an explicit owner scope:
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Models\MembershipInvitation;
 
@@ -279,13 +282,12 @@ OwnerContext::withOwner(null, function (): void {
         ->where('status', InvitationStatus::Pending)
         ->whereNotNull('expires_at')
         ->where('expires_at', '<=', now())
-        ->get()
-        ->each(fn (MembershipInvitation $invitation) => $invitation->expireIfDue());
+        ->lazyById()
+        ->each(fn (MembershipInvitation $invitation) => ExpireMembershipInvitationAction::run($invitation));
 });
 ```
 
-The command processes each owner scope explicitly; it does not rely on ambient
-web authentication.
+Repeat this operation for each authorized owner scope.
 
 ## Host Authorization
 
@@ -298,8 +300,8 @@ calling them.
 
 ## Rate Limiting
 
-Invite and apply endpoints must be throttled by the host. Unique indexes only
-deduplicate identical subject/channel/recipient/role or subject/applicant keys,
+Invite and apply endpoints must be throttled by the host. Subject locking deduplicates matching pending invitations, and the database
+constraint deduplicates pending applications,
 so varying recipients or justifications can otherwise create unbounded rows, and
 every new invitation emits a delivery event.
 
@@ -333,10 +335,3 @@ Only one pending application is kept for a subject and applicant. Repeated or
 concurrent submissions return that application without dispatching a duplicate
 `MembershipApplicationSubmitted` event.
 
-## Upgrading invitation callers
-
-The invitation schema now stores `channel` and `recipient` where it previously
-stored `email`. Fresh installs use the updated original migration. Databases
-that already ran it need their invitation schema updated before deploying this
-version. Update invitation callers to pass `recipient` and update event
-listeners to read the event's `delivery` payload.

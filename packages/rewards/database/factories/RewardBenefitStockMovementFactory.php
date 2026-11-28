@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
-use AIArmada\Rewards\Models\RewardBenefitStockMovement;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitStockMovement;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

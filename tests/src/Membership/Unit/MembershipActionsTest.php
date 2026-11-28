@@ -194,3 +194,20 @@ it('preserves existing members when adding new ones', function (): void {
     $this->subject->load('members');
     expect($this->subject->members)->toHaveCount(2);
 });
+
+it('rejects a different model with the same key as a member', function (): void {
+    AddMemberAction::make()->handle($this->subject, $this->user, MemberRole::Viewer);
+
+    $impostor = new TestSubject;
+    $impostor->setAttribute($impostor->getKeyName(), $this->user->getKey());
+    $impostor->exists = true;
+
+    expect(fn () => AddMemberAction::make()->handle($this->subject, $impostor, MemberRole::Admin))
+        ->toThrow(InvalidArgumentException::class, 'The member must be a persisted instance of the membership user model.')
+        ->and(fn () => ChangeMemberRoleAction::make()->handle($this->subject, $impostor, MemberRole::Admin))
+        ->toThrow(InvalidArgumentException::class, 'The member must be a persisted instance of the membership user model.')
+        ->and(fn () => RemoveMemberAction::make()->handle($this->subject, $impostor))
+        ->toThrow(InvalidArgumentException::class, 'The member must be a persisted instance of the membership user model.');
+
+    expect($this->subject->members()->first()?->pivot->role)->toBe(MemberRole::Viewer->spatieRoleName());
+});

@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Membership\Enums\InvitationStatus;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -109,7 +110,7 @@ class MembershipInvitation extends Model
     /**
      * Transition an invitation and record the actor and lifecycle timestamp.
      */
-    public function transitionStatus(InvitationStatus | string $status, ?Model $actor = null): static
+    public function transitionTo(InvitationStatus | string $status, ?Model $actor = null): static
     {
         if (! $this->exists) {
             throw new LogicException('A new invitation must use issue().');
@@ -143,10 +144,6 @@ class MembershipInvitation extends Model
             }
 
             $this->last_state_change_at ??= $now;
-
-            if ($this->isDirty()) {
-                $this->save();
-            }
 
             return $this;
         }
@@ -188,20 +185,8 @@ class MembershipInvitation extends Model
         }
 
         $this->last_state_change_at = $now;
-        $this->save();
 
         return $this;
-    }
-
-    public function expireIfDue(): bool
-    {
-        if ($this->status !== InvitationStatus::Pending || ! $this->isExpired()) {
-            return false;
-        }
-
-        $this->transitionStatus(InvitationStatus::Expired);
-
-        return true;
     }
 
     public function subject(): MorphTo
@@ -211,27 +196,25 @@ class MembershipInvitation extends Model
 
     public function inviter(): BelongsTo
     {
-        /** @phpstan-ignore argument.templateType */
-        return $this->belongsTo(config('auth.providers.users.model'), 'invited_by');
+        return $this->belongsTo(MembershipUserModel::resolve(), 'invited_by');
     }
 
     public function acceptor(): BelongsTo
     {
-        /** @phpstan-ignore argument.templateType */
-        return $this->belongsTo(config('auth.providers.users.model'), 'accepted_by');
+        return $this->belongsTo(MembershipUserModel::resolve(), 'accepted_by');
     }
 
     public function revoker(): BelongsTo
     {
-        /** @phpstan-ignore argument.templateType */
-        return $this->belongsTo(config('auth.providers.users.model'), 'revoked_by');
+        return $this->belongsTo(MembershipUserModel::resolve(), 'revoked_by');
     }
 
     public function isExpired(): bool
     {
         return $this->status === InvitationStatus::Expired
             || ($this->status === InvitationStatus::Pending
-                && $this->expires_at?->isPast() === true);
+                && $this->expires_at !== null
+                && $this->expires_at->lessThanOrEqualTo(CarbonImmutable::now()));
     }
 
     public function isAccepted(): bool

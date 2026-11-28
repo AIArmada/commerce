@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardAppealResource\Schemas;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardAppeal;
-use AIArmada\Rewards\Models\RewardAppealDecision;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardDecisionHistoryApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -25,10 +25,10 @@ class RewardAppealInfolist
                         TextEntry::make('member')
                             ->label('Member')
                             ->state(function (RewardAppeal $record): string {
-                                $award = RewardAward::query()->whereKey((string) $record->award_id)->first();
+                                $award = app(RewardAwardLockApi::class)->findAwardDecision((string) $record->award_id);
 
-                                return $award instanceof RewardAward
-                                    ? RewardAdminPresenter::recipientLabel((string) $award->recipient_type, (string) $award->recipient_id)
+                                return $award !== null
+                                    ? RewardAdminPresenter::recipientLabel($award->recipientType, $award->recipientId)
                                     : '-';
                             }),
                         TextEntry::make('status')
@@ -48,16 +48,7 @@ class RewardAppealInfolist
                 ->schema([
                     RepeatableEntry::make('decisions')
                         ->label('')
-                        ->state(fn (RewardAppeal $record): array => RewardAppealDecision::query()
-                            ->where('appeal_id', $record->getKey())
-                            ->orderBy('seq')
-                            ->get()
-                            ->map(fn (RewardAppealDecision $decision): array => [
-                                'transition' => ((string) $decision->from_status) . ' → ' . ((string) $decision->to_status),
-                                'reason' => (string) $decision->reason,
-                                'decided_by' => (string) $decision->actor_role,
-                                'decided_at' => (string) $decision->decided_at,
-                            ])->all())
+                        ->state(fn (RewardAppeal $record): array => app(RewardDecisionHistoryApi::class)->appealHistory((string) $record->getKey()))
                         ->schema([
                             TextEntry::make('transition')->label('Transition'),
                             TextEntry::make('reason')->label('Reason')->columnSpan(2),

@@ -6,7 +6,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\RewardPayeeResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +15,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -45,6 +48,7 @@ class ListRewardPayees extends ListRecords
                 ->action(function (array $data, VerifyRewardPayeeAction $verify): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('verify', RewardPayee::class), 403);
 
                     try {
                         $verify->handle(
@@ -54,7 +58,7 @@ class ListRewardPayees extends ListRecords
                             (string) $data['account_ref'],
                             (string) $data['account_display'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );

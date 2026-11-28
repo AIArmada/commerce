@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Pages\ListRewardBenefitGrants;
 use AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Tables\RewardBenefitGrantsTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardBenefitGrantResource extends Resource
+class RewardBenefitGrantResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -37,7 +37,7 @@ class RewardBenefitGrantResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyViaItem(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyViaItem(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

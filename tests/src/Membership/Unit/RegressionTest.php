@@ -11,10 +11,12 @@ use AIArmada\Membership\Actions\ApplyForMembershipAction;
 use AIArmada\Membership\Actions\ApproveMembershipApplicationAction;
 use AIArmada\Membership\Actions\CancelMembershipApplicationAction;
 use AIArmada\Membership\Actions\ChangeMemberRoleAction;
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Contracts\MembershipHook;
+use AIArmada\Membership\Data\MembershipIdentity;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
@@ -91,14 +93,14 @@ it('self-heals a past-due invitation on read instead of relying on a sweep', fun
     expect($due->isExpired())->toBeTrue()
         ->and($upcoming->isExpired())->toBeFalse();
 
-    // expireIfDue() is the self-heal the re-invite path calls.
-    expect($due->expireIfDue())->toBeTrue()
+    // The re-invite path uses the expiry action.
+    expect(ExpireMembershipInvitationAction::run($due))->toBeTrue()
         ->and($due->fresh()->status)->toBe(InvitationStatus::Expired)
-        ->and($upcoming->expireIfDue())->toBeFalse()
+        ->and(ExpireMembershipInvitationAction::run($upcoming))->toBeFalse()
         ->and($upcoming->fresh()->status)->toBe(InvitationStatus::Pending);
 
     // A second call is a no-op, so the transition is idempotent.
-    expect($due->fresh()->expireIfDue())->toBeFalse();
+    expect(ExpireMembershipInvitationAction::run($due->fresh()))->toBeFalse();
 });
 
 it('refuses a past-due invitation at the accept gate without any sweep', function (): void {
@@ -357,6 +359,47 @@ it('caches the pivot id column probe until flushed', function (): void {
     expect(DB::table('test_subject_members')->where('user_id', $second->getKey())->value('id'))->toBeUuid();
 });
 
+it('publishes membership hooks only after the outer transaction commits', function (): void {
+    $hook = new RecordingMembershipHook;
+    app()->instance(MembershipHook::class, $hook);
+
+    $user = User::query()->create(['name' => 'Transactional Member', 'email' => 'transactional-member@app.com', 'password' => 'secret']);
+
+    DB::beginTransaction();
+
+    try {
+        AddMemberAction::run($this->subject, $user, MemberRole::Viewer);
+        ChangeMemberRoleAction::run($this->subject, $user, MemberRole::Admin);
+        RemoveMemberAction::run($this->subject, $user);
+
+        expect($hook->added)->toBeEmpty()
+            ->and($hook->roleChanged)->toBeEmpty()
+            ->and($hook->removed)->toBeEmpty();
+    } finally {
+        DB::rollBack();
+    }
+
+    expect($hook->added)->toBeEmpty()
+        ->and($hook->roleChanged)->toBeEmpty()
+        ->and($hook->removed)->toBeEmpty()
+        ->and($this->subject->members()->count())->toBe(0);
+
+    DB::transaction(function () use ($user, $hook): void {
+        $user->unsetRelation('roles');
+        AddMemberAction::run($this->subject, $user, MemberRole::Viewer);
+        ChangeMemberRoleAction::run($this->subject, $user, MemberRole::Admin);
+        RemoveMemberAction::run($this->subject, $user);
+
+        expect($hook->added)->toBeEmpty()
+            ->and($hook->roleChanged)->toBeEmpty()
+            ->and($hook->removed)->toBeEmpty();
+    });
+
+    expect($hook->added)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Viewer->value]])
+        ->and($hook->roleChanged)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Viewer->value, MemberRole::Admin->value]])
+        ->and($hook->removed)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Admin->value]]);
+});
+
 final class RecordingMembershipHook implements MembershipHook
 {
     /** @var list<array{string, string, string}> */
@@ -365,18 +408,21 @@ final class RecordingMembershipHook implements MembershipHook
     /** @var list<array{string, string, string, string}> */
     public array $roleChanged = [];
 
-    public function onMemberAdded(Model $subject, Model $user, MemberRole $role): void
+    /** @var list<array{string, string, string|null}> */
+    public array $removed = [];
+
+    public function onMemberAdded(MembershipIdentity $subject, MembershipIdentity $user, string $role): void
     {
-        $this->added[] = [(string) $subject->getKey(), (string) $user->getKey(), $role->value];
+        $this->added[] = [$subject->id, $user->id, $role];
     }
 
-    public function onMemberRemoved(Model $subject, Model $user, ?MemberRole $previousRole): void
+    public function onMemberRemoved(MembershipIdentity $subject, MembershipIdentity $user, ?string $previousRole): void
     {
-        //
+        $this->removed[] = [$subject->id, $user->id, $previousRole];
     }
 
-    public function onMemberRoleChanged(Model $subject, Model $user, MemberRole $oldRole, MemberRole $newRole): void
+    public function onMemberRoleChanged(MembershipIdentity $subject, MembershipIdentity $user, string $oldRole, string $newRole): void
     {
-        $this->roleChanged[] = [(string) $subject->getKey(), (string) $user->getKey(), $oldRole->value, $newRole->value];
+        $this->roleChanged[] = [$subject->id, $user->id, $oldRole, $newRole];
     }
 }

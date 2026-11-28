@@ -1,0 +1,1009 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Rewards\Features\Entitlements\Actions;
+
+use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
+use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
+use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardPreviewContext;
+use AIArmada\Rewards\Data\RewardPreviewDecision;
+use AIArmada\Rewards\Data\RewardPreviewFixture;
+use AIArmada\Rewards\Data\RewardPreviewReason;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceFact;
+use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsent;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
+use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
+use AIArmada\Rewards\Support\RewardCapWindows;
+use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardLedgerLockOrder;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+/**
+ * Live single-fact entitlement evaluation.
+ *
+ * System/job-driven (no member endpoint): reads the current source fact
+ * through the reader boundary, resolves the applicable policy version at the
+ * server decision time, and reuses the accepted pure preview engine for
+ * policy gates over locked enrollment/acceptance/period snapshots. Live-only
+ * checks — source validity/fraud/correction, beneficiary binding, bilateral
+ * stacking, cap counters, canonical uniqueness — run under the global ledger
+ * lock order (source coordinator -> claims -> programs -> enrollments ->
+ * awards -> caps).
+ *
+ * Outcome contract:
+ * - Awarded/held/rejected-on-merits freeze an award row: retries, version
+ *   switches, and concurrent duplicates return the first award (duplicate
+ *   flag) instead of minting a second one. Policy version is evidence only.
+ * - Not-yet-authorized attempts (paused program, missing version/component,
+ *   missing/left enrollment, stale consent, unclaimed guest, exhausted cap,
+ *   unknown source, evidence after the decision) throw WITHOUT writing a
+ *   row, so a later legitimate decision is never blocked by an early freeze.
+ * - Cash/benefit components record held-prerequisite candidates only; actual
+ *   financial fulfillment is WP6 scope and is never marked here.
+ */
+final readonly class EvaluateRewardEntitlementAction
+{
+    use AsAction;
+
+    /**
+     * @var list<string>
+     */
+    private const array TRANSIENT_REASONS = [
+        'program_not_active',
+        'version_missing',
+        'component_not_enabled',
+        'enrollment_missing',
+        'enrollment_left',
+        'acceptance_missing',
+        'acceptance_stale_material_change',
+        'accepted_after_decision',
+        'guest_unclaimed',
+        'evidence_after_decision',
+        'cap_exceeded',
+        'unknown_source',
+    ];
+
+    public function __construct(
+        private ?RewardSourceFactReader $sourceReader = null,
+        private ?RewardPreviewEvaluator $policyEngine = null,
+    ) {}
+
+    public function handle(
+        string $programId,
+        RewardComponent | string $component,
+        string $recipientType,
+        string $recipientId,
+        RewardBeneficiaryRole | string $beneficiaryRole,
+        string $sourceBusinessKey,
+        CarbonInterface $decisionTime,
+        string $actorType = 'system',
+        ?string $actorId = null,
+        string $actorRole = 'system',
+    ): RewardEvaluationResult {
+        app(RewardProgramLockApi::class)->readProgram($programId);
+
+        $componentEnum = $component instanceof RewardComponent ? $component : RewardComponent::tryFrom($component);
+
+        if (! $componentEnum instanceof RewardComponent) {
+            throw new InvalidArgumentException('Unknown reward component.');
+        }
+
+        $roleEnum = $beneficiaryRole instanceof RewardBeneficiaryRole
+            ? $beneficiaryRole
+            : RewardBeneficiaryRole::tryFrom($beneficiaryRole);
+
+        if (! $roleEnum instanceof RewardBeneficiaryRole) {
+            throw new InvalidArgumentException('Unknown beneficiary role.');
+        }
+
+        $allowedRecipientTypes = RewardLedgerEntries::recipientTypes();
+
+        if (! in_array($recipientType, $allowedRecipientTypes, true)) {
+            throw new InvalidArgumentException('Recipient type must be one of [' . implode(',', $allowedRecipientTypes) . ']; no unclaimed-guest rewards.');
+        }
+
+        if (! Str::isUuid($recipientId)) {
+            throw new InvalidArgumentException('Recipient id must be a UUID.');
+        }
+
+        if ($sourceBusinessKey === '' || mb_strlen($sourceBusinessKey) > 191) {
+            throw new InvalidArgumentException('Source business key must be 1..191 characters.');
+        }
+
+        RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
+
+        $decision = CarbonImmutable::parse($decisionTime)->setTimezone('UTC');
+
+        if ($decision->greaterThan(CarbonImmutable::now('UTC')->addMinutes(5))) {
+            throw new InvalidArgumentException('Decision time cannot be more than 5 minutes in the future; trusted server time only.');
+        }
+
+        $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
+        $firstRead = $reader->read($sourceBusinessKey);
+
+        if (! $firstRead instanceof RewardSourceFact) {
+            throw new InvalidArgumentException('Refused: unknown_source has no readable source fact.');
+        }
+
+        $attempt = 0;
+
+        while (true) {
+            $attempt++;
+
+            try {
+                return DB::transaction(fn (): RewardEvaluationResult => $this->attempt(
+                    $programId,
+                    $componentEnum,
+                    $recipientType,
+                    $recipientId,
+                    $roleEnum,
+                    $sourceBusinessKey,
+                    $decision,
+                    $firstRead,
+                    $reader,
+                    $actorType,
+                    $actorId,
+                    $actorRole,
+                ));
+            } catch (QueryException $exception) {
+                if ($attempt >= 3 || (! RewardUniqueViolation::matches($exception) && ! self::isDeadlock($exception))) {
+                    throw $exception;
+                }
+
+                $existing = DB::transaction(fn (): ?RewardAward => RewardAward::query()
+                    ->where('recipient_type', $recipientType)
+                    ->where('recipient_id', $recipientId)
+                    ->where('source_business_key', $sourceBusinessKey)
+                    ->where('family_key', $this->familyKeyFor($programId))
+                    ->where('component', $componentEnum->value)
+                    ->first());
+
+                if ($existing instanceof RewardAward) {
+                    return $this->duplicateResult($existing);
+                }
+            }
+        }
+    }
+
+    private function attempt(
+        string $programId,
+        RewardComponent $component,
+        string $recipientType,
+        string $recipientId,
+        RewardBeneficiaryRole $role,
+        string $sourceBusinessKey,
+        CarbonImmutable $decision,
+        RewardSourceFact $firstRead,
+        RewardSourceFactReader $reader,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+    ): RewardEvaluationResult {
+        // Global-first lock: serializes every evaluation for this
+        // source/component/role across programs, so cross-family claim checks
+        // can never interleave. A concurrent coordinator creation bubbles as
+        // a unique violation to the outer retry loop.
+        $coordinator = RewardSourceCoordinator::query()
+            ->where('source_business_key', $sourceBusinessKey)
+            ->where('component', $component->value)
+            ->where('beneficiary_role', $role->value)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $coordinator instanceof RewardSourceCoordinator) {
+            RewardSourceCoordinator::query()->create([
+                'source_business_key' => $sourceBusinessKey,
+                'component' => $component,
+                'beneficiary_role' => $role,
+            ]);
+        }
+
+        $programs = app(RewardProgramLockApi::class);
+        $lockedProgram = $programs->readProgram($programId, lock: true);
+        $version = $programs->effectivePolicy($programId, $decision->toIso8601String());
+
+        if ($version === null) {
+            throw new InvalidArgumentException('Refused: version_missing has no published version at the decision time.');
+        }
+
+        $rules = $version->rules;
+        $components = [];
+
+        foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
+            if (is_array($entry) && is_string($entry['type'] ?? null)) {
+                $components[] = $entry['type'];
+            }
+        }
+
+        if (! in_array($component->value, $components, true)) {
+            throw new InvalidArgumentException('Refused: component_not_enabled by the applicable version.');
+        }
+
+        $componentResolution = ($this->policyEngine ?? app(RewardPreviewEvaluator::class))->resolveComponentConfiguration(
+            $rules,
+            $component->value,
+            $firstRead->outcome,
+            $role->value,
+        );
+
+        if ($componentResolution === null) {
+            throw new InvalidArgumentException('Refused: component_variant_ineligible; no matching outcome and beneficiary role may be frozen.');
+        }
+
+        $componentConfig = $componentResolution['configuration'];
+
+        if ($lockedProgram->status !== 'active') {
+            throw new InvalidArgumentException('Refused: program_not_active stops new qualification; accrued obligations keep frozen terms.');
+        }
+
+        $claims = RewardSourceComponentClaim::query()
+            ->where('source_business_key', $sourceBusinessKey)
+            ->where('component', $component->value)
+            ->where('beneficiary_role', $role->value)
+            ->orderBy('family_key')
+            ->lockForUpdate()
+            ->get();
+
+        $compatible = array_values(array_filter($version->compatibleWith, is_string(...)));
+
+        foreach ($claims as $claim) {
+            if ($claim->family_key === $lockedProgram->familyKey) {
+                $claimedAward = RewardAward::query()->whereKey($claim->award_id)->first();
+
+                if ($claimedAward instanceof RewardAward
+                    && $claimedAward->recipient_type === $recipientType
+                    && (string) $claimedAward->recipient_id === $recipientId
+                ) {
+                    return $this->duplicateResult($claimedAward);
+                }
+
+                return $this->recordRejection(
+                    $lockedProgram,
+                    $version,
+                    $rules,
+                    $recipientType,
+                    $recipientId,
+                    $role,
+                    $component,
+                    $sourceBusinessKey,
+                    $decision,
+                    $firstRead,
+                    null,
+                    null,
+                    ['stacking_conflict'],
+                    $actorType,
+                    $actorId,
+                    $actorRole,
+                    $componentConfig,
+                );
+            }
+
+            if (! in_array($claim->family_key, $compatible, true)
+                || ! in_array($lockedProgram->familyKey, $claim->compatible_snapshot, true)
+            ) {
+                return $this->recordRejection(
+                    $lockedProgram,
+                    $version,
+                    $rules,
+                    $recipientType,
+                    $recipientId,
+                    $role,
+                    $component,
+                    $sourceBusinessKey,
+                    $decision,
+                    $firstRead,
+                    null,
+                    null,
+                    ['stacking_conflict'],
+                    $actorType,
+                    $actorId,
+                    $actorRole,
+                    $componentConfig,
+                );
+            }
+        }
+
+        $coveringAcceptance = app(RewardEnrollmentConsentApi::class)->requireConsent(
+            $lockedProgram->id,
+            $recipientType,
+            $recipientId,
+            $version->materialTermsHash,
+            $decision,
+        );
+        $enrollment = $coveringAcceptance->enrollmentId;
+        $relevantJoinedAt = $coveringAcceptance->joinedAt;
+
+        $liveVerdict = $this->liveSourceVerdict($firstRead, $role, $recipientId);
+
+        if ($liveVerdict['reject'] !== null) {
+            return $this->recordRejection(
+                $lockedProgram,
+                $version,
+                $rules,
+                $recipientType,
+                $recipientId,
+                $role,
+                $component,
+                $sourceBusinessKey,
+                $decision,
+                $firstRead,
+                $enrollment,
+                $coveringAcceptance,
+                [$liveVerdict['reject']],
+                $actorType,
+                $actorId,
+                $actorRole,
+                $componentConfig,
+            );
+        }
+
+        $claimedFamilies = $claims->map(fn (RewardSourceComponentClaim $claim): string => $claim->family_key)->all();
+
+        $context = new RewardPreviewContext(
+            programFamilyKey: $lockedProgram->familyKey,
+            programStatus: RewardProgramStatus::from($lockedProgram->status),
+            versionFound: true,
+            versionId: $version->id,
+            versionNumber: $version->version,
+            versionRules: $rules,
+            versionComponents: $components,
+            versionMaterialHash: $version->materialTermsHash,
+            versionEffectiveFrom: CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC'),
+            compatibleWith: $compatible,
+            enrollmentExists: true,
+            enrollmentActiveAtDecision: true,
+            acceptanceId: $coveringAcceptance->acceptanceId,
+            acceptanceMaterialHash: $coveringAcceptance->materialHash,
+            acceptanceAcceptedAt: $coveringAcceptance->acceptedAt,
+            hasPriorAcceptance: true,
+            relevantPeriodJoinedAt: $relevantJoinedAt,
+            fixture: new RewardPreviewFixture(
+                sourceBusinessKey: $firstRead->sourceBusinessKey,
+                outcome: $firstRead->outcome,
+                category: $firstRead->category,
+                occurredAt: $firstRead->occurredAt,
+                verification: $firstRead->verification,
+                isFirstTime: $firstRead->isFirstTime,
+                actorId: $firstRead->actorId,
+                sharerId: $firstRead->sharerId,
+                isClaimedIdentity: $firstRead->isClaimedIdentity,
+                isAttributed: $firstRead->isAttributed,
+                isAmbiguousDevice: $firstRead->isAmbiguousDevice,
+                claimedFamilyKeys: $claimedFamilies,
+                isBot: $firstRead->isBot,
+                isCancelled: $firstRead->isCancelled,
+                isValidSource: $firstRead->isValid,
+                beneficiaryRole: $role,
+            ),
+            requestedComponent: $component,
+            decisionTime: $decision,
+            moderatedOutcomes: RewardModerationPolicyQuery::outcomes(),
+        );
+
+        $policy = ($this->policyEngine ?? app(RewardPreviewEvaluator::class))->evaluate($context);
+
+        if ($policy->decision === RewardPreviewDecision::Ineligible) {
+            $reason = $this->primaryReason($policy->reasons);
+
+            if (in_array($reason, self::TRANSIENT_REASONS, true)) {
+                throw new InvalidArgumentException("Refused: {$reason} is not yet authorized; no award row is frozen.");
+            }
+
+            return $this->recordRejection(
+                $lockedProgram,
+                $version,
+                $rules,
+                $recipientType,
+                $recipientId,
+                $role,
+                $component,
+                $sourceBusinessKey,
+                $decision,
+                $firstRead,
+                $enrollment,
+                $coveringAcceptance,
+                [$reason],
+                $actorType,
+                $actorId,
+                $actorRole,
+                $componentConfig,
+            );
+        }
+
+        if ($liveVerdict['hold'] !== null) {
+            return $this->recordHeld(
+                $lockedProgram,
+                $version,
+                $rules,
+                $enrollment,
+                $coveringAcceptance,
+                $recipientType,
+                $recipientId,
+                $role,
+                $component,
+                $sourceBusinessKey,
+                $decision,
+                $firstRead,
+                $reader,
+                [$liveVerdict['hold']],
+                $actorType,
+                $actorId,
+                $actorRole,
+                null,
+                $componentConfig,
+            );
+        }
+
+        if ($policy->decision === RewardPreviewDecision::Hold) {
+            return $this->recordHeld(
+                $lockedProgram,
+                $version,
+                $rules,
+                $enrollment,
+                $coveringAcceptance,
+                $recipientType,
+                $recipientId,
+                $role,
+                $component,
+                $sourceBusinessKey,
+                $decision,
+                $firstRead,
+                $reader,
+                ['hold_required'],
+                $actorType,
+                $actorId,
+                $actorRole,
+                null,
+                $componentConfig,
+            );
+        }
+
+        if ($component->requiresMoneyOrBenefitFulfillment()) {
+            return $this->recordHeld(
+                $lockedProgram,
+                $version,
+                $rules,
+                $enrollment,
+                $coveringAcceptance,
+                $recipientType,
+                $recipientId,
+                $role,
+                $component,
+                $sourceBusinessKey,
+                $decision,
+                $firstRead,
+                $reader,
+                ['financial_readiness_pending'],
+                $actorType,
+                $actorId,
+                $actorRole,
+                ['note' => 'Cash/benefit components record held-prerequisite candidates only; WP6 finance scope settles fulfillment.'],
+                $componentConfig,
+            );
+        }
+
+        $this->consumeCaps($rules, $lockedProgram->familyKey, $lockedProgram->id, $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
+
+        $secondRead = $reader->read($sourceBusinessKey);
+
+        if (! $secondRead instanceof RewardSourceFact || $secondRead->snapshot() !== $firstRead->snapshot()) {
+            throw new InvalidArgumentException('Source fact changed during evaluation; retry with a fresh read.');
+        }
+
+        $award = $this->insertAward(
+            $lockedProgram,
+            $version,
+            $rules,
+            $enrollment,
+            $coveringAcceptance,
+            $recipientType,
+            $recipientId,
+            $role,
+            $component,
+            $sourceBusinessKey,
+            $decision,
+            $firstRead,
+            RewardAwardStatus::Approved,
+            $actorType,
+            $actorId,
+            $actorRole,
+            ['ok'],
+            null,
+            $componentConfig,
+        );
+
+        RewardSourceComponentClaim::query()->create([
+            'source_business_key' => $sourceBusinessKey,
+            'component' => $component,
+            'beneficiary_role' => $role,
+            'family_key' => $lockedProgram->familyKey,
+            'program_id' => $lockedProgram->id,
+            'award_id' => $award->getKey(),
+            'compatible_snapshot' => $compatible,
+            'claimed_at' => $decision,
+        ]);
+
+        return new RewardEvaluationResult(RewardEvaluationOutcome::Awarded, $award->refresh(), ['ok']);
+    }
+
+    /**
+     * @return array{reject: ?string, hold: ?string}
+     */
+    private function liveSourceVerdict(RewardSourceFact $fact, RewardBeneficiaryRole $role, string $recipientId): array
+    {
+        if (! $fact->isValid) {
+            return ['reject' => 'source_invalid', 'hold' => null];
+        }
+
+        if ($fact->isBot) {
+            return ['reject' => 'source_bot_excluded', 'hold' => null];
+        }
+
+        if ($fact->isCancelled) {
+            return ['reject' => 'source_cancelled', 'hold' => null];
+        }
+
+        if ($fact->correctionStatus->value === 'withdrawn') {
+            return ['reject' => 'source_withdrawn', 'hold' => null];
+        }
+
+        if ($fact->fraudStatus->value === 'confirmed') {
+            return ['reject' => 'fraud_confirmed', 'hold' => null];
+        }
+
+        if (! $this->beneficiaryBinds($fact, $role, $recipientId)) {
+            return ['reject' => 'beneficiary_mismatch', 'hold' => null];
+        }
+
+        if ($fact->fraudStatus->value === 'suspect') {
+            return ['reject' => null, 'hold' => 'fraud_suspect_held'];
+        }
+
+        return ['reject' => null, 'hold' => null];
+    }
+
+    /**
+     * Binding follows the enum's single split: sharer-bound roles bind the
+     * fact's sharer id, actor-bound roles bind its actor id, and Staff
+     * additionally requires the fact's actor role to be Staff.
+     */
+    private function beneficiaryBinds(RewardSourceFact $fact, RewardBeneficiaryRole $role, string $recipientId): bool
+    {
+        return $role->binds($fact->actorId, $fact->actorRole, $fact->sharerId, $recipientId);
+    }
+
+    /**
+     * @param  list<RewardPreviewReason>  $reasons
+     */
+    private function primaryReason(array $reasons): string
+    {
+        foreach ($reasons as $reason) {
+            if ($reason !== RewardPreviewReason::Ok && $reason !== RewardPreviewReason::LiveChecksDeferred) {
+                return $reason->value;
+            }
+        }
+
+        return RewardPreviewReason::Ok->value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     */
+    private function consumeCaps(
+        array $rules,
+        string $familyKey,
+        string $programId,
+        string $recipientType,
+        string $recipientId,
+        string $sourceBusinessKey,
+        string $component,
+        CarbonImmutable $decision,
+    ): void {
+        $caps = $rules['caps'] ?? [];
+
+        if (! is_array($caps) || $caps === []) {
+            return;
+        }
+
+        $recipientKey = RewardCapWindows::recipientKey($recipientType, $recipientId);
+        $targets = [];
+
+        foreach ($caps as $cap) {
+            if (! is_array($cap) || ! is_string($cap['scope'] ?? null) || ! is_int($cap['limit'] ?? null)) {
+                continue;
+            }
+
+            $keys = RewardCapWindows::keysFor(
+                $cap['scope'],
+                $familyKey,
+                $programId,
+                $recipientKey,
+                $sourceBusinessKey,
+                $component,
+                $decision,
+            );
+
+            $targets[$keys['cap_key'] . '|' . $keys['window_key']] = [
+                'scope' => $cap['scope'],
+                'limit' => $cap['limit'],
+                'cap_key' => $keys['cap_key'],
+                'window_key' => $keys['window_key'],
+            ];
+        }
+
+        foreach (RewardLedgerLockOrder::sorted(array_keys($targets)) as $ordered) {
+            $target = $targets[$ordered];
+
+            $counter = RewardCapCounter::query()
+                ->where('cap_key', $target['cap_key'])
+                ->where('window_key', $target['window_key'])
+                ->lockForUpdate()
+                ->first();
+
+            if (! $counter instanceof RewardCapCounter) {
+                // A concurrent counter creation surfaces as a unique violation;
+                // it bubbles to the outer retry loop (PostgreSQL-safe: the
+                // catch sits outside the transaction, never inside it).
+                $counter = RewardCapCounter::query()->create([
+                    'cap_key' => $target['cap_key'],
+                    'window_key' => $target['window_key'],
+                    'family_key' => $target['scope'] === 'family_source_component' ? '*' : $familyKey,
+                    'scope' => $target['scope'],
+                    'limit_value' => $target['limit'],
+                    'consumed' => 0,
+                ]);
+            }
+
+            if ($counter->limit_value !== $target['limit']) {
+                throw new InvalidArgumentException("Cap [{$target['scope']}] limit changed under a frozen window; refusing to overspend.");
+            }
+
+            if ($counter->consumed >= $counter->limit_value) {
+                throw new InvalidArgumentException('Refused: cap_exceeded for scope [' . $target['scope'] . ']; no award row is frozen.');
+            }
+
+            $counter->forceFill(['consumed' => $counter->consumed + 1])->save();
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     * @param  list<string>  $reasons
+     * @param  array<string, mixed>|null  $extraEvidence
+     */
+    private function recordHeld(
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
+        array $rules,
+        string $enrollment,
+        RewardEnrollmentConsent $acceptance,
+        string $recipientType,
+        string $recipientId,
+        RewardBeneficiaryRole $role,
+        RewardComponent $component,
+        string $sourceBusinessKey,
+        CarbonImmutable $decision,
+        RewardSourceFact $fact,
+        RewardSourceFactReader $reader,
+        array $reasons,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+        ?array $extraEvidence = null,
+        ?array $componentConfigOverride = null,
+    ): RewardEvaluationResult {
+        $this->consumeCaps($rules, $program->familyKey, $program->id, $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
+
+        $secondRead = $reader->read($sourceBusinessKey);
+
+        if (! $secondRead instanceof RewardSourceFact || $secondRead->snapshot() !== $fact->snapshot()) {
+            throw new InvalidArgumentException('Source fact changed during evaluation; retry with a fresh read.');
+        }
+
+        $award = $this->insertAward(
+            $program,
+            $version,
+            $rules,
+            $enrollment,
+            $acceptance,
+            $recipientType,
+            $recipientId,
+            $role,
+            $component,
+            $sourceBusinessKey,
+            $decision,
+            $fact,
+            RewardAwardStatus::Held,
+            $actorType,
+            $actorId,
+            $actorRole,
+            $reasons,
+            $extraEvidence,
+            $componentConfigOverride,
+        );
+
+        RewardSourceComponentClaim::query()->create([
+            'source_business_key' => $sourceBusinessKey,
+            'component' => $component,
+            'beneficiary_role' => $role,
+            'family_key' => $program->familyKey,
+            'program_id' => $program->id,
+            'award_id' => $award->getKey(),
+            'compatible_snapshot' => array_values(array_filter($version->compatibleWith, is_string(...))),
+            'claimed_at' => $decision,
+        ]);
+
+        $this->obligateHeldCash($award, $program, $component, $decision, $actorType, $actorId, $actorRole);
+
+        return new RewardEvaluationResult(RewardEvaluationOutcome::Held, $award->refresh(), $reasons);
+    }
+
+    /**
+     * Reserves the earned cash obligation at the hold boundary: a held
+     * award is a real debt against confirmed funding, so its value is
+     * reserved here — not only at payout request — and the approval gate
+     * stays aggregate-correct across concurrent awards. Earning never
+     * fails for treasury shortfall: when confirmed funding does not
+     * cover the obligation, the reserve still lands (available goes
+     * negative, truthfully) and approval waits for funding.
+     */
+    private function obligateHeldCash(
+        RewardAward $award,
+        RewardProgramSnapshot $program,
+        RewardComponent $component,
+        CarbonImmutable $decision,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+        ?array $componentConfigOverride = null,
+    ): void {
+        if ($component !== RewardComponent::Cash) {
+            return;
+        }
+
+        $amount = $award->amount_snapshot ?? [];
+        $minor = (int) ($amount['minor_units'] ?? 0);
+        $currency = (string) ($amount['currency'] ?? '');
+
+        if ($minor <= 0 || $currency === '') {
+            throw new InvalidArgumentException('Cash awards must freeze a positive minor-unit amount and currency.');
+        }
+
+        $programId = $program->id;
+
+        app(RewardBudgetApi::class)->reserveObligation(
+            $programId,
+            $currency,
+            (string) $award->getKey(),
+            $minor,
+            0,
+            $actorType,
+            $actorId,
+            $actorRole,
+            $decision,
+        );
+
+        $award->forceFill(['obligation_epoch' => 0, 'obligated_minor' => $minor])->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     * @param  list<string>  $reasons
+     */
+    private function recordRejection(
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
+        array $rules,
+        string $recipientType,
+        string $recipientId,
+        RewardBeneficiaryRole $role,
+        RewardComponent $component,
+        string $sourceBusinessKey,
+        CarbonImmutable $decision,
+        RewardSourceFact $fact,
+        ?string $enrollment,
+        ?RewardEnrollmentConsent $acceptance,
+        array $reasons,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+        ?array $componentConfigOverride = null,
+    ): RewardEvaluationResult {
+        $award = $this->insertAward(
+            $program,
+            $version,
+            $rules,
+            $enrollment,
+            $acceptance,
+            $recipientType,
+            $recipientId,
+            $role,
+            $component,
+            $sourceBusinessKey,
+            $decision,
+            $fact,
+            RewardAwardStatus::Rejected,
+            $actorType,
+            $actorId,
+            $actorRole,
+            $reasons,
+            null,
+            $componentConfigOverride,
+        );
+
+        return new RewardEvaluationResult(RewardEvaluationOutcome::Rejected, $award->refresh(), $reasons);
+    }
+
+    private function snapshots(
+        array $rules,
+        RewardPolicySnapshot $version,
+        RewardComponent $component,
+        ?RewardEnrollmentConsent $acceptance,
+        RewardSourceFact $fact,
+        ?array $componentConfigOverride = null,
+    ): array {
+        $componentConfig = $componentConfigOverride ?? ['type' => $component->value];
+
+        if ($componentConfigOverride === null) {
+            foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
+                if (is_array($entry) && ($entry['type'] ?? null) === $component->value) {
+                    $componentConfig = $entry;
+
+                    break;
+                }
+            }
+        }
+
+        return [
+            'amount' => $componentConfig,
+            'policy' => [
+                'policy_version_id' => $version->id,
+                'policy_version' => $version->version,
+                'effective_from' => CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC')->toIso8601String(),
+                'material_terms_hash' => $version->materialTermsHash,
+                'eligibility' => $rules['eligibility'] ?? [],
+                'windows' => $rules['windows'] ?? [],
+                'stacking' => $rules['stacking'] ?? [],
+                // Approval re-evaluates against the immutable configuration
+                // selected for this source fact, not the program's raw variant
+                // catalogue. A held or rejected award must carry the same
+                // decision basis as an approved one.
+                'components' => [$componentConfig],
+            ],
+            'consent' => $acceptance instanceof RewardEnrollmentConsent
+                ? [
+                    'acceptance_id' => $acceptance->acceptanceId,
+                    'accepted_at' => $acceptance->acceptedAt->toIso8601String(),
+                    'material_terms_hash' => $acceptance->materialHash,
+                    'terms_label' => $acceptance->termsLabel,
+                ]
+                : ['status' => 'unresolved'],
+            'source' => $fact->snapshot(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $rules
+     * @param  list<string>  $reasons
+     * @param  array<string, mixed>|null  $extraEvidence
+     */
+    private function insertAward(
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
+        array $rules,
+        ?string $enrollment,
+        ?RewardEnrollmentConsent $acceptance,
+        string $recipientType,
+        string $recipientId,
+        RewardBeneficiaryRole $role,
+        RewardComponent $component,
+        string $sourceBusinessKey,
+        CarbonImmutable $decision,
+        RewardSourceFact $fact,
+        RewardAwardStatus $status,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+        array $reasons,
+        ?array $extraEvidence = null,
+        ?array $componentConfigOverride = null,
+    ): RewardAward {
+        $snapshots = $this->snapshots($rules, $version, $component, $acceptance, $fact, $componentConfigOverride);
+
+        $award = RewardAward::query()->create([
+            'program_id' => $program->id,
+            'policy_version_id' => $version->id,
+            'enrollment_id' => $enrollment,
+            'acceptance_id' => $acceptance?->acceptanceId,
+            'recipient_type' => $recipientType,
+            'recipient_id' => $recipientId,
+            'beneficiary_role' => $role,
+            'source_business_key' => $sourceBusinessKey,
+            'family_key' => $program->familyKey,
+            'component' => $component,
+            'status' => $status,
+            'amount_snapshot' => $snapshots['amount'],
+            'policy_snapshot' => $snapshots['policy'],
+            'consent_snapshot' => $snapshots['consent'],
+            'source_snapshot' => $snapshots['source'],
+            $status->transitionColumn() => $decision,
+        ]);
+
+        RewardLedgerWriter::appendAwardEntry(
+            $award,
+            'none',
+            $status->value,
+            $actorType,
+            $actorId,
+            $actorRole,
+            $reasons[0] ?? 'evaluation-recorded',
+            ['reasons' => $reasons, 'evaluation' => 'live', ...($extraEvidence ?? [])],
+            null,
+            $decision,
+        );
+
+        // Awards born approved plan the recipient's delayed digest in
+        // the same atomic unit; held/rejected records thank nothing.
+        // Planning is preference-gated — opted-out or non-user
+        // recipients simply yield no slot, never a failed evaluation.
+        if ($status === RewardAwardStatus::Approved) {
+            try {
+                app(RewardGratitudePlanner::class)->planFor($recipientType, $recipientId, ['awards'], $decision);
+            } catch (InvalidArgumentException) {
+                // No slot for this recipient; the award stands.
+            }
+        }
+
+        return $award;
+    }
+
+    private function duplicateResult(RewardAward $existing): RewardEvaluationResult
+    {
+        $outcome = match ($existing->status) {
+            RewardAwardStatus::Held, RewardAwardStatus::PendingReview => RewardEvaluationOutcome::Held,
+            RewardAwardStatus::Rejected => RewardEvaluationOutcome::Rejected,
+            default => RewardEvaluationOutcome::Awarded,
+        };
+
+        return new RewardEvaluationResult($outcome, $existing, ['duplicate_evaluation'], true);
+    }
+
+    private function familyKeyFor(string $programId): string
+    {
+        return app(RewardProgramLockApi::class)->readProgram($programId)->familyKey;
+    }
+
+    private static function isDeadlock(QueryException $exception): bool
+    {
+        $code = (string) $exception->getCode();
+
+        if (in_array($code, ['40001', '1213'], true)) {
+            return true;
+        }
+
+        return mb_stripos($exception->getMessage(), 'deadlock') !== false;
+    }
+}

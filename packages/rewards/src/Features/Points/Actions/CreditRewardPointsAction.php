@@ -1,0 +1,295 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Rewards\Features\Points\Actions;
+
+use AIArmada\Rewards\Enums\RewardPointLotStatus;
+use AIArmada\Rewards\Enums\RewardPointMovementKind;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
+use AIArmada\Rewards\Support\RewardOperationKeys;
+use AIArmada\Rewards\Support\RewardPointInput;
+use AIArmada\Rewards\Support\RewardRuleValidator;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+/**
+ * Source-linked point credit: creates one lot plus its credit movement.
+ *
+ * Idempotent by operation key — retries return the existing credit movement
+ * instead of minting a second lot. Amounts are bounded integers; expiry must
+ * be after availability; cumulative overflow is refused.
+ */
+final readonly class CreditRewardPointsAction
+{
+    use AsAction;
+
+    public function handle(
+        string $recipientType,
+        string $recipientId,
+        string $familyKey,
+        string $unit,
+        int $points,
+        CarbonInterface $availableAt,
+        ?CarbonInterface $expiresAt = null,
+        ?string $awardId = null,
+        ?string $programId = null,
+        ?string $operationKey = null,
+        string $actorType = 'system',
+        ?string $actorId = null,
+        string $reason = 'award-credit',
+        ?CarbonInterface $occurredAt = null,
+    ): RewardPointMovement {
+        RewardPointInput::assertRecipient($recipientType, $recipientId);
+        RewardPointInput::assertFamily($familyKey);
+        RewardPointInput::assertUnit($unit);
+        RewardPointInput::assertActor($actorType, $actorId);
+        RewardPointInput::assertReason($reason);
+
+        if ($points < 1 || $points > RewardRuleValidator::maxPoints()) {
+            throw new InvalidArgumentException('Credit points must be an integer 1..' . RewardRuleValidator::maxPoints() . '.');
+        }
+
+        $available = CarbonImmutable::parse($availableAt)->setTimezone('UTC');
+        $expires = $expiresAt === null ? null : CarbonImmutable::parse($expiresAt)->setTimezone('UTC');
+
+        if ($expires !== null && ! $expires->greaterThan($available)) {
+            throw new InvalidArgumentException('Lot expiry must be after availability.');
+        }
+
+        if ($awardId !== null && ! Str::isUuid($awardId)) {
+            throw new InvalidArgumentException('Award id must be a UUID.');
+        }
+
+        if ($programId !== null && ! Str::isUuid($programId)) {
+            throw new InvalidArgumentException('Program id must be a UUID.');
+        }
+
+        // Lot owners are not the program: a lot may only be bound to a
+        // foreign award/program that actually exists AND sits in the
+        // current owner scope. Dangling references stay allowed for
+        // append-only annotations.
+        if ($awardId !== null) {
+            app(RewardAwardLockApi::class)->assertAwardInScopeWhenExists($awardId);
+        }
+
+        if ($programId !== null) {
+            app(RewardProgramLockApi::class)->assertProgramInScopeWhenExists($programId);
+        }
+
+        $key = $operationKey ?? ($awardId !== null
+            ? RewardOperationKeys::credit('award', $awardId, $unit)
+            : null);
+
+        if ($key === null) {
+            throw new InvalidArgumentException('Non-award credits require an explicit operation key.');
+        }
+
+        RewardOperationKeys::assertValid($key);
+
+        $occurred = $occurredAt === null
+            ? CarbonImmutable::now('UTC')
+            : CarbonImmutable::parse($occurredAt)->setTimezone('UTC');
+
+        $attempt = 0;
+
+        while (true) {
+            $attempt++;
+
+            try {
+                return DB::transaction(fn (): RewardPointMovement => $this->attempt(
+                    $recipientType,
+                    $recipientId,
+                    $familyKey,
+                    $unit,
+                    $points,
+                    $available,
+                    $expires,
+                    $awardId,
+                    $programId,
+                    $key,
+                    $actorType,
+                    $actorId,
+                    $reason,
+                    $occurred,
+                ));
+            } catch (QueryException $exception) {
+                // Deadlock victims retry; every catch sits outside the
+                // transaction (PostgreSQL-safe). A concurrent same-key
+                // credit that won the insert collapses the replay onto the
+                // winner only when its bound terms match.
+                if (self::isDeadlock($exception) && $attempt < 3) {
+                    continue;
+                }
+
+                if (! RewardUniqueViolation::matches($exception)) {
+                    throw $exception;
+                }
+
+                $winner = RewardPointMovement::query()->where('operation_key', $key)->first();
+
+                if ($winner instanceof RewardPointMovement) {
+                    self::assertReplayBinds($winner, $recipientType, $recipientId, $familyKey, $unit, $points, $available, $expires, $awardId, $programId);
+
+                    return $winner;
+                }
+
+                throw $exception;
+            }
+        }
+    }
+
+    private static function isDeadlock(QueryException $exception): bool
+    {
+        $code = (string) $exception->getCode();
+
+        if (in_array($code, ['40001', '1213'], true)) {
+            return true;
+        }
+
+        return mb_stripos($exception->getMessage(), 'deadlock') !== false;
+    }
+
+    private function attempt(
+        string $recipientType,
+        string $recipientId,
+        string $familyKey,
+        string $unit,
+        int $points,
+        CarbonImmutable $available,
+        ?CarbonImmutable $expires,
+        ?string $awardId,
+        ?string $programId,
+        string $key,
+        string $actorType,
+        ?string $actorId,
+        string $reason,
+        CarbonImmutable $occurred,
+    ): RewardPointMovement {
+        $existing = RewardPointMovement::query()->where('operation_key', $key)->first();
+
+        if ($existing instanceof RewardPointMovement) {
+            self::assertReplayBinds($existing, $recipientType, $recipientId, $familyKey, $unit, $points, $available, $expires, $awardId, $programId);
+
+            return $existing;
+        }
+
+        $lotExists = RewardPointLot::query()->where('source_operation_key', $key)->exists();
+
+        if ($lotExists) {
+            throw new InvalidArgumentException('Credit operation key is already used by a lot; supply a fresh key.');
+        }
+
+        $credited = (int) RewardPointLot::query()
+            ->where('recipient_type', $recipientType)
+            ->where('recipient_id', $recipientId)
+            ->where('family_key', $familyKey)
+            ->where('unit', $unit)
+            ->sum('credited_points');
+
+        if ($credited > PHP_INT_MAX - $points) {
+            throw new InvalidArgumentException('Credit would overflow the recipient balance; refused.');
+        }
+
+        $seqs = RewardPointLot::query()
+            ->where('recipient_type', $recipientType)
+            ->where('recipient_id', $recipientId)
+            ->where('family_key', $familyKey)
+            ->where('unit', $unit)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('seq')
+            ->all();
+
+        $seq = ($seqs === [] ? 0 : max(array_map(intval(...), $seqs))) + 1;
+
+        $lot = RewardPointLot::query()->create([
+            'recipient_type' => $recipientType,
+            'recipient_id' => $recipientId,
+            'family_key' => $familyKey,
+            'program_id' => $programId,
+            'award_id' => $awardId,
+            'seq' => $seq,
+            'unit' => $unit,
+            'credited_points' => $points,
+            'source_operation_key' => $key,
+            'available_at' => $available,
+            'expires_at' => $expires,
+            'status' => RewardPointLotStatus::Open,
+            'credited_at' => $occurred,
+            'depleted_at' => null,
+            'expired_at' => null,
+        ]);
+
+        return RewardPointMovement::query()->create([
+            'lot_id' => $lot->getKey(),
+            'kind' => RewardPointMovementKind::Credit,
+            'delta' => $points,
+            'operation_key' => $key,
+            'aggregate_operation_key' => $key,
+            'linked_movement_id' => null,
+            'reservation_key' => null,
+            'award_id' => $awardId,
+            'actor_type' => $actorType,
+            'actor_id' => $actorId,
+            'reason' => $reason,
+            'occurred_at' => $occurred,
+        ]);
+    }
+
+    public static function assertReplayBinds(
+        RewardPointMovement $existing,
+        string $recipientType,
+        string $recipientId,
+        string $familyKey,
+        string $unit,
+        int $points,
+        CarbonImmutable $available,
+        ?CarbonImmutable $expires,
+        ?string $awardId,
+        ?string $programId,
+    ): void {
+        if ($existing->kind !== RewardPointMovementKind::Credit || (int) $existing->delta !== $points) {
+            throw new InvalidArgumentException('Credit operation key is already bound to different terms; supply a fresh key.');
+        }
+
+        $lot = RewardPointLot::query()->whereKey((string) $existing->lot_id)->first();
+
+        if (! $lot instanceof RewardPointLot) {
+            throw new InvalidArgumentException('Credit operation key is already bound to different terms; supply a fresh key.');
+        }
+
+        $lotAvailable = $lot->available_at instanceof CarbonImmutable
+            ? $lot->available_at->format('Y-m-d H:i:s')
+            : CarbonImmutable::parse($lot->available_at)->format('Y-m-d H:i:s');
+        $reqAvailable = $available->setTimezone('UTC')->format('Y-m-d H:i:s');
+        $lotExpires = $lot->expires_at === null
+            ? null
+            : ($lot->expires_at instanceof CarbonImmutable
+                ? $lot->expires_at->format('Y-m-d H:i:s')
+                : CarbonImmutable::parse($lot->expires_at)->format('Y-m-d H:i:s'));
+        $reqExpires = $expires?->setTimezone('UTC')->format('Y-m-d H:i:s');
+
+        if ((string) $lot->recipient_type !== $recipientType
+            || (string) $lot->recipient_id !== $recipientId
+            || (string) $lot->family_key !== $familyKey
+            || (string) $lot->unit !== $unit
+            || (int) $lot->credited_points !== $points
+            || $lotAvailable !== $reqAvailable
+            || $lotExpires !== $reqExpires
+            || ($lot->award_id === null ? null : (string) $lot->award_id) !== $awardId
+            || ($lot->program_id === null ? null : (string) $lot->program_id) !== $programId
+        ) {
+            throw new InvalidArgumentException('Credit operation key is already bound to a different recipient, family, unit, amount, or schedule.');
+        }
+    }
+}

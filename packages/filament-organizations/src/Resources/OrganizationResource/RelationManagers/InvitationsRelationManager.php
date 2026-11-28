@@ -8,10 +8,10 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RevokeInvitationAction;
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use AIArmada\Organizations\Models\Organization;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;

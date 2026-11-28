@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "Finance",
+  "owns": {
+    "table:reward_funding_entries": [
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\RecordRewardFundingAction"
+    ],
+    "table:reward_funding_sources": [
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\RecordRewardFundingSourceAction"
+    ],
+    "table:reward_payees": [
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\RegisterRewardPayeeAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\RejectRewardPayeeAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\VerifyRewardPayeeAction"
+    ],
+    "table:reward_payout_requests": [
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\RequestRewardPayoutAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\ApproveRewardPayoutAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\CancelRewardPayoutAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\ConfirmRewardPayoutAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\ReconcileRewardPayoutAction",
+      "AIArmada\\Rewards\\Features\\Finance\\Actions\\SubmitRewardPayoutAction"
+    ],
+    "table:reward_budget_movements": [
+      "AIArmada\\Rewards\\Features\\Finance\\Persistence\\RewardBudgetLedger"
+    ]
+  },
+  "extensions": {}
+}

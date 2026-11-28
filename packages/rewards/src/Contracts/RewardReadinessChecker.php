@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardReadinessAssessment;
+use AIArmada\Rewards\Data\RewardReadinessAssessment;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 
 /**
  * Readiness checks for the program lifecycle.
@@ -24,7 +23,7 @@ use AIArmada\Rewards\Support\RewardReadinessAssessment;
  */
 interface RewardReadinessChecker
 {
-    public function canMarkReady(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment;
+    public function canMarkReady(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment;
 
-    public function canActivate(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment;
+    public function canActivate(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment;
 }

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\SettleRewardRecoveryAction;
-use AIArmada\Rewards\Actions\WriteOffRewardRecoveryAction;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -17,6 +17,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -53,9 +55,10 @@ class RewardRecoveriesTable
                     ->action(function (RewardRecovery $record, array $data, SettleRewardRecoveryAction $settle): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('settle', $record), 403);
 
                         try {
-                            $settle->handle($record, ['recovery_proof' => (string) $data['recovery_proof']], 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $settle->handle($record, ['recovery_proof' => (string) $data['recovery_proof']], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['recovery_proof' => $exception->getMessage()]);
                         }
@@ -74,9 +77,10 @@ class RewardRecoveriesTable
                     ->action(function (RewardRecovery $record, array $data, WriteOffRewardRecoveryAction $writeOff): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('writeOff', $record), 403);
 
                         try {
-                            $writeOff->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $writeOff->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

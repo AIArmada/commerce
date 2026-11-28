@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\GrantRewardBadgeAction;
-use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RevokeRewardBadgeAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBadgeGrant;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Entitlements\Actions\GrantRewardBadgeAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RevokeRewardBadgeAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Data\InvitationActorData;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\InvitationChannelManager;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,16 +27,30 @@ final class AcceptInvitationAction
 
     public function handle(MembershipInvitation $invitation, Model $user, ?string $token = null): void
     {
+        MembershipUserModel::assertPersisted($user);
+
         $acceptedInvitation = DB::transaction(function () use ($invitation, $token, $user): MembershipInvitation {
             $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
                 MembershipInvitation::class,
                 (string) $invitation->getKey(),
             );
 
+            $subject = $guardedInvitation->subject;
+
+            if (! $subject instanceof Model) {
+                throw new RuntimeException('Cannot accept an invitation whose subject no longer exists.');
+            }
+
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
             $lockedInvitation = MembershipInvitation::query()
                 ->lockForUpdate()
                 ->whereKey($guardedInvitation->getKey())
                 ->firstOrFail();
+
+            if ($lockedInvitation->subject_type !== $subject->getMorphClass() || (string) $lockedInvitation->subject_id !== (string) $subject->getKey()) {
+                throw new RuntimeException('Membership request subject changed during processing.');
+            }
 
             if (! $lockedInvitation->isValid()) {
                 throw new RuntimeException('Invitation is no longer valid.');
@@ -60,10 +75,10 @@ final class AcceptInvitationAction
                 throw new RuntimeException('Invitation contains an invalid membership role.');
             }
 
-            $lockedInvitation->transitionStatus(InvitationStatus::Accepted, $user);
+            $lockedInvitation->transitionTo(InvitationStatus::Accepted, $user)->save();
 
             AddMemberAction::make()->handle(
-                $lockedInvitation->subject,
+                $subject,
                 $user,
                 $role,
             );
@@ -71,7 +86,9 @@ final class AcceptInvitationAction
             return $lockedInvitation;
         });
 
-        MembershipInvitationAccepted::dispatch($acceptedInvitation->fresh());
+        DB::afterCommit(static function () use ($acceptedInvitation): void {
+            MembershipInvitationAccepted::dispatch($acceptedInvitation);
+        });
     }
 
     private function emailFor(Model $user): ?string

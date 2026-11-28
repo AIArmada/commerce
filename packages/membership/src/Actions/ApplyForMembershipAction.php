@@ -8,7 +8,10 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Persistence\MembershipUniqueViolation;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -19,13 +22,17 @@ use ValueError;
 
 final class ApplyForMembershipAction
 {
-    private const string UNIQUE_INDEX = 'membership_applications_subject_applicant_status_unique';
+    private const string UNIQUE_INDEX = 'membership_applications_pending_unique';
 
     use AsAction;
 
+    public function __construct(private readonly MembershipSubjectGuard $subjectGuard) {}
+
     public function handle(Model $subject, Model $user, string $justification, array $meta = []): MembershipApplication
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
+        MembershipUserModel::assertPersisted($user);
+
+        $this->subjectGuard->validate($subject);
 
         $justification = mb_trim($justification);
 
@@ -45,7 +52,9 @@ final class ApplyForMembershipAction
         $created = false;
 
         try {
-            $application = DB::transaction(function () use ($applicantId, $justification, $meta, $subjectId, $subjectType, &$created): MembershipApplication {
+            $application = DB::transaction(function () use ($applicantId, $justification, $meta, $subject, $subjectId, $subjectType, &$created): MembershipApplication {
+                $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
                 $existing = $this->pendingApplicationQuery($subjectType, $subjectId, $applicantId)
                     ->lockForUpdate()
                     ->first();
@@ -82,11 +91,13 @@ final class ApplyForMembershipAction
             return $application;
         }
 
-        MembershipApplicationSubmitted::dispatch($application);
+        DB::afterCommit(static function () use ($application): void {
+            MembershipApplicationSubmitted::dispatch($application);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifySubmitted($application);
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifySubmitted(MembershipApplicationMapper::snapshot($application));
+            }
+        });
 
         return $application;
     }
@@ -114,18 +125,18 @@ final class ApplyForMembershipAction
 
         $encoded = json_encode($meta);
 
-        if ($encoded === false || mb_strlen($encoded) > 65535) {
+        if ($encoded === false || mb_strlen($encoded, '8bit') > 65535) {
             throw new InvalidArgumentException('Application metadata must not exceed 65535 bytes.');
         }
     }
 
     private function isApplicationUniquenessViolation(QueryException $exception): bool
     {
-        if (! in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
+        if (! MembershipUniqueViolation::matches($exception)) {
             return false;
         }
 
-        $message = mb_strtolower($exception->getMessage());
+        $message = MembershipUniqueViolation::detail($exception);
 
         if (str_contains($message, self::UNIQUE_INDEX)) {
             return true;
@@ -137,6 +148,7 @@ final class ApplyForMembershipAction
             && str_contains($message, 'subject_type')
             && str_contains($message, 'subject_id')
             && str_contains($message, 'applicant_id')
-            && str_contains($message, 'status');
+            && str_contains($message, 'status')
+            && str_contains($message, 'pending_guard');
     }
 }

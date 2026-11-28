@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Traits;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Membership\Enums\ApplicationStatus;
-use AIArmada\Membership\Enums\InvitationStatus;
+use AIArmada\Membership\Actions\CancelPendingMembershipRequestsAction;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
-use Carbon\CarbonImmutable;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -42,33 +39,13 @@ trait HasMembers
     public static function bootHasMembers(): void
     {
         static::deleting(function (self $subject): void {
-            DB::transaction(function () use ($subject): void {
-                $now = CarbonImmutable::now();
-
-                $subject->applications()->getQuery()
-                    ->withoutGlobalScope(OwnerScope::class)
-                    ->where('status', ApplicationStatus::Pending->value)
-                    ->update([
-                        'status' => ApplicationStatus::Cancelled->value,
-                        'cancelled_at' => $now,
-                    ]);
-
-                $subject->invitations()->getQuery()
-                    ->withoutGlobalScope(OwnerScope::class)
-                    ->where('status', InvitationStatus::Pending->value)
-                    ->update([
-                        'status' => InvitationStatus::Revoked->value,
-                        'revoked_at' => $now,
-                        'last_state_change_at' => $now,
-                    ]);
-            });
+            app(CancelPendingMembershipRequestsAction::class)->handle($subject);
         });
     }
 
     public function members(): BelongsToMany
     {
-        /** @var class-string<Model> $userModel */
-        $userModel = config('auth.providers.users.model', Model::class);
+        $userModel = MembershipUserModel::resolve();
 
         return $this->belongsToMany(
             $userModel,

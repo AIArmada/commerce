@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Tests\Fixtures;
 
-use AIArmada\Membership\Channels\InvitationChannelManager;
+use AIArmada\Membership\Support\InvitationChannelManager;
 
 trait RegistersFakeInvitationChannel
 {
@@ -17,10 +17,8 @@ trait RegistersFakeInvitationChannel
         $this->fakeChannel = new FakeInvitationChannel;
         $this->fakeVerifier = new FakeInvitationRecipientVerifier;
 
-        $manager = new InvitationChannelManager;
+        $manager = app(InvitationChannelManager::class);
         $manager->registerChannel($this->fakeChannel);
         $manager->registerVerifier($this->fakeVerifier);
-
-        app()->instance(InvitationChannelManager::class, $manager);
     }
 }

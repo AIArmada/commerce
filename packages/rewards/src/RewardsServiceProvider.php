@@ -4,36 +4,40 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards;
 
-use AIArmada\Rewards\Commands\ApplyRewardSourceCorrectionsCommand;
-use AIArmada\Rewards\Commands\ExpireRewardPointLotsCommand;
-use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
-use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Support\ManualRewardPayoutExecutor;
-use AIArmada\Rewards\Support\ManualRewardPayoutMethodCatalog;
-use AIArmada\Rewards\Support\MorphRewardRecipientResolver;
-use AIArmada\Rewards\Support\NullRewardBenefitCouponFulfillment;
-use AIArmada\Rewards\Support\NullRewardCorrectionKeySource;
-use AIArmada\Rewards\Support\NullRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardGratitudePlanner;
-use AIArmada\Rewards\Support\NullRewardReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardReservationResolver;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardBenefitCatalogService;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutExecutor;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutMethodCatalog;
+use AIArmada\Rewards\Drivers\MorphRewardRecipientResolver;
+use AIArmada\Rewards\Drivers\NullRewardBenefitCouponFulfillment;
+use AIArmada\Rewards\Drivers\NullRewardCorrectionKeySource;
+use AIArmada\Rewards\Drivers\NullRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Drivers\NullRewardGratitudePlanner;
+use AIArmada\Rewards\Drivers\NullRewardReadinessChecker;
+use AIArmada\Rewards\Drivers\NullRewardReservationResolver;
+use AIArmada\Rewards\Drivers\NullRewardSourceFactReader;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
+use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
+use AIArmada\Rewards\Platform\ExtensionRegistry;
+use AIArmada\Rewards\Platform\FeatureCatalog;
+use AIArmada\Rewards\Platform\FeatureModule;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class RewardsServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule> */
+    private array $featureModules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -55,7 +59,6 @@ final class RewardsServiceProvider extends PackageServiceProvider
         $this->app->bind(RewardReservationResolver::class, NullRewardReservationResolver::class);
         $this->app->bind(RewardReadinessChecker::class, NullRewardReadinessChecker::class);
         $this->app->bind(RewardFinancialReadinessChecker::class, NullRewardFinancialReadinessChecker::class);
-        $this->app->bind(RewardBenefitCatalog::class, RewardBenefitCatalogService::class);
         $this->app->bind(RewardPayoutExecutor::class, ManualRewardPayoutExecutor::class);
         $this->app->bind(RewardPayoutMethodCatalog::class, ManualRewardPayoutMethodCatalog::class);
         $this->app->bind(RewardBenefitCouponFulfillment::class, NullRewardBenefitCouponFulfillment::class);
@@ -63,6 +66,26 @@ final class RewardsServiceProvider extends PackageServiceProvider
         $this->app->bind(RewardCorrectionKeySource::class, NullRewardCorrectionKeySource::class);
         $this->app->bind(RewardGratitudePlanner::class, NullRewardGratitudePlanner::class);
 
-        $this->app->bind(RewardPreviewEvaluator::class, Support\RewardPreviewEngine::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+            $module = $this->app->make($class);
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException("Invalid Rewards feature module [{$class}].");
+            }
+
+            $this->featureModules[$feature] = $module;
+            $module->register($this->app);
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->featureModules as $module) {
+            $module->boot($this->app);
+        }
     }
 }

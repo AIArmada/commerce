@@ -10,6 +10,7 @@ use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(FilamentOrganizationsTestCase::class);
 
@@ -25,6 +26,15 @@ test('abstract members and invitations relation managers expose reusable hooks a
 
     $membersRm = new class extends AbstractMembersRelationManager
     {
+        public bool $allowAdd = false;
+
+        protected function authorizeMutation(string $ability): void
+        {
+            if (! $this->allowAdd || $ability !== 'add') {
+                parent::authorizeMutation($ability);
+            }
+        }
+
         protected function addMember(Model $owner, Model $member, string $role): void {}
 
         protected function changeMemberRole(Model $owner, Model $member, string $role): void {}
@@ -36,11 +46,21 @@ test('abstract members and invitations relation managers expose reusable hooks a
             return $this->searchUsers($term);
         }
 
+        public function probeOptionLabel(mixed $value): ?string
+        {
+            return $this->getUserOptionLabel($value);
+        }
+
         public function probeRoleOptions(): array
         {
             return $this->roleOptions();
         }
     };
+
+    expect(fn () => $membersRm->probeSearch('100%_'))->toThrow(HttpException::class)
+        ->and(fn () => $membersRm->probeOptionLabel('unknown'))->toThrow(HttpException::class);
+
+    $membersRm->allowAdd = true;
 
     $results = $membersRm->probeSearch('100%_');
     expect($results)->toHaveCount(1)
@@ -49,6 +69,11 @@ test('abstract members and invitations relation managers expose reusable hooks a
 
     $invitesRm = new class extends AbstractMemberInvitationsRelationManager
     {
+        public function probeAuthorization(Model $owner): void
+        {
+            $this->authorizeInvitationMutation('invite', $owner);
+        }
+
         protected function createInvitation(
             Model $owner,
             string $recipient,
@@ -65,5 +90,6 @@ test('abstract members and invitations relation managers expose reusable hooks a
         ): void {}
     };
 
-    expect($invitesRm)->toBeInstanceOf(AbstractMemberInvitationsRelationManager::class);
+    expect($invitesRm)->toBeInstanceOf(AbstractMemberInvitationsRelationManager::class)
+        ->and(fn () => $invitesRm->probeAuthorization(new User))->toThrow(HttpException::class);
 });

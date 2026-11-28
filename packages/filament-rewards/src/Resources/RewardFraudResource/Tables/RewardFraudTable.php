@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
+use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -57,7 +57,7 @@ class RewardFraudTable
                     ->modalDescription('Dismissal records reason/actor/time evidence. It is NOT award approval and clears no financial hold by itself.')
                     ->schema([Textarea::make('reason')->label('Dismissal reason')->required()->maxLength(2000)->rows(3)])
                     ->visible(fn (RewardAward $record): bool => self::fraudStatusFor($record) !== RewardSourceFraudStatus::Clear->value
-                        && auth()->user()?->can('reward-fraud-steward') === true)
+                        && RewardAdminPresenter::canStewardFraud())
                     ->action(function (RewardAward $record, array $data, DismissRewardFraudAction $dismiss): void {
                         // Handler boundary: `visible()` is presentation only, so
                         // re-check the staff role and the steward ability here.
@@ -66,7 +66,7 @@ class RewardFraudTable
                         abort_unless(auth()->user()?->can('reward-fraud-steward') === true, 403);
 
                         try {
-                            $dismiss->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $dismiss->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

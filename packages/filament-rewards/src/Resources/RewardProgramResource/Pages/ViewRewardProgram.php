@@ -6,13 +6,13 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
+use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use AIArmada\Rewards\Support\RewardPublishAssembler;
 use AIArmada\Rewards\Support\RewardRuleValidator;
@@ -28,6 +28,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -52,6 +54,7 @@ class ViewRewardProgram extends ViewRecord
         $record = $this->getRecord();
 
         abort_unless($record instanceof RewardProgram, 404);
+        abort_unless(RewardProgramResource::canView($record), 403);
 
         return $record;
     }
@@ -69,22 +72,24 @@ class ViewRewardProgram extends ViewRecord
             ->action(function (array $data): void {
                 $staff = RewardAdminPresenter::staffActor();
                 abort_unless($staff !== null, 403);
+                $program = $this->programRecord();
+                abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('publishVersion', $program), 403);
 
                 try {
-                    $payload = RewardPublishAssembler::assemble($this->programRecord()->mode, $data);
+                    $payload = RewardPublishAssembler::assemble($program->mode, $data);
                 } catch (InvalidArgumentException $exception) {
                     throw ValidationException::withMessages([$this->publishErrorField($exception) => $exception->getMessage()]);
                 }
 
                 try {
                     PublishRewardProgramVersionAction::run(
-                        $this->programRecord(),
+                        $program,
                         CarbonImmutable::parse((string) $data['effective_from']),
                         $payload['rules'],
                         $payload['terms'],
                         filled($data['reason'] ?? null) ? (string) $data['reason'] : null,
                         'user',
-                        (string) $staff->getKey(),
+                        (string) $staff->getAuthIdentifier(),
                     );
                 } catch (InvalidArgumentException $exception) {
                     throw ValidationException::withMessages([$this->publishErrorField($exception) => $exception->getMessage()]);
@@ -388,10 +393,12 @@ class ViewRewardProgram extends ViewRecord
                     ->required(),
             ])
             ->action(function (array $data): void {
-                abort_unless(RewardAdminPresenter::staffActor() !== null, 403);
+                $staff = RewardAdminPresenter::staffActor();
+                $program = $this->programRecord();
+                abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('transitionStatus', $program), 403);
 
                 try {
-                    TransitionRewardProgramStatusAction::run($this->programRecord(), (string) $data['to']);
+                    TransitionRewardProgramStatusAction::run($program, (string) $data['to']);
                 } catch (InvalidArgumentException $exception) {
                     throw ValidationException::withMessages(['to' => $exception->getMessage()]);
                 }
@@ -438,12 +445,16 @@ class ViewRewardProgram extends ViewRecord
                 Toggle::make('self_credit')->label('Actor is the sharer (self credit)')->default(false),
             ])
             ->action(function (array $data, PreviewRewardQualificationAction $preview): void {
+                $staff = RewardAdminPresenter::staffActor();
+                $program = $this->programRecord();
+                abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('previewQualification', $program), 403);
+
                 $actorId = '11111111-1111-4111-8111-111111111111';
                 $sharerId = ($data['self_credit'] ?? false) ? $actorId : '22222222-2222-4222-8222-222222222222';
 
                 try {
                     $result = $preview->handle(
-                        $this->programRecord(),
+                        (string) $program->getKey(),
                         RewardComponent::from((string) $data['component']),
                         [
                             'source_business_key' => 'fixture:preview:' . (string) $data['outcome'],

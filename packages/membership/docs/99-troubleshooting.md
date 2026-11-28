@@ -41,7 +41,7 @@ An invalid recipient throws before any invitation row is written.
 
 ## Re-invite Returns a Stale Invitation
 
-Re-inviting the same subject, channel, recipient, and role returns the existing pending invitation without a new event. If that invitation is past its expiry deadline, it is transitioned to `expired` and a fresh invitation is created instead. To persist expiry for reporting without waiting for a re-invite, call `$invitation->expireIfDue()` on the past-due rows.
+Re-inviting the same subject, channel, recipient, and role returns the existing pending invitation without a new event. If that invitation is past its expiry deadline, it is transitioned to `expired` and a fresh invitation is created instead. To persist expiry for reporting without waiting for a re-invite, call `$invitation->ExpireMembershipInvitationAction::run($invitation)` on the past-due rows.
 
 ## Pivot Table Is Missing
 

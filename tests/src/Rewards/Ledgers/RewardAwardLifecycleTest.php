@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\AcknowledgeRewardRecognitionAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\DismissRewardFraudAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardBadgeGrant;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AcknowledgeRewardRecognitionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -35,7 +35,7 @@ function lifecycleAward(RewardProgramMode $mode = RewardProgramMode::Points, str
     $component = RewardLedgerFixtures::componentFor($mode);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         $component,
         'user',
         $memberId,
@@ -55,7 +55,7 @@ function heldPointsAward(string $source = 'src-life-held-1'): array
     $reader->seed(RewardLedgerFixtures::fact($source, $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -154,13 +154,13 @@ it('refuses cash and benefit approval and fulfillment while unready', function (
 
     $memberId = (string) Str::uuid();
     $version = $program->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-lcash-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -262,7 +262,7 @@ it('dismisses fraud back to held without approving', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-lfraud-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['fraudStatus' => RewardSourceFraudStatus::Suspect]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

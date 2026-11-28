@@ -2,40 +2,40 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardAppeal;
-use AIArmada\Rewards\Models\RewardAppealDecision;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardCapCounter;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardMilestoneCycle;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardPointOperation;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Models\RewardPointOperation;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerWorkerDb;
@@ -181,7 +181,7 @@ function raceSeedProgram(string $family, string $case, ?array $caps = null, arra
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     $memberId = (string) Str::uuid();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     return [$program->refresh(), $version, $memberId];
 }
@@ -230,7 +230,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
         $reader->seed(RewardLedgerFixtures::fact('src-race-ver-1', $memberId));
 
         $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -247,7 +247,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
         $terms['version_label'] = 'draft-2';
         $effective = CarbonImmutable::parse('2026-07-01T00:00:00Z');
         $v2 = PublishRewardProgramVersionAction::run($program, $effective, $rules, $terms, 'raise', null, null, $effective);
-        EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
 
         $payload = [
             'program_ids' => [(string) $program->getKey()],
@@ -282,7 +282,7 @@ it('serializes two-family exclusivity races to a single claim', function (): voi
         [$programB] = raceSeedProgram('race-exclb', 'x1');
 
         $versionB = $programB->versions()->orderBy('version')->firstOrFail();
-        EnrollRewardMemberAction::run($programB, 'user', $memberId, $versionB, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $programB->getKey(), 'user', $memberId, (string) $versionB->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
         $payload = [
             'program_ids' => [(string) $programA->getKey(), (string) $programB->getKey()],
@@ -335,7 +335,7 @@ it('stacks compatible families concurrently without losing either award', functi
 
         foreach ([$programA, $programB] as $program) {
             $version = $program->versions()->orderBy('version')->firstOrFail();
-            EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+            EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         }
 
         $payload = [
@@ -519,7 +519,7 @@ it('achieves a milestone exactly once under concurrent contributions', function 
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
         $recipient = (string) Str::uuid();
-        EnrollRewardMemberAction::run($program, 'user', $recipient, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $recipient, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         $program = $program->refresh();
 
         $factA = raceFactPayload('src-race-mile-a', $recipient);
@@ -573,7 +573,7 @@ it('keeps buckets coherent when correction races spending', function (): void {
         $reader->seed(RewardLedgerFixtures::fact('src-race-corr-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -798,7 +798,7 @@ it('serializes concurrent appeal advances without duplicate decisions', function
         $reader->seed(RewardLedgerFixtures::fact('src-race-appeal-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1019,7 +1019,7 @@ it('serializes concurrent double approvals without duplicate obligations', funct
         $reader->seed(RewardLedgerFixtures::fact('src-race-approve2-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1064,7 +1064,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
         $reader->seed(RewardLedgerFixtures::fact('src-race-ao-rej', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
         $held = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1073,7 +1073,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
             CarbonImmutable::parse('2026-06-15T00:00:00Z'),
         );
         $rejected = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1130,7 +1130,7 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
         $recipient = (string) Str::uuid();
-        EnrollRewardMemberAction::run($program, 'user', $recipient, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $recipient, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         $program = $program->refresh();
 
         $reader = new FakeRewardSourceFactReader;
@@ -1384,7 +1384,7 @@ it('converges attested reversal and release with no resurrection', function (): 
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevrel-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1444,7 +1444,7 @@ it('blocks unattested reversal under release contention, then converges', functi
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevun-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1509,7 +1509,7 @@ it('serializes reversal and capture to exactly one settlement', function (): voi
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevcap-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1579,7 +1579,7 @@ it('serializes reversal and refund without resurrecting corrected credit', funct
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevref-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,

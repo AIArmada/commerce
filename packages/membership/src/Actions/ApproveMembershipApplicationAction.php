@@ -10,6 +10,8 @@ use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,8 @@ final class ApproveMembershipApplicationAction
 
     public function handle(MembershipApplication $application, Model $reviewer, MemberRole $role, ?string $note = null): void
     {
+        MembershipUserModel::assertPersisted($reviewer);
+
         $note = $this->normalizeNote($note);
 
         $approvedApplication = DB::transaction(function () use ($application, $note, $reviewer, $role): MembershipApplication {
@@ -31,24 +35,31 @@ final class ApproveMembershipApplicationAction
                 (string) $application->getKey(),
             );
 
+            $subject = $guardedApplication->subject;
+
+            if (! $subject instanceof Model) {
+                throw new RuntimeException('Cannot approve a membership application whose subject no longer exists.');
+            }
+
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
             $lockedApplication = MembershipApplication::query()
                 ->lockForUpdate()
                 ->whereKey($guardedApplication->getKey())
                 ->firstOrFail();
+
+            if ($lockedApplication->subject_type !== $subject->getMorphClass() || (string) $lockedApplication->subject_id !== (string) $subject->getKey()) {
+                throw new RuntimeException('Membership request subject changed during processing.');
+            }
 
             if ($lockedApplication->status !== ApplicationStatus::Pending) {
                 throw new RuntimeException('Only pending membership applications can be approved.');
             }
 
             $applicant = $lockedApplication->applicant;
-            $subject = $lockedApplication->subject;
 
             if (! $applicant instanceof Model) {
                 throw new RuntimeException('Cannot approve a membership application whose applicant no longer exists.');
-            }
-
-            if (! $subject instanceof Model) {
-                throw new RuntimeException('Cannot approve a membership application whose subject no longer exists.');
             }
 
             $lockedApplication->forceFill([
@@ -68,11 +79,13 @@ final class ApproveMembershipApplicationAction
             return $lockedApplication;
         });
 
-        MembershipApplicationApproved::dispatch($approvedApplication);
+        DB::afterCommit(static function () use ($approvedApplication): void {
+            MembershipApplicationApproved::dispatch($approvedApplication);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyApproved($approvedApplication);
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifyApproved(MembershipApplicationMapper::snapshot($approvedApplication));
+            }
+        });
     }
 
     private function normalizeNote(?string $note): ?string

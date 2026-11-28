@@ -2,16 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -203,4 +206,72 @@ it('refuses negative, zero, overflowing, and incoherent point operations', funct
 
     expect(fn () => ReleaseRewardPointsAction::run('rsv:unknown-1', 'x', CarbonImmutable::parse('2026-06-05T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'Unknown reservation');
+});
+
+it('rejects foreign reservation capture and replay without spending points', function (): void {
+    [$type, $recipient, $family, $unit] = pointsIdentity('capture-owner');
+    [, $otherRecipient, $otherFamily] = pointsIdentity('capture-foreign');
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+
+    CreditRewardPointsAction::run($type, $recipient, $family, $unit, 25, $at, null, null, null, 'op:cap-owner');
+    ReserveRewardPointsAction::run($type, $recipient, $family, $unit, 15, 'rsv:cap-owner', 'hold', $at);
+
+    foreach ([[$otherRecipient, $family, $unit], [$recipient, $otherFamily, $unit], [$recipient, $family, 'other']] as [$wrongRecipient, $wrongFamily, $wrongUnit]) {
+        expect(fn () => DebitRewardPointsAction::run($type, $wrongRecipient, $wrongFamily, $wrongUnit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at))
+            ->toThrow(InvalidArgumentException::class, 'different recipient, family, or unit');
+    }
+
+    expect(RewardPointMovement::query()->where('kind', 'debit')->count())->toBe(0);
+
+    DebitRewardPointsAction::run($type, $recipient, $family, $unit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at);
+
+    expect(fn () => DebitRewardPointsAction::run($type, $otherRecipient, $family, $unit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at))
+        ->toThrow(InvalidArgumentException::class, 'different recipient, family, or unit');
+
+    expect(RewardPointMovement::query()->where('kind', 'debit')->count())->toBe(1);
+});
+
+it('refunds a captured reservation only for its bound recipient and reservation', function (): void {
+    [$type, $recipient, $family, $unit] = pointsIdentity('refund-owner');
+    [, $otherRecipient] = pointsIdentity('refund-foreign');
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+    $api = app(RewardPointsApi::class);
+
+    CreditRewardPointsAction::run($type, $recipient, $family, $unit, 25, $at, null, null, null, 'op:refund-owner');
+    $api->reserve($type, $recipient, $family, $unit, 15, 'rsv:refund-owner', 'hold', $at);
+    $api->capture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'capture', $at, 'system', null);
+
+    expect(fn () => $api->refundCapture('rsv:refund-owner', $type, $otherRecipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null))
+        ->toThrow(InvalidArgumentException::class, 'different reservation or recipient');
+
+    expect(fn () => $api->refundCapture('rsv:other', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null))
+        ->toThrow(InvalidArgumentException::class, 'different reservation or recipient');
+
+    expect(RewardPointMovement::query()->where('kind', 'refund')->count())->toBe(0);
+
+    $api->refundCapture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null);
+    $api->refundCapture('rsv:refund-owner', $type, $recipient, 'spend:refund-owner', 'refund:owner', 'refund', $at, 'system', null);
+
+    expect(RewardPointMovement::query()->where('kind', 'refund')->count())->toBe(1)
+        ->and(RewardPointLedger::balancesFor($type, $recipient, $family, $unit, $at)->available)->toBe(25);
+});
+
+it('binds submission replays to the recorded reference and timestamps delivery', function (): void {
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+    $sending = RewardReservationSubmissionStatus::Sending->value;
+    $delivered = RewardReservationSubmissionStatus::Delivered->value;
+
+    $first = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-a', $at);
+
+    expect(fn () => MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-b', $at))
+        ->toThrow(InvalidArgumentException::class, 'different reference');
+
+    $replay = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $sending, 'ref-a', $at);
+    expect($replay->getKey())->toBe($first->getKey());
+
+    $resolved = MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', $delivered, 'receipt-a', $at->addMinute());
+    expect($resolved->resolved_at?->equalTo($at->addMinute()))->toBeTrue();
+
+    expect(fn () => MarkRewardReservationSubmittedAction::run('rsv:handoff-reference', RewardReservationSubmissionStatus::Failed->value, null, $at))
+        ->toThrow(InvalidArgumentException::class, 'terminal');
 });

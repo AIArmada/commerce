@@ -129,3 +129,21 @@ it('rejects an ownership transfer target from a different member model', functio
     expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $otherOrg->refresh()))
         ->toThrow(InvalidArgumentException::class, 'member model');
 });
+
+it('rejects an organization actor with a colliding member primary key', function (): void {
+    $creator = User::factory()->create();
+    $target = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Actor Identity Circle']);
+    AddMemberAction::make()->handle($organization, $target, MemberRole::Admin);
+
+    $impostor = new Organization;
+    $impostor->setAttribute($impostor->getKeyName(), $creator->getKey());
+    $impostor->exists = true;
+
+    expect(fn () => app(OrganizationAuthorization::class)->authorize($impostor, $organization, 'organization.manage-members'))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $impostor, $target))
+        ->toThrow(AuthorizationException::class);
+
+    expect($organization->ownerMember()->first()?->is($creator))->toBeTrue();
+});

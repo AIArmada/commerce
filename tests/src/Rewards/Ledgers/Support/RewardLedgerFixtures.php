@@ -6,23 +6,23 @@ namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
+use AIArmada\Rewards\Data\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
-use AIArmada\Rewards\Support\RewardSourceFact;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -120,10 +120,10 @@ final class RewardLedgerFixtures
 
         $memberId = (string) Str::uuid();
         $enrollment = EnrollRewardMemberAction::run(
-            $program,
+            (string) $program->getKey(),
             'user',
             $memberId,
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             CarbonImmutable::parse($enrolledAt),
         );
@@ -155,10 +155,10 @@ final class RewardLedgerFixtures
             TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $owned,
+                (string) $owned->getKey(),
                 'user',
                 $memberId,
-                $ownedVersion,
+                (string) $ownedVersion->getKey(),
                 'member-portal',
                 CarbonImmutable::parse('2026-06-10T00:00:00Z'),
             );
@@ -173,10 +173,10 @@ final class RewardLedgerFixtures
             TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $global,
+                (string) $global->getKey(),
                 'user',
                 $memberId,
-                $globalVersion,
+                (string) $globalVersion->getKey(),
                 'member-portal',
                 CarbonImmutable::parse('2026-06-10T00:00:00Z'),
             );

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership;
 
-use AIArmada\Membership\Channels\InvitationChannelManager;
-use AIArmada\Membership\Console\Commands\SyncRolesCommand;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
+use AIArmada\Membership\Drivers\EmailInvitationChannel;
+use AIArmada\Membership\Drivers\EmailInvitationRecipientVerifier;
+use AIArmada\Membership\EntryPoints\Commands\SyncRolesCommand;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -26,7 +28,9 @@ final class MembershipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(MembershipRoleSyncService::class);
-        $this->app->singleton(InvitationChannelManager::class);
+        $this->app->singleton(SyncMembershipRolesAction::class);
+        $this->app->singleton(InvitationChannelManager::class, static fn (): InvitationChannelManager => (new InvitationChannelManager)
+            ->registerChannel(app(EmailInvitationChannel::class))
+            ->registerVerifier(app(EmailInvitationRecipientVerifier::class)));
     }
 }

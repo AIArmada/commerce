@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Rewards\Features\Entitlements\Queries;
+
+use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardDecision;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardPayoutAwardSnapshot;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use InvalidArgumentException;
+
+final readonly class RewardAwardLockQuery implements RewardAwardLockApi
+{
+    public function assertAwardProgram(string $awardId, string $programId): void
+    {
+        $award = RewardAwardGuard::findAwardOrFail($awardId);
+
+        if ((string) $award->program_id !== $programId) {
+            throw new InvalidArgumentException('Award does not belong to the supplied reward program.');
+        }
+    }
+
+    public function assertAwardInScopeWhenExists(string $awardId): void
+    {
+        $this->assertAwardsInScopeWhenExist([$awardId]);
+    }
+
+    public function assertAwardsInScopeWhenExist(array $awardIds): void
+    {
+        if ($awardIds === []) {
+            return;
+        }
+
+        $programIds = RewardAward::query()
+            ->whereIn('id', array_values(array_unique($awardIds)))
+            ->distinct()
+            ->pluck('program_id');
+
+        $programs = app(RewardProgramLockApi::class);
+
+        foreach ($programIds as $programId) {
+            $programs->assertProgramInScope((string) $programId);
+        }
+    }
+
+    public function withAwardOwnerWhenExists(string $awardId, callable $callback): mixed
+    {
+        $programId = RewardAward::query()->whereKey($awardId)->value('program_id');
+
+        return is_string($programId)
+            ? app(RewardProgramLockApi::class)->withProgramOwner($programId, $callback)
+            : $callback();
+    }
+
+    public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision
+    {
+        $query = RewardAward::query()->whereKey($awardId);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $award = $query->first(['id', 'program_id', 'recipient_type', 'recipient_id', 'status']);
+
+        if ($award === null) {
+            return null;
+        }
+
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $award->program_id);
+
+        return new RewardAwardDecision(
+            id: (string) $award->getKey(),
+            recipientType: (string) $award->recipient_type,
+            recipientId: (string) $award->recipient_id,
+            status: $award->status->value,
+        );
+    }
+
+    public function lockPayoutAward(string $awardId): RewardPayoutAwardSnapshot
+    {
+        $award = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first([
+            'id', 'program_id', 'recipient_type', 'recipient_id', 'component', 'status',
+            'amount_snapshot', 'obligation_epoch', 'obligated_minor',
+        ]);
+
+        if ($award === null) {
+            throw new InvalidArgumentException('Unknown reward award.');
+        }
+
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $award->program_id);
+
+        return new RewardPayoutAwardSnapshot(
+            id: (string) $award->getKey(),
+            programId: (string) $award->program_id,
+            recipientType: (string) $award->recipient_type,
+            recipientId: (string) $award->recipient_id,
+            component: $award->component->value,
+            status: $award->status->value,
+            amountSnapshot: $award->amount_snapshot,
+            obligationEpoch: $award->obligation_epoch,
+            obligatedMinor: $award->obligated_minor,
+        );
+    }
+
+    public function lockScopedAward(string $awardId): void
+    {
+        RewardAwardGuard::findAwardOrFail($awardId);
+
+        if (! RewardAward::query()->whereKey($awardId)->lockForUpdate()->first(['id']) instanceof RewardAward) {
+            throw new InvalidArgumentException('Unknown reward award.');
+        }
+    }
+
+    public function lockAndFindReversedAwards(array $awardIds): array
+    {
+        if ($awardIds === []) {
+            return [];
+        }
+
+        $awardIds = array_values(array_unique($awardIds));
+
+        $references = RewardAward::query()
+            ->whereIn('id', $awardIds)
+            ->get(['id', 'program_id']);
+
+        if ($references->count() !== count($awardIds)) {
+            throw new InvalidArgumentException('Linked debit award is missing.');
+        }
+
+        $programs = app(RewardProgramLockApi::class);
+
+        foreach ($references->pluck('program_id')->unique() as $programId) {
+            $programs->assertProgramInScope((string) $programId);
+        }
+
+        // Program provenance is immutable; validate it before taking any award lock.
+        $awards = RewardAward::query()
+            ->whereIn('id', $awardIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id', 'status']);
+
+        if ($awards->count() !== count($awardIds)) {
+            throw new InvalidArgumentException('Linked debit award is missing.');
+        }
+
+        return $awards
+            ->filter(static fn (RewardAward $award): bool => $award->status === RewardAwardStatus::Reversed)
+            ->map(static fn (RewardAward $award): string => (string) $award->getKey())
+            ->values()
+            ->all();
+    }
+}

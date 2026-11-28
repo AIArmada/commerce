@@ -40,23 +40,23 @@ use AIArmada\Referrals\Support\ReferralContactNormalizer;
 use AIArmada\Referrals\Support\ReferralProgramAttributeNormalizer;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use AIArmada\Referrals\Support\ReferralRewardSpecValidator;
-use AIArmada\Rewards\Actions\ApplyRewardSourceCorrectionsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardMilestoneCycle;
-use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ApplyRewardSourceCorrectionsAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
@@ -433,18 +433,18 @@ it('fulfils each referral side against its own role, recipient, and family', fun
 
     OwnerContext::withOwner($owner, function () use ($rewardsProgram, $version, $referrer, $invitee, $recipientType, $start): void {
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $invitee->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
@@ -486,10 +486,10 @@ it('fulfils each referral side against its own role, recipient, and family', fun
         TransitionRewardProgramStatusAction::run($refereeProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($refereeProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $refereeProgram,
+            (string) $refereeProgram->getKey(),
             $recipientType,
             (string) $invitee->getKey(),
-            $refereeVersion,
+            (string) $refereeVersion->getKey(),
             'member-portal',
             $start,
         );
@@ -509,7 +509,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
     });
 
     $asOf = CarbonImmutable::now('UTC')->addMinute();
-    $spendableBefore = RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf);
+    $spendableBefore = OwnerContext::withOwner($owner, fn () => RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf));
 
     expect($spendableBefore->available)->toBe(10);
 
@@ -565,7 +565,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
             ->where('source_business_key', $businessKey)
             ->whereIn('status', [RewardAwardStatus::Held, RewardAwardStatus::PendingReview, RewardAwardStatus::Approved, RewardAwardStatus::Fulfilled])
             ->exists())->toBeFalse()
-        ->and(RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf)->available)->toBe(0)
+        ->and(OwnerContext::withOwner($owner, fn () => RewardPointLedger::balancesFor($recipientType, (string) $referrer->getKey(), 'referral-share', 'pts', $asOf))->available)->toBe(0)
         ->and($reversed->metadata['rewards_reversal'])->toBe('verified_corrections_sweep')
         ->and($orphanContribution->fresh()->revoked_at)->toBeNull();
 });
@@ -618,10 +618,10 @@ it('blocks the referral reversal when the rewards award cannot be reversed', fun
         TransitionRewardProgramStatusAction::run($rewardsProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($rewardsProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
@@ -658,7 +658,7 @@ it('blocks the referral reversal when the rewards award cannot be reversed', fun
         );
         MarkRewardReservationSubmittedAction::run(
             'rsv:referral-blocked-1',
-            RewardPointReservationSubmission::STATUS_SENDING,
+            RewardReservationSubmissionStatus::Sending->value,
             'ext-referral-blocked-1',
         );
     });
@@ -721,10 +721,10 @@ it('fulfils the referrer side only from the family-bound rewards program', funct
             TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $program,
+                (string) $program->getKey(),
                 $recipientType,
                 (string) $referrer->getKey(),
-                $version,
+                (string) $version->getKey(),
                 'member-portal',
                 $start,
             );
@@ -791,10 +791,10 @@ it('keeps a global rewards program outside tenant referral fulfilment by default
         TransitionRewardProgramStatusAction::run($globalProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($globalProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $globalProgram,
+            (string) $globalProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );

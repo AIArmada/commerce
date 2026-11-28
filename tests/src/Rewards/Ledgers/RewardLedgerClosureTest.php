@@ -2,31 +2,31 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
+use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardCapCounter;
-use AIArmada\Rewards\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardPointOperation;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
+use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Models\RewardPointOperation;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -118,7 +118,7 @@ it('B refuses held approval while the source stays underverified', function (): 
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -153,7 +153,7 @@ it('B advances verified held awards without duplicate claims or cap use', functi
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b2', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -294,7 +294,7 @@ it('B clears only targeted merit gates on overturn and never published rules', f
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b5', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -331,7 +331,7 @@ it('B clears only targeted merit gates on overturn and never published rules', f
     $reader2->seed(RewardLedgerFixtures::fact('src-cl-b5b', $member2, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $held = (new EvaluateRewardEntitlementAction($reader2))->handle(
-        $program2,
+        (string) $program2->getKey(),
         RewardComponent::Points,
         'user',
         $member2,
@@ -350,7 +350,7 @@ it('B refuses overturns that would bypass frozen outcome rules', function (): vo
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b6', $memberId, '2026-06-12T00:00:00Z', 'saved_item'));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

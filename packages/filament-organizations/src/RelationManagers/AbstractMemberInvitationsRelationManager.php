@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
@@ -109,7 +109,10 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
         Model $actor,
     ): void;
 
-    protected function authorizeInvitationMutation(string $ability, Model $owner): void {}
+    protected function authorizeInvitationMutation(string $ability, Model $owner): void
+    {
+        abort(403);
+    }
 
     /**
      * @param  Builder<MembershipInvitation>  $query

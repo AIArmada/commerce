@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Membership\EntryPoints\Commands;
+
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
+use Illuminate\Console\Command;
+use Spatie\Permission\PermissionRegistrar;
+
+final class SyncRolesCommand extends Command
+{
+    protected $signature = 'membership:sync-roles
+        {--flush-cache : Flush permission cache after sync}
+        {--prune : Remove permissions not configured for membership roles}';
+
+    protected $description = 'Reconcile membership roles into Spatie permission roles.';
+
+    public function handle(SyncMembershipRolesAction $syncService): int
+    {
+        $count = $syncService->syncAll(
+            prune: (bool) $this->option('prune'),
+        );
+
+        if ($this->option('flush-cache')) {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $this->info('Permission cache flushed.');
+        }
+
+        $this->info("Synced {$count} membership roles.");
+
+        return self::SUCCESS;
+    }
+}

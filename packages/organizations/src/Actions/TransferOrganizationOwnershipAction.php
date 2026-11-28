@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Actions;
 
+use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
@@ -22,10 +22,11 @@ final class TransferOrganizationOwnershipAction
 
     public function handle(Organization $organization, Model $actor, Model $newOwner): Organization
     {
-        app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
-
         if ($actor->is($newOwner)) {
             return DB::transaction(function () use ($actor, $organization): Organization {
+                $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+                app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
+
                 $owners = $organization->ownerMember()->lockForUpdate()->get();
 
                 if ($owners->count() !== 1) {
@@ -43,6 +44,9 @@ final class TransferOrganizationOwnershipAction
         }
 
         return DB::transaction(function () use ($actor, $newOwner, $organization): Organization {
+            $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+            app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
+
             $owners = $organization->ownerMember()->lockForUpdate()->get();
             $target = $organization->members()->lockForUpdate()->whereKey($newOwner->getKey())->first();
 
@@ -56,7 +60,7 @@ final class TransferOrganizationOwnershipAction
                 throw new RuntimeException('The new owner must already be an organization member.');
             }
 
-            if ($target->getMorphClass() !== $newOwner->getMorphClass()) {
+            if (! $newOwner->exists || ! $target->is($newOwner) || ! is_a($newOwner, $target::class)) {
                 throw new InvalidArgumentException('The new owner must use the organization member model.');
             }
 
@@ -70,7 +74,7 @@ final class TransferOrganizationOwnershipAction
             $members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]);
             $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]);
 
-            $roleSync = app(MembershipRoleSyncService::class);
+            $roleSync = app(SyncMembershipRolesAction::class);
             $roleSync->revokeFromUser($organization, $currentOwner, MemberRole::Owner);
             $roleSync->assignToUser($organization, $currentOwner, MemberRole::Admin);
 

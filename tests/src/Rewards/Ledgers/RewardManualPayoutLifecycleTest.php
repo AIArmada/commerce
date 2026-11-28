@@ -3,41 +3,41 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ReconcileRewardPayoutAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutExecutor;
+use AIArmada\Rewards\Drivers\ManualRewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardAwardEntry;
-use AIArmada\Rewards\Models\RewardBudgetMovement;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\ManualRewardPayoutExecutor;
-use AIArmada\Rewards\Support\ManualRewardPayoutMethodCatalog;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -63,16 +63,16 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     $staff = (string) Str::uuid();
 
     RecordRewardFundingSourceAction::run($prefix . '-source', 'MYR', 10000, 'user', $staff, 'staff');
-    RecordRewardFundingAction::run($program, 'MYR', 10000, $prefix . '-source', 'user', $staff, 'staff');
+    RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 10000, $prefix . '-source', 'user', $staff, 'staff');
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -80,7 +80,7 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     $reader->seed(RewardLedgerFixtures::fact($prefix . '-attendance', $memberId));
 
     $result = EvaluateRewardEntitlementAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -126,7 +126,7 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     );
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         $payee,
         'manual',
         'program',
@@ -207,7 +207,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'native-manual-source',
@@ -222,10 +222,10 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     $this->travelTo(CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
     );
 
@@ -234,7 +234,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     $this->travelTo(CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     $result = EvaluateRewardEntitlementAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -281,7 +281,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     );
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         $payee,
         'manual',
         'program',

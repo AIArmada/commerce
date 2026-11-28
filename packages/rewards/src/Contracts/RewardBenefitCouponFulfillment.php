@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Data\RewardCouponGrant;
+use AIArmada\Rewards\Data\RewardCouponTerms;
 use Carbon\CarbonImmutable;
 
 /**
@@ -23,7 +23,7 @@ interface RewardBenefitCouponFulfillment
      * Issue the coupon backing the grant, exactly once per grant key.
      * Returns the issued coupon code stored as the grant external ref.
      */
-    public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string;
+    public function issue(RewardCouponGrant $grant, RewardCouponTerms $item, CarbonImmutable $decided): string;
 
     /**
      * Assert canonical coupon use: the cited (or auto-resolved) usage must
@@ -32,11 +32,11 @@ interface RewardBenefitCouponFulfillment
      *
      * @param  array<string, mixed>  $useEvidence
      */
-    public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void;
+    public function assertCanonicalUsage(RewardCouponGrant $grant, array $useEvidence): void;
 
     /**
      * Revoke the issued coupon. Throws when the coupon is missing or was
      * already used — consumed value needs a recovery case, not revocation.
      */
-    public function revoke(RewardBenefitGrant $grant): void;
+    public function revoke(RewardCouponGrant $grant): void;
 }

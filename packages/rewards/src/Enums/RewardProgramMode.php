@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Enums;
 
+use AIArmada\Rewards\Data\RewardComponent;
+
 enum RewardProgramMode: string
 {
     case Recognition = 'recognition';

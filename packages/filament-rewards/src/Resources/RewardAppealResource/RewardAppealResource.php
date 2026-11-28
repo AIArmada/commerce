@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardAppealResource;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppeals;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Schemas\RewardAppealInfolist;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Tables\RewardAppealsTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
-use AIArmada\Rewards\Models\RewardAppeal;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardAppealResource extends Resource
+class RewardAppealResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -44,7 +44,7 @@ class RewardAppealResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyViaAward(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyViaAward(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

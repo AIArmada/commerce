@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreWorkerDb;
 use Carbon\CarbonImmutable;
@@ -194,7 +194,7 @@ it('assigns unique acceptance seqs under concurrent reaccepts', function (): voi
             null,
             $effective,
         );
-        $enrollment = EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $version, 'api', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', (string) Str::uuid(), (string) $version->getKey(), 'api', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
         $payload = [
             'enrollment_id' => (string) $enrollment->getKey(),

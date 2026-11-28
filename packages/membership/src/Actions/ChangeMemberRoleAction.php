@@ -7,6 +7,8 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
+use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -17,46 +19,48 @@ final class ChangeMemberRoleAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly MembershipMembersQuery $members,
+        private readonly MembershipSubjectGuard $subjectGuard,
+        private readonly AddMemberAction $addMember,
+    ) {}
+
     public function handle(Model $subject, Model $user, MemberRole $role): void
     {
-        app(MembershipSubjectGuard::class)->validate($subject);
-
-        /** @phpstan-ignore method.notFound */
-        $member = $subject->members()->whereKey($user->getKey())->first();
-
-        if ($member === null) {
-            throw new RuntimeException('Cannot change the role of a non-member.');
-        }
+        $this->subjectGuard->validate($subject);
 
         $oldRole = null;
 
         DB::transaction(function () use ($role, $subject, $user, &$oldRole): void {
-            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->first();
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-            /** @phpstan-ignore method.notFound */
-            $freshMember = $subject->members()->whereKey($user->getKey())->first();
+            $freshMember = $this->members->find($subject, $user);
 
             if ($freshMember === null) {
                 throw new RuntimeException('Cannot change the role of a non-member.');
             }
 
             if ($subject instanceof MembershipMutationGuard) {
-                $subject->assertMemberRoleCanChange($freshMember, $role);
+                $subject->assertMemberRoleCanChange(MembershipIdentityMapper::fromModel($freshMember), $role->value, MemberRole::fromSpatieRoleName((string) $this->members->role($freshMember))?->value);
             }
 
-            /** @phpstan-ignore property.notFound */
-            $oldRole = MemberRole::fromSpatieRoleName((string) $freshMember->pivot?->role);
+            $oldRole = MemberRole::fromSpatieRoleName((string) $this->members->role($freshMember));
 
-            AddMemberAction::make()->handleResolvedMember($subject, $user, $role, $freshMember, false);
+            $this->addMember->handleResolvedMember($subject, $user, $role, $freshMember, false);
         });
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberRoleChanged(
-                $subject,
-                $user,
-                $oldRole,
-                $role,
-            );
+            $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+            $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+            DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $oldRole, $role): void {
+                app(MembershipHook::class)->onMemberRoleChanged(
+                    $subjectIdentity,
+                    $userIdentity,
+                    $oldRole->value,
+                    $role->value,
+                );
+            });
         }
     }
 }

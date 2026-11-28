@@ -6,9 +6,11 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\RewardFundingResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingSource;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -16,6 +18,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -44,6 +48,7 @@ class ListRewardFunding extends ListRecords
                 ->action(function (array $data, RecordRewardFundingSourceAction $recorder): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('record', RewardFundingSource::class), 403);
 
                     try {
                         $recorder->handle(
@@ -51,7 +56,7 @@ class ListRewardFunding extends ListRecords
                             (string) $data['currency'],
                             (int) $data['amount_minor'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );
@@ -68,7 +73,12 @@ class ListRewardFunding extends ListRecords
                 ->modalHeading('Record confirmed funding')
                 ->modalDescription('Allocate confirmed value from a recorded source to one program. Record the source first; this never moves live money.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => RewardProgram::query()->orderBy('title')->pluck('title', 'id')->all())->required()->searchable(),
+                    Select::make('program_id')
+                        ->label('Program')
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => app(RewardProgramDirectoryApi::class)->options($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) && $value !== '' ? app(RewardProgramDirectoryApi::class)->title($value) : null)
+                        ->required(),
                     TextInput::make('currency')->required()->maxLength(3)->default('MYR'),
                     TextInput::make('amount_minor')->label('Amount (minor units)')->required()->numeric()->minValue(1),
                     TextInput::make('source_ref')->label('Source reference')->required()->maxLength(191),
@@ -77,6 +87,7 @@ class ListRewardFunding extends ListRecords
                 ->action(function (array $data, RecordRewardFundingAction $recorder): void {
                     $staff = RewardAdminPresenter::staffActor();
                     abort_unless($staff !== null, 403);
+                    abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('record', [RewardFundingEntry::class, (string) ($data['program_id'] ?? '')]), 403);
 
                     try {
                         $recorder->handle(
@@ -85,7 +96,7 @@ class ListRewardFunding extends ListRecords
                             (int) $data['amount_minor'],
                             (string) $data['source_ref'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );

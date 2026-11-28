@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\DismissRewardFraudAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\ReverseRewardFulfillmentAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardPayee;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ReverseRewardFulfillmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -27,6 +26,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -35,11 +35,12 @@ class RewardAwardsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => RewardProgramScopeQuery::withProgramTitle($query))
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardAward $record): string => (string) (RewardProgram::query()->whereKey((string) $record->program_id)->value('title') ?? $record->family_key)),
+                    ->state(fn (RewardAward $record): string => (string) ($record->getAttribute('program_title') ?? $record->family_key)),
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(fn (RewardAward $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id))
@@ -118,7 +119,7 @@ class RewardAwardsTable
                         $staff = self::authorize($record, 'dismissFraud');
 
                         try {
-                            $dismiss->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $dismiss->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -149,20 +150,22 @@ class RewardAwardsTable
                     ->action(function (RewardAward $record, array $data, RequestRewardPayoutAction $request): void {
                         $staff = self::authorize($record, 'requestPayout');
 
-                        $payee = RewardPayee::query()->whereKey((string) ($data['payee_id'] ?? ''))->first();
-
-                        if (! $payee instanceof RewardPayee) {
-                            throw ValidationException::withMessages(['payee_id' => 'Select a verified destination.']);
-                        }
+                        $payeeId = (string) ($data['payee_id'] ?? '');
 
                         try {
+                            $method = app(RewardPayeeSelectionApi::class)->methodForAward((string) $record->getKey(), $payeeId);
+
+                            if ($method === null) {
+                                throw new InvalidArgumentException('Select a verified destination.');
+                            }
+
                             $request->handle(
-                                $record,
-                                $payee,
-                                (string) $payee->method,
+                                (string) $record->getKey(),
+                                $payeeId,
+                                $method,
                                 (string) ($data['fee_payer'] ?? 'program'),
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                             );
                         } catch (InvalidArgumentException $exception) {
@@ -187,12 +190,9 @@ class RewardAwardsTable
                     ->action(function (RewardAward $record, array $data, TransitionRewardAwardAction $transition): void {
                         $staff = self::authorize($record, 'fulfill');
 
-                        $confirmed = RewardPayoutRequest::query()
-                            ->where('award_id', $record->getKey())
-                            ->where('status', RewardPayoutRequestStatus::Confirmed->value)
-                            ->first();
+                        $confirmed = app(RewardPayoutQueryApi::class)->forAward((string) $record->getKey());
 
-                        if (! $confirmed instanceof RewardPayoutRequest) {
+                        if ($confirmed === null || $confirmed->status !== RewardPayoutRequestStatus::Confirmed->value) {
                             throw ValidationException::withMessages(['reason' => 'No confirmed payout exists for this award.']);
                         }
 
@@ -201,10 +201,10 @@ class RewardAwardsTable
                                 $record,
                                 RewardAwardStatus::Fulfilled,
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                                 (string) $data['reason'],
-                                ['payout_request_id' => (string) $confirmed->getKey()],
+                                ['payout_request_id' => $confirmed->id],
                             );
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
@@ -238,16 +238,7 @@ class RewardAwardsTable
      */
     private static function verifiedPayeeOptions(RewardAward $record): array
     {
-        return RewardPayee::query()
-            ->where('recipient_type', (string) $record->recipient_type)
-            ->where('recipient_id', (string) $record->recipient_id)
-            ->where('status', RewardPayeeStatus::Verified->value)
-            ->orderByDesc('verified_at')
-            ->get()
-            ->mapWithKeys(static fn (RewardPayee $payee): array => [
-                (string) $payee->getKey() => (string) $payee->method . ' — ' . (string) $payee->account_display,
-            ])
-            ->all();
+        return app(RewardPayeeSelectionApi::class)->optionsForAward((string) $record->getKey());
     }
 
     private static function reverse(
@@ -264,7 +255,7 @@ class RewardAwardsTable
                 $outcome = ReverseRewardFulfillmentAction::run(
                     $record,
                     'user',
-                    (string) $staff->getKey(),
+                    (string) $staff->getAuthIdentifier(),
                     RewardAdminPresenter::staffRole(),
                     $reason,
                 );
@@ -296,7 +287,7 @@ class RewardAwardsTable
         $staff = self::authorize($record, $ability);
 
         try {
-            $transition->handle($record, $to, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), $reason);
+            $transition->handle($record, $to, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), $reason);
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
         }

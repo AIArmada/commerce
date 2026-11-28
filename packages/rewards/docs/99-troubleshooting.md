@@ -30,7 +30,7 @@ Without `--keys`, the sweep reads the bound `RewardCorrectionKeySource`. The def
 
 ## Cross-tenant writes throw `AuthorizationException`
 
-Inbound program/award/request/grant/enrollment/recovery/contribution ids are validated against the current owner scope by `RewardProgramGuard`. Wrap host batch work in `OwnerContext::withOwner($owner, ...)` per owner. Member-role actors cannot claw back award points, settle or write off recoveries, leave or reaccept enrollments, or invalidate milestone contributions — those paths require a staff/admin/system identity on top of the owner scope. With `owner.enabled=false` the guard degrades to a plain existence lookup, so single-tenant hosts are unchanged.
+Inbound program/award/request/grant/enrollment/recovery/contribution ids are validated against the current owner scope by the owning feature's scoped guard. Wrap host batch work in `OwnerContext::withOwner($owner, ...)` per owner. Member-role actors cannot claw back award points, settle or write off recoveries, leave or reaccept enrollments, or invalidate milestone contributions — those paths require a staff/admin/system identity on top of the owner scope. With `owner.enabled=false` the guard degrades to a plain existence lookup, so single-tenant hosts are unchanged.
 
 ## System runs throw `NoCurrentOwnerException`
 
@@ -41,12 +41,12 @@ need — and must not be wrapped in — an ambient owner. If a custom host job
 calls a core action without any owner context, wrap the call per program:
 
 ```php
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 
-RewardProgramGuard::withProgramOwner($programId, static fn () => $action->handle(...));
+app(RewardProgramLockApi::class)->withProgramOwner($programId, static fn () => $action->handle(...));
 ```
 
-`RewardProgramGuard::withProgramOwner()` throws
+`app(RewardProgramLockApi::class)->withProgramOwner()` throws
 `InvalidArgumentException` for an unknown program id or a program whose
 owner row was deleted; the queue then retries/dead-letters instead of
 silently skipping the work.

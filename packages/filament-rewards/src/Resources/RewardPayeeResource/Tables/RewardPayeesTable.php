@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\RejectRewardPayeeAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
-use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Actions\RejectRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -16,6 +16,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -56,6 +58,7 @@ class RewardPayeesTable
                     ->action(function (RewardPayee $record, VerifyRewardPayeeAction $verify): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('verify', $record), 403);
 
                         try {
                             $verify->handle(
@@ -65,7 +68,7 @@ class RewardPayeesTable
                                 (string) $record->account_ref,
                                 (string) $record->account_display,
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                                 ['verified_from_registration_id' => (string) $record->getKey()],
                             );
@@ -87,9 +90,10 @@ class RewardPayeesTable
                     ->action(function (RewardPayee $record, array $data, RejectRewardPayeeAction $reject): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('reject', $record), 403);
 
                         try {
-                            $reject->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $reject->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

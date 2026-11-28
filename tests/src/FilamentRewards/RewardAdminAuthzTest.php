@@ -5,28 +5,45 @@ declare(strict_types=1);
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppeals;
+use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
+use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
+use AIArmada\FilamentRewards\Resources\RewardAwardResource\RewardAwardResource;
+use AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Pages\ListRewardBenefitGrants;
+use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
+use AIArmada\FilamentRewards\Resources\RewardFraudResource\RewardFraudResource;
+use AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages\ListRewardFunding;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
+use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\CreateRewardProgram;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ListRewardPrograms;
+use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardProgram;
+use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
+use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -73,7 +90,7 @@ function rewardAuthzHeldAward(bool $suspect = false): RewardAward
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
-    EnrollRewardMemberAction::run($program->refresh(), 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact(
@@ -86,7 +103,7 @@ function rewardAuthzHeldAward(bool $suspect = false): RewardAward
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program->refresh(),
+        (string) $program->getKey(),
         RewardComponent::Recognition,
         'user',
         $memberId,
@@ -327,4 +344,216 @@ it('refuses a fraud dismissal without the steward ability, even when the action 
 
     expect($status)->toBe(403)
         ->and($award->fresh()->status)->toBe(RewardAwardStatus::Held);
+});
+
+it('requires both staff membership and fraud stewardship to list fraud cases', function (): void {
+    $outsider = User::factory()->create();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => true);
+
+    Livewire::actingAs($outsider)
+        ->test(ListRewardFraudCases::class)
+        ->assertStatus(403);
+
+    $this->actingAs($this->staff);
+
+    expect(RewardFraudResource::canViewAny())->toBeTrue();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => false);
+
+    expect(RewardFraudResource::canViewAny())->toBeFalse();
+});
+
+it('denies non-staff access to administrative resource lists even with permissive host policies', function (string $page): void {
+    $outsider = User::factory()->create();
+    Gate::before(static fn (): bool => true);
+
+    Livewire::actingAs($outsider)->test($page)->assertStatus(403);
+})->with([
+    ListRewardPrograms::class,
+    ListRewardAwards::class,
+    ListRewardAppeals::class,
+    ListRewardFunding::class,
+    ListRewardPayees::class,
+    ListRewardPayouts::class,
+    ListRewardBenefitItems::class,
+    ListRewardBenefitGrants::class,
+    ListRewardRecoveries::class,
+    ListRewardFraudCases::class,
+]);
+
+it('denies non-staff direct access to administrative record pages', function (): void {
+    $award = rewardAuthzHeldAward();
+    $appeal = OpenRewardAppealAction::run(
+        $award,
+        'user',
+        (string) $award->recipient_id,
+        'member',
+        'Please review my award.',
+        null,
+        CarbonImmutable::parse('2026-06-16T00:00:00Z'),
+    );
+    $outsider = User::factory()->create();
+    Gate::before(static fn (): bool => true);
+
+    Livewire::actingAs($outsider)->test(ViewRewardProgram::class, ['record' => $award->program_id])->assertStatus(403);
+    Livewire::actingAs($outsider)->test(ViewRewardAward::class, ['record' => $award->getKey()])->assertStatus(403);
+    Livewire::actingAs($outsider)->test(ViewRewardAppeal::class, ['record' => $appeal->getKey()])->assertStatus(403);
+});
+
+it('denies direct resource authorization for an award outside the active owner scope', function (): void {
+    $award = rewardAuthzHeldAward();
+    $other = User::factory()->create();
+    $this->actingAs($this->staff);
+
+    Gate::before(static fn (): bool => true);
+
+    expect(RewardAwardResource::canView($award))->toBeTrue()
+        ->and(OwnerContext::withOwner($other, fn (): bool => RewardAwardResource::canView($award)))->toBeFalse();
+});
+
+it('requires fraud stewardship for direct record authorization', function (): void {
+    $award = rewardAuthzHeldAward(true);
+    $this->actingAs($this->staff);
+
+    Gate::define('reward-fraud-steward', static fn (): bool => true);
+    expect(RewardFraudResource::canView($award))->toBeTrue();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => false);
+    expect(RewardFraudResource::canView($award))->toBeFalse();
+});
+
+it('requires operation-specific payout authorization inside the handler', function (string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    $request = RewardPayoutRequest::factory()->make();
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardPayouts::class,
+        $ability,
+        $request,
+        $data,
+    ))->toBe(403);
+})->with([
+    'approve' => ['approve', ['reason' => 'Finance review']],
+    'confirm' => ['confirm', ['bank_reference' => 'REF-123']],
+    'reconcile' => ['reconcile', []],
+]);
+
+it('requires operation-specific recovery authorization inside the handler', function (string $action, string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardRecoveries::class,
+        $action,
+        RewardRecovery::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'settle' => ['settle', 'settle', ['recovery_proof' => 'BANK-123']],
+    'write off' => ['write_off', 'writeOff', ['reason' => 'Unrecoverable']],
+]);
+
+it('requires operation-specific payee authorization inside the handler', function (string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardPayees::class,
+        $ability,
+        RewardPayee::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'verify' => ['verify', []],
+    'reject' => ['reject', ['reason' => 'Rejected']],
+]);
+
+it('requires operation-specific grant authorization inside the handler', function (string $action, string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardBenefitGrants::class,
+        $action,
+        RewardBenefitGrant::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'fulfill' => ['fulfill', 'fulfill', []],
+    'consume' => ['consume', 'consume', []],
+    'cancel' => ['cancel', 'cancel', ['reason' => 'Cancelled']],
+    'recall' => ['record_recall', 'recordRecall', ['recall_reference' => 'REF-123']],
+    'revoke' => ['revoke', 'revoke', ['reason' => 'Revoked']],
+    'expire' => ['expire', 'expire', []],
+]);
+
+it('requires catalog retirement authorization inside the handler', function (): void {
+    Gate::define('retire', static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardBenefitItems::class,
+        'retire',
+        RewardBenefitItem::factory()->make(),
+        ['reason' => 'Retired'],
+    ))->toBe(403);
+});
+
+it('checks program operation permissions when executing header actions', function (string $name, string $ability, array $data): void {
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('program-gate-test', RewardProgramMode::Points);
+    Gate::define($ability, static fn (): bool => false);
+
+    $page = Livewire::actingAs($this->staff)
+        ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
+        ->instance();
+
+    $action = $page->getAction($name);
+    expect($action)->toBeInstanceOf(Action::class);
+    $action->data($data);
+
+    expect(fn () => $action->call())->toThrow(HttpException::class);
+})->with([
+    'publish' => ['publish_version', 'publishVersion', []],
+    'transition' => ['transition_status', 'transitionStatus', ['to' => 'ready']],
+    'preview' => ['preview_qualification', 'previewQualification', []],
+]);
+
+it('checks class operation permissions when executing funding and catalog header actions', function (string $pageClass, string $name, string $ability): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    $page = Livewire::actingAs($this->staff)->test($pageClass)->instance();
+    $action = $page->getAction($name);
+    expect($action)->toBeInstanceOf(Action::class);
+    $action->data([]);
+
+    expect(fn () => $action->call())->toThrow(HttpException::class);
+})->with([
+    'funding source' => [ListRewardFunding::class, 'record_source', 'record'],
+    'funding entry' => [ListRewardFunding::class, 'record', 'record'],
+    'catalog creation' => [ListRewardBenefitItems::class, 'create', 'create'],
+]);
+
+it('projects program titles without exposing titles from another owner', function (): void {
+    $award = rewardAuthzHeldAward();
+    $program = RewardProgram::query()->findOrFail($award->program_id);
+
+    $projected = RewardProgramScopeQuery::withProgramTitle(RewardAwardResource::getEloquentQuery())
+        ->whereKey($award->getKey())
+        ->firstOrFail();
+
+    expect($projected->getAttribute('program_title'))->toBe($program->title)
+        ->and($projected->getKey())->toBe($award->getKey());
+
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($other, static function () use ($award): void {
+        $projected = RewardProgramScopeQuery::withProgramTitle(RewardAward::query())
+            ->whereKey($award->getKey())
+            ->firstOrFail();
+
+        expect($projected->getAttribute('program_title'))->toBeNull();
+    });
 });
