@@ -76,7 +76,7 @@ it('scopes filament pricing resources to the resolved owner (including global)',
 
 });
 
-it('returns strict global-only when owner resolver returns null', function (): void {
+it('requires explicit global context when owner resolver returns null', function (): void {
     config()->set('pricing.features.owner.enabled', true);
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
@@ -95,7 +95,9 @@ it('returns strict global-only when owner resolver returns null', function (): v
         'owner_id' => null,
     ]));
 
-    $scopedIds = PriceListResource::getEloquentQuery()->pluck('id')->all();
+    expect(fn () => PriceListResource::getEloquentQuery()->pluck('id')->all())->toThrow(\AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException::class);
+
+    $scopedIds = OwnerContext::withOwner(null, fn (): array => PriceListResource::getEloquentQuery()->pluck('id')->all());
 
     expect($scopedIds)->toContain($globalList->id);
 });

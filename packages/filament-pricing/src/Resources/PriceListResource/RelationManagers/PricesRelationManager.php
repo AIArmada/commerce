@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentPricing\Actions\DeletePricingBulkAction;
 use AIArmada\FilamentPricing\Support\CatalogReference;
 use AIArmada\Pricing\Actions\SavePrice;
 use AIArmada\Pricing\Models\Price;
@@ -223,7 +224,7 @@ final class PricesRelationManager extends RelationManager
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    DeletePricingBulkAction::make(),
                 ]),
             ]);
     }

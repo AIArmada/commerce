@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\Tables;
 
+use AIArmada\FilamentPricing\Actions\DeletePricingBulkAction;
 use Filament\Actions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -76,7 +77,7 @@ final class PriceListsTable
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    DeletePricingBulkAction::make(),
                 ]),
             ]);
     }

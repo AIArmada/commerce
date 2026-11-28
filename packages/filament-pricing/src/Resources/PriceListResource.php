@@ -52,6 +52,7 @@ final class PriceListResource extends Resource
         }
 
         $owner = self::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
         /** @var Builder<PriceList> $scoped */
         $scoped = $query->forOwner(

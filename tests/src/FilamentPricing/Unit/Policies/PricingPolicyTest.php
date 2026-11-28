@@ -57,3 +57,38 @@ it('scopes price list access to the owning context', function (): void {
         ->and($policy->viewAny($ownerA))->toBeTrue()
         ->and($policy->create($ownerA))->toBeTrue();
 });
+
+it('treats visible global pricing records as read only for tenants', function (): void {
+    config()->set('pricing.features.owner.include_global', true);
+    $owner = User::query()->create(['name' => 'Policy Tenant', 'email' => 'policy-tenant-global@example.com', 'password' => 'secret']);
+
+    $records = OwnerContext::withOwner(null, function () use ($owner): array {
+        $list = PriceList::query()->create(['name' => 'Global Retail', 'slug' => 'global-policy-retail']);
+        $price = Price::query()->create([
+            'price_list_id' => $list->id,
+            'priceable_type' => $owner->getMorphClass(),
+            'priceable_id' => $owner->getKey(),
+            'amount' => 100,
+        ]);
+        $tier = PriceTier::query()->create([
+            'price_list_id' => $list->id,
+            'tierable_type' => $owner->getMorphClass(),
+            'tierable_id' => $owner->getKey(),
+            'min_quantity' => 2,
+            'amount' => 90,
+        ]);
+
+        return [[$list, new PriceListPolicy], [$price, new PricePolicy], [$tier, new PriceTierPolicy]];
+    });
+
+    foreach ($records as [$record, $policy]) {
+        OwnerContext::withOwner($owner, function () use ($owner, $record, $policy): void {
+            expect($policy->view($owner, $record))->toBeTrue()
+                ->and($policy->update($owner, $record))->toBeFalse()
+                ->and($policy->delete($owner, $record))->toBeFalse()
+                ->and($policy->duplicate($owner, $record))->toBeFalse();
+        });
+
+        expect(OwnerContext::withOwner(null, fn (): bool => $policy->update($owner, $record)))->toBeTrue();
+    }
+});
