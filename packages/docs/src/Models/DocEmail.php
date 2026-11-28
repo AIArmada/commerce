@@ -92,24 +92,6 @@ final class DocEmail extends Model implements Auditable
         return $this->belongsTo(DocEmailTemplate::class, 'doc_email_template_id');
     }
 
-    public function markAsOpened(): void
-    {
-        $this->increment('open_count');
-
-        if (! $this->opened_at) {
-            $this->update(['opened_at' => CarbonImmutable::now()]);
-        }
-    }
-
-    public function markAsClicked(): void
-    {
-        $this->increment('click_count');
-
-        if (! $this->clicked_at) {
-            $this->update(['clicked_at' => CarbonImmutable::now()]);
-        }
-    }
-
     public function isSent(): bool
     {
         return $this->status === EmailStatus::Sent;

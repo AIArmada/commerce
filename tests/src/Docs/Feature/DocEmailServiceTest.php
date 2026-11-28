@@ -264,9 +264,22 @@ test('email tracks opened timestamp', function (): void {
 
     expect($email->opened_at)->toBeNull();
 
-    $email->markAsOpened();
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => $email->getKey(),
+        'type' => 'open',
+        'issued_at' => now()->timestamp,
+    ], JSON_THROW_ON_ERROR));
 
-    expect($email->opened_at)->not->toBeNull();
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeTrue();
+    $firstOpenedAt = $email->refresh()->opened_at;
+
+    expect($firstOpenedAt)->not->toBeNull()
+        ->and($email->open_count)->toBe(1);
+
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeTrue();
+
+    expect($email->refresh()->open_count)->toBe(2)
+        ->and($email->opened_at?->toDateTimeString())->toBe($firstOpenedAt?->toDateTimeString());
 });
 
 it('rejects malformed and future email tracking tokens', function (): void {

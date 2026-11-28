@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -45,10 +45,10 @@ final readonly class TrackDocEmail
             return false;
         }
 
-        return DB::transaction(function () use ($data): bool {
+        return (new DocEmail)->getConnection()->transaction(function () use ($data): bool {
             $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
 
-            if (! $email instanceof DocEmail) {
+            if (! $email instanceof DocEmail || ! $this->matchesDocumentOwner($email)) {
                 return false;
             }
 
@@ -58,7 +58,11 @@ final readonly class TrackDocEmail
                 return false;
             }
 
-            OwnerContext::withOwner($owner, static fn () => $email->markAsOpened());
+            OwnerContext::withOwner($owner, static function () use ($email): void {
+                $email->open_count = (int) $email->open_count + 1;
+                $email->opened_at ??= CarbonImmutable::now();
+                $email->save();
+            });
 
             return true;
         });
@@ -75,10 +79,10 @@ final readonly class TrackDocEmail
             return null;
         }
 
-        return DB::transaction(function () use ($data): ?string {
+        return (new DocEmail)->getConnection()->transaction(function () use ($data): ?string {
             $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
 
-            if (! $email instanceof DocEmail) {
+            if (! $email instanceof DocEmail || ! $this->matchesDocumentOwner($email)) {
                 return null;
             }
 
@@ -88,10 +92,23 @@ final readonly class TrackDocEmail
                 return null;
             }
 
-            OwnerContext::withOwner($owner, static fn () => $email->markAsClicked());
+            OwnerContext::withOwner($owner, static function () use ($email): void {
+                $email->click_count = (int) $email->click_count + 1;
+                $email->clicked_at ??= CarbonImmutable::now();
+                $email->save();
+            });
 
             return $data['url'];
         });
+    }
+
+    private function matchesDocumentOwner(DocEmail $email): bool
+    {
+        $doc = Doc::query()->withoutOwnerScope()->find($email->doc_id, ['id', 'owner_type', 'owner_id']);
+
+        return $doc instanceof Doc
+            && $doc->owner_type === $email->owner_type
+            && (string) $doc->owner_id === (string) $email->owner_id;
     }
 
     /**

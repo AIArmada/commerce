@@ -54,7 +54,9 @@ test('click tracking allows safe absolute http urls', function (): void {
 
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
 
-    expect($response->getTargetUrl())->toBe('https://example.test/docs/123');
+    expect($response->getTargetUrl())->toBe('https://example.test/docs/123')
+        ->and($email->refresh()->click_count)->toBe(1)
+        ->and($email->clicked_at)->not->toBeNull();
 });
 
 test('click tracking allows safe relative paths', function (): void {
@@ -154,4 +156,27 @@ test('click tracking rejects backslash-based relative redirects', function (): v
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
 
     expect($response->getTargetUrl())->toBe('https://app.example.test');
+});
+
+test('tracking rejects an email whose owning document has a different owner', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', false);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create());
+    $email = OwnerContext::withOwner($other, fn (): DocEmail => DocEmail::query()->create([
+        'doc_id' => $doc->getKey(),
+        'recipient_email' => 'customer@example.test',
+        'subject' => 'Tracking test',
+        'body' => 'Body',
+        'status' => EmailStatus::Sent,
+    ]));
+
+    $tracking = app(TrackDocEmail::class);
+    $token = tokenFromTrackedUrl($tracking->getTrackingPixelUrl($email));
+
+    expect($tracking->trackOpen($token))->toBeFalse()
+        ->and(OwnerContext::withOwner($other, fn (): int => (int) $email->fresh()->open_count))->toBe(0);
 });

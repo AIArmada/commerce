@@ -21,7 +21,7 @@ final class DocTrackingController extends Controller
      */
     public function open(string $token): Response
     {
-        $this->emailService->trackOpen($token);
+        $this->tracking->trackOpen($token);
 
         $gif = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
 
@@ -38,7 +38,7 @@ final class DocTrackingController extends Controller
      */
     public function click(string $token): RedirectResponse
     {
-        $url = $this->sanitizeRedirectUrl($this->emailService->trackClick($token));
+        $url = $this->sanitizeRedirectUrl($this->tracking->trackClick($token));
 
         return redirect()->to($url)->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
