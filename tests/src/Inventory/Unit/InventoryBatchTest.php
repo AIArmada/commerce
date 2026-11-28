@@ -8,6 +8,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -383,4 +384,33 @@ it('does not release recalled or expired quarantined batches into available stoc
     $expired = InventoryBatch::factory()->quarantined()->create(['expires_at' => now()->subDay()]);
     expect(fn () => app(BatchService::class)->releaseFromQuarantine($expired))->toThrow(InvalidArgumentException::class)
         ->and($expired->fresh()->status)->toBe(BatchStatus::Quarantined->value);
+});
+
+it('treats the exact expiry instant as expired and includes batches expiring today in upcoming expiry', function (): void {
+    $now = CarbonImmutable::parse('2026-11-28 12:00:00');
+    CarbonImmutable::setTestNow($now);
+
+    try {
+        $expired = InventoryBatch::factory()->create([
+            'expires_at' => $now,
+            'status' => BatchStatus::Active->value,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 0,
+        ]);
+        $upcoming = InventoryBatch::factory()->create([
+            'expires_at' => $now->addHours(2),
+            'status' => BatchStatus::Active->value,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 0,
+        ]);
+
+        expect($expired->is_expired)->toBeTrue()
+            ->and($expired->canAllocate())->toBeFalse()
+            ->and(InventoryBatch::query()->expired()->whereKey($expired->id)->exists())->toBeTrue()
+            ->and($upcoming->isExpiringSoon(1))->toBeTrue()
+            ->and(InventoryBatch::query()->expiringSoon(1)->whereKey($upcoming->id)->exists())->toBeTrue()
+            ->and(InventoryBatch::query()->expiringSoon(1)->whereKey($expired->id)->exists())->toBeFalse();
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
 });

@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Queries;
 
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final readonly class BatchLookupService
 {
+    public function __construct(private LocationVisibility $locations) {}
+
     /**
      * Find batch by batch number.
      */
@@ -62,8 +66,12 @@ final readonly class BatchLookupService
     }
 
     /** @return Builder<InventoryBatch> */
-    private function allocatableQuery(Model $model, ?string $locationId): Builder
+    public function allocatableQuery(Model $model, ?string $locationId): Builder
     {
+        if (InventoryOwnerScope::isEnabled() && $locationId !== null && ! $this->locations->isWritable($locationId)) {
+            throw new InvalidArgumentException('Invalid location for current owner');
+        }
+
         $query = InventoryOwnerScope::forMutation(
             InventoryBatch::query()
                 ->where('inventoryable_type', $model->getMorphClass())

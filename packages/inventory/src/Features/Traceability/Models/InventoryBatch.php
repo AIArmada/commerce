@@ -185,7 +185,7 @@ final class InventoryBatch extends Model implements Auditable
             return false;
         }
 
-        return $this->expires_at->isPast();
+        return $this->expires_at->lte(CarbonImmutable::now());
     }
 
     /**
@@ -243,9 +243,9 @@ final class InventoryBatch extends Model implements Auditable
             return false;
         }
 
-        $daysUntil = $this->days_until_expiry;
+        $now = CarbonImmutable::now();
 
-        return $daysUntil !== null && $daysUntil <= $days && $daysUntil > 0;
+        return $this->expires_at->gt($now) && $this->expires_at->lte($now->addDays($days));
     }
 
     /**
@@ -295,7 +295,8 @@ final class InventoryBatch extends Model implements Auditable
     public function scopeExpiringSoon(Builder $query, int $days = 30): Builder
     {
         return $query->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [CarbonImmutable::now(), CarbonImmutable::now()->addDays($days)]);
+            ->where('expires_at', '>', $now = CarbonImmutable::now())
+            ->where('expires_at', '<=', $now->addDays($days));
     }
 
     /**
@@ -307,7 +308,7 @@ final class InventoryBatch extends Model implements Auditable
     public function scopeExpired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')
-            ->where('expires_at', '<', CarbonImmutable::now());
+            ->where('expires_at', '<=', CarbonImmutable::now());
     }
 
     /**

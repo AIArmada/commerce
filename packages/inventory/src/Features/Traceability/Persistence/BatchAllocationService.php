@@ -48,16 +48,6 @@ final readonly class BatchAllocationService implements BatchReservationBalances
             throw new InvalidArgumentException('Quantity must be positive');
         }
 
-        if (InventoryOwnerScope::isEnabled() && $locationId !== null) {
-            $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
-                ->whereKey($locationId)
-                ->exists();
-
-            if (! $isAllowed) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
-        }
-
         return $this->allocateFromBatches($this->batches->getFifoBatches($model, $locationId), $quantity);
     }
 

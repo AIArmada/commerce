@@ -13,7 +13,7 @@ use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->service = new BatchAllocationService(new BatchLookupService);
+    $this->service = new BatchAllocationService(app(BatchLookupService::class));
 });
 
 describe('allocateFefo', function (): void {

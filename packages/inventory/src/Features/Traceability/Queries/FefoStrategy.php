@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\Inventory\Data\AllocationContext;
-use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
 
 /**
  * FEFO (First Expired, First Out) allocation strategy.
@@ -20,7 +17,7 @@ use InvalidArgumentException;
  */
 final readonly class FefoStrategy
 {
-    public function __construct(private LocationVisibility $locations) {}
+    public function __construct(private BatchLookupService $batches) {}
 
     public function name(): string
     {
@@ -93,23 +90,7 @@ final readonly class FefoStrategy
      */
     private function eligibleBatches(Model $model, AllocationContext $context): Builder
     {
-        if (InventoryOwnerScope::isEnabled() && $context->locationId !== null) {
-            if (! $this->locations->isVisible($context->locationId)) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
-        }
-
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->allocatable()
-                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
-        );
-
-        if ($context->locationId !== null) {
-            $query->atLocation($context->locationId);
-        }
+        $query = $this->batches->allocatableQuery($model, $context->locationId);
 
         if ($context->excludeLocationIds !== null) {
             $query->whereNotIn('location_id', $context->excludeLocationIds);

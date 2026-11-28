@@ -7,11 +7,13 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Data\AllocationContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
+use AIArmada\Inventory\Features\Traceability\Queries\FefoStrategy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -246,5 +248,24 @@ it('excludes visible global batches from tenant allocation plans and availabilit
         ->and($allocation->getFefoAllocationPlan($sku, 6)['available'])->toBeFalse()
         ->and($allocation->allocateFefo($sku, 5)[0]['batch']->id)->toBe($owned->id)
         ->and(fn () => $allocation->allocateFifo($sku, 1, $fixture['locationGlobal']->id))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('uses the same exact owner scope for FEFO strategy and batch lookup', function (): void {
+    $fixture = makeOwnerScopedBatchServiceFixture();
+    $sku = $fixture['sku'];
+    $owned = $fixture['service']->createBatch($sku, 'FEFO-OWNED', $fixture['locationA']->id, 5);
+
+    setBatchServiceOwnerResolver(null);
+    OwnerContext::withOwner(null, fn (): InventoryBatch => app(BatchService::class)
+        ->createBatch($sku, 'FEFO-GLOBAL', $fixture['locationGlobal']->id, 100));
+
+    setBatchServiceOwnerResolver($fixture['ownerA']);
+    $strategy = app(FefoStrategy::class);
+
+    expect($strategy->canFulfill($sku, 6))->toBeFalse()
+        ->and($strategy->getRecommendedOrder($sku)->modelKeys())->toBe([$owned->id])
+        ->and($strategy->allocate($sku, 6)[0]['quantity'])->toBe(5)
+        ->and(fn () => $strategy->allocate($sku, 1, new AllocationContext(locationId: $fixture['locationGlobal']->id)))
         ->toThrow(InvalidArgumentException::class);
 });
