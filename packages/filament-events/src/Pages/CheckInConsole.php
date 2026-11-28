@@ -22,6 +22,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class CheckInConsole extends Page implements HasTable
@@ -77,14 +78,17 @@ final class CheckInConsole extends Page implements HasTable
                     ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
             );
 
-        if ($this->passOrRegistration) {
-            $pattern = LikeSearch::contains($this->passOrRegistration);
+        $search = mb_trim($this->passOrRegistration ?? '');
+
+        if ($search !== '') {
+            $pattern = LikeSearch::contains($search);
 
             $query->where(function (Builder $q) use ($pattern): void {
                 LikeSearch::whereLike($q, 'pass_no', $pattern);
-                $q->orWhereHas(
+                $q->orWhereHasMorph(
                     'registration',
-                    fn (Builder $r) => LikeSearch::whereLike($r, 'registration_no', $pattern)
+                    [ModelResolver::registrationClass()],
+                    fn (Builder $r) => LikeSearch::whereLike($r, 'registration_no', $pattern),
                 );
             });
         }
@@ -105,7 +109,8 @@ final class CheckInConsole extends Page implements HasTable
                         ->autocomplete(false),
                 ])
                 ->action(function (array $data): void {
-                    $this->passOrRegistration = $data['query'];
+                    $this->passOrRegistration = $data['query'] ?? '';
+                    $this->resetPage();
                 }),
             Action::make('walkIn')
                 ->label('Walk-In Check-In')
@@ -125,9 +130,9 @@ final class CheckInConsole extends Page implements HasTable
                                 ->pluck('title', 'id')
                                 ->all();
                         })
-                        ->getOptionLabelUsing(fn (mixed $value): ?string => OwnerUiScope::apply(ModelResolver::eventClass()::query(), includeGlobal: false)
-                            ->whereKey($value)
-                            ->value('title'))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) && Str::isUuid($value)
+                            ? OwnerUiScope::apply(ModelResolver::eventClass()::query(), includeGlobal: false)->whereKey($value)->value('title')
+                            : null)
                         ->required(),
                     TextInput::make('attendee_name')->label('Name')->maxLength(255),
                     TextInput::make('attendee_email')->label('Email')->email()->maxLength(255),

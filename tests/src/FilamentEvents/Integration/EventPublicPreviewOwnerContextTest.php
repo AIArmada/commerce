@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Livewire\Attributes\Locked;
 use Livewire\Livewire;
@@ -77,6 +78,7 @@ it('clears the event after an owner switch', function (): void {
 it('keeps the event when the owner context is unchanged', function (): void {
     $owner = previewOwner('Preview Stable Owner');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+    $this->actingAs($owner);
 
     $page = app(EventPublicPreview::class);
     $page->mount(previewEvent($owner, 'stable')->id);
@@ -183,4 +185,25 @@ it('rejects a same-scope event preview when its actor is denied', function (): v
     $this->actingAs($outsider);
 
     expect(fn () => app(EventPublicPreview::class)->mount($event->id))->toThrow(NotFoundHttpException::class);
+});
+
+it('clears the preview when view permission is revoked without an owner switch', function (): void {
+    $owner = previewOwner('Preview Revoked Permission');
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+    $this->actingAs($owner);
+
+    $allowed = true;
+    Gate::before(static function ($user, string $ability) use (&$allowed): ?bool {
+        return $ability === 'view' ? $allowed : null;
+    });
+
+    $test = Livewire::test(EventPublicPreview::class, ['eventId' => previewEvent($owner, 'revoked')->getKey()]);
+
+    expect($test->get('event'))->not->toBeNull();
+
+    $allowed = false;
+    $test->call('$refresh');
+
+    expect($test->get('event'))->toBeNull()
+        ->and($test->get('recordOwnerStamp'))->toBeNull();
 });

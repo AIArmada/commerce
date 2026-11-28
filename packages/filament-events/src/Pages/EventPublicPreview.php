@@ -21,7 +21,9 @@ use UnitEnum;
 
 final class EventPublicPreview extends Page
 {
-    use VerifiesRecordOwnerContext;
+    use VerifiesRecordOwnerContext {
+        hydrateVerifiesRecordOwnerContext as private hydrateOwnerGuard;
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-eye';
 
@@ -48,10 +50,7 @@ final class EventPublicPreview extends Page
             abort(404);
         }
 
-        $event = OwnerUiScope::apply(ModelResolver::eventClass()::query()->with([
-            'occurrences', 'locations', 'involvements', 'ticketTypes',
-            'materials', 'links', 'mediaRecords', 'updates' => fn ($q) => $q->where('is_pinned', true),
-        ]), includeGlobal: false)->find($eventId);
+        $event = OwnerUiScope::apply(ModelResolver::eventClass()::query(), includeGlobal: false)->find($eventId);
 
         if (! $event instanceof Event || ! Gate::forUser(Filament::auth()->user())->allows('view', $event)) {
             abort(404);
@@ -59,6 +58,34 @@ final class EventPublicPreview extends Page
 
         $this->eventId = $eventId;
         $this->event = $event;
+        $this->loadPreviewRelations();
+    }
+
+    public function hydrateVerifiesRecordOwnerContext(): void
+    {
+        $this->hydrateOwnerGuard();
+
+        if ($this->event === null) {
+            return;
+        }
+
+        if (! Gate::forUser(Filament::auth()->user())->allows('view', $this->event)) {
+            $this->failOwnerGuard();
+
+            return;
+        }
+
+        $this->loadPreviewRelations();
+    }
+
+    private function loadPreviewRelations(): void
+    {
+        $this->event?->loadMissing([
+            'occurrences',
+            'involvements',
+            'ticketTypes',
+            'updates' => fn ($query) => $query->where('is_pinned', true),
+        ]);
     }
 
     protected function ownerGuardedPropName(): string
