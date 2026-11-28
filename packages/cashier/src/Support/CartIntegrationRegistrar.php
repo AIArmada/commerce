@@ -10,7 +10,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
-use AIArmada\Inventory\InventoryServiceProvider;
+use AIArmada\Inventory\Features\Reservations\Api\CartStockReservations;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\DB;
@@ -109,16 +109,14 @@ final class CartIntegrationRegistrar
             $cartManager = $this->app->make('cart');
 
             // Retrieve cart without mutating global cart manager state
-            $cart = $cartManager->getCartInstance($cartManager->instance(), $cartId);
+            $cart = $cartManager->getById($cartId);
 
-            if (! $cart->exists()) {
+            if ($cart === null || ! $cart->exists()) {
                 return;
             }
 
             // Commit inventory allocations if inventory package is present
-            if (class_exists(InventoryServiceProvider::class)) {
-                $this->commitInventoryAllocations($cartManager, $cartId, $event);
-            }
+            $this->commitInventoryAllocations($cartId, $event);
 
             // Record affiliate conversion if affiliates package is present
             if (class_exists(AffiliatesServiceProvider::class)) {
@@ -173,14 +171,13 @@ final class CartIntegrationRegistrar
     /**
      * Commit inventory allocations on successful payment.
      */
-    private function commitInventoryAllocations(CartManagerInterface $cartManager, string $cartId, PaymentSucceeded $event): void
+    private function commitInventoryAllocations(string $cartId, PaymentSucceeded $event): void
     {
-        if (! method_exists($cartManager, 'commitInventory')) {
+        if (! $this->app->bound(CartStockReservations::class)) {
             return;
         }
 
-        $orderId = $this->extractOrderIdFromPayment($event);
-        $cartManager->commitInventory($cartId, $orderId);
+        $this->app->make(CartStockReservations::class)->commit($cartId, $this->extractOrderIdFromPayment($event));
     }
 
     /**
@@ -188,15 +185,8 @@ final class CartIntegrationRegistrar
      */
     private function releaseInventoryAllocations(string $cartId): void
     {
-        if (! class_exists(InventoryServiceProvider::class)) {
-            return;
-        }
-
-        /** @var CartManagerInterface $cartManager */
-        $cartManager = $this->app->make('cart');
-
-        if (method_exists($cartManager, 'releaseAllInventory')) {
-            $cartManager->releaseAllInventory($cartId);
+        if ($this->app->bound(CartStockReservations::class)) {
+            $this->app->make(CartStockReservations::class)->releaseAllForCart($cartId);
         }
     }
 

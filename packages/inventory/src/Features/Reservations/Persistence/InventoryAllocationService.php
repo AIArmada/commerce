@@ -11,6 +11,7 @@ use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Reservations\Api\CartStockReservations;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
@@ -50,7 +51,7 @@ use InvalidArgumentException;
  * $available = $service->getTotalAvailable($product);
  * ```
  */
-final class InventoryAllocationService
+final class InventoryAllocationService implements CartStockReservations
 {
     public function __construct(
         private InventoryService $inventoryService,

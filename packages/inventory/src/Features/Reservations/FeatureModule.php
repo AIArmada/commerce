@@ -14,6 +14,7 @@ use AIArmada\Inventory\Contracts\BatchReservationInvalidator;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Features\Reservations\Actions\InvalidateBatchReservations;
 use AIArmada\Inventory\Features\Reservations\Api\ActiveAllocationCount;
+use AIArmada\Inventory\Features\Reservations\Api\CartStockReservations;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
@@ -34,6 +35,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(InventoryAllocationService::class);
+        $app->alias(InventoryAllocationService::class, CartStockReservations::class);
         $app->singleton(ActiveAllocationCount::class, ActiveAllocationCountQuery::class);
         $app->alias(InventoryAllocationService::class, 'inventory.allocations');
         $app->singleton(CheckoutReservationService::class);
