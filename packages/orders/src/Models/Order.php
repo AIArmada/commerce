@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -13,6 +14,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderPaymentRetention;
 use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
 use AIArmada\Orders\Support\RefundAllocator;
@@ -491,11 +493,8 @@ class Order extends Model implements Auditable
                 throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
             }
 
-            $order->items()->delete();
-            $order->addresses()->detach();
-            $order->payments()->delete();
-            $order->refunds()->delete();
-            $order->orderNotes()->delete();
+            app(AddressAttachmentWriter::class)->detachAll($order->getMorphClass(), (string) $order->getKey());
+            app(OrderPaymentRetention::class)->removeForOrder((string) $order->getKey(), $order->allowUnsafeDelete);
         });
     }
 

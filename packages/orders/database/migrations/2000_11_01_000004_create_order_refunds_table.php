@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('orders.database.tables.order_refunds', 'order_refunds'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id');
+            $table->foreignUuid('order_id')->constrained(config('orders.database.tables.orders', 'orders'))->restrictOnDelete();
             $table->foreignUuid('payment_id')->nullable();
 
             $table->string('gateway', 50);

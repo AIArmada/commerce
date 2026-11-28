@@ -6,10 +6,12 @@ namespace AIArmada\Orders\Features\Payments;
 
 use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderPaymentRetention;
 use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Features\Payments\Actions\ConfirmOrderPayment;
 use AIArmada\Orders\Features\Payments\Actions\OrderRefundOperations;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RemoveOrderPaymentRecords;
 use AIArmada\Orders\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -20,6 +22,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(CancellationRefundReservations::class, RegisterOrderRefund::class);
         $app->bind(OrderRefunds::class, OrderRefundOperations::class);
         $app->bind(OrderPaymentConfirmation::class, ConfirmOrderPayment::class);
+        $app->bind(OrderPaymentRetention::class, RemoveOrderPaymentRecords::class);
     }
 
     public function boot(Application $app): void {}

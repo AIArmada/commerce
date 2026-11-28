@@ -8,6 +8,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use Illuminate\Database\QueryException;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -59,4 +60,19 @@ it('rejects deletion of a free order that has entered processing', function (): 
         ->toThrow(LogicException::class);
 
     expect(Order::query()->find($order->getKey()))->not->toBeNull();
+});
+
+it('prevents bulk order deletion from orphaning payment records', function (): void {
+    $order = Order::query()->create([
+        'status' => PendingPayment::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+    app(RegisterOrderPayment::class)->execute($order, 'retention-' . $order->getKey(), 'manual', 5000);
+
+    expect(fn () => $order->getConnection()->transaction(fn () => Order::query()->whereKey($order->getKey())->delete()))
+        ->toThrow(QueryException::class);
+
+    expect($order->refresh()->payments()->count())->toBe(1);
 });
