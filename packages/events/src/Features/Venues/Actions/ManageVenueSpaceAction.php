@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Venues\Actions;
 
 use AIArmada\Events\Features\Venues\Models\VenueSpace;
+use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -40,7 +41,7 @@ final readonly class ManageVenueSpaceAction
             $space = $this->resolve($spaceId);
             $this->authorize($actor, 'delete', $space);
 
-            if ($space->eventLocations()->exists()) {
+            if ($space->eventLocations()->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)->exists()) {
                 throw ValidationException::withMessages(['venue_space_id' => 'Remove event location assignments before deleting this space.']);
             }
 
