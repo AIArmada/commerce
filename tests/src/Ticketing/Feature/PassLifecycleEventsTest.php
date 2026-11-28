@@ -18,24 +18,24 @@ beforeEach(function (): void {
 
 it('fires PassRevoked on revoke', function (): void {
     Event::fake([PassRevoked::class]);
-    $this->pass->markRevoked('test');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($this->pass, 'test');
 
     Event::assertDispatched(PassRevoked::class, fn (PassRevoked $event): bool => $event->pass->is($this->pass));
 });
 
 it('fires PassCancelled on cancel', function (): void {
     Event::fake([PassCancelled::class]);
-    $this->pass->markCancelled('test');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction::class)->handle($this->pass, 'test');
 
     Event::assertDispatched(PassCancelled::class, fn (PassCancelled $event): bool => $event->pass->is($this->pass));
 });
 
 it('fires PassVoided on void (from revoked)', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markRevoked('prep for void');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($pass, 'prep for void');
 
     Event::fake([PassVoided::class]);
-    $pass->markVoided('final void');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\VoidPassAction::class)->handle($pass, 'final void');
 
     Event::assertDispatched(PassVoided::class, fn (PassVoided $event): bool => $event->pass->is($pass));
 });
@@ -44,7 +44,7 @@ it('fires PassExpired on expire', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
 
     Event::fake([PassExpired::class]);
-    $pass->markExpired();
+    app(\AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction::class)->handle($pass);
 
     Event::assertDispatched(PassExpired::class, fn (PassExpired $event): bool => $event->pass->is($pass));
 });

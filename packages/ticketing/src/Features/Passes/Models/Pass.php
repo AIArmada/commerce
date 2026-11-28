@@ -9,18 +9,8 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
-use AIArmada\Ticketing\Events\PassCancelled;
-use AIArmada\Ticketing\Events\PassExpired;
-use AIArmada\Ticketing\Events\PassRevoked;
-use AIArmada\Ticketing\Events\PassVoided;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\States\Activated;
-use AIArmada\Ticketing\States\Cancelled;
-use AIArmada\Ticketing\States\Expired;
 use AIArmada\Ticketing\States\PassState;
-use AIArmada\Ticketing\States\Revoked;
-use AIArmada\Ticketing\States\Used;
-use AIArmada\Ticketing\States\Voided;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -35,7 +25,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 /**
@@ -254,53 +243,6 @@ class Pass extends Model
             'voided',
             'expired',
         ], true);
-    }
-
-    public function markActivated(): void
-    {
-        $this->activated_at ??= CarbonImmutable::now();
-        $this->status->transitionTo(Activated::class);
-    }
-
-    public function markUsed(): void
-    {
-        $this->used_at ??= CarbonImmutable::now();
-        $this->status->transitionTo(Used::class);
-    }
-
-    public function markCancelled(?string $reason = null): void
-    {
-        $this->cancelled_at ??= CarbonImmutable::now();
-        $this->status_reason = $reason;
-        $this->status->transitionTo(Cancelled::class);
-
-        Event::dispatch(new PassCancelled($this));
-    }
-
-    public function markRevoked(?string $reason = null): void
-    {
-        $this->revoked_at ??= CarbonImmutable::now();
-        $this->status_reason = $reason;
-        $this->status->transitionTo(Revoked::class);
-
-        Event::dispatch(new PassRevoked($this));
-    }
-
-    public function markVoided(?string $reason = null): void
-    {
-        $this->voided_at ??= CarbonImmutable::now();
-        $this->status_reason = $reason;
-        $this->status->transitionTo(Voided::class);
-
-        Event::dispatch(new PassVoided($this));
-    }
-
-    public function markExpired(): void
-    {
-        $this->expired_at ??= CarbonImmutable::now();
-        $this->status->transitionTo(Expired::class);
-
-        Event::dispatch(new PassExpired($this));
     }
 
     public function generateQrCode(): string

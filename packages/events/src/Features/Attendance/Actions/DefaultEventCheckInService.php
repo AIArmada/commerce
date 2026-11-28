@@ -379,7 +379,11 @@ final class DefaultEventCheckInService implements EventCheckInService
         mixed $attendeeId = null,
     ): void {
         if ($pass !== null) {
-            Pass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
+            $lockedPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $lockedPass->isValid()) {
+                throw new InvalidArgumentException('The selected pass is no longer valid for check-in.');
+            }
 
             return;
         }

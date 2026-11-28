@@ -14,9 +14,9 @@ beforeEach(function (): void {
 
 it('issues a pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markActivated();
+    app(\AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('activated');
+    expect((string) $pass->fresh()->status)->toBe('activated');
 });
 
 it('receives owner assignment from HasOwner trait', function (): void {
@@ -34,37 +34,37 @@ it('prevents transfer on used pass', function (): void {
 
 it('transitions from issued to cancelled', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markCancelled('cancelled by organiser');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction::class)->handle($pass, 'cancelled by organiser');
 
-    expect((string) $pass->status)->toBe('cancelled')
-        ->and($pass->status_reason)->toBe('cancelled by organiser');
+    expect((string) $pass->fresh()->status)->toBe('cancelled')
+        ->and($pass->fresh()->status_reason)->toBe('cancelled by organiser');
 });
 
 it('transitions from issued to revoked', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markRevoked('revoked for fraud');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($pass, 'revoked for fraud');
 
-    expect((string) $pass->status)->toBe('revoked');
+    expect((string) $pass->fresh()->status)->toBe('revoked');
 });
 
 it('transitions from activated to used', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    $pass->markUsed();
+    app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('used');
+    expect((string) $pass->fresh()->status)->toBe('used');
 });
 
 it('transitions from activated to expired', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    $pass->markExpired();
+    app(\AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('expired');
+    expect((string) $pass->fresh()->status)->toBe('expired');
 });
 
 it('blocks invalid transition', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
 
-    expect(fn () => $pass->markUsed())
+    expect(fn () => app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass))
         ->toThrow(TransitionNotFound::class);
 });
 

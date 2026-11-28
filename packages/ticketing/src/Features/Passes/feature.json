@@ -14,7 +14,12 @@
     "table:ticket_passes": [
       "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassIssuer",
       "AIArmada\\Ticketing\\Features\\Passes\\Actions\\RevokePassAction",
-      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass"
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\ActivatePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\UsePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\CancelPassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\VoidPassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\ExpirePassAction"
     ]
   },
   "extensions": {}

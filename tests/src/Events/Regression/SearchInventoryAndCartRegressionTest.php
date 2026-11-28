@@ -134,7 +134,7 @@ it('reports only passes actually revoked', function (): void {
 
     $first = createEventPass($ticketType, $registration);
     createEventPass($ticketType, $registration);
-    $first->markRevoked('Already revoked');
+    app(\AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction::class)->handle($first, 'Already revoked');
 
     $revoked = app(EventTicketingDriver::class)->revokePasses(
         $registration->getMorphClass(),

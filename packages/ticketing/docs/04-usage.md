@@ -249,37 +249,31 @@ States and allowed transitions, exactly as configured in `States/PassState::conf
 
 ### Transition Actions
 
-There is no per-state action class. `RevokePassAction` is the only lifecycle action in
-the package; every other transition goes through the state machine:
+Each lifecycle transition runs through a feature-owned Action, which locks the current pass and persists the state machine transition:
 
 ```php
 use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 
 // Activate at entry
-$pass->markActivated();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction::class)->handle($pass);
 
 // Mark as used
-$pass->markUsed();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass);
 
 // Cancel
-$pass->markCancelled('Order refunded');
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction::class)->handle($pass, 'Order refunded');
 
 // Revoke for policy violation
 app(RevokePassAction::class)->handle($pass, reason: 'Fraud detected');
 
 // Void (admin action, only from Revoked)
-$pass->markVoided('Duplicate issuance');
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\VoidPassAction::class)->handle($pass, 'Duplicate issuance');
 
 // Expire
-$pass->markExpired();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction::class)->handle($pass);
 ```
 
-`RevokePassAction` persists the pass itself; the `mark*()` methods only transition state and timestamps, so call `save()` afterwards.
+Lifecycle Actions persist the transition and timestamps atomically. Repeated requests for the same state are idempotent.
 
 ## Pass Delivery
 

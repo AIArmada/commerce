@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Events\PassCancelled;
@@ -42,9 +43,11 @@ final class FeatureModule implements FeatureModuleContract
             Event::listen(OrderFulfillmentRequired::class, IssuePassesOnFulfillment::class);
         }
 
-        Event::listen(PassRevoked::class, ReleaseSeatsOnPassRevoked::class);
-        Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
-        Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
-        Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
+        if (class_exists(ReleaseAllocationsAction::class)) {
+            Event::listen(PassRevoked::class, ReleaseSeatsOnPassRevoked::class);
+            Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
+            Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
+            Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
+        }
     }
 }
