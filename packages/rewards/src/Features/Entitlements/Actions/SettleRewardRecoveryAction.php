@@ -61,13 +61,19 @@ final readonly class SettleRewardRecoveryAction
 
         // The program is the tenant boundary: prove the recovery's award's
         // program is in the current owner scope before any lock.
-        RewardRecoveryGuard::findOrFail($recoveryId);
+        $resolved = RewardRecoveryGuard::findOrFail($recoveryId);
+        $awardId = (string) $resolved->award_id;
 
-        return DB::transaction(function () use ($recoveryId, $recoveryEvidence, $actorType, $actorId, $actorRole, $decided): RewardRecovery {
+        return DB::transaction(function () use ($recoveryId, $awardId, $recoveryEvidence, $proof, $actorType, $actorId, $actorRole, $decided): RewardRecovery {
+            $award = RewardAward::query()->whereKey($awardId)->lockForUpdate()->firstOrFail();
             $locked = RewardRecovery::query()->whereKey($recoveryId)->lockForUpdate()->first();
 
             if (! $locked instanceof RewardRecovery) {
                 throw new InvalidArgumentException('Unknown reward recovery.');
+            }
+
+            if ((string) $locked->award_id !== $awardId) {
+                throw new InvalidArgumentException('Recovery award binding is incoherent.');
             }
 
             if ($locked->status !== RewardRecoveryStatus::Open) {
@@ -75,7 +81,6 @@ final readonly class SettleRewardRecoveryAction
             }
 
             if ($locked->amount_minor !== null && $locked->currency !== null) {
-                $award = RewardAward::query()->whereKey((string) $locked->award_id)->lockForUpdate()->firstOrFail();
                 $programId = (string) $award->program_id;
                 app(RewardBudgetApi::class)->recoverConfirmedSpend(
                     $programId,
@@ -91,7 +96,13 @@ final readonly class SettleRewardRecoveryAction
             }
 
             $evidence = $locked->evidence ?? [];
-            $evidence['settlement'] = $recoveryEvidence;
+            $evidence['settlement'] = array_merge($recoveryEvidence, [
+                'recovery_proof' => $proof,
+                'actor_type' => $actorType,
+                'actor_id' => $actorId,
+                'actor_role' => $actorRole,
+                'settled_at' => $decided->toIso8601String(),
+            ]);
 
             $locked->forceFill([
                 'status' => RewardRecoveryStatus::Settled,

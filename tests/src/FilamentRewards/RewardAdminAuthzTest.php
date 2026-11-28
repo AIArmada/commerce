@@ -34,6 +34,7 @@ use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
@@ -434,4 +435,19 @@ it('requires operation-specific payout authorization inside the handler', functi
     'approve' => ['approve', ['reason' => 'Finance review']],
     'confirm' => ['confirm', ['bank_reference' => 'REF-123']],
     'reconcile' => ['reconcile', []],
+]);
+
+it('requires operation-specific recovery authorization inside the handler', function (string $action, string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardRecoveries::class,
+        $action,
+        RewardRecovery::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'settle' => ['settle', 'settle', ['recovery_proof' => 'BANK-123']],
+    'write off' => ['write_off', 'writeOff', ['reason' => 'Unrecoverable']],
 ]);

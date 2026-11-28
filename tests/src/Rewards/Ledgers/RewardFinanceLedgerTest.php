@@ -285,7 +285,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
 
     $settled = SettleRewardRecoveryAction::run(
         $recovery,
-        ['recovery_proof' => 'BANK-RETURN-1'],
+        ['recovery_proof' => ' BANK-RETURN-1 ', 'actor_id' => 'forged'],
         'user',
         $staff,
         'staff',
@@ -293,6 +293,8 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     );
 
     expect($settled->status)->toBe(RewardRecoveryStatus::Settled)
+        ->and($settled->evidence['settlement']['recovery_proof'])->toBe('BANK-RETURN-1')
+        ->and($settled->evidence['settlement']['actor_id'])->toBe($staff)
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR'))
         ->toBe(['funded' => 10000, 'reserved' => 0, 'net_spent' => 0, 'available' => 10000]);
 
@@ -320,7 +322,8 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
         CarbonImmutable::parse('2026-06-23T00:00:00Z'),
     );
 
-    expect($written->status)->toBe(RewardRecoveryStatus::WrittenOff);
+    expect($written->status)->toBe(RewardRecoveryStatus::WrittenOff)
+        ->and($written->evidence['writeoff']['actor_id'])->toBe($staff);
 });
 
 it('expires due point lots through the operator command, idempotently', function (): void {

@@ -48,7 +48,7 @@ final readonly class WriteOffRewardRecoveryAction
         // program is in the current owner scope before any lock.
         RewardRecoveryGuard::findOrFail($recoveryId);
 
-        return DB::transaction(function () use ($recoveryId, $reason, $decided): RewardRecovery {
+        return DB::transaction(function () use ($recoveryId, $reason, $actorType, $actorId, $actorRole, $decided): RewardRecovery {
             $locked = RewardRecovery::query()->whereKey($recoveryId)->lockForUpdate()->first();
 
             if (! $locked instanceof RewardRecovery) {
@@ -60,7 +60,13 @@ final readonly class WriteOffRewardRecoveryAction
             }
 
             $evidence = $locked->evidence ?? [];
-            $evidence['writeoff'] = ['reason' => $reason, 'written_off_at' => $decided->toIso8601String()];
+            $evidence['writeoff'] = [
+                'reason' => $reason,
+                'actor_type' => $actorType,
+                'actor_id' => $actorId,
+                'actor_role' => $actorRole,
+                'written_off_at' => $decided->toIso8601String(),
+            ];
 
             $locked->forceFill([
                 'status' => RewardRecoveryStatus::WrittenOff,
