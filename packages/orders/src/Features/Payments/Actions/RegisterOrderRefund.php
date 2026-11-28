@@ -339,7 +339,7 @@ final readonly class RegisterOrderRefund
         $order = $refund->order;
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        $failed = DB::transaction(function () use ($refund, $reason): OrderRefund {
+        [$failed, $changed] = DB::transaction(function () use ($refund, $reason): array {
             // Lock order → refund everywhere, like every other refund path.
             $lockedOrder = $this->lockOrderRow($refund);
             $lockedOrder->unsetRelation('refunds');
@@ -352,20 +352,24 @@ final readonly class RegisterOrderRefund
 
             $lockedRefund->setRelation('order', $lockedOrder);
 
-            if ($lockedRefund->isPending()) {
+            $changed = $lockedRefund->isPending();
+
+            if ($changed) {
                 $lockedRefund->markAsFailed($reason);
 
                 // The status-change event already moved the totals; refresh so
                 // any later reads in this request see fresh values.
                 $lockedOrder->refresh();
-
-                event(new OrderRefundFailed($lockedOrder, $lockedRefund, $reason, $lockedRefund->metadata ?? []));
             }
 
             // Report the persisted row: the caller's instance predates the
             // lock and would still read as pending to listeners.
-            return $lockedRefund;
+            return [$lockedRefund, $changed];
         });
+
+        if ($changed) {
+            event(new OrderRefundFailed($failed->order, $failed, $reason, $failed->metadata ?? []));
+        }
 
         return $failed;
     }

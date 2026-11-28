@@ -6,6 +6,7 @@ use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
+use AIArmada\Orders\Events\OrderRefundFailed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Processing;
@@ -107,4 +108,20 @@ it('emits exactly one event for two completion attempts with different provider 
     $action->completePending($pending[0]->fresh(), 'provider-b');
 
     Event::assertDispatchedTimes(OrderRefunded::class, 1);
+});
+
+it('emits a refund failure event only on the first pending-to-failed transition', function (): void {
+    Event::fake([OrderRefundFailed::class]);
+
+    $order = ord06Order();
+    $payment = ord06Payment($order, 'ord06-failure-event-pay');
+    $order->refresh();
+
+    $action = app(RegisterOrderRefund::class);
+    $refund = $action->createPending($order, 5000, 'ord06-failure-event', 'Refund', [], $payment)[0];
+
+    $action->failPending($refund, 'Provider rejected');
+    $action->failPending($refund->fresh(), 'Duplicate notification');
+
+    Event::assertDispatchedTimes(OrderRefundFailed::class, 1);
 });

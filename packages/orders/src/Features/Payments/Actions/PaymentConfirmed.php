@@ -91,7 +91,6 @@ final class PaymentConfirmed extends Transition
                     'metadata' => $this->metadata,
                 ]));
             } catch (UniqueConstraintViolationException $e) {
-
                 // Race condition: another caller inserted the same identity.
                 // Reload and validate rather than re-inserting.
                 $existingPayment = $this->order->payments()

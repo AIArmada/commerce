@@ -129,9 +129,12 @@ final class RefundAllocator
 
         $eligible = self::eligiblePayments($order, $payment);
         $available = 0;
+        $capacities = [];
 
         foreach ($eligible as $candidate) {
-            $available += self::remainingForPayment($candidate);
+            $capacity = self::remainingForPayment($candidate);
+            $capacities[(string) $candidate->getKey()] = $capacity;
+            $available += $capacity;
         }
 
         if ($amount > $available) {
@@ -149,7 +152,7 @@ final class RefundAllocator
                 break;
             }
 
-            $candidateRemaining = self::remainingForPayment($candidate);
+            $candidateRemaining = $capacities[(string) $candidate->getKey()];
 
             if ($candidateRemaining <= 0) {
                 continue;

@@ -69,8 +69,9 @@ it('rejects blank payment identities', function (): void {
     $order = makePayableOrder();
 
     expect(fn () => app(RegisterOrderPayment::class)->execute($order, '', 'stripe', 100))
-        ->toThrow(InvalidArgumentException::class, 'transaction ID')
-        ->and(fn () => app(RegisterOrderPayment::class)->execute($order, 'txn_blank_gateway', ' ', 100))
+        ->toThrow(InvalidArgumentException::class, 'transaction ID');
+
+    expect(fn () => app(RegisterOrderPayment::class)->execute($order, 'txn_blank_gateway', ' ', 100))
         ->toThrow(InvalidArgumentException::class, 'gateway');
 
     expect($order->payments()->count())->toBe(0);
