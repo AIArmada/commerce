@@ -15,6 +15,7 @@ use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
@@ -209,18 +210,18 @@ it('reuses identical PDF inputs and regenerates changed document and template co
     $driver->shouldReceive('render')->times(3)->andReturn('original', 'edited', 'template changed');
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocRenderService::class);
-    $renderer = app(DocRenderService::class);
+    $storePdf = app(StoreDocumentPdf::class);
 
-    $path = $renderer->storePdf($doc);
-    expect($renderer->storePdf($doc))->toBe($path);
+    $path = $storePdf->execute($doc);
+    expect($storePdf->execute($doc))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('original');
 
     $doc->update(['notes' => 'Edited notes']);
-    expect($renderer->storePdf($doc))->toBe($path);
+    expect($storePdf->execute($doc))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('edited');
 
     $template->update(['layout' => [['type' => DocTemplateBlockType::DocumentHeader->value, 'data' => []]]]);
-    expect($renderer->storePdf($doc))->toBe($path);
+    expect($storePdf->execute($doc))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('template changed');
 });
 
@@ -251,12 +252,12 @@ it('retries PDF publication if document content changes while the driver is rend
 
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocRenderService::class);
-    $renderer = app(DocRenderService::class);
+    $storePdf = app(StoreDocumentPdf::class);
 
-    $path = $renderer->storePdf($doc);
+    $path = $storePdf->execute($doc);
 
     expect(Storage::disk('local')->get($path))->toBe('fresh PDF')
-        ->and($renderer->storePdf($doc))->toBe($path);
+        ->and($storePdf->execute($doc))->toBe($path);
 });
 
 it('rejects ambiguous relative rich-content URLs before rendering links and images', function (string $url): void {

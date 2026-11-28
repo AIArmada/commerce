@@ -4,10 +4,14 @@
   "owns": {
     "table:docs": [
       "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments",
-      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\DocumentOperations"
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\DocumentOperations",
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\StoreDocumentPdf"
     ],
     "table:docs_status_histories": [
       "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
+    ],
+    "store:docs.pdf": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\StoreDocumentPdf"
     ]
   },
   "extensions": {}

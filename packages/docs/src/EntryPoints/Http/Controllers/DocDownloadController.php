@@ -6,6 +6,7 @@ namespace AIArmada\Docs\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DocDownloadController
 {
-    public function __invoke(Doc | string $doc, DocRenderService $renderer): BinaryFileResponse | StreamedResponse
+    public function __invoke(Doc | string $doc, DocRenderService $renderer, StoreDocumentPdf $storePdf): BinaryFileResponse | StreamedResponse
     {
         $ownerEnabled = (bool) config('docs.owner.enabled', false);
 
@@ -65,7 +66,7 @@ final class DocDownloadController
             ]);
         }
 
-        $path = $renderer->storePdf($docModel);
+        $path = $storePdf->execute($docModel);
         $disk = app(DocService::class)->resolveStorageDiskForDocType($docModel->doc_type);
 
         return Storage::disk($disk)->download($path, $this->generateFilename($docModel), [
