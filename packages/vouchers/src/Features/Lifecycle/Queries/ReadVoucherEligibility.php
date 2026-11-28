@@ -10,7 +10,6 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;

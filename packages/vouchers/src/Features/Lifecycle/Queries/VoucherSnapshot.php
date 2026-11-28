@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Runtime;
+namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherStatus;

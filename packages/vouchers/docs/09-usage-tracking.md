@@ -248,15 +248,16 @@ class VoucherDashboardController extends Controller
 }
 ```
 
-## RecordVoucherUsage Action
+## VoucherUsageRecorder API
 
-The `RecordVoucherUsage` action is the canonical way to persist a voucher redemption. It handles limit checking, state transitions (marks voucher as `Depleted` when the global limit is reached), and dispatches `VoucherUsageRecorded`.
+The `VoucherUsageRecorder` feature API is the canonical way to persist a voucher redemption. It handles limit checking, state transitions (marks voucher as `Depleted` when the global limit is reached), and dispatches `VoucherUsageRecorded`.
 
 ```php
-use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use Akaunting\Money\Money;
 
-$usage = RecordVoucherUsage::run(
+$usage = app(VoucherUsageRecorder::class)->handle(
     code: 'SUMMER2024',
     discountAmount: Money::MYR(2500),
     channel: 'web',
@@ -264,7 +265,7 @@ $usage = RecordVoucherUsage::run(
         'order_id' => $order->id,
         'order_number' => $order->number,
     ],
-    redeemedBy: $order,
+    redeemedBy: EloquentRecordReference::fromModel($order),
     notes: 'Checkout redemption',
 );
 ```
@@ -278,7 +279,7 @@ voucher as the public readonly `$voucher` property (a `VoucherData` DTO).
 
 ### VoucherUsageRecorded
 
-Dispatched by `RecordVoucherUsage::run()` after a usage record is persisted.
+Dispatched by `app(VoucherUsageRecorder::class)->handle()` after a usage record is persisted.
 
 ```php
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;

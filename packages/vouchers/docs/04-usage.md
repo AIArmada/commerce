@@ -32,7 +32,7 @@ $voucher = app(VoucherCreator::class)->handle([
 ]);
 ```
 
-Validation uses the authenticated model. `RecordVoucherUsage` also requires that model as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, currency and channel match.
+Validation uses the authenticated model. `RecordVoucherUsage` also requires that model's `RecordReference` as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, currency and channel match.
 
 ### CreateVoucher
 
@@ -92,15 +92,16 @@ RemoveVoucherFromCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMME
 ### RecordVoucherUsage
 
 ```php
-use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use Akaunting\Money\Money;
 
-$usage = RecordVoucherUsage::run(
+$usage = app(VoucherUsageRecorder::class)->handle(
     code: 'SUMMER2024',
     discountAmount: Money::MYR(2500),
     channel: 'web',
     metadata: ['order_id' => $order->id],
-    redeemedBy: auth()->user(),
+    redeemedBy: EloquentRecordReference::fromModel(auth()->user()),
 );
 ```
 

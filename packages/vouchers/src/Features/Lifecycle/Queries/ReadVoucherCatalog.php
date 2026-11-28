@@ -12,7 +12,6 @@ use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 
 final class ReadVoucherCatalog implements VoucherCatalog
 {
@@ -23,7 +22,7 @@ final class ReadVoucherCatalog implements VoucherCatalog
 
     public function connectionName(): string
     {
-        return (new Voucher)->getConnection()->getName();
+        return (string) (new Voucher)->getConnection()->getName();
     }
 
     public function find(string $code, ?string $voucherId = null): ?VoucherData
