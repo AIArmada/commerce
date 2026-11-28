@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
-use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

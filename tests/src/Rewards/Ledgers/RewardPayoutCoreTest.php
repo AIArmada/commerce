@@ -25,7 +25,7 @@ use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Models\RewardBudgetMovement;
+use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
-use AIArmada\Rewards\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

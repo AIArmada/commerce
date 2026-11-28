@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages\ListRewardFunding;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables\RewardFundingTable;
-use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;

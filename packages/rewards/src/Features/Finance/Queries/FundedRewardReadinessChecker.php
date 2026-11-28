@@ -10,7 +10,7 @@ use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardReadinessAssessment;
 use AIArmada\Rewards\Data\RewardVersionSnapshot;
-use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 
 /**
  * Real program-lifecycle readiness backed by funded finance adapters.

@@ -18,7 +18,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Models\RewardAdjustment;
-use AIArmada\Rewards\Models\RewardBadgeGrant;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

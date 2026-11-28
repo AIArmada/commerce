@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Entitlements\Models;
 
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;

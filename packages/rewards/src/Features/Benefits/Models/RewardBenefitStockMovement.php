@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Benefits\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardBenefitStockMovementFactory;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;

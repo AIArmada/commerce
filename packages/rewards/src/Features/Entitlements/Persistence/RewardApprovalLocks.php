@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
-use AIArmada\Rewards\Models\RewardSourceCoordinator;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
 
 /**
  * Shared approval-chain acquisition for direct approvals and appeal

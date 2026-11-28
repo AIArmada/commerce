@@ -46,7 +46,7 @@ use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusActi
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;

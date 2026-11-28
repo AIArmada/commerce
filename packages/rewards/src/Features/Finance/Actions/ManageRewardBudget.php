@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Finance\Actions;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Models\RewardBudgetMovement;
+use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;

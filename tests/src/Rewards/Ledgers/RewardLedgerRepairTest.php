@@ -31,7 +31,7 @@ use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

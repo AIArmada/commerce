@@ -19,7 +19,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAct
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardSourceComponentClaim;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
