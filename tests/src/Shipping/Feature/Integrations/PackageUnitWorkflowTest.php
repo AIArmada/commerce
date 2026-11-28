@@ -96,7 +96,7 @@ function orderWithPackageUnits(string $status = Processing::class): array
 
 function shipPackageUnit(Order $order, OrderItem $item, int $ordinal, array $extra = []): Shipment
 {
-    $result = app(OrderFulfillmentHandler::class)->createShipment($order, $extra + [
+    $result = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), $extra + [
         'carrier' => 'manual',
         'package_units' => [$item->id => [$ordinal]],
     ]);
@@ -123,7 +123,7 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
     app(OrderService::class)->ship($order, 'Manual', $shipment->tracking_number, $shipment->id);
     expect($order->isShipped())->toBeFalse();
 
-    $overlap = app(OrderFulfillmentHandler::class)->createShipment($order, ['package_units' => [$item->id => [1, 2]]]);
+    $overlap = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), ['package_units' => [$item->id => [1, 2]]]);
     expect($overlap['success'])->toBeFalse()
         ->and($overlap['error'])->toContain('already assigned');
 
@@ -239,13 +239,13 @@ it('reuses the same shipment after a definite carrier failure and blocks an ambi
 
     $handler = app(OrderFulfillmentHandler::class);
     $selection = ['carrier' => 'package-retry', 'package_units' => [$item->id => [1]]];
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Carrier refused');
-    expect($handler->createShipment($order, $selection)['tracking_number'])->toBe('TRACK-RETRY')
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Carrier refused');
+    expect($handler->createShipment((string) $order->getKey(), $selection)['tracking_number'])->toBe('TRACK-RETRY')
         ->and(Shipment::query()->where('shippable_id', $order->id)->count())->toBe(1);
 
     $selection['package_units'][$item->id] = [2];
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Carrier timed out');
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Reconcile')
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Carrier timed out');
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Reconcile')
         ->and(Shipment::query()->where('shippable_id', $order->id)->count())->toBe(2);
 });
 

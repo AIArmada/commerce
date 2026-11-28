@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Contracts;
 
-use AIArmada\Orders\Models\Order;
-
 /**
  * Contract for inventory integration.
  *
@@ -16,20 +14,20 @@ interface InventoryHandler
     /**
      * Reserve inventory for an order.
      */
-    public function reserveInventory(Order $order): bool;
+    public function reserveInventory(string $orderId): bool;
 
     /**
      * Deduct inventory for a paid order.
      */
-    public function deductInventory(Order $order): bool;
+    public function deductInventory(string $orderId): bool;
 
     /**
      * Release reserved inventory (on cancellation).
      */
-    public function releaseInventory(Order $order): bool;
+    public function releaseInventory(string $orderId): bool;
 
     /**
      * Check if all items are in stock.
      */
-    public function checkAvailability(Order $order): bool;
+    public function checkAvailability(string $orderId): bool;
 }

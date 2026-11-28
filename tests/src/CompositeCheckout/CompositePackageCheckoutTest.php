@@ -245,9 +245,9 @@ it('ships the package and the standalone line as five units of the same stock id
     app()->instance(ShippingManager::class, $manager);
 
     $handler = app(FulfillmentHandler::class);
-    expect($handler->getRates($order))->toHaveCount(1);
+    expect($handler->getRates((string) $order->getKey()))->toHaveCount(1);
 
-    $result = $handler->createShipment($order, ['carrier' => 'manual']);
+    $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual']);
     expect($result['error'])->toBeNull();
 
     $shipment = Shipment::query()->findOrFail($result['shipment_id']);

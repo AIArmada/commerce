@@ -348,12 +348,12 @@ interface FulfillmentHandler
      * @param  array<string, mixed>  $shipmentData  Carrier, service, etc.
      * @return array{success: bool, shipment_id: ?string, tracking_number: ?string, error: ?string}
      */
-    public function createShipment(Order $order, array $shipmentData): array;
+    public function createShipment(string $orderId, array $shipmentData): array;
 
     /**
      * @return array<array{carrier: string, service: string, rate: int, currency: string}>
      */
-    public function getRates(Order $order): array;
+    public function getRates(string $orderId): array;
 
     /**
      * @return array{status: string, events: array<array{date: string, description: string, location: ?string}>}
@@ -370,10 +370,10 @@ interface FulfillmentHandler
 ```php
 interface InventoryHandler
 {
-    public function reserveInventory(Order $order): bool;
-    public function deductInventory(Order $order): bool;
-    public function releaseInventory(Order $order): bool;
-    public function checkAvailability(Order $order): bool;
+    public function reserveInventory(string $orderId): bool;
+    public function deductInventory(string $orderId): bool;
+    public function releaseInventory(string $orderId): bool;
+    public function checkAvailability(string $orderId): bool;
 }
 ```
 
@@ -388,12 +388,12 @@ interface PaymentHandler
      * @param  array<string, mixed>  $paymentData  Payment method data
      * @return array{success: bool, transaction_id: ?string, error: ?string}
      */
-    public function processPayment(Order $order, array $paymentData): array;
+    public function processPayment(string $orderId, array $paymentData): array;
 
     /**
      * @return array{success: bool, transaction_id: ?string, error: ?string}
      */
-    public function processRefund(Order $order, int $amount, string $reason): array;
+    public function processRefund(string $orderId, int $amount, string $reason): array;
 
     /**
      * @return array<string, array{name: string, icon: ?string}>

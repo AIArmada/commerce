@@ -79,9 +79,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
     /**
      * {@inheritDoc}
      */
-    public function createShipment(Order $order, array $shipmentData): array
+    public function createShipment(string $orderId, array $shipmentData): array
     {
         try {
+            $order = Order::query()->findOrFail($orderId);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
             $shippingAddress = $order->primaryAddress('shipping');
 
@@ -212,8 +213,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
     /**
      * {@inheritDoc}
      */
-    public function getRates(Order $order): array
+    public function getRates(string $orderId): array
     {
+        $order = Order::query()->findOrFail($orderId);
+        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
         $shippingAddress = $order->primaryAddress('shipping');
 
         if ($shippingAddress === null) {

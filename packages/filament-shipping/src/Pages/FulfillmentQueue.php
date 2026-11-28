@@ -7,7 +7,8 @@ namespace AIArmada\FilamentShipping\Pages;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\Support\PackageUnit;
 use BackedEnum;
@@ -245,9 +246,9 @@ class FulfillmentQueue extends Page implements HasTable
                     ->form(fn (): array => $this->getFulfillmentForm())
                     ->action(function (Order $record, array $data): void {
                         try {
-                            $service = app(OrderService::class);
+                            $service = app(OrderFulfillment::class);
                             $service->ship(
-                                $record,
+                                (string) $record->getKey(),
                                 $data['carrier'],
                                 $data['tracking_number'],
                             );
@@ -322,44 +323,13 @@ class FulfillmentQueue extends Page implements HasTable
      */
     protected function getCarrierOptions(): array
     {
-        $handlerContract = implode('\\', [
-            'AIArmada',
-            'Orders',
-            'Contracts',
-            'FulfillmentHandler',
-        ]);
-
-        if (! class_exists($handlerContract) || ! app()->bound($handlerContract)) {
+        if (! app()->bound(FulfillmentHandler::class)) {
             return [];
         }
 
-        $handler = app($handlerContract);
+        $handler = app(FulfillmentHandler::class);
 
-        if (! is_object($handler) || ! method_exists($handler, 'availableCarriers')) {
-            return [];
-        }
-
-        $availableCarriers = call_user_func([$handler, 'availableCarriers']);
-
-        if (! is_array($availableCarriers)) {
-            return [];
-        }
-
-        $carriers = [];
-
-        foreach ($availableCarriers as $code => $label) {
-            if (is_int($code) && is_string($label)) {
-                $carriers[$label] = $label;
-
-                continue;
-            }
-
-            if (is_string($code) && is_string($label) && $code !== '' && $label !== '') {
-                $carriers[$code] = $label;
-            }
-        }
-
-        return $carriers;
+        return $handler instanceof FulfillmentHandler ? $handler->availableCarriers() : [];
     }
 
     /**

@@ -177,7 +177,7 @@ class ViewOrder extends ViewRecord
                             }
                             $units = array_map('array_values', $units);
 
-                            $result = $fulfillmentHandler->createShipment($record, [
+                            $result = $fulfillmentHandler->createShipment((string) $record->getKey(), [
                                 'carrier' => $data['carrier'],
                                 'service' => $data['service'],
                                 'package_units' => $units === [] ? null : $units,

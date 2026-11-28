@@ -468,7 +468,7 @@ Fulfill a composite order by passing `package_units` to the order fulfillment ha
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Services\OrderService;
 
-$result = app(FulfillmentHandler::class)->createShipment($order, [
+$result = app(FulfillmentHandler::class)->createShipment((string) $order->getKey(), [
     'carrier' => 'manual',
     'package_units' => [$orderItem->id => [1]],
     'parcels' => [['weight' => 700], ['weight' => 300]],
