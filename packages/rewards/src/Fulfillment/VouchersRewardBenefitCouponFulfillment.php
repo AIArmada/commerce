@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Fulfillment;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
@@ -19,8 +20,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 {
     public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
     {
-        $createActionClass = 'AIArmada\\Vouchers\\Runtime\\VoucherCreator';
-        $addToWalletClass = 'AIArmada\\Vouchers\\Runtime\\WalletClaim';
+        $createActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCreator';
+        $addToWalletClass = 'AIArmada\\Vouchers\\Features\\Wallet\\Api\\WalletClaim';
 
         if (! interface_exists($createActionClass) || ! interface_exists($addToWalletClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
@@ -40,7 +41,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
         $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grant_key), 0, 12));
 
-        app($createActionClass)->handle([
+        $voucher = app($createActionClass)->handle([
             'code' => $code,
             'name' => mb_substr((string) $item->title, 0, 120),
             'type' => 'fixed',
@@ -60,12 +61,12 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             ],
         ]);
 
-        app($addToWalletClass)->handle($code, $holder, [
+        app($addToWalletClass)->handle($voucher->code, EloquentRecordReference::fromModel($holder), [
             'grant_key' => (string) $grant->grant_key,
             'benefit_key' => (string) $item->benefit_key,
-        ]);
+        ], $voucher->id);
 
-        return $code;
+        return $voucher->code;
     }
 
     public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
@@ -132,7 +133,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
     {
         $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
         $usageClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\VoucherUsage';
-        $expireActionClass = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
+        $expireActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherExpiry';
 
         if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! interface_exists($expireActionClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');

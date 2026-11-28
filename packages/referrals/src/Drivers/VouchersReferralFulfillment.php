@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralRewardContext;
+use AIArmada\Vouchers\Data\VoucherData;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 {
     public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
-        $createAction = 'AIArmada\\Vouchers\\Runtime\\VoucherCreator';
+        $createAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCreator';
         $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
 
         if (! interface_exists($createAction) || ! class_exists($voucherClass)) {
@@ -103,8 +104,8 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
             $voucher = $action->handle($data);
 
-            if (! $voucher instanceof Model) {
-                return ReferralFulfillmentResult::failed('The vouchers create action did not return a voucher model.');
+            if (! $voucher instanceof VoucherData) {
+                return ReferralFulfillmentResult::failed('The voucher creator did not return voucher data.');
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -112,12 +113,12 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('Voucher issuance failed.');
         }
 
-        return ReferralFulfillmentResult::fulfilled((string) $voucher->getAttribute('code'));
+        return ReferralFulfillmentResult::fulfilled($voucher->code);
     }
 
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
     {
-        $expireAction = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
+        $expireAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherExpiry';
         $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
         $code = $reward->externalReference;
 

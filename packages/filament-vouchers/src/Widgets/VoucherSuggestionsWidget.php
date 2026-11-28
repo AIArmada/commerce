@@ -12,11 +12,13 @@ use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use Filament\Notifications\Notification;
@@ -80,6 +82,7 @@ final class VoucherSuggestionsWidget extends Widget
             // Resolve the cart and its applied codes once instead of once
             // per candidate voucher.
             $appliedCodes = $this->appliedVoucherCodes();
+            $snapshots = app(VoucherWalletReader::class)->readMany($vouchers->modelKeys());
 
             // Filter and calculate potential savings
             $suggestions = $vouchers
@@ -96,8 +99,11 @@ final class VoucherSuggestionsWidget extends Widget
 
                     return true;
                 })
-                ->map(function (Voucher $voucher) use ($cartTotal, $cartCurrency) {
-                    $potentialSavings = $this->calculatePotentialSavings($voucher, $cartTotal);
+                ->map(function (Voucher $voucher) use ($cartTotal, $cartCurrency, $snapshots) {
+                    $snapshot = $snapshots[$voucher->id] ?? null;
+                    $potentialSavings = $snapshot !== null && $snapshot->redeemable
+                        ? $this->calculatePotentialSavings($voucher, $cartTotal, $snapshot->voucher)
+                        : 0;
                     $savingsText = MoneyHelper::formatMoney($potentialSavings, $cartCurrency);
 
                     $recommendation = $this->generateRecommendation($voucher, $cartTotal, $potentialSavings);
@@ -248,12 +254,12 @@ final class VoucherSuggestionsWidget extends Widget
      * cannot drift from suggestions; unpersisted models fall back to the
      * local simple-type estimate.
      */
-    protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal): int
+    protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal, ?VoucherData $snapshot = null): int
     {
-        try {
-            $savings = app(VoucherDiscountCalculator::class)
-                ->calculate(VoucherSnapshot::fromModel($voucher), $cartTotal);
-        } catch (Throwable) {
+        if ($voucher->exists) {
+            $snapshot ??= app(VoucherCatalog::class)->find($voucher->code, $voucher->id);
+            $savings = $snapshot === null ? 0 : app(VoucherDiscountCalculator::class)->calculate($snapshot, $cartTotal);
+        } else {
             $savings = $this->simpleTypeEstimate($voucher, $cartTotal);
         }
 
