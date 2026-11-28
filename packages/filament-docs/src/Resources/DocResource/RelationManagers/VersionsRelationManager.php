@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Docs\Contracts\DocumentVersions;
-use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;

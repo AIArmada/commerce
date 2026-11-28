@@ -15,7 +15,7 @@ use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Models\DocTemplate;
-use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use AIArmada\Docs\Models\DocWorkflow;
 use AIArmada\Docs\Models\DocWorkflowStep;
 use OwenIt\Auditing\Contracts\Auditable;

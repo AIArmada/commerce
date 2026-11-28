@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Versioning\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Database\Factories\DocVersionFactory;
+use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -56,6 +58,11 @@ final class DocVersion extends Model implements Auditable
                 $version->created_at = CarbonImmutable::now();
             }
         });
+    }
+
+    protected static function newFactory(): DocVersionFactory
+    {
+        return DocVersionFactory::new();
     }
 
     public function getTable(): string

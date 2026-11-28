@@ -19,6 +19,7 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\Runtime\VersionRelationModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -70,7 +71,8 @@ use Throwable;
  * @property-read DocTemplate|null $template
  * @property-read Collection<int, DocStatusHistory> $statusHistories
  * @property-read Collection<int, DocPayment> $payments
- * @property-read Collection<int, DocVersion> $versions
+ * @property-read Collection<int, RelatedDocVersion> $versions
+ * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
  * @property-read Collection<int, DocEmail> $emails
  * @property-read Collection<int, DocApproval> $approvals
  * @property-read Collection<int, DocShareLink> $shareLinks
@@ -155,11 +157,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocVersion, $this>
+     * @return HasMany<RelatedDocVersion, $this>
      */
     public function versions(): HasMany
     {
-        return $this->hasMany(DocVersion::class);
+        return $this->hasMany(app(VersionRelationModel::class)->version(), 'doc_id');
     }
 
     /**

@@ -3,7 +3,7 @@
 
 @verbatim
 - Use `Data\DocData` for document creation and integer minor-unit values.
-- Use `Contracts\DocumentPaymentRecorder`, `CreateDocVersion`, and the document service for changes. Do not mutate document versions or payment totals directly.
+- Use `Contracts\DocumentPaymentRecorder`, `Contracts\DocumentVersions`, and the document service for changes. Do not mutate document versions or payment totals directly.
 - Inject `Contracts\PdfRenderer` for HTML-to-PDF rendering; use `Data\PdfRenderOptions` and bind custom drivers in the host container.
 - Use `Contracts\DocumentApprovalRequests` to request or remove pending approvals; never delete settled approvals.
 - Use `Contracts\DocumentApprovals` for approval decisions; resolve actor permissions at the authenticated entry point.

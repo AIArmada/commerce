@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Database\Factories;
 
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DocVersionFactory extends Factory

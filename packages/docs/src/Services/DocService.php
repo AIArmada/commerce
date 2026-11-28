@@ -15,7 +15,6 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
-use AIArmada\Docs\Models\DocVersion;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
@@ -162,7 +161,7 @@ final class DocService
                 throw $this->translateDocNumberViolation($exception, $docNumber);
             }
 
-            OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocVersion => $this->createVersion($doc, 'Initial creation'));
+            OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): string => app(DocumentVersions::class)->capture((string) $doc->getKey(), 'Initial creation'));
 
             // Load relationships
             $doc->loadMissing(['template', 'docable']);
@@ -247,7 +246,7 @@ final class DocService
                 }
 
                 // Create initial version
-                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocVersion => $this->createVersion($doc, 'Initial creation'));
+                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): string => app(DocumentVersions::class)->capture((string) $doc->getKey(), 'Initial creation'));
 
                 return $doc;
             });
@@ -363,7 +362,7 @@ final class DocService
             }
 
             // Create version snapshot
-            $this->createVersion($doc, $summary);
+            app(DocumentVersions::class)->capture((string) $doc->getKey(), $summary);
 
             return $doc->fresh() ?? $doc;
         });
@@ -469,16 +468,6 @@ final class DocService
         }
 
         return [$source, $sourceOwner];
-    }
-
-    /**
-     * Create a version snapshot.
-     */
-    public function createVersion(Doc $doc, ?string $summary = null): DocVersion
-    {
-        $versionId = app(DocumentVersions::class)->capture((string) $doc->getKey(), $summary);
-
-        return $doc->versions()->findOrFail($versionId);
     }
 
     /**

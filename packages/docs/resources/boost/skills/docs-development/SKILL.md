@@ -6,7 +6,7 @@ description: Develop Docs integrations using Laravel Dune boundaries. Document c
 # Docs development
 
 - Use `Data\DocData` for document creation and integer minor-unit values.
-- Use `Contracts\DocumentPaymentRecorder`, `CreateDocVersion`, and the document service for changes. Do not mutate document versions or payment totals directly.
+- Use `Contracts\DocumentPaymentRecorder`, `Contracts\DocumentVersions`, and the document service for changes. Do not mutate document versions or payment totals directly.
 - Use `Contracts\DocumentApprovalRequests` to request or remove pending approvals; never delete settled approvals.
 - Use `Contracts\DocumentApprovals` for approval decisions; resolve actor permissions at the authenticated entry point.
 - Use `Contracts\DocumentSequenceSettings` for numbering configuration; issued or reserved sequences retain their numbering settings and cannot be deleted.

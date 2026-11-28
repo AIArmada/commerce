@@ -19,6 +19,7 @@ use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
@@ -569,8 +570,8 @@ test('deleting a doc removes its stored pdf', function (): void {
 test('versions increment sequentially', function (): void {
     $doc = Doc::factory()->create();
 
-    $first = app(DocService::class)->createVersion($doc, 'one');
-    $second = app(DocService::class)->createVersion($doc, 'two');
+    $first = $doc->versions()->findOrFail(app(DocumentVersions::class)->capture((string) $doc->getKey(), 'one'));
+    $second = $doc->versions()->findOrFail(app(DocumentVersions::class)->capture((string) $doc->getKey(), 'two'));
 
     expect($first->version_number)->toBe(1)
         ->and($second->version_number)->toBe(2);

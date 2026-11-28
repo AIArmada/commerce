@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Features\Versioning\Actions;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class RestoreDocVersion

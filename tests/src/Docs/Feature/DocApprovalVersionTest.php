@@ -6,7 +6,7 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
-use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use AIArmada\Docs\States\Draft;
 
 beforeEach(function (): void {
