@@ -95,6 +95,8 @@ class TaxCalculator implements TaxCalculatorInterface
 
     public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResultData
     {
+        $context['owner'] = TaxOwnerScope::resolve($context);
+
         if (! $this->isShippingTaxable()) {
             return $this->createZeroResult($zoneId, $context);
         }
