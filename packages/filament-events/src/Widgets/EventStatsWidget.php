@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Widgets;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Events\Features\Attendance\Models\EventAttendance;
-use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
-use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use Carbon\CarbonImmutable;
+use AIArmada\Events\Contracts\EventAdministrationStats;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 final class EventStatsWidget extends StatsOverviewWidget
 {
@@ -22,47 +16,26 @@ final class EventStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $eventQuery = OwnerUiScope::apply(Event::query(), includeGlobal: false);
-        $eventTotals = (clone $eventQuery)
-            ->selectRaw('COUNT(*) as total_events')
-            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as published_events', [Event::PUBLISHED])
-            ->toBase()
-            ->first();
+        $stats = app(EventAdministrationStats::class)->read();
 
         return [
-            Stat::make('Total Events', (int) ($eventTotals->total_events ?? 0))
+            Stat::make('Total Events', $stats->totalEvents)
                 ->description('All events in the system')
                 ->descriptionIcon('heroicon-o-calendar')
                 ->color('primary'),
-            Stat::make('Published Events', (int) ($eventTotals->published_events ?? 0))
+            Stat::make('Published Events', $stats->publishedEvents)
                 ->description('Currently published')
                 ->descriptionIcon('heroicon-o-check-circle')
                 ->color('success'),
-            Stat::make(
-                'Upcoming Occurrences',
-                EventOccurrence::query()
-                    ->whereHas('event', fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
-                    ->where('starts_at', '>=', CarbonImmutable::now())
-                    ->count()
-            )
+            Stat::make('Upcoming Occurrences', $stats->upcomingOccurrences)
                 ->description('Scheduled for the future')
                 ->descriptionIcon('heroicon-o-clock')
                 ->color('info'),
-            Stat::make(
-                'Total Registrations',
-                EventRegistration::query()
-                    ->whereHas('event', fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
-                    ->count()
-            )
+            Stat::make('Total Registrations', $stats->totalRegistrations)
                 ->description('All registrations')
                 ->descriptionIcon('heroicon-o-user-group')
                 ->color('warning'),
-            Stat::make(
-                'Total Attendances',
-                EventAttendance::query()
-                    ->whereHas('event', fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
-                    ->count()
-            )
+            Stat::make('Total Attendances', $stats->totalAttendances)
                 ->description('All check-ins')
                 ->descriptionIcon('heroicon-o-clipboard-document-check')
                 ->color('gray'),

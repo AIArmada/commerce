@@ -117,16 +117,16 @@ app(EventCheckInService::class)->checkInWithResult([
 ]);
 ```
 
-The console uses `checkInWithResult()` so duplicate scans resolve to the
+Both check-in actions require the event `manageAdmissions` permission. The console uses `checkInWithResult()` so duplicate scans resolve to the
 existing attendance instead of erroring.
 
 ## Approval Queue
 
 The Approval Queue page (`/events/approvals`) processes event submissions
-through the scalar-ID `EventModerationWorkflow`:
+through the scalar-ID `EventApprovalWorkflow`:
 
 - **Table:** approvable_type (badge), approvable_id, status (badge), requested_by_type, assigned_to_type, created_at, approved_at, rejected_at
-- **Row actions:** Approve (optional notes → `approve($submissionId, $actor, $notes)`), Reject (required reason → `reject($submissionId, $actor, $reason, $notes)`), Assign to Me (requires an authenticated user model)
+- **Row actions:** Approve (optional notes → `approve($requestId, $actor, $notes)`), Reject (required reason → `reject($requestId, $actor, $reason, $notes)`), Assign to Me (requires an authenticated user model)
 
 ## Event Public Preview
 

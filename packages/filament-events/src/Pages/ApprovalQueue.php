@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventApprovalWorkflow;
-use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
 use AIArmada\Events\Features\Governance\Models\EventSubmission;
+use AIArmada\Events\Platform\EventWriteGuard;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -126,7 +125,7 @@ final class ApprovalQueue extends Page implements HasTable
             throw new InvalidArgumentException('Event submissions in this queue must be attached to an event.');
         }
 
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $submission->event_id);
+        EventWriteGuard::findOrFail($submission->event_id);
 
         return $submission;
     }

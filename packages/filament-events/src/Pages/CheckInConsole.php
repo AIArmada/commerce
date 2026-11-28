@@ -8,11 +8,13 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
+use AIArmada\Events\Features\Catalog\Api\CatalogApi;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
@@ -64,6 +66,8 @@ final class CheckInConsole extends Page implements HasTable
                         if (! $registration instanceof EventRegistration) {
                             return;
                         }
+
+                        app(CatalogApi::class)->authorizeManageAdmissions(Filament::auth()->user(), $registration->event_id);
 
                         app(EventCheckInService::class)->checkInWithResult([
                             'event_id' => $registration->event_id,
@@ -151,6 +155,7 @@ final class CheckInConsole extends Page implements HasTable
                 ])
                 ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
+                    app(CatalogApi::class)->authorizeManageAdmissions(Filament::auth()->user(), $data['event_id']);
 
                     app(EventCheckInService::class)->checkInWithResult([
                         'event_id' => $data['event_id'],
