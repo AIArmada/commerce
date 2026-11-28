@@ -20,7 +20,6 @@ use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
 use Carbon\CarbonImmutable;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -324,12 +323,12 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
 
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        return DB::transaction(function () use ($refund): bool {
+        return $order->getConnection()->transaction(function () use ($refund): bool {
             // Lock order → refund everywhere, like every other refund path.
-            $this->lockOrderRow($refund);
+            $lockedOrder = $this->lockOrderRow($refund);
 
             /** @var OrderRefund|null $lockedRefund */
-            $lockedRefund = $refund->newQuery()
+            $lockedRefund = $lockedOrder->refunds()
                 ->lockForUpdate()
                 ->find($refund->getKey());
 
@@ -340,6 +339,44 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             }
 
             $lockedRefund->provider_submission_started_at = CarbonImmutable::now();
+            $lockedRefund->save();
+
+            return true;
+        });
+    }
+
+    public function correlateProviderReference(OrderRefund $refund, ?string $providerRefundId, ?string $relatedPaymentId = null): bool
+    {
+        $order = $refund->order;
+
+        if (! $order instanceof Order) {
+            throw new RuntimeException('The refund must belong to an order.');
+        }
+
+        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+        if ($providerRefundId === null || mb_trim($providerRefundId) === '' || $providerRefundId === $relatedPaymentId) {
+            return true;
+        }
+
+        $providerRefundId = mb_trim($providerRefundId);
+
+        return $order->getConnection()->transaction(function () use ($refund, $providerRefundId): bool {
+            $lockedOrder = $this->lockOrderRow($refund);
+            $lockedRefund = $lockedOrder->refunds()->lockForUpdate()->findOrFail($refund->getKey());
+            $metadata = $lockedRefund->metadata ?? [];
+            $existingId = $metadata['provider_refund_id'] ?? null;
+
+            if (is_scalar($existingId) && mb_trim((string) $existingId) !== '') {
+                return mb_trim((string) $existingId) === $providerRefundId;
+            }
+
+            if (! $lockedRefund->isPending()) {
+                return false;
+            }
+
+            $metadata['provider_refund_id'] = $providerRefundId;
+            $lockedRefund->metadata = $metadata;
             $lockedRefund->save();
 
             return true;
@@ -359,7 +396,7 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         $order = $refund->order;
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        [$failed, $changed] = DB::transaction(function () use ($refund, $reason): array {
+        [$failed, $changed] = $order->getConnection()->transaction(function () use ($refund, $reason): array {
             // Lock order → refund everywhere, like every other refund path.
             $lockedOrder = $this->lockOrderRow($refund);
             $lockedOrder->unsetRelation('refunds');

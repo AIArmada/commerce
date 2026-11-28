@@ -17,6 +17,8 @@ interface OrderRefunds
 
     public function claimPendingRefundSubmission(string $refundId): bool;
 
+    public function correlateProviderReference(string $refundId, ?string $providerRefundId, ?string $relatedPaymentId = null): bool;
+
     public function completePendingRefund(string $refundId, ?string $transactionId = null): void;
 
     public function failPendingRefund(string $refundId, string $reason): void;

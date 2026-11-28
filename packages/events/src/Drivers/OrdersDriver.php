@@ -25,7 +25,6 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -317,25 +316,13 @@ final class OrdersDriver implements EventOrderDriver
         ?string $providerRefundId,
         ?string $relatedPaymentId,
     ): bool {
-        if (in_array($providerRefundId, [null, '', $relatedPaymentId], true)) {
-            return true;
-        }
+        $refund = $this->refund($refundId);
 
-        return DB::transaction(function () use ($refundId, $providerRefundId): bool {
-            $refund = $this->refund($refundId, lock: true);
-            $metadata = is_array($refund->metadata) ? $refund->metadata : [];
-            $existingId = data_get($metadata, 'provider_refund_id');
-
-            if (is_scalar($existingId) && mb_trim((string) $existingId) !== '') {
-                return mb_trim((string) $existingId) === $providerRefundId;
-            }
-
-            $metadata['provider_refund_id'] = $providerRefundId;
-
-            $refund->forceFill(['metadata' => $metadata])->save();
-
-            return true;
-        });
+        return OwnerContext::withOwner($this->ownerOf($refund), fn (): bool => $this->orderService()->correlateProviderReference(
+            $refundId,
+            $providerRefundId,
+            $relatedPaymentId,
+        ));
     }
 
     public function submitRefund(string $refundId): EventRefundResultData
@@ -347,7 +334,12 @@ final class OrdersDriver implements EventOrderDriver
             throw new RuntimeException('The refund is not attached to an order.');
         }
 
-        $payment = $this->completedPayment($order);
+        $payment = $order->payments()->whereKey($refund->payment_id)->firstOrFail();
+
+        if (! $payment->isCompleted()) {
+            throw new InvalidArgumentException('The reserved payment is not completed.');
+        }
+
         $this->assertOnlinePayment($payment);
 
         $processor = $this->resolveProcessor($payment);
@@ -373,11 +365,10 @@ final class OrdersDriver implements EventOrderDriver
         return Order::query()->with(['payments'])->findOrFail($orderId);
     }
 
-    private function refund(string $refundId, bool $lock = false): OrderRefund
+    private function refund(string $refundId): OrderRefund
     {
         return OwnerScopeOverride::withoutIncludeGlobal(
             static fn (): OrderRefund => OrderRefund::query()
-                ->when($lock, fn (Builder $query): Builder => $query->lockForUpdate())
                 ->findOrFail($refundId),
         );
     }

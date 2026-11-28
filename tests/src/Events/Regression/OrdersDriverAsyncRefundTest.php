@@ -85,7 +85,12 @@ it('matches, correlates and completes a trusted provider refund confirmation for
 
     expect($driver->correlateRefundProviderReference($match->refundId, 're_123', 'pay_123'))->toBeTrue();
 
+    expect($driver->correlateRefundProviderReference($match->refundId, 're_conflict', 'pay_123'))->toBeFalse();
+
     $driver->completeRefund($match->refundId, 're_123');
+
+    expect($driver->correlateRefundProviderReference($match->refundId, 're_123', 'pay_123'))->toBeTrue()
+        ->and($refund->fresh()->metadata['provider_refund_id'])->toBe('re_123');
 
     expect($refund->fresh()->status)->toBe(RefundStatus::Completed);
 });

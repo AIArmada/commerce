@@ -35,6 +35,11 @@ final readonly class OrderRefundOperations implements OrderRefunds
         return $this->refunds->claimPendingSubmission(OrderRefund::query()->findOrFail($refundId));
     }
 
+    public function correlateProviderReference(string $refundId, ?string $providerRefundId, ?string $relatedPaymentId = null): bool
+    {
+        return $this->refunds->correlateProviderReference(OrderRefund::query()->findOrFail($refundId), $providerRefundId, $relatedPaymentId);
+    }
+
     public function completePendingRefund(string $refundId, ?string $transactionId = null): void
     {
         $this->refunds->completePending(OrderRefund::query()->findOrFail($refundId), $transactionId);
