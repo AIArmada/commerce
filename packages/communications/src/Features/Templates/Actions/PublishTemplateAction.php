@@ -10,7 +10,6 @@ use AIArmada\Communications\Events\TemplatePublished;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 
@@ -18,7 +17,7 @@ final class PublishTemplateAction
 {
     public function handle(string $versionId): CommunicationTemplateVersion
     {
-        [$version, $template] = DB::transaction(function () use ($versionId): array {
+        [$version, $template] = (new CommunicationTemplateVersion)->getConnection()->transaction(function () use ($versionId): array {
             $version = CommunicationTemplateVersion::query()
                 ->lockForUpdate()
                 ->findOrFail($versionId);

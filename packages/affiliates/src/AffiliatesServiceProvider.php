@@ -66,6 +66,7 @@ use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\CommerceSupport\Support\SettingsMigrationPath;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
@@ -137,19 +138,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     private function registerSettingsMigrationPath(): void
     {
-        $packagePath = __DIR__ . '/../database/settings';
-
-        if (! is_dir($packagePath)) {
-            return;
-        }
-
-        $paths = config('settings.migrations_paths', []);
-
-        if (! in_array($packagePath, $paths, true)) {
-            $paths[] = $packagePath;
-
-            config(['settings.migrations_paths' => $paths]);
-        }
+        SettingsMigrationPath::register($this->app, __DIR__ . '/../database/settings');
     }
 
     public function packageBooted(): void

@@ -105,17 +105,17 @@ final class DispatchManagedNotificationAction
                 }
             }
 
+            if ($notification instanceof CommunicationContextAware) {
+                $notification->withCommunicationContext(
+                    communicationId: $communication->id,
+                    deliveryIdsByChannel: $deliveryIdsByChannel,
+                    ownerType: $communication->owner_type,
+                    ownerId: $communication->owner_id,
+                );
+            }
+
             return [$communication, $deliveryIdsByChannel];
         });
-
-        if ($notification instanceof CommunicationContextAware) {
-            $notification->withCommunicationContext(
-                communicationId: $communication->id,
-                deliveryIdsByChannel: $deliveryIdsByChannel,
-                ownerType: $communication->owner_type,
-                ownerId: $communication->owner_id,
-            );
-        }
 
         if ($deliveryIdsByChannel !== []) {
             DispatchManagedNotificationJob::dispatch(

@@ -225,7 +225,6 @@ final class MergeCustomers
 
     private function moveNotes(Customer $source, Customer $target): void
     {
-        $this->assertNotesShareOwner($source, $target);
         $source->notes()->update(['customer_id' => $target->id]);
     }
 

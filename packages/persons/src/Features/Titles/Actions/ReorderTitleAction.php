@@ -8,7 +8,6 @@ use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use RuntimeException;
@@ -20,7 +19,7 @@ final class ReorderTitleAction
      */
     public function create(array $attributes): Title
     {
-        return DB::transaction(function () use ($attributes): Title {
+        return (new Title)->getConnection()->transaction(function () use ($attributes): Title {
             $title = new Title;
             $title->fill($attributes);
             $this->lockCategories([(string) $title->category_id]);
@@ -45,7 +44,7 @@ final class ReorderTitleAction
      */
     public function update(Title $title, array $attributes): Title
     {
-        return DB::transaction(function () use ($title, $attributes): Title {
+        return $title->getConnection()->transaction(function () use ($title, $attributes): Title {
             $originalCategory = (string) $title->getRawOriginal('category_id');
             $requestedCategory = array_key_exists('category_id', $attributes)
                 ? (string) $attributes['category_id']
@@ -228,7 +227,7 @@ final class ReorderTitleAction
         }
 
         $quotedCases = [];
-        $connection = DB::connection();
+        $connection = (new Title)->getConnection();
 
         foreach ($orders as $id => $order) {
             $quotedId = $connection->getPdo()->quote($id);
@@ -238,7 +237,7 @@ final class ReorderTitleAction
         Title::query()
             ->whereIn('id', array_keys($orders))
             ->update([
-                'sort_order' => DB::raw('CASE id ' . implode(' ', $quotedCases) . ' ELSE sort_order END'),
+                'sort_order' => $connection->raw('CASE id ' . implode(' ', $quotedCases) . ' ELSE sort_order END'),
             ]);
     }
 

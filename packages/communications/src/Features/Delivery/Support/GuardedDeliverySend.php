@@ -46,17 +46,22 @@ final class GuardedDeliverySend
 
     public static function claim(string $deliveryId, ?string $communicationId): ?CommunicationDelivery
     {
-        $delivery = CommunicationDelivery::query()->whereKey($deliveryId)->lockForUpdate()->first();
-
-        if (! $delivery instanceof CommunicationDelivery || $communicationId === null || $delivery->communication_id !== $communicationId) {
+        if ($communicationId === null) {
             return null;
         }
 
         $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->first();
 
         if (! $communication instanceof Communication) {
-            self::restoreSettledFlip($delivery);
+            return null;
+        }
 
+        $delivery = CommunicationDelivery::query()
+            ->where('communication_id', $communication->id)
+            ->lockForUpdate()
+            ->find($deliveryId);
+
+        if (! $delivery instanceof CommunicationDelivery) {
             return null;
         }
 
@@ -156,12 +161,25 @@ final class GuardedDeliverySend
         string $attemptId,
         array $result = [],
     ): bool {
-        $delivery = CommunicationDelivery::query()->whereKey($deliveryId)->lockForUpdate()->first();
         $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->first();
-        $attempt = CommunicationAttempt::query()->whereKey($attemptId)->lockForUpdate()->first();
+
+        if (! $communication instanceof Communication) {
+            return false;
+        }
+
+        $delivery = CommunicationDelivery::query()
+            ->where('communication_id', $communication->id)
+            ->lockForUpdate()
+            ->find($deliveryId);
+
+        $attempt = $delivery instanceof CommunicationDelivery
+            ? CommunicationAttempt::query()
+                ->where('delivery_id', $delivery->id)
+                ->lockForUpdate()
+                ->find($attemptId)
+            : null;
 
         if (! $delivery instanceof CommunicationDelivery
-            || ! $communication instanceof Communication
             || ! $attempt instanceof CommunicationAttempt
             || (string) $attempt->delivery_id !== $deliveryId
             || ! self::ownsPair($delivery, $communication)
@@ -219,12 +237,25 @@ final class GuardedDeliverySend
         string $failureMessage,
         ?string $failureCode = null,
     ): bool {
-        $delivery = CommunicationDelivery::query()->whereKey($deliveryId)->lockForUpdate()->first();
         $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->first();
-        $attempt = CommunicationAttempt::query()->whereKey($attemptId)->lockForUpdate()->first();
+
+        if (! $communication instanceof Communication) {
+            return false;
+        }
+
+        $delivery = CommunicationDelivery::query()
+            ->where('communication_id', $communication->id)
+            ->lockForUpdate()
+            ->find($deliveryId);
+
+        $attempt = $delivery instanceof CommunicationDelivery
+            ? CommunicationAttempt::query()
+                ->where('delivery_id', $delivery->id)
+                ->lockForUpdate()
+                ->find($attemptId)
+            : null;
 
         if (! $delivery instanceof CommunicationDelivery
-            || ! $communication instanceof Communication
             || ! $attempt instanceof CommunicationAttempt
             || (string) $attempt->delivery_id !== $deliveryId
             || ! self::ownsPair($delivery, $communication)

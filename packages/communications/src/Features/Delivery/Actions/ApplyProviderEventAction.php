@@ -13,6 +13,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Api\ProviderEventProcessor;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -74,10 +75,31 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
     private function apply(ProviderEventData $eventData, string $eventType): CommunicationDelivery
     {
         return (new CommunicationDelivery)->getConnection()->transaction(function () use ($eventData, $eventType): CommunicationDelivery {
-            $delivery = $this->findDeliveryForUpdate($eventData->deliveryId);
+            $probe = $this->findDelivery($eventData->deliveryId);
 
-            if ($eventData->communicationId !== null && $eventData->communicationId !== $delivery->communication_id) {
+            if ($eventData->communicationId !== null && $eventData->communicationId !== $probe->communication_id) {
                 throw new RuntimeException('Provider event references a different communication.');
+            }
+
+            $communication = Communication::query()
+                ->lockForUpdate()
+                ->find($probe->communication_id);
+
+            if (! $communication instanceof Communication) {
+                throw new RuntimeException('Provider event delivery has no communication.');
+            }
+
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+            }
+
+            $delivery = CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->lockForUpdate()
+                ->findOrFail($probe->id);
+
+            if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $delivery->id);
             }
 
             $event = $this->recordEvent($eventData, $delivery);
@@ -93,10 +115,10 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
         });
     }
 
-    private function findDeliveryForUpdate(string $deliveryId): CommunicationDelivery
+    private function findDelivery(string $deliveryId): CommunicationDelivery
     {
         if (! CommunicationDelivery::ownerScopeConfig()->enabled) {
-            return CommunicationDelivery::query()->lockForUpdate()->findOrFail($deliveryId);
+            return CommunicationDelivery::query()->findOrFail($deliveryId);
         }
 
         /** @var CommunicationDelivery $delivery */
@@ -105,10 +127,7 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
             $deliveryId,
         );
 
-        return CommunicationDelivery::query()
-            ->whereKey($delivery->getKey())
-            ->lockForUpdate()
-            ->firstOrFail();
+        return $delivery;
     }
 
     private function resolveDeliveryOwner(string $deliveryId): ?Model

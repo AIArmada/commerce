@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Affiliations\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Database\Factories\AffiliationFactory;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Features\Affiliations\Actions\DeleteAffiliationRoles;
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Affiliation extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasUuids;
 

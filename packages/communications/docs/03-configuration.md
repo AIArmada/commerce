@@ -191,6 +191,9 @@ use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
     ],
     'route_name_prefix' => 'communications.webhooks.',
 ],
+
+The webhook route is named `{route_name_prefix}handle`, so the default route
+name is `communications.webhooks.handle` for `route()` URL generation.
 ```
 
 The default middleware fails closed unless the provider is configured and sends

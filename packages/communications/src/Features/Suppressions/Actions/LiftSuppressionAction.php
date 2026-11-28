@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Events\SuppressionLifted;
 use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 
@@ -16,7 +15,7 @@ final class LiftSuppressionAction
 {
     public function handle(string $suppressionId): CommunicationSuppression
     {
-        $suppression = DB::transaction(function () use ($suppressionId): CommunicationSuppression {
+        $suppression = (new CommunicationSuppression)->getConnection()->transaction(function () use ($suppressionId): CommunicationSuppression {
             $suppression = CommunicationSuppression::query()->lockForUpdate()->findOrFail($suppressionId);
 
             if (CommunicationSuppression::ownerScopeConfig()->enabled) {

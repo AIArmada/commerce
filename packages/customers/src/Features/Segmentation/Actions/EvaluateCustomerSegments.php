@@ -6,9 +6,9 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Queries\SegmentConditionValue;
+use AIArmada\Customers\Features\Segmentation\Support\DeferredSegmentEvents;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -94,7 +94,7 @@ final class EvaluateCustomerSegments
             /** @var Segment|null $segment */
             $segment = $segmentsById->get($segmentId);
             if ($segment !== null) {
-                event(new CustomerSegmentChanged($customer, $segment, 'added'));
+                DeferredSegmentEvents::dispatch($customer, $segment, 'added');
             }
         }
 
@@ -102,7 +102,7 @@ final class EvaluateCustomerSegments
             /** @var Segment|null $segment */
             $segment = $segmentsById->get($segmentId);
             if ($segment !== null) {
-                event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+                DeferredSegmentEvents::dispatch($customer, $segment, 'removed');
             }
         }
 
@@ -149,20 +149,16 @@ final class EvaluateCustomerSegments
             return false;
         }
 
-        $value = $condition['value_numeric']
-            ?? $condition['value_boolean']
-            ?? $condition['value_status']
-            ?? $condition['value']
-            ?? null;
+        $value = SegmentConditionValue::resolve($field, $condition);
 
         if ($value === null) {
             return false;
         }
 
         return match ($field) {
-            'accepts_marketing' => $customer->accepts_marketing === (bool) $value,
-            'status' => $customer->status->value === ($value instanceof CustomerStatus ? $value->value : (string) $value),
-            'created_days_ago' => $customer->created_at !== null && $customer->created_at->lte(CarbonImmutable::now()->subDays((int) $value)),
+            'accepts_marketing' => $customer->accepts_marketing === $value,
+            'status' => $customer->status->value === $value,
+            'created_days_ago' => $customer->created_at !== null && $customer->created_at->lte(CarbonImmutable::now()->subDays($value)),
             default => false,
         };
     }

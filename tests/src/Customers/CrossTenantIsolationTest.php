@@ -81,7 +81,6 @@ it('does not match customers across tenant boundary', function (): void {
     $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Marketing Segment A',
         'slug' => 'marketing-segment-a-' . uniqid(),
-        'is_active' => true,
         'is_automatic' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -113,7 +112,6 @@ it('prevents cross-tenant segment membership changes', function (): void {
     $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Segment A',
         'slug' => 'segment-a-' . uniqid(),
-        'is_active' => true,
         'is_automatic' => false,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),

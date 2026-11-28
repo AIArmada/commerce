@@ -102,13 +102,11 @@ final class SegmentForm
                                             ->label('Value')
                                             ->required()
                                             ->numeric()
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago']))
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago'])),
 
                                         Toggle::make('value_boolean')
                                             ->label('Value')
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing']))
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing'])),
 
                                         Select::make('value_status')
                                             ->label('Status')
@@ -116,8 +114,7 @@ final class SegmentForm
                                                 collect(CustomerStatus::cases())
                                                     ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
                                             )
-                                            ->visible(fn (Get $get) => $get('field') === 'status')
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => $get('field') === 'status'),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add Condition')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Templates\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\TemplateStatus;
@@ -37,6 +38,7 @@ use Illuminate\Support\Carbon;
  */
 final class CommunicationTemplate extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;

@@ -14,6 +14,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -22,7 +23,6 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\LazyCollection;
 use Throwable;
@@ -101,12 +101,13 @@ final class SegmentsTable
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->is_automatic)
+                    ->visible(fn (Segment $record): bool => $record->is_automatic && $record->isActive())
                     ->requiresConfirmation()
                     ->action(function (Segment $record): void {
-                        $user = Auth::user();
+                        $user = Filament::auth()->user();
                         abort_unless($user !== null, 403);
 
+                        Gate::forUser($user)->authorize('viewAny', Segment::class);
                         Gate::forUser($user)->authorize('rebuild', $record);
 
                         $count = app(RebuildAllSegments::class)->rebuildSegment($record);

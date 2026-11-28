@@ -64,7 +64,6 @@ function createCustomerSegment(Model $owner, string $name, string $slug): Segmen
         'slug' => $slug,
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
     ]));
 }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Enums\CommunicationStatus;
@@ -89,7 +90,21 @@ final readonly class ManageScheduledCommunications implements ScheduledCommunica
             $communication->status = CommunicationStatus::Expired;
             $communication->save();
 
-            Event::dispatch(new CommunicationExpired(communicationId: $id));
+            $deliveryOwner = $communication->owner_type !== null || $communication->owner_id !== null
+                ? OwnerContext::fromTypeAndId($communication->owner_type, $communication->owner_id)
+                : null;
+            $connection = (new Communication)->getConnection();
+
+            $connection->afterCommit(function () use ($id, $deliveryOwner): void {
+                if (Communication::ownerScopeConfig()->enabled) {
+                    OwnerContext::withOwner($deliveryOwner, fn () => Event::dispatch(new CommunicationExpired(communicationId: $id)));
+
+                    return;
+                }
+
+                Event::dispatch(new CommunicationExpired(communicationId: $id));
+            });
+
             $this->deliveries->expire($id);
 
             return true;

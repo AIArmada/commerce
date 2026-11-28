@@ -291,7 +291,6 @@ describe('unified segment semantics', function (): void {
             'name' => 'Empty Conditions ' . uniqid(),
             'slug' => 'empty-conditions-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [],
         ]);
 
@@ -327,7 +326,6 @@ describe('unified segment semantics', function (): void {
                 'name' => 'Unknown ' . $index . ' ' . uniqid(),
                 'slug' => 'unknown-' . $index . '-' . uniqid(),
                 'is_automatic' => true,
-                'is_active' => true,
                 'conditions' => $conditions,
             ]);
 
@@ -341,7 +339,6 @@ describe('unified segment semantics', function (): void {
             'name' => 'Suspended Excluded ' . uniqid(),
             'slug' => 'suspended-excluded-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [
                 ['field' => 'accepts_marketing', 'value' => true],
             ],
@@ -367,7 +364,6 @@ describe('bounded segment operations', function (): void {
             'name' => 'Stats Aggregate ' . uniqid(),
             'slug' => 'stats-aggregate-' . uniqid(),
             'is_automatic' => false,
-            'is_active' => true,
         ]);
 
         foreach ([
@@ -397,7 +393,6 @@ describe('bounded segment operations', function (): void {
             'name' => 'Count Only ' . uniqid(),
             'slug' => 'count-only-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [
                 ['field' => 'accepts_marketing', 'value' => true],
             ],
@@ -683,7 +678,6 @@ describe('slug conflict handling', function (): void {
                 'type' => 'custom',
                 'is_automatic' => true,
                 'priority' => 0,
-                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -715,20 +709,21 @@ describe('marketing default and customer indexes', function (): void {
 });
 
 describe('reactivation clears deactivated_at', function (): void {
-    it('clears deactivated_at when a segment is reactivated', function (): void {
+    it('deactivates and reactivates a segment through deactivated_at', function (): void {
         $segment = Segment::query()->create([
             'name' => 'Reactivate ' . uniqid(),
             'slug' => 'reactivate-' . uniqid(),
-            'is_active' => true,
         ]);
 
-        $segment->update(['is_active' => false]);
+        $segment->update(['deactivated_at' => now()]);
 
-        expect($segment->fresh()?->deactivated_at)->not->toBeNull();
+        expect($segment->fresh()?->deactivated_at)->not->toBeNull()
+            ->and($segment->fresh()?->isActive())->toBeFalse();
 
-        $segment->update(['is_active' => true]);
+        $segment->update(['deactivated_at' => null]);
 
-        expect($segment->fresh()?->deactivated_at)->toBeNull();
+        expect($segment->fresh()?->deactivated_at)->toBeNull()
+            ->and($segment->fresh()?->isActive())->toBeTrue();
     });
 
     it('clears deactivated_at when a group is reactivated', function (): void {

@@ -7,20 +7,34 @@ namespace AIArmada\Communications\Features\Delivery\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class CancelCommunicationDeliveryAction
 {
     public function handle(string $deliveryId): CommunicationDelivery
     {
-        return DB::transaction(function () use ($deliveryId): CommunicationDelivery {
-            $delivery = CommunicationDelivery::query()->lockForUpdate()->findOrFail($deliveryId);
+        $probe = CommunicationDelivery::query()->findOrFail($deliveryId);
 
-            if (CommunicationDelivery::ownerScopeConfig()->enabled) {
-                OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
-            }
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
+
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $probe->communication_id);
+        }
+
+        return (new CommunicationDelivery)->getConnection()->transaction(function () use ($deliveryId, $probe): CommunicationDelivery {
+            $communication = Communication::query()
+                ->whereKey($probe->communication_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $delivery = CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->lockForUpdate()
+                ->findOrFail($deliveryId);
 
             $cancellableStatuses = ['pending', 'scheduled', 'queued', 'sending'];
 

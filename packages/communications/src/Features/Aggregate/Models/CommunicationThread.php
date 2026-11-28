@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\ThreadStatus;
+use AIArmada\Communications\Features\Aggregate\Actions\DeleteCommunicationThreadAction;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -41,6 +43,7 @@ use Illuminate\Support\Carbon;
  */
 final class CommunicationThread extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -96,7 +99,7 @@ final class CommunicationThread extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationThread $thread): void {
-            $thread->communications()->chunkById(100, fn (Collection $communications) => $communications->each->delete());
+            app(DeleteCommunicationThreadAction::class)->deleteDependents($thread);
         });
     }
 }

@@ -13,7 +13,6 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Notifications\Notification;
 use RuntimeException;
-use Throwable;
 
 final class CommunicationManagerService implements CommunicationManager
 {
@@ -34,33 +33,28 @@ final class CommunicationManagerService implements CommunicationManager
             ? $this->referenceNormalizer->normalize($context)
             : null;
 
-        if ($context->idempotencyKey === null) {
+        $connection = (new Communication)->getConnection();
+
+        return $connection->transaction(function () use ($connection, $notifiable, $notification, $context, $eventReference): string {
+            if ($context->idempotencyKey !== null) {
+                $lockKey = $this->scopedLockKey($context->idempotencyKey);
+                $acquired = $this->idempotencyLock->acquire(
+                    $lockKey,
+                    max(1, (int) config('communications.cache.idempotency_ttl', 3600)),
+                );
+
+                if (! $acquired) {
+                    throw new RuntimeException('Duplicate communication detected for idempotency key.');
+                }
+
+                $connection->afterRollBack(fn () => $this->idempotencyLock->release($lockKey));
+            }
+
             $communication = $this->dispatcher->handle($notifiable, $notification, $context);
             $this->attachEventReference($communication, $eventReference);
 
             return (string) $communication->getKey();
-        }
-
-        $lockKey = $this->scopedLockKey($context->idempotencyKey);
-        $acquired = $this->idempotencyLock->acquire(
-            $lockKey,
-            max(1, (int) config('communications.cache.idempotency_ttl', 3600)),
-        );
-
-        if (! $acquired) {
-            throw new RuntimeException('Duplicate communication detected for idempotency key.');
-        }
-
-        try {
-            $communication = $this->dispatcher->handle($notifiable, $notification, $context);
-            $this->attachEventReference($communication, $eventReference);
-        } catch (Throwable $exception) {
-            $this->idempotencyLock->release($lockKey);
-
-            throw $exception;
-        }
-
-        return (string) $communication->getKey();
+        });
     }
 
     private function scopedLockKey(string $key): string

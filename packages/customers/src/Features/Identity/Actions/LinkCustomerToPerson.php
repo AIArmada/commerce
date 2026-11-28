@@ -30,7 +30,10 @@ final class LinkCustomerToPerson
         }
 
         return $customer->getConnection()->transaction(function () use ($customer, $person): Customer {
-            OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+            if (Customer::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+            }
+
             $ownedCustomer = $customer->newQuery()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
             $ownedCustomer->forceFill(['person_id' => $person->getKey()]);
 

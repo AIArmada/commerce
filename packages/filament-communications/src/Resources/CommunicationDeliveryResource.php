@@ -9,11 +9,13 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource\Pages;
 use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -21,8 +23,10 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 use RuntimeException;
 
 final class CommunicationDeliveryResource extends Resource
@@ -88,14 +92,29 @@ final class CommunicationDeliveryResource extends Resource
                     ->visible(fn (CommunicationDelivery $record): bool => $record->status === DeliveryStatus::Failed)
                     ->action(function (CommunicationDelivery $record): void {
                         try {
-                            $delivery = OwnerWriteGuard::findOrFailForOwner(
-                                CommunicationDelivery::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                            );
+                            $user = Filament::auth()->user();
+                            abort_if($user === null, 403);
+
+                            $delivery = CommunicationDelivery::ownerScopeConfig()->enabled
+                                ? OwnerWriteGuard::findOrFailForOwner(
+                                    CommunicationDelivery::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                )
+                                : CommunicationDelivery::query()->findOrFail($record->getKey());
+
+                            $communication = Communication::ownerScopeConfig()->enabled
+                                ? OwnerWriteGuard::findOrFailForOwner(
+                                    Communication::class,
+                                    $delivery->communication_id,
+                                    includeGlobal: false,
+                                )
+                                : Communication::query()->findOrFail($delivery->communication_id);
+
+                            Gate::forUser($user)->authorize('retry', $communication);
 
                             app(RetryCommunicationDeliveryAction::class)->handle((string) $delivery->getKey());
-                        } catch (ModelNotFoundException | RuntimeException $exception) {
+                        } catch (AuthorizationException | ModelNotFoundException | RuntimeException $exception) {
                             Notification::make()
                                 ->danger()
                                 ->title('Delivery retry failed')

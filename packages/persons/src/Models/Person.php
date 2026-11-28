@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Models;
 
 use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
@@ -59,6 +60,7 @@ use Spatie\EloquentSortable\SortableTrait;
  */
 class Person extends Model implements Sortable
 {
+    use DeletesAtomically;
     use HasAffiliations;
     use HasCredentials;
     use HasFactory;

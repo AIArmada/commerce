@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Database\Factories\TitleIssuerFactory;
 use AIArmada\Persons\Enums\IssuerType;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleIssuer;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -27,6 +29,7 @@ use InvalidArgumentException;
  */
 class TitleIssuer extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasUuids;
 
@@ -40,6 +43,10 @@ class TitleIssuer extends Model
 
     protected static function booted(): void
     {
+        static::deleting(function (TitleIssuer $issuer): void {
+            app(DeleteTitleIssuer::class)->clearAssignments($issuer);
+        });
+
         static::saving(function (TitleIssuer $issuer): void {
             $issuerName = $issuer->getAttribute('issuer_name');
 

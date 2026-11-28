@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryAccepted;
 use AIArmada\Communications\Events\DeliveryClicked;
@@ -77,6 +78,31 @@ final class TransitionDeliveryAction
 
     public const TERMINAL_STATUSES = ['failed', 'cancelled', 'expired', 'suppressed', 'unsubscribed'];
 
+    private const PROGRESS_PRECEDENCE = [
+        'pending' => 0,
+        'scheduled' => 1,
+        'queued' => 2,
+        'sending' => 3,
+        'accepted' => 4,
+        'sent' => 5,
+        'received' => 6,
+        'delivered' => 7,
+        'opened' => 8,
+        'read' => 9,
+        'clicked' => 10,
+        'replied' => 11,
+    ];
+
+    private const NEGATIVE_STATUSES = [
+        'failed',
+        'bounced',
+        'complained',
+        'cancelled',
+        'expired',
+        'suppressed',
+        'unsubscribed',
+    ];
+
     public function handle(
         CommunicationDelivery $delivery,
         DeliveryStatus $newStatus,
@@ -122,26 +148,73 @@ final class TransitionDeliveryAction
         CommunicationDelivery $delivery,
         DeliveryStatus $target,
     ): bool {
-        if ($delivery->status === $target) {
-            $timestampColumn = self::STATUS_TIMESTAMP_MAP[$target->value];
+        $current = $delivery->status;
 
-            if ($delivery->{$timestampColumn} === null) {
-                $delivery->{$timestampColumn} = CarbonImmutable::now();
-                if (! $delivery->save()) {
-                    throw new RuntimeException('Delivery transition was cancelled.');
-                }
-            }
+        if ($current === $target) {
+            $this->stampIfMissing($delivery, $target);
 
             return true;
         }
 
-        if (in_array($delivery->status->value, self::TERMINAL_STATUSES, true)) {
+        if (in_array($current->value, self::TERMINAL_STATUSES, true)) {
+            return false;
+        }
+
+        $targetIsNegative = in_array($target->value, self::NEGATIVE_STATUSES, true);
+        $currentIsNegative = in_array($current->value, self::NEGATIVE_STATUSES, true);
+
+        if (! $targetIsNegative) {
+            if ($currentIsNegative) {
+                if ($this->progressRank($target) > self::PROGRESS_PRECEDENCE['sent']) {
+                    return false;
+                }
+
+                $this->stampIfMissing($delivery, $target);
+
+                return true;
+            }
+
+            if ($this->progressRank($target) > $this->progressRank($current)) {
+                $this->handle($delivery, $target, force: true);
+
+                return true;
+            }
+
+            $this->stampIfMissing($delivery, $target);
+
+            return true;
+        }
+
+        $allowed = self::ALLOWED_TRANSITIONS[$current->value] ?? [];
+
+        if (! in_array($target->value, $allowed, true)
+            && ($currentIsNegative || $this->progressRank($current) > self::PROGRESS_PRECEDENCE['sent'])) {
             return false;
         }
 
         $this->handle($delivery, $target, force: true);
 
         return true;
+    }
+
+    private function stampIfMissing(CommunicationDelivery $delivery, DeliveryStatus $status): void
+    {
+        $timestampColumn = self::STATUS_TIMESTAMP_MAP[$status->value];
+
+        if ($delivery->{$timestampColumn} !== null) {
+            return;
+        }
+
+        $delivery->{$timestampColumn} = CarbonImmutable::now();
+
+        if (! $delivery->save()) {
+            throw new RuntimeException('Delivery transition was cancelled.');
+        }
+    }
+
+    private function progressRank(DeliveryStatus $status): int
+    {
+        return self::PROGRESS_PRECEDENCE[$status->value] ?? -1;
     }
 
     private function dispatchEvent(CommunicationDelivery $delivery, string $targetStatus): void
@@ -152,58 +225,74 @@ final class TransitionDeliveryAction
             return;
         }
 
+        $event = null;
+
         if ($eventClass === DeliverySending::class) {
-            Event::dispatch(new DeliverySending(
+            $event = new DeliverySending(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 channel: $delivery->channel,
-            ));
+            );
         } elseif ($eventClass === DeliveryAccepted::class) {
-            Event::dispatch(new DeliveryAccepted(
+            $event = new DeliveryAccepted(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 providerMessageId: $delivery->provider_message_id ?? '',
-            ));
+            );
         } elseif ($eventClass === DeliverySent::class) {
-            Event::dispatch(new DeliverySent(
+            $event = new DeliverySent(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 channel: $delivery->channel,
-            ));
+            );
         } elseif ($eventClass === DeliveryDelivered::class) {
-            Event::dispatch(new DeliveryDelivered(
+            $event = new DeliveryDelivered(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
-            ));
+            );
         } elseif ($eventClass === DeliveryRead::class) {
-            Event::dispatch(new DeliveryRead(
+            $event = new DeliveryRead(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
-            ));
+            );
         } elseif ($eventClass === DeliveryClicked::class) {
-            Event::dispatch(new DeliveryClicked(
+            $event = new DeliveryClicked(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 targetUrl: $delivery->metadata['target_url'] ?? '',
-            ));
+            );
         } elseif ($eventClass === DeliveryReplied::class) {
-            Event::dispatch(new DeliveryReplied(
+            $event = new DeliveryReplied(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
-            ));
+            );
         } elseif ($eventClass === DeliveryFailed::class) {
-            Event::dispatch(new DeliveryFailed(
+            $event = new DeliveryFailed(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 failureCode: $delivery->failure_code,
                 failureMessage: $delivery->failure_message,
-            ));
+            );
         } elseif ($eventClass === DeliverySuppressed::class) {
-            Event::dispatch(new DeliverySuppressed(
+            $event = new DeliverySuppressed(
                 deliveryId: $delivery->id,
                 communicationId: $delivery->communication_id,
                 reason: 'suppressed_by_transition',
-            ));
+            );
         }
+
+        $owner = $delivery->owner_type !== null || $delivery->owner_id !== null
+            ? OwnerContext::fromTypeAndId($delivery->owner_type, $delivery->owner_id)
+            : null;
+
+        $delivery->getConnection()->afterCommit(function () use ($owner, $event): void {
+            if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                OwnerContext::withOwner($owner, fn () => Event::dispatch($event));
+
+                return;
+            }
+
+            Event::dispatch($event);
+        });
     }
 }

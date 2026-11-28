@@ -24,9 +24,11 @@ use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Enums\TrackingInteractionType;
+use AIArmada\Communications\Events\CommunicationCreated;
 use AIArmada\Communications\Events\CommunicationExpired;
 use AIArmada\Communications\Events\DeliveryDelivered;
 use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Features\Aggregate\Actions\ReceiveInboundCommunicationAction;
 use AIArmada\Communications\Features\Aggregate\Actions\ResolveCommunicationThreadAction;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
@@ -50,6 +52,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -60,6 +63,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 
 final class RepairQueueNotifiable
 {
@@ -480,6 +484,37 @@ test('failed dispatches release the idempotency lock', function (): void {
     expect($manager->notify(new RepairQueueNotifiable, new RepairEmptyNotification, $context))->toBeString();
 });
 
+test('an outer rollback releases the managed dispatch idempotency lock', function (): void {
+    $manager = app(CommunicationManager::class);
+    $context = new CommunicationContextData(idempotencyKey: 'managed-outer-rollback');
+    $notify = fn (): string => $manager->notify(new RepairQueueNotifiable, new RepairEmptyNotification, $context);
+
+    DB::beginTransaction();
+
+    try {
+        $rolledBackId = $notify();
+    } finally {
+        DB::rollBack();
+    }
+
+    expect(Communication::query()->whereKey($rolledBackId)->exists())->toBeFalse()
+        ->and($notify())->not->toBe($rolledBackId);
+});
+
+test('an after commit listener failure keeps the managed dispatch idempotency lock', function (): void {
+    $manager = app(CommunicationManager::class);
+    $context = new CommunicationContextData(idempotencyKey: 'managed-after-commit-failure');
+    $notify = fn (): string => $manager->notify(new RepairQueueNotifiable, new RepairEmptyNotification, $context);
+
+    Event::listen(CommunicationCreated::class, static function (): never {
+        throw new RuntimeException('Listener failed after commit.');
+    });
+
+    expect($notify)->toThrow(RuntimeException::class, 'Listener failed after commit.')
+        ->and(Communication::query()->where('idempotency_key', $context->idempotencyKey)->count())->toBe(1)
+        ->and($notify)->toThrow(RuntimeException::class, 'Duplicate communication detected');
+});
+
 test('planning caps batch size and validates dates', function (): void {
     $communication = regressionCommunication();
     $recipient = CommunicationRecipient::create([
@@ -715,6 +750,150 @@ test('concurrent thread resolution returns a single thread', function (): void {
 
     expect($second->id)->toBe($first->id);
     expect(CommunicationThread::query()->where('external_thread_id', 'thread-repair-1')->count())->toBe(1);
+});
+
+test('thread external ids stay isolated per owner and global partition', function (): void {
+    Config::set('communications.features.owner.enabled', true);
+    Config::set('communications.features.owner.include_global', true);
+
+    $firstOwner = User::create(['name' => 'First Thread Owner', 'email' => 'thread-first-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $secondOwner = User::create(['name' => 'Second Thread Owner', 'email' => 'thread-second-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $channel = 'mail';
+    $externalThreadId = 'thread-scope-' . Str::uuid();
+    $action = app(ResolveCommunicationThreadAction::class);
+
+    $global = OwnerContext::withOwner(null, fn (): CommunicationThread => $action->handle(
+        channel: $channel,
+        externalThreadId: $externalThreadId,
+        title: 'Global thread',
+    ));
+    $first = OwnerContext::withOwner($firstOwner, fn (): CommunicationThread => $action->handle(
+        channel: $channel,
+        externalThreadId: $externalThreadId,
+        title: 'First thread',
+    ));
+    $firstAgain = OwnerContext::withOwner($firstOwner, fn (): CommunicationThread => $action->handle(
+        channel: $channel,
+        externalThreadId: $externalThreadId,
+        title: 'First thread updated',
+    ));
+    $second = OwnerContext::withOwner($secondOwner, fn (): CommunicationThread => $action->handle(
+        channel: $channel,
+        externalThreadId: $externalThreadId,
+    ));
+
+    expect($firstAgain->id)->toBe($first->id)
+        ->and($second->id)->not->toBe($first->id)
+        ->and($global->id)->not->toBe($first->id)
+        ->and($global->fresh()->title)->toBe('Global thread')
+        ->and(CommunicationThread::query()->withoutOwnerScope()->where('channel', $channel)->where('external_thread_id', $externalThreadId)->count())->toBe(3);
+});
+
+test('thread subject lookups stay inside the persisted owner partition', function (): void {
+    Config::set('communications.features.owner.enabled', true);
+    Config::set('communications.features.owner.include_global', true);
+
+    $owner = User::create(['name' => 'Subject Thread Owner', 'email' => 'thread-subject-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $subjectId = (string) Str::uuid();
+    $action = app(ResolveCommunicationThreadAction::class);
+
+    $global = OwnerContext::withOwner(null, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        subjectType: User::class,
+        subjectId: $subjectId,
+        title: 'Global subject thread',
+    ));
+    $owned = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        subjectType: User::class,
+        subjectId: $subjectId,
+        title: 'Owned subject thread',
+    ));
+
+    expect($owned->id)->not->toBe($global->id)
+        ->and($global->fresh()->title)->toBe('Global subject thread')
+        ->and(CommunicationThread::query()->withoutOwnerScope()->where('subject_type', User::class)->where('subject_id', $subjectId)->count())->toBe(2);
+});
+
+test('thread resolution writes the global partition when owner scoping is disabled', function (): void {
+    $owner = User::create(['name' => 'Disabled Scope Owner', 'email' => 'thread-disabled-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $externalThreadId = 'thread-disabled-' . Str::uuid();
+    $action = app(ResolveCommunicationThreadAction::class);
+
+    Config::set('communications.features.owner.enabled', true);
+    $owned = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+    ));
+
+    Config::set('communications.features.owner.enabled', false);
+    $global = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+    ));
+    $globalAgain = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+    ));
+
+    expect($global->id)->not->toBe($owned->id)
+        ->and($global->owner_type)->toBeNull()
+        ->and($global->owner_id)->toBeNull()
+        ->and($globalAgain->id)->toBe($global->id)
+        ->and(CommunicationThread::query()->withoutOwnerScope()->where('external_thread_id', $externalThreadId)->count())->toBe(2);
+});
+
+test('thread resolution never mutates a global thread from an owned context when auto assignment is disabled', function (): void {
+    $owner = User::create(['name' => 'Auto Assign Owner', 'email' => 'thread-auto-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $externalThreadId = 'thread-auto-' . Str::uuid();
+    $action = app(ResolveCommunicationThreadAction::class);
+
+    Config::set('communications.features.owner.enabled', true);
+    Config::set('communications.features.owner.auto_assign_on_create', true);
+    $owned = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+    ));
+
+    Config::set('communications.features.owner.auto_assign_on_create', false);
+    $global = OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+        title: 'Global created from owned context',
+    ));
+
+    expect($global->id)->not->toBe($owned->id)
+        ->and($global->owner_type)->toBeNull()
+        ->and($global->owner_id)->toBeNull()
+        ->and($global->title)->toBe('Global created from owned context');
+
+    expect(fn (): CommunicationThread => OwnerContext::withOwner($owner, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+        title: 'Owned context retry',
+    )))->toThrow(AuthorizationException::class);
+
+    expect($global->fresh()->title)->toBe('Global created from owned context');
+
+    $globalAgain = OwnerContext::withOwner(null, fn (): CommunicationThread => $action->handle(
+        channel: 'mail',
+        externalThreadId: $externalThreadId,
+        title: 'Explicit global retry',
+    ));
+
+    expect($globalAgain->id)->toBe($global->id)
+        ->and($globalAgain->title)->toBe('Explicit global retry')
+        ->and(CommunicationThread::query()->withoutOwnerScope()->where('external_thread_id', $externalThreadId)->count())->toBe(2);
+});
+
+test('thread resolution allows multiple null external ids', function (): void {
+    $action = app(ResolveCommunicationThreadAction::class);
+
+    $first = $action->handle(channel: 'mail');
+    $second = $action->handle(channel: 'mail');
+
+    expect($second->id)->not->toBe($first->id)
+        ->and(CommunicationThread::query()->whereNull('external_thread_id')->count())->toBe(2);
 });
 
 test('delivery attempts number sequentially per delivery', function (): void {
@@ -955,4 +1134,120 @@ test('late native delivery callbacks cannot regress cancelled or delivered recor
 
     expect($delivered->fresh()->status)->toBe(DeliveryStatus::Delivered)
         ->and($cancelled->fresh()->status)->toBe(DeliveryStatus::Cancelled);
+});
+
+test('create communication rejects foreign references and requires references to exist when owner scoping is disabled', function (): void {
+    $ownerA = User::create(['name' => 'Create A', 'email' => 'create-a-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $ownerB = User::create(['name' => 'Create B', 'email' => 'create-b-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $foreignParent = OwnerContext::withOwner($ownerB, fn (): Communication => regressionCommunication());
+    $action = app(CreateCommunicationAction::class);
+
+    expect(fn (): string => OwnerContext::withOwner($ownerA, fn (): string => $action->handle(
+        new CommunicationContextData(purpose: 'foreign-parent', parentId: $foreignParent->id),
+    )))->toThrow(AuthorizationException::class);
+
+    Config::set('communications.features.owner.enabled', false);
+
+    expect(fn (): string => $action->handle(
+        new CommunicationContextData(purpose: 'missing-parent', parentId: (string) Str::uuid()),
+    ))->toThrow(ModelNotFoundException::class);
+});
+
+test('a cancelled communication save is rejected', function (): void {
+    Communication::saving(static fn (Communication $communication): ?bool => $communication->purpose === 'cancelled-create' ? false : null);
+
+    expect(fn (): string => app(CreateCommunicationAction::class)->handle(
+        new CommunicationContextData(purpose: 'cancelled-create'),
+    ))->toThrow(RuntimeException::class, 'Communication creation was cancelled.');
+});
+
+test('late progress provider statuses keep the later state and stamp their timestamps', function (): void {
+    $communication = regressionCommunication();
+    $delivery = regressionDelivery($communication, ['status' => DeliveryStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
+
+    app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+        provider: 'sendgrid',
+        providerEventId: 'late-accepted-after-sent',
+        providerMessageId: null,
+        eventType: 'accept',
+        occurredAt: CarbonImmutable::now(),
+        communicationId: $communication->id,
+        deliveryId: $delivery->id,
+    ));
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sent)
+        ->and($delivery->fresh()->accepted_at)->not->toBeNull();
+});
+
+test('provider complaints can follow delivery without a late acceptance regressing the status', function (): void {
+    $communication = regressionCommunication();
+    $delivery = regressionDelivery($communication, ['status' => DeliveryStatus::Delivered]);
+
+    foreach (['complaint', 'accept'] as $eventType) {
+        app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+            provider: 'ses',
+            providerEventId: 'delivery-complaint-' . $eventType,
+            providerMessageId: null,
+            eventType: $eventType,
+            occurredAt: CarbonImmutable::now(),
+            communicationId: $communication->id,
+            deliveryId: $delivery->id,
+        ));
+    }
+
+    $delivery->refresh();
+
+    expect($delivery->status)->toBe(DeliveryStatus::Complained)
+        ->and($delivery->complained_at)->not->toBeNull()
+        ->and($delivery->accepted_at)->not->toBeNull();
+});
+
+test('bare communication deletion rolls back dependents when a later listener vetoes the delete', function (): void {
+    $parent = regressionCommunication();
+    $child = regressionCommunication(['parent_id' => $parent->id]);
+
+    Communication::deleting(static fn (Communication $communication): ?bool => $communication->id === $parent->id ? false : null);
+
+    expect($parent->delete())->toBeFalse()
+        ->and($child->fresh()->parent_id)->toBe($parent->id);
+});
+
+test('thread resolution rethrows a unique race when no winning row exists', function (): void {
+    $channel = 'race-' . uniqid();
+    $externalThreadId = 'external-' . uniqid();
+    $owner = OwnerContext::resolve();
+
+    if ($owner === null) {
+        throw new RuntimeException('Thread race fixture requires a resolved owner.');
+    }
+
+    $armed = true;
+
+    CommunicationThread::creating(function (CommunicationThread $thread) use (&$armed, $channel, $externalThreadId, $owner): void {
+        if (! $armed || $thread->channel !== $channel || $thread->external_thread_id !== $externalThreadId) {
+            return;
+        }
+
+        $armed = false;
+
+        DB::table($thread->getTable())->insert([
+            'id' => (string) Str::uuid(),
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+            'channel' => $channel,
+            'external_thread_id' => $externalThreadId,
+            'status' => 'open',
+            'opened_at' => CarbonImmutable::now(),
+            'last_communication_at' => CarbonImmutable::now(),
+            'created_at' => CarbonImmutable::now(),
+            'updated_at' => CarbonImmutable::now(),
+        ]);
+    });
+
+    expect(fn (): CommunicationThread => app(ResolveCommunicationThreadAction::class)->handle(
+        channel: $channel,
+        externalThreadId: $externalThreadId,
+    ))->toThrow(UniqueConstraintViolationException::class);
+
+    expect(CommunicationThread::query()->where('channel', $channel)->where('external_thread_id', $externalThreadId)->count())->toBe(0);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -16,7 +17,6 @@ use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 
@@ -45,7 +45,7 @@ final class ReceiveInboundCommunicationAction
         $this->validateOptionalMorph('subject', $subjectType, $subjectId);
         $this->validateOptionalMorph('sender', $senderType, $senderId);
 
-        return DB::transaction(function () use (
+        return (new Communication)->getConnection()->transaction(function () use (
             $fromType,
             $fromId,
             $channel,
@@ -97,11 +97,27 @@ final class ReceiveInboundCommunicationAction
             $content->rendered_at = CarbonImmutable::now();
             $content->save();
 
-            Event::dispatch(new InboundCommunicationReceived(
-                communicationId: $communication->id,
-                threadId: $thread->id,
-                channel: $channel,
-            ));
+            $owner = $communication->owner_type !== null || $communication->owner_id !== null
+                ? OwnerContext::fromTypeAndId($communication->owner_type, $communication->owner_id)
+                : null;
+
+            (new Communication)->getConnection()->afterCommit(function () use ($communication, $thread, $channel, $owner): void {
+                if (Communication::ownerScopeConfig()->enabled) {
+                    OwnerContext::withOwner($owner, fn () => Event::dispatch(new InboundCommunicationReceived(
+                        communicationId: $communication->id,
+                        threadId: $thread->id,
+                        channel: $channel,
+                    )));
+
+                    return;
+                }
+
+                Event::dispatch(new InboundCommunicationReceived(
+                    communicationId: $communication->id,
+                    threadId: $thread->id,
+                    channel: $channel,
+                ));
+            });
 
             return $communication;
         });

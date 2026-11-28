@@ -462,8 +462,11 @@ path (`Segment::getMatchingCustomers()`, rebuilds) and the in-memory path
 (`SegmentationService::customerMatchesSegment()`, `evaluateCustomer()`).
 Conditions with a missing field, a missing value, or an unknown field match
 nothing in both paths, and an automatic segment with no conditions matches
-nobody. Segment slugs are unique per owner scope; concurrent duplicate
-creates fail with a `ValidationException`, not a database error.
+nobody. Segment lifecycle now uses `deactivated_at` for form state, queries,
+counts, and rebuilds. Replace segment `is_active` filters with `Segment::active()`.
+To deactivate a segment, save a `deactivated_at` timestamp. To reactivate it,
+clear the timestamp. Segment slugs are unique per owner scope; concurrent
+duplicate creates fail with a `ValidationException`, not a database error.
 
 ### Rebuild Segments Command
 

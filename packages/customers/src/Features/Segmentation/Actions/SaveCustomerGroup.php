@@ -16,7 +16,15 @@ final readonly class SaveCustomerGroup
     {
         $group = new CustomerGroup;
 
-        return $group->getConnection()->transaction(fn (): CustomerGroup => $group->newQuery()->create($attributes));
+        return $group->getConnection()->transaction(function () use ($group, $attributes): CustomerGroup {
+            $group->fill($attributes);
+
+            if (! $group->save()) {
+                throw new RuntimeException('Customer group persistence was cancelled.');
+            }
+
+            return $group;
+        });
     }
 
     /** @param array<string, mixed> $attributes */
@@ -28,7 +36,11 @@ final readonly class SaveCustomerGroup
 
         return $group->getConnection()->transaction(function () use ($group, $attributes): CustomerGroup {
             $locked = $group->newQuery()->whereKey($group->getKey())->lockForUpdate()->firstOrFail();
-            $locked->fill($attributes)->save();
+            $locked->fill($attributes);
+
+            if (! $locked->save()) {
+                throw new RuntimeException('Customer group persistence was cancelled.');
+            }
 
             return $locked;
         });

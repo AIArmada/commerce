@@ -31,7 +31,6 @@ class SegmentFactory extends Factory
             'conditions' => [],
             'is_automatic' => false,
             'priority' => $this->faker->numberBetween(0, 100),
-            'is_active' => true,
         ];
     }
 
@@ -79,7 +78,7 @@ class SegmentFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_active' => false,
+            'deactivated_at' => now(),
         ]);
     }
 }

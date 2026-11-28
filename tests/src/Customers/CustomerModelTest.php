@@ -115,7 +115,6 @@ describe('Customer Model', function (): void {
                 'name' => 'Scope Segment ' . uniqid(),
                 'slug' => 'scope-segment-' . uniqid(),
                 'is_automatic' => false,
-                'is_active' => true,
             ]);
 
             $inSegment = Customer::create([

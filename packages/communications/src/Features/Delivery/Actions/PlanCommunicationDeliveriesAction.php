@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Data\PlannedDeliveryData;
+use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryPlanned;
 use AIArmada\Communications\Features\Aggregate\Api\DeliveryReferenceValidator;
@@ -13,7 +15,6 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Throwable;
@@ -28,8 +29,6 @@ final class PlanCommunicationDeliveriesAction
      */
     public function handle(string $communicationId, array $planned): Collection
     {
-        $communication = Communication::query()->findOrFail($communicationId);
-
         if (Communication::ownerScopeConfig()->enabled) {
             OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
         }
@@ -72,7 +71,18 @@ final class PlanCommunicationDeliveriesAction
             ];
         }
 
-        $deliveries = DB::transaction(function () use ($communication, $rows): Collection {
+        $connection = (new Communication)->getConnection();
+
+        $deliveries = $connection->transaction(function () use ($communicationId, $rows): Collection {
+            $communication = Communication::query()
+                ->whereKey($communicationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
+                throw new InvalidArgumentException('Cannot plan deliveries for a cancelled or expired communication.');
+            }
+
             $records = new Collection;
 
             foreach ($rows as $row) {
@@ -97,11 +107,27 @@ final class PlanCommunicationDeliveriesAction
         });
 
         foreach ($deliveries as $delivery) {
-            Event::dispatch(new DeliveryPlanned(
-                deliveryId: $delivery->id,
-                communicationId: $delivery->communication_id,
-                channel: $delivery->channel,
-            ));
+            $owner = $delivery->owner_type !== null || $delivery->owner_id !== null
+                ? OwnerContext::fromTypeAndId($delivery->owner_type, $delivery->owner_id)
+                : null;
+
+            $connection->afterCommit(function () use ($delivery, $owner): void {
+                if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                    OwnerContext::withOwner($owner, fn () => Event::dispatch(new DeliveryPlanned(
+                        deliveryId: $delivery->id,
+                        communicationId: $delivery->communication_id,
+                        channel: $delivery->channel,
+                    )));
+
+                    return;
+                }
+
+                Event::dispatch(new DeliveryPlanned(
+                    deliveryId: $delivery->id,
+                    communicationId: $delivery->communication_id,
+                    channel: $delivery->channel,
+                ));
+            });
         }
 
         return $deliveries;

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
+use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Api\ScheduledDeliveryLifecycle;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -16,27 +18,40 @@ final readonly class ManageScheduledDeliveries implements ScheduledDeliveryLifec
 
     public function queueDue(string $communicationId, DateTimeInterface $now): void
     {
-        CommunicationDelivery::query()
-            ->where('communication_id', $communicationId)
-            ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled])
-            ->where(function (Builder $query) use ($now): void {
-                $query->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', $now);
-            })
-            ->update([
-                'status' => DeliveryStatus::Queued->value,
-                'queued_at' => $now,
-            ]);
+        (new Communication)->getConnection()->transaction(function () use ($communicationId, $now): void {
+            $communication = $this->lockActiveCommunication($communicationId);
+
+            if ($communication === null) {
+                return;
+            }
+
+            CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled])
+                ->where(function (Builder $query) use ($now): void {
+                    $query->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', $now);
+                })
+                ->update([
+                    'status' => DeliveryStatus::Queued->value,
+                    'queued_at' => $now,
+                ]);
+        });
     }
 
     public function startQueued(string $communicationId): int
     {
-        $model = new CommunicationDelivery;
         $transitioned = 0;
 
         do {
-            $count = $model->getConnection()->transaction(function () use ($communicationId): int {
+            $count = (new Communication)->getConnection()->transaction(function () use ($communicationId): int {
+                $communication = $this->lockActiveCommunication($communicationId);
+
+                if ($communication === null) {
+                    return 0;
+                }
+
                 $deliveries = CommunicationDelivery::query()
-                    ->where('communication_id', $communicationId)
+                    ->where('communication_id', $communication->id)
                     ->where('status', DeliveryStatus::Queued)
                     ->orderBy('queued_at')
                     ->orderBy('created_at')
@@ -60,22 +75,40 @@ final readonly class ManageScheduledDeliveries implements ScheduledDeliveryLifec
 
     public function cancel(string $communicationId, DateTimeInterface $now): void
     {
-        CommunicationDelivery::query()
-            ->where('communication_id', $communicationId)
-            ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending])
-            ->update([
-                'status' => DeliveryStatus::Cancelled,
-                'cancelled_at' => $now,
-            ]);
+        (new Communication)->getConnection()->transaction(function () use ($communicationId, $now): void {
+            $communication = Communication::query()
+                ->whereKey($communicationId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $communication instanceof Communication) {
+                return;
+            }
+
+            CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending])
+                ->update([
+                    'status' => DeliveryStatus::Cancelled,
+                    'cancelled_at' => $now,
+                ]);
+        });
     }
 
     public function expire(string $communicationId): void
     {
-        $model = new CommunicationDelivery;
+        (new Communication)->getConnection()->transaction(function () use ($communicationId): void {
+            $communication = Communication::query()
+                ->whereKey($communicationId)
+                ->lockForUpdate()
+                ->first();
 
-        $model->getConnection()->transaction(function () use ($communicationId): void {
+            if (! $communication instanceof Communication) {
+                return;
+            }
+
             CommunicationDelivery::query()
-                ->where('communication_id', $communicationId)
+                ->where('communication_id', $communication->id)
                 ->whereNotIn('status', [
                     DeliveryStatus::Delivered,
                     DeliveryStatus::Opened,
@@ -97,5 +130,23 @@ final readonly class ManageScheduledDeliveries implements ScheduledDeliveryLifec
                     force: true,
                 ), 100);
         });
+    }
+
+    private function lockActiveCommunication(string $communicationId): ?Communication
+    {
+        $communication = Communication::query()
+            ->whereKey($communicationId)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $communication instanceof Communication) {
+            return null;
+        }
+
+        if ($communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
+            return null;
+        }
+
+        return $communication;
     }
 }

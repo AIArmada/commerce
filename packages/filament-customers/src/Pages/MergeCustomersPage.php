@@ -63,6 +63,13 @@ final class MergeCustomersPage extends Page implements HasForms
         return (bool) config('filament-customers.features.merge_customers', true);
     }
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Customer::class);
+    }
+
     public function form(Schema $form): Schema
     {
         return $form
@@ -213,6 +220,9 @@ final class MergeCustomersPage extends Page implements HasForms
         Gate::forUser($user)->authorize('update', $source);
         Gate::forUser($user)->authorize('delete', $source);
 
+        $sourceLabel = PrimaryEmailResolver::resolve($source) ?? $source->full_name;
+        $targetLabel = PrimaryEmailResolver::resolve($target) ?? $target->full_name;
+
         try {
             app(MergeCustomers::class)->execute($target, $source);
         } catch (InvalidArgumentException $exception) {
@@ -224,9 +234,6 @@ final class MergeCustomersPage extends Page implements HasForms
 
             return;
         }
-
-        $sourceLabel = PrimaryEmailResolver::resolve($source) ?? $source->full_name;
-        $targetLabel = PrimaryEmailResolver::resolve($target) ?? $target->full_name;
 
         Notification::make()
             ->success()

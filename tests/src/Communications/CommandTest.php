@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\EntryPoints\Commands\DispatchDueCommunicationsCommand;
 use AIArmada\Communications\EntryPoints\Commands\ExpireCommunicationsCommand;
 use AIArmada\Communications\EntryPoints\Commands\PruneCommunicationDataCommand;
@@ -78,8 +79,17 @@ test('prune command accepts dry-run flag', function (): void {
 });
 
 test('prune-inboxes command accepts dry-run flag', function (): void {
-    $exitCode = Artisan::call('communications:prune-inboxes', ['--dry-run' => true]);
+    $exitCode = Artisan::call('communications:prune-inboxes', ['--dry-run' => true, '--all-owners' => true]);
     expect($exitCode)->toBe(0);
+});
+
+test('prune-inboxes rejects conflicting owner options', function (): void {
+    $exitCode = Artisan::call('communications:prune-inboxes', [
+        '--owner' => User::class . ':1',
+        '--all-owners' => true,
+    ]);
+
+    expect($exitCode)->toBe(1);
 });
 
 test('prune-inboxes command reports archived inbox entries in dry-run mode', function (): void {
@@ -109,10 +119,46 @@ test('prune-inboxes command reports archived inbox entries in dry-run mode', fun
         'archived_at' => now()->subDays(100),
     ])->save();
 
-    $exitCode = Artisan::call('communications:prune-inboxes', ['--dry-run' => true]);
+    $exitCode = Artisan::call('communications:prune-inboxes', ['--dry-run' => true, '--all-owners' => true]);
 
     expect($exitCode)->toBe(0);
-    expect(Artisan::output())->toContain('Would prune 1 inbox entries.');
+    expect(Artisan::output())->toContain('Would prune 1 inbox entries across all owners.');
+});
+
+test('prune-inboxes removes archived entries across explicit owner scopes', function (): void {
+    $firstOwner = commandTestOwner();
+    $secondOwner = commandTestOwner();
+
+    foreach ([$firstOwner, $secondOwner, null] as $owner) {
+        OwnerContext::withOwner($owner, function () use ($firstOwner): void {
+            $communication = (new Communication)->forceFill([
+                'direction' => CommunicationDirection::Internal,
+                'category' => CommunicationCategory::Internal,
+                'priority' => CommunicationPriority::Normal,
+                'purpose' => 'inbox-prune-all-owners',
+                'status' => CommunicationStatus::Completed,
+            ]);
+            $communication->save();
+
+            (new NotificationInbox)->forceFill([
+                'recipient_type' => $firstOwner->getMorphClass(),
+                'recipient_id' => $firstOwner->getKey(),
+                'communication_id' => $communication->getKey(),
+                'family' => NotificationFamily::SystemAnnouncement,
+                'priority' => NotificationPriority::Normal,
+                'trigger' => NotificationTrigger::SystemAlert,
+                'title' => 'Archived Inbox',
+                'archived_at' => now()->subDays(100),
+            ])->save();
+        });
+    }
+
+    expect(Artisan::call('communications:prune-inboxes', ['--all-owners' => true]))->toBe(0)
+        ->and(Artisan::output())->toContain('Pruned 3 inbox entries across all owners.');
+
+    foreach ([$firstOwner, $secondOwner, null] as $owner) {
+        OwnerContext::withOwner($owner, fn () => expect(NotificationInbox::query()->count())->toBe(0));
+    }
 });
 
 test('replay-webhooks command runs without error when no events exist', function (): void {

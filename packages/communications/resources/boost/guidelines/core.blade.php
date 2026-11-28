@@ -11,6 +11,8 @@
 
 - Default notification, audit, eligibility, encryption and cache implementations are in `Drivers/Notifications/`, `Drivers/Audit/`, `Drivers/Eligibility/`, `Drivers/Security/` and `Drivers/Cache/`. Bind their package contracts rather than reaching into implementation classes.
 
+- Delete batches and threads through `Features\Aggregate\Actions\DeleteCommunicationBatchAction` and `DeleteCommunicationThreadAction`; never cascade their communications from UI code.
+- Thread external ids are unique per owner tuple and separately in the global partition. `ResolveCommunicationThreadAction` writes only the partition implied by `auto_assign_on_create`; it never adopts global rows from an owned context. PostgreSQL `REPEATABLE READ` callers retry when it rethrows `UniqueConstraintViolationException`.
 - `CommunicationBatch`, `CommunicationThread` and `CommunicationReference` live under `Features/Aggregate/Models/`; use the owning Aggregate actions for mutations.
 
 - `CommunicationContent` and `CommunicationRecipient` are Aggregate-owned models under `Features/Aggregate/Models/`. Use Aggregate actions to create or modify recipient and content records.

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Support\DeferredSegmentEvents;
 use AIArmada\Customers\Models\Customer;
 use InvalidArgumentException;
 
@@ -39,7 +39,7 @@ final class RemoveCustomerFromSegment
                 return;
             }
 
-            event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+            DeferredSegmentEvents::dispatch($customer, $segment, 'removed');
         });
     }
 

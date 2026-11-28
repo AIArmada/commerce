@@ -38,7 +38,7 @@ describe('RebuildSegmentsCommand', function (): void {
     describe('Handle Method via Artisan', function (): void {
         it('handles empty segments', function (): void {
             // Ensure no automatic active segments exist
-            Segment::query()->where('is_automatic', true)->where('is_active', true)->delete();
+            Segment::query()->where('is_automatic', true)->whereNull('deactivated_at')->delete();
 
             // Register command
             $this->app->make(Kernel::class)
@@ -52,7 +52,6 @@ describe('RebuildSegmentsCommand', function (): void {
             Segment::create([
                 'name' => 'Rebuild All Test ' . uniqid(),
                 'slug' => 'rebuild-all-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);
@@ -68,7 +67,6 @@ describe('RebuildSegmentsCommand', function (): void {
             $segment = Segment::create([
                 'name' => 'Single Test ' . uniqid(),
                 'slug' => 'single-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);
@@ -92,7 +90,6 @@ describe('RebuildSegmentsCommand', function (): void {
             $segment = Segment::create([
                 'name' => 'Manual Test ' . uniqid(),
                 'slug' => 'manual-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => false,
             ]);
 
@@ -107,7 +104,6 @@ describe('RebuildSegmentsCommand', function (): void {
             Segment::create([
                 'name' => 'Dry Run Test ' . uniqid(),
                 'slug' => 'dry-run-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);
@@ -123,7 +119,6 @@ describe('RebuildSegmentsCommand', function (): void {
             $segment = Segment::create([
                 'name' => 'Single Dry Run ' . uniqid(),
                 'slug' => 'single-dry-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);

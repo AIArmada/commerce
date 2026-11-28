@@ -54,7 +54,8 @@ describe('Segment Model', function (): void {
                 'slug' => 'active-' . uniqid(),
             ]);
 
-            expect($segment->is_active)->toBeTrue();
+            expect($segment->deactivated_at)->toBeNull()
+                ->and($segment->isActive())->toBeTrue();
         });
 
         it('defaults to automatic', function (): void {
@@ -254,18 +255,17 @@ describe('Segment Model', function (): void {
             Segment::create([
                 'name' => 'Active Scope ' . uniqid(),
                 'slug' => 'active-scope-' . uniqid(),
-                'is_active' => true,
             ]);
 
             Segment::create([
                 'name' => 'Inactive Scope ' . uniqid(),
                 'slug' => 'inactive-scope-' . uniqid(),
-                'is_active' => false,
+                'deactivated_at' => now(),
             ]);
 
             $active = Segment::active()->get();
 
-            expect($active->every(fn ($s) => $s->is_active))->toBeTrue();
+            expect($active->every(fn ($s) => $s->deactivated_at === null))->toBeTrue();
         });
 
         it('can filter automatic segments', function (): void {

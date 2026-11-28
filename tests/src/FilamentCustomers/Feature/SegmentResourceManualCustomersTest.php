@@ -41,7 +41,6 @@ it('syncManualCustomers rejects syncing when the segment record is outside curre
         'slug' => 'outside-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]));

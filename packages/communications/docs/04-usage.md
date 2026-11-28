@@ -250,20 +250,51 @@ php artisan communications:expire
 # Reconcile aggregate statuses
 php artisan communications:reconcile
 
-# Prune archived inbox rows
+# Prune archived inbox rows for the explicit global scope
 php artisan communications:prune-inboxes
+
+# Prune archived inbox rows for one owner
+php artisan communications:prune-inboxes --owner="App\Models\Team:1"
+
+# Prune archived inbox rows for every owner scope and global rows
+php artisan communications:prune-inboxes --all-owners
 
 # Replay stored provider webhook events
 php artisan communications:replay-webhooks
 ```
 
 Pruning hard-deletes eligible records; communications models use no soft deletes.
+Use `--owner` only when owner scoping is enabled, and choose either `--owner` or `--all-owners` for each invocation.
 
 ## Owner scoping
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
 
 Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to return a trusted `AIArmada\CommerceSupport\Data\RecordReference` (owner morph type and ID) from provider-authenticated payload data. Explicit owner references are resolved again in the worker and missing owners fail closed. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
+
+## Thread resolution
+
+`ResolveCommunicationThreadAction` resolves and writes only the partition the
+thread will actually persist to:
+
+- With owner scoping enabled and `auto_assign_on_create` enabled, an owned
+  context resolves that owner's threads. An explicit global context resolves
+  global threads.
+- With `auto_assign_on_create` disabled, owned and global contexts both write
+  the global partition; an owned context cannot update an existing global
+  thread without an explicit global context.
+- With owner scoping disabled, thread resolution writes the global partition.
+
+External thread ids are unique per exact owner tuple and separately per global
+partition, so the same provider thread may exist once for each owner and once
+globally. Null external ids are not unique and may repeat. `include_global`
+does not merge partitions during writes: an owned caller never adopts or
+mutates a global thread.
+
+PostgreSQL `REPEATABLE READ` callers that lose a concurrent insert race cannot
+see the committed winner inside their snapshot. The action rethrows
+`UniqueConstraintViolationException` in that case; retry the caller transaction
+to resolve against the winner.
 
 ## Restricted attributes
 
@@ -318,9 +349,12 @@ Expiring a communication dispatches `CommunicationExpired` and expires its
 pending deliveries; the original `expires_at` deadline is preserved.
 
 Legal transitions come from a single `ALLOWED_TRANSITIONS` table on the
-action; anything else throws unless the `force` flag is passed. Each
-transition stamps its `*_at` column only when it is still null, so lifecycle
-timestamps are never cleared or overwritten.
+action; anything else throws unless the `force` flag is passed. Provider
+statuses follow an explicit progress precedence (`pending` through `replied`)
+plus terminal failure handling, so a late `accepted` event after `sent` keeps
+`sent` while still stamping `accepted_at`. Each transition stamps its `*_at`
+column only when it is still null, so lifecycle timestamps are never cleared
+or overwritten.
 
 Aggregate status is derived by `RecalculateCommunicationStatusAction`: all
 deliveries terminal with no failures or cancellations means `Completed`;

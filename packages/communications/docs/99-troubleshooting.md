@@ -47,13 +47,23 @@ If queries return unexpected results:
 3. Check that the inbox was created through `DispatchInboxNotificationAction` or `AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries`
 4. Verify the `communications.inbox-index` component is registered when you expect the Livewire screen
 
+## Thread resolution throws a unique constraint violation
+
+`ResolveCommunicationThreadAction` recovers the winning thread after a
+concurrent insert in the same owner or global partition. Under PostgreSQL
+`REPEATABLE READ`, a winner committed after the caller's snapshot started is
+invisible to the recovery query, so the action rethrows
+`UniqueConstraintViolationException`. Retry the caller transaction; the next
+attempt resolves the committed winner.
+
 ## Inbox pruning is not deleting rows
 
-`communications:prune-inboxes` only removes archived entries older than the cutoff.
+`communications:prune-inboxes` only removes archived entries older than the cutoff inside the active owner scope. With owner scoping enabled, omitting `--owner` targets the explicit global scope.
 
 1. Ensure the rows have `archived_at` set
-2. Check the `--before` date if you overrode it
-3. Run the command without `--dry-run` to perform the delete
+2. Pass `--owner="Type:id"` for one owner or `--all-owners` for every scope
+3. Check the `--before` date if you overrode it
+4. Run the command without `--dry-run` to perform the delete
 
 ## Status or morph-type values silently dropped on create/update
 

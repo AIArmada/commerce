@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Database\Factories\TitleCategoryFactory;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleCategory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\DB;
  */
 class TitleCategory extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasUuids;
 
@@ -37,9 +39,7 @@ class TitleCategory extends Model
     protected static function booted(): void
     {
         static::deleting(function (TitleCategory $category): void {
-            DB::transaction(static function () use ($category): void {
-                $category->titles()->chunkById(500, static fn (Collection $titles) => $titles->each->delete());
-            });
+            app(DeleteTitleCategory::class)->deleteDependents($category);
         });
     }
 

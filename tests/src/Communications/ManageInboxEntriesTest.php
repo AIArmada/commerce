@@ -198,7 +198,7 @@ test('prune removes archived entries older than the threshold', function (): voi
     expect(NotificationInbox::find($newInbox->id))->not->toBeNull();
 });
 
-test('prune removes archived entries across owners', function (): void {
+test('prune requires an explicit owner scope instead of crossing owners', function (): void {
     config()->set('communications.features.owner.enabled', true);
     Model::clearBootedModels();
 
@@ -261,9 +261,14 @@ test('prune removes archived entries across owners', function (): void {
 
     $pruned = $this->service->prune(before: CarbonImmutable::now()->subDays(30));
 
-    expect($pruned)->toBe(2);
-    expect(NotificationInbox::query()->withoutOwnerScope()->find($currentOwnerInbox->id))->toBeNull();
-    expect(NotificationInbox::query()->withoutOwnerScope()->find($otherOwnerInbox->id))->toBeNull();
+    expect($pruned)->toBe(1)
+        ->and(NotificationInbox::query()->withoutOwnerScope()->find($currentOwnerInbox->id))->toBeNull()
+        ->and(NotificationInbox::query()->withoutOwnerScope()->find($otherOwnerInbox->id))->not->toBeNull();
+
+    $otherPruned = OwnerContext::withOwner($otherOwner, fn (): int => $this->service->prune(before: CarbonImmutable::now()->subDays(30)));
+
+    expect($otherPruned)->toBe(1)
+        ->and(NotificationInbox::query()->withoutOwnerScope()->find($otherOwnerInbox->id))->toBeNull();
 });
 
 test('prune returns 0 when no archived entries exceed threshold', function (): void {
@@ -318,4 +323,24 @@ test('uses DB transactions', function (): void {
 
     expect($inbox)->toBeInstanceOf(NotificationInbox::class);
     expect($inbox->title)->toBe('Transactional Create');
+});
+
+test('createMany creates one inbox row per recipient and none for the communication', function (): void {
+    $second = User::create([
+        'name' => 'Second Service User',
+        'email' => 'second-service-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $created = $this->service->createMany(
+        recipients: [$this->user, $second],
+        communication: $this->communication,
+        family: NotificationFamily::SystemAnnouncement,
+        priority: NotificationPriority::Normal,
+        trigger: NotificationTrigger::SystemAlert,
+        title: 'Batch Inbox',
+    );
+
+    expect($created)->toHaveCount(2)
+        ->and($created->pluck('recipient_id')->all())->toEqualCanonicalizing([$this->user->id, $second->id]);
 });

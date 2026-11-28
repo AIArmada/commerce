@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Events\CommunicationCancelled;
@@ -18,7 +19,9 @@ final class CancelCommunicationAction
 
     public function handle(string $communicationId, ?string $reason = null): Communication
     {
-        $communication = (new Communication)->getConnection()->transaction(function () use ($communicationId): Communication {
+        $connection = (new Communication)->getConnection();
+
+        $communication = $connection->transaction(function () use ($communicationId): Communication {
             $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->firstOrFail();
 
             if (Communication::ownerScopeConfig()->enabled) {
@@ -35,10 +38,25 @@ final class CancelCommunicationAction
             return $communication;
         }, attempts: 3);
 
-        Event::dispatch(new CommunicationCancelled(
-            communicationId: $communication->id,
-            reason: $reason,
-        ));
+        $owner = $communication->owner_type !== null || $communication->owner_id !== null
+            ? OwnerContext::fromTypeAndId($communication->owner_type, $communication->owner_id)
+            : null;
+
+        $connection->afterCommit(function () use ($communication, $owner, $reason): void {
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerContext::withOwner($owner, fn () => Event::dispatch(new CommunicationCancelled(
+                    communicationId: $communication->id,
+                    reason: $reason,
+                )));
+
+                return;
+            }
+
+            Event::dispatch(new CommunicationCancelled(
+                communicationId: $communication->id,
+                reason: $reason,
+            ));
+        });
 
         return $communication;
     }

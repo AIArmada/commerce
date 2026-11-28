@@ -4,60 +4,45 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Policies;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Policies\EnforcesOwnerScope;
 use AIArmada\Communications\Models\Communication;
-use Illuminate\Foundation\Auth\User;
 
 final class CommunicationPolicy
 {
-    public function __construct(
-        private readonly OwnerResolverInterface $ownerResolver,
-    ) {}
+    use EnforcesOwnerScope;
 
-    public function viewAny(User $user): bool
+    public function viewAny(mixed $user): bool
     {
-        return true;
+        return $user !== null && $this->ownerContextAllowsAccess(Communication::class);
     }
 
-    public function view(User $user, Communication $communication): bool
+    public function view(mixed $user, Communication $communication): bool
     {
-        $owner = $this->ownerResolver->resolve();
-
-        if ($owner === null) {
-            return $communication->owner_type === null
-                && $communication->owner_id === null;
-        }
-
-        return $communication->owner_type === $owner->type
-            && (string) $communication->owner_id === $owner->id;
+        return $user !== null && $this->isViewableInOwnerScope($communication);
     }
 
-    public function create(User $user): bool
+    public function create(mixed $user): bool
     {
-        return true;
+        return $user !== null && $this->ownerContextAllowsAccess(Communication::class);
     }
 
-    /**
-     * Communications are read-only records once created. The sanctioned
-     * mutation paths are the cancel/retry actions below, not generic edits.
-     */
-    public function update(User $user, Communication $communication): bool
+    public function update(mixed $user, Communication $communication): bool
     {
         return false;
     }
 
-    public function delete(User $user, Communication $communication): bool
+    public function delete(mixed $user, Communication $communication): bool
     {
         return false;
     }
 
-    public function cancel(User $user, Communication $communication): bool
+    public function cancel(mixed $user, Communication $communication): bool
     {
-        return $this->view($user, $communication);
+        return $user !== null && $this->isMutableInOwnerScope($communication);
     }
 
-    public function retry(User $user, Communication $communication): bool
+    public function retry(mixed $user, Communication $communication): bool
     {
-        return $this->view($user, $communication);
+        return $user !== null && $this->isMutableInOwnerScope($communication);
     }
 }

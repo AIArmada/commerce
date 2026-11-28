@@ -51,7 +51,6 @@ describe('SegmentationService', function (): void {
             Segment::create([
                 'name' => 'Rebuild All ' . uniqid(),
                 'slug' => 'rebuild-all-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);
@@ -107,7 +106,6 @@ describe('SegmentationService', function (): void {
                 'name' => 'Evaluate ' . uniqid(),
                 'slug' => 'evaluate-' . uniqid(),
                 'is_automatic' => true,
-                'is_active' => true,
                 'conditions' => [
                     ['field' => 'accepts_marketing', 'value' => true],
                 ],

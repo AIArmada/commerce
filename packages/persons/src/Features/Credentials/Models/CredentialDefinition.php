@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Credentials\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Database\Factories\CredentialDefinitionFactory;
 use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class CredentialDefinition extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasUuids;
 

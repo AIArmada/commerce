@@ -10,7 +10,6 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend;
 use AIArmada\Communications\Models\Communication;
-use Illuminate\Support\Facades\DB;
 
 final readonly class DeliveryFencingService implements DeliveryFencing
 {
@@ -63,15 +62,7 @@ final readonly class DeliveryFencingService implements DeliveryFencing
 
         sort($deliveryIds, SORT_STRING);
 
-        DB::transaction(function () use ($communicationId, $deliveryIds, $failureMessage): void {
-            $deliveries = CommunicationDelivery::query()
-                ->where('communication_id', $communicationId)
-                ->whereIn('id', $deliveryIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy(static fn (CommunicationDelivery $delivery): string => (string) $delivery->getKey());
-
+        (new Communication)->getConnection()->transaction(function () use ($communicationId, $deliveryIds, $failureMessage): void {
             $communication = Communication::query()
                 ->whereKey($communicationId)
                 ->lockForUpdate()
@@ -80,6 +71,14 @@ final readonly class DeliveryFencingService implements DeliveryFencing
             if (! $communication instanceof Communication || $communication->cancelled_at !== null) {
                 return;
             }
+
+            $deliveries = CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->whereIn('id', $deliveryIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(static fn (CommunicationDelivery $delivery): string => (string) $delivery->getKey());
 
             foreach ($deliveryIds as $deliveryId) {
                 $delivery = $deliveries->get($deliveryId);

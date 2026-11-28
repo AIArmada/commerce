@@ -48,10 +48,10 @@ it('rebuild action honors Gate interceptors', function (): void {
         'slug' => 'manual-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
     ]);
 
-    Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true && $ability === 'rebuild'
+    Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true
+        && in_array($ability, ['viewAny', 'rebuild'], true)
         ? true
         : null);
 

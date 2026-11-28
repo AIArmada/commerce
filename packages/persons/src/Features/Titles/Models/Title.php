@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Titles\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\Persons\Database\Factories\TitleFactory;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Title extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasUuids;
 

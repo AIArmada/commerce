@@ -8,6 +8,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\CreateContactMethodAction;
@@ -79,6 +80,7 @@ use Spatie\Tags\HasTags;
  */
 class Customer extends Model implements Auditable, HasMedia
 {
+    use DeletesAtomically;
     use HasAddresses;
     use HasCommerceAudit;
     use HasContactMethods;

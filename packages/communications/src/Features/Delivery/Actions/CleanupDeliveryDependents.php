@@ -19,8 +19,22 @@ final readonly class CleanupDeliveryDependents implements DeliveryDependentsClea
 
     public function cleanup(string $deliveryId): void
     {
-        (new CommunicationDelivery)->getConnection()->transaction(function () use ($deliveryId): void {
-            $delivery = CommunicationDelivery::query()->whereKey($deliveryId)->lockForUpdate()->firstOrFail();
+        $probe = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        (new CommunicationDelivery)->getConnection()->transaction(function () use ($deliveryId, $probe): void {
+            $communication = Communication::query()
+                ->whereKey($probe->communication_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+            }
+
+            $delivery = CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->lockForUpdate()
+                ->findOrFail($deliveryId);
 
             if (CommunicationDelivery::ownerScopeConfig()->enabled) {
                 OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
@@ -47,15 +61,24 @@ final readonly class CleanupDeliveryDependents implements DeliveryDependentsClea
         }
 
         (new CommunicationDelivery)->getConnection()->transaction(function () use ($communicationId): void {
+            $communication = Communication::query()
+                ->whereKey($communicationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+            }
+
             CommunicationDelivery::query()
-                ->where('communication_id', $communicationId)
+                ->where('communication_id', $communication->id)
                 ->eachById(static function (CommunicationDelivery $delivery): void {
                     if (! $delivery->delete()) {
                         throw new RuntimeException('Communication dependent deletion was cancelled.');
                     }
                 }, 100);
 
-            CommunicationEvent::query()->where('communication_id', $communicationId)->delete();
+            CommunicationEvent::query()->where('communication_id', $communication->id)->delete();
         });
     }
 }

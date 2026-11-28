@@ -17,10 +17,12 @@ use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleIssuer;
 use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -361,4 +363,30 @@ it('rejects ordering a title in a missing category', function (): void {
     ]))->toThrow(ValidationException::class);
 
     expect(Title::query()->where('name', 'Orphan')->exists())->toBeFalse();
+});
+
+it('nulls title assignment issuer ids when a title issuer is deleted', function (): void {
+    $issuer = TitleIssuer::create([
+        'issuer_name' => 'Professional Board',
+        'issuer_type' => 'professional_board',
+    ]);
+    $category = TitleCategory::create(['code' => 'issuer-delete', 'name' => 'Issuer Delete', 'sort_order' => 1]);
+    $title = Title::create([
+        'category_id' => $category->id,
+        'name' => 'Certified',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $person = Person::create(['name' => 'Issuer Assignment']);
+    $assignment = TitleAssignment::create([
+        'titleable_type' => 'person',
+        'titleable_id' => $person->id,
+        'title_id' => $title->id,
+        'issuer_id' => $issuer->id,
+        'status' => AssignmentStatus::Active,
+    ]);
+
+    expect(app(DeleteTitleIssuer::class)->execute($issuer))->toBeTrue()
+        ->and(TitleIssuer::query()->whereKey($issuer->id)->exists())->toBeFalse()
+        ->and($assignment->fresh()?->issuer_id)->toBeNull();
 });

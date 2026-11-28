@@ -10,8 +10,10 @@ use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
@@ -61,7 +63,6 @@ describe('RebuildAllSegments', function (): void {
             $segment = OwnerContext::withOwner($owner, fn (): Segment => Segment::create([
                 'name' => 'ForOwner ' . uniqid(),
                 'slug' => 'forowner-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [
                     ['field' => 'accepts_marketing', 'value' => true],
@@ -106,6 +107,44 @@ describe('RebuildAllSegments', function (): void {
             $count = $this->action->rebuildSegment($segment);
 
             expect($count)->toBe(1);
+        });
+
+        it('writes a large membership diff in bounded batches', function (): void {
+            Event::fake([CustomerSegmentChanged::class]);
+
+            $segment = Segment::create([
+                'name' => 'Large Rebuild',
+                'slug' => 'large-rebuild',
+                'is_automatic' => true,
+                'conditions' => [['field' => 'accepts_marketing', 'value' => true]],
+            ]);
+
+            foreach (array_chunk(range(1, 401), 100) as $chunk) {
+                DB::table((new Customer)->getTable())->insert(array_map(static fn (int $number): array => [
+                    'id' => (string) Str::uuid(),
+                    'owner_type' => $segment->owner_type,
+                    'owner_id' => $segment->owner_id,
+                    'first_name' => 'Customer',
+                    'last_name' => (string) $number,
+                    'accepts_marketing' => true,
+                ], $chunk));
+            }
+
+            DB::enableQueryLog();
+
+            try {
+                $count = $this->action->rebuildSegment($segment);
+                $pivotInserts = array_filter(DB::getQueryLog(), static fn (array $entry): bool => str_contains($entry['query'], 'insert')
+                    && str_contains($entry['query'], $segment->customers()->getTable()));
+            } finally {
+                DB::disableQueryLog();
+                DB::flushQueryLog();
+            }
+
+            expect($count)->toBe(401)
+                ->and($segment->customers()->count())->toBe(401)
+                ->and($pivotInserts)->toHaveCount(3);
+            Event::assertDispatchedTimes(CustomerSegmentChanged::class, 401);
         });
 
         it('returns existing count for manual segment without changes', function (): void {

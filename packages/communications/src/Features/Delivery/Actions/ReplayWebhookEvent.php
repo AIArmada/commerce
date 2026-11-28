@@ -9,6 +9,7 @@ use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use RuntimeException;
@@ -66,8 +67,32 @@ final readonly class ReplayWebhookEvent implements WebhookReplay
 
         try {
             return (new CommunicationDelivery)->getConnection()->transaction(function () use ($candidate, $eventId, $force): string {
-                // Match the provider-event delivery-first lock order.
-                $delivery = CommunicationDelivery::query()->lockForUpdate()->find($candidate->delivery_id);
+                $communicationId = $candidate->communication_id;
+
+                if ($communicationId === null) {
+                    $communicationId = CommunicationDelivery::query()
+                        ->whereKey($candidate->delivery_id)
+                        ->value('communication_id');
+                }
+
+                if (! is_string($communicationId) || $communicationId === '') {
+                    return 'skipped';
+                }
+
+                $communication = Communication::query()->lockForUpdate()->find($communicationId);
+
+                if ($communication === null) {
+                    return 'skipped';
+                }
+
+                if (Communication::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+                }
+
+                $delivery = CommunicationDelivery::query()
+                    ->where('communication_id', $communication->id)
+                    ->lockForUpdate()
+                    ->find($candidate->delivery_id);
 
                 if ($delivery === null) {
                     return 'skipped';
@@ -101,13 +126,7 @@ final readonly class ReplayWebhookEvent implements WebhookReplay
                 }
 
                 $target = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
-                $transitions = app(TransitionDeliveryAction::class);
-
-                if ($force) {
-                    $transitions->handle($delivery, $target, force: true);
-                } else {
-                    $transitions->applyProviderStatus($delivery, $target);
-                }
+                app(TransitionDeliveryAction::class)->applyProviderStatus($delivery, $target);
 
                 $this->auditRecorder->recordWebhookReplay(
                     communicationId: $delivery->communication_id,

@@ -18,25 +18,21 @@ final class PruneCommunicationDataAction
     {
         $pruned = 0;
 
-        $pruned += (new Communication)->getConnection()->transaction(function () use ($before): int {
-            $query = Communication::query()
-                ->where(function ($q) use ($before): void {
-                    $q->where('completed_at', '<', $before)
-                        ->orWhere('failed_at', '<', $before)
-                        ->orWhere('cancelled_at', '<', $before)
-                        ->orWhere('expires_at', '<', $before);
-                });
-
-            $count = 0;
-            $query->chunkById(100, function (Collection $communications) use (&$count): void {
+        Communication::query()
+            ->where(function ($q) use ($before): void {
+                $q->where('completed_at', '<', $before)
+                    ->orWhere('failed_at', '<', $before)
+                    ->orWhere('cancelled_at', '<', $before)
+                    ->orWhere('expires_at', '<', $before);
+            })
+            ->select('id')
+            ->chunkById(100, function (Collection $communications) use (&$pruned, $before): void {
                 foreach ($communications as $communication) {
-                    $this->deleteCommunication->handle((string) $communication->getKey());
-                    $count++;
+                    if ($this->deleteCommunication->handle((string) $communication->getKey(), $before)) {
+                        $pruned++;
+                    }
                 }
             });
-
-            return $count;
-        });
 
         return $pruned;
     }

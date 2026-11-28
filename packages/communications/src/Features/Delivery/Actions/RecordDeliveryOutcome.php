@@ -19,80 +19,89 @@ final readonly class RecordDeliveryOutcome implements CommunicationRecorder
 
     public function markSending(string $communicationId, string $deliveryId): void
     {
-        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
+        $this->withLockedPair($communicationId, $deliveryId, function (Communication $communication, CommunicationDelivery $delivery): void {
+            if ($delivery->cancelled_at !== null || $this->isAlreadySettledForSending($delivery)) {
+                return;
+            }
 
-        if ($delivery === null || $delivery->cancelled_at !== null) {
-            return;
-        }
+            $delivery->status = DeliveryStatus::Sending;
+            $delivery->sending_at = CarbonImmutable::now();
+            $delivery->save();
 
-        if ($this->isAlreadySettledForSending($delivery)) {
-            return;
-        }
-
-        $delivery->status = DeliveryStatus::Sending;
-        $delivery->sending_at = CarbonImmutable::now();
-        $delivery->save();
-
-        $this->recalculator->handle($communicationId);
+            $this->recalculator->handle($communication->id);
+        });
     }
 
     public function markSent(string $communicationId, string $deliveryId, array $result): void
     {
-        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
+        $this->withLockedPair($communicationId, $deliveryId, function (Communication $communication, CommunicationDelivery $delivery) use ($result): void {
+            if ($delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
+                return;
+            }
 
-        if ($delivery === null || $delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
-            return;
-        }
+            $delivery->status = DeliveryStatus::Sent;
+            $delivery->sent_at = CarbonImmutable::now();
+            $delivery->provider_message_id = $result['provider_message_id'] ?? $delivery->provider_message_id;
+            $delivery->save();
 
-        $delivery->status = DeliveryStatus::Sent;
-        $delivery->sent_at = CarbonImmutable::now();
-        $delivery->provider_message_id = $result['provider_message_id'] ?? $delivery->provider_message_id;
-        $delivery->save();
-
-        $this->recalculator->handle($communicationId);
+            $this->recalculator->handle($communication->id);
+        });
     }
 
     public function markFailed(string $communicationId, string $deliveryId, string $failureMessage): void
     {
-        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
+        $this->withLockedPair($communicationId, $deliveryId, function (Communication $communication, CommunicationDelivery $delivery) use ($failureMessage): void {
+            if ($delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
+                return;
+            }
 
-        if ($delivery === null || $delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
-            return;
-        }
+            $delivery->status = DeliveryStatus::Failed;
+            $delivery->failed_at = CarbonImmutable::now();
+            $delivery->failure_message = $failureMessage;
+            $delivery->save();
 
-        $delivery->status = DeliveryStatus::Failed;
-        $delivery->failed_at = CarbonImmutable::now();
-        $delivery->failure_message = $failureMessage;
-        $delivery->save();
-
-        $this->recalculator->handle($communicationId);
+            $this->recalculator->handle($communication->id);
+        });
     }
 
-    private function deliveryForCommunication(string $communicationId, string $deliveryId): ?CommunicationDelivery
+    /**
+     * @param  callable(Communication, CommunicationDelivery): void  $callback
+     */
+    private function withLockedPair(string $communicationId, string $deliveryId, callable $callback): void
     {
-        $delivery = CommunicationDelivery::query()
-            ->where('communication_id', $communicationId)
-            ->find($deliveryId);
+        (new Communication)->getConnection()->transaction(function () use ($communicationId, $deliveryId, $callback): void {
+            $communication = Communication::query()
+                ->whereKey($communicationId)
+                ->lockForUpdate()
+                ->first();
 
-        if ($delivery === null) {
-            return null;
-        }
+            if (! $communication instanceof Communication) {
+                return;
+            }
 
-        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
-        }
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+            }
 
-        if (Communication::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
-        }
+            if ($communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
+                return;
+            }
 
-        $communication = Communication::query()->find($communicationId);
+            $delivery = CommunicationDelivery::query()
+                ->where('communication_id', $communication->id)
+                ->lockForUpdate()
+                ->find($deliveryId);
 
-        if ($communication === null || $communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
-            return null;
-        }
+            if (! $delivery instanceof CommunicationDelivery) {
+                return;
+            }
 
-        return $delivery;
+            if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $delivery->id);
+            }
+
+            $callback($communication, $delivery);
+        });
     }
 
     private function isAlreadySettledForSending(CommunicationDelivery $delivery): bool

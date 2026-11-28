@@ -91,6 +91,13 @@ test('route uses configurable middleware', function (): void {
     expect($middleware)->toContain('api', 'throttle:communications-webhooks', VerifyWebhookSignature::class);
 });
 
+test('webhook route name honors the configured prefix', function (): void {
+    $routes = app('router')->getRoutes();
+    $routes->refreshNameLookups();
+
+    expect($routes->getByName('communications.webhooks.handle'))->not->toBeNull();
+});
+
 test('provider webhook registrar does not resolve nested configuration as a provider', function (): void {
     Config::set('communications.webhooks.providers.sendgrid.nested', ['secret' => 'nested-secret']);
 

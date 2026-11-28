@@ -13,7 +13,6 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class RecordProviderEventAction
@@ -34,7 +33,7 @@ final class RecordProviderEventAction
         array $payload = [],
         ?string $failureMessage = null,
     ): CommunicationEvent {
-        return DB::transaction(function () use (
+        return (new CommunicationEvent)->getConnection()->transaction(function () use (
             $attemptId,
             $communicationId,
             $deliveryId,

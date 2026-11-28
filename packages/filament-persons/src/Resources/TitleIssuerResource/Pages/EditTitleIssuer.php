@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleIssuer;
 use AIArmada\Persons\Features\Titles\Actions\SaveTitleIssuer;
 use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use AIArmada\Persons\Support\ModelResolver;
@@ -33,7 +34,8 @@ final class EditTitleIssuer extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (TitleIssuer $record): bool => app(DeleteTitleIssuer::class)->execute($record)),
         ];
     }
 

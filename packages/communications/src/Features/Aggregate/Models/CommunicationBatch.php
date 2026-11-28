@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Communications\Features\Aggregate\Actions\DeleteCommunicationBatchAction;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -45,6 +47,7 @@ use Illuminate\Support\Carbon;
  */
 final class CommunicationBatch extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -106,7 +109,7 @@ final class CommunicationBatch extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationBatch $batch): void {
-            $batch->communications()->chunkById(100, fn (Collection $communications) => $communications->each->delete());
+            app(DeleteCommunicationBatchAction::class)->deleteDependents($batch);
         });
     }
 }

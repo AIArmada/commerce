@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -85,63 +86,88 @@ final class RebuildAllSegments
 
         return OwnerContext::withOwner($segmentOwner, fn (): int => $segment->getConnection()->transaction(function () use ($segment, $segmentOwner): int {
             $segment = Segment::query()->whereKey($segment->getKey())->lockForUpdate()->firstOrFail();
-            if (! $segment->is_automatic) {
+
+            if (! $segment->is_automatic || ! $segment->isActive()) {
                 return $segment->customers()->count();
             }
 
-            $newCustomerIds = [];
+            $connection = $segment->getConnection();
+            $pivotTable = config('customers.database.tables.segment_customer', 'customer_segment_customer');
+            $matchingQuery = $segment->matchingCustomersQuery()->select('id');
+            $total = (clone $matchingQuery)->count();
+            $now = CarbonImmutable::now();
 
-            $segment->matchingCustomersQuery()
-                ->select('id')
-                ->chunkById(1000, function (Collection $customers) use (&$newCustomerIds): void {
-                    foreach ($customers as $customer) {
-                        $newCustomerIds[] = (string) $customer->getKey();
+            $matchingQuery
+                ->whereNotIn('id', function ($query) use ($pivotTable, $segment): void {
+                    $query->select('customer_id')
+                        ->from($pivotTable)
+                        ->where('segment_id', $segment->getKey());
+                })
+                ->chunkById(200, function (Collection $customers) use ($connection, $pivotTable, $segment, $segmentOwner, $now): void {
+                    $ids = array_map(static fn (Customer $customer): string => (string) $customer->getKey(), $customers->all());
+
+                    if ($ids === []) {
+                        return;
                     }
+
+                    $rows = array_map(static fn (string $id): array => [
+                        'segment_id' => $segment->getKey(),
+                        'customer_id' => $id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ], $ids);
+
+                    $connection->table($pivotTable)->insertOrIgnore($rows);
+
+                    $this->deferMembershipEvents($segment, $segmentOwner, $ids, 'added');
                 });
 
-            $currentCustomerIds = [];
-            $relatedKey = $segment->customers()->getRelated()->qualifyColumn('id');
+            Customer::query()
+                ->forOwner($segmentOwner, includeGlobal: false)
+                ->whereIn('id', function ($query) use ($pivotTable, $segment): void {
+                    $query->select('customer_id')
+                        ->from($pivotTable)
+                        ->where('segment_id', $segment->getKey());
+                })
+                ->whereNotIn('id', $segment->matchingCustomersQuery()->select('id'))
+                ->select('id')
+                ->chunkById(200, function (Collection $customers) use ($connection, $pivotTable, $segment, $segmentOwner): void {
+                    $ids = array_map(static fn (Customer $customer): string => (string) $customer->getKey(), $customers->all());
 
-            $segment->customers()
-                ->select($relatedKey)
-                ->chunkById(1000, function (Collection $customers) use (&$currentCustomerIds): void {
-                    foreach ($customers as $customer) {
-                        $currentCustomerIds[] = (string) $customer->getKey();
+                    if ($ids === []) {
+                        return;
                     }
-                }, $relatedKey, 'id');
 
-            $addedIds = array_values(array_diff($newCustomerIds, $currentCustomerIds));
-            $removedIds = array_values(array_diff($currentCustomerIds, $newCustomerIds));
+                    $connection->table($pivotTable)
+                        ->where('segment_id', $segment->getKey())
+                        ->whereIn('customer_id', $ids)
+                        ->delete();
 
-            $segment->customers()->sync($newCustomerIds);
+                    $this->deferMembershipEvents($segment, $segmentOwner, $ids, 'removed');
+                });
 
-            $this->dispatchMembershipEvents($segment, $segmentOwner, $addedIds, 'added');
-            $this->dispatchMembershipEvents($segment, $segmentOwner, $removedIds, 'removed');
-
-            return count($newCustomerIds);
+            return $total;
         }));
     }
 
     /**
      * @param  array<int, string>  $customerIds
      */
-    private function dispatchMembershipEvents(Segment $segment, ?Model $segmentOwner, array $customerIds, string $action): void
+    private function deferMembershipEvents(Segment $segment, ?Model $segmentOwner, array $customerIds, string $action): void
     {
-        foreach (array_chunk($customerIds, 1000) as $chunk) {
-            $customersById = Customer::query()
-                ->forOwner($segmentOwner, includeGlobal: false)
-                ->whereIn('id', $chunk)
-                ->get()
-                ->keyBy(fn (Customer $customer): string => (string) $customer->getKey());
+        $segment->getConnection()->afterCommit(function () use ($segment, $segmentOwner, $customerIds, $action): void {
+            OwnerContext::withOwner($segmentOwner, function () use ($segment, $segmentOwner, $customerIds, $action): void {
+                $customers = Customer::query()
+                    ->forOwner($segmentOwner, includeGlobal: false)
+                    ->whereKey($customerIds)
+                    ->orderBy('id')
+                    ->get();
 
-            foreach ($chunk as $customerId) {
-                $customer = $customersById->get($customerId);
-
-                if ($customer instanceof Customer) {
+                foreach ($customers as $customer) {
                     event(new CustomerSegmentChanged($customer, $segment, $action));
                 }
-            }
-        }
+            });
+        });
     }
 
     private function ownerLabel(?string $ownerType, string | int | null $ownerId): string

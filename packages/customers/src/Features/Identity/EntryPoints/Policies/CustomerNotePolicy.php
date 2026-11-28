@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Identity\EntryPoints\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Policies\EnforcesOwnerScope;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
-use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final class CustomerNotePolicy
 {
+    use EnforcesOwnerScope;
     use HandlesAuthorization;
 
     private function hasPermission(mixed $user, string $permission): bool
@@ -22,8 +22,6 @@ final class CustomerNotePolicy
         }
 
         try {
-            // Gate-mediated check first: Spatie permissions resolve through
-            // Gate::before, which also preserves Super Admin overrides.
             if ($user instanceof Authorizable) {
                 return $user->can($permission);
             }
@@ -42,57 +40,33 @@ final class CustomerNotePolicy
         return false;
     }
 
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('customers.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
-    }
-
-    private function isAccessible(CustomerNote $note): bool
-    {
-        if (! (bool) config('customers.features.owner.enabled', false)) {
-            return true;
-        }
-
-        $owner = $this->resolveOwner();
-        $includeGlobal = (bool) config('customers.features.owner.include_global', false);
-
-        if ($owner === null) {
-            return $note->owner_type === null && $note->owner_id === null;
-        }
-
-        if ($includeGlobal && $note->isGlobal()) {
-            return true;
-        }
-
-        return $note->belongsToOwner($owner);
-    }
-
     public function viewAny(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.notes.view');
+        return $this->hasPermission($user, 'customers.notes.view')
+            && $this->ownerContextAllowsAccess(CustomerNote::class);
     }
 
     public function view(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.notes.view') && $this->isAccessible($note);
+        return $this->hasPermission($user, 'customers.notes.view')
+            && $this->isViewableInOwnerScope($note);
     }
 
     public function create(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.notes.create');
+        return $this->hasPermission($user, 'customers.notes.create')
+            && $this->ownerContextAllowsAccess(CustomerNote::class);
     }
 
     public function update(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.notes.update') && $this->isAccessible($note);
+        return $this->hasPermission($user, 'customers.notes.update')
+            && $this->isMutableInOwnerScope($note);
     }
 
     public function delete(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.notes.delete') && $this->isAccessible($note);
+        return $this->hasPermission($user, 'customers.notes.delete')
+            && $this->isMutableInOwnerScope($note);
     }
 }

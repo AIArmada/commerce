@@ -271,7 +271,6 @@ describe('CustomerResolver', function (): void {
             'name' => 'Merge Segment ' . uniqid(),
             'slug' => 'merge-segment-' . uniqid(),
             'is_automatic' => false,
-            'is_active' => true,
         ]);
 
         $group = CustomerGroup::query()->create([

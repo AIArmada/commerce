@@ -57,9 +57,11 @@ use AIArmada\Communications\Features\Inbox\EntryPoints\Http\Livewire\InboxIndex;
 use AIArmada\Communications\Features\RecipientRouting\Queries\CommunicationDestinationResolver;
 use AIArmada\Communications\Features\Suppressions\Queries\ActiveSuppressionResolver;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
+use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Platform\ExtensionRegistry;
 use AIArmada\Communications\Platform\FeatureCatalog;
 use AIArmada\Communications\Platform\FeatureModule;
+use AIArmada\Communications\Policies\CommunicationPolicy;
 use AIArmada\Communications\Support\AutoCaptureState;
 use AIArmada\Communications\Support\PayloadRedactorService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -67,6 +69,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter as RateLimiterFacade;
 use InvalidArgumentException;
 use Livewire\Livewire;
@@ -176,6 +179,8 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         foreach ($this->modules as $module) {
             $module->boot($this->app);
         }
+
+        Gate::policy(Communication::class, CommunicationPolicy::class);
     }
 
     public function bootingPackage(): void

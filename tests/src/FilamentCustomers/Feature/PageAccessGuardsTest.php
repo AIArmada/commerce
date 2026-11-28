@@ -10,6 +10,7 @@ use AIArmada\FilamentCustomers\Pages\MergeCustomersPage;
 use AIArmada\FilamentCustomers\Pages\SegmentRebuildPage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
@@ -46,6 +47,14 @@ it('blocks merge page customer lookups outside the current owner scope', functio
 });
 
 it('blocks segment rebuilds outside the current owner scope', function (): void {
+    $user = User::query()->create([
+        'name' => 'Segment Guard',
+        'email' => 'segment-guard-' . uniqid() . '@example.com',
+        'password' => 'password',
+    ]);
+    test()->actingAs($user);
+    Gate::before(static fn (mixed $authenticatedUser, string $ability): ?bool => $ability === 'viewAny' ? true : null);
+
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 
@@ -54,7 +63,6 @@ it('blocks segment rebuilds outside the current owner scope', function (): void 
         'slug' => 'foreign-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => true,
-        'is_active' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]));

@@ -115,7 +115,7 @@ beforeEach(function (): void {
 describe('CustomerNotePolicy', function (): void {
     describe('viewAny', function (): void {
         it('allows viewing any notes with the view permission', function (): void {
-            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->viewAny($this->permitted)))->toBeTrue();
         });
 
         it('denies viewing any notes without the view permission', function (): void {
@@ -146,7 +146,7 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->view($this->permitted, $note))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->view($this->permitted, $note)))->toBeTrue();
         });
 
         it('denies viewing owner-scoped note without owner resolver', function (): void {
@@ -240,7 +240,7 @@ describe('CustomerNotePolicy', function (): void {
 
     describe('create', function (): void {
         it('allows creating notes with the create permission', function (): void {
-            expect($this->policy->create($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->create($this->permitted)))->toBeTrue();
         });
 
         it('denies creating notes without the create permission', function (): void {
@@ -271,7 +271,7 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->permitted, $note))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->update($this->permitted, $note)))->toBeTrue();
         });
 
         it('denies updating an in-scope note without the update permission', function (): void {
@@ -336,7 +336,7 @@ describe('CustomerNotePolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->permitted, $note))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->delete($this->permitted, $note)))->toBeTrue();
         });
 
         it('denies deleting an in-scope note without the delete permission', function (): void {

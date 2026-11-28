@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Models;
 
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\DeliveryStatus;
@@ -78,6 +79,7 @@ use Illuminate\Support\Carbon;
  */
 final class CommunicationDelivery extends Model
 {
+    use DeletesAtomically;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;

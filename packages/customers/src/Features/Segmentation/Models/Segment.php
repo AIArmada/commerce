@@ -14,6 +14,7 @@ use AIArmada\Customers\Database\Factories\SegmentFactory;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Queries\AssertSegmentSlugAvailable;
+use AIArmada\Customers\Features\Segmentation\Queries\SegmentConditionValue;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,7 +38,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<int, array{field: string, operator?: string, value: mixed}>|null $conditions
  * @property bool $is_automatic
  * @property int $priority
- * @property bool $is_active
  * @property CarbonImmutable|null $deactivated_at
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
@@ -65,7 +65,6 @@ class Segment extends Model implements Auditable
         'conditions',
         'is_automatic',
         'priority',
-        'is_active',
         'deactivated_at',
         'metadata',
     ];
@@ -82,7 +81,7 @@ class Segment extends Model implements Auditable
             'conditions',
             'is_automatic',
             'priority',
-            'is_active',
+            'deactivated_at',
             'metadata',
         ];
     }
@@ -93,7 +92,6 @@ class Segment extends Model implements Auditable
     protected $casts = [
         'type' => SegmentType::class,
         'conditions' => 'array',
-        'is_active' => 'boolean',
         'is_automatic' => 'boolean',
         'priority' => 'integer',
         'deactivated_at' => 'immutable_datetime',
@@ -104,7 +102,6 @@ class Segment extends Model implements Auditable
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'is_active' => true,
         'is_automatic' => true,
         'priority' => 0,
     ];
@@ -223,6 +220,11 @@ class Segment extends Model implements Auditable
         return ! $this->is_automatic;
     }
 
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
     // =========================================================================
     // SCOPES
     // =========================================================================
@@ -233,7 +235,7 @@ class Segment extends Model implements Auditable
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('is_active', true);
+        return $query->whereNull('deactivated_at');
     }
 
     /**
@@ -280,14 +282,6 @@ class Segment extends Model implements Auditable
     {
         static::saving(function (Segment $segment): void {
             app(AssertSegmentSlugAvailable::class)->execute($segment);
-
-            if ($segment->isDirty('is_active')) {
-                if ($segment->is_active === false) {
-                    $segment->deactivated_at ??= CarbonImmutable::now();
-                } else {
-                    $segment->deactivated_at = null;
-                }
-            }
         });
 
         static::deleting(function (Segment $segment): void {
@@ -315,22 +309,25 @@ class Segment extends Model implements Auditable
     {
         foreach ($conditions as $condition) {
             $field = $condition['field'] ?? null;
-            $value = $condition['value_numeric']
-                ?? $condition['value_boolean']
-                ?? $condition['value_status']
-                ?? $condition['value']
-                ?? null;
 
-            if (! is_string($field) || $field === '' || $value === null) {
+            if (! is_string($field) || $field === '') {
+                $query->whereRaw('1 = 0');
+
+                continue;
+            }
+
+            $value = SegmentConditionValue::resolve($field, $condition);
+
+            if ($value === null) {
                 $query->whereRaw('1 = 0');
 
                 continue;
             }
 
             match ($field) {
-                'accepts_marketing' => $query->where('accepts_marketing', (bool) $value),
-                'status' => $query->where('status', (string) $value),
-                'created_days_ago' => $query->where('created_at', '<=', CarbonImmutable::now()->subDays((int) $value)),
+                'accepts_marketing' => $query->where('accepts_marketing', $value),
+                'status' => $query->where('status', $value),
+                'created_days_ago' => $query->where('created_at', '<=', CarbonImmutable::now()->subDays($value)),
                 default => $query->whereRaw('1 = 0'),
             };
         }
