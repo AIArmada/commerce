@@ -11,8 +11,8 @@ use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Features\Entitlements\Queries\RewardEvaluationCandidates;
 use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
-use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

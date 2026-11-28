@@ -20,6 +20,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
@@ -31,7 +32,6 @@ use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

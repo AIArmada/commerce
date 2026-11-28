@@ -38,6 +38,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
@@ -49,7 +50,6 @@ use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Queries\RewardReadinessMapper;

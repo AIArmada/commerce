@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardRecoveryGuard;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

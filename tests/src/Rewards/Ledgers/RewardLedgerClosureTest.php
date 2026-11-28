@@ -16,6 +16,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneCont
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
@@ -26,7 +27,6 @@ use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Models\RewardPointOperation;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

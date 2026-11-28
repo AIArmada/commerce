@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 
 /**

@@ -13,10 +13,10 @@ use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneCont
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RevokeRewardBadgeAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
