@@ -11,7 +11,6 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
 use InvalidArgumentException;
 
 final readonly class InventoryLevelStore
@@ -28,31 +27,7 @@ final readonly class InventoryLevelStore
             'location_id' => $locationId,
         ];
 
-        try {
-            return InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate(
-                $identity,
-                [
-                    'quantity_on_hand' => 0,
-                    'quantity_reserved' => 0,
-                ]
-            );
-        } catch (QueryException $exception) {
-            // The framework already rescues plain unique races, but its
-            // recovery lookup is over-constrained by the mutable quantity
-            // defaults. Re-select by identity so a loser never 500s when
-            // the winner's row has since moved.
-            if (! in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true)) {
-                throw $exception;
-            }
-
-            $level = InventoryOwnerScope::forMutation(InventoryLevel::query())->where($identity)->first();
-
-            if (! $level instanceof InventoryLevel) {
-                throw $exception;
-            }
-
-            return $level;
-        }
+        return InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate($identity);
     }
 
     /**

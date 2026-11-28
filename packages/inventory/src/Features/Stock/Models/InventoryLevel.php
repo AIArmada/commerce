@@ -73,6 +73,11 @@ final class InventoryLevel extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'inventory.owner';
 
+    protected $attributes = [
+        'quantity_on_hand' => 0,
+        'quantity_reserved' => 0,
+    ];
+
     /**
      * Set by ledger services that record their own movement, so the
      * direct-write auto-audit below stands down for that save.

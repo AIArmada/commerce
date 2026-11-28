@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
+use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
@@ -314,4 +316,49 @@ describe('DeductInventoryFromOrder lifecycle guard', function (): void {
         'refunded' => Refunded::class,
         'fraud' => Fraud::class,
     ]);
+});
+
+it('restores shipped inventory with exactly one receipt and accurate balance snapshots', function (): void {
+    Schema::dropIfExists('inventory_test_products');
+    Schema::create('inventory_test_products', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $item = InventoryItem::create(['name' => 'Restored SKU']);
+    $location = InventoryLocation::factory()->create();
+    $inventory = app(InventoryService::class);
+    $orderId = (string) str()->uuid();
+
+    $inventory->receive($item, $location->id, 10);
+    $inventory->ship($item, $location->id, 3, reason: 'order', reference: $orderId);
+
+    expect(app(RestoreOrderStock::class)->restore($orderId, 'RESTORE-1'))->toBe(1);
+
+    $receipt = InventoryMovement::query()->where('reference', $orderId)
+        ->where('type', MovementType::Receipt->value)->sole();
+
+    expect($receipt->quantity)->toBe(3)
+        ->and($receipt->quantity_before)->toBe(7)
+        ->and($receipt->quantity_after)->toBe(10)
+        ->and($inventory->getLevel($item, $location->id)->quantity_on_hand)->toBe(10)
+        ->and(InventoryMovement::query()->where('inventoryable_id', $item->getKey())->count())->toBe(3);
+});
+
+it('initializes new stock levels with both balances available before refresh', function (): void {
+    Schema::dropIfExists('inventory_test_products');
+    Schema::create('inventory_test_products', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $item = InventoryItem::create(['name' => 'New Stock SKU']);
+    $location = InventoryLocation::factory()->create();
+    $level = app(InventoryService::class)->getOrCreateLevel($item, $location->id);
+
+    expect($level->quantity_on_hand)->toBe(0)
+        ->and($level->quantity_reserved)->toBe(0)
+        ->and($level->available)->toBe(0);
 });
