@@ -187,7 +187,7 @@ Cart::releaseAllInventory();
 | `InventoryTransferred` | Stock moved between locations |
 | `InventoryAdjusted` | Stock level manually adjusted |
 | `InventoryAllocated` | Stock allocated to cart |
-| `InventoryReleased` | Allocation released |
+| `Features/Reservations/Events/InventoryReleased` | Allocation released |
 | `LowInventoryDetected` | Stock below reorder point |
 | `OutOfInventory` | Available stock reached zero |
 

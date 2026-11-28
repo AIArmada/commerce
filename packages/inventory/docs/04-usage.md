@@ -632,7 +632,7 @@ The package dispatches events you can listen to:
 | `InventoryTransferred` | Stock moved between locations |
 | `InventoryAdjusted` | Stock count adjusted |
 | `InventoryAllocated` | Stock reserved for cart/order |
-| `InventoryReleased` | Reserved stock released |
+| `Features/Reservations/Events/InventoryReleased` | Reserved stock released |
 | `LowInventoryDetected` | Stock falls below reorder point |
 | `OutOfInventory` | Stock reaches zero |
 | `SafetyStockBreached` | Stock falls below safety stock |
@@ -647,7 +647,7 @@ The package dispatches events you can listen to:
 ```php
 // In EventServiceProvider
 protected $listen = [
-    \AIArmada\Inventory\Events\LowInventoryDetected::class => [
+    \AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected::class => [
         \App\Listeners\SendLowStockAlert::class,
     ],
 ];

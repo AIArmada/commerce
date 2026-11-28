@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\States;
+namespace AIArmada\Inventory\Features\Backorders\States;
 
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use Illuminate\Database\Eloquent\Model;

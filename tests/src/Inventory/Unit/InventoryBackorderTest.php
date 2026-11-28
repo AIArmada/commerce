@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
-use AIArmada\Inventory\States\Cancelled;
-use AIArmada\Inventory\States\Expired;
-use AIArmada\Inventory\States\Fulfilled;
-use AIArmada\Inventory\States\PartiallyFulfilled;
-use AIArmada\Inventory\States\Pending;
+use AIArmada\Inventory\Features\Backorders\States\Cancelled;
+use AIArmada\Inventory\Features\Backorders\States\Expired;
+use AIArmada\Inventory\Features\Backorders\States\Fulfilled;
+use AIArmada\Inventory\Features\Backorders\States\PartiallyFulfilled;
+use AIArmada\Inventory\Features\Backorders\States\Pending;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 

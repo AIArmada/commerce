@@ -38,7 +38,7 @@ Serial lifecycle mutations belong to `AIArmada\Inventory\Features\Traceability\P
 
 Use `AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService` for batch lookup, allocatable batches and total available quantities; use `ExpiryMonitorService` for expiry queries and `Actions\ProcessExpiredBatches` for expiration mutations. `BatchService` owns batch lifecycle writes.
 
-Composite cart and order stock demand belongs to `AIArmada\Inventory\Queries\InventoryDemandResolver`. The shared inventory query resolves frozen component snapshots and aggregates demand by actual inventory identity before allocating or deducting stock.
+Composite cart and order stock demand belongs to `AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver`. The Reservations query resolves frozen component snapshots and aggregates demand by actual inventory identity before allocating or deducting stock.
 
 The Stock feature owns the public inventory service registration. Model read helpers call `InventoryStockQuery` directly. Default-location receipt and shipment use `Features/Stock/Actions/ReceiveAtDefault` and `ShipFromDefault` so location initialization and stock changes are atomic.
 
@@ -47,3 +47,5 @@ Use the pure `AIArmada\Inventory\Data\AllocationStrategy` enum when selecting al
 Read per-location sellable quantity through the canonical `InventoryLevel::$available` attribute. Aggregate availability by clamping each location's on-hand minus reserved quantity to zero before summing.
 
 Persisted inventory level identity (inventoryable type, inventoryable ID and location ID) is immutable. Use `TransferInventory` to move stock between locations rather than reassigning an existing level.
+
+The Backorders feature owns its model states (`AIArmada\Inventory\Features\Backorders\States`). Register the stock health entry point `AIArmada\Inventory\Features\Stock\EntryPoints\Health\LowStockCheck` for active-location sellable stock checks.

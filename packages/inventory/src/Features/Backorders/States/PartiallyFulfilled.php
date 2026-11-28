@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\States;
+namespace AIArmada\Inventory\Features\Backorders\States;
 
-final class Pending extends BackorderStatus
+final class PartiallyFulfilled extends BackorderStatus
 {
-    public static string $name = 'pending';
+    public static string $name = 'partially_fulfilled';
 
     public function label(): string
     {
-        return 'Pending';
+        return 'Partially Fulfilled';
     }
 
     public function color(): string
     {
-        return 'warning';
+        return 'info';
     }
 
     public function isOpen(): bool

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Health;
+namespace AIArmada\Inventory\Features\Stock\EntryPoints\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;

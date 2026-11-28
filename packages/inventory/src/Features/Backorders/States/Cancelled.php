@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\States;
+namespace AIArmada\Inventory\Features\Backorders\States;
 
-final class Fulfilled extends BackorderStatus
+final class Cancelled extends BackorderStatus
 {
-    public static string $name = 'fulfilled';
+    public static string $name = 'cancelled';
 
     public function label(): string
     {
-        return 'Fulfilled';
+        return 'Cancelled';
     }
 
     public function color(): string
     {
-        return 'success';
+        return 'danger';
     }
 
     public function isClosed(): bool
