@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitGuard;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +30,7 @@ final readonly class RetireRewardBenefitItemAction
         string $reason,
         ?CarbonInterface $decidedAt = null,
     ): RewardBenefitItem {
-        RewardProgramGuard::findItemOrFail($item);
+        RewardBenefitGuard::findItemOrFail($item);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);

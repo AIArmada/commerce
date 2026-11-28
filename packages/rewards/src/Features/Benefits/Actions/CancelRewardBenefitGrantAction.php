@@ -7,11 +7,11 @@ namespace AIArmada\Rewards\Features\Benefits\Actions;
 use AIArmada\Rewards\Data\RewardReservationSubmissionStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitGuard;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +39,7 @@ final readonly class CancelRewardBenefitGrantAction
         string $reason,
         ?CarbonInterface $decidedAt = null,
     ): RewardBenefitGrant {
-        RewardProgramGuard::findGrantOrFail($grant);
+        RewardBenefitGuard::findGrantOrFail($grant);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);

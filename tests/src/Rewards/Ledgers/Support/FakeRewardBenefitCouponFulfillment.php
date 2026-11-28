@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Tests\Ledgers\Support;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Data\RewardCouponGrant;
 use AIArmada\Rewards\Data\RewardCouponTerms;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

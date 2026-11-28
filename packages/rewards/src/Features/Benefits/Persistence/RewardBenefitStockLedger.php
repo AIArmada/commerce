@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Benefits\Persistence;
 
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitStockMovement;
-use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;

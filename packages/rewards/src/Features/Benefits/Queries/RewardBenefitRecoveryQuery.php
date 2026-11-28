@@ -7,8 +7,8 @@ namespace AIArmada\Rewards\Features\Benefits\Queries;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Features\Benefits\Api\ConsumedRewardBenefit;
 use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use InvalidArgumentException;
 
 final readonly class RewardBenefitRecoveryQuery implements RewardBenefitRecoveryApi

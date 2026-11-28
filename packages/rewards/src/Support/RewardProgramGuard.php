@@ -8,8 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardRecovery;
@@ -109,44 +107,6 @@ final class RewardProgramGuard
 
         if (! $resolved instanceof RewardAward) {
             throw new InvalidArgumentException('Unknown reward award.');
-        }
-
-        self::findProgramOrFail((string) $resolved->program_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the benefit grant and prove its catalog item's program is in
-     * the current owner scope.
-     */
-    public static function findGrantOrFail(RewardBenefitGrant | string $grant): RewardBenefitGrant
-    {
-        $id = $grant instanceof RewardBenefitGrant ? (string) $grant->getKey() : $grant;
-
-        $resolved = RewardBenefitGrant::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardBenefitGrant) {
-            throw new InvalidArgumentException('Unknown reward benefit grant.');
-        }
-
-        self::findItemOrFail((string) $resolved->item_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the catalog item and prove its program is in the current
-     * owner scope.
-     */
-    public static function findItemOrFail(RewardBenefitItem | string $item): RewardBenefitItem
-    {
-        $id = $item instanceof RewardBenefitItem ? (string) $item->getKey() : $item;
-
-        $resolved = RewardBenefitItem::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardBenefitItem) {
-            throw new InvalidArgumentException('Unknown reward benefit item.');
         }
 
         self::findProgramOrFail((string) $resolved->program_id);

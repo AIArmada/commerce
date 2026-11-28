@@ -10,7 +10,7 @@ use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
 use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

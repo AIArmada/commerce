@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
-use AIArmada\Rewards\Models\RewardBenefitItem;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;

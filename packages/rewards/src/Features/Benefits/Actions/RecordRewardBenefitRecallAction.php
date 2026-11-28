@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitGuard;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +36,7 @@ final readonly class RecordRewardBenefitRecallAction
         string $actorRole,
         ?CarbonInterface $decidedAt = null,
     ): RewardBenefitGrant {
-        RewardProgramGuard::findGrantOrFail($grant);
+        RewardBenefitGuard::findGrantOrFail($grant);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
 
