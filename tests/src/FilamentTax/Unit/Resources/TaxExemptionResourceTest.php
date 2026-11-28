@@ -9,6 +9,7 @@ uses(TestCase::class);
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages\CreateTaxExemption;
 use AIArmada\Tax\Models\TaxClass;
+use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\Tax\Models\TaxExemption;
 use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
@@ -103,9 +104,13 @@ it('returns a navigation badge when exemptions are expiring soon', function (): 
         ->and(TaxExemptionResource::getNavigationBadgeColor())->toBe('warning');
 });
 
-it('uses the create lifecycle hook to validate owner-scoped exemptable entities', function (): void {
-    $hookMethod = new ReflectionMethod(CreateTaxExemption::class, 'beforeCreate');
+it('rejects unsupported exemptable entities through the canonical create action', function (): void {
+    $page = app(CreateTaxExemption::class);
+    $method = new ReflectionMethod($page, 'handleRecordCreation');
 
-    expect($hookMethod->getDeclaringClass()->getName())
-        ->toBe(CreateTaxExemption::class);
+    expect(fn () => $method->invoke($page, [
+        'exemptable_type' => TaxClass::class,
+        'exemptable_id' => 'forged-id',
+        'reason' => 'Invalid entity',
+    ]))->toThrow(AuthorizationException::class, 'Invalid tax exemption entity.');
 });

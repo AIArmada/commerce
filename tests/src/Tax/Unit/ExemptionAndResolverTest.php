@@ -141,7 +141,11 @@ describe('Owner mass assignment', function (): void {
 });
 
 it('does not allow ordinary exemption updates to set privileged lifecycle fields', function (): void {
-    $exemption = app(RequestTaxExemption::class)->execute(['reason' => 'Original request']);
+    $exemption = app(RequestTaxExemption::class)->execute([
+        'exemptable_type' => 'App\\Models\\Customer',
+        'exemptable_id' => 'customer-1',
+        'reason' => 'Original request',
+    ]);
 
     $updated = app(UpdateTaxExemptionAction::class)->execute($exemption->id, [
         'reason' => 'Updated request',
@@ -157,7 +161,11 @@ it('does not allow ordinary exemption updates to set privileged lifecycle fields
 });
 
 it('prevents ordinary edits from changing an approved exemption', function (): void {
-    $exemption = app(RequestTaxExemption::class)->execute(['reason' => 'Original request']);
+    $exemption = app(RequestTaxExemption::class)->execute([
+        'exemptable_type' => 'App\\Models\\Customer',
+        'exemptable_id' => 'customer-1',
+        'reason' => 'Original request',
+    ]);
     $exemption->approve();
 
     expect(fn () => app(UpdateTaxExemptionAction::class)->execute($exemption->id, ['reason' => 'Replaced request']))

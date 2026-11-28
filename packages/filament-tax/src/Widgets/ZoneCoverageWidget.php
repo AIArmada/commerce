@@ -52,7 +52,7 @@ final class ZoneCoverageWidget extends Widget
 
     /**
      * @param  Collection<int, TaxZone>  $zones
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array{id: string, name: string, code: string, type: string, countries: array, states: array, priority: int, is_default: bool, rates: list<array{name: string, class: string, rate: string, is_compound: bool}>, rate_count: int}>
      */
     protected function formatZones(Collection $zones): Collection
     {
