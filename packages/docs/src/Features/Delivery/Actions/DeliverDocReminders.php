@@ -25,7 +25,7 @@ final readonly class DeliverDocReminders
 
     public function execute(?string $docId, int $daysBeforeDue, int $daysAfterOverdue, ?string $ownerType, string | int | null $ownerId, bool $ownerBatch): void
     {
-        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+        $owner = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
 
         OwnerContext::withOwner($owner, function () use ($docId, $daysBeforeDue, $daysAfterOverdue, $ownerBatch): void {
             if ($docId !== null) {
@@ -97,8 +97,9 @@ final readonly class DeliverDocReminders
                 continue;
             }
 
-            if (! array_key_exists($doc->doc_type, $templates)) {
-                $templates[$doc->doc_type] = $emailService->findTemplate($doc, 'due_soon');
+            $templateKey = json_encode([$doc->owner_type, $doc->owner_id, $doc->doc_type], JSON_THROW_ON_ERROR);
+            if (! array_key_exists($templateKey, $templates)) {
+                $templates[$templateKey] = $emailService->findTemplate($doc, 'due_soon');
             }
 
             try {
@@ -106,7 +107,7 @@ final readonly class DeliverDocReminders
                     doc: $doc,
                     recipientEmail: $recipientEmail,
                     recipientName: $recipientName,
-                    template: $templates[$doc->doc_type],
+                    template: $templates[$templateKey],
                     variables: [
                         'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                     ],
@@ -141,12 +142,13 @@ final readonly class DeliverDocReminders
                 continue;
             }
 
-            if (! array_key_exists($doc->doc_type, $templates)) {
-                $templates[$doc->doc_type] = $emailService->findTemplate($doc, 'reminder');
+            $templateKey = json_encode([$doc->owner_type, $doc->owner_id, $doc->doc_type], JSON_THROW_ON_ERROR);
+            if (! array_key_exists($templateKey, $templates)) {
+                $templates[$templateKey] = $emailService->findTemplate($doc, 'reminder');
             }
 
             try {
-                $emailService->sendReminder($doc, $recipientEmail, [], $templates[$doc->doc_type]);
+                $emailService->sendReminder($doc, $recipientEmail, [], $templates[$templateKey]);
 
                 Log::info('docs.reminder: Overdue reminder sent', [
                     'doc_id' => $doc->id,

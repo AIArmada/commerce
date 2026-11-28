@@ -7,6 +7,7 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Models\Doc;
@@ -24,8 +25,32 @@ use Throwable;
 /**
  * Document email service for sending and tracking emails.
  */
-final class DocEmailService
+final class DocEmailService implements DocumentEmailSender
 {
+    public function sendTo(
+        string $docId,
+        string $recipientEmail,
+        ?string $recipientName = null,
+        ?string $templateId = null,
+        ?string $subject = null,
+        ?string $body = null,
+        array $metadata = [],
+    ): string {
+        $doc = config('docs.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, owner: OwnerContext::resolve(), includeGlobal: (bool) config('docs.owner.include_global', false))
+            : Doc::query()->findOrFail($docId);
+
+        return (string) $this->send(
+            doc: $doc,
+            recipientEmail: $recipientEmail,
+            recipientName: $recipientName,
+            template: $this->resolveTemplate($doc, $templateId),
+            subjectOverride: $subject,
+            bodyOverride: $body,
+            metadata: $metadata,
+        )->getKey();
+    }
+
     /**
      * Send a document to a recipient.
      *

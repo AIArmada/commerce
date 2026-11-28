@@ -7,7 +7,7 @@ namespace AIArmada\FilamentDocs\Actions;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -85,20 +85,13 @@ final class SendEmailAction
         DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
 
         try {
-            $emailService = app(DocEmailService::class);
-
-            $template = $emailService->resolveTemplate(
-                $record,
-                isset($data['template_id']) ? (string) $data['template_id'] : null,
-            );
-
-            $emailService->send(
-                doc: $record,
+            app(DocumentEmailSender::class)->sendTo(
+                docId: (string) $record->getKey(),
                 recipientEmail: $data['to'],
                 recipientName: self::getRecipientName($record),
-                template: $template,
-                subjectOverride: $data['subject'] ?? null,
-                bodyOverride: $data['message'] ?? null,
+                templateId: isset($data['template_id']) ? (string) $data['template_id'] : null,
+                subject: $data['subject'] ?? null,
+                body: $data['message'] ?? null,
                 metadata: array_filter([
                     'cc' => $data['cc'] ?? null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== ''),

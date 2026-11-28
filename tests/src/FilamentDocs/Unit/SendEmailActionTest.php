@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
@@ -195,7 +195,7 @@ it('handles email failures and pushes an error notification to the session', fun
         ],
     ]);
 
-    app()->bind(DocEmailService::class, fn (): never => throw new Exception('fail'));
+    app()->bind(DocumentEmailSender::class, fn (): never => throw new Exception('fail'));
 
     $method = new ReflectionMethod(SendEmailAction::class, 'sendEmail');
 
