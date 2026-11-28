@@ -349,3 +349,37 @@ it('values only remaining layers in the selected costing method and currency', f
     expect($this->service->getDashboardKpis()['total_inventory_value'])->toBe(400)
         ->and($this->service->getDashboardKpis(CostingMethod::WeightedAverage)['total_inventory_value'])->toBe(800);
 });
+
+it('classifies each SKU by combined sellable stock across active locations', function (): void {
+    config(['inventory.default_reorder_point' => 10]);
+
+    $emptyLocation = InventoryLocation::factory()->create(['is_active' => true]);
+    $inactiveLocation = InventoryLocation::factory()->create(['is_active' => false]);
+    $this->location->update(['is_active' => true]);
+
+    $low = InventoryItem::create(['name' => 'Low Stock SKU']);
+    $empty = InventoryItem::create(['name' => 'Out of Stock SKU']);
+
+    foreach ([
+        [$this->item, $this->location, 25, 0],
+        [$this->item, $emptyLocation, 0, 8],
+        [$low, $this->location, 4, 0],
+        [$low, $emptyLocation, 5, 0],
+        [$empty, $this->location, 0, 0],
+        [$empty, $inactiveLocation, 100, 0],
+    ] as [$item, $location, $onHand, $reserved]) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->getKey(),
+            'quantity_on_hand' => $onHand,
+            'quantity_reserved' => $reserved,
+        ]);
+    }
+
+    $kpis = $this->service->getDashboardKpis();
+
+    expect($kpis['total_sku_count'])->toBe(3)
+        ->and($kpis['low_stock_items'])->toBe(1)
+        ->and($kpis['out_of_stock_items'])->toBe(1);
+});

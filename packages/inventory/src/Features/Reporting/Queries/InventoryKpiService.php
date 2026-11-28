@@ -97,39 +97,24 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        $totalShipmentsQuery = InventoryMovement::query()
+        $query = InventoryMovement::query()
             ->where('inventoryable_type', $inventoryableType)
             ->where('inventoryable_id', $inventoryableId)
             ->where('type', MovementType::Shipment->value)
             ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($totalShipmentsQuery);
+            InventoryOwnerScope::applyToMovementQuery($query);
         }
 
-        $totalShipments = $totalShipmentsQuery->count();
+        $counts = $query->toBase()
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw("COUNT(CASE WHEN reason IS NULL OR reason <> 'partial' THEN 1 END) AS fulfilled")
+            ->first();
 
-        if ($totalShipments === 0) {
-            return 100.0;
-        }
+        $total = (int) ($counts->total ?? 0);
 
-        $fulfilledShipmentsQuery = InventoryMovement::query()
-            ->where('inventoryable_type', $inventoryableType)
-            ->where('inventoryable_id', $inventoryableId)
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->where(function ($query): void {
-                $query->whereNull('reason')
-                    ->orWhere('reason', '!=', 'partial');
-            });
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($fulfilledShipmentsQuery);
-        }
-
-        $fulfilledShipments = $fulfilledShipmentsQuery->count();
-
-        return round(($fulfilledShipments / $totalShipments) * 100, 2);
+        return $total === 0 ? 100.0 : round(((int) ($counts->fulfilled ?? 0) / $total) * 100, 2);
     }
 
     /**
@@ -184,35 +169,23 @@ final class InventoryKpiService
         $endDate ??= CarbonImmutable::now();
 
         // Count cycle count adjustments
-        $totalCountsQuery = InventoryMovement::query()
+        $query = InventoryMovement::query()
             ->where('type', MovementType::Adjustment->value)
             ->where('reason', 'cycle_count')
             ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($totalCountsQuery);
+            InventoryOwnerScope::applyToMovementQuery($query);
         }
 
-        $totalCounts = $totalCountsQuery->count();
+        $counts = $query->toBase()
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw('COUNT(CASE WHEN quantity = 0 THEN 1 END) AS accurate')
+            ->first();
 
-        if ($totalCounts === 0) {
-            return 100.0;
-        }
+        $total = (int) ($counts->total ?? 0);
 
-        // Accurate counts are those with zero adjustment
-        $accurateCountsQuery = InventoryMovement::query()
-            ->where('type', MovementType::Adjustment->value)
-            ->where('reason', 'cycle_count')
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->where('quantity', 0);
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($accurateCountsQuery);
-        }
-
-        $accurateCounts = $accurateCountsQuery->count();
-
-        return round(($accurateCounts / $totalCounts) * 100, 2);
+        return $total === 0 ? 100.0 : round(((int) ($counts->accurate ?? 0) / $total) * 100, 2);
     }
 
     /**
@@ -230,7 +203,8 @@ final class InventoryKpiService
     }
 
     /**
-     * Get comprehensive KPI dashboard data.
+     * Get comprehensive KPI dashboard data. SKU counts reflect active locations;
+     * each SKU is classified once using its combined sellable quantity.
      *
      * @return array{
      *     total_sku_count: int,
@@ -247,42 +221,30 @@ final class InventoryKpiService
     {
         $stockLevelsQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()
-                ->select([
-                    'inventoryable_type',
-                    'inventoryable_id',
-                    DB::raw('SUM(quantity_on_hand) as total_quantity'),
-                ])
+                ->select('inventoryable_type', 'inventoryable_id')
+                ->selectRaw('SUM(CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END) AS available')
+                ->whereHas('location', fn ($query) => $query->where('is_active', true))
                 ->groupBy('inventoryable_type', 'inventoryable_id')
         );
 
-        $totalSkus = DB::query()->fromSub($stockLevelsQuery->toBase(), 'grouped_skus')->count();
+        $threshold = (int) config('inventory.default_reorder_point', 10);
+        $counts = DB::query()->fromSub($stockLevelsQuery->toBase(), 'grouped_skus')
+            ->selectRaw('COUNT(*) AS total_skus')
+            ->selectRaw('COUNT(CASE WHEN available > 0 AND available <= ? THEN 1 END) AS low_stock', [$threshold])
+            ->selectRaw('COUNT(CASE WHEN available = 0 THEN 1 END) AS out_of_stock')
+            ->first();
+
         $totalValue = app(InventoryValues::class)->total($method, (string) config('inventory.defaults.currency', 'MYR'));
 
-        $lowStockQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->lowStock()
-        );
-
-        $lowStockItems = DB::query()
-            ->fromSub($lowStockQuery->select('inventoryable_type', 'inventoryable_id')->distinct()->toBase(), 'low_stock_skus')
-            ->count();
-
-        $outOfStockQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->whereRaw('(quantity_on_hand - quantity_reserved) <= 0')
-        );
-
-        $outOfStockItems = DB::query()
-            ->fromSub($outOfStockQuery->select('inventoryable_type', 'inventoryable_id')->distinct()->toBase(), 'out_of_stock_skus')
-            ->count();
-
         return [
-            'total_sku_count' => $totalSkus,
+            'total_sku_count' => (int) ($counts->total_skus ?? 0),
             'total_inventory_value' => (int) $totalValue,
             'average_turnover_ratio' => $this->calculateOverallTurnoverRatio(),
             'average_days_on_hand' => $this->calculateOverallDaysOnHand(),
             'overall_fill_rate' => $this->calculateOverallFillRate(),
             'inventory_accuracy' => $this->calculateInventoryAccuracy(),
-            'low_stock_items' => $lowStockItems,
-            'out_of_stock_items' => $outOfStockItems,
+            'low_stock_items' => (int) ($counts->low_stock ?? 0),
+            'out_of_stock_items' => (int) ($counts->out_of_stock ?? 0),
         ];
     }
 
@@ -412,36 +374,22 @@ final class InventoryKpiService
         $startDate ??= CarbonImmutable::now()->subMonth();
         $endDate ??= CarbonImmutable::now();
 
-        $totalShipmentsQuery = InventoryMovement::query()
+        $query = InventoryMovement::query()
             ->where('type', MovementType::Shipment->value)
             ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($totalShipmentsQuery);
+            InventoryOwnerScope::applyToMovementQuery($query);
         }
 
-        $totalShipments = $totalShipmentsQuery->count();
+        $counts = $query->toBase()
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw("COUNT(CASE WHEN reason IS NULL OR reason <> 'partial' THEN 1 END) AS fulfilled")
+            ->first();
 
-        if ($totalShipments === 0) {
-            return 100.0;
-        }
+        $total = (int) ($counts->total ?? 0);
 
-        // Count shipments that are not marked as partial
-        $fulfilledShipmentsQuery = InventoryMovement::query()
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->where(function ($query): void {
-                $query->whereNull('reason')
-                    ->orWhere('reason', '!=', 'partial');
-            });
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($fulfilledShipmentsQuery);
-        }
-
-        $fulfilledShipments = $fulfilledShipmentsQuery->count();
-
-        return round(($fulfilledShipments / $totalShipments) * 100, 2);
+        return $total === 0 ? 100.0 : round(((int) ($counts->fulfilled ?? 0) / $total) * 100, 2);
     }
 
     private function getScopedLocationOrFail(string $locationId): InventoryLocation
