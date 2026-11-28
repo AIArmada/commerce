@@ -312,5 +312,4 @@ final class FulfillmentLocationService
 
         return $availability;
     }
-
 }

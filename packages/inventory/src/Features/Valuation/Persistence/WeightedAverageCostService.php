@@ -180,7 +180,7 @@ final class WeightedAverageCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -253,7 +253,7 @@ final class WeightedAverageCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -289,7 +289,7 @@ final class WeightedAverageCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::WeightedAverage)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {

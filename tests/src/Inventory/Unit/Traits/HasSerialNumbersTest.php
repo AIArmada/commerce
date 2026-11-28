@@ -11,6 +11,7 @@ use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 
 beforeEach(function (): void {
     $this->item = SerializedInventoryItem::create(['name' => 'Serialized Product']);
@@ -478,7 +479,7 @@ it('rolls back all serials and their history when registration fails midway', fu
     $this->item->registerSerial('EXISTING', $this->location->id);
 
     expect(fn () => $this->item->registerSerials(['NEW', 'EXISTING'], $this->location->id))
-        ->toThrow(\Illuminate\Database\QueryException::class);
+        ->toThrow(QueryException::class);
 
     expect($this->item->serials()->count())->toBe(1)
         ->and($this->item->findSerial('NEW'))->toBeNull()

@@ -159,7 +159,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
@@ -205,7 +205,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -259,7 +259,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -296,7 +296,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
                 ->fifoOrder()
         );
 
@@ -333,7 +333,7 @@ final class FifoCostService
                 ->forModel($model)
                 ->withRemainingQuantity()
                 ->usingMethod(CostingMethod::Fifo)
-                    ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+                ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
         );
 
         if (InventoryOwnerScope::isEnabled()) {
