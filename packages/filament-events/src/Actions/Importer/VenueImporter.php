@@ -35,27 +35,32 @@ final class VenueImporter extends Importer
         return [
             ImportColumn::make('name')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Name'),
             ImportColumn::make('slug')
+                ->rules(['nullable', 'string', 'max:255'])
                 ->label('Slug'),
             ImportColumn::make('venue_type')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Venue Type'),
             ImportColumn::make('address_id')
                 ->label('Primary Address ID')
-                ->rules(['uuid'])
+                ->rules(['nullable', 'uuid'])
                 ->ignoreBlankState()
                 ->fillRecordUsing(static function (): void {}),
             ImportColumn::make('status')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Status'),
             ImportColumn::make('phone')
                 ->label('Phone')
+                ->rules(['nullable', 'string', 'max:255'])
                 ->ignoreBlankState()
                 ->fillRecordUsing(static function (): void {}),
             ImportColumn::make('email')
                 ->label('Email')
-                ->rules(['nullable', 'email'])
+                ->rules(['nullable', 'email', 'max:254'])
                 ->ignoreBlankState()
                 ->fillRecordUsing(static function (): void {}),
         ];

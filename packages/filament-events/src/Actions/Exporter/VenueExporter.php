@@ -10,6 +10,7 @@ use AIArmada\Events\Platform\ModelResolver;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
 
 final class VenueExporter extends Exporter
 {
@@ -22,6 +23,15 @@ final class VenueExporter extends Exporter
         $model = ModelResolver::venueClass();
 
         return $model;
+    }
+
+    /**
+     * @param  Builder<Venue>  $query
+     * @return Builder<Venue>
+     */
+    public static function modifyQuery(Builder $query): Builder
+    {
+        return $query->with('addresses');
     }
 
     public static function getColumns(): array
