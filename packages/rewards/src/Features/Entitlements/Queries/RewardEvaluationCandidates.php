@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Entitlements\Queries;
 
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
-use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Automation candidate resolution for single-fact evaluation.
@@ -36,8 +35,8 @@ final class RewardEvaluationCandidates
      *                                   program scan past the ambient owner scope — every candidate is then
      *                                   evaluated under its own program owner by the caller.
      * @return list<array{
-     *     program: RewardProgram,
-     *     version: RewardProgramVersion,
+     *     program: RewardProgramSnapshot,
+     *     version: RewardPolicySnapshot,
      *     components: list<RewardComponent>,
      *     milestones: list<array<string, mixed>>,
      *     role: RewardBeneficiaryRole,
@@ -70,57 +69,9 @@ final class RewardEvaluationCandidates
         $at = $at->setTimezone('UTC');
         $candidates = [];
 
-        // System enumeration (the queued job) runs without an ambient owner,
-        // so the program scan widens past the current owner scope on
-        // purpose: each candidate is later evaluated under its own program
-        // owner via RewardProgramGuard::withProgramOwner(). This is the
-        // only sanctioned unscoped query on programs.
-        $programs = RewardProgram::query()
-            ->when(
-                $systemEnumeration && config('rewards.owner.enabled', true),
-                static fn (Builder $query): Builder => $query->withoutGlobalScopes(),
-            )
-            ->where('status', RewardProgramStatus::Active->value)
-            ->orderBy('family_key')
-            ->get();
-
-        foreach ($programs as $program) {
-            /** @var RewardProgram $program */
-            $versions = RewardProgramVersion::query()
-                ->where('program_id', $program->getKey())
-                ->orderBy('version')
-                ->get();
-
-            $timeline = [];
-
-            foreach ($versions as $version) {
-                /** @var RewardProgramVersion $version */
-                $timeline[] = [
-                    'id' => (string) $version->getKey(),
-                    'version' => (int) $version->version,
-                    'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
-                ];
-            }
-
-            $applicable = RewardVersionResolver::resolveAt($timeline, $at);
-
-            if ($applicable === null) {
-                continue;
-            }
-
-            $resolved = null;
-
-            foreach ($versions as $version) {
-                if ((string) $version->getKey() === $applicable['id']) {
-                    $resolved = $version;
-
-                    break;
-                }
-            }
-
-            if (! $resolved instanceof RewardProgramVersion) {
-                continue;
-            }
+        foreach (app(RewardProgramLockApi::class)->activePolicies($at->toIso8601String(), $systemEnumeration) as $entry) {
+            $program = $entry['program'];
+            $resolved = $entry['policy'];
 
             $rules = $resolved->rules;
             $entries = is_array($rules['components'] ?? null) ? $rules['components'] : [];

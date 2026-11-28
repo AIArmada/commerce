@@ -9,9 +9,9 @@ use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardSourceFact;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardEvaluationCandidates;
+use AIArmada\Rewards\Features\Entitlements\Queries\RewardEvaluationCandidates;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -45,11 +45,11 @@ final readonly class EvaluateRewardSourceAction
             }
 
             try {
-                RewardProgramGuard::withProgramOwner($candidate['program'], function () use ($evaluate, $fact, $candidate, $now, $recipientType, $reader): void {
+                RewardProgramGuard::withProgramOwner($candidate['program']->id, function () use ($evaluate, $fact, $candidate, $now, $recipientType, $reader): void {
                     foreach ($candidate['components'] as $component) {
                         try {
                             $evaluate->handle(
-                                (string) $candidate['program']->getKey(),
+                                $candidate['program']->id,
                                 $component,
                                 $recipientType,
                                 $candidate['recipient_id'],
@@ -67,7 +67,7 @@ final readonly class EvaluateRewardSourceAction
                         }
                     }
 
-                    $this->recordMilestones($fact, $candidate['milestones'], $candidate['recipient_id'], $candidate['role']->value, (string) $candidate['program']->getKey(), $candidate['program']->family_key, $recipientType, $reader);
+                    $this->recordMilestones($fact, $candidate['milestones'], $candidate['recipient_id'], $candidate['role']->value, $candidate['program']->id, $candidate['program']->familyKey, $recipientType, $reader);
                 });
             } catch (InvalidArgumentException $exception) {
                 if (str_starts_with($exception->getMessage(), 'Refused:')) {
@@ -80,13 +80,13 @@ final readonly class EvaluateRewardSourceAction
     }
 
     /**
-     * @param  array{program: RewardProgram, version: RewardProgramVersion, components: list<RewardComponent>, milestones: list<array<string, mixed>>, role: RewardBeneficiaryRole, recipient_id: string}  $candidate
+     * @param  array{program: RewardProgramSnapshot, version: RewardPolicySnapshot, components: list<RewardComponent>, milestones: list<array<string, mixed>>, role: RewardBeneficiaryRole, recipient_id: string}  $candidate
      */
     private function inScope(array $candidate): bool
     {
         return ($this->onlyRecipientId === null || $candidate['recipient_id'] === $this->onlyRecipientId)
             && ($this->onlyRole === null || $candidate['role'] === $this->onlyRole)
-            && ($this->onlyFamilyKey === null || $candidate['program']->family_key === $this->onlyFamilyKey);
+            && ($this->onlyFamilyKey === null || $candidate['program']->familyKey === $this->onlyFamilyKey);
     }
 
     private function recipientType(): string

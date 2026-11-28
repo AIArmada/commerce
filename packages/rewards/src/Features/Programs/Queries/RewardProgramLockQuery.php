@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Programs\Queries;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
@@ -63,9 +65,45 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
     {
         RewardProgramGuard::findProgramOrFail($programId);
 
+        return $this->effectivePolicyForProgram($programId, CarbonImmutable::parse($at)->setTimezone('UTC'));
+    }
+
+    public function activePolicies(string $at, bool $systemEnumeration = false): array
+    {
+        $decision = CarbonImmutable::parse($at)->setTimezone('UTC');
+        $query = RewardProgram::query();
+
+        if ($systemEnumeration && config('rewards.owner.enabled', true)
+            && ! OwnerContext::hasOverride() && OwnerContext::resolve() === null) {
+            $query->withoutGlobalScopes();
+        }
+
+        $programs = $query->where('status', RewardProgramStatus::Active->value)
+            ->orderBy('family_key')
+            ->orderBy('id')
+            ->get(['id', 'family_key', 'status']);
+        $result = [];
+
+        foreach ($programs as $program) {
+            $id = (string) $program->getKey();
+            $policy = $this->effectivePolicyForProgram($id, $decision);
+
+            if ($policy !== null) {
+                $result[] = [
+                    'program' => new RewardProgramSnapshot($id, $program->family_key, $program->status->value),
+                    'policy' => $policy,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    private function effectivePolicyForProgram(string $programId, CarbonImmutable $at): ?RewardPolicySnapshot
+    {
         $version = RewardProgramVersion::query()
             ->where('program_id', $programId)
-            ->where('effective_from', '<=', CarbonImmutable::parse($at)->setTimezone('UTC'))
+            ->where('effective_from', '<=', $at)
             ->orderByDesc('effective_from')
             ->orderByDesc('version')
             ->first();
