@@ -10,6 +10,7 @@ use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\EnsureProductBySlug;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Actions\ReplaceOptionValues;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Products\Actions\UpdateProduct;
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
@@ -29,6 +30,39 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
+
+describe('UpdateCatalogProducts Action', function (): void {
+    it('updates distinct products once using their current persisted prices', function (): void {
+        $first = Product::create(['name' => 'First bulk price', 'price' => 1000]);
+        $second = Product::create(['name' => 'Second bulk price', 'price' => 2000]);
+        Product::query()->whereKey($first->id)->update(['price' => 1500]);
+
+        app(UpdateCatalogProducts::class)->adjustPrices([$second, $first, $first], 'increase_amount', 2);
+
+        expect($first->fresh()->price)->toBe(1700)
+            ->and($second->fresh()->price)->toBe(2200);
+    });
+
+    it('rolls back bulk price changes on integer overflow', function (): void {
+        $first = Product::create(['name' => 'Ordinary price', 'price' => 1000]);
+        $second = Product::create(['name' => 'Maximum price', 'price' => PHP_INT_MAX]);
+
+        expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices([$first, $second], 'increase_amount', 1))
+            ->toThrow(ValidationException::class);
+
+        expect($first->fresh()->price)->toBe(1000)
+            ->and($second->fresh()->price)->toBe(PHP_INT_MAX);
+    });
+
+    it('rejects percentage increases that cannot fit in a signed integer', function (): void {
+        $product = Product::create(['name' => 'Large price', 'price' => intdiv(PHP_INT_MAX, 2) + 1]);
+
+        expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices([$product], 'increase_percent', 100))
+            ->toThrow(ValidationException::class);
+
+        expect($product->fresh()->price)->toBe(intdiv(PHP_INT_MAX, 2) + 1);
+    });
+});
 
 describe('CreateProduct Action', function (): void {
     it('creates a product with given attributes', function (): void {

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
 use Closure;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -29,15 +30,23 @@ final readonly class UpdateCatalogProducts
         $this->mutate($records, static function (Product $product) use ($action, $value): void {
             $current = (int) $product->getAttribute('price');
             $minor = (int) round($value * 100);
+            if ($action === 'increase_amount' && $current > PHP_INT_MAX - $minor) {
+                throw ValidationException::withMessages(['value' => 'Price exceeds the supported integer range.']);
+            }
+
             $price = match ($action) {
                 'set' => $minor,
-                'increase_percent' => (int) round($current * (1 + $value / 100)),
-                'decrease_percent' => (int) round($current * (1 - $value / 100)),
+                'increase_percent' => $value === 0.0 ? $current : round($current * (1 + $value / 100)),
+                'decrease_percent' => $value === 0.0 ? $current : round($current * (1 - $value / 100)),
                 'increase_amount' => $current + $minor,
                 'decrease_amount' => $current - $minor,
             };
 
-            $product->update(['price' => max(0, $price)]);
+            if (is_float($price) && $price >= (float) PHP_INT_MAX) {
+                throw ValidationException::withMessages(['value' => 'Price exceeds the supported integer range.']);
+            }
+
+            $product->update(['price' => max(0, (int) $price)]);
         });
     }
 
@@ -66,8 +75,8 @@ final readonly class UpdateCatalogProducts
             $ids[] = $record->getKey();
         }
 
-        $ids = array_unique($ids);
-        sort($ids);
+        $ids = array_values(array_unique($ids));
+        sort($ids, SORT_STRING);
 
         DB::transaction(function () use ($ids, $mutation): void {
             $query = Product::query();
@@ -78,9 +87,16 @@ final readonly class UpdateCatalogProducts
                 $query->forOwner($owner, false);
             }
 
-            foreach ($ids as $id) {
-                $product = (clone $query)->whereKey($id)->lockForUpdate()->firstOrFail();
-                $mutation($product);
+            foreach (array_chunk($ids, 200) as $chunk) {
+                $products = (clone $query)->whereKey($chunk)->orderBy('id')->lockForUpdate()->get();
+
+                if ($products->count() !== count($chunk)) {
+                    throw (new ModelNotFoundException)->setModel(Product::class, $chunk);
+                }
+
+                foreach ($products as $product) {
+                    $mutation($product);
+                }
             }
         }, 3);
     }
