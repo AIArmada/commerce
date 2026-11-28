@@ -19,10 +19,12 @@ use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
+use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
@@ -33,6 +35,7 @@ use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
+use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
@@ -46,6 +49,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -283,7 +287,7 @@ final readonly class TransitionRewardAwardAction
         $meritOverride = [];
 
         if ($isOverturn) {
-            $meritOverride = $this->assertOverturnAuthority($locked, $entryEvidence, $sourceOperationId);
+            $meritOverride = $this->assertOverturnAuthority($locked, $entryEvidence, $sourceOperationId, $actorType, $actorId, $actorRole);
             $this->obligateOverturnedCash($locked, $actorType, $actorId, $actorRole, $decided);
         } elseif (($entryEvidence['merit_override'] ?? null) !== null) {
             throw new InvalidArgumentException('Refused: merit overrides apply only to appeal overturns of rejected awards.');
@@ -1043,20 +1047,50 @@ final readonly class TransitionRewardAwardAction
      * @param  array<string, mixed>  $entryEvidence
      * @return list<string>
      */
-    private function assertOverturnAuthority(RewardAward $award, array $entryEvidence, ?string $sourceOperationId): array
-    {
+    private function assertOverturnAuthority(
+        RewardAward $award,
+        array $entryEvidence,
+        ?string $sourceOperationId,
+        string $actorType,
+        ?string $actorId,
+        string $actorRole,
+    ): array {
         $appealId = $entryEvidence['appeal_id'] ?? null;
         $authority = $entryEvidence['override_authority'] ?? null;
 
-        if (! is_string($appealId) || $appealId === ''
+        if (! is_string($appealId) || ! Str::isUuid($appealId)
             || $authority !== 'appeal-merit-override'
-            || $sourceOperationId === null
-            || ! str_starts_with($sourceOperationId, 'appeal-overturn:')
+            || $sourceOperationId !== 'appeal-overturn:' . $appealId
         ) {
             throw new InvalidArgumentException('Refused: rejected-to-approved overturns require explicit appeal-merit-override evidence and an appeal-overturn operation id.');
         }
 
+        $appeal = RewardAppeal::query()
+            ->whereKey($appealId)
+            ->where('award_id', $award->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if (! $appeal instanceof RewardAppeal || $appeal->status !== RewardAppealStatus::Overturned) {
+            throw new InvalidArgumentException('Refused: overturn requires an overturned appeal belonging to this award.');
+        }
+
+        $decision = $appeal->decisions()->reorder('seq', 'desc')->first();
+
+        if (! $decision instanceof RewardAppealDecision
+            || $decision->to_status !== RewardAppealStatus::Overturned->value
+            || $decision->actor_type !== $actorType
+            || $decision->actor_id !== $actorId
+            || $decision->actor_role !== $actorRole
+        ) {
+            throw new InvalidArgumentException('Refused: overturn authority must match the recorded appeal reviewer.');
+        }
+
         $override = $entryEvidence['merit_override'] ?? [];
+
+        if ($override !== ($decision->evidence['merit_override'] ?? [])) {
+            throw new InvalidArgumentException('Refused: merit overrides must match the recorded appeal decision.');
+        }
 
         if (! is_array($override) || ! array_is_list($override)) {
             throw new InvalidArgumentException('Refused: merit overrides must be an explicit list of gate names.');

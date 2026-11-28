@@ -13,12 +13,14 @@ use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 function appealHarness(string $source = 'src-appeal-1', array $factOverrides = []): array
 {
@@ -123,8 +125,27 @@ it('overturns rejected awards by appending overrides while the original stands',
     $opened = OpenRewardAppealAction::run($award, 'user', $memberId, 'member', 'verification-completed', null, CarbonImmutable::parse('2026-06-20T00:00:00Z'));
     $reviewer = RewardLedgerFixtures::staffId();
 
+    $forgedId = (string) Str::uuid();
+
+    foreach ([$forgedId, (string) $opened->getKey()] as $appealId) {
+        expect(fn () => app(TransitionRewardAwardAction::class)->handle(
+            $award,
+            RewardAwardStatus::Approved,
+            'user',
+            $reviewer,
+            'admin',
+            'forged-override',
+            ['appeal_id' => $appealId, 'override_authority' => 'appeal-merit-override'],
+            'appeal-overturn:' . $appealId,
+            CarbonImmutable::parse('2026-06-21T00:00:00Z'),
+        ))->toThrow(InvalidArgumentException::class, 'overturned appeal belonging to this award');
+    }
+
+    expect($award->refresh()->status)->toBe(RewardAwardStatus::Rejected)
+        ->and($award->entries()->count())->toBe(1);
+
     AdvanceRewardAppealAction::run($opened, RewardAppealStatus::InReview, 'user', $reviewer, 'admin', 'taking-case', null, CarbonImmutable::parse('2026-06-21T00:00:00Z'));
-    $overturned = (new AdvanceRewardAppealAction($reader))->handle($opened, RewardAppealStatus::Overturned, 'user', $reviewer, 'admin', 'evidence-now-qualified', ['review' => 'verified'], CarbonImmutable::parse('2026-06-22T00:00:00Z'));
+    $overturned = (new AdvanceRewardAppealAction($reader))->handle($opened, RewardAppealStatus::Overturned, 'user', $reviewer, 'admin', 'evidence-now-qualified', ['review' => 'verified', 'appeal_id' => $forgedId, 'override_authority' => 'untrusted'], CarbonImmutable::parse('2026-06-22T00:00:00Z'));
 
     expect($overturned->status)->toBe(RewardAppealStatus::Overturned);
 
@@ -137,7 +158,9 @@ it('overturns rejected awards by appending overrides while the original stands',
 
     expect($entries[0]->to_status)->toBe('rejected')
         ->and($entries[1]->to_status)->toBe('approved')
-        ->and($entries[1]->reason)->toStartWith('appeal-overturned:');
+        ->and($entries[1]->reason)->toStartWith('appeal-overturned:')
+        ->and($entries[1]->evidence['appeal_id'])->toBe((string) $opened->getKey())
+        ->and($entries[1]->evidence['override_authority'])->toBe('appeal-merit-override');
 });
 
 it('appends idempotent adjustments and resolves them with separated identities', function (): void {

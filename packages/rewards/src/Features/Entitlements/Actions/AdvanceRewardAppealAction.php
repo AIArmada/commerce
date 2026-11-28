@@ -176,7 +176,7 @@ final readonly class AdvanceRewardAppealAction
                     $actorId,
                     $actorRole,
                     'appeal-overturned:' . $reason,
-                    ['appeal_id' => (string) $locked->getKey(), 'override_authority' => 'appeal-merit-override', ...($evidence ?? [])],
+                    [...($evidence ?? []), 'appeal_id' => (string) $locked->getKey(), 'override_authority' => 'appeal-merit-override'],
                     'appeal-overturn:' . (string) $locked->getKey(),
                     $decided,
                 );
