@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Chip;
+namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
+use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
-use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
 
@@ -17,7 +17,7 @@ use InvalidArgumentException;
  * This class provides compatibility with the unified cashier interface while
  * delegating to the native cashier-chip CheckoutBuilder when available.
  */
-class ChipCheckoutBuilder implements CheckoutBuilderContract
+class ChipCheckoutBuilder implements DynamicCheckoutBuilderContract
 {
     /**
      * The billable model.

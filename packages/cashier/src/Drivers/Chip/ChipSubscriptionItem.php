@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Stripe;
+namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\SubscriptionItemContract;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use Carbon\CarbonInterface;
-use Laravel\Cashier\SubscriptionItem;
 
 /**
- * Wrapper for Stripe subscription item.
+ * Wrapper for CHIP subscription item.
  */
-class StripeSubscriptionItem implements SubscriptionItemContract
+class ChipSubscriptionItem implements SubscriptionItemContract
 {
     /**
-     * Create a new Stripe subscription item wrapper.
+     * Create a new CHIP subscription item wrapper.
      */
     public function __construct(
         protected SubscriptionItem $item
@@ -25,7 +25,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function id(): string
     {
-        return (string) $this->item->getKey();
+        return (string) $this->item->id;
     }
 
     /**
@@ -33,7 +33,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function gatewayId(): string
     {
-        return (string) $this->item->getAttribute('stripe_id');
+        return $this->item->chip_id ?? (string) $this->item->id;
     }
 
     /**
@@ -41,7 +41,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function gateway(): string
     {
-        return 'stripe';
+        return 'chip';
     }
 
     /**
@@ -49,7 +49,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function priceId(): string
     {
-        return (string) $this->item->getAttribute('stripe_price');
+        return $this->item->chip_price ?? '';
     }
 
     /**
@@ -57,9 +57,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function productId(): ?string
     {
-        $product = $this->item->getAttribute('stripe_product');
-
-        return is_string($product) && $product !== '' ? $product : null;
+        return $this->item->chip_product;
     }
 
     /**
@@ -67,9 +65,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function quantity(): ?int
     {
-        $quantity = $this->item->getAttribute('quantity');
-
-        return is_int($quantity) ? $quantity : null;
+        return $this->item->quantity;
     }
 
     /**
@@ -77,7 +73,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function currentPeriodStart(): ?CarbonInterface
     {
-        return $this->item->currentPeriodStart();
+        return $this->item->subscription?->currentPeriodStart();
     }
 
     /**
@@ -85,7 +81,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function currentPeriodEnd(): ?CarbonInterface
     {
-        return $this->item->currentPeriodEnd();
+        return $this->item->subscription?->currentPeriodEnd();
     }
 
     /**

@@ -2,34 +2,33 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Stripe;
+namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Contracts\SubscriptionItemContract;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Laravel\Cashier\Subscription;
-use Laravel\Cashier\SubscriptionItem;
 
 /**
- * Wrapper for Stripe subscription.
+ * Wrapper for CHIP subscription.
  *
- * This class wraps a Laravel Cashier Subscription model and adapts it
+ * This class wraps a CashierChip Subscription model and adapts it
  * to the unified SubscriptionContract interface.
  */
-class StripeSubscription implements SubscriptionContract
+class ChipSubscription implements SubscriptionContract
 {
     protected Subscription $subscription;
 
     /**
-     * Create a new Stripe subscription wrapper.
+     * Create a new CHIP subscription wrapper.
      */
     public function __construct(mixed $subscription)
     {
         if (! $subscription instanceof Subscription) {
-            throw new InvalidArgumentException('StripeSubscription expects an instance of ' . Subscription::class);
+            throw new InvalidArgumentException('ChipSubscription expects an instance of ' . Subscription::class);
         }
 
         $this->subscription = $subscription;
@@ -45,10 +44,11 @@ class StripeSubscription implements SubscriptionContract
 
     /**
      * Get the gateway subscription ID.
+     * Note: CHIP subscriptions are managed locally, not on the gateway.
      */
     public function gatewayId(): string
     {
-        return (string) $this->subscription->getAttribute('stripe_id');
+        return $this->subscription->chip_id ?? (string) $this->subscription->id;
     }
 
     /**
@@ -56,7 +56,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function gateway(): string
     {
-        return 'stripe';
+        return 'chip';
     }
 
     /**
@@ -64,7 +64,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function type(): string
     {
-        return (string) $this->subscription->getAttribute('type');
+        return $this->subscription->type;
     }
 
     /**
@@ -104,7 +104,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function canceled(): bool
     {
-        return $this->subscription->canceled();
+        return $this->subscription->ends_at !== null;
     }
 
     /**
@@ -120,7 +120,9 @@ class StripeSubscription implements SubscriptionContract
      */
     public function onGracePeriod(): bool
     {
-        return $this->subscription->onGracePeriod();
+        $endsAt = $this->subscription->ends_at;
+
+        return $endsAt !== null && $endsAt->isFuture();
     }
 
     /**
@@ -160,9 +162,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function trialEndsAt(): ?CarbonInterface
     {
-        $trialEndsAt = $this->subscription->getAttribute('trial_ends_at');
-
-        return $trialEndsAt instanceof CarbonInterface ? $trialEndsAt : null;
+        return $this->subscription->trial_ends_at;
     }
 
     /**
@@ -170,9 +170,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function endsAt(): ?CarbonInterface
     {
-        $endsAt = $this->subscription->getAttribute('ends_at');
-
-        return $endsAt instanceof CarbonInterface ? $endsAt : null;
+        return $this->subscription->ends_at;
     }
 
     /**
@@ -192,18 +190,23 @@ class StripeSubscription implements SubscriptionContract
     }
 
     /**
+     * Get the next billing date.
+     */
+    public function nextBillingAt(): ?CarbonInterface
+    {
+        return $this->subscription->next_billing_at;
+    }
+
+    /**
      * Get the subscription items.
      *
      * @return Collection<int, SubscriptionItemContract>
      */
     public function items(): Collection
     {
-        $items = $this->subscription->items
-            ->filter(fn ($item) => $item instanceof SubscriptionItem)
-            ->map(fn (SubscriptionItem $item): SubscriptionItemContract => new StripeSubscriptionItem($item))
-            ->values();
-
         /** @var Collection<int, SubscriptionItemContract> $items */
+        $items = $this->subscription->items->map(fn ($item) => new ChipSubscriptionItem($item));
+
         return $items;
     }
 
@@ -221,9 +224,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function quantity(): ?int
     {
-        $quantity = $this->subscription->getAttribute('quantity');
-
-        return is_int($quantity) ? $quantity : null;
+        return $this->subscription->quantity;
     }
 
     /**
@@ -232,6 +233,14 @@ class StripeSubscription implements SubscriptionContract
     public function hasPrice(string $price): bool
     {
         return $this->subscription->hasPrice($price);
+    }
+
+    /**
+     * Get the recurring token.
+     */
+    public function recurringToken(): ?string
+    {
+        return $this->subscription->recurringToken();
     }
 
     /**
@@ -256,10 +265,11 @@ class StripeSubscription implements SubscriptionContract
 
     /**
      * Cancel the subscription immediately and invoice.
+     * Note: For CHIP, this is the same as cancelNow.
      */
     public function cancelNowAndInvoice(): static
     {
-        $this->subscription->cancelNowAndInvoice();
+        $this->subscription->cancelNow();
 
         return $this;
     }
@@ -317,6 +327,14 @@ class StripeSubscription implements SubscriptionContract
     }
 
     /**
+     * Charge the subscription.
+     */
+    public function charge(?int $amount = null): mixed
+    {
+        return $this->subscription->charge($amount);
+    }
+
+    /**
      * Get the underlying subscription model.
      */
     public function asGatewaySubscription(): Subscription
@@ -326,6 +344,9 @@ class StripeSubscription implements SubscriptionContract
 
     /**
      * Convert to array.
+     *
+     * The recurring token is a reusable payment credential: it is exposed
+     * only via recurringToken(), never via serialization.
      *
      * @return array<string, mixed>
      */
@@ -345,6 +366,7 @@ class StripeSubscription implements SubscriptionContract
             'on_grace_period' => $this->onGracePeriod(),
             'trial_ends_at' => $this->trialEndsAt()?->toIso8601String(),
             'ends_at' => $this->endsAt()?->toIso8601String(),
+            'next_billing_at' => $this->nextBillingAt()?->toIso8601String(),
         ];
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\OwnerScopedBillableUser;
 use Stripe\ApiRequestor;

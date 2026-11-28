@@ -8,7 +8,6 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Events\SubscriptionCreated;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\Cashier\Gateways\AbstractGateway;
 use AIArmada\Cashier\Support\ActionGuard;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,7 +34,6 @@ final class CreateSubscription
         }
 
         $gatewayName = ActionGuard::gatewayName($gateway);
-        /** @var AbstractGateway $gateway */
         $gateway = Cashier::gateway($gatewayName);
 
         $builder = $gateway->newSubscription($billable, $type, $prices);

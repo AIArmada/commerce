@@ -6,7 +6,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Actions\ProcessCheckoutPaymentNotification;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;

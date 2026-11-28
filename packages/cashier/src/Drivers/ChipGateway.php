@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways;
+namespace AIArmada\Cashier\Drivers;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
@@ -15,12 +15,12 @@ use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
-use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
-use AIArmada\Cashier\Gateways\Chip\ChipCustomer;
-use AIArmada\Cashier\Gateways\Chip\ChipPayment;
-use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
-use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
-use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
+use AIArmada\Cashier\Drivers\Chip\ChipCheckoutBuilder;
+use AIArmada\Cashier\Drivers\Chip\ChipCustomer;
+use AIArmada\Cashier\Drivers\Chip\ChipPayment;
+use AIArmada\Cashier\Drivers\Chip\ChipPaymentMethod;
+use AIArmada\Cashier\Drivers\Chip\ChipSubscription;
+use AIArmada\Cashier\Drivers\Chip\ChipSubscriptionBuilder;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;

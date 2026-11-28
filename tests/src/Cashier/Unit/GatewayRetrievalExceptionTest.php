@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
-use AIArmada\Cashier\Gateways\ChipGateway;
-use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Stripe\Exception\InvalidRequestException;

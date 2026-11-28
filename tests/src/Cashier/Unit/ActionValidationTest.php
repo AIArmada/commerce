@@ -15,7 +15,7 @@ use AIArmada\Cashier\Exceptions\Gateway\InvalidGatewayException;
 use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
 use AIArmada\Cashier\Exceptions\PaymentOperationRateLimitedException;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;

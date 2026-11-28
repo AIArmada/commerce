@@ -19,7 +19,7 @@ keywords:
 - Composer: `aiarmada/cashier`
 - Role: Unified multi-gateway billing abstraction over Stripe (laravel/cashier) and CHIP-style providers.
 - Triggers: billing, subscription, invoice, stripe, multi-gateway, billable
-- Search first: `src/Actions, src/Gateways, src/Contracts, src/Checkout, config, docs`
+- Search first: `src/Actions, src/Drivers, src/Contracts, src/Checkout, config, docs`
 - Related: `filament-cashier`, `cashier-chip`, `chip`
 - Paired: `filament-cashier` (Filament admin adapter)
 

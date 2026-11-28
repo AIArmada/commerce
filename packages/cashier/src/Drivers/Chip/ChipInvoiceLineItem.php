@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Chip;
+namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use AIArmada\Chip\Data\ProductData;

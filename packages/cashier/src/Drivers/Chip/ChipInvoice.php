@@ -2,42 +2,36 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Stripe;
+namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
+use AIArmada\Chip\Contracts\PurchaseStatus;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
-use Laravel\Cashier\Invoice;
-use Stripe\Invoice as StripeInvoiceObject;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Wrapper for Stripe invoice.
+ * Wrapper for CHIP invoice (purchase).
  */
-class StripeInvoice implements InvoiceContract
+class ChipInvoice implements InvoiceContract
 {
     /**
-     * The Stripe invoice instance.
+     * Create a new CHIP invoice wrapper.
      */
-    protected StripeInvoiceObject | Invoice $invoice;
-
-    /**
-     * Create a new Stripe invoice wrapper.
-     */
-    public function __construct(StripeInvoiceObject | Invoice $invoice)
-    {
-        $this->invoice = $invoice;
-    }
+    public function __construct(
+        protected PurchaseData $purchase
+    ) {}
 
     /**
      * Get the invoice ID.
      */
     public function id(): string
     {
-        return $this->getStripeInvoice()->id;
+        return $this->purchase->id;
     }
 
     /**
@@ -45,7 +39,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function gateway(): string
     {
-        return 'stripe';
+        return 'chip';
     }
 
     /**
@@ -53,7 +47,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function number(): ?string
     {
-        return $this->getStripeInvoice()->number;
+        return $this->purchase->purchase->notes ?? $this->purchase->notes ?? $this->purchase->id;
     }
 
     /**
@@ -61,7 +55,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function date(): CarbonInterface
     {
-        return Carbon::createFromTimestamp($this->getStripeInvoice()->created);
+        return $this->purchase->getCreatedAt();
     }
 
     /**
@@ -69,9 +63,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function dueDate(): ?CarbonInterface
     {
-        $dueDate = $this->getStripeInvoice()->due_date;
-
-        return $dueDate ? Carbon::createFromTimestamp($dueDate) : null;
+        return $this->purchase->getDueDate();
     }
 
     /**
@@ -79,7 +71,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function status(): string
     {
-        return $this->getStripeInvoice()->status;
+        return $this->purchase->status;
     }
 
     /**
@@ -87,7 +79,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function rawTotal(): int
     {
-        return $this->getStripeInvoice()->total;
+        return $this->purchase->purchase->getTotalInCents();
     }
 
     /**
@@ -95,11 +87,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function total(): string
     {
-        if ($this->invoice instanceof Invoice) {
-            return $this->invoice->total();
-        }
-
-        return $this->formatAmount($this->rawTotal());
+        return MoneyFormatter::formatMinorWithCode($this->rawTotal(), $this->currency());
     }
 
     /**
@@ -107,7 +95,13 @@ class StripeInvoice implements InvoiceContract
      */
     public function rawSubtotal(): int
     {
-        return $this->getStripeInvoice()->subtotal;
+        $subtotalOverride = $this->purchase->purchase->subtotal_override;
+
+        if ($subtotalOverride !== null) {
+            return (int) $subtotalOverride->getAmount();
+        }
+
+        return $this->purchase->purchase->getSubtotalInCents();
     }
 
     /**
@@ -115,11 +109,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function subtotal(): string
     {
-        if ($this->invoice instanceof Invoice) {
-            return $this->invoice->subtotal();
-        }
-
-        return $this->formatAmount($this->rawSubtotal());
+        return MoneyFormatter::formatMinorWithCode($this->rawSubtotal(), $this->currency());
     }
 
     /**
@@ -127,7 +117,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function rawTax(): int
     {
-        return $this->getStripeInvoice()->tax ?? 0;
+        return (int) ($this->purchase->purchase->total_tax_override?->getAmount() ?? 0);
     }
 
     /**
@@ -135,11 +125,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function tax(): string
     {
-        if ($this->invoice instanceof Invoice) {
-            return $this->invoice->tax();
-        }
-
-        return $this->formatAmount($this->rawTax());
+        return MoneyFormatter::formatMinorWithCode($this->rawTax(), $this->currency());
     }
 
     /**
@@ -147,7 +133,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function currency(): string
     {
-        return mb_strtoupper($this->getStripeInvoice()->currency);
+        return mb_strtoupper($this->purchase->purchase->currency);
     }
 
     /**
@@ -157,13 +143,13 @@ class StripeInvoice implements InvoiceContract
      */
     public function items(): Collection
     {
-        $stripeInvoice = $this->getStripeInvoice();
+        $products = $this->purchase->purchase->products;
 
-        $data = $stripeInvoice->lines->data;
-
-        $items = collect(is_array($data) ? $data : [])
-            ->map(static fn ($item): InvoiceLineItemContract => new StripeInvoiceLineItem($item))
-            ->values();
+        $items = collect($products)
+            ->values()
+            ->map(static function (ProductData $product, int $index): InvoiceLineItemContract {
+                return new ChipInvoiceLineItem($product, $index);
+            });
 
         /** @var Collection<int, InvoiceLineItemContract> $items */
         return $items;
@@ -174,7 +160,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function isPaid(): bool
     {
-        return $this->getStripeInvoice()->status === 'paid';
+        return $this->purchaseStatus()->isSuccessful();
     }
 
     /**
@@ -182,7 +168,17 @@ class StripeInvoice implements InvoiceContract
      */
     public function isOpen(): bool
     {
-        return $this->getStripeInvoice()->status === 'open';
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_RELEASE,
+            PurchaseStatus::PENDING_REFUND,
+        ], true);
     }
 
     /**
@@ -190,7 +186,13 @@ class StripeInvoice implements InvoiceContract
      */
     public function isVoid(): bool
     {
-        return $this->getStripeInvoice()->status === 'void';
+        return in_array($this->purchaseStatus(), [
+            PurchaseStatus::CANCELLED,
+            PurchaseStatus::RELEASED,
+            PurchaseStatus::EXPIRED,
+            PurchaseStatus::ERROR,
+            PurchaseStatus::BLOCKED,
+        ], true);
     }
 
     /**
@@ -198,7 +200,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function isDraft(): bool
     {
-        return $this->getStripeInvoice()->status === 'draft';
+        return false; // CHIP doesn't have draft status
     }
 
     /**
@@ -206,7 +208,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function customer(): mixed
     {
-        return $this->getStripeInvoice()->customer;
+        return $this->purchase->client;
     }
 
     /**
@@ -214,7 +216,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function hostedUrl(): ?string
     {
-        return $this->getStripeInvoice()->hosted_invoice_url;
+        return $this->purchase->getCheckoutUrl();
     }
 
     /**
@@ -222,7 +224,8 @@ class StripeInvoice implements InvoiceContract
      */
     public function pdfUrl(): ?string
     {
-        return $this->getStripeInvoice()->invoice_pdf;
+        // CHIP doesn't provide direct PDF URLs
+        return null;
     }
 
     /**
@@ -232,15 +235,8 @@ class StripeInvoice implements InvoiceContract
      */
     public function download(array $data = []): Response
     {
-        if ($this->invoice instanceof Invoice) {
-            /** @var Response $response */
-            $response = $this->invoice->download($data);
-
-            return $response;
-        }
-
-        // Fallback to redirect to PDF URL
-        return redirect()->to($this->pdfUrl());
+        // Would need to generate PDF locally
+        return redirect()->to($this->hostedUrl() ?? '/');
     }
 
     /**
@@ -250,20 +246,20 @@ class StripeInvoice implements InvoiceContract
      */
     public function view(array $data = []): Response
     {
-        if ($this->invoice instanceof Invoice) {
-            return response($this->invoice->view($data));
-        }
-
-        // Fallback to redirect to hosted URL
-        return redirect()->to($this->hostedUrl());
+        return redirect()->to($this->hostedUrl() ?? '/');
     }
 
     /**
      * Get the underlying gateway invoice object.
      */
-    public function asGatewayInvoice(): StripeInvoiceObject
+    public function asGatewayInvoice(): PurchaseData
     {
-        return $this->getStripeInvoice();
+        return $this->purchase;
+    }
+
+    private function purchaseStatus(): PurchaseStatus
+    {
+        return PurchaseStatus::from($this->purchase->status);
     }
 
     /**
@@ -290,7 +286,6 @@ class StripeInvoice implements InvoiceContract
             'date' => $this->date()->toIso8601String(),
             'due_date' => $this->dueDate()?->toIso8601String(),
             'hosted_url' => $this->hostedUrl(),
-            'pdf_url' => $this->pdfUrl(),
         ];
     }
 
@@ -300,25 +295,5 @@ class StripeInvoice implements InvoiceContract
     public function toJson($options = 0): string
     {
         return json_encode($this->toArray(), $options);
-    }
-
-    /**
-     * Get the Stripe invoice object.
-     */
-    protected function getStripeInvoice(): StripeInvoiceObject
-    {
-        if ($this->invoice instanceof Invoice) {
-            return $this->invoice->asStripeInvoice();
-        }
-
-        return $this->invoice;
-    }
-
-    /**
-     * Format an amount.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        return MoneyFormatter::formatMinorWithCode($amount, $this->currency());
     }
 }

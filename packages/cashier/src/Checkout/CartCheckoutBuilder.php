@@ -11,7 +11,7 @@ use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
-use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
+use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\InventoryServiceProvider;
@@ -329,7 +329,7 @@ final class CartCheckoutBuilder
 
         // For gateways with dynamic pricing (like CHIP) the real unit
         // amount travels with the item name so the purchase never posts 0.
-        if ($builder instanceof ChipCheckoutBuilder) {
+        if ($builder instanceof DynamicCheckoutBuilderContract) {
             $builder->product(
                 $item->getLineItemName(),
                 (int) $item->getLineItemPrice()->getAmount(),

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\Chip\ChipPayment;
+use AIArmada\Cashier\Drivers\Chip\ChipPayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;

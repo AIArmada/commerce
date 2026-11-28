@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways;
+namespace AIArmada\Cashier\Drivers;
 
+use AIArmada\Cashier\Contracts\WebhookEventSource;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
@@ -15,13 +16,13 @@ use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
-use AIArmada\Cashier\Gateways\Stripe\StripeCheckoutBuilder;
-use AIArmada\Cashier\Gateways\Stripe\StripeCustomer;
-use AIArmada\Cashier\Gateways\Stripe\StripeInvoice;
-use AIArmada\Cashier\Gateways\Stripe\StripePayment;
-use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
-use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
-use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
+use AIArmada\Cashier\Drivers\Stripe\StripeCheckoutBuilder;
+use AIArmada\Cashier\Drivers\Stripe\StripeCustomer;
+use AIArmada\Cashier\Drivers\Stripe\StripeInvoice;
+use AIArmada\Cashier\Drivers\Stripe\StripePayment;
+use AIArmada\Cashier\Drivers\Stripe\StripePaymentMethod;
+use AIArmada\Cashier\Drivers\Stripe\StripeSubscription;
+use AIArmada\Cashier\Drivers\Stripe\StripeSubscriptionBuilder;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ use Throwable;
  * This gateway wraps Laravel Cashier for Stripe functionality,
  * providing a unified interface compatible with the multi-gateway system.
  */
-class StripeGateway extends AbstractGateway
+class StripeGateway extends AbstractGateway implements WebhookEventSource
 {
     /**
      * Get the gateway name.

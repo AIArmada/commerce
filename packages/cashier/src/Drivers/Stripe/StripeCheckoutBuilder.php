@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Stripe;
+namespace AIArmada\Cashier\Drivers\Stripe;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
-use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use Illuminate\Http\RedirectResponse;
 
 /**

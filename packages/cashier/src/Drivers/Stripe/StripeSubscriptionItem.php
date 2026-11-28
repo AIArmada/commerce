@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Gateways\Chip;
+namespace AIArmada\Cashier\Drivers\Stripe;
 
 use AIArmada\Cashier\Contracts\SubscriptionItemContract;
-use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use Carbon\CarbonInterface;
+use Laravel\Cashier\SubscriptionItem;
 
 /**
- * Wrapper for CHIP subscription item.
+ * Wrapper for Stripe subscription item.
  */
-class ChipSubscriptionItem implements SubscriptionItemContract
+class StripeSubscriptionItem implements SubscriptionItemContract
 {
     /**
-     * Create a new CHIP subscription item wrapper.
+     * Create a new Stripe subscription item wrapper.
      */
     public function __construct(
         protected SubscriptionItem $item
@@ -25,7 +25,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function id(): string
     {
-        return (string) $this->item->id;
+        return (string) $this->item->getKey();
     }
 
     /**
@@ -33,7 +33,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function gatewayId(): string
     {
-        return $this->item->chip_id ?? (string) $this->item->id;
+        return (string) $this->item->getAttribute('stripe_id');
     }
 
     /**
@@ -41,7 +41,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function gateway(): string
     {
-        return 'chip';
+        return 'stripe';
     }
 
     /**
@@ -49,7 +49,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function priceId(): string
     {
-        return $this->item->chip_price ?? '';
+        return (string) $this->item->getAttribute('stripe_price');
     }
 
     /**
@@ -57,7 +57,9 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function productId(): ?string
     {
-        return $this->item->chip_product;
+        $product = $this->item->getAttribute('stripe_product');
+
+        return is_string($product) && $product !== '' ? $product : null;
     }
 
     /**
@@ -65,7 +67,9 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function quantity(): ?int
     {
-        return $this->item->quantity;
+        $quantity = $this->item->getAttribute('quantity');
+
+        return is_int($quantity) ? $quantity : null;
     }
 
     /**
@@ -73,7 +77,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function currentPeriodStart(): ?CarbonInterface
     {
-        return $this->item->subscription?->currentPeriodStart();
+        return $this->item->currentPeriodStart();
     }
 
     /**
@@ -81,7 +85,7 @@ class ChipSubscriptionItem implements SubscriptionItemContract
      */
     public function currentPeriodEnd(): ?CarbonInterface
     {
-        return $this->item->subscription?->currentPeriodEnd();
+        return $this->item->currentPeriodEnd();
     }
 
     /**

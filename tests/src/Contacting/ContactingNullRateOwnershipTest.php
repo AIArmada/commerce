@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\Stripe\StripeCustomer;
+use AIArmada\Cashier\Drivers\Stripe\StripeCustomer;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;

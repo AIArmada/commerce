@@ -97,9 +97,7 @@ class GatewayManager extends Manager
             );
         }
 
-        $config = $this->config->get('cashier.gateways.stripe', []);
-
-        return $this->buildGateway('stripe', Gateways\StripeGateway::class, $config);
+        return $this->container->make('cashier.gateway.stripe');
     }
 
     /**
@@ -113,23 +111,7 @@ class GatewayManager extends Manager
             );
         }
 
-        $config = $this->config->get('cashier.gateways.chip', []);
-
-        return $this->buildGateway('chip', Gateways\ChipGateway::class, $config);
+        return $this->container->make('cashier.gateway.chip');
     }
 
-    /**
-     * Build a gateway instance.
-     *
-     * @param  class-string<GatewayContract>  $class
-     * @param  array<string, mixed>  $config
-     */
-    protected function buildGateway(string $name, string $class, array $config): GatewayContract
-    {
-        if (! class_exists($class)) {
-            throw new GatewayNotFoundException("Gateway class [{$class}] not found. Make sure the required package is installed.");
-        }
-
-        return new $class($config);
-    }
 }

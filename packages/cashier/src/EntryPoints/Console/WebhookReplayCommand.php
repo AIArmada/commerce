@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\EntryPoints\Console;
 use AIArmada\Cashier\Actions\SyncWebhook;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Cashier\Contracts\WebhookEventSource;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -74,7 +74,7 @@ final class WebhookReplayCommand extends Command
     {
         $gatewayInstance = $gatewayManager->gateway($gateway);
 
-        if ($gatewayInstance instanceof StripeGateway) {
+        if ($gatewayInstance instanceof WebhookEventSource) {
             return $gatewayInstance->fetchWebhookEvent($eventId);
         }
 
