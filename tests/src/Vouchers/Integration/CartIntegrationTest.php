@@ -8,8 +8,8 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {

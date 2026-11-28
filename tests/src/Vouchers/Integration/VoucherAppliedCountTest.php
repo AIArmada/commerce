@@ -6,8 +6,8 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {

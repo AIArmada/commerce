@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**

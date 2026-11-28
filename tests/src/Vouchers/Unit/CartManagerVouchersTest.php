@@ -9,9 +9,9 @@ use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
-use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
+use AIArmada\Vouchers\Stacking\StackingPolicy;
 
 beforeEach(function (): void {
     $manager = app(CartManagerInterface::class);

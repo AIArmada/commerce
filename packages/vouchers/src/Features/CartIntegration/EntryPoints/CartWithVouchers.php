@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Traits\InteractsWithVouchers;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 
 /** Wraps a cart with voucher operations. */
 class CartWithVouchers
