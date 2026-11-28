@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Models\SeatHold;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -21,13 +20,13 @@ class ReleaseExpiredHoldsCommand extends Command
     {
         $chunk = max(1, min(5000, (int) $this->option('chunk')));
 
-        $released = OwnerContext::withOwner(null, fn (): int => (int) (new OwnerBatchRunner(
+        $released = (int) (new OwnerBatchRunner(
             SeatHold::class,
             [
                 'enabled' => 'seating.owner.enabled',
                 'include_global' => 'seating.owner.include_global',
             ],
-        ))->forEach(fn (): int => $this->releaseForCurrentOwner($chunk))->sum());
+        ))->forEachAcrossOwners(fn (): int => $this->releaseForCurrentOwner($chunk))->sum();
 
         $this->info("Released {$released} expired hold(s).");
 
