@@ -10,15 +10,12 @@ use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
-use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -33,7 +30,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * Lock order: programs, then enrollments, then acceptances, then periods.
  * Bulk callers must process (program_id, member_type, member_id) in sorted
- * order. The unique identity constraint arbitrates creation races.
+ * order. The program lock serializes enrollment creation; the unique
+ * identity constraint rejects conflicting writes.
  */
 final readonly class EnrollRewardMemberAction
 {
@@ -93,30 +91,13 @@ final readonly class EnrollRewardMemberAction
                 ->first();
 
             if (! $enrollment instanceof RewardEnrollment) {
-                try {
-                    $enrollment = RewardEnrollment::query()->create([
-                        'program_id' => $programId,
-                        'member_type' => $memberType,
-                        'member_id' => $memberId,
-                        'status' => RewardEnrollmentStatus::Active,
-                        'enrolled_at' => $decision,
-                    ]);
-                } catch (QueryException $exception) {
-                    if (! RewardUniqueViolation::matches($exception)) {
-                        throw $exception;
-                    }
-
-                    $enrollment = RewardEnrollment::query()
-                        ->where('program_id', $programId)
-                        ->where('member_type', $memberType)
-                        ->where('member_id', $memberId)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $enrollment instanceof RewardEnrollment) {
-                        throw new LogicException('Enrollment creation raced but the row is missing.');
-                    }
-                }
+                $enrollment = RewardEnrollment::query()->create([
+                    'program_id' => $programId,
+                    'member_type' => $memberType,
+                    'member_id' => $memberId,
+                    'status' => RewardEnrollmentStatus::Active,
+                    'enrolled_at' => $decision,
+                ]);
 
                 $acceptance = $this->appendAcceptance($enrollment, $version, $acceptedVia, $decision);
 
