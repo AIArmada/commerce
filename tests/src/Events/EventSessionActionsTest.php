@@ -713,3 +713,24 @@ it('rejects duplicate session slugs within an event but allows reuse across even
     expect($second->refresh()->slug)->toBe('second-session')
         ->and($update->handle($other, ['slug' => $first->slug])['session']->slug)->toBe($first->slug);
 });
+
+it('does not dispatch session lifecycle events from rolled back transactions', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventSessionCancelled::class]);
+
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'status' => 'scheduled',
+    ]);
+
+    expect(fn () => Illuminate\Support\Facades\DB::transaction(function () use ($session): void {
+        $session->cancel('Cancelled inside transaction');
+
+        Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCancelled::class);
+
+        throw new RuntimeException('Rollback cancellation');
+    }))->toThrow(RuntimeException::class, 'Rollback cancellation');
+
+    expect($session->refresh()->status->getValue())->toBe('scheduled');
+    Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCancelled::class);
+});

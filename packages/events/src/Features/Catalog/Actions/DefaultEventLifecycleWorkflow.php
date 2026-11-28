@@ -54,7 +54,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
             $this->recordChange($eventId, 'published');
 
-            event(new EventPublished($eventId));
+            DB::afterCommit(static fn () => event(new EventPublished($eventId)));
         });
     }
 
@@ -71,12 +71,12 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
             $this->recordChange($context['event_id'], 'cancelled', $reason, $context['occurrence_id'], $context['session_id']);
 
-            match ($targetType) {
+            DB::afterCommit(static fn () => match ($targetType) {
                 'event' => event(new EventCancelled($context['event_id'], $context['occurrence_id'], $reason)),
                 'occurrence' => event(new EventOccurrenceCancelled($targetId, $context['event_id'], $reason)),
                 'session' => event(new EventSessionCancelled($targetId, $context['event_id'], $context['occurrence_id'], $reason)),
                 default => null,
-            };
+            });
         });
     }
 
@@ -93,12 +93,12 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
             $this->recordChange($context['event_id'], 'postponed', $reason, $context['occurrence_id'], $context['session_id']);
 
-            match ($targetType) {
+            DB::afterCommit(static fn () => match ($targetType) {
                 'event' => event(new EventPostponed($context['event_id'], $context['occurrence_id'], $reason)),
                 'occurrence' => event(new EventOccurrencePostponed($targetId, $context['event_id'], $reason)),
                 'session' => event(new EventSessionPostponed($targetId, $context['event_id'], $context['occurrence_id'], $reason)),
                 default => null,
-            };
+            });
         });
     }
 
@@ -128,9 +128,9 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
                 : CarbonImmutable::createFromInterface($expectedStartsAt)->setTimezone('UTC');
 
             if ($targetType === 'session') {
-                event(new EventSessionDelayed($targetId, $context['event_id'], $reason, $expected));
+                DB::afterCommit(static fn () => event(new EventSessionDelayed($targetId, $context['event_id'], $reason, $expected)));
             } else {
-                event(new EventOccurrenceDelayed($targetId, $context['event_id'], $reason, $expected));
+                DB::afterCommit(static fn () => event(new EventOccurrenceDelayed($targetId, $context['event_id'], $reason, $expected)));
             }
         });
     }
@@ -194,7 +194,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             $occurrenceOrSessionEndsAt = $endsAt ?? $startsAt;
 
             if ($targetType === 'session') {
-                event(new EventSessionRescheduled(
+                DB::afterCommit(static fn () => event(new EventSessionRescheduled(
                     $targetId,
                     $context['event_id'],
                     $startsAt,
@@ -202,16 +202,16 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
                     $context['occurrence_id'],
                     $previousStartsAt,
                     $previousEndsAt,
-                ));
+                )));
             } else {
-                event(new EventOccurrenceRescheduled(
+                DB::afterCommit(static fn () => event(new EventOccurrenceRescheduled(
                     $targetId,
                     $context['event_id'],
                     $startsAt,
                     $occurrenceOrSessionEndsAt,
                     $previousStartsAt,
                     $previousEndsAt,
-                ));
+                )));
             }
 
             return $targetId;
@@ -231,9 +231,9 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             $this->recordChange($context['event_id'], 'completed', null, $context['occurrence_id'], $context['session_id']);
 
             if ($targetType === 'session') {
-                event(new EventSessionCompleted($targetId, $context['event_id']));
+                DB::afterCommit(static fn () => event(new EventSessionCompleted($targetId, $context['event_id'])));
             } elseif ($targetType === 'occurrence') {
-                event(new EventOccurrenceCompleted($targetId, $context['event_id']));
+                DB::afterCommit(static fn () => event(new EventOccurrenceCompleted($targetId, $context['event_id'])));
             }
         });
     }
@@ -256,7 +256,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             $this->recordChange($context['event_id'], 'archived', $reason, $context['occurrence_id'], $context['session_id']);
 
             if ($targetType === 'event') {
-                event(new EventArchived($context['event_id'], $context['occurrence_id'], $reason));
+                DB::afterCommit(static fn () => event(new EventArchived($context['event_id'], $context['occurrence_id'], $reason)));
             }
         });
     }

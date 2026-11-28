@@ -162,45 +162,9 @@ it('scopes slug uniqueness to the current owner', function (): void {
     expect($failsUnderA)->toBeTrue();
 });
 
-it('keeps occurrence and session slugs globally unique', function (): void {
-    // Occurrences and sessions intentionally carry no owner columns
-    // (ScopesByEventOwner resolves ownership through the parent event), so
-    // per-owner slug scoping is not applicable there: uniqueness stays
-    // global. Owner-style wheres must never be added — on SQLite they
-    // silently match nothing (quoted unknown identifiers degrade to string
-    // literals), which would neuter the rule instead of scoping it.
-    $ownerA = User::query()->create([
-        'name' => 'Slug Owner C',
-        'email' => 'slug-owner-c-' . uniqid() . '@example.com',
-        'password' => 'secret',
-    ]);
-    $ownerB = User::query()->create([
-        'name' => 'Slug Owner D',
-        'email' => 'slug-owner-d-' . uniqid() . '@example.com',
-        'password' => 'secret',
-    ]);
-
-    OwnerContext::withOwner($ownerA, function (): void {
-        $event = Event::factory()->create(['slug' => 'slug-scope-event']);
-        EventOccurrence::factory()->create(['event_id' => $event->id, 'slug' => 'shared-child-slug']);
-        EventSession::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $event->occurrences()->first()->id,
-            'slug' => 'shared-child-slug',
-        ]);
-    });
-
-    OwnerContext::withOwner($ownerB, function (): void {
-        $occurrenceRule = recordPlacement_slugRule(EventOccurrenceResource::class, EventOccurrence::class);
-        $sessionRule = recordPlacement_slugRule(EventSessionResource::class, EventSession::class);
-
-        expect($occurrenceRule)->toBeInstanceOf(Unique::class)
-            ->and($sessionRule)->toBeInstanceOf(Unique::class)
-            ->and((string) $occurrenceRule)->not->toContain('owner_type')
-            ->and((string) $sessionRule)->not->toContain('owner_type')
-            ->and(Validator::make(['slug' => 'shared-child-slug'], ['slug' => $occurrenceRule])->fails())->toBeTrue()
-            ->and(Validator::make(['slug' => 'shared-child-slug'], ['slug' => $sessionRule])->fails())->toBeTrue();
-    });
+it('leaves schedule slug uniqueness to the owning domain action', function (): void {
+    expect(recordPlacement_slugRule(EventOccurrenceResource::class, EventOccurrence::class))->toBeNull()
+        ->and(recordPlacement_slugRule(EventSessionResource::class, EventSession::class))->toBeNull();
 });
 
 it('shows schedule lifecycle actions only for permitted state transitions', function (string $resource, string $model): void {
