@@ -73,7 +73,12 @@ class ListRewardFunding extends ListRecords
                 ->modalHeading('Record confirmed funding')
                 ->modalDescription('Allocate confirmed value from a recorded source to one program. Record the source first; this never moves live money.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => app(RewardProgramDirectoryApi::class)->options())->required()->searchable(),
+                    Select::make('program_id')
+                        ->label('Program')
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => app(RewardProgramDirectoryApi::class)->options($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) && $value !== '' ? app(RewardProgramDirectoryApi::class)->title($value) : null)
+                        ->required(),
                     TextInput::make('currency')->required()->maxLength(3)->default('MYR'),
                     TextInput::make('amount_minor')->label('Amount (minor units)')->required()->numeric()->minValue(1),
                     TextInput::make('source_ref')->label('Source reference')->required()->maxLength(191),

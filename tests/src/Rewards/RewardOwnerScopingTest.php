@@ -48,6 +48,7 @@ use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -871,4 +872,25 @@ it('batch validates linked awards while rejecting foreign provenance', function 
         $ownerB,
         fn () => $awards->assertAwardsInScopeWhenExist([$missingId, $awardId]),
     ))->toThrow(AuthorizationException::class);
+});
+
+it('bounds program directory searches and treats wildcard characters literally within the owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $literal = OwnerContext::withOwner($owner, static function (): RewardProgram {
+        RewardProgram::factory()->count(26)->create(['title' => 'Directory ordinary']);
+        RewardProgram::factory()->create(['title' => 'Directory 100Xabc']);
+
+        return RewardProgram::factory()->create(['title' => 'Directory 100%_literal']);
+    });
+
+    $foreign = OwnerContext::withOwner($other, static fn (): RewardProgram => RewardProgram::factory()->create(['title' => 'Directory 100%_foreign']));
+    $directory = app(RewardProgramDirectoryApi::class);
+
+    OwnerContext::withOwner($owner, static function () use ($directory, $literal, $foreign): void {
+        expect($directory->options('Directory'))->toHaveCount(25)
+            ->and($directory->options('100%_'))->toBe([(string) $literal->getKey() => $literal->title])
+            ->and($directory->title((string) $foreign->getKey()))->toBeNull();
+    });
 });

@@ -11,3 +11,5 @@ Payout handlers require the corresponding `approve`, `submit`, `confirm`, `recon
 Payee verification and rejection require `verify` and `reject` Gate abilities on the record (or the payee model class for register-and-verify). Benefit grant handlers require `fulfill`, `consume`, `cancel`, `recordRecall`, `revoke`, or `expire` on the grant, and catalog retirement requires `retire` on the item. Host applications must explicitly authorize these operations; staff membership alone is insufficient.
 
 Program header actions require `publishVersion`, `transitionStatus`, and `previewQualification` on the current scoped program. Funding source recording requires `record` on the funding source class; funding allocation requires `record` on the funding entry class with the target program ID. Catalog creation requires `create` on the benefit item class with the target program ID. These checks run before any action or ledger mutation.
+
+Use the program directory's bounded `options($search)` for server-side program selectors and `title($id)` for the selected label. Both queries respect the current owner scope; search wildcards are treated literally.

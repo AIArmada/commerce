@@ -41,7 +41,12 @@ class ListRewardBenefitItems extends ListRecords
                 ->modalHeading('Create benefit catalog item')
                 ->modalDescription('Terms freeze at creation. Take either a point cost or direct entitlement.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => app(RewardProgramDirectoryApi::class)->options())->required()->searchable(),
+                    Select::make('program_id')
+                        ->label('Program')
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => app(RewardProgramDirectoryApi::class)->options($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) && $value !== '' ? app(RewardProgramDirectoryApi::class)->title($value) : null)
+                        ->required(),
                     TextInput::make('benefit_key')->label('Key (slug)')->required()->maxLength(64),
                     TextInput::make('title')->required()->maxLength(191),
                     Textarea::make('conditions')->label('Conditions (one per line)')->required()->rows(3),

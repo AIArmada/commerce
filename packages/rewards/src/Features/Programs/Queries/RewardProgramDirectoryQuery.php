@@ -18,9 +18,18 @@ final readonly class RewardProgramDirectoryQuery implements RewardProgramDirecto
         return is_string($title) ? $title : null;
     }
 
-    public function options(): array
+    public function options(string $search = ''): array
     {
-        return RewardProgram::query()->orderBy('title')->orderBy('id')->pluck('title', 'id')->all();
+        $search = mb_trim($search);
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($search));
+
+        $query = RewardProgram::query();
+
+        if ($escaped !== '') {
+            $query->whereRaw("LOWER(title) LIKE ? ESCAPE '!'", ["%{$escaped}%"]);
+        }
+
+        return $query->orderBy('title')->orderBy('id')->limit(25)->pluck('title', 'id')->all();
     }
 
     public function versionCount(string $programId): int
