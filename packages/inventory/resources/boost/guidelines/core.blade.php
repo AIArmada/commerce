@@ -22,10 +22,12 @@ FEFO batch planning belongs to `Features/Traceability/Queries/FefoStrategy`; nea
 
 Reorder suggestion reporting uses `Features/Replenishment/Api/ReorderSuggestionCounts`; implement `Contracts/ExportableInterface` for custom export rows.
 
-Dashboard and location stock values represent recorded remaining cost layers in `inventory.defaults.currency`, defaulting to FIFO. Pass `CostingMethod::WeightedAverage` for weighted-average layers. Standard cost is not a layer-based valuation and is not supported by these reports. Uncosted stock is not included in monetary totals.
+Dashboard and location stock values represent recorded remaining cost layers in `inventory.defaults.currency`, defaulting to FIFO. Pass `CostingMethod::WeightedAverage` for weighted-average layers. Standard costing values physical on-hand balances at the effective standard cost in the configured currency. Uncosted stock is not included in monetary totals.
 
-ABC analysis ranks positive remaining monetary cost-layer values, not physical quantities. It uses the full valued inventory denominator even when the displayed result is limited. A SKU crossing a class threshold remains in the class where its cumulative contribution began.
+ABC analysis ranks positive monetary inventory values, not physical quantities. It uses the full valued inventory denominator even when the displayed result is limited. A SKU crossing a class threshold remains in the class where its cumulative contribution began.
 
-Stagnant-stock reporting returns recorded cost-layer value for the exact SKU/location and `null` when no matching cost is recorded. Reorder value uses linked supplier order costs in the reporting currency for pending/approved suggestions, with an explicit unpriced count. Ordered suggestions are excluded.
+Stagnant-stock reporting returns recorded inventory value for the exact SKU/location and `null` when no matching cost is recorded. Reorder value uses linked supplier order costs in the reporting currency for pending/approved suggestions, with an explicit unpriced count. Ordered suggestions are excluded.
 
 Cycle counts are recorded through `AdjustInventory` with canonical reason `cycle_count`, including accurate zero-variance counts. Adjustment movements record locked before/after quantities. Cycle-count monetary variance is unavailable (`null`) for nonzero variances without historical cost evidence; percentage is unavailable if any count lacks a meaningful baseline.
+
+Use `Features/Valuation/Api/InventoryValues` for reporting across FIFO, weighted-average and standard costing. Standard-cost lookup matches exact stock owner and item identities, with no cross-owner fallback.

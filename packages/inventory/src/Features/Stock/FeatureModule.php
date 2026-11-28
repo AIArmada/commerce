@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock;
 
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Features\Stock\Queries\LocationVisibilityQuery;
+use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
@@ -18,6 +20,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->singleton(FulfillmentLocationService::class);
         $app->singleton(LocationVisibility::class, LocationVisibilityQuery::class);
+        $app->singleton(StockBalances::class, StockBalancesQuery::class);
         $app->singleton(StockHealth::class, StockHealthQuery::class);
     }
 

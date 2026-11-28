@@ -13,7 +13,9 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Valuation\Api\InventoryValues;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -665,4 +667,38 @@ it('reports cycle count percentages from recorded before quantities without inve
         ->and($result['total_variance_units'])->toBe(6)
         ->and($result['avg_variance_percentage'])->toBe(13.33)
         ->and($result['total_variance_value'])->toBeNull();
+});
+
+it('uses effective standard cost and physical on-hand balances across valuation reports', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 10,
+        'quantity_reserved' => 2,
+        'updated_at' => now()->subDays(120),
+    ]);
+
+    foreach ([
+        ['MYR', 120, now()->subMonth(), null],
+        ['USD', 900, now()->subDay(), null],
+        ['MYR', 500, now()->addDay(), null],
+        ['MYR', 60, now()->subMonths(3), now()->subMonths(2)],
+    ] as [$currency, $cost, $from, $to]) {
+        InventoryStandardCost::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'standard_cost_minor' => $cost,
+            'currency' => $currency,
+            'effective_from' => $from,
+            'effective_to' => $to,
+        ]);
+    }
+
+    expect($this->report->getStockByLocation(CostingMethod::Standard)->first()['total_value'])->toBe(1200)
+        ->and($this->report->getAbcAnalysis(method: CostingMethod::Standard)->first()['total_value'])->toBe(1200)
+        ->and($this->report->getDeadStock(method: CostingMethod::Standard)->first()['value'])->toBe(1200)
+        ->and(app(InventoryValues::class)->total(CostingMethod::Standard, 'MYR'))->toBe(1200);
 });

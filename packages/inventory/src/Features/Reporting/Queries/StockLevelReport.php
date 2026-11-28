@@ -12,7 +12,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Api\BatchAging;
-use AIArmada\Inventory\Features\Valuation\Api\CostLayerValues;
+use AIArmada\Inventory\Features\Valuation\Api\InventoryValues;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -139,7 +139,7 @@ final class StockLevelReport
                 ->groupBy('location_id')
         );
 
-        $values = app(CostLayerValues::class)->byLocation($method, (string) config('inventory.defaults.currency', 'MYR'));
+        $values = app(InventoryValues::class)->byLocation($method, (string) config('inventory.defaults.currency', 'MYR'));
 
         /** @var Collection<int, array{location_id: string, location_name: string, sku_count: int, total_quantity: int, total_value: int, low_stock_count: int, out_of_stock_count: int}> $stockByLocation */
         $stockByLocation = $query->get()
@@ -169,7 +169,7 @@ final class StockLevelReport
      */
     public function getAbcAnalysis(int $limit = 500, CostingMethod $method = CostingMethod::Fifo): Collection
     {
-        $items = app(CostLayerValues::class)->rankedItems(
+        $items = app(InventoryValues::class)->rankedItems(
             $method,
             (string) config('inventory.defaults.currency', 'MYR'),
             $limit,
@@ -330,7 +330,7 @@ final class StockLevelReport
             'location_id' => (string) $row->location_id,
         ])->values()->all();
 
-        $values = app(CostLayerValues::class)->byItemsAtLocations(
+        $values = app(InventoryValues::class)->byItemsAtLocations(
             $method,
             (string) config('inventory.defaults.currency', 'MYR'),
             $items,

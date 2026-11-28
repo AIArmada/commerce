@@ -9,7 +9,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Valuation\Api\CostLayerValues;
+use AIArmada\Inventory\Features\Valuation\Api\InventoryValues;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -256,7 +256,7 @@ final class InventoryKpiService
         );
 
         $totalSkus = DB::query()->fromSub($stockLevelsQuery->toBase(), 'grouped_skus')->count();
-        $totalValue = app(CostLayerValues::class)->total($method, (string) config('inventory.defaults.currency', 'MYR'));
+        $totalValue = app(InventoryValues::class)->total($method, (string) config('inventory.defaults.currency', 'MYR'));
 
         $lowStockQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()->lowStock()

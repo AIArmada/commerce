@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Valuation\Api;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 
-interface CostLayerValues
+interface InventoryValues
 {
     public function total(CostingMethod $method, string $currency): int;
 
