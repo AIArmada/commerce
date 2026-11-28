@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Docs\Actions\RecordDocPayment;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
@@ -125,9 +125,11 @@ final class PaymentsRelationManager extends RelationManager
         DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
 
         try {
-            return app(RecordDocPayment::class)->execute($doc, array_merge($data, [
+            $id = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), array_merge($data, [
                 'currency' => $doc->currency,
             ]));
+
+            return $doc->payments()->findOrFail($id);
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw ValidationException::withMessages([
                 'amount_minor' => $exception->getMessage(),
@@ -149,7 +151,7 @@ final class PaymentsRelationManager extends RelationManager
             ]);
         }
 
-        foreach (['amount_minor', 'currency', 'payment_method'] as $immutable) {
+        foreach (['amount_minor', 'currency', 'payment_method', 'transaction_id'] as $immutable) {
             if (array_key_exists($immutable, $data)
                 && (string) $data[$immutable] !== (string) $payment->getAttribute($immutable)) {
                 throw ValidationException::withMessages([
@@ -160,7 +162,6 @@ final class PaymentsRelationManager extends RelationManager
 
         $payment->update(array_intersect_key($data, array_flip([
             'reference',
-            'transaction_id',
             'notes',
             'paid_at',
         ])));

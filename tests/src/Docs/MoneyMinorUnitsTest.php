@@ -102,3 +102,18 @@ it('captures immutable document dates rather than retaining mutable caller objec
     expect($data->issueDate?->format('Y-m-d'))->toBe('2026-11-28')
         ->and($data->dueDate?->format('Y-m-d'))->toBe('2026-11-28');
 });
+
+it('replays the same document payment transaction without recording it twice', function (): void {
+    $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100, 'currency' => 'MYR']);
+    $service = app(DocService::class);
+    $data = ['amount_minor' => 100, 'currency' => 'MYR', 'payment_method' => 'cash', 'transaction_id' => 'payment-replay-1'];
+
+    $first = $service->recordPayment($doc, $data);
+    $second = $service->recordPayment($doc, $data);
+
+    expect($second->getKey())->toBe($first->getKey())
+        ->and($doc->payments()->count())->toBe(1);
+
+    expect(fn () => $service->recordPayment($doc, array_replace($data, ['amount_minor' => 99])))
+        ->toThrow(InvalidArgumentException::class, 'different payment details');
+});

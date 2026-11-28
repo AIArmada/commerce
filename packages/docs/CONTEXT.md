@@ -44,7 +44,7 @@ keywords:
 ## Key surfaces
 - Numbering feature: `Features/Numbering` owns sequence configuration and counters; document creation uses `Contracts/DocumentSequence`.
 - Models: `Doc`, `DocApproval`, `DocEInvoiceSubmission`, `DocEmail`, `DocEmailTemplate`, `DocPayment`, `DocSequence`, `DocShareLink`, `DocStatusHistory`, `DocTemplate`, `DocVersion`, `DocWorkflow`, `DocWorkflowStep`, `SequenceNumber`
-- Actions/Services: `Services/DocEmailService`, `Actions/RecordDocPayment`, `Services/DocRenderService`, `Services/DocService`, `Services/DocTotals`, `Services/DueDocReminders`, `Services/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
+- Actions/Services: `Services/DocEmailService`, `Features/Payments/Actions/RecordDocPayment`, `Services/DocRenderService`, `Services/DocService`, `Services/DocTotals`, `Services/DueDocReminders`, `Services/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
 - Config `docs.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `docs`, `doc_templates`, `doc_share_links`, `doc_status_histories`, `doc_payments`, `doc_email_templates`
 
 ## Docs map

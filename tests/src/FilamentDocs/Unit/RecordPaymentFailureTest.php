@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Actions\RecordDocPayment;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\States\Sent;
@@ -53,7 +53,7 @@ it('notifies instead of throwing when payment recording fails unexpectedly (M1)'
         'currency' => 'MYR',
     ]);
 
-    app()->bind(RecordDocPayment::class, fn (): never => throw new RuntimeException('gateway down'));
+    app()->bind(DocumentPaymentRecorder::class, fn (): never => throw new RuntimeException('gateway down'));
 
     filamentDocs_invokeRecordPayment($doc, [
         'amount_minor' => 10,

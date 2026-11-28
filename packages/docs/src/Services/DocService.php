@@ -7,7 +7,7 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Actions\CreateDocVersion;
-use AIArmada\Docs\Actions\RecordDocPayment;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
@@ -43,7 +43,7 @@ final class DocService implements DocServiceInterface
         protected DocumentNumberRegistry $numberRegistry,
         protected DocumentSequence $sequenceManager,
         protected DocTotals $totals,
-        protected RecordDocPayment $paymentRecorder,
+        protected DocumentPaymentRecorder $paymentRecorder,
     ) {}
 
     /**
@@ -412,7 +412,9 @@ final class DocService implements DocServiceInterface
      */
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
-        return $this->paymentRecorder->execute($doc, $paymentData);
+        $paymentId = $this->paymentRecorder->record((string) $doc->getKey(), $paymentData);
+
+        return $doc->payments()->findOrFail($paymentId);
     }
 
     /**

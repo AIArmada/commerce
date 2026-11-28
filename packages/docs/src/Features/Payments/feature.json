@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Payments",
+  "owns": {
+    "table:docs_payments": [
+      "AIArmada\\Docs\\Features\\Payments\\Actions\\RecordDocPayment"
+    ]
+  },
+  "extensions": {}
+}

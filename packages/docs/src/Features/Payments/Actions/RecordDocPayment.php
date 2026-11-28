@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Actions;
+namespace AIArmada\Docs\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
@@ -17,21 +18,21 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
 
-final readonly class RecordDocPayment
+final readonly class RecordDocPayment implements DocumentPaymentRecorder
 {
     /**
      * @param  array<string, mixed>  $paymentData
      */
-    public function execute(Doc $doc, array $paymentData): DocPayment
+    public function record(string $docId, array $paymentData): string
     {
-        return DB::transaction(function () use ($doc, $paymentData): DocPayment {
+        return DB::transaction(function () use ($docId, $paymentData): string {
             $owner = config('docs.owner.enabled', false) ? OwnerContext::resolve() : null;
             $includeGlobal = (bool) config('docs.owner.include_global', false);
 
             if (config('docs.owner.enabled', false)) {
                 OwnerWriteGuard::findOrFailForOwner(
                     Doc::class,
-                    (string) $doc->getKey(),
+                    $docId,
                     owner: $owner,
                     includeGlobal: $includeGlobal,
                     message: 'Document is not available in the current owner scope.',
@@ -40,15 +41,15 @@ final readonly class RecordDocPayment
 
             $lockedDoc = Doc::query()
                 ->forOwner($owner, $includeGlobal)
-                ->whereKey($doc->getKey())
+                ->whereKey($docId)
                 ->lockForUpdate()
                 ->first();
 
             if (! $lockedDoc instanceof Doc) {
-                throw (new ModelNotFoundException)->setModel(Doc::class, [$doc->getKey()]);
+                throw (new ModelNotFoundException)->setModel(Doc::class, [$docId]);
             }
 
-            return OwnerContext::withOwner($lockedDoc->owner, function () use ($lockedDoc, $paymentData): DocPayment {
+            return OwnerContext::withOwner($lockedDoc->owner, function () use ($lockedDoc, $paymentData): string {
                 $paymentCurrency = mb_strtoupper((string) ($paymentData['currency'] ?? $lockedDoc->currency));
 
                 if ($paymentCurrency !== mb_strtoupper($lockedDoc->currency)) {
@@ -63,6 +64,28 @@ final readonly class RecordDocPayment
 
                 if (! is_string($paymentMethod) || ! array_key_exists($paymentMethod, config('docs.payment_methods', []))) {
                     throw new InvalidArgumentException('Payment payment_method is not supported.');
+                }
+
+                $transactionId = $paymentData['transaction_id'] ?? null;
+
+                if ($transactionId !== null) {
+                    if (! is_string($transactionId) || mb_trim($transactionId) === '' || mb_strlen($transactionId) > 255) {
+                        throw new InvalidArgumentException('Payment transaction_id must be a non-empty string of at most 255 characters.');
+                    }
+
+                    $existing = $lockedDoc->payments()->where('transaction_id', $transactionId)->first();
+
+                    if ($existing instanceof DocPayment) {
+                        if ($existing->amount_minor !== $paymentData['amount_minor'] || $existing->currency !== $paymentCurrency || $existing->payment_method !== $paymentMethod || $existing->status !== DocPaymentStatus::Paid) {
+                            throw new InvalidArgumentException('Payment transaction_id already exists with different payment details.');
+                        }
+
+                        return (string) $existing->getKey();
+                    }
+                }
+
+                if (! $lockedDoc->canBePaid()) {
+                    throw new InvalidArgumentException('Document is not payable in its current status.');
                 }
 
                 $totalPaidBefore = (int) $lockedDoc->payments()
@@ -114,7 +137,7 @@ final readonly class RecordDocPayment
                     );
                 }
 
-                return $payment;
+                return (string) $payment->getKey();
             });
         });
     }

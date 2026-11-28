@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Docs\Actions\RecordDocPayment;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Overdue;
@@ -115,7 +115,7 @@ final class RecordPaymentAction
         $amountMinor = (int) $data['amount_minor'];
 
         try {
-            app(RecordDocPayment::class)->execute($record, [
+            app(DocumentPaymentRecorder::class)->record((string) $record->getKey(), [
                 'amount_minor' => $amountMinor,
                 'currency' => $record->currency,
                 'payment_method' => $data['payment_method'],
