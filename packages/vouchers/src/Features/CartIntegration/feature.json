@@ -6,5 +6,9 @@
       "AIArmada\\Vouchers\\Features\\CartIntegration\\Actions\\ManageVoucherReservations"
     ]
   },
-  "extensions": {}
+  "extensions": {
+    "cart.conditions": [
+      "AIArmada\\Vouchers\\Features\\CartIntegration\\Extensions\\VoucherConditionProvider"
+    ]
+  }
 }

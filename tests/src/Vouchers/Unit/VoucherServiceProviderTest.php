@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -12,8 +13,10 @@ use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Platform\ExtensionRegistry;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Vouchers\VoucherServiceProvider;
@@ -77,6 +80,13 @@ describe('VoucherServiceProvider', function (): void {
                 ->and($provides)->toContain(VoucherRulesFactory::class)
                 ->and($provides)->toContain('voucher');
         });
+    });
+
+    it('registers cart condition providers from feature manifests', function (): void {
+        expect(app(ExtensionRegistry::class)->classesFor('cart.conditions'))
+            ->toBe([VoucherConditionProvider::class])
+            ->and(app(ConditionProviderRegistry::class)->providerKeys())
+            ->toContain(VoucherConditionProvider::class);
     });
 
     describe('CartConditionResolver registration', function (): void {

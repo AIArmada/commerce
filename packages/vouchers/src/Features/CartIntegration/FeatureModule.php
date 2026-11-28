@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration;
 
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\ManageVoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\RemoveVoucherFromCart;
@@ -13,11 +14,13 @@ use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
 use AIArmada\Vouchers\Features\CartIntegration\Queries\VoucherValidator;
+use AIArmada\Vouchers\Platform\ExtensionRegistry;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
 use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use RuntimeException;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -33,7 +36,15 @@ final class FeatureModule implements FeatureModuleContract
     public function boot(Application $app): void
     {
         if (class_exists(ConditionProviderRegistry::class)) {
-            $app->make(ConditionProviderRegistry::class)->register(VoucherConditionProvider::class);
+            $registry = $app->make(ConditionProviderRegistry::class);
+
+            foreach ($app->make(ExtensionRegistry::class)->classesFor('cart.conditions') as $provider) {
+                if (! is_a($provider, ConditionProviderInterface::class, true)) {
+                    throw new RuntimeException("Cart condition extension {$provider} must implement " . ConditionProviderInterface::class);
+                }
+
+                $registry->register($provider);
+            }
         }
 
         $event = 'AIArmada\\Checkout\\Events\\CheckoutStarted';
