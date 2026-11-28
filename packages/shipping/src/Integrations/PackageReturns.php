@@ -11,6 +11,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Data\ReturnedPackageUnit;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\PackageUnit;
@@ -181,14 +182,22 @@ final class PackageReturns implements PackageReturnVerifier
         });
     }
 
-    public function receivedUnit(Order $order, string $authorizationId): PackageUnit
+    public function receivedUnit(string $orderId, string $authorizationId): ReturnedPackageUnit
+    {
+        $unit = $this->resolveReceivedUnit($orderId, $authorizationId);
+
+        return new ReturnedPackageUnit((string) $unit->item->getKey(), $unit->ordinal);
+    }
+
+    private function resolveReceivedUnit(string $orderId, string $authorizationId): PackageUnit
     {
         $rma = ReturnAuthorization::query()->findOrFail($authorizationId);
         [$returnOrder, $unit] = $this->resolve($rma);
-        if (! $returnOrder->is($order) || $rma->received_at === null || (! $rma->isReceived() && ! $rma->isCompleted())) {
+        if ((string) $returnOrder->getKey() !== $orderId || $rma->received_at === null || (! $rma->isReceived() && ! $rma->isCompleted())) {
             throw new DomainException('A received package return on this order is required for the refund.');
         }
 
+        $this->assertOwnerBoundaryForMutation($returnOrder, __METHOD__);
         $this->assertContents($rma, $unit, approved: true, inspected: true);
 
         return $unit;
@@ -199,7 +208,7 @@ final class PackageReturns implements PackageReturnVerifier
         return DB::transaction(function () use ($rma, $transactionId): ReturnAuthorization {
             [$rma, $order] = $this->lockReturn($rma);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
-            $unit = $this->receivedUnit($order, $rma->id);
+            $unit = $this->resolveReceivedUnit((string) $order->getKey(), $rma->id);
 
             if ($rma->isCompleted()) {
                 return $rma;

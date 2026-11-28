@@ -6,6 +6,8 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Data\ReturnedPackageUnit;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
@@ -165,7 +167,9 @@ it('requires the complete inspected unit and settles its net price and tax exact
     expect(fn () => $returns->request($shipment, $item->id, 2, 'defective'))->toThrow(DomainException::class);
     $refund = app(RegisterOrderRefund::class);
     $metadata = ['return_authorization_id' => $rma->id];
+    $verifier = app(PackageReturnVerifier::class);
 
+    expect(fn () => $verifier->receivedUnit($order->id, $rma->id))->toThrow(DomainException::class);
     expect(fn () => $refund->execute($order, 1000, 'refund-1', 'Return', $metadata))->toThrow(DomainException::class);
     expect(fn () => $refund->createPending($order, 1000, 'refund-1', 'Return'))->toThrow(DomainException::class, 'authorization');
 
@@ -184,6 +188,14 @@ it('requires the complete inspected unit and settles its net price and tax exact
 
     $returns->receive($rma, $inspection);
     $returns->receive($rma, $inspection);
+
+    $verified = $verifier->receivedUnit($order->id, $rma->id);
+    expect($verified)->toBeInstanceOf(ReturnedPackageUnit::class)
+        ->and($verified->orderItemId)->toBe($item->id)
+        ->and($verified->ordinal)->toBe(1);
+    expect(fn () => $verifier->receivedUnit(Order::factory()->create()->id, $rma->id))
+        ->toThrow(DomainException::class, 'on this order');
+
     $movements = InventoryMovement::query()->where('reason', $rma->rma_number)->get();
     expect($movements)->toHaveCount(1)
         ->and($movements->first()->inventoryable_id)->toBe($first->id)

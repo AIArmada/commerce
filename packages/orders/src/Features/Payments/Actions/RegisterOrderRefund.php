@@ -398,9 +398,9 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             throw new DomainException('A valid package return authorization is required.');
         }
 
-        $unit = app(PackageReturnVerifier::class)->receivedUnit($order, $authorizationId);
+        $unit = app(PackageReturnVerifier::class)->receivedUnit((string) $order->getKey(), $authorizationId);
         $metadata['package_unit'] = [
-            'order_item_id' => $unit->item->id,
+            'order_item_id' => $unit->orderItemId,
             'ordinal' => $unit->ordinal,
         ];
 
