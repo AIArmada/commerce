@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxClass;
+use AIArmada\Tax\Models\TaxRate;
+use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -360,4 +362,17 @@ describe('TaxClass', function () use ($bindTaxOwnerForScoping): void {
 
         $this->assertNull($default);
     });
+});
+
+it('rolls back rate reassignment when a tax class deletion is cancelled', function (): void {
+    config(['tax.features.owner.enabled' => false]);
+    $class = TaxClass::query()->create(['name' => 'Special', 'slug' => 'special']);
+    $zone = TaxZone::factory()->create();
+    $rate = TaxRate::factory()->create(['zone_id' => $zone->id, 'tax_class' => $class->slug]);
+
+    TaxClass::deleting(fn (TaxClass $record): ?bool => $record->is($class) ? false : null);
+
+    expect($class->delete())->toBeFalse()
+        ->and($class->fresh())->not->toBeNull()
+        ->and($rate->fresh()->tax_class)->toBe('special');
 });

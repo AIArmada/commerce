@@ -6,6 +6,7 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -44,6 +45,7 @@ use Spatie\Activitylog\Support\LogOptions;
  */
 class TaxZone extends Model implements Auditable
 {
+    use DeletesAtomically;
     use HasCommerceAudit;
 
     /** @use HasFactory<TaxZoneFactory> */

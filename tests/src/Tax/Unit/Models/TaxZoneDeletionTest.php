@@ -223,3 +223,32 @@ describe('TaxZoneDeletion', function () use ($bindOwner): void {
         $freshZone->delete();
     })->throws(AuthorizationException::class, 'Cross-owner delete blocked for AIArmada\Tax\Models\TaxZone.');
 });
+
+it('rolls back dependent rate deletion when a tax zone deletion is cancelled', function (): void {
+    config(['tax.features.owner.enabled' => false]);
+    $zone = TaxZone::factory()->create();
+    $rate = TaxRate::factory()->create(['zone_id' => $zone->id]);
+
+    TaxZone::deleting(fn (TaxZone $record): ?bool => $record->is($zone) ? false : null);
+
+    expect($zone->delete())->toBeFalse()
+        ->and($zone->fresh())->not->toBeNull()
+        ->and($rate->fresh())->not->toBeNull();
+});
+
+it('rolls back the entire bulk zone deletion when a later deletion is cancelled', function (): void {
+    config(['tax.features.owner.enabled' => false]);
+    $zones = collect([TaxZone::factory()->create(), TaxZone::factory()->create()])->sortBy('id')->values();
+    $first = $zones[0];
+    $last = $zones[1];
+    $rate = TaxRate::factory()->create(['zone_id' => $first->id]);
+
+    TaxZone::deleting(fn (TaxZone $record): ?bool => $record->is($last) ? false : null);
+
+    expect(fn () => app(DeleteTaxZonesAction::class)->execute([$first->id, $last->id]))
+        ->toThrow(RuntimeException::class, 'Tax zone deletion was cancelled.');
+
+    expect($first->fresh())->not->toBeNull()
+        ->and($last->fresh())->not->toBeNull()
+        ->and($rate->fresh())->not->toBeNull();
+});

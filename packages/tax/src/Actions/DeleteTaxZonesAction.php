@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final readonly class DeleteTaxZonesAction
 {
@@ -17,7 +18,9 @@ final readonly class DeleteTaxZonesAction
     {
         DB::transaction(function () use ($ids): void {
             foreach (TaxOwnerScope::lockWritable(TaxZone::query(), $ids) as $record) {
-                $record->delete();
+                if ($record->delete() !== true) {
+                    throw new RuntimeException('Tax zone deletion was cancelled.');
+                }
             }
         });
     }
