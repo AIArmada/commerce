@@ -7,7 +7,9 @@ namespace AIArmada\Ticketing\Features\Passes\Actions;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\States\Activated;
+use AIArmada\Ticketing\States\Issued;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 final readonly class ActivatePassAction
 {
@@ -19,6 +21,10 @@ final readonly class ActivatePassAction
 
             if ($locked->status instanceof Activated) {
                 return $locked;
+            }
+
+            if ($locked->status instanceof Issued && ! $locked->isValid()) {
+                throw new AuthorizationException('A pass with an invalid registration cannot be activated.');
             }
 
             $locked->activated_at ??= CarbonImmutable::now();

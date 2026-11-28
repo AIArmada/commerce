@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\UsePassAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
@@ -14,7 +17,7 @@ beforeEach(function (): void {
 
 it('issues a pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction::class)->handle($pass);
+    app(ActivatePassAction::class)->handle($pass);
 
     expect((string) $pass->fresh()->status)->toBe('activated');
 });
@@ -49,7 +52,7 @@ it('transitions from issued to revoked', function (): void {
 
 it('transitions from activated to used', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass);
+    app(UsePassAction::class)->handle($pass);
 
     expect((string) $pass->fresh()->status)->toBe('used');
 });
@@ -64,7 +67,7 @@ it('transitions from activated to expired', function (): void {
 it('blocks invalid transition', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
 
-    expect(fn () => app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass))
+    expect(fn () => app(UsePassAction::class)->handle($pass))
         ->toThrow(TransitionNotFound::class);
 });
 
@@ -84,4 +87,32 @@ it('returns isValid false when its registration has been refunded', function ():
     $pass->setRelation('registration', $registration);
 
     expect($pass->isValid())->toBeFalse();
+});
+
+it('refuses activation when the associated registration has been refunded', function (): void {
+    $registration = EventRegistration::factory()->create(['status' => 'refunded']);
+    $pass = Pass::factory()->create([
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'issued',
+    ]);
+
+    expect(fn () => app(ActivatePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+
+    expect((string) $pass->fresh()->status)->toBe('issued')
+        ->and($pass->fresh()->activated_at)->toBeNull();
+});
+
+it('refuses redemption when the associated registration has been refunded', function (): void {
+    $registration = EventRegistration::factory()->create(['status' => 'refunded']);
+    $pass = Pass::factory()->create([
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'activated',
+    ]);
+
+    expect(fn () => app(UsePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+
+    expect((string) $pass->fresh()->status)->toBe('activated')
+        ->and($pass->fresh()->used_at)->toBeNull();
 });
