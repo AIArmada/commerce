@@ -9,6 +9,7 @@ use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Features\Points\Models\RewardPointOperation;
 use AIArmada\Rewards\Features\Points\Persistence\RewardPointOperationAuthority;
 use Carbon\CarbonInterface;
+use InvalidArgumentException;
 
 final readonly class ManageRewardPoints implements RewardPointsApi
 {
@@ -25,6 +26,17 @@ final readonly class ManageRewardPoints implements RewardPointsApi
     public function debit(string $recipientType, string $recipientId, string $familyKey, string $unit, int $points, string $operationKey, string $reason, ?string $reservationKey = null, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void
     {
         DebitRewardPointsAction::run($recipientType, $recipientId, $familyKey, $unit, $points, $operationKey, $reason, $reservationKey, $occurredAt, $actorType, $actorId);
+    }
+
+    public function capture(string $reservationKey, string $recipientType, string $recipientId, string $operationKey, string $reason, CarbonInterface $occurredAt, string $actorType, ?string $actorId): void
+    {
+        $reservation = RewardPointOperationAuthority::find(RewardPointOperationAuthority::KIND_RESERVE, $reservationKey);
+
+        if ($reservation === null || $reservation->recipient_type !== $recipientType || $reservation->recipient_id !== $recipientId) {
+            throw new InvalidArgumentException('Grant reservation is missing or belongs to a different recipient.');
+        }
+
+        DebitRewardPointsAction::run($recipientType, $recipientId, $reservation->family_key, $reservation->unit, $reservation->points, $operationKey, $reason, $reservationKey, $occurredAt, $actorType, $actorId);
     }
 
     public function release(string $reservationKey, string $reason, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void

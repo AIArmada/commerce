@@ -185,6 +185,10 @@ final readonly class DebitRewardPointsAction
     ): array {
         if ($reservationKey !== null) {
             return $this->captureReservation(
+                $recipientType,
+                $recipientId,
+                $familyKey,
+                $unit,
                 $reservationKey,
                 $points,
                 $operationKey,
@@ -265,6 +269,10 @@ final readonly class DebitRewardPointsAction
      * @return list<RewardPointMovement>
      */
     private function captureReservation(
+        string $recipientType,
+        string $recipientId,
+        string $familyKey,
+        string $unit,
         string $reservationKey,
         int $points,
         string $operationKey,
@@ -273,23 +281,22 @@ final readonly class DebitRewardPointsAction
         string $actorType,
         ?string $actorId,
     ): array {
-        // Preview the reservation without locks to bind the capture's
-        // ownership terms; reserves and lots are append-only/immutable, so
-        // the preview is stable and every mutation below re-reads under lock.
-        $preview = RewardPointMovement::query()
-            ->where('kind', RewardPointMovementKind::Reserve)
-            ->where('reservation_key', $reservationKey)
-            ->orderBy('id')
-            ->get();
+        $reservation = RewardPointOperationAuthority::find(RewardPointOperationAuthority::KIND_RESERVE, $reservationKey);
 
-        if ($preview->isEmpty()) {
+        if ($reservation === null) {
             throw new InvalidArgumentException('Unknown reservation key.');
         }
 
-        $previewLot = RewardPointLot::query()->whereKey((string) $preview->first()->lot_id)->first();
+        if ($reservation->recipient_type !== $recipientType
+            || $reservation->recipient_id !== $recipientId
+            || $reservation->family_key !== $familyKey
+            || $reservation->unit !== $unit
+        ) {
+            throw new InvalidArgumentException('Reservation is bound to a different recipient, family, or unit.');
+        }
 
-        if (! $previewLot instanceof RewardPointLot) {
-            throw new InvalidArgumentException('Reservation lot is missing.');
+        if ($reservation->points !== $points) {
+            throw new InvalidArgumentException('Capture requires the exact reserved amount; reservations are atomic.');
         }
 
         // Operation identity before locks: concurrent captures of any
@@ -297,14 +304,7 @@ final readonly class DebitRewardPointsAction
         $operation = RewardPointOperationAuthority::claim(
             RewardPointOperationAuthority::KIND_DEBIT,
             $operationKey,
-            $this->terms(
-                (string) $previewLot->recipient_type,
-                (string) $previewLot->recipient_id,
-                (string) $previewLot->family_key,
-                (string) $previewLot->unit,
-                $points,
-                $reservationKey,
-            ),
+            $this->terms($recipientType, $recipientId, $familyKey, $unit, $points, $reservationKey),
             'Debit aggregate',
         );
 
@@ -319,23 +319,23 @@ final readonly class DebitRewardPointsAction
                 throw new InvalidArgumentException('Debit claim is incoherent; refusing to reallocate.');
             }
 
-            $sum = 0;
-
-            foreach ($replay as $movement) {
-                if ($movement->kind !== RewardPointMovementKind::Debit
-                    || (string) $movement->reservation_key !== $reservationKey
-                ) {
-                    throw new InvalidArgumentException('Debit aggregate is already bound to different terms; supply a fresh key.');
-                }
-
-                $sum += (int) $movement->delta;
-            }
-
-            if ($sum !== $points) {
-                throw new InvalidArgumentException('Debit aggregate is already bound to a different amount; supply a fresh key.');
-            }
+            self::assertReplayBinds($replay, $recipientType, $recipientId, $familyKey, $unit, $points, $reservationKey);
 
             return $replay;
+        }
+
+        $lotIds = RewardPointMovement::query()
+            ->where('kind', RewardPointMovementKind::Reserve)
+            ->where('reservation_key', $reservationKey)
+            ->pluck('lot_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        $lots = RewardPointLot::query()->whereIn('id', $lotIds)->orderBy('id')->lockForUpdate()->get();
+
+        if ($lots->count() !== count($lotIds)) {
+            throw new InvalidArgumentException('Reservation lot is missing.');
         }
 
         $reserves = RewardPointMovement::query()
@@ -359,11 +359,7 @@ final readonly class DebitRewardPointsAction
             throw new InvalidArgumentException('Reservation is already resolved; capture requires an active reservation.');
         }
 
-        $reserved = (int) $reserves->sum('delta');
-
-        if ($reserved !== $points) {
-            throw new InvalidArgumentException('Capture requires the exact reserved amount; reservations are atomic.');
-        }
+        ReserveRewardPointsAction::assertReplayBinds($reserves->all(), $recipientType, $recipientId, $familyKey, $unit, $points, $reservationKey);
 
         $created = [];
 

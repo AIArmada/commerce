@@ -204,3 +204,26 @@ it('refuses negative, zero, overflowing, and incoherent point operations', funct
     expect(fn () => ReleaseRewardPointsAction::run('rsv:unknown-1', 'x', CarbonImmutable::parse('2026-06-05T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'Unknown reservation');
 });
+
+it('rejects foreign reservation capture and replay without spending points', function (): void {
+    [$type, $recipient, $family, $unit] = pointsIdentity('capture-owner');
+    [, $otherRecipient, $otherFamily] = pointsIdentity('capture-foreign');
+    $at = CarbonImmutable::parse('2026-06-05T00:00:00Z');
+
+    CreditRewardPointsAction::run($type, $recipient, $family, $unit, 25, $at, null, null, null, 'op:cap-owner');
+    ReserveRewardPointsAction::run($type, $recipient, $family, $unit, 15, 'rsv:cap-owner', 'hold', $at);
+
+    foreach ([[$otherRecipient, $family, $unit], [$recipient, $otherFamily, $unit], [$recipient, $family, 'other']] as [$wrongRecipient, $wrongFamily, $wrongUnit]) {
+        expect(fn () => DebitRewardPointsAction::run($type, $wrongRecipient, $wrongFamily, $wrongUnit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at))
+            ->toThrow(InvalidArgumentException::class, 'different recipient, family, or unit');
+    }
+
+    expect(RewardPointMovement::query()->where('kind', 'debit')->count())->toBe(0);
+
+    DebitRewardPointsAction::run($type, $recipient, $family, $unit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at);
+
+    expect(fn () => DebitRewardPointsAction::run($type, $otherRecipient, $family, $unit, 15, 'spend:cap-owner', 'capture', 'rsv:cap-owner', $at))
+        ->toThrow(InvalidArgumentException::class, 'different recipient, family, or unit');
+
+    expect(RewardPointMovement::query()->where('kind', 'debit')->count())->toBe(1);
+});

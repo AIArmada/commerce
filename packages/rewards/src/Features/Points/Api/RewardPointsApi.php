@@ -15,6 +15,8 @@ interface RewardPointsApi
 
     public function debit(string $recipientType, string $recipientId, string $familyKey, string $unit, int $points, string $operationKey, string $reason, ?string $reservationKey = null, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void;
 
+    public function capture(string $reservationKey, string $recipientType, string $recipientId, string $operationKey, string $reason, CarbonInterface $occurredAt, string $actorType, ?string $actorId): void;
+
     public function release(string $reservationKey, string $reason, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void;
 
     public function refund(string $refundOperationKey, string $linkedAggregateKey, int $points, string $reason, ?CarbonInterface $occurredAt = null, string $actorType = 'system', ?string $actorId = null): void;

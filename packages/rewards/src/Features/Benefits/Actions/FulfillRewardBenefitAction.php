@@ -8,17 +8,13 @@ use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
-use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -134,64 +130,12 @@ final readonly class FulfillRewardBenefitAction
         ?string $actorId,
         string $externalRef,
     ): void {
-        // Canonical lots-before-movements order: read the touched lot ids,
-        // lock the lots in sorted order, then lock the reserve pieces.
-        // Every other point path (reserve, debit, refund, clawback, mark)
-        // takes the same direction, so fulfill-vs-reversal converges
-        // instead of deadlocking.
-        $lotIds = RewardPointMovement::query()
-            ->where('reservation_key', (string) $grant->reservation_key)
-            ->where('kind', RewardPointMovementKind::Reserve)
-            ->orderBy('id')
-            ->pluck('lot_id')
-            ->map(static fn ($lotId): string => (string) $lotId)
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($lotIds === []) {
-            throw new InvalidArgumentException('Grant reservation has no held pieces; refusing to fulfill.');
-        }
-
-        foreach (RewardLedgerLockOrder::sorted($lotIds) as $lotId) {
-            RewardPointLot::query()->whereKey($lotId)->lockForUpdate()->first();
-        }
-
-        $reserves = RewardPointMovement::query()
-            ->where('reservation_key', (string) $grant->reservation_key)
-            ->where('kind', RewardPointMovementKind::Reserve)
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
-        if ($reserves->isEmpty()) {
-            throw new InvalidArgumentException('Grant reservation has no held pieces; refusing to fulfill.');
-        }
-
-        $total = (int) $reserves->sum('delta');
-
-        $lots = RewardPointLot::query()->whereIn('id', $lotIds)->lockForUpdate()->get();
-
-        if ($lots->isEmpty() || $total <= 0) {
-            throw new InvalidArgumentException('Grant reservation pieces are incoherent; refusing to fulfill.');
-        }
-
-        $familyKey = (string) $lots->firstOrFail()->family_key;
-        $unit = (string) $lots->firstOrFail()->unit;
-
-        if ($lots->some(static fn (RewardPointLot $lot): bool => (string) $lot->family_key !== $familyKey || (string) $lot->unit !== $unit)) {
-            throw new InvalidArgumentException('Grant reservation spans families or units; refusing to fulfill.');
-        }
-
-        app(RewardPointsApi::class)->debit(
+        app(RewardPointsApi::class)->capture(
+            (string) $grant->reservation_key,
             (string) $grant->recipient_type,
             (string) $grant->recipient_id,
-            $familyKey,
-            $unit,
-            $total,
             "capture:{$grant->reservation_key}",
             "benefit-fulfillment:{$grant->grant_key}",
-            (string) $grant->reservation_key,
             $decided,
             $actorType,
             $actorId,
