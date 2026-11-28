@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Canceled;

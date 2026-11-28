@@ -271,7 +271,7 @@ refund id and amount.
 Marks the pending `OrderPayment` as failed and records `payment_failed_at`.
 
 ```php
-use AIArmada\Orders\Transitions\PaymentFailed as PaymentFailedTransition;
+use AIArmada\Orders\Features\Payments\Actions\PaymentFailed as PaymentFailedTransition;
 
 $order->status->transitionTo(PaymentFailed::class, new PaymentFailedTransition(
     $order,

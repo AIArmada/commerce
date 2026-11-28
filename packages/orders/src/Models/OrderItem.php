@@ -175,8 +175,16 @@ class OrderItem extends Model implements Auditable
             throw new InvalidArgumentException('Order item quantity, prices, discounts, and taxes cannot be negative.');
         }
 
+        if ($this->quantity > 0 && $this->unit_price > intdiv(PHP_INT_MAX, $this->quantity)) {
+            throw new InvalidArgumentException('Order item subtotal exceeds the supported integer range.');
+        }
+
         $subtotal = $this->quantity * $this->unit_price;
         $afterDiscount = max(0, $subtotal - $this->discount_amount);
+
+        if ($this->tax_amount > PHP_INT_MAX - $afterDiscount) {
+            throw new InvalidArgumentException('Order item total exceeds the supported integer range.');
+        }
 
         return $afterDiscount + $this->tax_amount;
     }

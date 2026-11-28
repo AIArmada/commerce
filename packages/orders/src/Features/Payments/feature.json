@@ -5,7 +5,8 @@
     "table:order_payments": [
       "AIArmada\\Orders\\Features\\Payments\\Actions\\PaymentConfirmed",
       "AIArmada\\Orders\\Features\\Payments\\Actions\\RefundProcessed",
-      "AIArmada\\Orders\\Features\\Payments\\Actions\\RefundCompleted"
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RefundCompleted",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\PaymentFailed"
     ],
     "table:order_refunds": [
       "AIArmada\\Orders\\Features\\Payments\\Actions\\RegisterOrderRefund",

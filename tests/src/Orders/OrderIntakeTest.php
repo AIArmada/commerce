@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
 use AIArmada\Orders\Models\Order;

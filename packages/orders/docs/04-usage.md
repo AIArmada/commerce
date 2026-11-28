@@ -11,8 +11,8 @@ The canonical orchestration surface is the `Actions` tree. Prefer these over dir
 ### Creating Orders
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
-use AIArmada\Orders\Actions\CreateOrderFromCart;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderFromCart;
 
 // Basic creation — $orderData and $items are both required
 $order = app(CreateOrder::class)->execute(
@@ -46,7 +46,7 @@ $order = app(CreateOrderFromCart::class)->execute(
 Prevent duplicate orders from retries and concurrent submissions using intake identity. Pass `intakeSource` and `intakeId` to make order creation idempotent:
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 
 // Idempotent creation — same intake identity returns the existing order
 $order = app(CreateOrder::class)->execute(
@@ -409,7 +409,7 @@ Use `CreateOrderInvoiceDoc` when you want to create a Docs record for a paid ord
 Automatic `OrderPaid` invoice generation is disabled by default. Turn on `orders.integrations.docs.enabled` only when you want that event listener to create persisted Docs invoices automatically.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderInvoiceDoc;
 
 $invoice = app(CreateOrderInvoiceDoc::class)->execute(
     order: $order,
@@ -427,7 +427,7 @@ Use `CreateOrderReceiptDoc` when payment confirmation should also create a recei
 Checkout-driven receipt generation is also opt-in from the checkout package side; manual action usage remains available regardless of the listener defaults.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderReceiptDoc;
 
 $receipt = app(CreateOrderReceiptDoc::class)->execute(
     order: $order,

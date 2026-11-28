@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 
 if (! function_exists('foldedValidOrderData')) {
     function foldedValidOrderData(array $overrides = []): array

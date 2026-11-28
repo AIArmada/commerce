@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\BuyablePriceResolver;
@@ -20,10 +20,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 
-final class CreateOrderFromCart
+final readonly class CreateOrderFromCart
 {
     public function __construct(
-        private readonly CreateOrder $createOrder,
+        private CreateOrder $createOrder,
     ) {}
 
     /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
@@ -18,12 +18,13 @@ use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
-final class CreateOrder
+final readonly class CreateOrder
 {
     use AssertsOrderOwnerBoundary;
 
@@ -44,6 +45,12 @@ final class CreateOrder
         ?string $intakeId = null,
     ): Order {
         $this->assertOwnerBoundaryForCreation();
+
+        if (($intakeSource === null) !== ($intakeId === null) || ($intakeSource !== null && (mb_trim($intakeSource) === '' || mb_trim((string) $intakeId) === ''))) {
+            throw new InvalidArgumentException('Intake source and ID must be supplied together and must not be blank.');
+        }
+
+        $this->validateTotalsInvariant($orderData);
 
         if ($intakeSource !== null && $intakeId !== null) {
             // Serialize concurrent creates for the same intake identity. The
@@ -125,7 +132,7 @@ final class CreateOrder
 
     private function intakeLockKey(string $intakeSource, string $intakeId): string
     {
-        $owner = OwnerContext::resolve();
+        $owner = config('orders.owner.enabled', false) ? OwnerContext::resolve() : null;
 
         $scope = $owner instanceof Model
             ? $owner->getMorphClass() . ':' . $owner->getKey()
@@ -222,6 +229,13 @@ final class CreateOrder
         }
 
         if (is_string($value) && preg_match('/^-?\d+$/', mb_trim($value)) === 1) {
+            $digits = ltrim(mb_trim($value), '-0');
+            $limit = str_starts_with(mb_trim($value), '-') ? substr((string) PHP_INT_MIN, 1) : (string) PHP_INT_MAX;
+
+            if (strlen($digits) > strlen($limit) || (strlen($digits) === strlen($limit) && strcmp($digits, $limit) > 0)) {
+                throw new InvalidArgumentException("{$field} exceeds the supported integer range.");
+            }
+
             return (int) $value;
         }
 
@@ -248,7 +262,7 @@ final class CreateOrder
         // the write lock is not held for the follow-up selects.
         $orderKey = DB::transaction(function () use ($orderData, $items, $billingAddress, $shippingAddress, $intakeSource, $intakeId): string {
             try {
-                $order = Order::create([
+                $order = DB::transaction(fn (): Order => Order::create([
                     'order_number' => $orderData['order_number'] ?? Order::generateOrderNumber(),
                     'intake_source' => $intakeSource,
                     'intake_id' => $intakeId,
@@ -263,9 +277,9 @@ final class CreateOrder
                     'currency' => $orderData['currency'] ?? config('orders.currency.default', 'MYR'),
                     'notes' => $orderData['notes'] ?? null,
                     'metadata' => $orderData['metadata'] ?? null,
-                ]);
-            } catch (QueryException $e) {
-                if ($intakeSource !== null && $intakeId !== null && $this->isDuplicateKeyError($e)) {
+                ]));
+            } catch (UniqueConstraintViolationException $e) {
+                if ($intakeSource !== null && $intakeId !== null) {
                     $existing = $this->findExistingIntake($intakeSource, $intakeId);
 
                     if ($existing !== null) {
@@ -328,16 +342,9 @@ final class CreateOrder
         }
     }
 
-    private function isDuplicateKeyError(QueryException $e): bool
-    {
-        $sqlState = (string) $e->getPrevious()?->getCode();
-
-        return $sqlState === '23000' || $sqlState === '23505';
-    }
-
     private function isOrderNumberDuplicate(QueryException $e): bool
     {
-        if (! $this->isDuplicateKeyError($e)) {
+        if (! $e instanceof UniqueConstraintViolationException) {
             return false;
         }
 
@@ -418,6 +425,10 @@ final class CreateOrder
     public function addAddress(Order $order, array $addressData, string $type): void
     {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+        if (! in_array($type, ['billing', 'shipping'], true)) {
+            throw new InvalidArgumentException('Order address type must be billing or shipping.');
+        }
 
         $addressData = $this->normalizeAddressData($addressData);
         $firstName = $addressData['first_name'] ?? null;
