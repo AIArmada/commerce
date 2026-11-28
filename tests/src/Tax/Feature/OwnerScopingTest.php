@@ -7,8 +7,10 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Tax\Actions\DeleteTaxClassesAction;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxZone;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -116,4 +118,34 @@ describe('Tax owner scoping', function (): void {
             ->not->toContain($owned->id)
             ->not->toContain($corruptId);
     });
+});
+
+it('deletes tax classes when owner scoping is disabled', function (): void {
+    config()->set('tax.features.owner.enabled', false);
+    $class = TaxClass::query()->create(['name' => 'Unused Class', 'slug' => 'unused-class']);
+
+    app(DeleteTaxClassesAction::class)->execute([$class->id]);
+
+    expect(TaxClass::query()->whereKey($class->id)->exists())->toBeFalse();
+});
+
+it('rejects an entire bulk delete when one tax class belongs to another owner', function (): void {
+    config()->set('tax.features.owner.enabled', true);
+    config()->set('tax.features.owner.include_global', true);
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    bindTaxOwnerForScoping($ownerA);
+    $owned = TaxClass::query()->create(['name' => 'Owned Class', 'slug' => 'owned-bulk-class']);
+
+    bindTaxOwnerForScoping($ownerB);
+    $foreign = TaxClass::query()->create(['name' => 'Foreign Class', 'slug' => 'foreign-bulk-class']);
+
+    bindTaxOwnerForScoping($ownerA);
+    expect(fn () => app(DeleteTaxClassesAction::class)->execute([$owned->id, $foreign->id]))
+        ->toThrow(AuthorizationException::class);
+    expect(TaxClass::query()->whereKey($owned->id)->exists())->toBeTrue();
+
+    bindTaxOwnerForScoping($ownerB);
+    expect(TaxClass::query()->whereKey($foreign->id)->exists())->toBeTrue();
 });
