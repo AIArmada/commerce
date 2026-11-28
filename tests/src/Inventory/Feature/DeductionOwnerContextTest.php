@@ -102,3 +102,35 @@ test('deduction skips malformed and half-null owner tuples without an operation'
     expect(findDeductionOperation($emptyType))->toBeNull()
         ->and(findDeductionOperation($halfNull))->toBeNull();
 });
+
+test('deduction rejects a mismatched persisted order owner before recording an operation', function (): void {
+    config()->set('inventory.owner.enabled', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $order = createOwnedDeductionOrder($owner, 'ORD-CTX-D-MISMATCH');
+
+    simulateQueueWorkerWithoutAmbientOwner();
+
+    $event = new InventoryDeductionRequired($order);
+    $event->owner_type = $other->getMorphClass();
+    $event->owner_id = (string) $other->getKey();
+
+    $listener = app(DeductInventoryFromOrder::class);
+    $listener->handle($event);
+
+    expect(findDeductionOperation($order))->toBeNull();
+
+    $event->owner_type = null;
+    $event->owner_id = null;
+    $event->owner_is_global = true;
+
+    $listener->handle($event);
+
+    expect(findDeductionOperation($order))->toBeNull();
+
+    $listener->handle(new InventoryDeductionRequired($order));
+
+    expect(findDeductionOperation($order))->not->toBeNull()
+        ->and(findDeductionOperation($order)->status)->toBe(InventoryOperation::STATUS_COMPLETED);
+});

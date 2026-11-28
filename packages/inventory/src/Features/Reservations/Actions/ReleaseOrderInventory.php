@@ -9,6 +9,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Queries\OrderInventoryIdentity;
 use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
@@ -18,6 +19,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Releases inventory when an order is cancelled.
@@ -74,7 +76,15 @@ final class ReleaseOrderInventory
 
     private function handleScoped(InventoryReleaseRequired $event): void
     {
-        $order = $event->order;
+        $order = OrderInventoryIdentity::find($event);
+
+        if ($order === null) {
+            Log::warning('Inventory release skipped: persisted order does not match event identity.', [
+                'order_id' => $event->order->getKey(),
+            ]);
+
+            return;
+        }
 
         $operation = $this->resolveOrCreateOperation($order, InventoryOperation::KIND_RELEASE);
 
@@ -87,7 +97,7 @@ final class ReleaseOrderInventory
             return;
         }
 
-        DB::transaction(function () use ($order, $operation): void {
+        DB::transaction(function () use ($event, $order, $operation): void {
             $operation = InventoryOwnerScope::forMutation(
                 InventoryOperation::query()
                     ->whereKey($operation->id)
@@ -98,7 +108,12 @@ final class ReleaseOrderInventory
                 return;
             }
 
-            $fresh = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $fresh = OrderInventoryIdentity::find($event, lock: true);
+
+            if ($fresh === null) {
+                throw new RuntimeException('Order identity changed before inventory release.');
+            }
+
             $this->releaseAllocations($fresh);
             $this->restoreShippedInventory($fresh);
 

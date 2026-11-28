@@ -10,6 +10,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Queries\OrderInventoryIdentity;
 use AIArmada\Inventory\Features\Stock\Api\DeductionCandidates;
 use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Services\InventoryService;
@@ -85,7 +86,15 @@ final class DeductOrderInventory
 
     private function handleScoped(InventoryDeductionRequired $event): void
     {
-        $order = $event->order;
+        $order = OrderInventoryIdentity::find($event);
+
+        if ($order === null) {
+            Log::warning('Inventory deduction skipped: persisted order does not match event identity.', [
+                'order_id' => $event->order->getKey(),
+            ]);
+
+            return;
+        }
 
         $operation = $this->resolveOrCreateOperation($order, InventoryOperation::KIND_DEDUCTION);
 
@@ -98,7 +107,7 @@ final class DeductOrderInventory
             return;
         }
 
-        DB::transaction(function () use ($order, $operation): void {
+        DB::transaction(function () use ($event, $order, $operation): void {
             $operation = InventoryOwnerScope::forMutation(
                 InventoryOperation::query()
                     ->whereKey($operation->id)
@@ -113,10 +122,13 @@ final class DeductOrderInventory
             // lifecycle under a lock so a delayed deduction never
             // consumes stock after a terminal transition. Same terminal
             // set as the outbox relay suppression.
-            $fresh = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
+            $fresh = OrderInventoryIdentity::find($event, lock: true);
 
-            if (! $fresh instanceof Order
-                || $fresh->status instanceof Canceled
+            if ($fresh === null) {
+                throw new RuntimeException('Order identity changed before inventory deduction.');
+            }
+
+            if ($fresh->status instanceof Canceled
                 || $fresh->status instanceof Refunded
                 || $fresh->status instanceof Fraud
             ) {

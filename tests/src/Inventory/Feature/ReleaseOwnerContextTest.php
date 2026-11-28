@@ -102,3 +102,35 @@ test('release skips malformed and half-null owner tuples without an operation', 
     expect(findReleaseOperation($emptyType))->toBeNull()
         ->and(findReleaseOperation($halfNull))->toBeNull();
 });
+
+test('release rejects a mismatched persisted order owner before recording an operation', function (): void {
+    config()->set('inventory.owner.enabled', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $order = createOwnedReleaseOrder($owner, 'ORD-CTX-R-MISMATCH');
+
+    simulateReleaseQueueWorkerWithoutAmbientOwner();
+
+    $event = new InventoryReleaseRequired($order);
+    $event->owner_type = $other->getMorphClass();
+    $event->owner_id = (string) $other->getKey();
+
+    $listener = app(ReleaseInventoryFromOrder::class);
+    $listener->handle($event);
+
+    expect(findReleaseOperation($order))->toBeNull();
+
+    $event->owner_type = null;
+    $event->owner_id = null;
+    $event->owner_is_global = true;
+
+    $listener->handle($event);
+
+    expect(findReleaseOperation($order))->toBeNull();
+
+    $listener->handle(new InventoryReleaseRequired($order));
+
+    expect(findReleaseOperation($order))->not->toBeNull()
+        ->and(findReleaseOperation($order)->status)->toBe(InventoryOperation::STATUS_COMPLETED);
+});
