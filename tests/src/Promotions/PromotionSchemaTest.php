@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\PromotionsServiceProvider;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
-use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
