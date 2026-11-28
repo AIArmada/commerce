@@ -10,12 +10,17 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Cancelled as CancelledState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Completed as CompletedState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Delayed as DelayedState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Postponed as PostponedState;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventSessionExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
@@ -138,15 +143,19 @@ final class EventSessionResource extends Resource
                     ->color('warning')
                     ->form([
                         Textarea::make('reason'),
-                        DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
+                        DateTimePicker::make('expected_starts_at')->label('Expected New Start')->rules(['nullable', 'date']),
                     ])
                     ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventSession $record): void {
                         Gate::forUser(Filament::auth()->user())->authorize('update', $record);
 
-                        app(EventLifecycleWorkflow::class)->delay('session', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                        $expectedStartsAt = filled($data['expected_starts_at'] ?? null)
+                            ? CarbonImmutable::parse($data['expected_starts_at'])
+                            : null;
+
+                        app(EventLifecycleWorkflow::class)->delay('session', (string) $record->getKey(), $data['reason'] ?? null, $expectedStartsAt);
                     })
-                    ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventSession $record): bool => $record?->status->canTransitionTo(DelayedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
@@ -161,7 +170,7 @@ final class EventSessionResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->postpone('session', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventSession $record): bool => $record?->status->canTransitionTo(PostponedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel Session')
@@ -176,7 +185,7 @@ final class EventSessionResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->cancel('session', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventSession $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
+                    ->visible(static fn (?EventSession $record): bool => $record?->status->canTransitionTo(CancelledState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('complete')
                     ->label('Complete')
@@ -188,7 +197,7 @@ final class EventSessionResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->complete('session', (string) $record->getKey());
                     })
-                    ->visible(fn (?EventSession $record) => (string) ($record?->status ?? '') === 'published')
+                    ->visible(static fn (?EventSession $record): bool => $record?->status->canTransitionTo(CompletedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('clone')
                     ->label('Clone')

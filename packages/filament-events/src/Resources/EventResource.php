@@ -11,6 +11,9 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Archived as ArchivedState;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Cancelled as CancelledState;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Published as PublishedState;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
@@ -187,7 +190,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->publish((string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['pending_review', 'scheduled', 'delayed', 'postponed', 'rescheduled'], true))
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(PublishedState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('archive')
                 ->label('Archive')
@@ -199,7 +202,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->archive('event', (string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending_review', 'scheduled', 'published', 'cancelled', 'completed', 'expired'], true))
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(ArchivedState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('cancel')
                 ->label('Cancel')
@@ -214,7 +217,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->cancel('event', (string) $record->getKey(), $data['reason']);
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['pending_review', 'scheduled', 'published', 'delayed', 'postponed', 'rescheduled'], true))
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(CancelledState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('clone')
                 ->label('Clone')

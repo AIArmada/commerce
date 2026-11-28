@@ -19,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Unique;
 use Livewire\Component as LivewireComponent;
@@ -201,3 +202,30 @@ it('keeps occurrence and session slugs globally unique', function (): void {
             ->and(Validator::make(['slug' => 'shared-child-slug'], ['slug' => $sessionRule])->fails())->toBeTrue();
     });
 });
+
+it('shows schedule lifecycle actions only for permitted state transitions', function (string $resource, string $model): void {
+    $this->actingAs(User::factory()->create());
+    Gate::before(static fn (): bool => true);
+
+    $visible = function (string $status) use ($resource, $model): array {
+        $record = new $model;
+        $record->status = $status;
+        $table = $resource::table(Table::make(Mockery::mock(HasTable::class)));
+
+        return collect($table->getActions())
+            ->filter(fn ($action): bool => in_array($action->getName(), ['delay', 'postpone', 'cancel', 'complete'], true))
+            ->filter(fn ($action): bool => $action->record($record)->isVisible())
+            ->map(fn ($action): string => $action->getName())
+            ->values()
+            ->all();
+    };
+
+    expect($visible('live'))->toBe(['delay', 'postpone', 'cancel', 'complete'])
+        ->and($visible('scheduled'))->toBe(['delay', 'postpone', 'cancel', 'complete'])
+        ->and($visible('draft'))->toBe(['cancel'])
+        ->and($visible('completed'))->toBe([])
+        ->and($visible('archived'))->toBe([]);
+})->with([
+    'occurrences' => [EventOccurrenceResource::class, EventOccurrence::class],
+    'sessions' => [EventSessionResource::class, EventSession::class],
+]);

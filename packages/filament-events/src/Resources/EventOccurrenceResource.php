@@ -10,6 +10,10 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Cancelled as CancelledState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Completed as CompletedState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Delayed as DelayedState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Postponed as PostponedState;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
@@ -17,6 +21,7 @@ use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
 use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
@@ -125,15 +130,19 @@ final class EventOccurrenceResource extends Resource
                     ->color('warning')
                     ->form([
                         Textarea::make('reason'),
-                        DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
+                        DateTimePicker::make('expected_starts_at')->label('Expected New Start')->rules(['nullable', 'date']),
                     ])
                     ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventOccurrence $record): void {
                         Gate::forUser(Filament::auth()->user())->authorize('update', $record);
 
-                        app(EventLifecycleWorkflow::class)->delay('occurrence', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                        $expectedStartsAt = filled($data['expected_starts_at'] ?? null)
+                            ? CarbonImmutable::parse($data['expected_starts_at'])
+                            : null;
+
+                        app(EventLifecycleWorkflow::class)->delay('occurrence', (string) $record->getKey(), $data['reason'] ?? null, $expectedStartsAt);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(DelayedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
@@ -148,7 +157,7 @@ final class EventOccurrenceResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->postpone('occurrence', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(PostponedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel Occurrence')
@@ -163,7 +172,7 @@ final class EventOccurrenceResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->cancel('occurrence', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(CancelledState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('complete')
                     ->label('Complete')
@@ -175,7 +184,7 @@ final class EventOccurrenceResource extends Resource
 
                         app(EventLifecycleWorkflow::class)->complete('occurrence', (string) $record->getKey());
                     })
-                    ->visible(fn (?EventOccurrence $record) => (string) ($record?->status ?? '') === 'published')
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(CompletedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('clone')
                     ->label('Clone')
