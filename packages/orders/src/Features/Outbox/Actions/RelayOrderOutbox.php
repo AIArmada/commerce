@@ -115,7 +115,7 @@ final readonly class RelayOrderOutbox
             $eventClass = $row->event_class;
 
             /** @var 'dead'|'suppressed'|null $terminal */
-            $terminal = DB::transaction(function () use ($eventClass, $order, $row): ?string {
+            $terminal = $order->getConnection()->transaction(function () use ($eventClass, $order, $row): ?string {
                 // Serialize replay with lifecycle changes: the order lock
                 // is held through dispatch, so a cancel/refund either
                 // commits first (row suppressed below, cleanup already

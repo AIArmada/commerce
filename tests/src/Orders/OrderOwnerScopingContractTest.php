@@ -12,8 +12,12 @@ use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use Illuminate\Database\Eloquent\Model;
@@ -231,5 +235,31 @@ it('excludes globally visible orders from tenant-local mutation and intake contr
         expect($global->refresh()->status)->toBeInstanceOf(PendingPayment::class)
             ->and($global->payments()->count())->toBe(0)
             ->and(app(OrderServiceInterface::class)->find($global->id)?->id)->toBe($global->id);
+    });
+});
+
+it('does not stage or suppress another owner\'s order outbox messages', function (): void {
+    config()->set('orders.outbox.enabled', true);
+
+    $owner = TestOwner::query()->create(['name' => 'Outbox tenant']);
+    $other = TestOwner::query()->create(['name' => 'Other outbox tenant']);
+    $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ]));
+    $writer = app(OrderOutboxWriter::class);
+    $id = OwnerContext::withOwner($owner, fn (): ?string => $writer->stage($order->id, OrderFulfillmentRequired::class, 'outbox-scope', 'manual'));
+
+    OwnerContext::withOwner($other, function () use ($writer, $order): void {
+        expect(fn () => $writer->stage($order->id, OrderFulfillmentRequired::class, 'foreign', 'manual'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => $writer->suppressForOrder($order->id, 'foreign suppression'))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($writer, $order, $id): void {
+        expect(OrderOutboxMessage::query()->findOrFail($id)->status)->toBe(OutboxStatus::Pending)
+            ->and($writer->suppressForOrder($order->id, 'owner suppression'))->toBe(1)
+            ->and(OrderOutboxMessage::query()->findOrFail($id)->status)->toBe(OutboxStatus::Suppressed);
     });
 });

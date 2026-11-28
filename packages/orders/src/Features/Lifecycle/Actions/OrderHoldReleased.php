@@ -9,7 +9,6 @@ use AIArmada\Orders\Events\OrderHoldReleased as OrderHoldReleasedEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\OnHold;
 use AIArmada\Orders\States\Processing;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
 
@@ -33,7 +32,7 @@ final class OrderHoldReleased extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
             $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
@@ -56,7 +55,7 @@ final class OrderHoldReleased extends Transition
             $reason = $this->reason;
             $releasedBy = $this->releasedBy;
 
-            DB::afterCommit(function () use ($order, $reason, $releasedBy): void {
+            $order->getConnection()->afterCommit(function () use ($order, $reason, $releasedBy): void {
                 event(new OrderHoldReleasedEvent($order, $reason, $releasedBy));
             });
 

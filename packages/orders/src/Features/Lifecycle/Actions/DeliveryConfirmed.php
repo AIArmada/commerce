@@ -11,7 +11,6 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Delivered;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -33,7 +32,7 @@ final class DeliveryConfirmed extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
             $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);

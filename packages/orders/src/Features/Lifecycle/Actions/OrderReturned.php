@@ -11,7 +11,6 @@ use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\Support\PackageUnit;
 use Carbon\CarbonImmutable;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
 
@@ -35,7 +34,7 @@ final class OrderReturned extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
             $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
@@ -62,7 +61,7 @@ final class OrderReturned extends Transition
             $reason = $this->reason;
             $returnedBy = $this->returnedBy;
 
-            DB::afterCommit(function () use ($order, $reason, $returnedBy): void {
+            $order->getConnection()->afterCommit(function () use ($order, $reason, $returnedBy): void {
                 event(new OrderReturnedEvent($order, $reason, $returnedBy));
             });
 

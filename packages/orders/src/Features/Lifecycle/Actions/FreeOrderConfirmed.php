@@ -13,7 +13,6 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
 
@@ -29,7 +28,7 @@ final class FreeOrderConfirmed extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $order = $this->order->newQuery()
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
@@ -68,7 +67,7 @@ final class FreeOrderConfirmed extends Transition
                 app(OrderOutboxWriter::class)->stage((string) $order->getKey(), OrderFulfillmentRequired::class, (string) $order->getKey(), 'free'),
             ];
 
-            DB::afterCommit(function () use ($order, $outboxIds): void {
+            $order->getConnection()->afterCommit(function () use ($order, $outboxIds): void {
                 app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, static function () use ($order): void {
                     event(new OrderProcessingStarted($order, (string) $order->getKey(), 'free'));
                     event(new OrderFulfillmentRequired($order, (string) $order->getKey(), 'free'));

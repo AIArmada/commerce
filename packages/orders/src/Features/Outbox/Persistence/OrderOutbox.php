@@ -15,7 +15,6 @@ use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
 use Closure;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -39,10 +38,9 @@ final readonly class OrderOutbox implements OrderOutboxWriter
             throw new InvalidArgumentException("Event class is not replayable through the order outbox: {$eventClass}.");
         }
 
-        $order = Order::query()->withoutOwnerScope()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
 
-        // The row belongs to the order's owner, not to whoever happens to
-        // hold the ambient context (webhook, console, queue).
+        // Require the caller's matching owner context before staging.
         return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id), static fn (): string => OrderOutboxMessage::query()->create([
             'order_id' => $order->getKey(),
             'owner_type' => $order->owner_type,
@@ -63,8 +61,10 @@ final readonly class OrderOutbox implements OrderOutboxWriter
      */
     public function suppressForOrder(string $orderId, string $reason): int
     {
+        Order::query()->forOwner()->findOrFail($orderId);
+
         return OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->forOwner()
             ->where('order_id', $orderId)
             ->whereIn('status', [OutboxStatus::Pending->value, OutboxStatus::Failed->value])
             ->update([
@@ -89,7 +89,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
      */
     public function dispatchReplayable(string $orderId, array $ids, Closure $dispatch): void
     {
-        DB::transaction(function () use ($orderId, $ids, $dispatch): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId, $ids, $dispatch): void {
             $locked = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($orderId)

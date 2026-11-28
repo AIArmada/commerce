@@ -10,7 +10,6 @@ use AIArmada\Orders\Events\OrderFlaggedAsFraud as OrderFlaggedAsFraudEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Fraud;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
 
@@ -33,7 +32,7 @@ final class OrderFlaggedAsFraud extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             // Locked like the sibling lifecycle transitions so flagging
             // serializes with relay/live dispatch: either this commit
             // (and its suppression below) wins and dispatch skips, or
@@ -67,7 +66,7 @@ final class OrderFlaggedAsFraud extends Transition
             $reason = $this->reason;
             $flaggedBy = $this->flaggedBy;
 
-            DB::afterCommit(function () use ($order, $reason, $flaggedBy): void {
+            $order->getConnection()->afterCommit(function () use ($order, $reason, $flaggedBy): void {
                 event(new OrderFlaggedAsFraudEvent($order, $reason, $flaggedBy));
             });
 

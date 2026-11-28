@@ -14,7 +14,6 @@ use AIArmada\Orders\Support\PackageUnit;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -40,7 +39,7 @@ final class ShipmentCreated extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->id);
             $this->order->refresh();
             $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);

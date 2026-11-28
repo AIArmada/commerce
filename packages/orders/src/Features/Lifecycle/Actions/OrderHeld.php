@@ -9,7 +9,6 @@ use AIArmada\Orders\Events\OrderHeld as OrderHeldEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\OnHold;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
 
@@ -33,7 +32,7 @@ final class OrderHeld extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
             $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
@@ -56,7 +55,7 @@ final class OrderHeld extends Transition
             $reason = $this->reason;
             $heldBy = $this->heldBy;
 
-            DB::afterCommit(function () use ($order, $reason, $heldBy): void {
+            $order->getConnection()->afterCommit(function () use ($order, $reason, $heldBy): void {
                 event(new OrderHeldEvent($order, $reason, $heldBy));
             });
 

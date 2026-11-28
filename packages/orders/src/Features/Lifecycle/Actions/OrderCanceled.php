@@ -14,7 +14,6 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use Carbon\CarbonImmutable;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
@@ -41,7 +40,7 @@ final class OrderCanceled extends Transition
     {
         $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
@@ -93,7 +92,7 @@ final class OrderCanceled extends Transition
             $reason = $this->reason;
             $canceledBy = $this->canceledBy;
 
-            DB::afterCommit(function () use ($order, $reason, $canceledBy): void {
+            $order->getConnection()->afterCommit(function () use ($order, $reason, $canceledBy): void {
                 event(new OrderCanceledEvent($order, $reason, $canceledBy));
                 event(new OrderCancelInitiated($order, $reason, $canceledBy));
             });
