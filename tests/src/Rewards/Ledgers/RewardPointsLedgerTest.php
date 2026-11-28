@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

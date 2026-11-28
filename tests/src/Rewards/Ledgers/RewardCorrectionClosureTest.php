@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\ClawBackAwardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
 use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
@@ -27,7 +27,7 @@ use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

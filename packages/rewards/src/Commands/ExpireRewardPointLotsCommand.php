@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Commands;
 
-use AIArmada\Rewards\Actions\ExpireDueRewardPointLotsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireDueRewardPointLotsAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Throwable;

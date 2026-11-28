@@ -7,15 +7,15 @@ declare(strict_types=1);
 // immediately when merely included, so test runners never execute it.
 
 use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Actions\CreditRewardPointsAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ExpireRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
 use AIArmada\Rewards\Actions\InvalidateRewardMilestoneContributionAction;
 use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
-use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;

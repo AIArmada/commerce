@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Points\Queries;
+
+use AIArmada\Rewards\Data\RewardPointBuckets;
 
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;

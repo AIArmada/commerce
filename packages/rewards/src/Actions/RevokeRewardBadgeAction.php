@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
 use AIArmada\Rewards\Models\RewardBadgeGrant;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
+
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;

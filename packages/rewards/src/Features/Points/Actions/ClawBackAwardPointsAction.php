@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Points\Actions;
+
+use AIArmada\Rewards\Actions\AppendRewardAdjustmentAction;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
@@ -14,7 +16,7 @@ use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

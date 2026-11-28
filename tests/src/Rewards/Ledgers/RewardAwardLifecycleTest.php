@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Rewards\Actions\AcknowledgeRewardRecognitionAction;
-use AIArmada\Rewards\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
@@ -20,7 +20,7 @@ use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

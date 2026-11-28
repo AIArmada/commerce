@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
-use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 
-use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
 
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;

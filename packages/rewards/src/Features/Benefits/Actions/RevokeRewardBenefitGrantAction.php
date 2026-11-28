@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
-use AIArmada\Rewards\Actions\RefundRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Queries\RewardCouponMapper;

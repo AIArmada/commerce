@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
-use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Queries\RewardCouponMapper;

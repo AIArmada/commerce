@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Points\Queries;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
