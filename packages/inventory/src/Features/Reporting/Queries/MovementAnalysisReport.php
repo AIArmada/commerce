@@ -286,7 +286,6 @@ final class MovementAnalysisReport
             ];
         });
 
-        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
         return $slowMovers;
     }
 

@@ -476,7 +476,7 @@ class ProductsTable
 
             [$imported, $updated, $errors] = app(ImportCatalogProducts::class)->execute($rows, $updateExisting, $skipErrors, $authorize);
 
-            Storage::disk('local')->delete((string) $csvFile);
+            app(\AIArmada\FilamentProducts\Actions\DeleteCatalogImportFile::class)->execute($csvFile);
 
             Notification::make()
                 ->title('Import completed')

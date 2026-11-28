@@ -492,6 +492,7 @@ it('rebuilds checkout allocation metadata across all composite components and re
     $this->inventoryService->receive($mouse, $this->location->id, 10);
     $this->inventoryService->receive($cable, $this->location->id, 10);
 
+    config()->set('cart.empty_cart_behavior', 'preserve');
     $cart = new Cart(new InMemoryStorage, 'composite-metadata-cart');
     $cart->addBuyable(compositeCartBuyable('metadata-bundle', 'Bundle', 1000, compositeComponentSnapshot([
         ['product' => $mouse, 'quantity' => 2],

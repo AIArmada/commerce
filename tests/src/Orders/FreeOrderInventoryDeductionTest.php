@@ -11,7 +11,9 @@ use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
+use AIArmada\Inventory\Features\Stock\FeatureModule as StockFeatureModule;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\FeatureModule as TraceabilityFeatureModule;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
@@ -278,6 +280,8 @@ it('schedules the processing-started dispatch after commit', function (): void {
 
 it('deducts stock exactly once for a free order end to end', function (): void {
     config()->set('inventory.models.product', InventoryItem::class);
+    (new StockFeatureModule)->register(app());
+    (new TraceabilityFeatureModule)->register(app());
     app()->singleton(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
 
     $item = InventoryItem::create(['name' => 'Free Order Item']);

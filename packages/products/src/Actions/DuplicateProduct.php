@@ -7,7 +7,8 @@ namespace AIArmada\Products\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Pricing\Actions\CopyPriceablePrices;
-use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
+use AIArmada\Pricing\Models\Price;
+use Illuminate\Support\Facades\Schema;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
@@ -91,7 +92,7 @@ final readonly class DuplicateProduct
                 }
             }
 
-            if (app()->bound(PriceCalculatorInterface::class)) {
+            if (class_exists(Price::class) && Schema::hasTable((new Price)->getTable())) {
                 app(CopyPriceablePrices::class)->execute($record, $newProduct);
             }
 
