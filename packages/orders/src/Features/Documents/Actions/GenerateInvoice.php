@@ -24,6 +24,7 @@ final class GenerateInvoice implements OrderInvoiceDownload
      */
     public function save(Order $order, string $path): string
     {
+        $order = $this->resolveOrderForDocument((string) $order->getKey());
         $this->buildPdf($order)->save($path);
 
         return $path;
@@ -34,9 +35,7 @@ final class GenerateInvoice implements OrderInvoiceDownload
      */
     public function download(string $orderId): PdfBuilder | StreamedResponse
     {
-        $order = Order::query()
-            ->forOwner(includeGlobal: (bool) config('orders.owner.include_global', false))
-            ->findOrFail($orderId);
+        $order = $this->resolveOrderForDocument($orderId);
 
         if (! $this->hasPdfRuntime()) {
             return $this->downloadOrderHtmlFallback(

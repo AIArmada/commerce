@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
@@ -20,6 +21,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 trait BuildsOrderDocs
 {
+    use AssertsOrderOwnerBoundary;
+
+    protected function resolveOrderForDocument(string $orderId): Order
+    {
+        $order = Order::query()->forOwner(includeGlobal: false)->findOrFail($orderId);
+        $this->assertOwnerBoundaryForMutation($order, 'generate order document');
+
+        return $order;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

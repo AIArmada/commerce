@@ -25,6 +25,7 @@ final class GenerateReceipt
      */
     public function save(Order $order, string $path): string
     {
+        $order = $this->resolveOrderForDocument((string) $order->getKey());
         $this->buildReceiptPdf($order)->save($path);
 
         return $path;
@@ -35,6 +36,8 @@ final class GenerateReceipt
      */
     public function download(Order $order): PdfBuilder | StreamedResponse
     {
+        $order = $this->resolveOrderForDocument((string) $order->getKey());
+
         if (! $this->hasPdfRuntime()) {
             return $this->downloadOrderHtmlFallback(
                 order: $order,

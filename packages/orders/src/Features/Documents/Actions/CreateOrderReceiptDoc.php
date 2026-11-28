@@ -19,6 +19,8 @@ final readonly class CreateOrderReceiptDoc
 
     public function execute(Order $order, string $transactionId, string $gateway): string
     {
+        $order = $this->resolveOrderForDocument((string) $order->getKey());
+
         return $this->runWithinOrderOwnerScope($order, function () use ($order, $transactionId, $gateway): string {
             return $order->getConnection()->transaction(function () use ($order, $transactionId, $gateway): string {
                 $order = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
