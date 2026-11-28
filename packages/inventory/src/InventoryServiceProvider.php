@@ -12,7 +12,7 @@ use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
-use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
 use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;

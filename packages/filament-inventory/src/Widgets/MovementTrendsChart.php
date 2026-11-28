@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 

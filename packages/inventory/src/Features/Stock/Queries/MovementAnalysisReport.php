@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Features\Reporting\Queries;
+namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
@@ -19,7 +19,7 @@ use InvalidArgumentException;
 /**
  * Generates inventory movement analysis reports.
  */
-final class MovementAnalysisReport
+final readonly class MovementAnalysisReport
 {
     /**
      * Get movement totals for the dashboard period.
@@ -32,27 +32,21 @@ final class MovementAnalysisReport
 
         $query = InventoryMovement::query()
             ->where('occurred_at', '>=', $since)
-            ->selectRaw('type, SUM(quantity) as total')
+            ->selectRaw('type, SUM(quantity) as total, COUNT(*) as movement_count')
             ->groupBy('type');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($query);
         }
 
-        $movements = $query->pluck('total', 'type')->toArray();
-
-        $totalQuery = InventoryMovement::query()->where('occurred_at', '>=', $since);
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($totalQuery);
-        }
+        $movements = $query->toBase()->get()->keyBy('type');
 
         return [
-            'receipts' => (int) ($movements[MovementType::Receipt->value] ?? 0),
-            'shipments' => (int) ($movements[MovementType::Shipment->value] ?? 0),
-            'transfers' => (int) ($movements[MovementType::Transfer->value] ?? 0),
-            'adjustments' => (int) ($movements[MovementType::Adjustment->value] ?? 0),
-            'total' => $totalQuery->count(),
+            'receipts' => (int) ($movements->get(MovementType::Receipt->value)?->total ?? 0),
+            'shipments' => (int) ($movements->get(MovementType::Shipment->value)?->total ?? 0),
+            'transfers' => (int) ($movements->get(MovementType::Transfer->value)?->total ?? 0),
+            'adjustments' => (int) ($movements->get(MovementType::Adjustment->value)?->total ?? 0),
+            'total' => (int) $movements->sum('movement_count'),
         ];
     }
 
@@ -90,15 +84,15 @@ final class MovementAnalysisReport
                     ->orWhere('to_location_id', $locationId);
             }))
             ->groupBy('type')
-
-            ->orderByDesc('count');
+            ->orderByDesc('count')
+            ->orderBy('type');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($query);
         }
 
         /** @var Collection<int, array{movement_type: string, count: int, total_quantity: int, total_value: int}> $summary */
-        $summary = $query->get()
+        $summary = $query->toBase()->get()
             ->map(fn ($row): array => [
                 'movement_type' => (string) $row->type,
                 'count' => (int) $row->count,
@@ -140,14 +134,14 @@ final class MovementAnalysisReport
             InventoryOwnerScope::applyToMovementQuery($movementsQuery);
         }
 
-        $movements = $movementsQuery->get();
+        $movements = $movementsQuery->toBase()->get()->groupBy('date');
 
         $dates = collect();
-        $current = $startDate->copy();
+        $current = $startDate->startOfDay();
 
         while ($current->lte($endDate)) {
             $dateStr = $current->format('Y-m-d');
-            $dayMovements = $movements->where('date', $dateStr);
+            $dayMovements = $movements->get($dateStr, collect());
 
             $dates->push([
                 'date' => $dateStr,
@@ -187,19 +181,21 @@ final class MovementAnalysisReport
                 'inventoryable_type',
                 'inventoryable_id',
                 DB::raw('COUNT(*) as movement_count'),
-                DB::raw('SUM(quantity) as total_quantity_moved'),
-                DB::raw('AVG(quantity) as avg_quantity'),
+                DB::raw('SUM(ABS(quantity)) as total_quantity_moved'),
+                DB::raw('AVG(ABS(quantity)) as avg_quantity'),
             ])
             ->whereBetween('occurred_at', [$startDate, $endDate])
             ->groupBy('inventoryable_type', 'inventoryable_id')
             ->orderByDesc('movement_count')
-            ->limit($limit);
+            ->orderBy('inventoryable_type')
+            ->orderBy('inventoryable_id')
+            ->limit(max(0, $limit));
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($query);
         }
 
-        return $query->get()
+        return $query->toBase()->get()
             ->map(fn ($row): array => [
                 'inventoryable_type' => (string) $row->inventoryable_type,
                 'inventoryable_id' => (string) $row->inventoryable_id,
@@ -270,8 +266,8 @@ final class MovementAnalysisReport
         $now = CarbonImmutable::now();
 
         /** @var Collection<int, array{inventoryable_type: string, inventoryable_id: string, current_quantity: int, last_movement_at: string|null, days_since_movement: int}> $slowMovers */
-        $slowMovers = $query->get()->map(static function ($row) use ($now): array {
-            $lastOccurredAt = $row->getAttribute('last_occurred_at');
+        $slowMovers = $query->toBase()->get()->map(static function ($row) use ($now): array {
+            $lastOccurredAt = $row->last_occurred_at;
 
             return [
                 'inventoryable_type' => (string) $row->inventoryable_type,
@@ -307,25 +303,21 @@ final class MovementAnalysisReport
         $endDate ??= CarbonImmutable::now();
         $days = max(1, $startDate->diffInDays($endDate));
 
-        $receiptsQuery = InventoryMovement::query()
-            ->where('type', MovementType::Receipt->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
+        $movementQuery = InventoryMovement::query()
+            ->whereBetween('occurred_at', [$startDate, $endDate])
+            ->whereIn('type', [MovementType::Receipt->value, MovementType::Shipment->value]);
 
         if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($receiptsQuery);
+            InventoryOwnerScope::applyToMovementQuery($movementQuery);
         }
 
-        $receipts = (int) $receiptsQuery->sum('quantity');
+        $totals = $movementQuery->toBase()
+            ->selectRaw('type, SUM(ABS(quantity)) as total')
+            ->groupBy('type')
+            ->pluck('total', 'type');
 
-        $shipmentsQuery = InventoryMovement::query()
-            ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate]);
-
-        if (InventoryOwnerScope::isEnabled()) {
-            InventoryOwnerScope::applyToMovementQuery($shipmentsQuery);
-        }
-
-        $shipments = (int) $shipmentsQuery->sum('quantity');
+        $receipts = (int) $totals->get(MovementType::Receipt->value, 0);
+        $shipments = (int) $totals->get(MovementType::Shipment->value, 0);
 
         $currentStockQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query());
 
@@ -371,26 +363,24 @@ final class MovementAnalysisReport
         }
 
         /** @var Collection<int, array{reason: string, count: int, total_positive: int, total_negative: int, net_adjustment: int}> $analysis */
-        $analysis = $query->get()
-            ->groupBy(fn ($m) => (string) ($m->reason ?? 'unknown'))
-            ->map(function ($movements, $reason): array {
-                $totalPositive = (int) $movements
-                    ->filter(fn ($movement) => $movement->quantity > 0)
-                    ->sum('quantity');
-                $totalNegative = abs((int) $movements
-                    ->filter(fn ($movement) => $movement->quantity < 0)
-                    ->sum('quantity'));
-
-                return [
-                    'reason' => (string) $reason,
-                    'count' => (int) $movements->count(),
-                    'total_positive' => $totalPositive,
-                    'total_negative' => $totalNegative,
-                    'net_adjustment' => (int) $movements->sum('quantity'),
-                ];
-            })
-            ->sortByDesc('count')
-            ->values();
+        $delta = 'COALESCE(quantity_after - quantity_before, quantity)';
+        $analysis = $query->toBase()
+            ->selectRaw("COALESCE(reason, 'unknown') as reason")
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw("SUM(CASE WHEN {$delta} > 0 THEN {$delta} ELSE 0 END) as total_positive")
+            ->selectRaw("SUM(CASE WHEN {$delta} < 0 THEN -({$delta}) ELSE 0 END) as total_negative")
+            ->selectRaw("SUM({$delta}) as net_adjustment")
+            ->groupByRaw("COALESCE(reason, 'unknown')")
+            ->orderByDesc('count')
+            ->orderBy('reason')
+            ->get()
+            ->map(static fn ($row): array => [
+                'reason' => (string) $row->reason,
+                'count' => (int) $row->count,
+                'total_positive' => (int) $row->total_positive,
+                'total_negative' => (int) $row->total_negative,
+                'net_adjustment' => (int) $row->net_adjustment,
+            ]);
 
         return $analysis;
     }

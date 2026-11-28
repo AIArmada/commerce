@@ -24,6 +24,7 @@ use AIArmada\Inventory\Features\Stock\Queries\DeductionCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Features\Stock\Queries\InventoryStockQuery;
 use AIArmada\Inventory\Features\Stock\Queries\LocationVisibilityQuery;
+use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
 use AIArmada\Inventory\Features\Stock\Queries\MovementReferencesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\ReorderStockQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockAvailabilityQuery;
@@ -44,6 +45,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->alias(InventoryService::class, 'inventory');
         $app->singleton(InventoryStockQuery::class);
         $app->singleton(FulfillmentLocationService::class);
+        $app->singleton(MovementAnalysisReport::class);
         $app->singleton(AllocationCandidates::class, AllocationCandidatesQuery::class);
         $app->singleton(DeductionCandidates::class, DeductionCandidatesQuery::class);
         $app->singleton(LocationVisibility::class, LocationVisibilityQuery::class);
