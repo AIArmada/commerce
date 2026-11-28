@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
@@ -48,7 +48,13 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
             }
 
             return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($lockedDoc->owner_type, $lockedDoc->owner_id), function () use ($lockedDoc, $paymentData): string {
-                $paymentCurrency = mb_strtoupper((string) ($paymentData['currency'] ?? $lockedDoc->currency));
+                $currency = $paymentData['currency'] ?? $lockedDoc->currency;
+
+                if (! is_string($currency) || preg_match('/^[A-Za-z]{3}$/D', $currency) !== 1) {
+                    throw new InvalidArgumentException('Payment currency must be a 3-letter ISO code.');
+                }
+
+                $paymentCurrency = mb_strtoupper($currency);
 
                 if ($paymentCurrency !== mb_strtoupper($lockedDoc->currency)) {
                     throw new InvalidArgumentException('Payment currency must match the document currency.');
@@ -63,6 +69,8 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 if (! is_string($paymentMethod) || ! array_key_exists($paymentMethod, config('docs.payment_methods', []))) {
                     throw new InvalidArgumentException('Payment payment_method is not supported.');
                 }
+
+                $details = $this->validateDetails($paymentData);
 
                 $this->assertPaymentOwners($lockedDoc);
 
@@ -102,26 +110,10 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                     'currency' => $paymentCurrency,
                     'payment_method' => $paymentMethod,
                     'status' => DocPaymentStatus::Paid,
-                    'paid_at' => self::resolvePaidAt($paymentData['paid_at'] ?? null),
+                    'paid_at' => $details['paid_at'] ?? CarbonImmutable::now(),
                 ];
 
-                foreach (['reference', 'transaction_id', 'notes'] as $textKey) {
-                    if (array_key_exists($textKey, $paymentData)) {
-                        if ($paymentData[$textKey] !== null && ! is_string($paymentData[$textKey])) {
-                            throw new InvalidArgumentException("Payment field `{$textKey}` must be a string.");
-                        }
-
-                        $paymentAttributes[$textKey] = $paymentData[$textKey];
-                    }
-                }
-
-                if (array_key_exists('metadata', $paymentData)) {
-                    if ($paymentData['metadata'] !== null && ! is_array($paymentData['metadata'])) {
-                        throw new InvalidArgumentException('Payment field `metadata` must be an array.');
-                    }
-
-                    $paymentAttributes['metadata'] = $paymentData['metadata'];
-                }
+                $paymentAttributes = array_merge($paymentAttributes, $details);
 
                 $payment = $lockedDoc->payments()->make($paymentAttributes);
                 $payment->save();
@@ -141,6 +133,43 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 return (string) $payment->getKey();
             });
         });
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function validateDetails(array $data): array
+    {
+        $details = [];
+
+        foreach (['reference' => 255, 'notes' => 500, 'transaction_id' => 255] as $field => $maximum) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $value = $data[$field];
+
+            if ($value !== null && (! is_string($value) || mb_strlen($value) > $maximum)) {
+                throw new InvalidArgumentException("Payment field `{$field}` must be a string of at most {$maximum} characters.");
+            }
+
+            $details[$field] = $value;
+        }
+
+        if (array_key_exists('metadata', $data)) {
+            if ($data['metadata'] !== null && ! is_array($data['metadata'])) {
+                throw new InvalidArgumentException('Payment field `metadata` must be an array.');
+            }
+
+            $details['metadata'] = $data['metadata'];
+        }
+
+        if (isset($data['paid_at'])) {
+            $details['paid_at'] = self::resolvePaidAt($data['paid_at']);
+        }
+
+        return $details;
     }
 
     private function assertPaymentOwners(Doc $doc): void
@@ -163,19 +192,15 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
 
     private static function resolvePaidAt(mixed $value): CarbonImmutable
     {
-        if ($value === null || $value === '') {
-            return CarbonImmutable::now();
-        }
-
         if ($value instanceof CarbonImmutable) {
             return $value;
         }
 
         if ($value instanceof DateTimeInterface) {
-            return CarbonImmutable::parse($value->format(DateTimeInterface::ATOM));
+            return CarbonImmutable::instance($value);
         }
 
-        if (is_string($value)) {
+        if (is_string($value) && mb_trim($value) !== '') {
             try {
                 return CarbonImmutable::parse($value);
             } catch (Throwable) {
