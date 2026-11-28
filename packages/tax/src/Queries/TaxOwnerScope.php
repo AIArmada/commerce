@@ -7,7 +7,9 @@ namespace AIArmada\Tax\Queries;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -60,5 +62,35 @@ final class TaxOwnerScope
             $owner,
             includeGlobal: (bool) config('tax.features.owner.include_global', false),
         );
+    }
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  list<int|string>  $ids
+     * @return Collection<int, TModel>
+     */
+    public static function lockWritable(Builder $query, array $ids): Collection
+    {
+        $ids = array_values(array_unique($ids));
+
+        if (config('tax.features.owner.enabled', false)) {
+            $query = OwnerQuery::applyToEloquentBuilder(
+                $query->withoutGlobalScope(OwnerScope::class),
+                self::resolve([]),
+                includeGlobal: false,
+            );
+        }
+
+        $records = $query->whereKey($ids)
+            ->orderBy($query->getModel()->getQualifiedKeyName())
+            ->lockForUpdate()
+            ->get();
+
+        if ($records->count() !== count($ids)) {
+            throw new AuthorizationException('Tax record is not accessible in the current owner scope.');
+        }
+
+        return $records;
     }
 }

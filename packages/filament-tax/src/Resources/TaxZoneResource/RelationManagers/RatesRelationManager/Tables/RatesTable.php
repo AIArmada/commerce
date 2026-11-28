@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Tax\Models\TaxRate;
+use AIArmada\Tax\Actions\DeleteTaxRatesAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -66,16 +65,7 @@ final class RatesTable
                     ->requiresConfirmation()
                     ->authorizeIndividualRecords('delete')
                     ->action(function (Collection $records): void {
-                        foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxRate::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax rate is not accessible in the current owner scope.',
-                            );
-
-                            $verified->delete();
-                        }
+                        app(DeleteTaxRatesAction::class)->execute($records->modelKeys());
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);

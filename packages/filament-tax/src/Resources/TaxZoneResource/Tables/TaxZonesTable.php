@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\Tables;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Tax\Actions\DeleteTaxZonesAction;
 use AIArmada\Tax\Models\TaxZone;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
@@ -79,16 +79,7 @@ final class TaxZonesTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxZone::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax zone is not accessible in the current owner scope.',
-                            );
-
-                            $verified->delete();
-                        }
+                        app(DeleteTaxZonesAction::class)->execute($records->modelKeys());
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);

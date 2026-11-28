@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Tables;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Tax\Models\TaxRate;
+use AIArmada\Tax\Actions\DeleteTaxRatesAction;
+use AIArmada\Tax\Actions\SetTaxRatesActiveAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -117,16 +117,7 @@ final class TaxRatesTable
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxRate::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax rate is not accessible in the current owner scope.',
-                            );
-
-                            $verified->update(['is_active' => true]);
-                        }
+                        app(SetTaxRatesActiveAction::class)->execute($records->modelKeys(), true);
                     })
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('deactivate')
@@ -135,16 +126,7 @@ final class TaxRatesTable
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxRate::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax rate is not accessible in the current owner scope.',
-                            );
-
-                            $verified->update(['is_active' => false]);
-                        }
+                        app(SetTaxRatesActiveAction::class)->execute($records->modelKeys(), false);
                     })
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('delete')
@@ -154,16 +136,7 @@ final class TaxRatesTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function ($records): void {
-                        foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxRate::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax rate is not accessible in the current owner scope.',
-                            );
-
-                            $verified->delete();
-                        }
+                        app(DeleteTaxRatesAction::class)->execute($records->modelKeys());
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);
