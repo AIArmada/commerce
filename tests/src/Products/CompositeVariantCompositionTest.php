@@ -243,3 +243,36 @@ it('rejects foreign parent variants even when pricing or supplied components byp
         ->and(fn () => $service->assertPublishable($a, $components, $variant))
         ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product');
 });
+
+it('rejects supplied component graphs from another product or another variant', function (): void {
+    $leaf = variantCompositeLeaf('Supplied Graph Leaf', 100);
+    $parent = variantCompositeParent('Supplied Graph Parent');
+    $other = variantCompositeParent('Other Graph Parent');
+    $first = variantCompositeOption($parent, 'First Graph', ['price_mode' => 'fixed', 'price' => 500]);
+    $second = variantCompositeOption($parent, 'Second Graph');
+    $foreign = variantCompositeOption($other, 'Foreign Graph');
+    $replace = app(ReplaceProductComponents::class);
+    $ownComponents = $replace->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], $first);
+    $otherVariantComponents = $replace->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ], $second);
+    $foreignComponents = $replace->handle($other, [
+        ['component_product_id' => $leaf->id, 'quantity' => 3],
+    ], $foreign);
+    $service = app(CompositePackageService::class);
+
+    expect($service->priceFor($parent, $ownComponents, $first))->toBe(500);
+
+    foreach ([$otherVariantComponents, $foreignComponents] as $components) {
+        expect(fn () => $service->priceFor($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->snapshot($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->availability($parent, $components, parentVariant: $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->assertPublishable($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner');
+    }
+});

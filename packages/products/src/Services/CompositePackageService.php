@@ -47,6 +47,8 @@ final class CompositePackageService
     public function priceFor(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): int
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
 
         return $this->recursivePrice($product, $components, [], $parentVariant);
     }
@@ -56,6 +58,7 @@ final class CompositePackageService
     {
         $this->assertParentAccessible($product);
         $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant);
@@ -94,6 +97,7 @@ final class CompositePackageService
     {
         $this->assertParentAccessible($product);
         $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         if ($components->isEmpty()) {
@@ -213,6 +217,7 @@ final class CompositePackageService
     public function assertPublishable(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): void
     {
         $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
 
         if ($product->supportsVariants() && $parentVariant === null) {
             $variants = $product->variants()->where('is_enabled', true)->get();
@@ -499,6 +504,23 @@ final class CompositePackageService
         }
 
         return $entry;
+    }
+
+    /** @param Collection<int, ProductComponent>|null $components */
+    private function assertComponentScope(Product $product, ?Collection $components, ?Variant $parentVariant): void
+    {
+        if ($components === null) {
+            return;
+        }
+
+        foreach ($components as $component) {
+            if ((string) $component->product_id !== (string) $product->getKey()
+                || (string) $component->parent_variant_id !== (string) $parentVariant?->getKey()
+                || (string) $component->owner_type !== (string) $product->owner_type
+                || (string) $component->owner_id !== (string) $product->owner_id) {
+                throw new InvalidCompositePackageException('Composite components must belong to the selected product, variant and owner.');
+            }
+        }
     }
 
     private function assertParentVariant(Product $product, ?Variant $parentVariant): void
