@@ -33,13 +33,26 @@ final readonly class WorkflowConditions
         return true;
     }
 
+    public static function matchesOwner(?string $ruleType, int|string|null $ruleId, ?string $docType, int|string|null $docId, bool $includeGlobal): bool
+    {
+        if (($ruleType === null) !== ($ruleId === null) || ($docType === null) !== ($docId === null)) {
+            return false;
+        }
+
+        if ($ruleType === $docType && (string) $ruleId === (string) $docId) {
+            return true;
+        }
+
+        return $includeGlobal && $ruleType === null && $ruleId === null;
+    }
+
     private static function matchesCondition(mixed $value, mixed $condition): bool
     {
         if (! is_array($condition)) {
             return $value === $condition;
         }
 
-        $operator = $condition['operator'] ?? '=';
+        $operator = array_key_exists('operator', $condition) ? $condition['operator'] : '=';
         if (! array_key_exists('value', $condition)) {
             return false;
         }

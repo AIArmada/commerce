@@ -306,6 +306,7 @@ test('workflow and step rules reject unknown fields and malformed operators cons
 
     foreach ([
         ['total_minor' => ['operator' => 'unknown', 'value' => 5000]],
+        ['total_minor' => ['operator' => null, 'value' => 5000]],
         ['missing_field' => null],
         ['total_minor' => ['operator' => '>']],
         ['total_minor' => ['operator' => '>', 'value' => '100']],
@@ -324,4 +325,47 @@ test('workflow and step rules reject unknown fields and malformed operators cons
 
     expect($workflow->appliesTo($doc))->toBeTrue()
         ->and($step->conditionsMet($doc))->toBeTrue();
+});
+
+test('workflow rules and steps reject documents outside their owner boundary', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', false);
+
+    $doc = new Doc;
+    $doc->forceFill(['owner_type' => 'tenant', 'owner_id' => 'tenant-a']);
+
+    $workflow = new DocWorkflow(['is_active' => true]);
+    $step = new DocWorkflowStep;
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_type' => 'tenant', 'owner_id' => 'tenant-b']);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_id' => 'tenant-a']);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_type' => null, 'owner_id' => null]);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
+
+    config()->set('docs.owner.include_global', true);
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
+
+    $workflow->forceFill(['owner_type' => 'tenant']);
+    $step->forceFill(['owner_type' => 'tenant']);
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
 });

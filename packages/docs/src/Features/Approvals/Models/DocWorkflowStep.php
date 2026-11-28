@@ -129,6 +129,16 @@ final class DocWorkflowStep extends Model implements Auditable
      */
     public function conditionsMet(Doc $doc): bool
     {
+        if (config('docs.owner.enabled', false) && ! WorkflowConditions::matchesOwner(
+            $this->owner_type,
+            $this->owner_id,
+            $doc->owner_type,
+            $doc->owner_id,
+            (bool) config('docs.owner.include_global', false),
+        )) {
+            return false;
+        }
+
         return WorkflowConditions::matches($doc->attributesToArray(), $this->conditions ?? []);
     }
 
