@@ -39,9 +39,9 @@ final class PostcodeMatcher
 
     private static function compareDigits(string $left, string $right): int
     {
-        $left = ltrim($left, '0');
-        $right = ltrim($right, '0');
+        $left = mb_ltrim($left, '0');
+        $right = mb_ltrim($right, '0');
 
-        return strlen($left) <=> strlen($right) ?: strcmp($left, $right);
+        return mb_strlen($left) <=> mb_strlen($right) ?: strcmp($left, $right);
     }
 }

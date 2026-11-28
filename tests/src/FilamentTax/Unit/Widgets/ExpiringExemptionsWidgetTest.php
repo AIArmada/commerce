@@ -44,7 +44,6 @@ it('queries only exemptions expiring within 30 days', function (): void {
         'expires_at' => now()->addDays(10),
     ]);
 
-
     foreach (['rejected', 'revoked', 'expired'] as $status) {
         TaxExemption::create([
             'exemptable_type' => TaxClass::class,

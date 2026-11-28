@@ -99,7 +99,6 @@ it('returns a navigation badge when exemptions are expiring soon', function (): 
         'expires_at' => now()->addDays(10),
     ]);
 
-
     foreach (['pending', 'rejected', 'revoked', 'expired'] as $status) {
         TaxExemption::create([
             'exemptable_type' => TaxClass::class,

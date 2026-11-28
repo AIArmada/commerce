@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Actions\InviteMemberAction;
-use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
