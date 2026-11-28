@@ -10,6 +10,8 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
@@ -236,4 +238,54 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
     expect($suggestions->getEligibleVouchers())->toBeEmpty();
     $suggestions->applySuggestion((string) $voucher->getKey());
 
+});
+
+it('honors the exact owner scope when global voucher suggestions are suppressed', function (): void {
+    config()->set('cart.owner.enabled', false);
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Exact Owner',
+        'email' => 'exact-owner-voucher-suggestions@example.com',
+        'password' => 'secret',
+    ]);
+
+    $global = OwnerContext::withOwner(null, fn () => Voucher::query()->create([
+        'code' => 'GLOBAL-SUGGESTION',
+        'name' => 'Global Voucher',
+        'type' => VoucherType::Fixed,
+        'value' => 500,
+        'currency' => 'USD',
+        'status' => 'active',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global): void {
+        $cart = Cart::query()->create([
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+            'instance' => 'default',
+            'identifier' => 'exact-owner-suggestion',
+            'currency' => 'USD',
+            'subtotal' => 10000,
+            'total' => 10000,
+        ]);
+
+        $manager = Mockery::mock(CartInstanceManager::class);
+        $manager->shouldReceive('resolveForSnapshot')->once()
+            ->andReturn(new LiveCart(new InMemoryStorage, $cart->identifier));
+        app()->instance(CartInstanceManager::class, $manager);
+
+        $applicator = Mockery::mock(CartVoucherApplicator::class);
+        $applicator->shouldNotReceive('handle');
+        app()->instance(CartVoucherApplicator::class, $applicator);
+
+        $widget = app(VoucherSuggestionsWidget::class);
+        $widget->record = $cart;
+
+        OwnerScopeOverride::withoutIncludeGlobal(function () use ($widget, $global): void {
+            expect($widget->getEligibleVouchers())->toBeEmpty();
+            $widget->applySuggestion((string) $global->getKey());
+        });
+    });
 });

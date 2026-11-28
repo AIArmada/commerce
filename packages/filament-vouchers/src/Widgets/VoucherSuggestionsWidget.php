@@ -8,7 +8,7 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
@@ -66,15 +66,7 @@ final class VoucherSuggestionsWidget extends Widget
             $cartCurrency = $this->record->currency;
 
             // Get active vouchers
-            $voucherQuery = Voucher::query();
-
-            if (config('vouchers.owner.enabled', false)) {
-                $voucherQuery = OwnerQuery::applyToEloquentBuilder(
-                    $voucherQuery,
-                    OwnerContext::resolve(),
-                    (bool) config('vouchers.owner.include_global', false),
-                );
-            }
+            $voucherQuery = $this->suggestionQuery();
 
             /** @var Builder<Voucher> $voucherQuery */
             $vouchers = $voucherQuery
@@ -223,17 +215,25 @@ final class VoucherSuggestionsWidget extends Widget
         }
     }
 
+    /** @return Builder<Voucher> */
+    private function suggestionQuery(): Builder
+    {
+        $query = Voucher::query();
+
+        if (! config('vouchers.owner.enabled', false)) {
+            return $query;
+        }
+
+        $scope = Voucher::ownerScopeConfig();
+        $owner = OwnerContext::resolveConfigured($scope);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return $query->forOwner($owner, $scope->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal());
+    }
+
     private function resolveVoucherForSuggestion(string $voucherId): ?Voucher
     {
-        $voucherQuery = Voucher::query();
-
-        if (config('vouchers.owner.enabled', false)) {
-            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
-                $voucherQuery,
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            );
-        }
+        $voucherQuery = $this->suggestionQuery();
 
         /** @var Voucher|null $voucher */
         $voucher = $voucherQuery->whereKey($voucherId)->first();

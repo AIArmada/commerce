@@ -84,7 +84,7 @@ final class CreateVoucher implements VoucherCreator
                     $createData = VoucherAffiliateOwnershipGuard::sanitize($createData);
 
                     if (config('vouchers.owner.enabled', false)) {
-                        $owner = OwnerContext::resolve();
+                        $owner = OwnerContext::resolveConfigured(VoucherModel::ownerScopeConfig());
                         OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
                         $createData['owner_type'] = $owner?->getMorphClass();
