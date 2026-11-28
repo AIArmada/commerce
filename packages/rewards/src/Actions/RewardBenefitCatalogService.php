@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
-use AIArmada\Rewards\Support\RewardFinancialReadinessAssessment;
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
@@ -12,11 +12,10 @@ use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Data\RewardAwardSnapshot;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -33,11 +32,9 @@ use InvalidArgumentException;
  */
 final class RewardBenefitCatalogService implements RewardBenefitCatalog
 {
-    public function coversProgram(RewardProgram $program, ?RewardProgramVersion $version): bool
+    public function coversProgram(string $programId, ?RewardVersionSnapshot $version): bool
     {
-        $version ??= $program->currentVersion()->first();
-
-        if (! $version instanceof RewardProgramVersion) {
+        if (! $version instanceof RewardVersionSnapshot) {
             return false;
         }
 
@@ -48,7 +45,7 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         }
 
         foreach ($keys as $key) {
-            if (! $this->itemReady((string) $program->getKey(), $key)) {
+            if (! $this->itemReady((string) $programId, $key)) {
                 return false;
             }
         }
@@ -56,13 +53,13 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         return true;
     }
 
-    public function assess(RewardAward $award, bool $fulfill): RewardFinancialReadinessAssessment
+    public function assess(RewardAwardSnapshot $award, bool $fulfill): RewardFinancialReadinessAssessment
     {
-        if ($award->component !== RewardComponent::Benefit) {
+        if ($award->component !== RewardComponent::Benefit->value) {
             return new RewardFinancialReadinessAssessment(ready: true);
         }
 
-        $key = $award->amount_snapshot['benefit_key'] ?? null;
+        $key = $award->amountSnapshot['benefit_key'] ?? null;
 
         if (! is_string($key) || $key === '') {
             return new RewardFinancialReadinessAssessment(
@@ -71,7 +68,7 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
             );
         }
 
-        if (! $this->itemReady((string) $award->program_id, $key)) {
+        if (! $this->itemReady((string) $award->programId, $key)) {
             return new RewardFinancialReadinessAssessment(
                 ready: false,
                 blockers: ['benefit-item-unavailable:' . $key],
@@ -87,7 +84,7 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         }
 
         $grant = RewardBenefitGrant::query()
-            ->where('award_id', $award->getKey())
+            ->where('award_id', $award->id)
             ->first();
 
         if ($grant instanceof RewardBenefitGrant
@@ -105,15 +102,15 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         );
     }
 
-    public function fulfill(RewardAward $award, CarbonImmutable $decided): void
+    public function fulfill(RewardAwardSnapshot $award, CarbonImmutable $decided): void
     {
-        $key = $award->amount_snapshot['benefit_key'] ?? null;
+        $key = $award->amountSnapshot['benefit_key'] ?? null;
 
         if (! is_string($key) || $key === '') {
             throw new InvalidArgumentException('Refused: benefit award carries no frozen benefit key.');
         }
 
-        $grantKey = 'award-grant:' . (string) $award->getKey();
+        $grantKey = 'award-grant:' . (string) $award->id;
 
         $existing = RewardBenefitGrant::query()->where('grant_key', $grantKey)->lockForUpdate()->first();
 
@@ -122,7 +119,7 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         }
 
         $item = RewardBenefitItem::query()
-            ->where('program_id', (string) $award->program_id)
+            ->where('program_id', (string) $award->programId)
             ->where('benefit_key', $key)
             ->lockForUpdate()
             ->first();
@@ -150,9 +147,9 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         $grant = RewardBenefitGrant::query()->create([
             'grant_key' => $grantKey,
             'item_id' => $item->getKey(),
-            'recipient_type' => (string) $award->recipient_type,
-            'recipient_id' => (string) $award->recipient_id,
-            'award_id' => $award->getKey(),
+            'recipient_type' => (string) $award->recipientType,
+            'recipient_id' => (string) $award->recipientId,
+            'award_id' => $award->id,
             'reservation_key' => null,
             'quantity' => 1,
             'status' => RewardBenefitGrantStatus::Reserved,

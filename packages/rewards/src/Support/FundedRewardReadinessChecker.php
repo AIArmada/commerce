@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardReadinessAssessment;
+
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Models\RewardFundingEntry;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 
 /**
  * Real program-lifecycle readiness backed by funded finance adapters.
@@ -30,9 +31,9 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
         private readonly RewardPayoutMethodCatalog $catalog,
     ) {}
 
-    public function canMarkReady(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment
+    public function canMarkReady(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment
     {
-        if (! $version instanceof RewardProgramVersion) {
+        if (! $version instanceof RewardVersionSnapshot) {
             return new RewardReadinessAssessment(
                 ready: false,
                 blockers: ['no-published-version'],
@@ -46,9 +47,9 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
         );
     }
 
-    public function canActivate(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment
+    public function canActivate(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment
     {
-        if (! $version instanceof RewardProgramVersion) {
+        if (! $version instanceof RewardVersionSnapshot) {
             return new RewardReadinessAssessment(
                 ready: false,
                 blockers: ['no-published-version'],
@@ -69,7 +70,7 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
 
             foreach ($currencies as $currency) {
                 $funded = (int) RewardFundingEntry::query()
-                    ->where('program_id', $program->getKey())
+                    ->where('program_id', $programId)
                     ->where('currency', $currency)
                     ->sum('amount_minor');
 
@@ -93,7 +94,7 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
         }
 
         if (in_array(RewardComponent::Benefit, $components, true)) {
-            if (! $this->benefitCatalogAvailable($program, $version)) {
+            if (! $this->benefitCatalogAvailable($programId, $version)) {
                 $blockers[] = 'benefit-catalog-unavailable';
             } else {
                 $notes[] = 'Benefit catalog available for configured benefit keys.';
@@ -112,11 +113,11 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
     /**
      * @return list<RewardComponent>
      */
-    private function components(RewardProgramVersion $version): array
+    private function components(RewardVersionSnapshot $version): array
     {
         $components = [];
 
-        foreach ($version->componentTypes() as $type) {
+        foreach ($version->componentTypes as $type) {
             $component = RewardComponent::tryFrom($type);
 
             if ($component instanceof RewardComponent) {
@@ -130,7 +131,7 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
     /**
      * @return list<string>
      */
-    private function cashCurrencies(RewardProgramVersion $version): array
+    private function cashCurrencies(RewardVersionSnapshot $version): array
     {
         $currencies = [];
         $components = $version->rules['components'] ?? [];
@@ -156,12 +157,12 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
         return array_values(array_unique($currencies));
     }
 
-    private function benefitCatalogAvailable(RewardProgram $program, ?RewardProgramVersion $version): bool
+    private function benefitCatalogAvailable(string $programId, ?RewardVersionSnapshot $version): bool
     {
         if (! interface_exists(RewardBenefitCatalog::class)) {
             return false;
         }
 
-        return app(RewardBenefitCatalog::class)->coversProgram($program, $version);
+        return app(RewardBenefitCatalog::class)->coversProgram($programId, $version);
     }
 }

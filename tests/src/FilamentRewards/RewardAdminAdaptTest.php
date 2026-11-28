@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -573,8 +574,8 @@ it('requires funding for every cash variant currency before activation', functio
 
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
-        $ready,
-        $ready->versions()->orderByDesc('version')->firstOrFail(),
+        (string) $ready->getKey(),
+        RewardReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()
@@ -636,8 +637,8 @@ it('requires catalog items for every benefit variant key before activation', fun
     $createBenefit('attendance-pack', 'Attendance Pack');
     $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
-        $ready,
-        $ready->versions()->orderByDesc('version')->firstOrFail(),
+        (string) $ready->getKey(),
+        RewardReadinessMapper::version($ready->versions()->orderByDesc('version')->firstOrFail()),
     );
 
     expect($blocked->ready)->toBeFalse()

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
+
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Data\RewardAwardSnapshot;
 
 /**
  * Truthful null financial readiness: no funding, payee, or fulfillment
@@ -16,7 +18,7 @@ use AIArmada\Rewards\Models\RewardAward;
  */
 final class NullRewardFinancialReadinessChecker implements RewardFinancialReadinessChecker
 {
-    public function canApproveFinancial(RewardAward $award): RewardFinancialReadinessAssessment
+    public function canApproveFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment
     {
         return new RewardFinancialReadinessAssessment(
             ready: false,
@@ -29,7 +31,7 @@ final class NullRewardFinancialReadinessChecker implements RewardFinancialReadin
         );
     }
 
-    public function canFulfillFinancial(RewardAward $award): RewardFinancialReadinessAssessment
+    public function canFulfillFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment
     {
         return new RewardFinancialReadinessAssessment(
             ready: false,

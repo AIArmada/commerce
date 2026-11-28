@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Support\RewardFinancialReadinessAssessment;
+use AIArmada\Rewards\Data\RewardAwardSnapshot;
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 
 /**
  * Per-award financial readiness for cash/benefit components.
@@ -18,7 +18,7 @@ use AIArmada\Rewards\Support\RewardFinancialReadinessAssessment;
  */
 interface RewardFinancialReadinessChecker
 {
-    public function canApproveFinancial(RewardAward $award): RewardFinancialReadinessAssessment;
+    public function canApproveFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment;
 
-    public function canFulfillFinancial(RewardAward $award): RewardFinancialReadinessAssessment;
+    public function canFulfillFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment;
 }

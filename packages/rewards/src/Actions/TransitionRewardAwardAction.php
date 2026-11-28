@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
@@ -256,8 +257,8 @@ final readonly class TransitionRewardAwardAction
 
         if ($locked->component->requiresMoneyOrBenefitFulfillment()) {
             $assessment = $toEnum === RewardAwardStatus::Fulfilled
-                ? $checker->canFulfillFinancial($locked)
-                : $checker->canApproveFinancial($locked);
+                ? $checker->canFulfillFinancial(RewardReadinessMapper::award($locked))
+                : $checker->canApproveFinancial(RewardReadinessMapper::award($locked));
 
             $entryEvidence['financial_readiness'] = [
                 'ready' => $assessment->ready,
@@ -1366,7 +1367,7 @@ final readonly class TransitionRewardAwardAction
             );
         }
 
-        app(RewardBenefitCatalog::class)->fulfill($award, $decided);
+        app(RewardBenefitCatalog::class)->fulfill(RewardReadinessMapper::award($award), $decided);
     }
 
     private function reverseConsumedPoints(

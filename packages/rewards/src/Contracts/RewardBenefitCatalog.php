@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardFinancialReadinessAssessment;
+use AIArmada\Rewards\Data\RewardAwardSnapshot;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 use Carbon\CarbonImmutable;
 
 /**
@@ -21,9 +20,9 @@ use Carbon\CarbonImmutable;
  */
 interface RewardBenefitCatalog
 {
-    public function coversProgram(RewardProgram $program, ?RewardProgramVersion $version): bool;
+    public function coversProgram(string $programId, ?RewardVersionSnapshot $version): bool;
 
-    public function assess(RewardAward $award, bool $fulfill): RewardFinancialReadinessAssessment;
+    public function assess(RewardAwardSnapshot $award, bool $fulfill): RewardFinancialReadinessAssessment;
 
-    public function fulfill(RewardAward $award, CarbonImmutable $decided): void;
+    public function fulfill(RewardAwardSnapshot $award, CarbonImmutable $decided): void;
 }

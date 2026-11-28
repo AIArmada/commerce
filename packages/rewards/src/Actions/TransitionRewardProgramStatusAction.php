@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -65,8 +66,8 @@ final readonly class TransitionRewardProgramStatusAction
                     ->first();
 
                 $assessment = $toEnum === RewardProgramStatus::Ready
-                    ? $checker->canMarkReady($locked, $latest)
-                    : $checker->canActivate($locked, $latest);
+                    ? $checker->canMarkReady((string) $locked->getKey(), RewardReadinessMapper::version($latest))
+                    : $checker->canActivate((string) $locked->getKey(), RewardReadinessMapper::version($latest));
 
                 if (! $assessment->ready) {
                     throw new InvalidArgumentException(

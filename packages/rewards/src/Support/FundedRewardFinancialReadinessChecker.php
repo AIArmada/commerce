@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
+
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Data\RewardAwardSnapshot;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
@@ -38,19 +40,19 @@ final class FundedRewardFinancialReadinessChecker implements RewardFinancialRead
         private readonly RewardPayoutMethodCatalog $catalog,
     ) {}
 
-    public function canApproveFinancial(RewardAward $award): RewardFinancialReadinessAssessment
+    public function canApproveFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment
     {
-        if ($award->component === RewardComponent::Benefit) {
+        if ($award->component === RewardComponent::Benefit->value) {
             return $this->benefitAssessment($award, false);
         }
 
-        if ($award->component !== RewardComponent::Cash) {
+        if ($award->component !== RewardComponent::Cash->value) {
             return new RewardFinancialReadinessAssessment(ready: true);
         }
 
         $blockers = [];
         $notes = [];
-        $amount = $award->amount_snapshot;
+        $amount = $award->amountSnapshot;
         $minor = $amount['minor_units'] ?? null;
         $currency = $amount['currency'] ?? null;
 
@@ -70,19 +72,19 @@ final class FundedRewardFinancialReadinessChecker implements RewardFinancialRead
             );
         }
 
-        $balances = RewardBudgetLedger::balances((string) $award->program_id, $currency);
+        $balances = RewardBudgetLedger::balances((string) $award->programId, $currency);
 
         // Own-obligation aware: the held award already reserves its value
         // inside `reserved`, so the gate credits the live obligation back
         // and prices only the uncovered remainder. A retired obligation
         // (rejection/request conversion) credits nothing.
         $ownReserved = 0;
-        $epoch = $award->obligation_epoch;
-        $obligated = $award->obligated_minor;
+        $epoch = $award->obligationEpoch;
+        $obligated = $award->obligatedMinor;
 
         if (is_int($epoch) && is_int($obligated) && $obligated > 0) {
             $retired = RewardBudgetMovement::query()
-                ->where('movement_key', RewardBudgetLedger::releaseObligateKey((string) $award->getKey(), $epoch))
+                ->where('movement_key', RewardBudgetLedger::releaseObligateKey((string) $award->id, $epoch))
                 ->exists();
 
             if (! $retired) {
@@ -97,8 +99,8 @@ final class FundedRewardFinancialReadinessChecker implements RewardFinancialRead
         }
 
         $payee = RewardPayee::query()
-            ->where('recipient_type', (string) $award->recipient_type)
-            ->where('recipient_id', (string) $award->recipient_id)
+            ->where('recipient_type', (string) $award->recipientType)
+            ->where('recipient_id', (string) $award->recipientId)
             ->where('status', RewardPayeeStatus::Verified->value)
             ->orderByDesc('verified_at')
             ->first();
@@ -118,18 +120,18 @@ final class FundedRewardFinancialReadinessChecker implements RewardFinancialRead
         return new RewardFinancialReadinessAssessment(ready: true, notes: $notes);
     }
 
-    public function canFulfillFinancial(RewardAward $award): RewardFinancialReadinessAssessment
+    public function canFulfillFinancial(RewardAwardSnapshot $award): RewardFinancialReadinessAssessment
     {
-        if ($award->component === RewardComponent::Benefit) {
+        if ($award->component === RewardComponent::Benefit->value) {
             return $this->benefitAssessment($award, true);
         }
 
-        if ($award->component !== RewardComponent::Cash) {
+        if ($award->component !== RewardComponent::Cash->value) {
             return new RewardFinancialReadinessAssessment(ready: true);
         }
 
         $request = RewardPayoutRequest::query()
-            ->where('award_id', $award->getKey())
+            ->where('award_id', $award->id)
             ->first();
 
         if (! $request instanceof RewardPayoutRequest) {
@@ -166,7 +168,7 @@ final class FundedRewardFinancialReadinessChecker implements RewardFinancialRead
         );
     }
 
-    private function benefitAssessment(RewardAward $award, bool $fulfill): RewardFinancialReadinessAssessment
+    private function benefitAssessment(RewardAwardSnapshot $award, bool $fulfill): RewardFinancialReadinessAssessment
     {
         if (! interface_exists(RewardBenefitCatalog::class) || ! app()->bound(RewardBenefitCatalog::class)) {
             return new RewardFinancialReadinessAssessment(

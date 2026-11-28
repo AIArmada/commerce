@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Data;
 
-final readonly class RewardReadinessAssessment
+final readonly class RewardFinancialReadinessAssessment
 {
     /**
      * @param  list<string>  $blockers

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardReadinessAssessment;
+
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Data\RewardVersionSnapshot;
 
 /**
  * Truthful null readiness implementation for the core slice.
@@ -19,9 +20,9 @@ use AIArmada\Rewards\Models\RewardProgramVersion;
  */
 final class NullRewardReadinessChecker implements RewardReadinessChecker
 {
-    public function canMarkReady(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment
+    public function canMarkReady(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment
     {
-        if (! $version instanceof RewardProgramVersion) {
+        if (! $version instanceof RewardVersionSnapshot) {
             return new RewardReadinessAssessment(
                 ready: false,
                 blockers: ['no-published-version'],
@@ -38,9 +39,9 @@ final class NullRewardReadinessChecker implements RewardReadinessChecker
         return new RewardReadinessAssessment(ready: true, notes: $notes);
     }
 
-    public function canActivate(RewardProgram $program, ?RewardProgramVersion $version): RewardReadinessAssessment
+    public function canActivate(string $programId, ?RewardVersionSnapshot $version): RewardReadinessAssessment
     {
-        if (! $version instanceof RewardProgramVersion) {
+        if (! $version instanceof RewardVersionSnapshot) {
             return new RewardReadinessAssessment(
                 ready: false,
                 blockers: ['no-published-version'],
@@ -67,9 +68,9 @@ final class NullRewardReadinessChecker implements RewardReadinessChecker
         );
     }
 
-    private function involvesMoneyOrBenefit(RewardProgramVersion $version): bool
+    private function involvesMoneyOrBenefit(RewardVersionSnapshot $version): bool
     {
-        foreach ($version->componentTypes() as $type) {
+        foreach ($version->componentTypes as $type) {
             $component = RewardComponent::tryFrom($type);
 
             if ($component instanceof RewardComponent && $component->requiresMoneyOrBenefitFulfillment()) {
