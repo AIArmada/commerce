@@ -134,24 +134,6 @@ final class DocApproval extends Model implements Auditable
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
-    public function approve(?string $comments = null): void
-    {
-        $this->update([
-            'status' => DocApprovalStatus::Approved,
-            'approved_at' => CarbonImmutable::now(),
-            'comments' => $comments,
-        ]);
-    }
-
-    public function reject(?string $comments = null): void
-    {
-        $this->update([
-            'status' => DocApprovalStatus::Rejected,
-            'rejected_at' => CarbonImmutable::now(),
-            'comments' => $comments,
-        ]);
-    }
-
     /**
      * @return array<string, string>
      */

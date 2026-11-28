@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\Docs\Contracts\DocumentApprovals;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
@@ -239,7 +240,7 @@ final class PendingApprovalsPage extends Page implements HasTable
         self::assertCanActOnApproval($approval);
         DocsOwnerScope::assertCanMutateRecord($approval, 'Approval not found.');
 
-        $approval->approve($comments);
+        app(DocumentApprovals::class)->decide((string) $approval->doc_id, (string) $approval->getKey(), (string) Auth::id(), true, $comments);
     }
 
     private static function rejectApproval(DocApproval $approval, string $comments): void
@@ -247,7 +248,7 @@ final class PendingApprovalsPage extends Page implements HasTable
         self::assertCanActOnApproval($approval);
         DocsOwnerScope::assertCanMutateRecord($approval, 'Approval not found.');
 
-        $approval->reject($comments);
+        app(DocumentApprovals::class)->decide((string) $approval->doc_id, (string) $approval->getKey(), (string) Auth::id(), false, $comments);
     }
 
     private static function assertCanActOnApproval(DocApproval $approval): void

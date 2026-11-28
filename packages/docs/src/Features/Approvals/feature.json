@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Approvals",
+  "owns": {
+    "table:docs_approvals": [
+      "AIArmada\\Docs\\Features\\Approvals\\Actions\\DecideDocApproval"
+    ]
+  },
+  "extensions": {}
+}

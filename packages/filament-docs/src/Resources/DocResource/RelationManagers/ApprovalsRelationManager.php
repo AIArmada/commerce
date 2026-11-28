@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentApprovals;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
@@ -161,9 +162,16 @@ final class ApprovalsRelationManager extends RelationManager
                         self::assertUserCanActOnApproval($record);
                         DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
 
-                        $record->approve($data['comments'] ?? null);
+                        app(DocumentApprovals::class)->decide(
+                            (string) $this->getOwnerRecord()->getKey(),
+                            (string) $record->getKey(),
+                            (string) auth()->id(),
+                            true,
+                            $data['comments'] ?? null,
+                            DocPermissions::allows(DocPermissions::DOCUMENT_APPROVAL, 'approve'),
+                        );
                     })
-                    ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
+                    ->visible(fn (DocApproval $record): bool => $record->isPending() && ! $record->isExpired() && self::userCanActOnApproval($record)),
 
                 Action::make('reject')
                     ->icon('heroicon-o-x-circle')
@@ -180,9 +188,16 @@ final class ApprovalsRelationManager extends RelationManager
                         self::assertUserCanActOnApproval($record);
                         DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
 
-                        $record->reject($data['comments']);
+                        app(DocumentApprovals::class)->decide(
+                            (string) $this->getOwnerRecord()->getKey(),
+                            (string) $record->getKey(),
+                            (string) auth()->id(),
+                            false,
+                            $data['comments'],
+                            DocPermissions::allows(DocPermissions::DOCUMENT_APPROVAL, 'approve'),
+                        );
                     })
-                    ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
+                    ->visible(fn (DocApproval $record): bool => $record->isPending() && ! $record->isExpired() && self::userCanActOnApproval($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
