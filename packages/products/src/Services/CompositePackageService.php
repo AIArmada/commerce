@@ -33,10 +33,7 @@ final class CompositePackageService
     {
         $this->assertParentAccessible($product);
 
-        if ($parentVariant !== null && ((string) $parentVariant->product_id !== (string) $product->getKey()
-            || ! $product->supportsVariants())) {
-            throw new InvalidCompositePackageException('Composite parent variant must belong to the selected product.');
-        }
+        $this->assertParentVariant($product, $parentVariant);
 
         return ProductComponent::query()
             ->where('product_id', $product->getKey())
@@ -58,6 +55,7 @@ final class CompositePackageService
     public function snapshot(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): CompositeSnapshot
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant);
@@ -95,6 +93,7 @@ final class CompositePackageService
     public function availability(Product $product, ?Collection $components = null, array $context = [], ?Variant $parentVariant = null): CompositeAvailability
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         if ($components->isEmpty()) {
@@ -213,6 +212,8 @@ final class CompositePackageService
     /** @param Collection<int, ProductComponent>|null $components */
     public function assertPublishable(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): void
     {
+        $this->assertParentVariant($product, $parentVariant);
+
         if ($product->supportsVariants() && $parentVariant === null) {
             $variants = $product->variants()->where('is_enabled', true)->get();
 
@@ -236,6 +237,8 @@ final class CompositePackageService
 
     public function priceModeFor(Product $product, ?Variant $parentVariant = null): CompositePriceMode
     {
+        $this->assertParentVariant($product, $parentVariant);
+
         $value = $parentVariant?->price_mode ?? $product->getAttribute('price_mode');
 
         if ($value instanceof CompositePriceMode) {
@@ -496,6 +499,20 @@ final class CompositePackageService
         }
 
         return $entry;
+    }
+
+    private function assertParentVariant(Product $product, ?Variant $parentVariant): void
+    {
+        if ($parentVariant === null) {
+            return;
+        }
+
+        if ((string) $parentVariant->product_id !== (string) $product->getKey()
+            || ! $product->supportsVariants()
+            || (string) $parentVariant->owner_type !== (string) $product->owner_type
+            || (string) $parentVariant->owner_id !== (string) $product->owner_id) {
+            throw new InvalidCompositePackageException('Composite parent variant must belong to the selected product.');
+        }
     }
 
     private function assertParentAccessible(Product $product): void

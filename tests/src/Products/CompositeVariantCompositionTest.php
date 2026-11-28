@@ -11,6 +11,7 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Support\Str;
 
 function variantCompositeLeaf(string $name, int $price): Product
@@ -219,4 +220,26 @@ it('prevents changing variant composition mode after variants or component graph
 
     expect(fn () => $parent->update(['supports_variants' => false]))
         ->toThrow(InvalidCompositePackageException::class, 'variant mode is immutable');
+});
+
+it('rejects foreign parent variants even when pricing or supplied components bypass graph queries', function (): void {
+    $a = variantCompositeParent('First Fixed Price Graph');
+    $b = variantCompositeParent('Second Fixed Price Graph');
+    $variant = variantCompositeOption($b, 'Foreign Fixed Price', [
+        'price_mode' => 'fixed',
+        'price' => 999,
+    ]);
+    $service = app(CompositePackageService::class);
+    $components = $service->componentsFor($a);
+
+    expect(fn () => $service->priceFor($a, parentVariant: $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->priceModeFor($a, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->snapshot($a, $components, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->availability($a, $components, parentVariant: $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->assertPublishable($a, $components, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product');
 });
