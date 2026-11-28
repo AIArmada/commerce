@@ -21,7 +21,7 @@ use Carbon\CarbonImmutable;
 
 describe('SerialService', function (): void {
     beforeEach(function (): void {
-        $this->service = new SerialService;
+        $this->service = app(SerialService::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
@@ -294,7 +294,7 @@ describe('SerialService', function (): void {
 
 it('rejects a second reservation from a stale serial instance', function (): void {
     $item = InventoryItem::create(['name' => 'Serialized item']);
-    $service = new SerialService;
+    $service = app(SerialService::class);
     $serial = $service->register($item, 'SN-STALE-RESERVATION');
     $stale = $serial->fresh();
 

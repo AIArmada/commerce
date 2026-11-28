@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Api\StockIdentity;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -23,6 +23,7 @@ final readonly class RegisterTraceability
         private BatchService $batches,
         private SerialService $serials,
         private UpdateTraceabilityDetails $details,
+        private StockIdentity $stock,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -39,7 +40,7 @@ final readonly class RegisterTraceability
             $batch = $this->batches->createBatch(
                 model: $this->item($level),
                 batchNumber: $this->identifier($attributes, 'batch_number'),
-                locationId: $level->location_id,
+                locationId: $level['location_id'],
                 quantity: $quantity,
                 expiresAt: $this->date($attributes, 'expires_at'),
                 manufacturedAt: $this->date($attributes, 'manufactured_at'),
@@ -61,7 +62,7 @@ final readonly class RegisterTraceability
             $serial = $this->serials->register(
                 model: $this->item($level),
                 serialNumber: $this->identifier($attributes, 'serial_number'),
-                locationId: $level->location_id,
+                locationId: $level['location_id'],
                 batchId: $batchId,
                 condition: SerialCondition::from((string) ($attributes['condition'] ?? SerialCondition::New->value)),
                 unitCostMinor: $this->cost($attributes),
@@ -72,22 +73,23 @@ final readonly class RegisterTraceability
         });
     }
 
-    private function level(string $id): InventoryLevel
+    /** @return array{type: string, id: string, location_id: string} */
+    private function level(string $id): array
     {
-        $query = InventoryLevel::query();
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            $query->forOwner($owner, false);
-        }
-
-        return $query->whereKey($id)->lockForUpdate()->firstOrFail();
+        return $this->stock->lockWritableLevel($id)
+            ?? throw new ModelNotFoundException('Inventory level is not accessible for current owner');
     }
 
-    private function item(InventoryLevel $level): Model
+    /** @param array{type: string, id: string, location_id: string} $level */
+    private function item(array $level): Model
     {
-        $item = $level->inventoryable;
+        $class = Relation::getMorphedModel($level['type']) ?? $level['type'];
+
+        if (! is_a($class, Model::class, true)) {
+            throw new InvalidArgumentException('Inventory item no longer exists');
+        }
+
+        $item = $class::query()->find($level['id']);
 
         if (! $item instanceof Model) {
             throw new InvalidArgumentException('Inventory item no longer exists');

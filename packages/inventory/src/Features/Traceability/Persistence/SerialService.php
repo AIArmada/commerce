@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Features\Traceability\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialEventType;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;
@@ -61,8 +61,10 @@ use InvalidArgumentException;
  * }
  * ```
  */
-final class SerialService
+final readonly class SerialService
 {
+    public function __construct(private LocationVisibility $locations) {}
+
     /**
      * Register a new serial number.
      *
@@ -493,15 +495,10 @@ final class SerialService
 
     private function lockOwnedSerial(InventorySerial $serial): InventorySerial
     {
-        $query = InventorySerial::query();
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            $query->forOwner($owner, false);
-        }
-
-        return $query->whereKey($serial->getKey())->lockForUpdate()->firstOrFail();
+        return InventoryOwnerScope::forMutation(InventorySerial::query())
+            ->whereKey($serial->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
     }
 
     private function assertBatchLocation(InventorySerial $serial, string $locationId): void
@@ -534,7 +531,7 @@ final class SerialService
             }
         }
 
-        if ($locationId !== null && ! InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId)->exists()) {
+        if ($locationId !== null && ! $this->locations->lockWritable($locationId)) {
             throw new InvalidArgumentException('Invalid location for current owner');
         }
     }

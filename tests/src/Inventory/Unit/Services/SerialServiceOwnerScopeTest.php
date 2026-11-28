@@ -79,7 +79,7 @@ function makeOwnerScopedSerialServiceFixture(): array
 
     $setOwnerContext($ownerA);
 
-    $service = new SerialService;
+    $service = app(SerialService::class);
 
     return [
         'ownerA' => $ownerA,
