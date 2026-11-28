@@ -6,6 +6,7 @@ namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 final readonly class UpdateProduct
@@ -27,7 +28,7 @@ final readonly class UpdateProduct
             }
 
             $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
-            $locked->update($data);
+            $locked->update(Arr::except($data, ['id', 'owner_type', 'owner_id']));
 
             return $locked->refresh();
         }, 3);

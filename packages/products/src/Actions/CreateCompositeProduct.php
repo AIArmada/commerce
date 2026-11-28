@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Creates a composite parent and its initial component rows in one transaction.
  */
-final class CreateCompositeProduct
+final readonly class CreateCompositeProduct
 {
     /**
      * @param  array<string, mixed>  $attributes
@@ -48,17 +48,14 @@ final class CreateCompositeProduct
 
             unset($attributes['status'], $attributes['price_mode']);
 
-            $parent = new Product;
-            $parent->fill($attributes);
-            $parent->forceFill([
+            $parent = app(CreateProduct::class)->execute(array_replace($attributes, [
                 'type' => ProductType::Composite,
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
                 'requires_shipping' => false,
                 'supports_variants' => (bool) ($attributes['supports_variants'] ?? false),
                 'tracks_inventory' => false,
-            ]);
-            $parent->save();
+            ]));
 
             if ($components !== []) {
                 app(ReplaceProductComponents::class)->handle($parent, $components);

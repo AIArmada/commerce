@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
+use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\EnsureProductBySlug;
 use AIArmada\Products\Actions\GenerateVariants;
@@ -336,4 +337,35 @@ it('provisions a tenant product without updating a visible global product of the
     });
 
     expect(OwnerContext::withOwner(null, fn (): int => $global->fresh()->price))->toBe(1000);
+});
+
+it('derives product and composite ownership from the active context', function (): void {
+    config()->set('products.features.owner.enabled', true);
+    config()->set('products.features.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create(['name' => 'Actual Owner', 'email' => 'actual-owner@example.com', 'password' => 'secret']);
+    $foreign = User::query()->create(['name' => 'Foreign Owner', 'email' => 'foreign-owner@example.com', 'password' => 'secret']);
+
+    OwnerContext::withOwner($owner, function () use ($owner, $foreign): void {
+        $attributes = ['owner_type' => $foreign->getMorphClass(), 'owner_id' => $foreign->getKey()];
+        $product = app(CreateProduct::class)->execute(['name' => 'Scoped Product', ...$attributes]);
+        $composite = app(CreateCompositeProduct::class)->handle(['name' => 'Scoped Composite', ...$attributes]);
+
+        expect($product->owner_id)->toBe($owner->getKey())
+            ->and($composite->owner_id)->toBe($owner->getKey());
+
+        $updated = app(UpdateProduct::class)->execute($product, ['name' => 'Updated Scoped Product', ...$attributes]);
+
+        expect($updated->owner_id)->toBe($owner->getKey())
+            ->and($updated->name)->toBe('Updated Scoped Product');
+    });
+
+    $global = OwnerContext::withOwner(null, fn (): Product => app(CreateProduct::class)->execute([
+        'name' => 'Scoped Global',
+        'owner_type' => $foreign->getMorphClass(),
+        'owner_id' => $foreign->getKey(),
+    ]));
+
+    expect($global->owner_type)->toBeNull()
+        ->and($global->owner_id)->toBeNull();
 });
