@@ -171,6 +171,13 @@ describe('Contracts', function (): void {
     });
 
     describe('InvoiceContract', function (): void {
+        it('exposes URLs rather than transport-specific responses', function (): void {
+            expect(method_exists(InvoiceContract::class, 'pdfUrl'))->toBeTrue()
+                ->and(method_exists(InvoiceContract::class, 'hostedUrl'))->toBeTrue()
+                ->and(method_exists(InvoiceContract::class, 'download'))->toBeFalse()
+                ->and(method_exists(InvoiceContract::class, 'view'))->toBeFalse();
+        });
+
         it('exists and is an interface', function (): void {
             expect(interface_exists(InvoiceContract::class))->toBeTrue();
         });

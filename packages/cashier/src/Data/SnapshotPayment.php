@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Support;
+namespace AIArmada\Cashier\Data;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
 use LogicException;

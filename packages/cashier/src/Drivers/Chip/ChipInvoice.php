@@ -12,7 +12,6 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Wrapper for CHIP invoice (purchase).
@@ -226,27 +225,6 @@ class ChipInvoice implements InvoiceContract
     {
         // CHIP doesn't provide direct PDF URLs
         return null;
-    }
-
-    /**
-     * Download the invoice as PDF.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function download(array $data = []): Response
-    {
-        // Would need to generate PDF locally
-        return redirect()->to($this->hostedUrl() ?? '/');
-    }
-
-    /**
-     * View the invoice in the browser.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function view(array $data = []): Response
-    {
-        return redirect()->to($this->hostedUrl() ?? '/');
     }
 
     /**

@@ -24,7 +24,13 @@ class ChipPaymentMethod implements PaymentMethodContract
     public function __construct(mixed $token, protected ?BillableContract $billable = null)
     {
         if ($token instanceof ChipNativePaymentMethod) {
-            $token = $token->toArray();
+            $token = [
+                'id' => $token->id(),
+                'type' => $token->type(),
+                'brand' => $token->brand(),
+                'last_four' => $token->lastFour(),
+                'is_default' => $token->isDefault(),
+            ];
         }
 
         if (! is_array($token)) {
@@ -98,6 +104,10 @@ class ChipPaymentMethod implements PaymentMethodContract
      */
     public function isDefault(): bool
     {
+        if (is_bool($this->token['is_default'] ?? null)) {
+            return $this->token['is_default'];
+        }
+
         if (! $this->billable) {
             return false;
         }
@@ -116,7 +126,7 @@ class ChipPaymentMethod implements PaymentMethodContract
             return ($default['id'] ?? null) === $this->id();
         }
 
-        if ($default instanceof PaymentMethodContract) {
+        if ($default instanceof ChipNativePaymentMethod || $default instanceof PaymentMethodContract) {
             return $default->id() === $this->id();
         }
 

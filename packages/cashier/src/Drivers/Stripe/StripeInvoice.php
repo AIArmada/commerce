@@ -12,7 +12,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Invoice;
 use Stripe\Invoice as StripeInvoiceObject;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Wrapper for Stripe invoice.
@@ -223,39 +222,6 @@ class StripeInvoice implements InvoiceContract
     public function pdfUrl(): ?string
     {
         return $this->getStripeInvoice()->invoice_pdf;
-    }
-
-    /**
-     * Download the invoice as PDF.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function download(array $data = []): Response
-    {
-        if ($this->invoice instanceof Invoice) {
-            /** @var Response $response */
-            $response = $this->invoice->download($data);
-
-            return $response;
-        }
-
-        // Fallback to redirect to PDF URL
-        return redirect()->to($this->pdfUrl());
-    }
-
-    /**
-     * View the invoice in the browser.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function view(array $data = []): Response
-    {
-        if ($this->invoice instanceof Invoice) {
-            return response($this->invoice->view($data));
-        }
-
-        // Fallback to redirect to hosted URL
-        return redirect()->to($this->hostedUrl());
     }
 
     /**

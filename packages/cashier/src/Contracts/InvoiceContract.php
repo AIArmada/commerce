@@ -8,7 +8,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Collection;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Contract for invoice representations.
@@ -121,20 +120,6 @@ interface InvoiceContract extends Arrayable, Jsonable
      * Get the PDF download URL.
      */
     public function pdfUrl(): ?string;
-
-    /**
-     * Download the invoice as PDF.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function download(array $data = []): Response;
-
-    /**
-     * View the invoice in the browser.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    public function view(array $data = []): Response;
 
     /**
      * Get the underlying gateway invoice object.
