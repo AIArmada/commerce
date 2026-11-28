@@ -5,16 +5,15 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Support\ModelResolver;
-use AIArmada\FilamentEngagement\Actions\BookmarkAction;
-use AIArmada\FilamentEngagement\Actions\FollowAction;
-use AIArmada\FilamentEngagement\Actions\ReactAction;
-use AIArmada\FilamentEngagement\Actions\RemoveBookmarkAction;
-use AIArmada\FilamentEngagement\Actions\RespondAction;
-use AIArmada\FilamentEngagement\Actions\SetReminderAction;
-use AIArmada\FilamentEngagement\Actions\SubscribeAction;
-use AIArmada\FilamentEngagement\Actions\UnfollowAction;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\BookmarkAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\FollowAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\ReactAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RemoveBookmarkAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RespondAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\UnfollowAction;
+use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Actions\SetReminderAction;
+use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Actions\SubscribeAction;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -108,7 +107,7 @@ it('processes bulk selections in bounded chunks without dropping rows', function
     OwnerContext::withOwner($actor, function () use ($records, &$processed): void {
         BulkRecordProcessor::eachInChunks(
             $records,
-            ModelResolver::followClass(),
+            Follow::class,
             function (Follow $record) use (&$processed): void {
                 $processed[] = (string) $record->getKey();
             },
@@ -124,7 +123,7 @@ it('processes bulk selections in bounded chunks without dropping rows', function
 it('ignores an empty bulk selection', function (): void {
     $calls = 0;
 
-    BulkRecordProcessor::eachInChunks([], ModelResolver::followClass(), function () use (&$calls): void {
+    BulkRecordProcessor::eachInChunks([], Follow::class, function () use (&$calls): void {
         $calls++;
     });
 
@@ -148,7 +147,7 @@ it('fails closed when a selected row leaves the owner scope', function (): void 
     OwnerContext::withOwner($ownerA, static function () use ($foreign): void {
         BulkRecordProcessor::eachInChunks(
             [$foreign],
-            ModelResolver::followClass(),
+            Follow::class,
             static function (): void {},
         );
     });

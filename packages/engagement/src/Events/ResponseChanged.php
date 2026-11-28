@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Models\Response;
-
-final class ResponseChanged
+final readonly class ResponseChanged
 {
-    public function __construct(public Response $response, public string $previousType) {}
+    public function __construct(
+        public string $responseId,
+        public string $actorType,
+        public string $actorId,
+        public string $subjectType,
+        public string $subjectId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+        public string $responseType,
+        public string $previousType,
+    ) {}
 }

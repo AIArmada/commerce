@@ -6,30 +6,31 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Enums\ContactPurpose;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Imports\ContactMethodImporter;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\RelationManagers\ContactMethodsRelationManager;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Resources\ContactMethodResource;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Resources\ContactMethodResource\Pages\ListContactMethods;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Tables\ContactMethodTable;
+use AIArmada\FilamentContacting\Features\Snapshots\EntryPoints\Filament\Resources\ContactSnapshotResource;
+use AIArmada\FilamentContacting\Features\Snapshots\EntryPoints\Filament\Tables\ContactSnapshotTable;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Imports\SocialProfileImporter;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\RelationManagers\SocialProfilesRelationManager;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Resources\SocialProfileResource;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Resources\SocialProfileResource\Pages\ListSocialProfiles;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Schemas\SocialProfileFormSchema;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Schemas\SocialProfileInfolistSchema;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Tables\SocialProfileTable;
 use AIArmada\FilamentContacting\FilamentContactingPlugin;
-use AIArmada\FilamentContacting\Imports\ContactMethodImporter;
-use AIArmada\FilamentContacting\Imports\SocialProfileImporter;
-use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;
-use AIArmada\FilamentContacting\RelationManagers\SocialProfilesRelationManager;
-use AIArmada\FilamentContacting\Resources\ContactMethodResource;
-use AIArmada\FilamentContacting\Resources\ContactMethodResource\Pages\ListContactMethods;
-use AIArmada\FilamentContacting\Resources\ContactSnapshotResource;
-use AIArmada\FilamentContacting\Resources\SocialProfileResource;
-use AIArmada\FilamentContacting\Resources\SocialProfileResource\Pages\ListSocialProfiles;
-use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
-use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
-use AIArmada\FilamentContacting\Schemas\SocialProfileInfolistSchema;
 use AIArmada\FilamentContacting\Support\ContactingLinks;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
-use AIArmada\FilamentContacting\Tables\ContactMethodTable;
-use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
-use AIArmada\FilamentContacting\Tables\SocialProfileTable;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ImportAction;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\Models\Import;
@@ -46,6 +47,8 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -60,6 +63,50 @@ class ContactingRepairSchemaHost extends Component implements HasSchemas
     {
         return view('livewire.placeholder');
     }
+}
+
+final class ContactingAuthorizationPolicy
+{
+    public static bool $allow = true;
+
+    public function viewAny(Model $user): bool
+    {
+        return self::$allow;
+    }
+
+    public function create(Model $user): bool
+    {
+        return self::$allow;
+    }
+
+    public function export(Model $user): bool
+    {
+        return self::$allow;
+    }
+}
+
+final class ContactingViewOnlyPolicy
+{
+    public static bool $allow = true;
+
+    public function viewAny(Model $user): bool
+    {
+        return self::$allow;
+    }
+}
+
+function contactingHeaderActions(string $page): array
+{
+    $method = new ReflectionMethod($page, 'getHeaderActions');
+    $method->setAccessible(true);
+
+    return $method->invoke(app($page));
+}
+
+function contactingExportAction(string $builder): ExportBulkAction
+{
+    return collect(makeContactingTestTable($builder)->getBulkActions())
+        ->first(fn ($action): bool => $action instanceof ExportBulkAction);
 }
 
 function makeContactingTestTable(string $builder): Table
@@ -551,6 +598,7 @@ it('list pages wire imports only when enabled and writable', function (): void {
     expect($actions)->toHaveCount(1);
     expect($actions[0])->toBeInstanceOf(ImportAction::class);
     expect($actions[0]->getImporter())->toBe(SocialProfileImporter::class);
+    expect($actions[0]->isVisible())->toBeTrue();
 
     config()->set('filament-contacting.resources.contact_methods.read_only', false);
 
@@ -698,4 +746,67 @@ it('sets the social profile purpose from the form while keeping the general defa
         ->toMatchArray(['purpose' => 'general'])
         ->and($stateFor(['platform' => 'facebook', 'handle' => 'purpose-set', 'purpose' => 'media']))
         ->toMatchArray(['purpose' => 'media']);
+});
+
+it('enforces registered policies on contacting import actions', function (): void {
+    $owner = makeContactingTestOwner();
+    $this->actingAs($owner);
+
+    config()->set('filament-contacting.features.imports', true);
+    config()->set('filament-contacting.resources.contact_methods.read_only', false);
+    config()->set('filament-contacting.resources.social_profiles.read_only', false);
+
+    expect(contactingHeaderActions(ListContactMethods::class)[0]->isAuthorized())->toBeTrue()
+        ->and(contactingHeaderActions(ListSocialProfiles::class)[0]->isAuthorized())->toBeTrue();
+
+    Gate::policy(ContactMethod::class, ContactingAuthorizationPolicy::class);
+    Gate::policy(SocialProfile::class, ContactingAuthorizationPolicy::class);
+
+    ContactingAuthorizationPolicy::$allow = false;
+
+    expect(contactingHeaderActions(ListContactMethods::class)[0]->isAuthorized())->toBeFalse()
+        ->and(contactingHeaderActions(ListSocialProfiles::class)[0]->isAuthorized())->toBeFalse();
+
+    ContactingAuthorizationPolicy::$allow = true;
+
+    expect(contactingHeaderActions(ListContactMethods::class)[0]->isAuthorized())->toBeTrue()
+        ->and(contactingHeaderActions(ListSocialProfiles::class)[0]->isAuthorized())->toBeTrue();
+});
+
+it('enforces config and registered policies on contacting export actions', function (): void {
+    $owner = makeContactingTestOwner();
+    $this->actingAs($owner);
+
+    config()->set('filament-contacting.features.exports', true);
+
+    Gate::policy(ContactMethod::class, ContactingAuthorizationPolicy::class);
+    Gate::policy(SocialProfile::class, ContactingAuthorizationPolicy::class);
+
+    ContactingAuthorizationPolicy::$allow = true;
+
+    expect(contactingExportAction(ContactMethodTable::class)->isAuthorized())->toBeTrue()
+        ->and(contactingExportAction(SocialProfileTable::class)->isAuthorized())->toBeTrue();
+
+    ContactingAuthorizationPolicy::$allow = false;
+
+    expect(contactingExportAction(ContactMethodTable::class)->isAuthorized())->toBeFalse()
+        ->and(contactingExportAction(SocialProfileTable::class)->isAuthorized())->toBeFalse();
+
+    ContactingAuthorizationPolicy::$allow = true;
+    config()->set('filament-contacting.features.exports', false);
+
+    expect(contactingExportAction(ContactMethodTable::class)->isAuthorized())->toBeFalse()
+        ->and(contactingExportAction(SocialProfileTable::class)->isAuthorized())->toBeFalse()
+        ->and(contactingExportAction(ContactMethodTable::class)->isVisible())->toBeFalse();
+
+    config()->set('filament-contacting.features.exports', true);
+    Gate::policy(ContactMethod::class, ContactingViewOnlyPolicy::class);
+
+    ContactingViewOnlyPolicy::$allow = true;
+
+    expect(contactingExportAction(ContactMethodTable::class)->isAuthorized())->toBeTrue();
+
+    ContactingViewOnlyPolicy::$allow = false;
+
+    expect(contactingExportAction(ContactMethodTable::class)->isAuthorized())->toBeFalse();
 });

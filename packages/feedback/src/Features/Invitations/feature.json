@@ -1,0 +1,13 @@
+{
+    "schema": 1,
+    "name": "Invitations",
+    "owns": {
+        "table:feedback_invitations": [
+            "AIArmada\\Feedback\\Features\\Invitations\\Actions\\SendFeedbackInvitationAction",
+            "AIArmada\\Feedback\\Features\\Invitations\\Actions\\ExpireFeedbackInvitationAction",
+            "AIArmada\\Feedback\\Features\\Invitations\\Actions\\MarkFeedbackInvitationOpenedAction",
+            "AIArmada\\Feedback\\Features\\Invitations\\Actions\\ManageInvitationLifecycleAction"
+        ]
+    },
+    "extensions": {}
+}

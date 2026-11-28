@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Actions;
+
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
+use Filament\Actions\Action;
+use Filament\Forms;
+
+final class SetReminderAction
+{
+    public static function make(): Action
+    {
+        return Action::make('setReminder')
+            ->label('Set Reminder')
+            ->icon('heroicon-o-clock')
+            ->form([
+                Forms\Components\Select::make('reminder_type')
+                    ->options(['before_start' => 'Before Start', 'when_live_starts' => 'When Live', 'custom' => 'Custom'])
+                    ->required(),
+                Forms\Components\DateTimePicker::make('remind_at')->label('Remind At'),
+            ])
+            ->action(function (array $data, $record): void {
+                $record = ActionRecordResolver::resolveOrFail($record);
+                app(ManageRemindersAction::class)->setReminder(AuthenticatedUser::resolve(), $record, $data['reminder_type'], $data);
+            });
+    }
+}

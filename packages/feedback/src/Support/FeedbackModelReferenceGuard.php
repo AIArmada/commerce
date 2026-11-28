@@ -46,16 +46,18 @@ final class FeedbackModelReferenceGuard
             throw new InvalidArgumentException('Model reference type and id must both be present or both be null.');
         }
 
+        if (mb_trim($type) === '' || mb_trim($id) === '') {
+            throw new InvalidArgumentException('Model reference type and id must not be blank.');
+        }
+
         $modelClass = Relation::getMorphedModel($type) ?? $type;
 
         if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
             throw new InvalidArgumentException('The model reference type is invalid.');
         }
 
-        try {
+        if ($this->usesOwnerScope($modelClass)) {
             return OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
-        } catch (InvalidArgumentException) {
-            // Models without an enabled owner boundary still require existence validation.
         }
 
         /** @var Model|null $model */
@@ -68,12 +70,30 @@ final class FeedbackModelReferenceGuard
         return $model;
     }
 
+    /**
+     * @param  class-string<Model>  $modelClass
+     */
+    private function usesOwnerScope(string $modelClass): bool
+    {
+        if (method_exists($modelClass, 'ownerScopeConfig')) {
+            return $modelClass::ownerScopeConfig()->enabled;
+        }
+
+        return method_exists($modelClass, 'scopeForOwner');
+    }
+
     public function validate(Model $model): void
     {
-        try {
-            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-        } catch (InvalidArgumentException) {
-            // Models without an enabled owner boundary are valid global references.
+        if (! $model->exists) {
+            throw new InvalidArgumentException('The referenced model must be persisted.');
         }
+
+        $key = $model->getKey();
+
+        if ((! is_string($key) && ! is_int($key)) || (string) $key === '') {
+            throw new InvalidArgumentException('The referenced model must have a non-empty key.');
+        }
+
+        $this->resolve($model->getMorphClass(), (string) $key);
     }
 }

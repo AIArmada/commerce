@@ -56,6 +56,31 @@ $context = CommunicationContextData::from([
 Communications::notify($user, new InvoicePaid($invoice), $context);
 ```
 
+### Durable idempotency
+
+Managed notifications accept an `idempotencyKey` on the context. Keys are
+trimmed and blank keys are rejected. The database owns deduplication: a unique
+index scopes `communications.idempotency_key` per owner (and separately for
+global communications), so retries stay safe even when the cache store is
+per-process, flushed, or expired.
+
+```php
+$context = CommunicationContextData::from([
+    'purpose' => 'invoice-paid',
+    'idempotencyKey' => 'invoice-paid:' . $invoice->getKey(),
+]);
+
+$communicationId = Communications::notify($user, new InvoicePaid($invoice), $context);
+```
+
+`DispatchManagedNotificationAction::handle()` returns the winning communication
+on a repeat without creating recipients, contents, deliveries, events, or
+another queued job. `handleUnique()` provides the strict variant and throws
+`RuntimeException` when a duplicate already exists. `CommunicationManagerService`
+(`Communications::notify()`) keeps the cache lock as a fast path and still calls
+the strict dispatcher path, so a durable duplicate is rejected even when the
+cache cannot see other processes.
+
 ### Using the context trait on notifications
 
 ```php

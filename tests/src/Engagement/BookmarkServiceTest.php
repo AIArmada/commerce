@@ -2,16 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Enums\BookmarkStatus;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 
 beforeEach(function (): void {
-    $this->manager = app(EngagementManager::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->manager = app(ManageInteractionsAction::class);
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a bookmark', function (): void {
@@ -25,4 +23,17 @@ it('removes bookmark via status', function (): void {
     $this->manager->removeBookmark($this->actor, $this->subject);
 
     expect(Bookmark::query()->where('status', 'removed')->count())->toBe(1);
+});
+
+it('clears archive timestamps when restoring a bookmark', function (): void {
+    $bookmark = $this->manager->bookmark($this->actor, $this->subject);
+    $this->manager->archiveBookmark($this->actor, $this->subject);
+
+    expect($bookmark->fresh()->archived_at)->not->toBeNull();
+
+    $restored = $this->manager->bookmark($this->actor, $this->subject);
+
+    expect($restored->is($bookmark))->toBeTrue()
+        ->and($restored->status)->toBe(BookmarkStatus::Active)
+        ->and($restored->archived_at)->toBeNull();
 });

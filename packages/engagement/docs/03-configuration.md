@@ -62,11 +62,16 @@ blocked by default.
 ```php
 'reminder' => [
     'batch_size' => (int) env('ENGAGEMENT_REMINDER_BATCH_SIZE', 100),
+    'claim_ttl' => (int) env('ENGAGEMENT_REMINDER_CLAIM_TTL', 300),
+    'max_attempts' => (int) env('ENGAGEMENT_REMINDER_MAX_ATTEMPTS', 3),
     'default_channels' => ['mail', 'database'],
 ]
 ```
 
-Controls how many reminders are processed per scheduled run and which notification channels to use by default. Reminders use Laravel Notifications for delivery.
+Controls how many reminders are processed per scheduled run, how long a delivery
+claim is held before another worker may recover it, the maximum number of
+delivery attempts, and which notification channels to use by default. Reminders
+use Laravel Notifications for delivery.
 
 ### Notifications
 
@@ -90,19 +95,3 @@ Override the notification class used for reminder delivery. Your custom class mu
 ```
 
 Bounds how many rows `subscriptionsFor()` and `remindersFor()` return. Both methods execute eagerly and return collections; raise the limit if a single actor legitimately holds more active subscriptions or pending reminders.
-
-### Model class overrides
-
-```php
-'models' => [
-    'follow' => Follow::class,
-    'bookmark' => Bookmark::class,
-    'response' => Response::class,
-    'reaction' => Reaction::class,
-    'subscription' => Subscription::class,
-    'reminder' => Reminder::class,
-    'share' => Share::class,
-]
-```
-
-These service-created models are configurable, allowing you to extend and replace them with your own subclasses.

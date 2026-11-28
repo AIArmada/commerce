@@ -76,14 +76,14 @@ entry points.
 These actions can be added to any Filament table to enable engagement features on the fly:
 
 ```php
-use AIArmada\FilamentEngagement\Actions\FollowAction;
-use AIArmada\FilamentEngagement\Actions\BookmarkAction;
-use AIArmada\FilamentEngagement\Actions\ReactAction;
-use AIArmada\FilamentEngagement\Actions\RespondAction;
-use AIArmada\FilamentEngagement\Actions\SubscribeAction;
-use AIArmada\FilamentEngagement\Actions\SetReminderAction;
-use AIArmada\FilamentEngagement\Actions\UnfollowAction;
-use AIArmada\FilamentEngagement\Actions\RemoveBookmarkAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\FollowAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\BookmarkAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\ReactAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RespondAction;
+use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Actions\SubscribeAction;
+use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Actions\SetReminderAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\UnfollowAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RemoveBookmarkAction;
 use Filament\Actions\ActionGroup;
 
 // On any resource table:
@@ -114,7 +114,7 @@ Available actions:
 Relation managers can be added to any resource to show engagement data in context:
 
 ```php
-use AIArmada\FilamentEngagement\RelationManagers\FollowersRelationManager;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\RelationManagers\FollowersRelationManager;
 
 public static function getRelations(): array
 {

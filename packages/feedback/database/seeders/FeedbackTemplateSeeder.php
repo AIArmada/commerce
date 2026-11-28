@@ -6,7 +6,7 @@ namespace AIArmada\Feedback\Database\Seeders;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Enums\FeedbackTemplateStatus;
-use AIArmada\Feedback\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use Illuminate\Database\Seeder;
 
 final class FeedbackTemplateSeeder extends Seeder

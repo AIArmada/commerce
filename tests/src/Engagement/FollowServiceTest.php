@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Events\FollowCreated;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageFollowsAction;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->manager = app(EngagementManager::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->manager = app(ManageInteractionsAction::class);
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a follow', function (): void {
@@ -38,4 +37,15 @@ it('unfollows without deleting', function (): void {
 
     $follow = Follow::query()->first();
     expect($follow->status)->toBe(FollowStatus::Unfollowed);
+});
+
+it('unfollows a muted follow without decrementing active follower counts twice', function (): void {
+    $manager = app(ManageFollowsAction::class);
+    $actor = engagementActor();
+    $subject = engagementSubject();
+    $follow = $manager->follow($actor, $subject);
+    $manager->muteFollow($actor, $subject);
+    $manager->unfollow($actor, $subject);
+
+    expect($follow->fresh()->status)->toBe(FollowStatus::Unfollowed);
 });
