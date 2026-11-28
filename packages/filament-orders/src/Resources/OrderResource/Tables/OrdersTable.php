@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\Tables;
 
 use AIArmada\FilamentOrders\Resources\OrderResource;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -15,6 +16,7 @@ use Filament\Forms;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class OrdersTable
 {
@@ -116,7 +118,9 @@ class OrdersTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorizeIndividualRecords('delete')
+                        ->action(fn (Collection $records) => app(OrderAdministration::class)->deleteDrafts(array_map('strval', $records->modelKeys()))),
                 ]),
             ]);
     }

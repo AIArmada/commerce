@@ -314,7 +314,14 @@ class Order extends Model implements Auditable
         $this->allowUnsafeDelete = $force;
 
         try {
-            return DB::transaction(fn (): ?bool => parent::delete());
+            return DB::transaction(function (): ?bool {
+                if ($this->exists) {
+                    $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+                    $this->refresh();
+                }
+
+                return parent::delete();
+            });
         } finally {
             $this->allowUnsafeDelete = $previous;
         }
@@ -501,7 +508,7 @@ class Order extends Model implements Auditable
         });
 
         static::deleting(function (Order $order): void {
-            if (! $order->allowUnsafeDelete && ($order->isPaid() || $order->isFinal())) {
+            if (! $order->allowUnsafeDelete && ($order->isPaid() || $order->getTotalPaid() > 0 || $order->isFinal())) {
                 throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
             }
 
