@@ -20,7 +20,7 @@ use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;

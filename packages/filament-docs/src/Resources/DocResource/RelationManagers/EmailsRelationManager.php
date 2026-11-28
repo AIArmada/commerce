@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;

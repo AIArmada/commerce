@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Features\Delivery\Mail;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Contracts\DocServiceInterface;

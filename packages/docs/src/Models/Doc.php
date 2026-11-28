@@ -74,7 +74,8 @@ use Throwable;
  * @property-read Collection<int, DocPayment> $payments
  * @property-read Collection<int, RelatedDocVersion> $versions
  * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
- * @property-read Collection<int, DocEmail> $emails
+ * @property-read Collection<int, RelatedDocEmail> $emails
+ * @phpstan-type RelatedDocEmail \AIArmada\Docs\Features\Delivery\Models\DocEmail
  * @property-read Collection<int, DocApproval> $approvals
  * @property-read Collection<int, RelatedDocShareLink> $shareLinks
  * @phpstan-type RelatedDocShareLink \AIArmada\Docs\Features\Delivery\Models\DocShareLink
@@ -167,11 +168,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocEmail, $this>
+     * @return HasMany<RelatedDocEmail, $this>
      */
     public function emails(): HasMany
     {
-        return $this->hasMany(DocEmail::class);
+        return $this->hasMany(app(DeliveryRelationModels::class)->email(), 'doc_id');
     }
 
     /**

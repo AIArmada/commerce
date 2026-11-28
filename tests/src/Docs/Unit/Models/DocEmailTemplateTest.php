@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use Illuminate\Database\QueryException;
 
 it('allows same slug across different owners and blocks duplicate slug for same owner', function (): void {

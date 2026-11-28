@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;

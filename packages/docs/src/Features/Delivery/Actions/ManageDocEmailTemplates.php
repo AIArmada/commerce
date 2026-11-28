@@ -7,7 +7,7 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentEmailTemplates;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;

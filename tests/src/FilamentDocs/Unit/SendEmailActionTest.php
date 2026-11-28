@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Actions\SendEmailAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;

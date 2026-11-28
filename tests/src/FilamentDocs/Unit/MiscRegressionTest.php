@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 use AIArmada\FilamentDocs\Rendering\DocsRichContentFileAttachmentProvider;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;

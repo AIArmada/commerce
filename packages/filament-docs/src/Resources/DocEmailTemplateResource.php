@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Contracts\DocumentEmailTemplates;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;

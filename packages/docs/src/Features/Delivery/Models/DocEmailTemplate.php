@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Delivery\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

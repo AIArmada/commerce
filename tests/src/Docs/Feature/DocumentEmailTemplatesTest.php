@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentEmailTemplates;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use Illuminate\Validation\ValidationException;
 
 it('manages email template mutations without accepting owner fields', function (): void {

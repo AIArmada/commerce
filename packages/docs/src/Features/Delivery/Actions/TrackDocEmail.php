@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;

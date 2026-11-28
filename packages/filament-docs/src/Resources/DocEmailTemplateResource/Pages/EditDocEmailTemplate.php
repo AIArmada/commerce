@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocEmailTemplateResource\Pages;
 
 use AIArmada\Docs\Contracts\DocumentEmailTemplates;
-use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;

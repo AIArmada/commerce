@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Cache;
