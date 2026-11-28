@@ -92,7 +92,7 @@ interface GatewayContract
      *
      * @return Collection<int, SubscriptionContract>
      */
-    public function subscriptions(BillableContract $billable): Collection;
+    public function subscriptions(BillableContract $billable, ?int $limit = null): Collection;
 
     /**
      * Get payment methods for a billable entity.

@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
+use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\GatewayManager;
+use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Chip\Services\ChipCollectService;
@@ -144,4 +147,26 @@ it('restricts invoice access checks to the owning user', function (): void {
     Auth::guard()->forgetUser();
 
     expect(InvoicesTable::isInvoiceAccessible(invoiceForUserId((string) $user->getKey())))->toBeFalse();
+});
+
+it('passes the bounded lookahead to the gateway for portal subscription queries', function (): void {
+    $user = createPortalUser('subscription-lookahead@example.com');
+    $gateway = Mockery::mock(GatewayContract::class);
+    $gateway->shouldReceive('subscriptions')->once()->with($user, 201)->andReturn(collect());
+
+    $manager = app(GatewayManager::class);
+    $manager->forgetDrivers();
+    $manager->extend('chip', fn () => $gateway);
+
+    $result = app(CustomerSubscriptionsQuery::class)->getForUser($user, 500, fetchExtra: true);
+
+    expect($result['items'])->toBeEmpty()
+        ->and($result['hasMore'])->toBeFalse();
+});
+
+it('does not query gateways for an unsaved billable', function (): void {
+    $result = app(CustomerSubscriptionsQuery::class)->getForUser(new ChipBillableUser);
+
+    expect($result['items'])->toBeEmpty()
+        ->and($result['hasMore'])->toBeFalse();
 });

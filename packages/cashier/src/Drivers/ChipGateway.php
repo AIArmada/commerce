@@ -371,17 +371,19 @@ class ChipGateway extends AbstractGateway
      *
      * @return Collection<int, SubscriptionContract>
      */
-    public function subscriptions(BillableContract $billable): Collection
+    public function subscriptions(BillableContract $billable, ?int $limit = null): Collection
     {
+        $limit = min(201, max(1, $limit ?? self::DEFAULT_LIST_LIMIT));
         $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
 
         if ($subscriptionsRelation instanceof Relation) {
             $subscriptionsRelation = $subscriptionsRelation
                 ->with('items')
-                ->limit(self::DEFAULT_LIST_LIMIT);
+                ->limit($limit);
         }
 
         $subscriptions = $subscriptionsRelation->get()
+            ->take($limit)
             ->map(fn ($subscription) => new ChipSubscription($subscription))
             ->values();
 

@@ -7,6 +7,7 @@ namespace AIArmada\Cashier\Queries;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use Illuminate\Database\Eloquent\Model;
@@ -32,23 +33,23 @@ final class CustomerSubscriptionsQuery
     {
         $perGatewayLimit = min(max(1, $perGatewayLimit), 200);
         $fetchLimit = $fetchExtra ? $perGatewayLimit + 1 : $perGatewayLimit;
-        if (! $user instanceof BillableContract) {
+        if (! $user instanceof BillableContract || ! $user->exists) {
             return ['items' => collect(), 'hasMore' => false];
         }
+
+        ActionGuard::assertBillableInScope($user);
 
         $subscriptions = collect();
         $hasMore = false;
 
-        $stripe = $this->getStripeSubscriptions($user, $user->getKey(), $fetchLimit, $fetchExtra);
-        $subscriptions = $subscriptions->merge($stripe['items']);
-        if ($stripe['hasMore']) {
-            $hasMore = true;
-        }
+        foreach (['stripe', 'chip'] as $gateway) {
+            if (! $this->detector->isAvailable($gateway)) {
+                continue;
+            }
 
-        $chip = $this->getChipSubscriptions($user, $fetchLimit, $fetchExtra);
-        $subscriptions = $subscriptions->merge($chip['items']);
-        if ($chip['hasMore']) {
-            $hasMore = true;
+            $result = $this->getGatewaySubscriptions($user, $gateway, $fetchLimit, $fetchExtra);
+            $subscriptions = $subscriptions->merge($result['items']);
+            $hasMore = $hasMore || $result['hasMore'];
         }
 
         return [
@@ -60,34 +61,10 @@ final class CustomerSubscriptionsQuery
     /**
      * @return array{items: Collection<int, UnifiedSubscription>, hasMore: bool}
      */
-    public function getStripeSubscriptions(Model $user, int | string $userIdentifier, int $fetchLimit = 51, bool $fetchExtra = false): array
-    {
-        if (! $user instanceof BillableContract || ! $this->detector->isAvailable('stripe')) {
-            return ['items' => collect(), 'hasMore' => false];
-        }
-
-        return $this->getGatewaySubscriptions($user, 'stripe', $fetchLimit, $fetchExtra);
-    }
-
-    /**
-     * @return array{items: Collection<int, UnifiedSubscription>, hasMore: bool}
-     */
-    public function getChipSubscriptions(Model $user, int $fetchLimit = 51, bool $fetchExtra = false): array
-    {
-        if (! $user instanceof BillableContract || ! $this->detector->isAvailable('chip')) {
-            return ['items' => collect(), 'hasMore' => false];
-        }
-
-        return $this->getGatewaySubscriptions($user, 'chip', $fetchLimit, $fetchExtra);
-    }
-
-    /**
-     * @return array{items: Collection<int, UnifiedSubscription>, hasMore: bool}
-     */
     private function getGatewaySubscriptions(BillableContract $user, string $gateway, int $fetchLimit, bool $fetchExtra): array
     {
         try {
-            $records = Cashier::gateway($gateway)->subscriptions($user)->take($fetchLimit);
+            $records = Cashier::gateway($gateway)->subscriptions($user, $fetchLimit);
         } catch (Throwable) {
             return ['items' => collect(), 'hasMore' => false];
         }

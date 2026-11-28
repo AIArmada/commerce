@@ -76,7 +76,7 @@ class TestableGateway extends AbstractGateway
         return null;
     }
 
-    public function subscriptions(BillableContract $billable): Collection
+    public function subscriptions(BillableContract $billable, ?int $limit = null): Collection
     {
         return collect();
     }

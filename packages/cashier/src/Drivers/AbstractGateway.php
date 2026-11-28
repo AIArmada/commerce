@@ -118,7 +118,7 @@ abstract class AbstractGateway implements GatewayContract
      *
      * @return Collection<int, SubscriptionContract>
      */
-    abstract public function subscriptions(BillableContract $billable): Collection;
+    abstract public function subscriptions(BillableContract $billable, ?int $limit = null): Collection;
 
     /**
      * Get all invoices for a customer.
