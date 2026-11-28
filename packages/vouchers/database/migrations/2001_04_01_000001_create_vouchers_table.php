@@ -73,10 +73,7 @@ return new class extends Migration
             // Indexes
             $table->index('status');
             $table->index(['starts_at', 'expires_at']);
-            // Codes are unique per owner so tenants can reuse names like
-            // `WELCOME10`. NULL owner tuples stay mutually distinct on most
-            // drivers; global rows are privileged writes guarded by scoped
-            // form rules in addition to this constraint.
+            // Codes are unique per owner so tenants can reuse names like WELCOME10.
             $table->unique(['owner_type', 'owner_id', 'code'], 'vouchers_owner_code_unique');
             // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
             $table->index('type'); // For filtering by voucher type
@@ -92,6 +89,11 @@ return new class extends Migration
             $table->index('last_activated_at');
         });
 
+        // Enforce uniqueness for global codes as well as owned codes.
+        if (in_array(ConnectionDriver::name(Schema::getConnection()), ['pgsql', 'sqlite'], true)) {
+            DB::statement("CREATE UNIQUE INDEX vouchers_global_code_unique ON \"{$tableName}\" (code) WHERE owner_type IS NULL AND owner_id IS NULL");
+        }
+
         // Optional: create GIN indexes when using jsonb on PostgreSQL
         $jsonColumnType = commerce_json_column_type('vouchers', 'jsonb');
 
@@ -106,50 +108,3 @@ return new class extends Migration
         }
     }
 };
-
-it('isolates claims of the same global voucher to each exact wallet owner', function (): void {
-    config()->set('vouchers.owner.enabled', true);
-    config()->set('vouchers.owner.include_global', true);
-
-    $holder = scopeWalletUser('shared-wallet-holder');
-    $ownerA = scopeWalletUser('shared-wallet-owner-a');
-    $ownerB = scopeWalletUser('shared-wallet-owner-b');
-    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'GLOBAL-WALLET-ISOLATION']));
-
-    $globalEntry = OwnerContext::withOwner(null, fn () => $holder->addVoucherToWallet($global->code));
-
-    $entryA = OwnerContext::withOwner($ownerA, function () use ($holder, $global, $ownerA) {
-        expect($holder->hasVoucherInWallet($global->code))->toBeFalse()
-            ->and($holder->removeVoucherFromWallet($global->code))->toBeFalse();
-
-        $entry = $holder->addVoucherToWallet($global->code);
-
-        expect((string) $entry->owner_id)->toBe((string) $ownerA->getKey())
-            ->and($holder->addVoucherToWallet($global->code)->id)->toBe($entry->id);
-
-        return $entry;
-    });
-
-    $entryB = OwnerContext::withOwner($ownerB, fn () => $holder->addVoucherToWallet($global->code));
-
-    expect($entryA->id)->not->toBe($entryB->id)
-        ->and($entryA->id)->not->toBe($globalEntry->id);
-
-    OwnerContext::withOwner($ownerA, function () use ($holder, $global): void {
-        expect($holder->removeVoucherFromWallet($global->code))->toBeTrue()
-            ->and($holder->hasVoucherInWallet($global->code))->toBeFalse();
-    });
-
-    OwnerContext::withOwner($ownerB, fn () => expect($holder->hasVoucherInWallet($global->code))->toBeTrue());
-    OwnerContext::withOwner(null, fn () => expect($holder->hasVoucherInWallet($global->code))->toBeTrue());
-});
-
-it('enforces global voucher code uniqueness in the database', function (): void {
-    config()->set('vouchers.owner.enabled', true);
-
-    OwnerContext::withOwner(null, function (): void {
-        scopeVoucher(['code' => 'UNIQUE-GLOBAL-CODE']);
-
-        expect(fn () => scopeVoucher(['code' => 'UNIQUE-GLOBAL-CODE']))->toThrow(QueryException::class);
-    });
-});
