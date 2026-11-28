@@ -49,6 +49,10 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
         ?string $notes = null,
         ?VoucherModel $voucherModel = null
     ): VoucherUsage {
+        if ($redeemedBy !== null && (string) $redeemedBy->getKey() === '') {
+            throw ValidationException::withMessages(['redeemed_by' => 'The redeemer must have an identity.']);
+        }
+
         return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
             $query = $this->voucherQuery()->where('code', $this->normalizeCode($code));
 
@@ -89,7 +93,9 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                     $sameAmount = (string) $existingUsage->discount_amount === (string) $discountAmount->getAmount();
                     $sameCurrency = mb_strtoupper($existingUsage->currency) === mb_strtoupper($discountAmount->getCurrency()->getCurrency());
 
-                    if (! $sameRedeemer || ! $sameAmount || ! $sameCurrency) {
+                    $sameChannel = $existingUsage->channel === ($channel ?? 'web');
+
+                    if (! $sameRedeemer || ! $sameAmount || ! $sameCurrency || ! $sameChannel) {
                         throw ValidationException::withMessages([
                             'idempotency_key' => 'The idempotency key was already used for a different voucher redemption.',
                         ]);

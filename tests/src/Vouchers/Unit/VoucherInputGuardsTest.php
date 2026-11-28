@@ -235,6 +235,31 @@ describe('usage recording guards', function (): void {
         expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(0);
     });
 
+    it('rejects an identified redemption without a redeemer key', function (): void {
+        $voucher = guardVoucher(['usage_limit_per_user' => 1]);
+
+        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: new GuardWalletUser))
+            ->toThrow(ValidationException::class);
+
+        expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(0);
+    });
+
+    it('rejects an idempotency key reused across redemption channels', function (): void {
+        $voucher = guardVoucher(['allows_manual_redemption' => true]);
+        $metadata = ['idempotency_key' => 'shared-channel-key'];
+
+        RecordVoucherUsage::run($voucher->code, Money::MYR(100), channel: 'web', metadata: $metadata);
+
+        expect(fn () => RecordVoucherUsage::run(
+            $voucher->code,
+            Money::MYR(100),
+            channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
+            metadata: $metadata,
+        ))->toThrow(ValidationException::class);
+
+        expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1);
+    });
+
     it('dedupes manual redemptions sharing a reference', function (): void {
         $voucher = guardVoucher(['allows_manual_redemption' => true]);
         $service = app(VoucherService::class);
