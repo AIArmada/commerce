@@ -7,12 +7,14 @@ namespace AIArmada\FilamentEvents\Actions\Importer;
 use AIArmada\Events\Contracts\EventImportScopeValidator;
 use AIArmada\Events\Features\Catalog\Actions\ImportEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Validation\Rule;
 use LogicException;
 
 final class EventSessionImporter extends Importer
@@ -44,28 +46,36 @@ final class EventSessionImporter extends Importer
                 ->label('Occurrence ID'),
             ImportColumn::make('title')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Title'),
             ImportColumn::make('slug')
+                ->rules(['nullable', 'string', 'max:255'])
                 ->label('Slug'),
             ImportColumn::make('summary')
                 ->label('Summary'),
             ImportColumn::make('starts_at')
                 ->requiredMapping()
+                ->rules(['required', 'date'])
                 ->label('Starts At'),
             ImportColumn::make('ends_at')
                 ->requiredMapping()
+                ->rules(['required', 'date'])
                 ->label('Ends At'),
             ImportColumn::make('timezone')
                 ->requiredMapping()
+                ->rules(['required', 'timezone'])
                 ->label('Timezone'),
             ImportColumn::make('status')
                 ->requiredMapping()
+                ->rules(['required', Rule::in(array_keys(OccurrenceStatus::options()))])
                 ->label('Status'),
             ImportColumn::make('capacity')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0', 'max:2147483647'])
                 ->label('Capacity'),
             ImportColumn::make('sort_order')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0', 'max:2147483647'])
                 ->label('Sort Order'),
         ];
     }

@@ -9,8 +9,10 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus;
 use AIArmada\Events\Platform\ModelResolver;
-use Illuminate\Support\Arr;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -24,12 +26,22 @@ final readonly class ImportEventSessionAction
     /** @param array<string, mixed> $data */
     public function handle(array $data, mixed $actor): EventSession
     {
-        $eventId = $data['event_id'] ?? null;
-        $occurrenceId = $data['event_occurrence_id'] ?? null;
+        $data = Validator::make($data, [
+            'event_id' => ['required', 'uuid'],
+            'event_occurrence_id' => ['required', 'uuid'],
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255'],
+            'summary' => ['nullable', 'string'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date'],
+            'timezone' => ['required', 'timezone'],
+            'status' => ['required', Rule::in(array_keys(OccurrenceStatus::options()))],
+            'capacity' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
+        ])->validate();
 
-        if (! is_string($occurrenceId) || $occurrenceId === '') {
-            throw ValidationException::withMessages(['event_occurrence_id' => 'An occurrence is required.']);
-        }
+        $eventId = $data['event_id'];
+        $occurrenceId = $data['event_occurrence_id'];
 
         $this->scope->validate($eventId, $occurrenceId, $actor, 'update');
 
@@ -40,17 +52,20 @@ final readonly class ImportEventSessionAction
             throw new InvalidArgumentException('Invalid occurrence model.');
         }
 
-        if (! is_string($data['status'] ?? null) || ! array_key_exists($data['status'], OccurrenceStatus::options())) {
-            throw ValidationException::withMessages(['status' => 'Invalid session status.']);
-        }
-
         Gate::forUser($actor)->authorize('create', ModelResolver::sessionClass());
         Gate::forUser($actor)->authorize('update', $occurrence);
 
+        $data['starts_at'] = CarbonImmutable::parse($data['starts_at'], $data['timezone'])->utc();
+        $data['ends_at'] = CarbonImmutable::parse($data['ends_at'], $data['timezone'])->utc();
+
+        if ($data['ends_at']->lessThanOrEqualTo($data['starts_at'])) {
+            throw ValidationException::withMessages(['ends_at' => 'Session end time must be after the start time.']);
+        }
+
+        unset($data['event_id'], $data['event_occurrence_id']);
+
         try {
-            return $this->create->handle($occurrence, Arr::only($data, [
-                'title', 'slug', 'summary', 'starts_at', 'ends_at', 'timezone', 'status', 'capacity', 'sort_order',
-            ]));
+            return $this->create->handle($occurrence, $data);
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['title' => $exception->getMessage()]);
         }
