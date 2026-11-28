@@ -7,8 +7,7 @@ namespace AIArmada\Seating\Features\Reservations\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatAllocationFactory;
-use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,11 +56,11 @@ class SeatAllocation extends Model
                 throw new InvalidArgumentException('Allocated-to type and id must both be present or both be null.');
             }
 
-            if ($allocation->seat_id !== null && ! Seat::query()->whereKey($allocation->seat_id)->exists()) {
+            if ($allocation->seat_id !== null && ! ModelResolver::seatClass()::query()->whereKey($allocation->seat_id)->exists()) {
                 throw new InvalidArgumentException('The allocation references a seat that does not exist in the current scope.');
             }
 
-            if ($allocation->seat_section_id !== null && ! SeatSection::query()->whereKey($allocation->seat_section_id)->exists()) {
+            if ($allocation->seat_section_id !== null && ! ModelResolver::seatSectionClass()::query()->whereKey($allocation->seat_section_id)->exists()) {
                 throw new InvalidArgumentException('The allocation references a section that does not exist in the current scope.');
             }
         });
@@ -110,16 +109,16 @@ class SeatAllocation extends Model
         return $this->status === 'active';
     }
 
-    /** @return BelongsTo<Seat, $this> */
+    /** @return BelongsTo<Model, $this> */
     public function seat(): BelongsTo
     {
-        return $this->belongsTo(Seat::class, 'seat_id');
+        return $this->belongsTo(ModelResolver::seatClass(), 'seat_id');
     }
 
-    /** @return BelongsTo<SeatSection, $this> */
+    /** @return BelongsTo<Model, $this> */
     public function seatSection(): BelongsTo
     {
-        return $this->belongsTo(SeatSection::class, 'seat_section_id');
+        return $this->belongsTo(ModelResolver::seatSectionClass(), 'seat_section_id');
     }
 
     public function allocatedTo(): MorphTo
@@ -130,20 +129,5 @@ class SeatAllocation extends Model
     public function releasedBy(): MorphTo
     {
         return $this->morphTo('released_by', 'released_by_type', 'released_by_id');
-    }
-
-    public function release(?string $releasedByType = null, ?string $releasedById = null): void
-    {
-        $this->update([
-            'status' => 'released',
-            'released_at' => CarbonImmutable::now(),
-            'released_by_type' => $releasedByType ?? $this->released_by_type,
-            'released_by_id' => $releasedById ?? $this->released_by_id,
-        ]);
-    }
-
-    public function revoke(): void
-    {
-        $this->update(['status' => 'revoked', 'revoked_at' => CarbonImmutable::now()]);
     }
 }

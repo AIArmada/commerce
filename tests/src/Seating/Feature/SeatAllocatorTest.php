@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Features\Maps\Models\Seat;

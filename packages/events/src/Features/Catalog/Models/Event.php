@@ -20,7 +20,7 @@ use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\RegistersEventMedia;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Support;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class TicketingOwnerGuard
 {
@@ -20,16 +20,16 @@ final class TicketingOwnerGuard
      */
     public static function assertRelations(Model $model, array $relations): void
     {
-        if (! config('ticketing.owner.enabled', true)) {
-            return;
+        $config = self::ownerScopeConfig($model);
+
+        if ($config->enabled) {
+            $owner = OwnerContext::resolveConfigured($config);
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                sprintf('%s requires an owner context or explicit global context.', $model::class),
+            );
         }
-
-        $owner = OwnerContext::resolve();
-
-        OwnerContext::assertResolvedOrExplicitGlobal(
-            $owner,
-            sprintf('%s requires an owner context or explicit global context.', $model::class),
-        );
 
         foreach ($relations as $definition) {
             self::assertRelation($model, $definition['relation'], $definition['required'] ?? false);
@@ -38,15 +38,6 @@ final class TicketingOwnerGuard
 
     private static function assertRelation(Model $model, string $relationName, bool $required): void
     {
-        $morphPrefix = Str::snake($relationName);
-        $morphType = $model->getAttribute("{$morphPrefix}_type");
-
-        if (array_key_exists("{$morphPrefix}_type", $model->getAttributes())) {
-            self::assertMorphRelation($model, $relationName, $morphType, $model->getAttribute("{$morphPrefix}_id"), $required);
-
-            return;
-        }
-
         $relation = $model->{$relationName}();
 
         if (! $relation instanceof BelongsTo) {
@@ -57,20 +48,21 @@ final class TicketingOwnerGuard
             ));
         }
 
-        $relatedClass = $relation->getRelated()::class;
-        $relatedId = null;
-
         if ($relation instanceof MorphTo) {
-            $morphType = $model->getAttribute($relation->getMorphType());
-            $relatedId = $model->getAttribute($relation->getForeignKeyName());
-
-            self::assertMorphRelation($model, $relationName, $morphType, $relatedId, $required);
+            self::assertMorphRelation(
+                $model,
+                $relationName,
+                $model->getAttribute($relation->getMorphType()),
+                $model->getAttribute($relation->getForeignKeyName()),
+                $required,
+            );
 
             return;
         }
+
         $relatedId = $model->getAttribute($relation->getForeignKeyName());
 
-        if ($relatedId === null) {
+        if ($relatedId === null || $relatedId === '') {
             if ($required) {
                 self::throwMissingRelation($model, $relationName);
             }
@@ -78,27 +70,29 @@ final class TicketingOwnerGuard
             return;
         }
 
-        if (! self::isOwnerScopedModel($relatedClass)) {
-            return;
-        }
-
-        /** @var class-string<Model> $relatedClass */
-        $related = $relatedClass::query()->whereKey($relatedId)->first();
-
-        if ($related instanceof Model) {
-            return;
-        }
-
-        throw new AuthorizationException(sprintf(
-            'The %s relation for %s is not accessible in the current owner scope.',
-            $relationName,
-            $model::class,
-        ));
+        $relatedClass = $relation->getRelated()::class;
+        self::assertAccessible($relatedClass, $relatedId, $model, $relationName);
     }
 
-    private static function assertMorphRelation(Model $model, string $relationName, mixed $morphType, mixed $relatedId, bool $required): void
-    {
-        if ($morphType === null || $relatedId === null) {
+    private static function assertMorphRelation(
+        Model $model,
+        string $relationName,
+        mixed $morphType,
+        mixed $relatedId,
+        bool $required,
+    ): void {
+        $hasType = $morphType !== null && $morphType !== '';
+        $hasId = $relatedId !== null && $relatedId !== '';
+
+        if ($hasType xor $hasId) {
+            throw new InvalidArgumentException(sprintf(
+                '%s %s type and id must both be present or both be null.',
+                $model::class,
+                $relationName,
+            ));
+        }
+
+        if (! $hasType) {
             if ($required) {
                 self::throwMissingRelation($model, $relationName);
             }
@@ -108,42 +102,36 @@ final class TicketingOwnerGuard
 
         $relatedClass = Relation::getMorphedModel((string) $morphType) ?? (string) $morphType;
 
-        if (! class_exists($relatedClass) || ! is_a($relatedClass, Model::class, true)) {
-            return;
+        if (! is_string($relatedClass) || ! class_exists($relatedClass) || ! is_a($relatedClass, Model::class, true)) {
+            throw new AuthorizationException(sprintf(
+                'The %s relation for %s does not resolve to an Eloquent model.',
+                $relationName,
+                $model::class,
+            ));
         }
 
-        if (! self::isOwnerScopedModel($relatedClass)) {
-            return;
-        }
-
-        /** @var class-string<Model> $relatedClass */
-        if ($relatedClass::query()->whereKey($relatedId)->exists()) {
-            return;
-        }
-
-        throw new AuthorizationException(sprintf(
-            'The %s relation for %s is not accessible in the current owner scope.',
-            $relationName,
-            $model::class,
-        ));
+        self::assertAccessible($relatedClass, $relatedId, $model, $relationName);
     }
 
     /**
-     * Non-owner-scoped (global) models are intentionally skipped: they carry
-     * no owner tuple to compare. Untrusted morph input is rejected earlier at
-     * the entry points (see HolderAttributesValidator), which resolves the
-     * class, enforces the holder allow-list, and requires the row to exist
-     * within the current owner scope.
-     *
      * @param  class-string<Model>  $relatedClass
      */
-    private static function isOwnerScopedModel(string $relatedClass): bool
+    private static function assertAccessible(string $relatedClass, mixed $relatedId, Model $model, string $relationName): void
     {
-        if (in_array(HasOwner::class, class_uses_recursive($relatedClass), true)) {
-            return true;
+        if (! $relatedClass::query()->whereKey($relatedId)->exists()) {
+            throw new AuthorizationException(sprintf(
+                'The %s relation for %s is not accessible in the current owner scope.',
+                $relationName,
+                $model::class,
+            ));
         }
+    }
 
-        return method_exists($relatedClass, 'eventOwnerRelation');
+    private static function ownerScopeConfig(Model $model): OwnerScopeConfig
+    {
+        $config = method_exists($model, 'ownerScopeConfig') ? $model->ownerScopeConfig() : null;
+
+        return $config instanceof OwnerScopeConfig ? $config : new OwnerScopeConfig(enabled: true);
     }
 
     private static function throwMissingRelation(Model $model, string $relationName): never

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;

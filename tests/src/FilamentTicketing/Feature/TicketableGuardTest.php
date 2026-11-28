@@ -6,6 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
 use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Tests\Fixtures\OwnedTicketable;
@@ -127,4 +129,30 @@ it('keeps the ticket type attached to its original host', function (): void {
 
         expect(app(DeleteTicketType::class)->handle($type, $first))->toBeTrue();
     });
+});
+
+it('authorizes inherited event occurrence hosts for ticket-type writes', function (): void {
+    $owner = ticketableOwner('ticketable-occurrence@example.com');
+    $other = ticketableOwner('ticketable-occurrence-other@example.com');
+
+    $event = OwnerContext::withOwner($owner, fn () => Event::factory()->create());
+    $occurrence = OwnerContext::withOwner($owner, fn () => EventOccurrence::factory()->create(['event_id' => $event->id]));
+
+    $data = [
+        'name' => 'Occurrence Admission',
+        'code' => 'OCC',
+        'access_type' => 'general',
+        'admits_quantity' => 1,
+        'status' => 'active',
+        'visibility' => 'public',
+        'price' => 1000,
+    ];
+
+    $type = OwnerContext::withOwner($owner, fn () => app(SaveTicketType::class)->handle($occurrence, $data));
+
+    expect($type->ticketable_type)->toBe($occurrence->getMorphClass())
+        ->and((string) $type->ticketable_id)->toBe((string) $occurrence->getKey());
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(SaveTicketType::class)->handle($occurrence, $data)))
+        ->toThrow(AuthorizationException::class);
 });

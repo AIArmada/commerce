@@ -7,11 +7,14 @@ namespace AIArmada\Ticketing\Features\Passes\Persistence;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Data\PassTransferData;
 use AIArmada\Ticketing\Data\TransferInputData;
 use AIArmada\Ticketing\Events\PassTransferred;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassHolderData;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -20,6 +23,11 @@ use RuntimeException;
 
 final readonly class PassTransferWriter implements PassTransferServiceInterface
 {
+    public function __construct(
+        private MapPassData $mapPassData,
+        private MapPassHolderData $mapPassHolderData,
+    ) {}
+
     public function transfer(TransferInputData $input): string
     {
         return (new Pass)->getConnection()->transaction(function () use ($input): string {
@@ -62,14 +70,14 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         $this->assertHolderBelongsToPass($pass, $holder);
         HolderAttributesValidator::validateAttributes($holder->getAttributes());
 
-        return (string) $this->transferLocked($pass, $holder, $input->reason)->getKey();
+        return (string) $this->transferLocked($pass, $holder, $input)->getKey();
     }
 
     /**
      * Execute the holder switch. The pass row must already be locked; the
      * lock serializes concurrent transfers of the same pass.
      */
-    private function transferLocked(Pass $freshPass, PassHolder $newHolder, ?string $reason): PassHolder
+    private function transferLocked(Pass $freshPass, PassHolder $newHolder, TransferInputData $input): PassHolder
     {
         // The new holder arrives unsaved and non-current. Persist it as
         // non-current first so the previous-holder lookup below can only
@@ -113,12 +121,22 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         $transfer->pass_id = $freshPass->getKey();
         $transfer->from_holder_id = $previousHolder?->getKey();
         $transfer->to_holder_id = $newHolder->getKey();
-        $transfer->reason = $reason;
+        $transfer->reason = $input->reason;
         $transfer->owner_type = $freshPass->owner_type;
         $transfer->owner_id = $freshPass->owner_id;
         $transfer->save();
 
-        $freshPass->getConnection()->afterCommit(fn () => event(new PassTransferred($freshPass, $previousHolder ?? $newHolder, $newHolder, $reason)));
+        $transferredAt = CarbonImmutable::now();
+        $payload = new PassTransferData(
+            pass: $this->mapPassData->handle($freshPass),
+            previousHolder: $this->mapPassHolderData->handle($previousHolder ?? $newHolder),
+            newHolder: $this->mapPassHolderData->handle($newHolder),
+            reason: $input->reason,
+            transferredAt: $transferredAt,
+            bulk: $input->bulk,
+        );
+
+        $freshPass->getConnection()->afterCommit(fn () => event(new PassTransferred($payload)));
 
         return $newHolder;
     }

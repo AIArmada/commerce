@@ -13,17 +13,28 @@ final class SendTransferNotifications
 {
     public function handle(PassTransferred $event): void
     {
-        $previousHolder = $event->previousHolder;
-        $newHolder = $event->newHolder;
+        $transfer = $event->transfer;
 
-        if (! blank($previousHolder->email)) {
-            Notification::route('mail', $previousHolder->email)
-                ->notify(new PassTransferredToOldHolderNotification($event->pass, $newHolder, $event->reason));
+        if ($transfer->bulk) {
+            return;
         }
 
-        if (! blank($newHolder->email)) {
-            Notification::route('mail', $newHolder->email)
-                ->notify(new PassTransferredToNewHolderNotification($event->pass, $previousHolder, $event->reason));
+        if (! blank($transfer->previousHolder->email) && $transfer->previousHolder->id !== $transfer->newHolder->id) {
+            Notification::route('mail', $transfer->previousHolder->email)
+                ->notify(new PassTransferredToOldHolderNotification(
+                    $transfer->pass,
+                    $transfer->newHolder,
+                    $transfer->reason,
+                ));
+        }
+
+        if (! blank($transfer->newHolder->email)) {
+            Notification::route('mail', $transfer->newHolder->email)
+                ->notify(new PassTransferredToNewHolderNotification(
+                    $transfer->pass,
+                    $transfer->previousHolder,
+                    $transfer->reason,
+                ));
         }
     }
 }

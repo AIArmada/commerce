@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Events\Data\EventRegistrationScopeData;
 use AIArmada\Events\Data\RegistrationMode;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 it('creates scope from explicit modes', function (): void {
     $scope = new EventRegistrationScopeData(

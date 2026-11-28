@@ -9,12 +9,12 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
-use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
-use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketTypeDependents;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -61,7 +61,6 @@ use InvalidArgumentException;
  * @property-read Collection<int, TicketTypeProduct> $requiredBundleProducts
  * @property-read Collection<int, TicketTypeProduct> $optionalBundleProducts
  * @property-read Collection<int, TicketTypeSeatingOption> $seatingOptions
- * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, InventoryLevel> $inventoryLevels
  * @property-read Collection<int, InventoryMovement> $inventoryMovements
  * @property-read Collection<int, InventoryAllocation> $inventoryAllocations
@@ -100,17 +99,7 @@ class TicketType extends Model
         });
 
         static::deleting(function (self $ticketType): void {
-            $key = (string) $ticketType->getKey();
-
-            $ticketType->passes()->update(['ticket_type_id' => null]);
-
-            TicketTypeComponent::query()
-                ->where(fn (Builder $query): Builder => $query->where('parent_ticket_type_id', $key)
-                    ->orWhere('component_ticket_type_id', $key))
-                ->delete();
-
-            $ticketType->bundleProducts()->delete();
-            $ticketType->seatingOptions()->delete();
+            app(DeleteTicketTypeDependents::class)->handle($ticketType);
         });
     }
 
@@ -190,14 +179,6 @@ class TicketType extends Model
     public function ticketable(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * @return HasMany<Pass, $this>
-     */
-    public function passes(): HasMany
-    {
-        return $this->hasMany(Pass::class);
     }
 
     /**

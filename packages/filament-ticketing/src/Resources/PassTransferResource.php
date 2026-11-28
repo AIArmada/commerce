@@ -28,22 +28,22 @@ final class PassTransferResource extends Resource
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-transfer.view');
+        return FilamentPermission::hasAbility('pass-transfer.view') && OwnerUiScope::canAccessRecord($record);
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('pass-transfer.create');
+        return FilamentPermission::hasAbility('pass-transfer.create') && OwnerUiScope::canCreate(PassTransfer::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-transfer.update');
+        return FilamentPermission::hasAbility('pass-transfer.update') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-transfer.delete');
+        return FilamentPermission::hasAbility('pass-transfer.delete') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function shouldRegisterNavigation(): bool

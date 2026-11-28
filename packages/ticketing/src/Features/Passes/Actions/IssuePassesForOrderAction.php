@@ -8,20 +8,33 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Api\TicketTypeApi;
+use AIArmada\Ticketing\Features\TicketTypes\Api\TicketTypeIssuanceData;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class IssuePassesForOrderAction
 {
-    public function __construct(private IssuePassesAction $issuePasses) {}
+    public function __construct(
+        private IssuePassesAction $issuePasses,
+        private TicketTypeApi $ticketTypes,
+    ) {}
 
     public function handle(Order $order): void
     {
-        OwnerContext::withOwner($order->owner ?? null, function () use ($order): void {
-            foreach ($order->items as $item) {
-                $ticketType = $item->purchasable;
+        $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
 
-                if (! $ticketType instanceof TicketType) {
+        OwnerContext::withOwner($owner, function () use ($order): void {
+            foreach ($order->items as $item) {
+                $ticketableType = $item->getAttribute('purchasable_type');
+                $ticketableId = $item->getAttribute('purchasable_id');
+
+                if (! is_string($ticketableType) || $ticketableType === '' || $ticketableId === null) {
+                    continue;
+                }
+
+                $ticketType = $this->ticketTypes->issuanceDataFor($ticketableType, (string) $ticketableId);
+
+                if (! $ticketType instanceof TicketTypeIssuanceData) {
                     continue;
                 }
 
@@ -36,7 +49,7 @@ final readonly class IssuePassesForOrderAction
         });
     }
 
-    private function issueRemainderForItem(mixed $orderId, Model $item, TicketType $ticketType): void
+    private function issueRemainderForItem(mixed $orderId, Model $item, TicketTypeIssuanceData $ticketType): void
     {
         $item->getConnection()->transaction(function () use ($orderId, $item, $ticketType): void {
             $locked = $item->newQuery()->whereKey($item->getKey())->lockForUpdate()->first();
@@ -62,7 +75,7 @@ final readonly class IssuePassesForOrderAction
             }
 
             $context = new PassIssuanceContext(
-                ticketTypeId: (string) $ticketType->getKey(),
+                ticketTypeId: $ticketType->id,
                 quantity: $quantity,
                 holderAttributes: $holderAttributes,
                 metadata: ['order_id' => $orderId, 'order_item_id' => $locked->getKey()],

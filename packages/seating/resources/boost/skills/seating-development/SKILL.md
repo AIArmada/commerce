@@ -5,7 +5,7 @@ description: Develop and integrate seating using owner-safe domain operations.
 
 # Seating development
 
-Seating owns seat maps, sections, seats, holds and allocations. Use EnsureSeatHoldAction for hold creation, ConvertHoldsToAllocationsAction for conversion, EnsureSectionAllocationAction for capacity allocation, and ReleaseAllocationsAction for release. The allocator delegates to the canonical hold action. Always preserve owner scoping and transaction locking. Livewire selections are not reservations.
+Seating owns seat maps, sections, seats, holds and allocations. Use EnsureSeatHoldAction for hold creation, ConvertHoldsToAllocationsAction for conversion, EnsureSectionAllocationAction for shared-capacity allocation, and ReleaseAllocationsAction for release. Cross-feature callers use MapsApi and ReservationsApi; the allocator and Livewire component delegate through those APIs. Always preserve owner scoping, deterministic lock order, and owner-scoped layout caching. Livewire selections are not reservations.
 
 ## Verification
 

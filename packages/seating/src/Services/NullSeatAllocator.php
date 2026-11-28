@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Services;
 
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 
 final readonly class NullSeatAllocator implements SeatAllocatorInterface
 {

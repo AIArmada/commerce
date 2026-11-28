@@ -152,11 +152,7 @@ final class TicketingDriver implements EventTicketingDriver
             return;
         }
 
-        $passes = Pass::query()->whereKey($passIds)->get();
-
-        foreach ($passes as $pass) {
-            $delivery->deliver((string) $pass->getKey());
-        }
+        $delivery->deliverMany($passIds);
     }
 
     public function shipInventory(string $ticketTypeId, int $quantity, string $reason, ?string $reference = null): void

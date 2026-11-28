@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
@@ -19,6 +19,8 @@ final readonly class SaveTicketType
 {
     public function handle(Model $ticketable, array $data, ?TicketType $record = null): TicketType
     {
+        $data = array_map(static fn (mixed $value): mixed => $value === '' ? null : $value, $data);
+
         $attributes = Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50'],
@@ -29,9 +31,9 @@ final readonly class SaveTicketType
             'currency' => ['nullable', 'string', 'size:3', 'alpha:ascii'],
             'admits_quantity' => ['required', 'integer', 'min:1', 'max:2147483647'],
             'min_quantity' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
-            'max_quantity' => ['nullable', 'integer', 'min:0', 'max:2147483647', Rule::when(isset($data['min_quantity']), 'gte:min_quantity')],
+            'max_quantity' => ['nullable', 'integer', 'min:0', 'max:2147483647', Rule::when(($data['min_quantity'] ?? null) !== null, 'gte:min_quantity')],
             'sales_starts_at' => ['nullable', 'date'],
-            'sales_ends_at' => ['nullable', 'date', Rule::when(! empty($data['sales_starts_at']), 'after_or_equal:sales_starts_at')],
+            'sales_ends_at' => ['nullable', 'date', Rule::when(($data['sales_starts_at'] ?? null) !== null, 'after_or_equal:sales_starts_at')],
             'status' => ['required', Rule::enum(TicketTypeStatus::class)],
             'visibility' => ['required', Rule::enum(TicketTypeVisibility::class)],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:2147483647'],
@@ -39,12 +41,8 @@ final readonly class SaveTicketType
         ])->validate();
 
         return (new TicketType)->getConnection()->transaction(function () use ($ticketable, $record, $attributes): TicketType {
-            if (! $ticketable->exists || ! $ticketable->newQuery()->whereKey($ticketable->getKey())->exists()) {
-                throw new AuthorizationException('The ticketable record is not accessible.');
-            }
-
-            if (method_exists($ticketable, 'ownerScopeConfig') && ! OwnerUiScope::canMutateRecord($ticketable)) {
-                throw new AuthorizationException('The ticketable record is not writable.');
+            if (! $ticketable->exists || ! OwnerUiScope::canMutateHost($ticketable)) {
+                throw new AuthorizationException('The ticketable record is not writable in the current owner scope.');
             }
 
             if ($record === null) {

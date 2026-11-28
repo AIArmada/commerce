@@ -5,12 +5,14 @@
     "table:seat_holds": [
       "AIArmada\\Seating\\Features\\Reservations\\Actions\\EnsureSeatHoldAction",
       "AIArmada\\Seating\\Features\\Reservations\\Actions\\ConvertHoldsToAllocationsAction",
-      "AIArmada\\Seating\\Features\\Reservations\\Actions\\ReleaseExpiredHoldsAction"
+      "AIArmada\\Seating\\Features\\Reservations\\Actions\\ReleaseExpiredHoldsAction",
+      "AIArmada\\Seating\\Features\\Reservations\\Persistence\\SeatReservationCleaner"
     ],
     "table:seat_allocations": [
       "AIArmada\\Seating\\Features\\Reservations\\Actions\\ConvertHoldsToAllocationsAction",
       "AIArmada\\Seating\\Features\\Reservations\\Actions\\EnsureSectionAllocationAction",
-      "AIArmada\\Seating\\Features\\Reservations\\Actions\\ReleaseAllocationsAction"
+      "AIArmada\\Seating\\Features\\Reservations\\Actions\\ReleaseAllocationsAction",
+      "AIArmada\\Seating\\Features\\Reservations\\Persistence\\SeatReservationCleaner"
     ]
   },
   "extensions": {}

@@ -6,7 +6,7 @@ namespace AIArmada\Events\Drivers;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;
@@ -65,7 +65,7 @@ final class SeatingDriver implements EventSeatingDriver
         }
 
         $holds = $this->ensureSeatHold->handle(
-            map: $map,
+            mapId: (string) $map->getKey(),
             quantity: $quantity,
             mode: $mode,
             heldByType: $heldByType,
@@ -103,7 +103,7 @@ final class SeatingDriver implements EventSeatingDriver
             $section = $this->sectionFor(TicketType::query()->findOrFail($ticketTypeId), $map);
 
             $allocation = $this->ensureSectionAllocation->handle(
-                section: $section,
+                sectionId: (string) $section->getKey(),
                 allocToType: $allocatedToType,
                 allocToId: $allocatedToId,
                 reference: $reference,
@@ -114,7 +114,7 @@ final class SeatingDriver implements EventSeatingDriver
 
         return $map->getConnection()->transaction(function () use ($map, $mode, $allocatedToType, $allocatedToId, $reference): array {
             $holds = $this->ensureSeatHold->handle(
-                map: $map,
+                mapId: (string) $map->getKey(),
                 quantity: 1,
                 mode: $mode,
                 heldByType: $allocatedToType,
@@ -186,7 +186,7 @@ final class SeatingDriver implements EventSeatingDriver
 
             if ($seatingMode === SeatingMode::GeneralAdmission) {
                 $this->ensureSectionAllocation->handle(
-                    section: $this->sectionFor($ticketType, $map),
+                    sectionId: (string) $this->sectionFor($ticketType, $map)->getKey(),
                     allocToType: $pass->getMorphClass(),
                     allocToId: (string) $pass->getKey(),
                     reference: $pass->pass_no,
@@ -196,7 +196,7 @@ final class SeatingDriver implements EventSeatingDriver
             }
 
             $holds = $this->ensureSeatHold->handle(
-                map: $map,
+                mapId: (string) $map->getKey(),
                 quantity: 1,
                 mode: $seatingMode,
                 heldByType: $pass->getMorphClass(),
@@ -312,17 +312,19 @@ final class SeatingDriver implements EventSeatingDriver
 
     private function sectionFor(TicketType $ticketType, SeatMap $map): SeatSection
     {
-        $ticketType->loadMissing('seatingOptions.section');
-
-        $option = $ticketType->seatingOptions->first();
+        $option = $ticketType->seatingOptions()
+            ->with('section')
+            ->whereHas('section', static fn ($query) => $query->where('seat_map_id', $map->getKey()))
+            ->orderBy('id')
+            ->first();
 
         if (! $option instanceof TicketTypeSeatingOption) {
-            throw new SeatSectionNotFoundException('No seating option configured for this ticket type.');
+            throw new SeatSectionNotFoundException('No seating option configured for this ticket type matches the active seat map.');
         }
 
         $section = $option->section;
 
-        if (! $section instanceof SeatSection || (string) $section->seat_map_id !== (string) $map->getKey()) {
+        if (! $section instanceof SeatSection) {
             throw new SeatSectionNotFoundException('The configured seat section does not belong to the resolved seat map.');
         }
 

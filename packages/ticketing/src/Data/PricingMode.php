@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Enums;
+namespace AIArmada\Ticketing\Data;
 
 use AIArmada\CommerceSupport\Traits\HasLabelOptions;
 

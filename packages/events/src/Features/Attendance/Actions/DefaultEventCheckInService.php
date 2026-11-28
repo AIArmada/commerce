@@ -94,10 +94,17 @@ final class DefaultEventCheckInService implements EventCheckInService
         }
 
         $sessionClass = ModelResolver::sessionClass();
+        $occurrenceClass = ModelResolver::occurrenceClass();
         $passSessionId = $pass?->session_id;
 
         if ($passSessionId === null && $pass?->ticketable instanceof $sessionClass) {
             $passSessionId = (string) $pass->ticketable->getKey();
+        }
+
+        $passOccurrenceId = $pass?->occurrence_id;
+
+        if ($passOccurrenceId === null && $pass?->ticketable instanceof $occurrenceClass) {
+            $passOccurrenceId = (string) $pass->ticketable->getKey();
         }
 
         $session = $this->resolveSession($eventId, $data['event_session_id'] ?? $passSessionId);
@@ -109,7 +116,7 @@ final class DefaultEventCheckInService implements EventCheckInService
         $occurrenceId = $data['event_occurrence_id']
             ?? $session?->getAttribute('event_occurrence_id')
             ?? $registration?->occurrenceId
-            ?? $pass?->occurrence_id
+            ?? $passOccurrenceId
             ?? $participant?->occurrenceId
             ?? null;
 
@@ -124,7 +131,7 @@ final class DefaultEventCheckInService implements EventCheckInService
             throw new InvalidArgumentException('The selected registration does not belong to the selected event occurrence.');
         }
 
-        if ($pass !== null && $pass->occurrence_id !== null && (string) $pass->occurrence_id !== $occurrenceId) {
+        if ($passOccurrenceId !== null && (string) $passOccurrenceId !== $occurrenceId) {
             throw new InvalidArgumentException('The selected pass does not belong to the selected event occurrence.');
         }
 
@@ -148,6 +155,9 @@ final class DefaultEventCheckInService implements EventCheckInService
                 $pass,
                 $participant,
                 $registration,
+                $eventId,
+                $occurrenceId,
+                $session !== null ? (string) $session->getKey() : null,
                 $data['attendee_type'] ?? null,
                 $data['attendee_id'] ?? null,
             );
@@ -386,14 +396,33 @@ final class DefaultEventCheckInService implements EventCheckInService
         ?Pass $pass,
         ?EventRegistrationParticipantData $participant,
         ?RegistrationSummary $registration,
+        string $eventId,
+        string $occurrenceId,
+        ?string $sessionId,
         mixed $attendeeType = null,
         mixed $attendeeId = null,
     ): void {
         if ($pass !== null) {
-            $lockedPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
+            $lockedPass = Pass::query()
+                ->with(['ticketable', 'registration'])
+                ->whereKey($pass->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if (! $lockedPass->isValid()) {
                 throw new InvalidArgumentException('The selected pass is no longer valid for check-in.');
+            }
+
+            if (! $this->passBelongsToEvent($lockedPass, $eventId)) {
+                throw new InvalidArgumentException('The selected pass does not belong to the selected event.');
+            }
+
+            if ($lockedPass->occurrence_id !== null && (string) $lockedPass->occurrence_id !== $occurrenceId) {
+                throw new InvalidArgumentException('The selected pass no longer belongs to the selected event occurrence.');
+            }
+
+            if ($lockedPass->session_id !== null && (string) $lockedPass->session_id !== $sessionId) {
+                throw new InvalidArgumentException('The selected pass no longer belongs to the selected event session.');
             }
 
             return;

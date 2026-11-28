@@ -59,7 +59,7 @@ your app overrides `events.models.*`, resolve through `ModelResolver` instead.
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 $event = OwnerContext::withOwner($owner, function (): Event {
     return Event::query()->create([
@@ -111,7 +111,7 @@ Sessions and occurrences can override the parent's mode:
 use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 $occurrence = EventOccurrence::query()->findOrFail($occurrenceId);
 

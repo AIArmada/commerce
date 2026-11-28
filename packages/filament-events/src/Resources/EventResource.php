@@ -14,7 +14,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;

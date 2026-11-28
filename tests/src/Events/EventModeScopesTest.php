@@ -8,7 +8,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSeries;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);

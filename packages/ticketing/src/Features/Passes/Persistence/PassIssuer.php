@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Persistence;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
-use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
+use AIArmada\Ticketing\Features\TicketTypes\Api\TicketTypeApi;
+use AIArmada\Ticketing\Features\TicketTypes\Api\TicketTypeIssuanceData;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +28,11 @@ final readonly class PassIssuer implements PassIssuerInterface
 
     private const int INSERT_CHUNK_SIZE = 200;
 
+    public function __construct(
+        private TicketTypeApi $ticketTypes,
+        private MapPassData $mapPassData,
+    ) {}
+
     public function issuePassesFor(PassIssuanceContext $context): array
     {
         if ($context->quantity <= 0) {
@@ -38,13 +45,12 @@ final readonly class PassIssuer implements PassIssuerInterface
             throw new IssuanceQuantityExceededException($maxQuantity, $context->quantity);
         }
 
-        $ticketType = TicketType::query()->with('ticketable')->findOrFail($context->ticketTypeId);
-        $ticketable = $ticketType->ticketable;
+        $ticketType = $this->ticketTypes->issuanceData($context->ticketTypeId);
         $passNumbers = $this->generatePassNumbers($context->quantity);
         $passes = new Collection;
 
         foreach ($passNumbers as $passNumber) {
-            $passes->push($this->makePass($context, $ticketType, $ticketable, $passNumber));
+            $passes->push($this->makePass($context, $ticketType, $passNumber));
         }
 
         $attempts = 0;
@@ -69,9 +75,8 @@ final readonly class PassIssuer implements PassIssuerInterface
                     $this->insertPasses($passes);
 
                     foreach ($passes as $pass) {
-                        $pass->getConnection()->afterCommit(function () use ($pass, $context): void {
-                            event(new PassIssued($pass, $context->issuedAt));
-                        });
+                        $passData = $this->mapPassData->handle($pass);
+                        $pass->getConnection()->afterCommit(fn () => event(new PassIssued($passData, $context->issuedAt)));
                     }
 
                     return $passes->modelKeys();
@@ -146,6 +151,19 @@ final readonly class PassIssuer implements PassIssuerInterface
         }
     }
 
+    private function resolveOwner(PassIssuanceContext $context, OwnerScopeConfig $scope): ?Model
+    {
+        if ($context->ownerType !== null && $context->ownerId !== null) {
+            $explicit = OwnerContext::fromTypeAndIdOrFail($context->ownerType, $context->ownerId);
+
+            if ($explicit !== null) {
+                return $explicit;
+            }
+        }
+
+        return OwnerContext::resolveConfigured($scope);
+    }
+
     private function generatePassNo(): string
     {
         return (string) config('ticketing.defaults.pass_no_prefix', 'PASS-')
@@ -154,15 +172,14 @@ final readonly class PassIssuer implements PassIssuerInterface
 
     private function makePass(
         PassIssuanceContext $context,
-        TicketType $ticketType,
-        ?Model $ticketable,
+        TicketTypeIssuanceData $ticketType,
         string $passNumber,
     ): Pass {
         $pass = new Pass;
         $pass->setUniqueIds();
-        $pass->ticketable_type = $ticketable?->getMorphClass() ?? $ticketType->ticketable_type;
-        $pass->ticketable_id = $ticketable?->getKey() ?? $ticketType->ticketable_id;
-        $pass->ticket_type_id = $ticketType->getKey();
+        $pass->ticketable_type = $ticketType->ticketableType;
+        $pass->ticketable_id = $ticketType->ticketableId;
+        $pass->ticket_type_id = $ticketType->id;
         $pass->registration_type = $context->registrationType;
         $pass->registration_id = $context->registrationId;
         $pass->occurrence_id = $context->occurrenceId;
@@ -179,17 +196,15 @@ final readonly class PassIssuer implements PassIssuerInterface
         $scope = Pass::ownerScopeConfig();
 
         if ($scope->enabled) {
-            $owner = OwnerContext::resolveConfigured($scope);
+            $owner = $this->resolveOwner($context, $scope);
             OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
-            if ($owner !== null && $scope->autoAssignOnCreate) {
+            if ($owner !== null) {
                 $pass->assignOwner($owner);
             }
         }
 
-        if ($ticketable instanceof TicketableInterface) {
-            $pass->transfer_expires_at = $ticketable->transferWindowEndsAt();
-        }
+        $pass->transfer_expires_at = $ticketType->transferWindowEndsAt;
 
         return $pass;
     }

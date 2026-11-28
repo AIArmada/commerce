@@ -24,5 +24,12 @@ final readonly class PassData
         public ?CarbonImmutable $expired_at = null,
         public ?PassHolderData $holder = null,
         public ?array $metadata = null,
+        public ?string $pass_type = null,
+        public ?string $ticketable_type = null,
+        public ?string $ticketable_id = null,
+        public ?string $registration_type = null,
+        public ?string $registration_id = null,
+        public ?string $occurrence_id = null,
+        public ?string $session_id = null,
     ) {}
 }

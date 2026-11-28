@@ -9,4 +9,6 @@ use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 final class NullPassDeliveryService implements PassDeliveryServiceInterface
 {
     public function deliver(string $passId): void {}
+
+    public function deliverMany(array $passIds): void {}
 }

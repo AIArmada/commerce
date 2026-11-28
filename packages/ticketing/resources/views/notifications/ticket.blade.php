@@ -4,7 +4,7 @@
 Thank you for your purchase! Here is your ticket.
 
 **Pass Number:** {{ $pass->pass_no }}
-**Ticket Type:** {{ $pass->ticketType?->name ?? 'N/A' }}
+**Ticket Type:** {{ $pass->ticket_type_name ?? 'N/A' }}
 
 @if($pass->qr_code)
 **QR Code:** {{ $pass->qr_code }}

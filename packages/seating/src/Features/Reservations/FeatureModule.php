@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Reservations;
 
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
+use AIArmada\Seating\Features\Reservations\Api\ReservationsApi;
 use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\Features\Reservations\Queries\EloquentReservationsApi;
 use AIArmada\Seating\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 use Illuminate\Console\Scheduling\Schedule;
@@ -16,6 +18,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(SeatAllocatorInterface::class, DefaultSeatAllocator::class);
+        $app->bind(ReservationsApi::class, EloquentReservationsApi::class);
     }
 
     public function boot(Application $app): void

@@ -149,6 +149,9 @@ abstract class TestCase extends Orchestra
         ]);
 
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+        config()->set('ticketing.testing.ticketable_type', User::class);
+        config()->set('ticketing.testing.ticketable_id', (string) $owner->getKey());
     }
 
     protected function getPackageProviders($app): array

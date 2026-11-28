@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Support;
 
-use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Ticketing\Data\PricingMode;
 
 final class PricingModeResolver
 {
-    /** @param Collection<int, TicketType> $ticketTypes */
-    public static function resolve(Collection $ticketTypes): PricingMode
+    /** @param iterable<object> $ticketTypes */
+    public static function resolve(iterable $ticketTypes): PricingMode
     {
         $hasPaid = false;
         $hasFree = false;
 
         foreach ($ticketTypes as $type) {
-            if ($type->price !== null && $type->price > 0) {
+            $price = data_get($type, 'price');
+
+            if ($price !== null && $price > 0) {
                 $hasPaid = true;
             } else {
                 $hasFree = true;

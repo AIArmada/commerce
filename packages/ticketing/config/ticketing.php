@@ -7,7 +7,7 @@ $tablePrefix = env('TICKETING_TABLE_PREFIX', 'ticket_');
 return [
     'database' => [
         'table_prefix' => $tablePrefix,
-        'json_column_type' => env('TICKETING_JSON_COLUMN_TYPE', 'jsonb'),
+        'json_column_type' => env('TICKETING_JSON_COLUMN_TYPE', 'json'),
         'tables' => [
             'ticket_types' => env('TICKETING_TICKET_TYPES_TABLE', $tablePrefix . 'types'),
             'ticket_type_components' => env('TICKETING_TICKET_TYPE_COMPONENTS_TABLE', $tablePrefix . 'type_components'),
@@ -21,6 +21,11 @@ return [
     'defaults' => [
         'currency' => env('TICKETING_CURRENCY', env('COMMERCE_CURRENCY', 'MYR')),
         'pass_no_prefix' => env('TICKETING_PASS_NO_PREFIX', 'PASS-'),
+    ],
+    'models' => [
+        'ticket_type' => null,
+        'pass' => null,
+        'pass_holder' => null,
     ],
     'ticketable_types' => [],
     'allowed_ticketable_types' => [],
@@ -39,8 +44,9 @@ return [
     'notifications' => [
         'ticket' => [
             'enabled' => true,
-            'from_address' => env('TICKETING_FROM_ADDRESS'),
-            'from_name' => env('TICKETING_FROM_NAME'),
+        ],
+        'transfer' => [
+            'enabled' => true,
         ],
     ],
     'features' => [
@@ -50,8 +56,5 @@ return [
         'enabled' => env('TICKETING_OWNER_ENABLED', true),
         'include_global' => false,
         'auto_assign_on_create' => env('TICKETING_OWNER_AUTO_ASSIGN', true),
-    ],
-    'events' => [
-        'pricing_consistency_check' => env('TICKETING_PRICING_CONSISTENCY_CHECK', true),
     ],
 ];

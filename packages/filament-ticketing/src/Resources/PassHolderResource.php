@@ -31,22 +31,22 @@ final class PassHolderResource extends Resource
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-holder.view');
+        return FilamentPermission::hasAbility('pass-holder.view') && OwnerUiScope::canAccessRecord($record);
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('pass-holder.create');
+        return FilamentPermission::hasAbility('pass-holder.create') && OwnerUiScope::canCreate(PassHolder::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-holder.update');
+        return FilamentPermission::hasAbility('pass-holder.update') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass-holder.delete');
+        return FilamentPermission::hasAbility('pass-holder.delete') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function shouldRegisterNavigation(): bool

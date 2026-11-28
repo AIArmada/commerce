@@ -37,8 +37,8 @@ it('rolls back all passes when issuance fails partway through the issuer loop', 
 
             for ($i = 0; $i < $context->quantity; $i++) {
                 $pass = new Pass;
-                $pass->ticketable_type = 'workshop';
-                $pass->ticketable_id = (string) Str::uuid();
+                $pass->ticketable_type = (string) config('ticketing.testing.ticketable_type');
+                $pass->ticketable_id = (string) config('ticketing.testing.ticketable_id');
                 $pass->ticket_type_id = $context->ticketTypeId;
                 $pass->pass_no = 'PASS-FAIL-' . $this->callCount . '-' . $i;
                 $pass->status = 'issued';
@@ -77,8 +77,8 @@ it('commits all passes on successful issuance', function (): void {
     $passes = new Collection;
     for ($i = 0; $i < 3; $i++) {
         $pass = new Pass;
-        $pass->ticketable_type = 'workshop';
-        $pass->ticketable_id = (string) Str::uuid();
+        $pass->ticketable_type = (string) config('ticketing.testing.ticketable_type');
+        $pass->ticketable_id = (string) config('ticketing.testing.ticketable_id');
         $pass->ticket_type_id = $ticketType->getKey();
         $pass->pass_no = 'PASS-SUCCESS-' . $i;
         $pass->status = 'issued';

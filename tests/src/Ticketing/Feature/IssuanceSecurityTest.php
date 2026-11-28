@@ -13,6 +13,7 @@ use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 function createIssuanceTicketType(): TicketType
@@ -182,4 +183,34 @@ it('does not assign ambient ownership when ticketing owner scoping is disabled',
                 ->and($pass->owner_id)->toBeNull();
         }
     });
+});
+
+it('assigns the resolved tenant owner to bulk passes when model auto-assignment is disabled', function (): void {
+    config()->set('ticketing.owner.auto_assign_on_create', false);
+    Model::clearBootedModels();
+
+    $owner = User::factory()->create();
+
+    $ids = OwnerContext::withOwner($owner, function () use ($owner): array {
+        $ticketType = TicketType::factory()->create([
+            'ticketable_type' => User::class,
+            'ticketable_id' => (string) $owner->getKey(),
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ]);
+
+        return app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+            ticketTypeId: (string) $ticketType->getKey(),
+            quantity: 2,
+        ));
+    });
+
+    $passes = Pass::query()->withoutOwnerScope()->whereKey($ids)->get();
+
+    expect($passes)->toHaveCount(2);
+
+    foreach ($passes as $pass) {
+        expect($pass->owner_type)->toBe($owner->getMorphClass())
+            ->and((string) $pass->owner_id)->toBe((string) $owner->getKey());
+    }
 });

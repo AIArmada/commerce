@@ -7,7 +7,7 @@ namespace AIArmada\Seating\Features\Reservations\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatHoldFactory;
-use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -54,7 +54,7 @@ class SeatHold extends Model
                 throw new InvalidArgumentException('Held-by type and id must both be present or both be null.');
             }
 
-            if (! Seat::query()->whereKey($hold->seat_id)->exists()) {
+            if (! ModelResolver::seatClass()::query()->whereKey($hold->seat_id)->exists()) {
                 throw new InvalidArgumentException('The hold references a seat that does not exist in the current scope.');
             }
         });
@@ -93,20 +93,15 @@ class SeatHold extends Model
         return $this->expires_at?->lessThanOrEqualTo(CarbonImmutable::now()) ?? false;
     }
 
-    /** @return BelongsTo<Seat, $this> */
+    /** @return BelongsTo<Model, $this> */
     public function seat(): BelongsTo
     {
-        return $this->belongsTo(Seat::class, 'seat_id');
+        return $this->belongsTo(ModelResolver::seatClass(), 'seat_id');
     }
 
     public function isConverted(): bool
     {
         return $this->converted_at !== null;
-    }
-
-    public function markConverted(): void
-    {
-        $this->update(['converted_at' => CarbonImmutable::now()]);
     }
 
     public function heldBy(): MorphTo

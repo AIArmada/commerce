@@ -15,7 +15,7 @@ final class AllocateEventSeatsOnPassIssued
 
     public function handle(PassIssued $event): void
     {
-        $passId = $event->pass->getKey();
+        $passId = $event->pass->id;
 
         if ($passId === null) {
             return;

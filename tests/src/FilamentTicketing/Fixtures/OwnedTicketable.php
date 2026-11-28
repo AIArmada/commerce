@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTicketing\Tests\Fixtures;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;

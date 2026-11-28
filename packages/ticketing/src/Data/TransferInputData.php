@@ -15,5 +15,6 @@ final readonly class TransferInputData
         public ?string $reason = null,
         public ?string $existing_holder_id = null,
         public ?array $metadata = null,
+        public bool $bulk = false,
     ) {}
 }

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = commerce_json_column_type('seating', 'jsonb');
+        $jsonType = commerce_json_column_type('seating', 'json');
         $tableName = (string) config('seating.database.tables.seat_allocations', 'seat_allocations');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {

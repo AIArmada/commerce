@@ -9,10 +9,12 @@ arch('seating')
 
 arch('seating contracts')
     ->expect('AIArmada\Seating\Contracts')
+    ->interfaces()
     ->toBeInterface();
 
 arch('seating data')
     ->expect('AIArmada\Seating\Data')
+    ->classes()
     ->toBeFinal()
     ->toBeReadonly();
 

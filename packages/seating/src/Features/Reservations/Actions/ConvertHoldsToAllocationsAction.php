@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
-use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Seating\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -30,105 +32,154 @@ final readonly class ConvertHoldsToAllocationsAction
         string $allocToId,
         ?string $reference = null,
     ): Collection {
-        return DB::transaction(function () use ($holds, $mode, $allocToType, $allocToId, $reference): Collection {
-            $allocations = new Collection;
+        $requestedIds = [];
 
-            foreach ($holds as $hold) {
-                $current = SeatHold::query()->whereKey($hold->getKey())->firstOrFail();
+        foreach ($holds as $hold) {
+            $requestedIds[] = (string) $hold->getKey();
+        }
 
-                if ($current->isConverted()) {
+        $requestedIds = array_values(array_unique($requestedIds));
+
+        if ($requestedIds === []) {
+            return new Collection;
+        }
+
+        return DB::transaction(function () use ($requestedIds, $allocToType, $allocToId, $reference): Collection {
+            $initialHolds = SeatHold::query()->whereKey($requestedIds)->get()->keyBy(fn (SeatHold $hold): string => (string) $hold->getKey());
+            $missing = array_values(array_diff($requestedIds, $initialHolds->keys()->all()));
+
+            if ($missing !== []) {
+                throw (new ModelNotFoundException)->setModel(SeatHold::class, $missing);
+            }
+
+            $seatIds = $initialHolds->map(fn (SeatHold $hold): string => (string) $hold->seat_id)->unique()->sort()->values()->all();
+            $seatClass = ModelResolver::seatClass();
+            $seats = $seatClass::query()
+                ->whereKey($seatIds)
+                ->orderBy('seat_section_id')
+                ->orderBy('row_number')
+                ->orderBy('column_number')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(fn (Model $seat): string => (string) $seat->getKey());
+
+            $lockedHolds = SeatHold::query()
+                ->whereKey($requestedIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(fn (SeatHold $hold): string => (string) $hold->getKey());
+
+            $lockedSeatIds = $lockedHolds->map(fn (SeatHold $hold): string => (string) $hold->seat_id)->unique()->sort()->values()->all();
+
+            if ($lockedSeatIds !== $seatIds) {
+                throw new StaleSeatHoldException('Seat hold targets changed while converting.');
+            }
+
+            $sectionIds = $seats->map(fn (Model $seat): string => (string) $seat->getAttribute('seat_section_id'))->unique()->sort()->values()->all();
+            $sectionClass = ModelResolver::seatSectionClass();
+            $sections = $sectionClass::query()
+                ->whereKey($sectionIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(fn (Model $section): string => (string) $section->getKey());
+
+            $activeAllocations = SeatAllocation::query()
+                ->withoutOwnerScope()
+                ->whereIn('seat_id', $seatIds)
+                ->where('status', 'active')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(fn (SeatAllocation $allocation): string => (string) $allocation->seat_id);
+
+            $sectionCounts = SeatAllocation::query()
+                ->withoutOwnerScope()
+                ->whereIn('seat_section_id', $sectionIds)
+                ->where('status', 'active')
+                ->selectRaw('seat_section_id, COUNT(*) as aggregate')
+                ->groupBy('seat_section_id')
+                ->pluck('aggregate', 'seat_section_id')
+                ->map(fn (mixed $count): int => (int) $count)
+                ->all();
+
+            $now = CarbonImmutable::now();
+            $allocations = [];
+            foreach ($requestedIds as $holdId) {
+                $hold = $lockedHolds->get($holdId);
+
+                if (! $hold instanceof SeatHold || $hold->isConverted()) {
                     continue;
                 }
 
-                $seat = Seat::query()
-                    ->whereKey($current->seat_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
+                $seat = $seats->get((string) $hold->seat_id);
+                $section = $seat instanceof Model ? $sections->get((string) $seat->getAttribute('seat_section_id')) : null;
 
-                $lockedHold = SeatHold::query()
-                    ->whereKey($hold->getKey())
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($lockedHold->isConverted()) {
-                    continue;
+                if (! $seat instanceof Model || ! $section instanceof Model) {
+                    throw new StaleSeatHoldException("SeatHold {$holdId} references an unavailable seat.");
                 }
 
-                if ($lockedHold->seat_id !== $seat->getKey() || $seat->status !== SeatStatus::Available || $lockedHold->isExpired()) {
-                    throw new StaleSeatHoldException(
-                        "SeatHold {$lockedHold->id} is no longer eligible for conversion."
+                if ($hold->isExpired() || $seat->getAttribute('status') !== SeatStatus::Available) {
+                    throw new StaleSeatHoldException("SeatHold {$holdId} is no longer eligible for conversion.");
+                }
+
+                $existing = $activeAllocations->get((string) $hold->seat_id);
+
+                if ($existing instanceof SeatAllocation) {
+                    if ($this->isSameTarget($existing, $allocToType, $allocToId, $hold)) {
+                        continue;
+                    }
+
+                    throw new StaleSeatHoldException("SeatHold {$holdId} conflicts with an active allocation.");
+                }
+
+                $sectionId = (string) $section->getKey();
+                $capacity = (int) $section->getAttribute('capacity');
+
+                if (($sectionCounts[$sectionId] ?? 0) >= $capacity) {
+                    throw new SectionCapacityExceededException(
+                        "Section {$section->getAttribute('name')} is at capacity ({$capacity})."
                     );
                 }
 
-                if ($this->hasActiveAllocation($seat)) {
-                    continue;
-                }
+                $allocation = new SeatAllocation([
+                    'seat_id' => $hold->seat_id,
+                    'seat_section_id' => $sectionId,
+                    'allocated_to_type' => $allocToType,
+                    'allocated_to_id' => $allocToId,
+                    'reference' => $reference,
+                    'allocated_at' => $now,
+                    'status' => 'active',
+                ]);
 
-                if ($mode !== SeatingMode::GeneralAdmission) {
-                    $this->assertSectionCapacity($seat);
-                }
-
-                $allocation = DB::transaction(function () use ($lockedHold, $mode, $allocToType, $allocToId, $reference, $seat): SeatAllocation {
-                    $allocation = new SeatAllocation([
-                        'seat_id' => $lockedHold->seat_id,
-                        'seat_section_id' => $mode === SeatingMode::GeneralAdmission ? null : $seat->seat_section_id,
-                        'allocated_to_type' => $allocToType,
-                        'allocated_to_id' => $allocToId,
-                        'reference' => $reference,
-                        'allocated_at' => CarbonImmutable::now(),
-                        'status' => 'active',
-                    ]);
-
-                    // The allocation inherits the hold owner exactly instead
-                    // of the ambient context, so batch conversions cannot
-                    // misattribute ownership across owners. A global hold
-                    // converts inside explicit global scope to stay global.
-                    if ($lockedHold->owner_type !== null && $lockedHold->owner_id !== null) {
-                        $allocation->owner_type = $lockedHold->owner_type;
-                        $allocation->owner_id = $lockedHold->owner_id;
-                        $allocation->save();
-                    } else {
-                        OwnerContext::withOwner(null, fn (): bool => $allocation->save());
+                if ($hold->owner_type !== null && $hold->owner_id !== null) {
+                    $allocation->owner_type = $hold->owner_type;
+                    $allocation->owner_id = $hold->owner_id;
+                } else {
+                    if (! OwnerContext::isExplicitGlobal()) {
+                        throw new AuthorizationException('Converting a global seat hold requires explicit global owner context.');
                     }
+                }
 
-                    // Mark the hold converted atomically with the
-                    // allocation so a privileged-write refusal rolls the
-                    // allocation back instead of leaving it orphaned.
-                    $lockedHold->markConverted();
+                $allocation->save();
+                $activeAllocations->put((string) $hold->seat_id, $allocation);
 
-                    return $allocation;
-                });
+                SeatHold::query()->whereKey($hold->getKey())->update(['converted_at' => $now]);
 
-                $allocations->push($allocation);
+                $sectionCounts[$sectionId] = ($sectionCounts[$sectionId] ?? 0) + 1;
+                $allocations[] = $allocation;
             }
 
-            return $allocations;
+            return new Collection($allocations);
         });
     }
 
-    private function assertSectionCapacity(Seat $seat): void
+    private function isSameTarget(SeatAllocation $allocation, string $type, string $id, SeatHold $hold): bool
     {
-        $section = SeatSection::query()->whereKey($seat->seat_section_id)->lockForUpdate()->firstOrFail();
-
-        $activeCount = SeatAllocation::query()
-            ->withoutOwnerScope()
-            ->where('seat_section_id', $section->getKey())
-            ->where('status', 'active')
-            ->count();
-
-        if ($activeCount >= $section->capacity) {
-            throw new SectionCapacityExceededException(
-                "Section {$section->name} is at capacity ({$section->capacity})."
-            );
-        }
-    }
-
-    private function hasActiveAllocation(Seat $seat): bool
-    {
-        return SeatAllocation::query()
-            ->withoutOwnerScope()
-            ->where('seat_id', $seat->getKey())
-            ->where('status', 'active')
-            ->exists();
+        return $allocation->allocated_to_type === $type
+            && (string) $allocation->allocated_to_id === $id
+            && $allocation->owner_type === $hold->owner_type
+            && (string) $allocation->owner_id === (string) $hold->owner_id;
     }
 }

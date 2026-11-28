@@ -155,7 +155,7 @@ final readonly class AddTicketTypeToCartAction
         $this->validateParticipants($mergedParticipants);
 
         $attributes = [
-            'purchasable_type' => TicketType::class,
+            'purchasable_type' => $ticketType->getMorphClass(),
             'purchasable_id' => $ticketType->getKey(),
             'code' => $ticketType->code,
             'participants' => $mergedParticipants,

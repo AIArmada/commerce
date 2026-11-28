@@ -5,14 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Seating\Features\Reservations\Api\ReservationsApi;
 use AIArmada\Ticketing\Events\PassExpired;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
 use AIArmada\Ticketing\States\Expired;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Event;
 
 final readonly class ExpirePassAction
 {
+    public function __construct(
+        private ReservationsApi $reservations,
+        private MapPassData $mapPassData,
+    ) {}
+
     public function handle(Pass $pass): Pass
     {
         return $pass->getConnection()->transaction(function () use ($pass): Pass {
@@ -27,7 +33,13 @@ final readonly class ExpirePassAction
             $locked->expired_at ??= CarbonImmutable::now();
             $locked->status->transitionTo(Expired::class);
 
-            Event::dispatch(new PassExpired($locked));
+            $this->reservations->releaseAllocations(
+                allocToType: $locked->getMorphClass(),
+                allocToId: (string) $locked->getKey(),
+            );
+
+            $payload = $this->mapPassData->handle($locked);
+            $locked->getConnection()->afterCommit(fn () => event(new PassExpired($payload)));
 
             return $locked;
         });

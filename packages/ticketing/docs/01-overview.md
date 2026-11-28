@@ -64,7 +64,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - `AutoAddRequiredTicketBundlesAction` — Auto-add required bundle products
 - `ExpandTicketTypeComponentsAction` — Expand component ticket types by a multiplier
 
-- `Pass::markActivated()`, `markUsed()`, `markCancelled()`, `markVoided()`, `markExpired()` — Model methods for the remaining lifecycle transitions (call `save()` after `mark*()` except when using `RevokePassAction`)
+- `ActivatePassAction`, `UsePassAction`, `CancelPassAction`, `RevokePassAction`, `VoidPassAction`, `ExpirePassAction` — Atomic lifecycle transitions; pass and seat release outcomes commit together, and domain events dispatch after commit
 
 ### Contracts
 
@@ -111,7 +111,6 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - **Single Transfer**: Transfer a pass to a new holder with audit trail
 - **Bulk Transfer**: Transfer multiple passes at once (configurable max size)
 - **Transfer Window**: Configurable window before event start
-- **Expiry Grace**: Additional grace period after transfer window closes
 - **Notifications**: Send transfer confirmation emails
 
 ### Pass Delivery

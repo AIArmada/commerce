@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Commerce\Actions;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 final class EnsureCartSeatHoldAction

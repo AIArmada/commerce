@@ -7,7 +7,7 @@ namespace AIArmada\Events\Database\Factories;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

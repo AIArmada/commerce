@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = commerce_json_column_type('ticketing', 'jsonb');
+        $jsonType = commerce_json_column_type('ticketing', 'json');
 
         Schema::create(config('ticketing.database.tables.pass_transfers', 'ticket_pass_transfers'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

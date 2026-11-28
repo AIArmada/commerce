@@ -10,7 +10,7 @@ Any Eloquent model can sell tickets by implementing `TicketableInterface`:
 
 ```php
 use AIArmada\Ticketing\Contracts\TicketableInterface;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
@@ -291,14 +291,22 @@ class EmailPassDeliveryService implements PassDeliveryServiceInterface
 {
     public function deliver(string $passId): void
     {
-        $pass = Pass::query()->with('holder')->findOrFail($passId);
-        $email = $pass->holder?->email;
+        $this->deliverMany([$passId]);
+    }
 
-        if ($email === null) {
-            return;
+    public function deliverMany(array $passIds): void
+    {
+        $passes = Pass::query()->with('holder')->whereKey($passIds)->get();
+
+        foreach ($passes as $pass) {
+            $email = $pass->holder?->email;
+
+            if ($email === null) {
+                continue;
+            }
+
+            Mail::to($email)->send(new TicketMail($pass));
         }
-
-        Mail::to($email)->send(new TicketMail($pass));
     }
 }
 ```
@@ -351,8 +359,8 @@ $allPasses = Pass::withoutOwnerScope()->get();
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `PassIssued` | `$pass` | Fired when a pass is issued |
-| `PassTransferred` | `$pass, $previousHolder, $newHolder` | Fired after transfer completes |
+| `PassIssued` | `$pass` (`PassData`), `$issuedAt` | Fired after issuance commits |
+| `PassTransferred` | `$transfer` (`PassTransferData`) | Fired after transfer commits |
 
 Listen to events as usual:
 
@@ -361,7 +369,7 @@ use AIArmada\Ticketing\Events\PassTransferred;
 use Illuminate\Support\Facades\Event;
 
 Event::listen(function (PassTransferred $event): void {
-    Log::info("Pass {$event->pass->pass_no} transferred");
+    Log::info("Pass {$event->transfer->pass->pass_no} transferred");
 });
 ```
 
@@ -377,7 +385,7 @@ $passDto = app(\AIArmada\Ticketing\Features\Passes\Queries\MapPassData::class)->
 $components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType, multiplier: 2);
 ```
 
-Use `TicketTypeData::fromTicketType()` and `PassData::fromPass()` at boundaries instead of hand-mapping models. `ExpandTicketTypeComponentsAction` expands `components → componentTicketType` by `quantity × multiplier` and returns an empty collection when there are no components.
+Use `MapTicketTypeData` and `MapPassData` at boundaries instead of hand-mapping models. `ExpandTicketTypeComponentsAction` expands `components → componentTicketType` by `quantity × multiplier` and returns an empty collection when there are no components.
 
 ## Ticketing owner guard
 

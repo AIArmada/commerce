@@ -5,14 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Seating\Features\Reservations\Api\ReservationsApi;
 use AIArmada\Ticketing\Events\PassRevoked;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
 use AIArmada\Ticketing\States\Revoked;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Event;
 
 final readonly class RevokePassAction
 {
+    public function __construct(
+        private ReservationsApi $reservations,
+        private MapPassData $mapPassData,
+    ) {}
+
     public function handle(Pass $pass, ?string $reason = null): Pass
     {
         return $pass->getConnection()->transaction(function () use ($pass, $reason): Pass {
@@ -28,7 +34,13 @@ final readonly class RevokePassAction
             $locked->status_reason = $reason;
             $locked->status->transitionTo(Revoked::class);
 
-            Event::dispatch(new PassRevoked($locked));
+            $this->reservations->releaseAllocations(
+                allocToType: $locked->getMorphClass(),
+                allocToId: (string) $locked->getKey(),
+            );
+
+            $payload = $this->mapPassData->handle($locked);
+            $locked->getConnection()->afterCommit(fn () => event(new PassRevoked($payload)));
 
             return $locked;
         });

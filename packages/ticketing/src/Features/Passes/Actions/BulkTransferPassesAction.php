@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Ticketing\Data\PassTransferData;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
 use AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassHolderData;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +22,11 @@ use InvalidArgumentException;
 
 final readonly class BulkTransferPassesAction
 {
-    public function __construct(private TransferPassToHolderAction $transfer) {}
+    public function __construct(
+        private TransferPassToHolderAction $transfer,
+        private MapPassData $mapPassData,
+        private MapPassHolderData $mapPassHolderData,
+    ) {}
 
     /** @param array<int, string> $passIds */
     public function handle(
@@ -56,20 +64,40 @@ final readonly class BulkTransferPassesAction
                 ->where('is_current', true)
                 ->get();
 
+            $previousByPass = $previousHolders->keyBy(fn (PassHolder $holder): string => (string) $holder->pass_id);
             $newHolders = new Collection;
+            $transfers = [];
+            $now = CarbonImmutable::now();
 
             foreach ($passes as $pass) {
-                $newHolders->push(
-                    $this->transfer->handle($pass, $this->holderForPass($newHolder), $holderAttributes, $reason, $authorizedBy)
+                $newHolderModel = $this->transfer->handle(
+                    $pass,
+                    $this->holderForPass($newHolder),
+                    $holderAttributes,
+                    $reason,
+                    $authorizedBy,
+                    bulk: true,
+                );
+
+                $newHolders->push($newHolderModel);
+                $previousHolder = $previousByPass->get((string) $pass->getKey());
+
+                $transfers[] = new PassTransferData(
+                    pass: $this->mapPassData->handle($pass),
+                    previousHolder: $this->mapPassHolderData->handle($previousHolder instanceof PassHolder ? $previousHolder : $newHolderModel),
+                    newHolder: $this->mapPassHolderData->handle($newHolderModel),
+                    reason: $reason,
+                    transferredAt: $now,
+                    bulk: true,
                 );
             }
 
-            $event = new PassesBulkTransferred($passes, $newHolders, $reason, previousHolders: $previousHolders);
+            $event = new PassesBulkTransferred($transfers, $now);
             $ownerType = $passes->first()?->owner_type;
             $ownerId = $passes->first()?->owner_id;
 
             dispatch(new BulkSendTransferNotificationsJob(
-                event: $event,
+                transfers: $transfers,
                 ownerType: $ownerType,
                 ownerId: $ownerId,
                 ownerIsGlobal: $ownerType === null && $ownerId === null,

@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Events;
 
-use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Data\PassData;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 final class PassCancelled
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
 
     public function __construct(
-        public readonly Pass $pass,
+        public readonly PassData $pass,
     ) {}
 }

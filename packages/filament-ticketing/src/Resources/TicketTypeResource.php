@@ -94,12 +94,7 @@ final class TicketTypeResource extends Resource
             return $query;
         }
 
-        return $query
-            ->whereHasMorph(
-                'ticketable',
-                $ticketableTypes,
-                fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
-            );
+        return $query->whereHasMorph('ticketable', $ticketableTypes);
     }
 
     public static function form(Schema $schema): Schema

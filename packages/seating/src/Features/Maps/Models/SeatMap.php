@@ -7,6 +7,7 @@ namespace AIArmada\Seating\Features\Maps\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatMapFactory;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMapDependents;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,7 +42,7 @@ class SeatMap extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $seatMap): void {
-            $seatMap->sections()->chunkById(500, fn ($sections): mixed => $sections->each->delete());
+            app(DeleteSeatMapDependents::class)->handle($seatMap);
         });
     }
 

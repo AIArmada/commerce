@@ -7,10 +7,13 @@ namespace AIArmada\Ticketing;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Services\DefaultPassDeliveryService;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Platform\ExtensionRegistry;
 use AIArmada\Ticketing\Platform\FeatureCatalog;
 use AIArmada\Ticketing\Platform\FeatureModule;
-use AIArmada\Ticketing\Services\DefaultPassDeliveryService;
 use AIArmada\Ticketing\Services\NullPassDeliveryService;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use RuntimeException;
@@ -33,6 +36,18 @@ final class TicketingServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $modelDefaults = [
+            'ticketing.models.ticket_type' => TicketType::class,
+            'ticketing.models.pass' => Pass::class,
+            'ticketing.models.pass_holder' => PassHolder::class,
+        ];
+
+        foreach ($modelDefaults as $key => $model) {
+            if (! $this->app['config']->get($key)) {
+                $this->app['config']->set($key, $model);
+            }
+        }
+
         $this->app->singleton(PassDeliveryServiceInterface::class, function ($app) {
             return config('ticketing.notifications.ticket.enabled', true)
                 ? $app->make(DefaultPassDeliveryService::class)

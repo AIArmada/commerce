@@ -7,9 +7,12 @@ namespace AIArmada\Ticketing\Features\Passes\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Ticketing\Events\PassesBulkTransferred;
+use AIArmada\Ticketing\Data\PassHolderData;
+use AIArmada\Ticketing\Data\PassTransferData;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;
+use AIArmada\Ticketing\Notifications\PassTransferredToOldHolderNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,8 +26,9 @@ final class BulkSendTransferNotificationsJob implements OwnerScopedJob, ShouldQu
     use OwnerContextJob;
     use Queueable;
 
+    /** @param list<PassTransferData> $transfers */
     public function __construct(
-        public readonly PassesBulkTransferred $event,
+        public readonly array $transfers,
         public readonly ?string $ownerType,
         public readonly string | int | null $ownerId,
         public readonly bool $ownerIsGlobal = false,
@@ -41,27 +45,57 @@ final class BulkSendTransferNotificationsJob implements OwnerScopedJob, ShouldQu
 
     protected function performJob(): void
     {
-        $previousByPassId = $this->event->previousHolders->keyBy(
-            fn ($holder): string => (string) $holder->pass_id
-        );
+        $passIds = array_values(array_filter(array_map(
+            static fn (PassTransferData $transfer): ?string => $transfer->pass->id,
+            $this->transfers,
+        )));
 
+        if ($passIds === []) {
+            return;
+        }
+
+        $passes = Pass::query()->whereKey($passIds)->get()->keyBy(fn (Pass $pass): string => (string) $pass->getKey());
         $currentHolders = PassHolder::query()
-            ->whereIn('id', $this->event->newHolders->modelKeys())
+            ->whereIn('pass_id', $passIds)
             ->where('is_current', true)
             ->get()
-            ->keyBy('pass_id');
+            ->keyBy(fn (PassHolder $holder): string => (string) $holder->pass_id);
 
-        foreach ($this->event->passes as $pass) {
-            $holder = $currentHolders->get((string) $pass->getKey());
+        foreach ($this->transfers as $transfer) {
+            $passId = $transfer->pass->id;
+            $pass = $passId === null ? null : $passes->get($passId);
+            $currentHolder = $passId === null ? null : $currentHolders->get($passId);
 
-            if ($holder === null || blank($holder->email)) {
+            if (! $pass instanceof Pass || ! $currentHolder instanceof PassHolder) {
                 continue;
             }
 
-            $previousHolder = $previousByPassId->get((string) $pass->getKey(), $holder);
+            if ((string) $currentHolder->getKey() !== $transfer->newHolder->id) {
+                continue;
+            }
 
-            Notification::route('mail', $holder->email)
-                ->notify(new PassTransferredToNewHolderNotification($pass, $previousHolder, $this->event->reason));
+            if (! blank($transfer->previousHolder->email) && $transfer->previousHolder->id !== $transfer->newHolder->id) {
+                Notification::route('mail', $transfer->previousHolder->email)
+                    ->notify(new PassTransferredToOldHolderNotification(
+                        $transfer->pass,
+                        $transfer->newHolder,
+                        $transfer->reason,
+                    ));
+            }
+
+            if (! blank($transfer->newHolder->email)) {
+                Notification::route('mail', $transfer->newHolder->email)
+                    ->notify(new PassTransferredToNewHolderNotification(
+                        $transfer->pass,
+                        $this->previousHolderData($transfer->previousHolder, $transfer->newHolder),
+                        $transfer->reason,
+                    ));
+            }
         }
+    }
+
+    private function previousHolderData(PassHolderData $previous, PassHolderData $new): PassHolderData
+    {
+        return $previous->id === $new->id ? $new : $previous;
     }
 }

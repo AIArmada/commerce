@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
@@ -30,7 +30,7 @@ beforeEach(function (): void {
 
 it('creates holds for assigned mode', function (): void {
     $holds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 3,
         mode: SeatingMode::Assigned,
     );
@@ -41,7 +41,7 @@ it('creates holds for assigned mode', function (): void {
 
 it('returns empty for non-assigned modes', function (SeatingMode $mode): void {
     $holds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 3,
         mode: $mode,
     );
@@ -55,7 +55,7 @@ it('returns empty for non-assigned modes', function (SeatingMode $mode): void {
 
 it('throws when insufficient seats', function (): void {
     expect(fn (): mixed => app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 10,
         mode: SeatingMode::Assigned,
     ))->toThrow(InsufficientSeatsException::class);
@@ -65,7 +65,7 @@ it('throws when insufficient seats', function (): void {
 
 it('returns empty for zero quantity', function (): void {
     $holds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 0,
         mode: SeatingMode::Assigned,
     );

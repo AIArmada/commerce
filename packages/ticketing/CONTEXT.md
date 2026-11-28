@@ -17,7 +17,7 @@ keywords:
 - Composer: `aiarmada/ticketing`
 - Role: Polymorphic ticket types, passes, transfers, bundle products for any ticketable.
 - Triggers: ticket, pass, transfer, bundle
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Search first: `src/Features/*/Actions, src/Features/*/Models, src/Features/*/Api, src/Data, config, docs`
 - Related: `filament-ticketing`, `inventory`, `cart`, `orders`, `checkout`
 - Paired: `filament-ticketing` (Filament admin adapter)
 
@@ -41,7 +41,8 @@ keywords:
 
 ## Key surfaces
 - Models: `Pass`, `PassHolder`, `PassTransfer`, `TicketType`, `TicketTypeComponent`, `TicketTypeProduct`, `TicketTypeSeatingOption`
-- Actions/Services: `Actions/AddTicketTypeToCartAction`, `Actions/AutoAddRequiredTicketBundlesAction`, `Actions/BulkTransferPassesAction`, `Actions/EnsureTicketTypeAction`, `Actions/ExpandTicketTypeComponentsAction`, `Actions/IssuePassesAction`, `Actions/RevokePassAction`, `Actions/TransferPassToHolderAction`
+- Actions/Services: `Features/TicketTypes/Actions/*`, `Features/Passes/Actions/*`, `Features/Passes/Persistence/PassIssuer`, `Features/Passes/Services/DefaultPassDeliveryService`
+- Feature APIs: `Features/TicketTypes/Api/TicketTypeApi`, `Features/Passes/Api/PassesApi`
 - Config `ticketing.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `ticket_types`, `ticket_type_components`, `ticket_type_products`, `ticket_type_seating_options`, `passes`, `pass_holders`
 
 ## Docs map

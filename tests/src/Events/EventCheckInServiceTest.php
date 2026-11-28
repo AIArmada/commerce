@@ -290,3 +290,37 @@ it('rejects a session pass at a different session and infers its assigned sessio
 
     expect($attendance->sessionId)->toBe($sessions[0]->id);
 });
+
+it('infers and validates the occurrence from an occurrence-ticketable pass', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $otherOccurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+    $pass = createEventPass(createEventTicketType($occurrence), $registration, [
+        'occurrence_id' => null,
+        'status' => 'issued',
+    ]);
+
+    $payload = [
+        'event_id' => $event->id,
+        'event_registration_id' => $registration->id,
+        'pass_id' => $pass->id,
+    ];
+
+    expect(fn () => app(EventCheckInService::class)->checkIn([
+        ...$payload,
+        'event_occurrence_id' => $otherOccurrence->id,
+    ]))->toThrow(InvalidArgumentException::class, 'does not belong to the selected event occurrence');
+
+    expect(EventAttendance::query()->count())->toBe(0);
+
+    $attendance = app(EventCheckInService::class)->checkIn([
+        ...$payload,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+
+    expect($attendance->occurrenceId)->toBe($occurrence->id);
+});

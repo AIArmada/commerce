@@ -7,10 +7,15 @@
       "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
     ],
     "table:seat_sections": [
-      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap",
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMapDependents"
     ],
     "table:seats": [
-      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap"
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatMap",
+      "AIArmada\\Seating\\Features\\Maps\\Actions\\DeleteSeatSectionDependents"
+    ],
+    "store:seating.layout": [
+      "AIArmada\\Seating\\Features\\Maps\\Persistence\\SeatMapLayoutCache"
     ]
   },
   "extensions": {}

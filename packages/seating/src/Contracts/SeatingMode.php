@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Enums;
+namespace AIArmada\Seating\Contracts;
 
 use AIArmada\CommerceSupport\Traits\HasLabelOptions;
 

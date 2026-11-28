@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Seating;
 
 use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Platform\ExtensionRegistry;
 use AIArmada\Seating\Platform\FeatureCatalog;
 use AIArmada\Seating\Platform\FeatureModule;
@@ -32,6 +37,20 @@ final class SeatingServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
+        $modelDefaults = [
+            'seating.models.seat_map' => SeatMapModel::class,
+            'seating.models.seat_section' => SeatSection::class,
+            'seating.models.seat' => Seat::class,
+            'seating.models.seat_hold' => SeatHold::class,
+            'seating.models.seat_allocation' => SeatAllocation::class,
+        ];
+
+        foreach ($modelDefaults as $key => $model) {
+            if (! $this->app['config']->get($key)) {
+                $this->app['config']->set($key, $model);
+            }
+        }
+
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 

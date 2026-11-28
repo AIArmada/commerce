@@ -104,7 +104,7 @@ Eloquent models remain available for hosts inside their own feature boundaries (
 
 ## Free-Only Event Mode
 
-Events support three **pricing modes** (`AIArmada\Ticketing\Enums\PricingMode`):
+Events support three **pricing modes** (`AIArmada\Ticketing\Data\PricingMode`):
 
 | Mode | Description |
 |---|---|

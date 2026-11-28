@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Features\Reservations\Actions;
 
+use AIArmada\Seating\Data\SeatAllocationData;
 use AIArmada\Seating\Events\SeatAllocationReleased;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class ReleaseAllocationsAction
@@ -28,17 +30,36 @@ final readonly class ReleaseAllocationsAction
                 ->lockForUpdate()
                 ->get();
 
-            foreach ($allocations as $allocation) {
-                $allocation->release(
-                    releasedByType: $actor !== null ? $actor->getMorphClass() : null,
-                    releasedById: $actor !== null ? (string) $actor->getKey() : null,
-                );
+            $now = CarbonImmutable::now();
 
-                if ($reason !== null) {
-                    $allocation->update(['metadata' => [...($allocation->metadata ?? []), 'release_reason' => $reason]]);
+            foreach ($allocations as $allocation) {
+                $allocation->status = 'released';
+                $allocation->released_at = $now;
+
+                if ($actor !== null) {
+                    $allocation->released_by_type = $actor->getMorphClass();
+                    $allocation->released_by_id = (string) $actor->getKey();
                 }
 
-                $allocation->getConnection()->afterCommit(fn () => event(new SeatAllocationReleased($allocation)));
+                if ($reason !== null) {
+                    $allocation->metadata = [...($allocation->metadata ?? []), 'release_reason' => $reason];
+                }
+
+                $allocation->save();
+
+                $payload = new SeatAllocationData(
+                    id: (string) $allocation->getKey(),
+                    seatId: $allocation->seat_id !== null ? (string) $allocation->seat_id : null,
+                    sectionId: $allocation->seat_section_id !== null ? (string) $allocation->seat_section_id : null,
+                    allocatedToType: $allocation->allocated_to_type,
+                    allocatedToId: $allocation->allocated_to_id !== null ? (string) $allocation->allocated_to_id : null,
+                    reference: $allocation->reference,
+                    status: $allocation->status,
+                    allocatedAt: $allocation->allocated_at,
+                    releasedAt: $allocation->released_at,
+                );
+
+                $allocation->getConnection()->afterCommit(fn () => event(new SeatAllocationReleased($payload)));
             }
 
             return $allocations->count();

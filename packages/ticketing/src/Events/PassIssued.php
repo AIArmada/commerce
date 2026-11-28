@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Events;
 
-use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Data\PassData;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 final class PassIssued
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
 
     public function __construct(
-        public readonly Pass $pass,
+        public readonly PassData $pass,
         public readonly CarbonImmutable $issuedAt,
     ) {}
 }

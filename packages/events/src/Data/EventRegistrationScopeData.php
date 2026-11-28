@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 final readonly class EventRegistrationScopeData
 {

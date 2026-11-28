@@ -16,6 +16,7 @@ use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfil
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 function createDedupTicketType(): TicketType
@@ -110,4 +111,21 @@ it('restores the order owner context when ambient context is missing', function 
     );
 
     expect(Pass::query()->withoutOwnerScope()->count())->toBe(2);
+});
+
+it('fails closed for an incomplete persisted order owner tuple', function (): void {
+    Event::fake([PassIssued::class]);
+
+    $ticketType = createDedupTicketType();
+    $order = createDedupOrderWithTicketItem('ORD-DEDUP-ORPHAN', $ticketType, 1);
+
+    DB::table((new Order)->getTable())
+        ->where($order->getKeyName(), $order->getKey())
+        ->update(['owner_id' => null]);
+
+    expect(fn () => app(IssuePassesOnFulfillment::class)->handle(
+        new OrderFulfillmentRequired($order->fresh(), 'txn-dedup-orphan', 'stripe')
+    ))->toThrow(InvalidArgumentException::class);
+
+    expect(Pass::query()->withoutOwnerScope()->count())->toBe(0);
 });

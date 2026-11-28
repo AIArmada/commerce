@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTicketing\Actions;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -41,9 +40,7 @@ final readonly class ValidateTicketableReference
         /** @var Builder<Model> $query */
         $query = $class::query();
 
-        $record = OwnerUiScope::apply($query, includeGlobal: false)
-            ->whereKey((string) $id)
-            ->first();
+        $record = $query->whereKey((string) $id)->first();
 
         if (! $record instanceof Model) {
             throw ValidationException::withMessages([

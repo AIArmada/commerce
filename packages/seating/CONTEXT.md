@@ -18,7 +18,7 @@ keywords:
 - Composer: `aiarmada/seating`
 - Role: Vendor-agnostic seat maps/holds/allocations + Livewire picker + allocator contract.
 - Triggers: seat, seat-map, hold, allocation, livewire
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Search first: `src/Features/*/Actions, src/Features/*/Models, src/Features/*/Api, src/Data, config, docs`
 - Related: `filament-seating`, `ticketing`, `events`
 - Paired: `filament-seating` (Filament admin adapter)
 
@@ -42,7 +42,8 @@ keywords:
 
 ## Key surfaces
 - Models: `Seat`, `SeatAllocation`, `SeatHold`, `SeatMap`, `SeatSection`
-- Actions/Services: `Actions/ConvertHoldsToAllocationsAction`, `Actions/EnsureSeatHoldAction`, `Actions/EnsureSectionAllocationAction`, `Actions/ReleaseAllocationsAction`, `Actions/ResolveSeatMapForHostAction`, `Services/DefaultSeatAllocator`, `Services/NullSeatAllocator`, `Services/SeatLayoutRenderer`
+- Actions/Services: `Features/Reservations/Actions/*`, `Features/Maps/Actions/*`, `Features/Maps/Queries/ResolveSeatMapForHostAction`, `Services/DefaultSeatAllocator`, `Services/NullSeatAllocator`, `Services/SeatLayoutRenderer`
+- Feature APIs: `Features/Maps/Api/MapsApi`, `Features/Reservations/Api/ReservationsApi`
 - Config `seating.php`: `database`, `json_column_type`, `tables`, `seat_maps`, `seat_sections`, `seats`, `seat_holds`, `seat_allocations`, `holds`, `ttl_minutes`
 
 ## Docs map

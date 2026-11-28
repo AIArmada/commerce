@@ -6,23 +6,25 @@ namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
-use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final readonly class EnsureSectionAllocationAction
 {
     public function handle(
-        SeatSection $section,
+        string $sectionId,
         string $allocToType,
         string $allocToId,
         ?string $reference = null,
     ): SeatAllocation {
-        return DB::transaction(function () use ($section, $allocToType, $allocToId, $reference): SeatAllocation {
-            $lockedSection = SeatSection::query()
+        return DB::transaction(function () use ($sectionId, $allocToType, $allocToId, $reference): SeatAllocation {
+            $sectionClass = ModelResolver::seatSectionClass();
+            $lockedSection = $sectionClass::query()
                 ->lockForUpdate()
-                ->findOrFail($section->getKey());
+                ->findOrFail($sectionId);
 
             $activeCount = SeatAllocation::query()
                 ->withoutOwnerScope()
@@ -30,9 +32,11 @@ final readonly class EnsureSectionAllocationAction
                 ->where('status', 'active')
                 ->count();
 
-            if ($activeCount >= $lockedSection->capacity) {
+            $capacity = (int) $lockedSection->getAttribute('capacity');
+
+            if ($activeCount >= $capacity) {
                 throw new SectionCapacityExceededException(
-                    "Section {$lockedSection->name} is at capacity ({$lockedSection->capacity})."
+                    sprintf('Section %s is at capacity (%d).', $lockedSection->getAttribute('name'), $capacity)
                 );
             }
 
@@ -45,19 +49,28 @@ final readonly class EnsureSectionAllocationAction
                 'status' => 'active',
             ]);
 
-            // The allocation inherits the section owner exactly instead of
-            // the ambient context, so conversions cannot misattribute
-            // ownership across owners. A global section allocates inside
-            // explicit global scope to stay global.
-            if ($lockedSection->owner_type !== null && $lockedSection->owner_id !== null) {
-                $allocation->owner_type = $lockedSection->owner_type;
-                $allocation->owner_id = $lockedSection->owner_id;
-                $allocation->save();
+            $config = SeatAllocation::ownerScopeConfig();
+            $contextOwner = $config->enabled ? OwnerContext::resolveConfigured($config) : null;
 
-                return $allocation;
+            if ($config->enabled) {
+                $sectionOwnerType = $lockedSection->getAttribute('owner_type');
+                $sectionOwnerId = $lockedSection->getAttribute('owner_id');
+
+                if (($sectionOwnerType === null) !== ($sectionOwnerId === null)) {
+                    throw new InvalidArgumentException('The seat section has an incomplete owner tuple.');
+                }
+
+                if ($sectionOwnerType !== null && $sectionOwnerId !== null) {
+                    $allocation->setAttribute('owner_type', $sectionOwnerType);
+                    $allocation->setAttribute('owner_id', $sectionOwnerId);
+                } elseif ($contextOwner !== null) {
+                    $allocation->assignOwner($contextOwner);
+                } else {
+                    OwnerContext::assertResolvedOrExplicitGlobal($contextOwner);
+                }
             }
 
-            OwnerContext::withOwner(null, fn (): bool => $allocation->save());
+            $allocation->save();
 
             return $allocation;
         });

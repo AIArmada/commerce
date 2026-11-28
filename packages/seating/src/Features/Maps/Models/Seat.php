@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatFactory;
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Seating\Features\Reservations\Api\ReservationsApi;
+use AIArmada\Seating\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,8 +46,11 @@ class Seat extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $seat): void {
-            $seat->holds()->chunkById(500, fn ($holds): mixed => $holds->each->delete());
-            $seat->allocations()->chunkById(500, fn ($allocations): mixed => $allocations->each->delete());
+            app(ReservationsApi::class)->deleteForSeat(
+                seatId: (string) $seat->getKey(),
+                ownerType: $seat->owner_type,
+                ownerId: $seat->owner_id,
+            );
         });
     }
 
@@ -96,22 +99,22 @@ class Seat extends Model
         return $this->belongsTo(SeatSection::class, 'seat_section_id');
     }
 
-    /** @return HasMany<SeatHold, $this> */
+    /** @return HasMany<Model, $this> */
     public function holds(): HasMany
     {
-        return $this->hasMany(SeatHold::class, 'seat_id');
+        return $this->hasMany(ModelResolver::seatHoldClass(), 'seat_id');
     }
 
-    /** @return HasMany<SeatAllocation, $this> */
+    /** @return HasMany<Model, $this> */
     public function allocations(): HasMany
     {
-        return $this->hasMany(SeatAllocation::class, 'seat_id');
+        return $this->hasMany(ModelResolver::seatAllocationClass(), 'seat_id');
     }
 
-    /** @return HasOne<SeatAllocation, $this> */
+    /** @return HasOne<Model, $this> */
     public function activeAllocation(): HasOne
     {
-        return $this->hasOne(SeatAllocation::class, 'seat_id')
+        return $this->hasOne(ModelResolver::seatAllocationClass(), 'seat_id')
             ->where('status', 'active');
     }
 

@@ -219,7 +219,7 @@ When reporting issues, include:
 
 ### State Actions
 - **Terminal** states cannot transition — create a new pass if needed
-- **Reasons** are optional on transitions (`markCancelled/markRevoked/markVoided`, `RevokePassAction`) — always provide context anyway
+- **Reasons** are optional on transitions (`CancelPassAction`, `RevokePassAction`, `VoidPassAction`) — always provide context anyway
 - **Transfers** are logged immutably — no deletion of transfer records
 - The admin panel is read-only for pass state; drive transitions from application code
 

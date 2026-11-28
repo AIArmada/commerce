@@ -9,7 +9,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
@@ -204,4 +204,39 @@ it('rejects a general admission section from an unrelated seat map', function ()
     ))->toThrow(SeatSectionNotFoundException::class);
 
     expect(SeatAllocation::query()->count())->toBe(0);
+});
+
+it('chooses an eligible seating option for the current map across all configured options', function (): void {
+    $event = Event::factory()->create();
+    $map = SeatMap::factory()->create([
+        'seatable_type' => $event->getMorphClass(),
+        'seatable_id' => $event->getKey(),
+    ]);
+    $validSection = SeatSection::factory()->create([
+        'seat_map_id' => $map->getKey(),
+        'capacity' => 4,
+    ]);
+    $foreignSection = SeatSection::factory()->create();
+    $ticketType = createEventTicketType($event, ['seating_mode' => SeatingMode::GeneralAdmission]);
+
+    TicketTypeSeatingOption::factory()->create([
+        'ticket_type_id' => $ticketType->getKey(),
+        'seat_section_id' => $foreignSection->getKey(),
+    ]);
+    TicketTypeSeatingOption::factory()->create([
+        'ticket_type_id' => $ticketType->getKey(),
+        'seat_section_id' => $validSection->getKey(),
+    ]);
+
+    $allocations = app(EventSeatingDriver::class)->allocateSeats(
+        'event',
+        (string) $event->getKey(),
+        SeatingMode::GeneralAdmission->value,
+        (string) $ticketType->getKey(),
+        'pass',
+        (string) Str::uuid(),
+    );
+
+    expect($allocations)->toHaveCount(1)
+        ->and(SeatAllocation::query()->findOrFail($allocations[0])->seat_section_id)->toBe($validSection->getKey());
 });

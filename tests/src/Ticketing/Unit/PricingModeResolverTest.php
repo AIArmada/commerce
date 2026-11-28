@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\PricingModeResolver;
 use Illuminate\Database\Eloquent\Collection;

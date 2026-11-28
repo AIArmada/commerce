@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
@@ -39,7 +39,7 @@ it('converts holds to allocations', function (): void {
 });
 
 it('skips already converted holds', function (): void {
-    $this->hold->markConverted();
+    $this->hold->update(['converted_at' => CarbonImmutable::now()]);
 
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$this->hold],
@@ -130,7 +130,7 @@ it('counts general admission allocations against assigned seat conversion capaci
     $section->update(['capacity' => 1]);
 
     app(EnsureSectionAllocationAction::class)->handle(
-        section: $section,
+        sectionId: $section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -162,4 +162,43 @@ it('rolls back a batch that would exceed section capacity', function (): void {
     expect(SeatAllocation::count())->toBe(0)
         ->and($this->hold->fresh()->isConverted())->toBeFalse()
         ->and($secondHold->fresh()->isConverted())->toBeFalse();
+});
+
+it('rejects a conflicting target atomically without converting the hold', function (): void {
+    SeatAllocation::factory()->create([
+        'seat_id' => $this->hold->seat_id,
+        'allocated_to_type' => 'pass',
+        'allocated_to_id' => (string) Str::orderedUuid(),
+    ]);
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        mode: SeatingMode::Assigned,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(StaleSeatHoldException::class, 'conflicts with an active allocation');
+
+    expect(SeatAllocation::query()->where('seat_id', $this->hold->seat_id)->count())->toBe(1)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
+});
+
+it('does not bypass section capacity when converting assigned-seat holds in general admission mode', function (): void {
+    $section = $this->hold->seat->section;
+    $section->update(['capacity' => 1]);
+
+    app(EnsureSectionAllocationAction::class)->handle(
+        sectionId: (string) $section->getKey(),
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    );
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        mode: SeatingMode::GeneralAdmission,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::query()->where('seat_id', $this->hold->seat_id)->count())->toBe(0)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
 });

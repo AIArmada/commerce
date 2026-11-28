@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\AddTicketTypeToCartAction;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Tests\Support\Cart\InMemoryStorage;
 
 beforeEach(function (): void {
@@ -91,4 +92,14 @@ it('rejects forged bundle source attributes', function (): void {
         $this->ticketType,
         extraAttributes: ['bundle_parent_line_id' => 'forged'],
     ))->toThrow(InvalidArgumentException::class, 'reserved keys');
+});
+
+it('stores the configured ticket type morph alias on the cart line', function (): void {
+    Relation::morphMap(['ticket_type_alias' => TicketType::class]);
+
+    $item = app(AddTicketTypeToCartAction::class)->handle($this->cart, $this->ticketType);
+
+    expect($item->getAttribute('purchasable_type'))->toBe('ticket_type_alias');
+
+    Relation::morphMap([], false);
 });

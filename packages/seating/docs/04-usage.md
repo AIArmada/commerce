@@ -39,7 +39,7 @@ Seat::query()->create([
 
 ```php
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 
 $results = app(SeatAllocatorInterface::class)->allocate(
     mapId: $map->id,
@@ -54,7 +54,7 @@ $results = app(SeatAllocatorInterface::class)->allocate(
 
 Each result is an `AllocationResult` DTO with `seatId`, `sectionCode`, `rowLabel`, `seatLabel`, and `category`.
 
-`DefaultSeatAllocator` delegates all hold creation to `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty list. The Livewire picker checks availability and the requested section.
+`DefaultSeatAllocator` delegates to `ReservationsApi::allocateHolds()`, which uses `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates in deterministic seat order, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty list. The Livewire picker reads through `MapsApi` and `ReservationsApi`, and layout caching is owner-scoped inside the Maps feature.
 
 ## Livewire Component
 

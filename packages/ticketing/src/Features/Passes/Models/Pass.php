@@ -6,10 +6,10 @@ namespace AIArmada\Ticketing\Features\Passes\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Actions\DeletePassDependents;
+use AIArmada\Ticketing\Platform\ModelResolver;
 use AIArmada\Ticketing\States\PassState;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -54,7 +53,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $updated_at
  * @property-read Model|Eloquent $ticketable
  * @property-read Model|Eloquent|null $registration
- * @property-read TicketType|null $ticketType
+ * @property-read Model|null $ticketType
  * @property-read PassHolder|null $holder
  * @property-read Collection<int, PassHolder> $holderHistory
  * @property-read Collection<int, PassTransfer> $transferHistory
@@ -84,15 +83,7 @@ class Pass extends Model
         });
 
         static::deleting(function (self $pass): void {
-            if (class_exists(ReleaseAllocationsAction::class)) {
-                app(ReleaseAllocationsAction::class)->handle(
-                    allocToType: $pass->getMorphClass(),
-                    allocToId: (string) $pass->getKey(),
-                );
-            }
-
-            $pass->holderHistory()->delete();
-            $pass->transferHistory()->delete();
+            app(DeletePassDependents::class)->handle($pass);
         });
     }
 
@@ -169,11 +160,11 @@ class Pass extends Model
     }
 
     /**
-     * @return BelongsTo<TicketType, $this>
+     * @return BelongsTo<Model, $this>
      */
     public function ticketType(): BelongsTo
     {
-        return $this->belongsTo(TicketType::class);
+        return $this->belongsTo(ModelResolver::ticketTypeClass());
     }
 
     /**
@@ -247,15 +238,5 @@ class Pass extends Model
             'rejected',
             'expired',
         ], true);
-    }
-
-    public function generateQrCode(): string
-    {
-        return Str::random(32);
-    }
-
-    public function generateBarcode(): string
-    {
-        return (string) str()->random(16);
     }
 }

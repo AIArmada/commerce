@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\EntryPoints\Livewire;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Seating\Contracts\SeatLayoutInterface;
+use AIArmada\Seating\Data\SeatMapRef;
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Api\MapsApi;
+use AIArmada\Seating\Features\Reservations\Api\ReservationsApi;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -96,30 +91,13 @@ class SeatMap extends Component
             return;
         }
 
-        $seat = Seat::query()
-            ->whereKey($seatId)
-            ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $mapId))
-            ->when($this->sectionId !== null, fn (Builder $query): Builder => $query->where('seat_section_id', $this->sectionId))
-            ->first();
+        $seat = app(MapsApi::class)->seatForSelection($seatId, $mapId, $this->sectionId);
 
-        if ($seat === null || $seat->status !== SeatStatus::Available) {
+        if ($seat === null || $seat->status !== SeatStatus::Available->value) {
             return;
         }
 
-        $now = CarbonImmutable::now();
-
-        $hasActiveHold = $seat->holds()
-            ->withoutOwnerScope()
-            ->where('expires_at', '>', $now)
-            ->whereNull('converted_at')
-            ->exists();
-
-        $hasActiveAllocation = $seat->allocations()
-            ->withoutOwnerScope()
-            ->where('status', 'active')
-            ->exists();
-
-        if ($hasActiveHold || $hasActiveAllocation) {
+        if (app(ReservationsApi::class)->isSeatOccupied($seatId, CarbonImmutable::now())) {
             return;
         }
 
@@ -141,71 +119,41 @@ class SeatMap extends Component
             return ['map' => null, 'sections' => [], 'seats' => [], 'bounds' => ['rows' => 0, 'cols' => 0]];
         }
 
-        $sectionKey = $this->sectionId ?? 'all';
-        $scope = SeatMapModel::ownerScopeConfig();
-        $owner = $scope->enabled ? OwnerContext::resolveConfigured($scope) : null;
-        $scopeKey = hash('sha256', serialize([
-            $scope->enabled,
-            $owner?->getMorphClass(),
-            $owner?->getKey(),
-            $scope->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
-        ]));
-
-        return Cache::remember(
-            "seating:layout:{$map->getKey()}:v{$map->version}:section:{$sectionKey}:scope:{$scopeKey}",
-            60,
-            fn (): array => app(SeatLayoutInterface::class)->describe((string) $map->getKey(), $this->sectionId),
-        );
+        return app(SeatLayoutInterface::class)->describe($map->id, $this->sectionId);
     }
 
     public function getStatusProperty(): array
     {
         $map = $this->resolveMap();
+
         if ($map === null) {
             return [];
         }
 
-        $now = CarbonImmutable::now();
-
-        $seats = $map->sections()
-            ->when($this->sectionId !== null, fn (Builder $query): Builder => $query->whereKey($this->sectionId))
-            ->with([
-                'seats' => fn ($query): mixed => $query->select('id', 'seat_section_id', 'status'),
-                'seats.holds' => fn ($query): mixed => $query
-                    ->withoutOwnerScope()
-                    ->select('id', 'seat_id', 'expires_at')
-                    ->where('expires_at', '>', $now)
-                    ->whereNull('converted_at'),
-                'seats.allocations' => fn ($query): mixed => $query
-                    ->withoutOwnerScope()
-                    ->select('id', 'seat_id', 'status')
-                    ->where('status', 'active'),
-            ])
-            ->get()
-            ->flatMap(fn ($section) => $section->seats);
-
+        $rawStatuses = app(MapsApi::class)->seatStatuses($map->id, $this->sectionId);
+        $occupancy = app(ReservationsApi::class)->seatOccupancy(array_keys($rawStatuses), CarbonImmutable::now());
         $status = [];
 
-        foreach ($seats as $seat) {
-            if ($seat->status === SeatStatus::Blocked) {
-                $status[$seat->id] = SeatStatus::Blocked->value;
+        foreach ($rawStatuses as $seatId => $rawStatus) {
+            if ($rawStatus === SeatStatus::Blocked->value) {
+                $status[$seatId] = SeatStatus::Blocked->value;
 
                 continue;
             }
 
-            if ($seat->holds->isNotEmpty()) {
-                $status[$seat->id] = SeatStatus::Held->value;
+            if (($occupancy[$seatId] ?? null) === 'held') {
+                $status[$seatId] = SeatStatus::Held->value;
 
                 continue;
             }
 
-            if ($seat->allocations->isNotEmpty()) {
-                $status[$seat->id] = SeatStatus::Sold->value;
+            if (($occupancy[$seatId] ?? null) === 'sold') {
+                $status[$seatId] = SeatStatus::Sold->value;
 
                 continue;
             }
 
-            $status[$seat->id] = in_array($seat->id, $this->picked, true)
+            $status[$seatId] = in_array($seatId, $this->picked, true)
                 ? SeatStatus::Picked->value
                 : SeatStatus::Available->value;
         }
@@ -230,58 +178,20 @@ class SeatMap extends Component
 
     private function resolveMapId(): ?string
     {
-        if ($this->seatMapId !== null) {
-            $id = SeatMapModel::query()->whereKey($this->seatMapId)->active()->value('id');
-
-            return is_string($id) ? $id : null;
-        }
-
-        $seatableClass = $this->resolveSeatableClass();
-
-        if ($seatableClass === null || $this->seatableId === null) {
-            return null;
-        }
-
-        $id = SeatMapModel::query()
-            ->where('seatable_type', $this->seatableType)
-            ->where('seatable_id', $this->seatableId)
-            ->active()
-            ->value('id');
-
-        return is_string($id) ? $id : null;
+        return app(MapsApi::class)->resolveActiveMapId(
+            $this->seatMapId,
+            $this->seatableType,
+            $this->seatableId,
+        );
     }
 
-    private function resolveMap(): ?SeatMapModel
+    private function resolveMap(): ?SeatMapRef
     {
-        if ($this->seatMapId !== null) {
-            return SeatMapModel::query()->find($this->seatMapId);
-        }
-
-        $seatableClass = $this->resolveSeatableClass();
-
-        if ($seatableClass === null || $this->seatableId === null) {
-            return null;
-        }
-
-        return SeatMapModel::query()
-            ->where('seatable_type', $this->seatableType)
-            ->where('seatable_id', $this->seatableId)
-            ->active()
-            ->first();
-    }
-
-    private function resolveSeatableClass(): ?string
-    {
-        if ($this->seatableType === null) {
-            return null;
-        }
-
-        $class = Relation::getMorphedModel($this->seatableType) ?? $this->seatableType;
-
-        if (! is_string($class) || ! class_exists($class) || ! is_subclass_of($class, Model::class)) {
-            return null;
-        }
-
-        return $class;
+        return app(MapsApi::class)->resolveMap(
+            $this->seatMapId,
+            $this->seatableType,
+            $this->seatableId,
+            activeOnly: $this->seatMapId === null,
+        );
     }
 }

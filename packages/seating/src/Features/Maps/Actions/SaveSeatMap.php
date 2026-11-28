@@ -24,12 +24,8 @@ final readonly class SaveSeatMap
         ])->validate();
 
         return (new SeatMap)->getConnection()->transaction(function () use ($attributes, $record, $host): SeatMap {
-            if ($host !== null && (! $host->exists || ! $host->newQuery()->whereKey($host->getKey())->exists())) {
-                throw new AuthorizationException('The seat-map host is not accessible.');
-            }
-
-            if ($host !== null && method_exists($host, 'ownerScopeConfig') && ! OwnerUiScope::canMutateRecord($host)) {
-                throw new AuthorizationException('The seat-map host is not writable.');
+            if ($host !== null && (! $host->exists || ! OwnerUiScope::canMutateHost($host))) {
+                throw new AuthorizationException('The seat-map host is not writable in the current owner scope.');
             }
 
             if ($record === null) {

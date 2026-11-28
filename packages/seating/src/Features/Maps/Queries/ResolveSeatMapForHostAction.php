@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Features\Maps\Queries;
 
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,6 +16,6 @@ final readonly class ResolveSeatMapForHostAction
             return null;
         }
 
-        return SeatMap::forHost($host)->active()->first();
+        return SeatMap::forHost($host)->active()->orderBy('created_at')->orderBy('id')->first();
     }
 }

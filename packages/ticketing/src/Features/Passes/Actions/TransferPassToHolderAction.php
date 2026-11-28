@@ -26,8 +26,9 @@ final readonly class TransferPassToHolderAction
         array $holderAttributes = [],
         ?string $reason = null,
         ?Model $authorizedBy = null,
+        bool $bulk = false,
     ): PassHolder {
-        return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $holderAttributes, $reason, $authorizedBy): PassHolder {
+        return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $holderAttributes, $reason, $authorizedBy, $bulk): PassHolder {
             $lockedPass = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->whereKey($pass->getKey())->lockForUpdate()->first();
 
             if (! $lockedPass instanceof Pass) {
@@ -49,6 +50,7 @@ final readonly class TransferPassToHolderAction
                 reason: $reason,
                 existing_holder_id: $resolvedHolder->exists ? (string) $resolvedHolder->getKey() : null,
                 metadata: $resolvedHolder->metadata,
+                bulk: $bulk,
             ));
 
             $resolve = fn (): PassHolder => PassHolder::query()->where('pass_id', $lockedPass->getKey())->where('is_current', true)->findOrFail($holderId);

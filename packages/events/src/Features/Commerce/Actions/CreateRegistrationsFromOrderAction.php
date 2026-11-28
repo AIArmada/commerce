@@ -14,7 +14,7 @@ use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Events\Platform\EventWriteGuard;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTicketing\Schemas;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Support\TicketMoney;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
@@ -22,7 +21,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
 
@@ -139,9 +137,6 @@ final class TicketTypeFormSchema
                     fn (string $class): MorphToSelect\Type => MorphToSelect\Type::make($class)
                         ->titleAttribute(TicketablePickerColumns::titleAttributeFor($class))
                         ->searchColumns(TicketablePickerColumns::searchColumnsFor($class))
-                        ->modifyOptionsQueryUsing(
-                            static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
-                        )
                 )->toArray()
             )
             ->searchable()

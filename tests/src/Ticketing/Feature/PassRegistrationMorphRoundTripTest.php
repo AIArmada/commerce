@@ -53,10 +53,13 @@ it('round-trips a custom uuid registration id on a non-owner-scoped morph target
         'email' => 'registration-morph-two@example.com',
         'password' => 'secret',
     ]);
-    $registrationId = '00000000-0000-4000-8000-000000000042';
+    $registration = User::query()->create([
+        'name' => 'Registration Target',
+        'email' => 'registration-target@example.com',
+        'password' => 'secret',
+    ]);
+    $registrationId = (string) $registration->getKey();
 
-    // User is not an owner-scoped model, so the ticketing owner guard skips
-    // existence validation and this pins pure storage semantics for the morph.
     $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::factory()->create([
         'registration_type' => User::class,
         'registration_id' => $registrationId,

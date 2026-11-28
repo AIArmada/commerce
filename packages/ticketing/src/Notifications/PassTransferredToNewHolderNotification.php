@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Notifications;
 
-use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Data\PassData;
+use AIArmada\Ticketing\Data\PassHolderData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -16,8 +16,8 @@ final class PassTransferredToNewHolderNotification extends Notification implemen
     use Queueable;
 
     public function __construct(
-        public readonly Pass $pass,
-        public readonly PassHolder $previousHolder,
+        public readonly PassData $pass,
+        public readonly PassHolderData $previousHolder,
         public readonly ?string $reason = null,
     ) {}
 

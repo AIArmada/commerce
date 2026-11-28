@@ -7,7 +7,8 @@ namespace AIArmada\Seating\Features\Maps\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatSectionFactory;
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatSectionDependents;
+use AIArmada\Seating\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,8 +42,7 @@ class SeatSection extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $section): void {
-            $section->seats()->chunkById(500, fn ($seats): mixed => $seats->each->delete());
-            $section->allocations()->chunkById(500, fn ($allocations): mixed => $allocations->each->delete());
+            app(DeleteSeatSectionDependents::class)->handle($section);
         });
     }
 
@@ -90,9 +90,9 @@ class SeatSection extends Model
         return $this->hasMany(Seat::class, 'seat_section_id');
     }
 
-    /** @return HasMany<SeatAllocation, $this> */
+    /** @return HasMany<Model, $this> */
     public function allocations(): HasMany
     {
-        return $this->hasMany(SeatAllocation::class, 'seat_section_id');
+        return $this->hasMany(ModelResolver::seatAllocationClass(), 'seat_section_id');
     }
 }
