@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentTemplates;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
@@ -62,16 +63,16 @@ final readonly class ManageDocTemplates implements DocumentTemplates
     }
 
     /** @template T
-     * @param callable(): T $callback
+     * @param Closure(): T $callback
      * @return T
      */
-    private function serialize(callable $callback): mixed
+    private function serialize(Closure $callback): mixed
     {
         $ownerKey = config('docs.owner.enabled', false)
             ? OwnerScopeKey::forOwner(OwnerContext::resolve())
             : OwnerScopeKey::GLOBAL;
 
-        return Cache::lock('docs.templates.write.' . $ownerKey, 60)->block(10, fn (): mixed => (new DocTemplate)->getConnection()->transaction($callback));
+        return Cache::lock('docs.templates.write.' . $ownerKey, 60)->block(10, fn () => (new DocTemplate)->getConnection()->transaction($callback));
     }
 
     private function lockTemplate(string $templateId): DocTemplate

@@ -11,6 +11,7 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Features\Numbering\Support\SequenceWriteLock;
+use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -68,14 +69,14 @@ final readonly class ManageDocSequences implements DocumentSequenceSettings
     }
 
     /** @template T
-     * @param callable(): T $callback
+     * @param Closure(): T $callback
      * @return T
      */
-    private function serialize(callable $callback): mixed
+    private function serialize(Closure $callback): mixed
     {
         $owner = config('docs.owner.enabled', false) ? OwnerContext::resolve() : null;
 
-        return Cache::lock(SequenceWriteLock::key($owner), 60)->block(5, fn (): mixed => (new DocSequence)->getConnection()->transaction($callback));
+        return Cache::lock(SequenceWriteLock::key($owner), 60)->block(5, fn () => (new DocSequence)->getConnection()->transaction($callback));
     }
 
     private function lockSequence(string $sequenceId): DocSequence
