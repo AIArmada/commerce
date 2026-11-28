@@ -243,6 +243,20 @@ class TaxExemption extends Model implements Auditable
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
+    public function scopeExpiringWithin(Builder $query, int $days): Builder
+    {
+        $now = CarbonImmutable::now();
+
+        return $query->approved()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>=', $now)
+            ->where('expires_at', '<=', $now->addDays($days));
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', PendingState::$name);

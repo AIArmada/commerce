@@ -119,10 +119,7 @@ final class TaxExemptionsTable
                 Filter::make('expiring_soon')
                     ->label('Expiring in 30 days')
                     ->query(
-                        fn ($query) => $query
-                            ->whereNotNull('expires_at')
-                            ->where('expires_at', '>=', CarbonImmutable::now())
-                            ->where('expires_at', '<=', CarbonImmutable::now()->addDays(30))
+                        fn (Builder $query): Builder => $query->expiringWithin(30)
                     )
                     ->toggle(),
 

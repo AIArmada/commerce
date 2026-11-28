@@ -9,11 +9,9 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
-use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 final class TaxStatsWidget extends BaseWidget
 {
@@ -67,8 +65,6 @@ final class TaxStatsWidget extends BaseWidget
      */
     private function getAggregatedStats(): array
     {
-        $now = CarbonImmutable::now();
-
         // All queries scoped by owner to ensure multitenancy safety
         $zoneCount = OwnerUiScope::apply(TaxZone::query(), includeGlobal: false)
             ->where('is_active', true)
@@ -83,17 +79,7 @@ final class TaxStatsWidget extends BaseWidget
             ->count();
 
         $exemptionCount = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
-            ->where('status', 'approved')
-            ->where(function (Builder $builder) use ($now): void {
-                $builder
-                    ->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', $now);
-            })
-            ->where(function (Builder $builder) use ($now): void {
-                $builder
-                    ->whereNull('starts_at')
-                    ->orWhere('starts_at', '<=', $now);
-            })
+            ->active()
             ->count();
 
         return [

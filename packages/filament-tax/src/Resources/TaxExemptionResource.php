@@ -75,12 +75,8 @@ final class TaxExemptionResource extends Resource
             'filament-tax.nav-badge.expiring-exemptions',
             CarbonImmutable::now()->addSeconds(30),
             function (): int {
-                $now = CarbonImmutable::now();
-
                 return (int) OwnerUiScope::apply(self::getModel()::query(), includeGlobal: false)
-                    ->whereNotNull('expires_at')
-                    ->where('expires_at', '>=', $now)
-                    ->where('expires_at', '<=', $now->addDays(30))
+                    ->expiringWithin(30)
                     ->count();
             }
         );

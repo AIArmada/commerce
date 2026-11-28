@@ -99,6 +99,17 @@ it('returns a navigation badge when exemptions are expiring soon', function (): 
         'expires_at' => now()->addDays(10),
     ]);
 
+
+    foreach (['pending', 'rejected', 'revoked', 'expired'] as $status) {
+        TaxExemption::create([
+            'exemptable_type' => TaxClass::class,
+            'exemptable_id' => $class->id,
+            'reason' => 'Not renewable',
+            'status' => $status,
+            'expires_at' => now()->addDays(10),
+        ]);
+    }
+
     expect(TaxExemptionResource::getNavigationBadge())
         ->toBe('1')
         ->and(TaxExemptionResource::getNavigationBadgeColor())->toBe('warning');

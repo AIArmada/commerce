@@ -198,6 +198,9 @@ use AIArmada\Tax\Models\TaxExemption;
 
 // Active = approved + started + not expired
 $active = TaxExemption::active()->get();
+
+// Approved exemptions due to expire within the next 30 days
+$expiring = TaxExemption::expiringWithin(30)->get();
 ```
 
 ### By Status

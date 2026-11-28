@@ -6,7 +6,6 @@ namespace AIArmada\FilamentTax\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
-use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -64,14 +63,9 @@ final class ExpiringExemptionsWidget extends BaseWidget
      */
     protected function getTableQuery(): Builder
     {
-        $now = CarbonImmutable::now();
-
         return OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
             ->with('exemptable')
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', $now->addDays(30))
-            ->where('expires_at', '>=', $now)
-            ->where('status', 'approved')
+            ->expiringWithin(30)
             ->orderBy('expires_at');
     }
 }
