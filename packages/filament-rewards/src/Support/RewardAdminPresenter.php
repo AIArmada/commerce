@@ -230,6 +230,13 @@ final class RewardAdminPresenter
         return 'staff';
     }
 
+    public static function canStewardFraud(): bool
+    {
+        $user = self::staffActor();
+
+        return $user instanceof Authorizable && Gate::forUser($user)->allows('reward-fraud-steward');
+    }
+
     public static function canDecideAward(mixed $award, string $ability): bool
     {
         $user = auth()->user();

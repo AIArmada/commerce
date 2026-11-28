@@ -7,6 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardFraudResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables\RewardFraudTable;
+use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -39,9 +40,7 @@ class RewardFraudResource extends Resource
     #[Override]
     public static function canViewAny(): bool
     {
-        $user = auth()->user();
-
-        return $user !== null && $user->can('reward-fraud-steward');
+        return RewardAdminPresenter::canStewardFraud();
     }
 
     #[Override]

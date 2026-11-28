@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppeals;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
+use AIArmada\FilamentRewards\Resources\RewardFraudResource\RewardFraudResource;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\CreateRewardProgram;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
@@ -327,4 +328,22 @@ it('refuses a fraud dismissal without the steward ability, even when the action 
 
     expect($status)->toBe(403)
         ->and($award->fresh()->status)->toBe(RewardAwardStatus::Held);
+});
+
+it('requires both staff membership and fraud stewardship to list fraud cases', function (): void {
+    $outsider = User::factory()->create();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => true);
+
+    Livewire::actingAs($outsider)
+        ->test(ListRewardFraudCases::class)
+        ->assertStatus(403);
+
+    $this->actingAs($this->staff);
+
+    expect(RewardFraudResource::canViewAny())->toBeTrue();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => false);
+
+    expect(RewardFraudResource::canViewAny())->toBeFalse();
 });
