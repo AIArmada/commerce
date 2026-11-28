@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Testimonials",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentFeedback\\Features\\Testimonials\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

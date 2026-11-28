@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Models\Response;
-
-final class ResponseCancelled
+final readonly class ResponseCancelled
 {
-    public function __construct(public Response $response) {}
+    public function __construct(
+        public string $responseId,
+        public string $actorType,
+        public string $actorId,
+        public string $subjectType,
+        public string $subjectId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+        public string $responseType,
+    ) {}
 }

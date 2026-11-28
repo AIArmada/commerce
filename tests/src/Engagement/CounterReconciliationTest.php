@@ -2,18 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Enums\ReactionStatus;
 use AIArmada\Engagement\Enums\ResponseStatus;
-use AIArmada\Engagement\Models\EngagementCounter;
-use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 
 it('reconciles keyed response and reaction counters after direct writes', function (): void {
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
 
     Response::query()->create([
         'responder_type' => $actor->getMorphClass(),
@@ -40,9 +38,9 @@ it('reconciles keyed response and reaction counters after direct writes', functi
         'count_value' => 9,
     ]);
 
-    app(EngagementCounterService::class)->recalculate($subject);
+    app(UpdateEngagementCountersAction::class)->recalculate($subject);
 
-    $counters = app(EngagementCounterService::class);
+    $counters = app(UpdateEngagementCountersAction::class);
 
     expect($counters->value($subject, 'responses'))->toBe(1)
         ->and($counters->value($subject, 'responses', 'interested'))->toBe(1)

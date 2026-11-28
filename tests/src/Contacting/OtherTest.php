@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Data\ContactLinksData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 
 test('BuildContactLinksAction builds mailto link', function (): void {
     $action = new BuildContactLinksAction;

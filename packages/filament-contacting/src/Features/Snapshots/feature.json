@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Snapshots",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentContacting\\Features\\Snapshots\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

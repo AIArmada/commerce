@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Analytics",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentFeedback\\Features\\Analytics\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

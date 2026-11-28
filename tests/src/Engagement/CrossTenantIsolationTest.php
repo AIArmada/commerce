@@ -12,17 +12,22 @@ use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\EngagementCounter;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Models\Share;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 
 it('isolates bookmark collections by owner', function (): void {
     $ownerA = User::query()->create([
@@ -178,3 +183,126 @@ it('does not mass assign engagement owner columns', function (string $modelClass
     Share::class,
     EngagementCounter::class,
 ]);
+
+it('does not reuse or mutate global engagement records through tenant write actions', function (): void {
+    config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
+
+    $owner = User::factory()->create();
+    $actor = engagementActor();
+    $subject = engagementSubject();
+    $interactions = app(ManageInteractionsAction::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
+    $reminders = app(ManageRemindersAction::class);
+    $due = CarbonImmutable::now()->addHour()->startOfSecond();
+
+    $create = fn (): array => [
+        $interactions->follow($actor, $subject),
+        $interactions->bookmark($actor, $subject),
+        $interactions->respond($actor, $subject, 'going'),
+        $interactions->react($actor, $subject, 'like'),
+        $subscriptions->subscribe($actor, $subject),
+        $reminders->setReminder($actor, $subject, 'follow_up', ['remind_at' => $due]),
+    ];
+
+    $global = OwnerContext::withOwner(null, $create);
+    $local = OwnerContext::withOwner($owner, $create);
+
+    foreach ($local as $index => $record) {
+        expect($record->getKey())->not->toBe($global[$index]->getKey())
+            ->and($record->owner_id)->toBe($owner->getKey());
+    }
+
+    OwnerContext::withOwner($owner, function () use ($interactions, $subscriptions, $reminders, $actor, $subject): void {
+        $interactions->unfollow($actor, $subject);
+        $interactions->removeBookmark($actor, $subject);
+        $interactions->cancelResponse($actor, $subject);
+        $interactions->removeReaction($actor, $subject, 'like');
+        $subscriptions->unsubscribe($actor, $subject);
+        $reminders->cancelReminder($actor, $subject, 'follow_up');
+    });
+
+    foreach ($global as $record) {
+        expect($record->newQueryWithoutScopes()->findOrFail($record->getKey())->status)->toBe($record->status);
+    }
+
+    foreach ($local as $record) {
+        expect($record->newQueryWithoutScopes()->findOrFail($record->getKey())->status)->not->toBe($record->status);
+    }
+});
+
+it('enforces unique global interaction identities and unbound subscription identities in the database', function (): void {
+    config(['engagement.owner.enabled' => true]);
+    $owner = User::factory()->create();
+    $actor = engagementActor();
+    $subject = engagementSubject();
+    $interactions = app(ManageInteractionsAction::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
+
+    OwnerContext::withOwner(null, function () use ($actor, $subject, $interactions, $subscriptions): void {
+        $bookmark = $interactions->bookmark($actor, $subject);
+        $collection = BookmarkCollection::query()->create([
+            'name' => 'Unique collection',
+            'visibility' => 'private',
+            'status' => 'active',
+        ]);
+        $interactions->addBookmarkToCollection($actor, $bookmark, $collection);
+
+        $records = [
+            $interactions->follow($actor, $subject),
+            $bookmark,
+            $interactions->respond($actor, $subject, 'going'),
+            $interactions->react($actor, $subject, 'like'),
+            BookmarkCollectionItem::query()->firstOrFail(),
+            $subscriptions->subscribe($actor, $subject),
+            $subscriptions->subscribe($actor),
+        ];
+
+        foreach ($records as $record) {
+            expect(fn () => $record->getConnection()->transaction(fn () => $record->replicate()->save()))
+                ->toThrow(QueryException::class);
+        }
+    });
+
+    OwnerContext::withOwner($owner, function () use ($actor, $subscriptions): void {
+        $subscription = $subscriptions->subscribe($actor);
+
+        expect(fn () => $subscription->getConnection()->transaction(fn () => $subscription->replicate()->save()))
+            ->toThrow(QueryException::class);
+    });
+});
+
+it('never reuses or removes a globally visible collection item from a tenant write', function (): void {
+    config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
+    $owner = User::factory()->create();
+    $actor = engagementActor();
+    $subject = engagementSubject();
+    $manager = app(ManageInteractionsAction::class);
+
+    [$bookmark, $collection] = OwnerContext::withOwner($owner, fn (): array => [
+        $manager->bookmark($actor, $subject),
+        BookmarkCollection::query()->create([
+            'name' => 'Tenant collection',
+            'visibility' => 'private',
+            'status' => 'active',
+        ]),
+    ]);
+
+    $globalItem = OwnerContext::withOwner(null, fn (): BookmarkCollectionItem => BookmarkCollectionItem::query()->create([
+        'bookmark_collection_id' => $collection->id,
+        'bookmark_id' => $bookmark->id,
+        'added_at' => CarbonImmutable::now(),
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($manager, $actor, $bookmark, $collection, $owner): void {
+        $manager->addBookmarkToCollection($actor, $bookmark, $collection);
+
+        $localItem = BookmarkCollectionItem::query()->forOwner()->firstOrFail();
+        expect($localItem->owner_id)->toBe($owner->getKey());
+
+        $manager->removeBookmarkFromCollection($actor, $bookmark, $collection);
+
+        expect($localItem->fresh()->removed_at)->not->toBeNull();
+    });
+
+    expect($globalItem->newQueryWithoutScopes()->findOrFail($globalItem->id)->removed_at)->toBeNull();
+});

@@ -23,7 +23,7 @@ $comment->block(
 );
 ```
 
-`block()` resolves the actor model safely when an ID and class name are provided. If you do not pass an actor, the block is still recorded. Morph-map aliases are resolved to their mapped model class before lookup.
+`block()` resolves the actor model safely when an ID and class name are provided. If neither actor field is passed, the block is still recorded. Partial, invalid, and nonexistent actor references are rejected. Morph-map aliases are resolved to their mapped model class before lookup.
 
 Re-blocking an already-blocked model is idempotent: the existing active block is returned instead of stacking a duplicate row, and its expiry is extended when the new expiry is later. An indefinite block (no expiry) stays indefinite. Past-due active rows are ignored by the lookup, so blocking again after expiry creates a fresh block.
 
@@ -41,7 +41,7 @@ The reason must be a known `BlockReason` value; unknown strings throw an `Invali
 ],
 ```
 
-With a non-empty list, any other actor type throws an `InvalidArgumentException`.
+With a non-empty list, any other actor type throws an `InvalidArgumentException`, including when calling the concrete Actions directly.
 
 ## Recording a moderation action
 

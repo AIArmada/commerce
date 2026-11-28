@@ -63,55 +63,46 @@ return new class extends Migration
             $table->index($validityIndexColumns, $validityIndexName);
         });
 
-        $this->createPrimaryUniqueIndex(
-            $tableName,
-            ['socialable_type', 'socialable_id', 'platform', 'purpose'],
-            'socialable_type',
-            'socialable_id',
-        );
+        $this->createPrimaryUniqueIndexes($tableName);
     }
 
-    /**
-     * @param  list<string>  $columns
-     */
-    private function createPrimaryUniqueIndex(
-        string $tableName,
-        array $columns,
-        string $morphTypeColumn,
-        string $morphIdColumn,
-    ): void {
-        $indexName = str_replace(['.', '-', ' '], '_', $tableName) . '_primary_unique';
-
+    private function createPrimaryUniqueIndexes(string $tableName): void
+    {
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
         $driver = ConnectionDriver::name($connection);
+        $base = str_replace(['.', '-', ' '], '_', $tableName);
+
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Contacting primary index migration cannot run on unsupported database driver [%s].',
                 $driver,
             ));
         }
-
-        $predicate = $driver === 'pgsql'
-            ? sprintf(
-                '%s IS TRUE AND %s IS NOT NULL AND %s IS NOT NULL',
-                $grammar->wrap('is_primary'),
-                $grammar->wrap($morphTypeColumn),
-                $grammar->wrap($morphIdColumn),
-            )
-            : sprintf(
-                '%s = 1 AND %s IS NOT NULL AND %s IS NOT NULL',
-                $grammar->wrap('is_primary'),
-                $grammar->wrap($morphTypeColumn),
-                $grammar->wrap($morphIdColumn),
-            );
-
+        $isPrimary = $driver === 'pgsql'
+            ? $grammar->wrap('is_primary') . ' IS TRUE'
+            : $grammar->wrap('is_primary') . ' = 1';
+        $socialablePresent = $grammar->wrap('socialable_type') . ' IS NOT NULL AND '
+            . $grammar->wrap('socialable_id') . ' IS NOT NULL';
         $connection->statement(sprintf(
-            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s',
-            $grammar->wrap($indexName),
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s AND %s IS NOT NULL AND %s IS NOT NULL',
+            $grammar->wrap($base . '_primary_owner_unique'),
             $grammar->wrapTable($tableName),
-            implode(', ', array_map($grammar->wrap(...), $columns)),
-            $predicate,
+            implode(', ', array_map($grammar->wrap(...), ['owner_type', 'owner_id', 'socialable_type', 'socialable_id', 'platform', 'purpose'])),
+            $isPrimary,
+            $socialablePresent,
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+        ));
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s AND %s IS NULL AND %s IS NULL',
+            $grammar->wrap($base . '_primary_unique'),
+            $grammar->wrapTable($tableName),
+            implode(', ', array_map($grammar->wrap(...), ['socialable_type', 'socialable_id', 'platform', 'purpose'])),
+            $isPrimary,
+            $socialablePresent,
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
         ));
     }
 };
