@@ -46,7 +46,10 @@ trait QueriesVouchers
             return null;
         }
 
-        return OwnerContext::resolve();
+        $owner = OwnerContext::resolveConfigured(Voucher::ownerScopeConfig());
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return $owner;
     }
 
     protected function shouldIncludeGlobal(): bool

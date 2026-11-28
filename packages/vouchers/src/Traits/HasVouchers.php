@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Traits;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -174,13 +175,22 @@ trait HasVouchers
      */
     protected function voucherQueryByCode(string $voucherCode): Builder
     {
-        $includeGlobal = (bool) config('vouchers.owner.include_global', false);
-        $normalizedCode = $this->normalizeVoucherCode($voucherCode);
+        $query = Voucher::query()->where('code', $this->normalizeVoucherCode($voucherCode));
 
-        /** @var Builder<Voucher> $query */
-        $query = Voucher::query()
-            ->forOwner(OwnerContext::resolve(), $includeGlobal)
-            ->where('code', $normalizedCode);
+        if (! config('vouchers.owner.enabled', false)) {
+            return $query;
+        }
+
+        $owner = OwnerContext::resolveConfigured(Voucher::ownerScopeConfig());
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal()
+            && (bool) config('vouchers.owner.include_global', false);
+
+        $query->forOwner($owner, $includeGlobal);
+
+        if ($owner !== null && $includeGlobal) {
+            $query->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END');
+        }
 
         return $query;
     }

@@ -184,9 +184,9 @@ $validation = Voucher::validate('MERCHANT10', $cart);
 | include_global | Owner Resolved | Vouchers Returned |
 |----------------|----------------|-------------------|
 | `true` | Yes | Owner's + Global |
-| `true` | No | Global only |
 | `false` | Yes | Owner's only |
-| `false` | No | None (no owner = no vouchers) |
+| Either | Explicit global context | Global only |
+| Either | Missing owner context | `NoCurrentOwnerException` |
 
 ## Model Scope
 
@@ -202,9 +202,7 @@ $merchantVouchers = Voucher::query()
     ->get();
 
 // Get only global vouchers
-$globalVouchers = Voucher::query()
-    ->forOwner(null, includeGlobal: true)
-    ->get();
+$globalVouchers = OwnerContext::withOwner(null, fn () => Voucher::query()->get());
 ```
 
 ## Owner Display

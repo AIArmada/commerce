@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
@@ -335,4 +339,44 @@ it('keeps an unchanged directly registered voucher at checkout', function (): vo
     app(ValidateVoucherOnCheckout::class)->handle($event);
 
     expect($cart->getDynamicConditions())->not->toBeEmpty();
+});
+
+it('rejects unresolved owners before global voucher lookups or wallet claims', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', false);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
+
+    $holder = scopeWalletUser('unresolved-owner');
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'EXPLICIT-GLOBAL']));
+    $service = app(VoucherService::class);
+
+    OwnerContext::withOwner(null, function () use ($service, $global): void {
+        expect($service->find('EXPLICIT-GLOBAL')?->id)->toBe($global->id);
+    });
+
+    expect(fn () => $service->find('EXPLICIT-GLOBAL'))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => $service->addToWallet('EXPLICIT-GLOBAL', $holder))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => $holder->hasVoucherInWallet('EXPLICIT-GLOBAL'))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => Voucher::query()->forOwner()->exists())->toThrow(NoCurrentOwnerException::class);
+});
+
+it('resolves wallet code queries to the tenant voucher ahead of a matching global voucher', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = scopeWalletUser('wallet-code-priority');
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global, $owned): void {
+        app(WalletClaim::class)->handle($global, $owner);
+        expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeFalse();
+
+        $owner->addVoucherToWallet('WALLET-PRIORITY');
+        expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeTrue();
+
+        $owner->markVoucherAsRedeemed('WALLET-PRIORITY');
+        expect($owner->voucherWallets()->where('voucher_id', $owned->id)->sole()->redeemed_at)->not->toBeNull()
+            ->and($owner->voucherWallets()->where('voucher_id', $global->id)->sole()->redeemed_at)->toBeNull();
+    });
 });
