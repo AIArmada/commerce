@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Data\AllocationStrategy;
-use AIArmada\Inventory\Events\InventoryAllocated;
+use AIArmada\Inventory\Features\Reservations\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Api\CartStockReservations;

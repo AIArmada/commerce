@@ -6,9 +6,9 @@ namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\Inventory\Contracts\BatchReservationInvalidator;
 use AIArmada\Inventory\Enums\BatchStatus;
-use AIArmada\Inventory\Events\BatchCreated;
-use AIArmada\Inventory\Events\BatchExpired;
-use AIArmada\Inventory\Events\BatchRecalled;
+use AIArmada\Inventory\Features\Traceability\Events\BatchCreated;
+use AIArmada\Inventory\Features\Traceability\Events\BatchExpired;
+use AIArmada\Inventory\Features\Traceability\Events\BatchRecalled;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;

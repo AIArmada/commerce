@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Events;
+namespace AIArmada\Inventory\Features\Reservations\Events;
 
 use AIArmada\CommerceSupport\Contracts\Events\InventoryEventInterface;
 use AIArmada\Inventory\Events\Concerns\HasInventoryEventData;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Events;
+namespace AIArmada\Inventory\Features\Traceability\Events;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;

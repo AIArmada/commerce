@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Events\BatchRecalled;
+use AIArmada\Inventory\Features\Traceability\Events\BatchRecalled;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use Illuminate\Database\Eloquent\Collection;
 
