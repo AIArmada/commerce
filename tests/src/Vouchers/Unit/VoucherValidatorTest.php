@@ -12,6 +12,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 
+beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+});
+
 test('validates valid voucher', function (): void {
     $voucher = Voucher::create([
         'code' => 'VALID',
@@ -448,5 +452,7 @@ test('rejects a voucher in a different currency from the live cart', function ()
 
     Config::set('cart.money.default_currency', 'MYR');
 
-    expect($validator->validate('CURRENCY', $cart)->isValid)->toBeTrue();
+    expect($validator->validate('CURRENCY', $cart)->isValid)->toBeTrue()
+        ->and($validator->validate('CURRENCY', ['total' => 1000, 'currency' => 'USD'])->isValid)->toBeFalse()
+        ->and($validator->validate('CURRENCY', ['total' => 1000, 'currency' => 'MYR'])->isValid)->toBeTrue();
 });

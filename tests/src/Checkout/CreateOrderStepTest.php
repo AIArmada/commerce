@@ -196,6 +196,7 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
 });
 
 it('refreshes voucher-driven affiliate overrides before creating order metadata', function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
     config()->set('checkout.integrations.vouchers.enabled', true);
     config()->set('checkout.create_order.confirm_payment', false);
 

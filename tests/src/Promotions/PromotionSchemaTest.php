@@ -43,17 +43,48 @@ it('constrains promotion codes per owner instead of globally', function (): void
 });
 
 it('cascades promotion target deletion at the database boundary', function (): void {
-    $promotion = Promotion::factory()->create();
+    $originalConnection = DB::getDefaultConnection();
+    $connection = 'promotion-cascade';
 
-    DB::table('promotionables')->insert([
-        'promotion_id' => $promotion->id,
-        'promotionable_type' => 'product',
-        'promotionable_id' => (string) Str::uuid(),
-    ]);
+    config(['database.connections.' . $connection => [
+        'driver' => 'sqlite',
+        'database' => ':memory:',
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]]);
 
-    DB::table('promotions')->where('id', $promotion->id)->delete();
+    DB::setDefaultConnection($connection);
+    Schema::clearResolvedInstance('db.schema');
 
-    expect(DB::table('promotionables')->where('promotion_id', $promotion->id)->exists())->toBeFalse();
+    try {
+        expect((int) DB::selectOne('PRAGMA foreign_keys')->foreign_keys)->toBe(1);
+
+        $migrationDirectory = dirname(__DIR__, 3) . '/packages/promotions/database/migrations';
+
+        foreach (glob($migrationDirectory . '/*.php') as $file) {
+            (require $file)->up();
+        }
+
+        $promotionId = (string) Str::uuid();
+        DB::table('promotions')->insert([
+            'id' => $promotionId,
+            'name' => 'Cascade promotion',
+            'discount_value' => 10,
+        ]);
+
+        DB::table('promotionables')->insert([
+            'promotion_id' => $promotionId,
+            'promotionable_type' => 'product',
+            'promotionable_id' => (string) Str::uuid(),
+        ]);
+
+        expect(DB::table('promotions')->where('id', $promotionId)->delete())->toBe(1)
+            ->and(DB::table('promotionables')->where('promotion_id', $promotionId)->exists())->toBeFalse();
+    } finally {
+        DB::setDefaultConnection($originalConnection);
+        Schema::clearResolvedInstance('db.schema');
+        DB::purge($connection);
+    }
 });
 
 it('rejects duplicate global promotion codes while allowing automatic promotions', function (): void {

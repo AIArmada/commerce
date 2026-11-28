@@ -30,6 +30,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
+beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+});
+
 final class ScopeWalletUser extends Model
 {
     use HasUuids;

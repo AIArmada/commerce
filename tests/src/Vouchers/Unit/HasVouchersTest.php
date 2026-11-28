@@ -16,6 +16,10 @@ use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use Illuminate\Support\Facades\Config;
 
+beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+});
+
 it('retrieves applied vouchers from cart conditions', function (): void {
     $storage = new InMemoryStorage;
 

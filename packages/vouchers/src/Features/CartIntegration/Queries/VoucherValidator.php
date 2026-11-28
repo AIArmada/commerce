@@ -49,7 +49,12 @@ final class VoucherValidator implements VoucherValidation
             return VoucherValidationResult::invalid('Voucher not found.');
         }
 
-        if ($cart instanceof Cart && mb_strtoupper($voucher->currency) !== $cart->getCheckoutCurrency()) {
+        $cartCurrency = $cart instanceof Cart
+            ? $cart->getCheckoutCurrency()
+            : (is_array($cart) ? ($cart['currency'] ?? null) : null);
+
+        if ($cartCurrency !== null
+            && (! is_string($cartCurrency) || mb_strtoupper(mb_trim($cartCurrency)) !== mb_strtoupper($voucher->currency))) {
             return VoucherValidationResult::invalid('Voucher currency does not match the cart currency.');
         }
 

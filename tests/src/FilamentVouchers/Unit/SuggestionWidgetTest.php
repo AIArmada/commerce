@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart as LiveCart;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Testing\InMemoryStorage;
@@ -48,7 +49,10 @@ it('applies suggestions by record key, resolving the code server-side', function
 
     $live = new LiveCart(new InMemoryStorage, $cart->identifier);
     $manager = Mockery::mock(CartInstanceManager::class);
-    $manager->shouldReceive('resolve')->with($cart->instance, $cart->identifier)->andReturn($live);
+    $manager->shouldReceive('resolveForSnapshot')->once()
+        ->with(Mockery::on(static fn (CartSnapshotData $snapshot): bool => $snapshot->instance === $cart->instance
+            && $snapshot->identifier === $cart->identifier))
+        ->andReturn($live);
     app()->instance(CartInstanceManager::class, $manager);
 
     $applicator = Mockery::mock(CartVoucherApplicator::class);
@@ -76,7 +80,10 @@ it('resolves the cart once no matter how many candidates exist', function (): vo
 
     $live = new LiveCart(new InMemoryStorage, $cart->identifier);
     $manager = Mockery::mock(CartInstanceManager::class);
-    $manager->shouldReceive('resolve')->once()->with($cart->instance, $cart->identifier)->andReturn($live);
+    $manager->shouldReceive('resolveForSnapshot')->once()
+        ->with(Mockery::on(static fn (CartSnapshotData $snapshot): bool => $snapshot->instance === $cart->instance
+            && $snapshot->identifier === $cart->identifier))
+        ->andReturn($live);
     app()->instance(CartInstanceManager::class, $manager);
 
     $widget = app(VoucherSuggestionsWidget::class);

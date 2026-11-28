@@ -100,10 +100,7 @@ it('does not resolve a code promotion when the code belongs to a valid voucher',
     $voucherService = mock(VoucherServiceInterface::class);
     $voucherService->shouldReceive('validate')
         ->once()
-        ->andReturn(VoucherValidationResult::valid());
-    $voucherService->shouldReceive('find')
-        ->once()
-        ->andReturn(VoucherData::fromArray([
+        ->andReturn(VoucherValidationResult::valid(['voucher' => VoucherData::fromArray([
             'id' => 'voucher-save10',
             'code' => 'SAVE10',
             'name' => 'Save 10',
@@ -111,7 +108,8 @@ it('does not resolve a code promotion when the code belongs to a valid voucher',
             'value' => 1000,
             'currency' => 'MYR',
             'status' => 'active',
-        ]));
+        ])->toArray()]));
+    $voucherService->shouldNotReceive('find');
 
     app()->instance(VoucherServiceInterface::class, $voucherService);
 

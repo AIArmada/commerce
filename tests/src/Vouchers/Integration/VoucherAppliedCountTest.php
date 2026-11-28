@@ -11,6 +11,8 @@ use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+
     $manager = app(CartManagerInterface::class);
 
     if (! $manager instanceof CartManagerWithVouchers) {
