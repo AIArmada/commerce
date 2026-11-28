@@ -118,7 +118,7 @@ it('B refuses held approval while the source stays underverified', function (): 
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -153,7 +153,7 @@ it('B advances verified held awards without duplicate claims or cap use', functi
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b2', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -294,7 +294,7 @@ it('B clears only targeted merit gates on overturn and never published rules', f
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b5', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -331,7 +331,7 @@ it('B clears only targeted merit gates on overturn and never published rules', f
     $reader2->seed(RewardLedgerFixtures::fact('src-cl-b5b', $member2, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $held = (new EvaluateRewardEntitlementAction($reader2))->handle(
-        $program2,
+        (string) $program2->getKey(),
         RewardComponent::Points,
         'user',
         $member2,
@@ -350,7 +350,7 @@ it('B refuses overturns that would bypass frozen outcome rules', function (): vo
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b6', $memberId, '2026-06-12T00:00:00Z', 'saved_item'));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

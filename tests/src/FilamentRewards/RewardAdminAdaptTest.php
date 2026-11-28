@@ -96,7 +96,7 @@ function adminAdaptHeldAward(string $staffId, bool $suspect = false): RewardAwar
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program->refresh(),
+        (string) $program->getKey(),
         RewardComponent::Recognition,
         'user',
         $memberId,
@@ -157,7 +157,7 @@ function adminAdaptCashSetup(string $staffId): array
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -719,7 +719,7 @@ it('scopes admin queries to programs visible in the current owner context', func
         $reader->seed(RewardLedgerFixtures::fact('src-scope-admin-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Recognition,
             'user',
             $memberId,
@@ -757,7 +757,7 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     $award = OwnerContext::withOwner(
         $owner,
         static fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -885,7 +885,7 @@ it('requests and fulfills a cash award through the awards table', function (): v
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,

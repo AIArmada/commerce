@@ -32,7 +32,7 @@ test('unknown recipient types are refused before any award freezes', function ()
     $reader->seed(RewardLedgerFixtures::fact('src-registry-recip-1', $memberId));
 
     expect(fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'ghost',
         $memberId,

@@ -49,7 +49,7 @@ final readonly class EvaluateRewardSourceAction
                     foreach ($candidate['components'] as $component) {
                         try {
                             $evaluate->handle(
-                                $candidate['program'],
+                                (string) $candidate['program']->getKey(),
                                 $component,
                                 $recipientType,
                                 $candidate['recipient_id'],

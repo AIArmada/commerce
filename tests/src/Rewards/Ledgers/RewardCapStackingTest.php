@@ -52,8 +52,8 @@ it('enforces default cross-family exclusivity per source, component, and role', 
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
 
-    $first = $action->handle($programA, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-excl-1', $decision);
-    $second = $action->handle($programB, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-excl-1', $decision);
+    $first = $action->handle((string) $programA->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-excl-1', $decision);
+    $second = $action->handle((string) $programB->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-excl-1', $decision);
 
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($second->outcome)->toBe(RewardEvaluationOutcome::Rejected)
@@ -72,8 +72,8 @@ it('allows explicit bilateral compatible stacking and refuses one-directional cl
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
 
-    $first = $action->handle($programA, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-comp-1', $decision);
-    $second = $action->handle($programB, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-comp-1', $decision);
+    $first = $action->handle((string) $programA->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-comp-1', $decision);
+    $second = $action->handle((string) $programB->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-comp-1', $decision);
 
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($second->outcome)->toBe(RewardEvaluationOutcome::Awarded)
@@ -89,8 +89,8 @@ it('allows explicit bilateral compatible stacking and refuses one-directional cl
 
     $reader->seed(RewardLedgerFixtures::fact('src-one-1', $memberId));
 
-    $third = $action->handle($programC, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-one-1', $decision);
-    $fourth = $action->handle($programD, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-one-1', $decision);
+    $third = $action->handle((string) $programC->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-one-1', $decision);
+    $fourth = $action->handle((string) $programD->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-one-1', $decision);
 
     expect($third->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($fourth->outcome)->toBe(RewardEvaluationOutcome::Rejected)
@@ -107,11 +107,11 @@ it('binds the recipient-source cap across stacked families unless relaxed', func
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
 
-    $first = $action->handle($programA, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-rsc-1', $decision);
+    $first = $action->handle((string) $programA->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-rsc-1', $decision);
 
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
-    expect(fn () => $action->handle($programB, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-rsc-1', $decision))
+    expect(fn () => $action->handle((string) $programB->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-rsc-1', $decision))
         ->toThrow(InvalidArgumentException::class, 'cap_exceeded');
 });
 
@@ -128,13 +128,13 @@ it('blocks same-family second beneficiaries on an already-claimed source', funct
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
 
-    $first = $action->handle($programA, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-samef-1', $decision);
+    $first = $action->handle((string) $programA->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-samef-1', $decision);
 
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $reader->seed(RewardLedgerFixtures::fact('src-samef-1', $otherId));
 
-    $second = $action->handle($programA, RewardComponent::Points, 'user', $otherId, RewardBeneficiaryRole::Recipient, 'src-samef-1', $decision);
+    $second = $action->handle((string) $programA->getKey(), RewardComponent::Points, 'user', $otherId, RewardBeneficiaryRole::Recipient, 'src-samef-1', $decision);
 
     expect($second->outcome)->toBe(RewardEvaluationOutcome::Rejected)
         ->and($second->reasons)->toBe(['stacking_conflict']);
@@ -155,16 +155,16 @@ it('enforces day, total, and cross-program caps without consuming on rejection',
 
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    $first = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-1', CarbonImmutable::parse('2026-06-15T10:00:00Z'));
+    $first = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-1', CarbonImmutable::parse('2026-06-15T10:00:00Z'));
 
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-2', CarbonImmutable::parse('2026-06-15T11:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-2', CarbonImmutable::parse('2026-06-15T11:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'cap_exceeded');
 
     expect(RewardAward::query()->where('source_business_key', 'src-cap-2')->count())->toBe(0);
 
-    $nextDay = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-2', CarbonImmutable::parse('2026-06-16T10:00:00Z'));
+    $nextDay = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cap-2', CarbonImmutable::parse('2026-06-16T10:00:00Z'));
 
     expect($nextDay->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
@@ -180,7 +180,7 @@ it('enforces day, total, and cross-program caps without consuming on rejection',
 
     $reader->seed(RewardLedgerFixtures::fact('src-capx-1', $memberId));
 
-    $crossFirst = $action->handle($programB, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-capx-1', CarbonImmutable::parse('2026-06-17T10:00:00Z'));
+    $crossFirst = $action->handle((string) $programB->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-capx-1', CarbonImmutable::parse('2026-06-17T10:00:00Z'));
 
     $keys = RewardCapWindows::keysFor(
         'family_source_component',
@@ -202,6 +202,6 @@ it('enforces day, total, and cross-program caps without consuming on rejection',
         ->and($counter->consumed)->toBe(1)
         ->and($counter->limit_value)->toBe(1);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-capx-1', CarbonImmutable::parse('2026-06-17T11:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-capx-1', CarbonImmutable::parse('2026-06-17T11:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'cap_exceeded');
 });

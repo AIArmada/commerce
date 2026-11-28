@@ -50,7 +50,7 @@ function payoutHarness(string $prefix): array
     $reader->seed(RewardLedgerFixtures::fact('src-' . $prefix . '-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,

@@ -418,7 +418,7 @@ it('advances a held participant award earned from an unattributed fact', functio
 
     $action = new EvaluateRewardEntitlementAction($reader);
     $held = $action->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

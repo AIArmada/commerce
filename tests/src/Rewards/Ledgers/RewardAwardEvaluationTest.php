@@ -38,7 +38,7 @@ it('awards a clean fact with frozen snapshots, entry, claim, and caps', function
 
     $action = new EvaluateRewardEntitlementAction($reader);
     $result = $action->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -106,9 +106,9 @@ it('freezes the matching per-outcome amount and refuses a first-only repeat', fu
 
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
-    $signup = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-signup', $decision);
-    $attendance = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-attendance', $decision);
-    $repeat = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-repeat', $decision);
+    $signup = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-signup', $decision);
+    $attendance = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-attendance', $decision);
+    $repeat = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-repeat', $decision);
 
     expect($signup->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($signup->award->amount_snapshot['points'])->toBe(5)
@@ -149,7 +149,7 @@ it('lets a matching activity variant loosen program eligibility and keeps previe
     $reader->seed($fact);
 
     $live = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -213,7 +213,7 @@ it('keeps tightened activity variants blocking weaker recurring evidence', funct
     $reader->seed($fact);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -237,8 +237,8 @@ it('returns the frozen first award on duplicate evaluation and version switch', 
     $action = new EvaluateRewardEntitlementAction($reader);
     $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
 
-    $first = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', $decision);
-    $second = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', $decision);
+    $first = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', $decision);
+    $second = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', $decision);
 
     expect($second->duplicate)->toBeTrue()
         ->and((string) $second->award->getKey())->toBe((string) $first->award->getKey())
@@ -253,7 +253,7 @@ it('returns the frozen first award on duplicate evaluation and version switch', 
 
     EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
 
-    $third = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
+    $third = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
 
     expect($third->duplicate)->toBeTrue()
         ->and((string) $third->award->getKey())->toBe((string) $first->award->getKey())
@@ -267,14 +267,14 @@ it('refuses unknown sources without writing rows', function (): void {
 
     $action = new EvaluateRewardEntitlementAction(new FakeRewardSourceFactReader);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-missing', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-missing', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'unknown_source');
 
     expect(RewardAward::query()->count())->toBe(0);
 
     $defaultAction = new EvaluateRewardEntitlementAction;
 
-    expect(fn () => $defaultAction->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-missing', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $defaultAction->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-missing', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'unknown_source');
 });
 
@@ -294,7 +294,7 @@ it('records permanent rejections for merits failures', function (array $factOver
     $reader->seed(RewardLedgerFixtures::fact($source, $memberId, '2026-06-12T00:00:00Z', 'attendance', $factOverrides));
 
     $action = new EvaluateRewardEntitlementAction($reader);
-    $result = $action->handle($program, RewardComponent::Points, 'user', $memberId, $factOverrides['@role'] ?? RewardBeneficiaryRole::Recipient, $source, CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $result = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, $factOverrides['@role'] ?? RewardBeneficiaryRole::Recipient, $source, CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($result->outcome)->toBe(RewardEvaluationOutcome::Rejected)
         ->and($result->reasons)->toBe([$reason])
@@ -302,7 +302,7 @@ it('records permanent rejections for merits failures', function (array $factOver
         ->and($result->award->rejected_at)->not->toBeNull()
         ->and($result->award->entries()->count())->toBe(1);
 
-    $retry = $action->handle($program, RewardComponent::Points, 'user', $memberId, $factOverrides['@role'] ?? RewardBeneficiaryRole::Recipient, $source, CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $retry = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, $factOverrides['@role'] ?? RewardBeneficiaryRole::Recipient, $source, CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($retry->duplicate)->toBeTrue()
         ->and(RewardAward::query()->count())->toBe(1);
@@ -330,7 +330,7 @@ it('awards an unattributed fact to an actor-bound role without freezing a reject
 
     $action = new EvaluateRewardEntitlementAction($reader);
     $result = $action->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -355,12 +355,12 @@ it('refuses not-yet-authorized attempts without freezing rows', function (): voi
     $reader->seed(RewardLedgerFixtures::fact('src-paused-1', $memberId));
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-paused-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-paused-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'program_not_active');
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
-    $ok = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-paused-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $ok = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-paused-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($ok->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
@@ -368,7 +368,7 @@ it('refuses not-yet-authorized attempts without freezing rows', function (): voi
 
     $reader->seed(RewardLedgerFixtures::fact('src-left-1', $memberId));
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-left-1', CarbonImmutable::parse('2026-06-17T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-left-1', CarbonImmutable::parse('2026-06-17T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'enrollment_left');
 
     expect(RewardAward::query()->where('source_business_key', 'src-left-1')->count())->toBe(0);
@@ -388,19 +388,19 @@ it('refuses stale consent, guest claims, and evidence after the decision transie
     $reader->seed(RewardLedgerFixtures::fact('src-stale-1', $memberId, '2026-07-02T00:00:00Z'));
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-stale-1', CarbonImmutable::parse('2026-07-05T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-stale-1', CarbonImmutable::parse('2026-07-05T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'acceptance_stale_material_change');
 
     expect(RewardAward::query()->where('source_business_key', 'src-stale-1')->count())->toBe(0);
 
     $reader->seed(RewardLedgerFixtures::fact('src-guest-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isClaimedIdentity' => false]));
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-guest-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-guest-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'guest_unclaimed');
 
     $reader->seed(RewardLedgerFixtures::fact('src-future-1', $memberId, '2026-06-20T00:00:00Z'));
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-future-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-future-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'evidence_after_decision');
 
     expect(RewardAward::query()->count())->toBe(0);
@@ -415,8 +415,8 @@ it('holds fraud suspects, ambiguous devices, and policy holds instead of approvi
 
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    $suspect = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-suspect-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
-    $ambiguous = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-ambig-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $suspect = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-suspect-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $ambiguous = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-ambig-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($suspect->outcome)->toBe(RewardEvaluationOutcome::Held)
         ->and($suspect->reasons)->toBe(['fraud_suspect_held'])
@@ -450,7 +450,7 @@ it('records cash candidates as held prerequisites, never approved money', functi
     $reader->seed(RewardLedgerFixtures::fact('src-cash-1', $memberId));
 
     $action = new EvaluateRewardEntitlementAction($reader);
-    $result = $action->handle($program, RewardComponent::Cash, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cash-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $result = $action->handle((string) $program->getKey(), RewardComponent::Cash, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-cash-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($result->outcome)->toBe(RewardEvaluationOutcome::Held)
         ->and($result->reasons)->toBe(['financial_readiness_pending'])
@@ -487,7 +487,7 @@ it('freezes a selected points variant in the held policy snapshot', function ():
     $reader->seed(RewardLedgerFixtures::fact('src-held-variant-points', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -514,7 +514,7 @@ it('records benefit candidates as held prerequisites with exact amount snapshots
     $reader->seed(RewardLedgerFixtures::fact('src-benefit-1', $memberId));
 
     $action = new EvaluateRewardEntitlementAction($reader);
-    $result = $action->handle($program, RewardComponent::Benefit, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-benefit-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $result = $action->handle((string) $program->getKey(), RewardComponent::Benefit, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-benefit-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($result->outcome)->toBe(RewardEvaluationOutcome::Held)
         ->and($result->reasons)->toBe(['financial_readiness_pending'])
@@ -533,7 +533,7 @@ it('proceeds on corrected sources while freezing the correction evidence', funct
     ]));
 
     $action = new EvaluateRewardEntitlementAction($reader);
-    $result = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-corr-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $result = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-corr-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($result->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($result->award->source_snapshot['correction_status'])->toBe('corrected')
@@ -549,8 +549,8 @@ it('qualifies preclaim facts inside the published lookback and rejects outside',
 
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    $inside = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-pre-in-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
-    $outside = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-pre-out-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $inside = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-pre-in-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $outside = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-pre-out-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($inside->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($outside->outcome)->toBe(RewardEvaluationOutcome::Rejected)
@@ -566,14 +566,14 @@ it('aborts when the source fact changes mid-evaluation and succeeds on retry', f
     $reader = new FakeRewardSourceFactReader(['src-chg-1' => [$first, $changed]]);
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    expect(fn () => $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-chg-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
+    expect(fn () => $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-chg-1', CarbonImmutable::parse('2026-06-15T00:00:00Z')))
         ->toThrow(InvalidArgumentException::class, 'Source fact changed');
 
     expect(RewardAward::query()->count())->toBe(0);
 
     $steady = new FakeRewardSourceFactReader;
     $steady->seed($first);
-    $retry = (new EvaluateRewardEntitlementAction($steady))->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-chg-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $retry = (new EvaluateRewardEntitlementAction($steady))->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-chg-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($retry->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 });
@@ -587,15 +587,15 @@ it('binds participant, purchaser, staff, and sharer roles to distinct identities
 
     $action = new EvaluateRewardEntitlementAction($reader);
 
-    $participant = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Participant, 'src-part-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
-    $staff = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Staff, 'src-staff-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $participant = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Participant, 'src-part-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $staff = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Staff, 'src-staff-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($participant->outcome)->toBe(RewardEvaluationOutcome::Awarded)
         ->and($staff->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $reader->seed(RewardLedgerFixtures::fact('src-part-bad-1', (string) Str::uuid(), '2026-06-12T00:00:00Z', 'attendance', ['actorId' => (string) Str::uuid()]));
 
-    $mismatch = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Participant, 'src-part-bad-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+    $mismatch = $action->handle((string) $program->getKey(), RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Participant, 'src-part-bad-1', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     expect($mismatch->outcome)->toBe(RewardEvaluationOutcome::Rejected)
         ->and($mismatch->reasons)->toBe(['beneficiary_mismatch']);

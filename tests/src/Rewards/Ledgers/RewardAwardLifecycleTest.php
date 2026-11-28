@@ -35,7 +35,7 @@ function lifecycleAward(RewardProgramMode $mode = RewardProgramMode::Points, str
     $component = RewardLedgerFixtures::componentFor($mode);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         $component,
         'user',
         $memberId,
@@ -55,7 +55,7 @@ function heldPointsAward(string $source = 'src-life-held-1'): array
     $reader->seed(RewardLedgerFixtures::fact($source, $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -160,7 +160,7 @@ it('refuses cash and benefit approval and fulfillment while unready', function (
     $reader->seed(RewardLedgerFixtures::fact('src-lcash-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -262,7 +262,7 @@ it('dismisses fraud back to held without approving', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-lfraud-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['fraudStatus' => RewardSourceFraudStatus::Suspect]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

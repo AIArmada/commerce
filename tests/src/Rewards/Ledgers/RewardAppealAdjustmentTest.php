@@ -30,7 +30,7 @@ function appealHarness(string $source = 'src-appeal-1', array $factOverrides = [
     $reader->seed(RewardLedgerFixtures::fact($source, $memberId, '2026-06-12T00:00:00Z', 'attendance', $factOverrides));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -104,7 +104,7 @@ it('overturns rejected awards by appending overrides while the original stands',
     $reader->seed(RewardLedgerFixtures::fact('src-appeal-over-1', $seedMember, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $seedProgram,
+        (string) $seedProgram->getKey(),
         RewardComponent::Points,
         'user',
         $seedMember,

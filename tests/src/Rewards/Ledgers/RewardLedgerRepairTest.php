@@ -124,7 +124,7 @@ it('R1 derives fulfillment expiry from frozen terms and never silently perpetuat
     $reader->seed(RewardLedgerFixtures::fact('src-r1d-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -343,7 +343,7 @@ it('R4 records exact prior states through full award and appeal chains', functio
     $reader->seed(RewardLedgerFixtures::fact('src-r4-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -393,7 +393,7 @@ it('R5 refuses approval and fulfillment after source invalidation', function ():
     $reader->seed(RewardLedgerFixtures::fact('src-r5a-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -416,7 +416,7 @@ it('R5 refuses approval and fulfillment after source invalidation', function ():
     $reader2->seed(RewardLedgerFixtures::fact('src-r5b-1', $member2));
 
     $result2 = (new EvaluateRewardEntitlementAction($reader2))->handle(
-        $program2,
+        (string) $program2->getKey(),
         RewardComponent::Points,
         'user',
         $member2,
@@ -451,7 +451,7 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
     $reader->seed(RewardLedgerFixtures::fact('src-r5c-1', $memberId));
 
     $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $programA,
+        (string) $programA->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -463,7 +463,7 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $second = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $programB,
+        (string) $programB->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -494,7 +494,7 @@ it('R5 keeps held approvals single-claim and single-cap', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-r5e-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -679,7 +679,7 @@ it('R5 refuses overturn when the frozen cap quota is exhausted', function (): vo
     $reader->seed(RewardLedgerFixtures::fact('src-r5f-2', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
     $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -691,7 +691,7 @@ it('R5 refuses overturn when the frozen cap quota is exhausted', function (): vo
     expect($first->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 
     $second = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,

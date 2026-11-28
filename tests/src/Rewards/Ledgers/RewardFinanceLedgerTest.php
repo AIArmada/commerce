@@ -160,7 +160,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     $reader->seed(RewardLedgerFixtures::fact('src-fin-cashrec-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -536,7 +536,7 @@ it('freezes recovery economics at opening time', function (): void {
     $reader->seed(RewardLedgerFixtures::fact('src-fin-frozen-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,

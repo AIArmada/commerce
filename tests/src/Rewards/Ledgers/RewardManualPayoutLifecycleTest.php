@@ -80,7 +80,7 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     $reader->seed(RewardLedgerFixtures::fact($prefix . '-attendance', $memberId));
 
     $result = EvaluateRewardEntitlementAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,
@@ -234,7 +234,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     $this->travelTo(CarbonImmutable::parse('2026-06-15T00:00:00Z'));
 
     $result = EvaluateRewardEntitlementAction::run(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Cash,
         'user',
         $memberId,

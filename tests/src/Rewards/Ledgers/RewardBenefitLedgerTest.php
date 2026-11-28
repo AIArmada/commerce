@@ -452,7 +452,7 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     $reader->seed(RewardLedgerFixtures::fact('src-ben-direct-1', $memberId));
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Benefit,
         'user',
         $memberId,

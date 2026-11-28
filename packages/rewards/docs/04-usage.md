@@ -46,7 +46,7 @@ use AIArmada\Rewards\Data\RewardComponent;
 EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', $enrolledAt);
 
 $result = EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Recipient, $sourceBusinessKey, $occurredAt,
 );
 
@@ -75,13 +75,13 @@ use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 // Sharer-bound (default): the fact must be attributed, or the
 // evaluation freezes a permanent `late_attribution_refused` rejection.
 EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Recipient, $sourceBusinessKey, $occurredAt,
 );
 
 // Actor-bound: the organizer's unattributed attendance still earns.
 EvaluateRewardEntitlementAction::run(
-    $program, RewardComponent::Points, 'user', $memberId,
+    (string) $program->getKey(), RewardComponent::Points, 'user', $memberId,
     RewardBeneficiaryRole::Participant, $sourceBusinessKey, $occurredAt,
 );
 ```

@@ -24,16 +24,16 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Data\RewardProgramStatus;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardEvaluationResult;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
-use AIArmada\Rewards\Support\RewardProgramGuard;
-use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -93,7 +93,7 @@ final readonly class EvaluateRewardEntitlementAction
     ) {}
 
     public function handle(
-        RewardProgram | string $program,
+        string $programId,
         RewardComponent | string $component,
         string $recipientType,
         string $recipientId,
@@ -104,7 +104,7 @@ final readonly class EvaluateRewardEntitlementAction
         ?string $actorId = null,
         string $actorRole = 'system',
     ): RewardEvaluationResult {
-        RewardProgramGuard::findProgramOrFail($program);
+        app(RewardProgramLockApi::class)->readProgram($programId);
 
         $componentEnum = $component instanceof RewardComponent ? $component : RewardComponent::tryFrom($component);
 
@@ -142,7 +142,6 @@ final readonly class EvaluateRewardEntitlementAction
             throw new InvalidArgumentException('Decision time cannot be more than 5 minutes in the future; trusted server time only.');
         }
 
-        $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
         $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
         $firstRead = $reader->read($sourceBusinessKey);
 
@@ -223,39 +222,11 @@ final readonly class EvaluateRewardEntitlementAction
             ]);
         }
 
-        $lockedProgram = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();
+        $programs = app(RewardProgramLockApi::class);
+        $lockedProgram = $programs->readProgram($programId, lock: true);
+        $version = $programs->effectivePolicy($programId, $decision->toIso8601String());
 
-        if (! $lockedProgram instanceof RewardProgram) {
-            throw new InvalidArgumentException('Unknown reward program.');
-        }
-
-        /** @var list<RewardProgramVersion> $versions */
-        $versions = RewardProgramVersion::query()
-            ->where('program_id', $lockedProgram->getKey())
-            ->orderBy('version')
-            ->get()
-            ->all();
-
-        $timeline = array_map(static fn (RewardProgramVersion $version): array => [
-            'id' => (string) $version->getKey(),
-            'version' => (int) $version->version,
-            'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
-        ], $versions);
-
-        $applicable = RewardVersionResolver::resolveAt($timeline, $decision);
-        $version = null;
-
-        if ($applicable !== null) {
-            foreach ($versions as $candidate) {
-                if ((string) $candidate->getKey() === $applicable['id']) {
-                    $version = $candidate;
-
-                    break;
-                }
-            }
-        }
-
-        if (! $version instanceof RewardProgramVersion) {
+        if ($version === null) {
             throw new InvalidArgumentException('Refused: version_missing has no published version at the decision time.');
         }
 
@@ -285,7 +256,7 @@ final readonly class EvaluateRewardEntitlementAction
 
         $componentConfig = $componentResolution['configuration'];
 
-        if ($lockedProgram->status->value !== 'active') {
+        if ($lockedProgram->status !== 'active') {
             throw new InvalidArgumentException('Refused: program_not_active stops new qualification; accrued obligations keep frozen terms.');
         }
 
@@ -297,10 +268,10 @@ final readonly class EvaluateRewardEntitlementAction
             ->lockForUpdate()
             ->get();
 
-        $compatible = array_values(array_filter($version->compatible_with, is_string(...)));
+        $compatible = array_values(array_filter($version->compatibleWith, is_string(...)));
 
         foreach ($claims as $claim) {
-            if ($claim->family_key === $lockedProgram->family_key) {
+            if ($claim->family_key === $lockedProgram->familyKey) {
                 $claimedAward = RewardAward::query()->whereKey($claim->award_id)->first();
 
                 if ($claimedAward instanceof RewardAward
@@ -332,7 +303,7 @@ final readonly class EvaluateRewardEntitlementAction
             }
 
             if (! in_array($claim->family_key, $compatible, true)
-                || ! in_array($lockedProgram->family_key, $claim->compatible_snapshot, true)
+                || ! in_array($lockedProgram->familyKey, $claim->compatible_snapshot, true)
             ) {
                 return $this->recordRejection(
                     $lockedProgram,
@@ -357,10 +328,10 @@ final readonly class EvaluateRewardEntitlementAction
         }
 
         $coveringAcceptance = app(RewardEnrollmentConsentApi::class)->requireConsent(
-            (string) $lockedProgram->getKey(),
+            $lockedProgram->id,
             $recipientType,
             $recipientId,
-            (string) $version->material_terms_hash,
+            $version->materialTermsHash,
             $decision,
         );
         $enrollment = $coveringAcceptance->enrollmentId;
@@ -393,15 +364,15 @@ final readonly class EvaluateRewardEntitlementAction
         $claimedFamilies = $claims->map(fn (RewardSourceComponentClaim $claim): string => $claim->family_key)->all();
 
         $context = new RewardPreviewContext(
-            programFamilyKey: $lockedProgram->family_key,
-            programStatus: $lockedProgram->status,
+            programFamilyKey: $lockedProgram->familyKey,
+            programStatus: RewardProgramStatus::from($lockedProgram->status),
             versionFound: true,
-            versionId: (string) $version->getKey(),
-            versionNumber: (int) $version->version,
+            versionId: $version->id,
+            versionNumber: $version->version,
             versionRules: $rules,
             versionComponents: $components,
-            versionMaterialHash: (string) $version->material_terms_hash,
-            versionEffectiveFrom: CarbonImmutable::parse($version->effective_from)->setTimezone('UTC'),
+            versionMaterialHash: $version->materialTermsHash,
+            versionEffectiveFrom: CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC'),
             compatibleWith: $compatible,
             enrollmentExists: true,
             enrollmentActiveAtDecision: true,
@@ -535,7 +506,7 @@ final readonly class EvaluateRewardEntitlementAction
             );
         }
 
-        $this->consumeCaps($rules, $lockedProgram->family_key, (string) $lockedProgram->getKey(), $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
+        $this->consumeCaps($rules, $lockedProgram->familyKey, $lockedProgram->id, $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
 
         $secondRead = $reader->read($sourceBusinessKey);
 
@@ -569,8 +540,8 @@ final readonly class EvaluateRewardEntitlementAction
             'source_business_key' => $sourceBusinessKey,
             'component' => $component,
             'beneficiary_role' => $role,
-            'family_key' => $lockedProgram->family_key,
-            'program_id' => $lockedProgram->getKey(),
+            'family_key' => $lockedProgram->familyKey,
+            'program_id' => $lockedProgram->id,
             'award_id' => $award->getKey(),
             'compatible_snapshot' => $compatible,
             'claimed_at' => $decision,
@@ -725,8 +696,8 @@ final readonly class EvaluateRewardEntitlementAction
      * @param  array<string, mixed>|null  $extraEvidence
      */
     private function recordHeld(
-        RewardProgram $program,
-        RewardProgramVersion $version,
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
         array $rules,
         string $enrollment,
         RewardEnrollmentConsent $acceptance,
@@ -745,7 +716,7 @@ final readonly class EvaluateRewardEntitlementAction
         ?array $extraEvidence = null,
         ?array $componentConfigOverride = null,
     ): RewardEvaluationResult {
-        $this->consumeCaps($rules, $program->family_key, (string) $program->getKey(), $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
+        $this->consumeCaps($rules, $program->familyKey, $program->id, $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
 
         $secondRead = $reader->read($sourceBusinessKey);
 
@@ -779,10 +750,10 @@ final readonly class EvaluateRewardEntitlementAction
             'source_business_key' => $sourceBusinessKey,
             'component' => $component,
             'beneficiary_role' => $role,
-            'family_key' => $program->family_key,
-            'program_id' => $program->getKey(),
+            'family_key' => $program->familyKey,
+            'program_id' => $program->id,
             'award_id' => $award->getKey(),
-            'compatible_snapshot' => array_values(array_filter($version->compatible_with, is_string(...))),
+            'compatible_snapshot' => array_values(array_filter($version->compatibleWith, is_string(...))),
             'claimed_at' => $decision,
         ]);
 
@@ -802,7 +773,7 @@ final readonly class EvaluateRewardEntitlementAction
      */
     private function obligateHeldCash(
         RewardAward $award,
-        RewardProgram $program,
+        RewardProgramSnapshot $program,
         RewardComponent $component,
         CarbonImmutable $decision,
         string $actorType,
@@ -822,7 +793,7 @@ final readonly class EvaluateRewardEntitlementAction
             throw new InvalidArgumentException('Cash awards must freeze a positive minor-unit amount and currency.');
         }
 
-        $programId = (string) $program->getKey();
+        $programId = $program->id;
 
         app(RewardBudgetApi::class)->reserveObligation(
             $programId,
@@ -844,8 +815,8 @@ final readonly class EvaluateRewardEntitlementAction
      * @param  list<string>  $reasons
      */
     private function recordRejection(
-        RewardProgram $program,
-        RewardProgramVersion $version,
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
         array $rules,
         string $recipientType,
         string $recipientId,
@@ -889,7 +860,7 @@ final readonly class EvaluateRewardEntitlementAction
 
     private function snapshots(
         array $rules,
-        RewardProgramVersion $version,
+        RewardPolicySnapshot $version,
         RewardComponent $component,
         ?RewardEnrollmentConsent $acceptance,
         RewardSourceFact $fact,
@@ -910,10 +881,10 @@ final readonly class EvaluateRewardEntitlementAction
         return [
             'amount' => $componentConfig,
             'policy' => [
-                'policy_version_id' => (string) $version->getKey(),
-                'policy_version' => (int) $version->version,
-                'effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC')->toIso8601String(),
-                'material_terms_hash' => (string) $version->material_terms_hash,
+                'policy_version_id' => $version->id,
+                'policy_version' => $version->version,
+                'effective_from' => CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC')->toIso8601String(),
+                'material_terms_hash' => $version->materialTermsHash,
                 'eligibility' => $rules['eligibility'] ?? [],
                 'windows' => $rules['windows'] ?? [],
                 'stacking' => $rules['stacking'] ?? [],
@@ -941,8 +912,8 @@ final readonly class EvaluateRewardEntitlementAction
      * @param  array<string, mixed>|null  $extraEvidence
      */
     private function insertAward(
-        RewardProgram $program,
-        RewardProgramVersion $version,
+        RewardProgramSnapshot $program,
+        RewardPolicySnapshot $version,
         array $rules,
         ?string $enrollment,
         ?RewardEnrollmentConsent $acceptance,
@@ -964,15 +935,15 @@ final readonly class EvaluateRewardEntitlementAction
         $snapshots = $this->snapshots($rules, $version, $component, $acceptance, $fact, $componentConfigOverride);
 
         $award = RewardAward::query()->create([
-            'program_id' => $program->getKey(),
-            'policy_version_id' => $version->getKey(),
+            'program_id' => $program->id,
+            'policy_version_id' => $version->id,
             'enrollment_id' => $enrollment,
             'acceptance_id' => $acceptance?->acceptanceId,
             'recipient_type' => $recipientType,
             'recipient_id' => $recipientId,
             'beneficiary_role' => $role,
             'source_business_key' => $sourceBusinessKey,
-            'family_key' => $program->family_key,
+            'family_key' => $program->familyKey,
             'component' => $component,
             'status' => $status,
             'amount_snapshot' => $snapshots['amount'],
@@ -1023,9 +994,7 @@ final readonly class EvaluateRewardEntitlementAction
 
     private function familyKeyFor(string $programId): string
     {
-        $program = RewardProgram::query()->whereKey($programId)->first();
-
-        return $program instanceof RewardProgram ? $program->family_key : '';
+        return app(RewardProgramLockApi::class)->readProgram($programId)->familyKey;
     }
 
     private static function isDeadlock(QueryException $exception): bool

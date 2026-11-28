@@ -230,7 +230,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
         $reader->seed(RewardLedgerFixtures::fact('src-race-ver-1', $memberId));
 
         $first = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -573,7 +573,7 @@ it('keeps buckets coherent when correction races spending', function (): void {
         $reader->seed(RewardLedgerFixtures::fact('src-race-corr-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -798,7 +798,7 @@ it('serializes concurrent appeal advances without duplicate decisions', function
         $reader->seed(RewardLedgerFixtures::fact('src-race-appeal-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1019,7 +1019,7 @@ it('serializes concurrent double approvals without duplicate obligations', funct
         $reader->seed(RewardLedgerFixtures::fact('src-race-approve2-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1064,7 +1064,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
         $reader->seed(RewardLedgerFixtures::fact('src-race-ao-rej', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
 
         $held = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1073,7 +1073,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
             CarbonImmutable::parse('2026-06-15T00:00:00Z'),
         );
         $rejected = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1384,7 +1384,7 @@ it('converges attested reversal and release with no resurrection', function (): 
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevrel-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1444,7 +1444,7 @@ it('blocks unattested reversal under release contention, then converges', functi
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevun-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1509,7 +1509,7 @@ it('serializes reversal and capture to exactly one settlement', function (): voi
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevcap-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -1579,7 +1579,7 @@ it('serializes reversal and refund without resurrecting corrected credit', funct
         $reader->seed(RewardLedgerFixtures::fact('src-race-crevref-1', $memberId));
 
         $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,

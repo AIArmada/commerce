@@ -86,7 +86,7 @@ function rewardAuthzHeldAward(bool $suspect = false): RewardAward
     app()->instance(RewardSourceFactReader::class, $reader);
 
     $result = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program->refresh(),
+        (string) $program->getKey(),
         RewardComponent::Recognition,
         'user',
         $memberId,

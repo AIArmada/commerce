@@ -238,7 +238,7 @@ it('refuses evaluation against a foreign program', function (): void {
     expect(fn () => OwnerContext::withOwner(
         $other,
         static fn () => $action->handle(
-            $program,
+            (string) $program->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,

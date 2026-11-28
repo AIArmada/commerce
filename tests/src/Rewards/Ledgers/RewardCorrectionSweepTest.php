@@ -41,7 +41,7 @@ function sweepHarness(string $prefix): array
     $staff = RewardLedgerFixtures::staffId();
 
     $held = $evaluate->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -51,7 +51,7 @@ function sweepHarness(string $prefix): array
     )->award->refresh();
 
     $approved = $evaluate->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -156,7 +156,7 @@ it('rechecks awards through the fact reader when a correction lands', function (
     $reader->seed(RewardLedgerFixtures::fact('src-sweep-3-1', $memberId));
 
     $award = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -202,7 +202,7 @@ it('rechecks through the key source when the key has no readable fact', function
     $reader->seed(RewardLedgerFixtures::fact('src-sweep-4-1', $memberId));
 
     $award = (new EvaluateRewardEntitlementAction($reader))->handle(
-        $program,
+        (string) $program->getKey(),
         RewardComponent::Points,
         'user',
         $memberId,
@@ -286,7 +286,7 @@ it('rechecks an owned program awards under its own owner without an ambient owne
     $award = OwnerContext::withOwner(
         $owner,
         static fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
-            $owned,
+            (string) $owned->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -330,7 +330,7 @@ it('sweeps owned-program awards and the command exits success without an ambient
     $held = OwnerContext::withOwner(
         $owner,
         static fn () => $evaluate->handle(
-            $owned,
+            (string) $owned->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -343,7 +343,7 @@ it('sweeps owned-program awards and the command exits success without an ambient
     $approved = OwnerContext::withOwner(
         $owner,
         static fn () => $evaluate->handle(
-            $owned,
+            (string) $owned->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -406,7 +406,7 @@ it('records a per-award error for a deleted program owner while the sweep contin
     $orphaned = OwnerContext::withOwner(
         $owner,
         static fn () => $evaluate->handle(
-            $owned,
+            (string) $owned->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
@@ -419,7 +419,7 @@ it('records a per-award error for a deleted program owner while the sweep contin
     $globalAward = OwnerContext::withOwner(
         null,
         static fn () => $evaluate->handle(
-            $global,
+            (string) $global->getKey(),
             RewardComponent::Points,
             'user',
             $memberId,
