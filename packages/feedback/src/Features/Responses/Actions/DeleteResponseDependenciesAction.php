@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
+use AIArmada\Contacting\Features\ContactMethods\Actions\DeleteContactMethodsForEntityAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\DeleteSocialProfilesForEntityAction;
 use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
@@ -15,6 +17,8 @@ final readonly class DeleteResponseDependenciesAction implements DeletesResponse
     public function __construct(
         private ReadsOwnedFormIdentity $forms,
         private ManagesTestimonialDependencies $testimonials,
+        private DeleteContactMethodsForEntityAction $contactMethods,
+        private DeleteSocialProfilesForEntityAction $socialProfiles,
     ) {}
 
     public function deleteForForm(string $formId): void
@@ -23,7 +27,28 @@ final readonly class DeleteResponseDependenciesAction implements DeletesResponse
 
         (new FeedbackResponse)->getConnection()->transaction(function () use ($formId): void {
             FeedbackResponse::query()->where('feedback_form_id', $formId)
-                ->chunkById(200, fn ($records) => $records->each->delete());
+                ->select('id')
+                ->chunkById(200, function ($records): void {
+                    $responseIds = $records->pluck('id')->all();
+
+                    if ($responseIds === []) {
+                        return;
+                    }
+
+                    $answerIds = FeedbackAnswer::query()
+                        ->whereIn('feedback_response_id', $responseIds)
+                        ->pluck('id')
+                        ->all();
+
+                    $this->testimonials->deleteForResponses($responseIds, $answerIds);
+
+                    $morphClass = (new FeedbackResponse)->getMorphClass();
+                    $this->contactMethods->executeForEntities($morphClass, $responseIds);
+                    $this->socialProfiles->executeForEntities($morphClass, $responseIds);
+
+                    FeedbackAnswer::query()->whereIn('feedback_response_id', $responseIds)->delete();
+                    FeedbackResponse::query()->whereIn('id', $responseIds)->delete();
+                });
         });
     }
 

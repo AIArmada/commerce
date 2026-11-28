@@ -7,14 +7,12 @@ use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(ManageRemindersAction::class);
     $this->subscriptionManager = app(ManageSubscriptionsAction::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a subscription', function (): void {

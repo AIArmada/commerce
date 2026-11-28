@@ -23,8 +23,8 @@ use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->manager = app(ManageRemindersAction::class);
-    $this->recipient = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->recipient = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('only dispatches pending or scheduled reminders', function (): void {

@@ -10,6 +10,9 @@ interface ManagesTestimonialDependencies
 
     public function deleteForAnswer(string $answerId): void;
 
+    /** @param list<string> $responseIds @param list<string> $answerIds */
+    public function deleteForResponses(array $responseIds, array $answerIds): void;
+
     /** @param list<string> $answerIds */
     public function detachForAnswers(array $answerIds): void;
 }

@@ -17,7 +17,13 @@ final class SetPrimarySocialProfileAction
                 OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
             }
 
+            $parent = $profile->socialable()->lockForUpdate()->firstOrFail();
             $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
+
+            if ((string) $profile->socialable_id !== (string) $parent->getKey()
+                || $profile->socialable_type !== $parent->getMorphClass()) {
+                throw new RuntimeException('The social profile parent changed while locking.');
+            }
             $profile->is_primary = true;
             if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new RuntimeException('The contact write was cancelled.');

@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class ManageRemindersAction implements WritesReminderRecords
@@ -37,6 +38,8 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
     {
         EngagementModelGuard::assertContract($recipient, CanInteract::class, 'recipient');
         EngagementModelGuard::assertContract($subject, Remindable::class, 'subject');
+        EngagementModelGuard::assertWritableIdentity($recipient, 'recipient');
+        EngagementModelGuard::assertWritableIdentity($subject, 'subject');
 
         $reminderType = EngagementModelGuard::requiredString($reminderType, 'reminder_type');
         $channel = EngagementModelGuard::boundedString($options['channel'] ?? null, 'channel');
@@ -174,6 +177,8 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
     {
         EngagementModelGuard::assertContract($recipient, CanInteract::class, 'recipient');
         EngagementModelGuard::assertContract($subject, Remindable::class, 'subject');
+        EngagementModelGuard::assertWritableIdentity($recipient, 'recipient');
+        EngagementModelGuard::assertWritableIdentity($subject, 'subject');
 
         $recipientIdentity = EngagementModelGuard::identity($recipient, 'recipient');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
@@ -201,15 +206,19 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
     public function cancelRecord(Reminder $reminder): void
     {
-        if (Reminder::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
-        }
+        $this->guardOwnerWrite($reminder);
 
         $reminder->getConnection()->transaction(function () use ($reminder): void {
             $locked = Reminder::query()->pending()->whereKey($reminder->getKey())->lockForUpdate()->first();
 
             if ($locked instanceof Reminder) {
-                $locked->update(['status' => ReminderStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+                $locked->forceFill([
+                    'status' => ReminderStatus::Cancelled,
+                    'cancelled_at' => CarbonImmutable::now(),
+                    'claim_token' => null,
+                    'claimed_at' => null,
+                    'claim_expires_at' => null,
+                ])->save();
                 event(new ReminderCancelled(
                     $locked->id,
                     $locked->recipient_type,
@@ -226,9 +235,7 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
     public function markSent(Reminder $reminder): void
     {
-        if (Reminder::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
-        }
+        $this->guardOwnerWrite($reminder);
 
         (new Reminder)->getConnection()->transaction(function () use ($reminder): void {
             $lockedReminder = Reminder::query()
@@ -241,7 +248,13 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 return;
             }
 
-            $lockedReminder->update(['status' => ReminderStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
+            $lockedReminder->forceFill([
+                'status' => ReminderStatus::Sent,
+                'sent_at' => CarbonImmutable::now(),
+                'claim_token' => null,
+                'claimed_at' => null,
+                'claim_expires_at' => null,
+            ])->save();
             event(new ReminderSent(
                 $lockedReminder->id,
                 $lockedReminder->recipient_type,
@@ -257,9 +270,7 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
     public function markFailed(Reminder $reminder, string $reason): void
     {
-        if (Reminder::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
-        }
+        $this->guardOwnerWrite($reminder);
 
         (new Reminder)->getConnection()->transaction(function () use ($reminder, $reason): void {
             $lockedReminder = Reminder::query()
@@ -272,11 +283,14 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 return;
             }
 
-            $lockedReminder->update([
+            $lockedReminder->forceFill([
                 'status' => ReminderStatus::Failed,
                 'failed_at' => CarbonImmutable::now(),
                 'failure_reason' => $reason,
-            ]);
+                'claim_token' => null,
+                'claimed_at' => null,
+                'claim_expires_at' => null,
+            ])->save();
             event(new ReminderFailed(
                 $lockedReminder->id,
                 $lockedReminder->recipient_type,
@@ -289,6 +303,197 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 $reason,
             ));
         });
+    }
+
+    public function claimForDelivery(
+        Reminder $reminder,
+        CarbonImmutable $now,
+        string $claimToken,
+        CarbonImmutable $claimExpiresAt,
+        int $maxAttempts,
+    ): bool {
+        $this->guardOwnerWrite($reminder);
+
+        if ($maxAttempts < 1 || $claimToken === '' || $claimExpiresAt->lessThanOrEqualTo($now)) {
+            return false;
+        }
+
+        return Reminder::query()->forOwner()
+            ->whereKey($reminder->getKey())
+            ->pending()
+            ->whereNotNull('remind_at')
+            ->where('remind_at', '<=', $now)
+            ->where(fn (Builder $query): Builder => $query->whereNull('expires_at')->orWhere('expires_at', '>', $now))
+            ->where(fn (Builder $query): Builder => $query->whereNull('claim_expires_at')->orWhere('claim_expires_at', '<=', $now))
+            ->where('attempts', '<', $maxAttempts)
+            ->update([
+                'claim_token' => $claimToken,
+                'claimed_at' => $now,
+                'claim_expires_at' => $claimExpiresAt,
+                'attempts' => DB::raw('attempts + 1'),
+                'updated_at' => $now,
+            ]) === 1;
+    }
+
+    public function completeClaim(Reminder $reminder, string $claimToken): bool
+    {
+        $this->guardOwnerWrite($reminder);
+
+        if ($claimToken === '') {
+            return false;
+        }
+
+        return (new Reminder)->getConnection()->transaction(function () use ($reminder, $claimToken): bool {
+            $now = CarbonImmutable::now();
+            $updated = Reminder::query()->forOwner()
+                ->whereKey($reminder->getKey())
+                ->pending()
+                ->where('claim_token', $claimToken)
+                ->update([
+                    'status' => ReminderStatus::Sent,
+                    'sent_at' => $now,
+                    'claim_token' => null,
+                    'claimed_at' => null,
+                    'claim_expires_at' => null,
+                    'updated_at' => $now,
+                ]);
+
+            if ($updated !== 1) {
+                return false;
+            }
+
+            event(new ReminderSent(
+                $reminder->id,
+                $reminder->recipient_type,
+                $reminder->recipient_id,
+                $reminder->remindable_type,
+                $reminder->remindable_id,
+                $reminder->owner_type,
+                $reminder->owner_id,
+                $reminder->reminder_type,
+            ));
+
+            return true;
+        });
+    }
+
+    public function failClaim(Reminder $reminder, string $claimToken, string $reason): bool
+    {
+        $this->guardOwnerWrite($reminder);
+
+        if ($claimToken === '') {
+            return false;
+        }
+
+        return (new Reminder)->getConnection()->transaction(function () use ($reminder, $claimToken, $reason): bool {
+            $now = CarbonImmutable::now();
+            $updated = Reminder::query()->forOwner()
+                ->whereKey($reminder->getKey())
+                ->pending()
+                ->where('claim_token', $claimToken)
+                ->update([
+                    'status' => ReminderStatus::Failed,
+                    'failed_at' => $now,
+                    'failure_reason' => $reason,
+                    'claim_token' => null,
+                    'claimed_at' => null,
+                    'claim_expires_at' => null,
+                    'updated_at' => $now,
+                ]);
+
+            if ($updated !== 1) {
+                return false;
+            }
+
+            event(new ReminderFailed(
+                $reminder->id,
+                $reminder->recipient_type,
+                $reminder->recipient_id,
+                $reminder->remindable_type,
+                $reminder->remindable_id,
+                $reminder->owner_type,
+                $reminder->owner_id,
+                $reminder->reminder_type,
+                $reason,
+            ));
+
+            return true;
+        });
+    }
+
+    public function failExhaustedClaim(Reminder $reminder, CarbonImmutable $now, int $maxAttempts): bool
+    {
+        $this->guardOwnerWrite($reminder);
+
+        if ($maxAttempts < 1) {
+            return false;
+        }
+
+        return (new Reminder)->getConnection()->transaction(function () use ($reminder, $now, $maxAttempts): bool {
+            $reason = 'Reminder delivery attempts exhausted.';
+            $updated = Reminder::query()->forOwner()
+                ->whereKey($reminder->getKey())
+                ->pending()
+                ->whereNotNull('remind_at')
+                ->where('remind_at', '<=', $now)
+                ->where(fn (Builder $query): Builder => $query->whereNull('expires_at')->orWhere('expires_at', '>', $now))
+                ->where('attempts', '>=', $maxAttempts)
+                ->where(fn (Builder $query): Builder => $query->whereNull('claim_expires_at')->orWhere('claim_expires_at', '<=', $now))
+                ->update([
+                    'status' => ReminderStatus::Failed,
+                    'failed_at' => $now,
+                    'failure_reason' => $reason,
+                    'claim_token' => null,
+                    'claimed_at' => null,
+                    'claim_expires_at' => null,
+                    'updated_at' => $now,
+                ]);
+
+            if ($updated !== 1) {
+                return false;
+            }
+
+            event(new ReminderFailed(
+                $reminder->id,
+                $reminder->recipient_type,
+                $reminder->recipient_id,
+                $reminder->remindable_type,
+                $reminder->remindable_id,
+                $reminder->owner_type,
+                $reminder->owner_id,
+                $reminder->reminder_type,
+                $reason,
+            ));
+
+            return true;
+        });
+    }
+
+    public function releaseClaim(Reminder $reminder, string $claimToken): bool
+    {
+        $this->guardOwnerWrite($reminder);
+
+        if ($claimToken === '') {
+            return false;
+        }
+
+        return Reminder::query()->forOwner()
+            ->whereKey($reminder->getKey())
+            ->pending()
+            ->where('claim_token', $claimToken)
+            ->update([
+                'claim_token' => null,
+                'claimed_at' => null,
+                'claim_expires_at' => null,
+                'updated_at' => CarbonImmutable::now(),
+            ]) === 1;
+    }
+
+    private function guardOwnerWrite(Reminder $reminder): void
+    {
+        if (Reminder::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
+        }
     }
 
     /**

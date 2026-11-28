@@ -7,14 +7,12 @@ use AIArmada\Engagement\Events\FollowCreated;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageFollowsAction;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->manager = app(ManageInteractionsAction::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a follow', function (): void {
@@ -43,8 +41,8 @@ it('unfollows without deleting', function (): void {
 
 it('unfollows a muted follow without decrementing active follower counts twice', function (): void {
     $manager = app(ManageFollowsAction::class);
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
     $follow = $manager->follow($actor, $subject);
     $manager->muteFollow($actor, $subject);
     $manager->unfollow($actor, $subject);

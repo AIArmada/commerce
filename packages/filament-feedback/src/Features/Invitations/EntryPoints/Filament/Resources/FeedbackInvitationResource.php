@@ -59,14 +59,16 @@ final class FeedbackInvitationResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('effective_status')
                     ->badge()
-                    ->color(fn (FeedbackInvitationStatus $state): string => match ($state) {
-                        FeedbackInvitationStatus::Pending => 'gray',
-                        FeedbackInvitationStatus::Sent => 'info',
-                        FeedbackInvitationStatus::Opened => 'warning',
-                        FeedbackInvitationStatus::Started => 'warning',
-                        FeedbackInvitationStatus::Submitted => 'success',
-                        FeedbackInvitationStatus::Expired => 'danger',
-                        FeedbackInvitationStatus::Cancelled => 'danger',
+                    ->formatStateUsing(fn (FeedbackInvitationStatus | string $state): string => $state instanceof FeedbackInvitationStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackInvitationStatus | string $state): string => match ($state instanceof FeedbackInvitationStatus ? $state->value : $state) {
+                        'pending' => 'gray',
+                        'sent' => 'info',
+                        'opened' => 'warning',
+                        'started' => 'warning',
+                        'submitted' => 'success',
+                        'expired' => 'danger',
+                        'cancelled' => 'danger',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('sent_at')
                     ->dateTime()

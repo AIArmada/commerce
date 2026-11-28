@@ -41,6 +41,8 @@ return [
     /* Reminder */
     'reminder' => [
         'batch_size' => (int) env('ENGAGEMENT_REMINDER_BATCH_SIZE', 100),
+        'claim_ttl' => (int) env('ENGAGEMENT_REMINDER_CLAIM_TTL', 300),
+        'max_attempts' => (int) env('ENGAGEMENT_REMINDER_MAX_ATTEMPTS', 3),
         'default_channels' => ['mail', 'database'],
     ],
 

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/src/Engagement/Helpers.php';
+
 if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSignedUploadUrl')) {
     require_once __DIR__ . '/Support/Shims/Facades/Livewire/Features/SupportFileUploads/GenerateSignedUploadUrl.php';
 }

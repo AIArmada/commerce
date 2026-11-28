@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Counters\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Engagement\Events\BookmarkArchived;
 use AIArmada\Engagement\Events\BookmarkCreated;
 use AIArmada\Engagement\Events\BookmarkRemoved;
@@ -45,6 +47,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     private function valueByIdentity(string $subjectType, string $subjectId, string $counterType, string $counterKey): int
     {
         $counter = EngagementCounter::query()
+            ->forOwner()
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
             ->where('counter_type', $counterType)
@@ -81,24 +84,26 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     public function recalculate(mixed $subject): void
     {
         $subjectType = $subject->getMorphClass();
-        $subjectId = $subject->getKey();
+        $subjectId = (string) $subject->getKey();
 
-        $counters = $this->interactions->aggregateCounters($subjectType, (string) $subjectId);
+        $this->withLockedCounters($subjectType, $subjectId, ['bookmarks', 'followers'], function () use ($subjectType, $subjectId): void {
+            $counters = $this->interactions->aggregateCounters($subjectType, $subjectId);
 
-        foreach ($counters as $type => $count) {
-            EngagementCounter::query()->forOwner()->updateOrCreate(
-                [
-                    'subject_type' => $subjectType,
-                    'subject_id' => $subjectId,
-                    'counter_type' => $type,
-                    'counter_key' => '',
-                ],
-                [
-                    'count_value' => $count,
-                    'recalculated_at' => CarbonImmutable::now(),
-                ],
-            );
-        }
+            foreach ($counters as $type => $count) {
+                EngagementCounter::query()->forOwner()->updateOrCreate(
+                    [
+                        'subject_type' => $subjectType,
+                        'subject_id' => $subjectId,
+                        'counter_type' => $type,
+                        'counter_key' => '',
+                    ],
+                    [
+                        'count_value' => $count,
+                        'recalculated_at' => CarbonImmutable::now(),
+                    ],
+                );
+            }
+        });
 
         $this->recalculateResponses($subject);
         $this->recalculateReactions($subject);
@@ -106,12 +111,16 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function recalculateBookmarks(mixed $subject): void
     {
-        $this->recalculateBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+        $type = $subject->getMorphClass();
+        $id = (string) $subject->getKey();
+        $this->withLockedCounters($type, $id, ['bookmarks'], fn () => $this->recalculateBookmarksByIdentity($type, $id));
     }
 
     public function recalculateFollowers(mixed $subject): void
     {
-        $this->recalculateFollowersByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+        $type = $subject->getMorphClass();
+        $id = (string) $subject->getKey();
+        $this->withLockedCounters($type, $id, ['followers'], fn () => $this->recalculateFollowersByIdentity($type, $id));
     }
 
     private function recalculateFollowersByIdentity(string $subjectType, string $subjectId): void
@@ -150,7 +159,9 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function recalculateResponses(mixed $subject, ?string $responseType = null): void
     {
-        $this->recalculateResponsesByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $responseType);
+        $type = $subject->getMorphClass();
+        $id = (string) $subject->getKey();
+        $this->withLockedCounters($type, $id, ['responses'], fn () => $this->recalculateResponsesByIdentity($type, $id, $responseType));
     }
 
     private function recalculateResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): void
@@ -226,7 +237,9 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function recalculateReactions(mixed $subject, ?string $reactionType = null): void
     {
-        $this->recalculateReactionsByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $reactionType);
+        $type = $subject->getMorphClass();
+        $id = (string) $subject->getKey();
+        $this->withLockedCounters($type, $id, ['reactions'], fn () => $this->recalculateReactionsByIdentity($type, $id, $reactionType));
     }
 
     private function recalculateReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): void
@@ -300,6 +313,47 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         return array_values(array_unique(array_merge(array_keys($counts), $storedKeys)));
     }
 
+    /** @param list<string> $counterTypes */
+    private function withLockedCounters(string $subjectType, string $subjectId, array $counterTypes, callable $write): void
+    {
+        (new EngagementCounter)->getConnection()->transaction(function () use ($subjectType, $subjectId, $counterTypes, $write): void {
+            foreach ($counterTypes as $counterType) {
+                $this->lockAggregateCounter($subjectType, $subjectId, $counterType);
+            }
+
+            $write();
+        }, attempts: 3);
+    }
+
+    private function lockAggregateCounter(string $subjectType, string $subjectId, string $counterType): void
+    {
+        $attributes = [
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'counter_type' => $counterType,
+            'counter_key' => '',
+        ];
+
+        $counter = EngagementCounter::query()->forOwner()->where($attributes)->lockForUpdate()->first();
+
+        if ($counter instanceof EngagementCounter) {
+            return;
+        }
+
+        try {
+            (new EngagementCounter)->getConnection()->transaction(static fn (): EngagementCounter => EngagementCounter::query()->create([
+                ...$attributes,
+                'count_value' => 0,
+            ]));
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+        }
+
+        EngagementCounter::query()->forOwner()->where($attributes)->lockForUpdate()->firstOrFail();
+    }
+
     /**
      * Apply one lifecycle transition to the cached counters without a full
      * recount. Events fire inside the originating write transaction, so the
@@ -339,7 +393,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
             ->first();
 
         if (! $counter instanceof EngagementCounter) {
-            if ($delta < 0) {
+            if ($delta < 0 && $counterKey !== '') {
                 return;
             }
 
@@ -358,6 +412,19 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         ]);
     }
 
+    private function inEventOwner(?string $ownerType, ?string $ownerId, callable $callback): void
+    {
+        if (! EngagementCounter::ownerScopeConfig()->enabled) {
+            $callback();
+
+            return;
+        }
+
+        $owner = OwnerTupleParser::fromTypeAndId($ownerType, $ownerId)->toOwnerModelOrFail();
+
+        OwnerContext::withOwner($owner, $callback);
+    }
+
     private function isUniqueConstraintViolation(QueryException $exception): bool
     {
         return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
@@ -365,64 +432,67 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function onFollowCreated(FollowCreated $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1));
     }
 
     public function onFollowRemoved(FollowRemoved $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1));
     }
 
     public function onFollowMuted(FollowMuted $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1));
     }
 
     public function onFollowUnmuted(FollowUnmuted $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1));
     }
 
     public function onReactionCreated(ReactionCreated $event): void
     {
-        $subjectType = $event->subjectType;
-        $subjectId = $event->subjectId;
-
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', '', 1);
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reactionType, 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, function () use ($event): void {
+            $this->withLockedCounters($event->subjectType, $event->subjectId, ['reactions'], function () use ($event): void {
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'reactions', '', 1);
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'reactions', $event->reactionType, 1);
+            });
+        });
     }
 
     public function onReactionRemoved(ReactionRemoved $event): void
     {
-        $subjectType = $event->subjectType;
-        $subjectId = $event->subjectId;
-
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', '', -1);
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reactionType, -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, function () use ($event): void {
+            $this->withLockedCounters($event->subjectType, $event->subjectId, ['reactions'], function () use ($event): void {
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'reactions', '', -1);
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'reactions', $event->reactionType, -1);
+            });
+        });
     }
 
     public function onBookmarkCreated(BookmarkCreated $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', 1));
     }
 
     public function onBookmarkRemoved(BookmarkRemoved $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1));
     }
 
     public function onBookmarkArchived(BookmarkArchived $event): void
     {
-        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, fn () => $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1));
     }
 
     public function onResponseCreated(ResponseCreated $event): void
     {
-        $subjectType = $event->subjectType;
-        $subjectId = $event->subjectId;
-
-        $this->adjustCounter($subjectType, $subjectId, 'responses', '', 1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, function () use ($event): void {
+            $this->withLockedCounters($event->subjectType, $event->subjectId, ['responses'], function () use ($event): void {
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', '', 1);
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', $event->responseType, 1);
+            });
+        });
     }
 
     public function onResponseChanged(ResponseChanged $event): void
@@ -431,19 +501,21 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
             return;
         }
 
-        $subjectType = $event->subjectType;
-        $subjectId = $event->subjectId;
-
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->previousType, -1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, 1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, function () use ($event): void {
+            $this->withLockedCounters($event->subjectType, $event->subjectId, ['responses'], function () use ($event): void {
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', $event->previousType, -1);
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', $event->responseType, 1);
+            });
+        });
     }
 
     public function onResponseCancelled(ResponseCancelled $event): void
     {
-        $subjectType = $event->subjectType;
-        $subjectId = $event->subjectId;
-
-        $this->adjustCounter($subjectType, $subjectId, 'responses', '', -1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, -1);
+        $this->inEventOwner($event->ownerType, $event->ownerId, function () use ($event): void {
+            $this->withLockedCounters($event->subjectType, $event->subjectId, ['responses'], function () use ($event): void {
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', '', -1);
+                $this->adjustCounter($event->subjectType, $event->subjectId, 'responses', $event->responseType, -1);
+            });
+        });
     }
 }

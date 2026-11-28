@@ -10,12 +10,17 @@ use AIArmada\Feedback\Features\Forms\Api\ReadsFormMetrics;
 use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Forms\Api\ReadsSubjectForms;
 use AIArmada\Feedback\Features\Forms\Api\ReadsSubmissionForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Policies\FeedbackFormPolicy;
+use AIArmada\Feedback\Features\Forms\Policies\FeedbackTemplatePolicy;
 use AIArmada\Feedback\Features\Forms\Queries\ReadFormMetricsQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadOwnedFormIdentityQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadSubjectFormsQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadSubmissionFormQuery;
 use AIArmada\Feedback\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -26,6 +31,8 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(ReadsOwnedFormIdentity::class, ReadOwnedFormIdentityQuery::class);
         $app->bind(ReadsSubmissionForm::class, ReadSubmissionFormQuery::class);
         $app->bind(CreatesFormsFromTemplates::class, CreateFeedbackFormFromTemplateAction::class);
+        Gate::policy(FeedbackForm::class, FeedbackFormPolicy::class);
+        Gate::policy(FeedbackTemplate::class, FeedbackTemplatePolicy::class);
     }
 
     public function boot(Application $app): void {}

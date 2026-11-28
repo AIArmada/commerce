@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackFormAction;
@@ -76,6 +77,90 @@ it('deletes the complete feedback form aggregate', function (): void {
         ->and(FeedbackInvitation::query()->count())->toBe(0)
         ->and(FeedbackTestimonial::query()->count())->toBe(0)
         ->and(ContactMethod::query()->count())->toBe(0);
+});
+
+it('deletes a batch of feedback responses and answers with bounded SQL queries', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Batch Delete'));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
+
+    $responses = [];
+
+    foreach (range(1, 30) as $number) {
+        $response = FeedbackResponse::query()->create([
+            'feedback_form_id' => $form->id,
+            'status' => 'submitted',
+            'is_anonymous' => true,
+        ]);
+        $responses[] = $response;
+
+        FeedbackAnswer::query()->create([
+            'feedback_response_id' => $response->id,
+            'feedback_question_id' => $question->id,
+            'text_value' => "Comment {$number}",
+        ]);
+
+        ContactMethod::query()->create([
+            'contactable_type' => $response->getMorphClass(),
+            'contactable_id' => $response->id,
+            'type' => 'email',
+            'purpose' => 'general',
+            'value' => "batch-response-{$number}@example.com",
+        ]);
+
+        SocialProfile::query()->create([
+            'socialable_type' => $response->getMorphClass(),
+            'socialable_id' => $response->id,
+            'platform' => 'facebook',
+            'purpose' => 'general',
+            'handle' => "batch-response-{$number}",
+        ]);
+    }
+
+    foreach (array_slice($responses, 0, 3) as $index => $response) {
+        $testimonial = FeedbackTestimonial::query()->create([
+            'feedback_response_id' => $response->id,
+            'quote' => "Batch testimonial {$index}",
+            'status' => 'pending',
+        ]);
+
+        ContactMethod::query()->create([
+            'contactable_type' => $testimonial->getMorphClass(),
+            'contactable_id' => $testimonial->id,
+            'type' => 'email',
+            'purpose' => 'general',
+            'value' => "batch-testimonial-{$index}@example.com",
+        ]);
+
+        SocialProfile::query()->create([
+            'socialable_type' => $testimonial->getMorphClass(),
+            'socialable_id' => $testimonial->id,
+            'platform' => 'facebook',
+            'purpose' => 'general',
+            'handle' => "batch-testimonial-{$index}",
+        ]);
+    }
+
+    $connection = $form->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        app(DeleteFeedbackFormAction::class)->execute($form);
+        $queryCount = count($connection->getQueryLog());
+    } finally {
+        $connection->disableQueryLog();
+    }
+
+    expect($queryCount)->toBeLessThan(35)
+        ->and(FeedbackResponse::query()->count())->toBe(0)
+        ->and(FeedbackAnswer::query()->count())->toBe(0)
+        ->and(FeedbackTestimonial::query()->count())->toBe(0)
+        ->and(ContactMethod::query()->count())->toBe(0)
+        ->and(SocialProfile::query()->count())->toBe(0);
 });
 
 it('nulls testimonial answer references when deleting a question', function (bool $direct): void {

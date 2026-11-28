@@ -222,8 +222,8 @@ from provider-specific payload fields.
 
 - `cache.idempotency_store` - cache store used for idempotency locks; defaults to `env('CACHE_STORE', 'array')`
 
-> **warning**
-> `IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. With the default `array` store, idempotency keys do **not** dedupe across HTTP requests or queue workers. Set `COMMUNICATIONS_IDEMPOTENCY_STORE` to a shared store (`redis`, `database`, `memcached`) whenever idempotency matters.
+> **info**
+> `IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. The lock is a fast-path guard only: `DispatchManagedNotificationAction` and `CommunicationManagerService::notify()` also enforce a durable, owner-scoped unique constraint on `communications.idempotency_key`. Duplicates are still rejected when the cache is flushed, expires, or uses a per-process store; a shared store simply fails faster. `DispatchManagedNotificationAction::handle()` returns the winning communication on a repeat, while `handleUnique()` additionally throws `RuntimeException`.
 
 - `cache.idempotency_ttl` - lifetime of an acquired idempotency lock, in seconds
 

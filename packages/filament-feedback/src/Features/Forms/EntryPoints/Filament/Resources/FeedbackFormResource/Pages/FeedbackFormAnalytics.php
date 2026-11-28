@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
@@ -14,6 +15,7 @@ use Filament\Resources\Pages\Page;
 final class FeedbackFormAnalytics extends Page
 {
     use InteractsWithRecord;
+    use VerifiesRecordOwnerContext;
 
     protected static string $resource = FeedbackFormResource::class;
 
@@ -27,6 +29,11 @@ final class FeedbackFormAnalytics extends Page
     protected function authorizeAccess(): void
     {
         abort_unless(static::getResource()::canView($this->getRecord()), 403);
+    }
+
+    protected function failOwnerGuard(): void
+    {
+        abort(403);
     }
 
     public function getView(): string

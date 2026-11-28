@@ -70,7 +70,7 @@ final class FollowResource extends Resource
                     'blocked' => 'Blocked',
                 ]),
                 Tables\Filters\SelectFilter::make('follower_type')
-                    ->options(fn (): array => Follow::query()
+                    ->options(fn (): array => OwnerUiScope::apply(Follow::query(), includeGlobal: false)
                         ->select('follower_type')
                         ->distinct()
                         ->orderBy('follower_type')
@@ -78,7 +78,7 @@ final class FollowResource extends Resource
                         ->all())
                     ->label('Follower Type'),
                 Tables\Filters\SelectFilter::make('followable_type')
-                    ->options(fn (): array => Follow::query()
+                    ->options(fn (): array => OwnerUiScope::apply(Follow::query(), includeGlobal: false)
                         ->select('followable_type')
                         ->distinct()
                         ->orderBy('followable_type')
@@ -119,7 +119,6 @@ final class FollowResource extends Resource
                                 return;
                             }
 
-                            $record = ActionRecordResolver::resolve($record);
                             app(ManageInteractionsAction::class)
                                 ->muteFollow($record->follower, $record->followable);
                         });
@@ -131,7 +130,6 @@ final class FollowResource extends Resource
                                 return;
                             }
 
-                            $record = ActionRecordResolver::resolve($record);
                             app(ManageInteractionsAction::class)
                                 ->unfollow($record->follower, $record->followable);
                         });

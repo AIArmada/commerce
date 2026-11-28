@@ -147,7 +147,11 @@ final readonly class ManageFollowsAction
 
             if ($follow) {
                 $wasActive = $follow->status === FollowStatus::Active;
-                $follow->update(['status' => 'unfollowed', 'unfollowed_at' => CarbonImmutable::now()]);
+                $follow->update([
+                    'status' => 'unfollowed',
+                    'unfollowed_at' => CarbonImmutable::now(),
+                    'muted_at' => null,
+                ]);
                 if ($wasActive) {
                     event(new FollowRemoved(
                         $follow->id,
@@ -229,6 +233,8 @@ final readonly class ManageFollowsAction
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
         EngagementModelGuard::assertContract($subject, $subjectContract, 'subject');
+        EngagementModelGuard::assertWritableIdentity($actor, 'actor');
+        EngagementModelGuard::assertWritableIdentity($subject, 'subject');
     }
 
     private function authorize(bool $allowed, string $message): void

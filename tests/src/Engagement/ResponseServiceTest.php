@@ -5,13 +5,11 @@ declare(strict_types=1);
 use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(ManageInteractionsAction::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a response', function (): void {

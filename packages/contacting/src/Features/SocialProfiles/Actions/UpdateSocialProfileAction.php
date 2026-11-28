@@ -37,7 +37,13 @@ final class UpdateSocialProfileAction
                 OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
             }
 
+            $parent = $profile->socialable()->lockForUpdate()->firstOrFail();
             $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
+
+            if ((string) $profile->socialable_id !== (string) $parent->getKey()
+                || $profile->socialable_type !== $parent->getMorphClass()) {
+                throw new RuntimeException('The social profile parent changed while locking.');
+            }
 
             $handleProvided = ! $data->handle instanceof MissingValue;
             $urlProvided = ! $data->url instanceof MissingValue;

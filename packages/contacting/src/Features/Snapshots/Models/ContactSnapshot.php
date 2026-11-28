@@ -8,13 +8,13 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\ContactSnapshotFactory;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
+use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
@@ -36,8 +36,8 @@ use LogicException;
  * @property bool $is_public
  * @property array|null $payload
  * @property array|null $metadata
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property-read Model|Eloquent $snapshotable
  * @property-read Model|Eloquent $owner
  */
@@ -77,6 +77,8 @@ final class ContactSnapshot extends Model
             'is_public' => 'boolean',
             'payload' => 'array',
             'metadata' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
         ];
     }
 

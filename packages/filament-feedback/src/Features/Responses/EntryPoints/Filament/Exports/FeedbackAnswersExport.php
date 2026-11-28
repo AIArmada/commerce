@@ -46,19 +46,52 @@ final class FeedbackAnswersExport extends Exporter
     public static function modifyQuery(Builder $query): Builder
     {
         $query = OwnerUiScope::apply($query, includeGlobal: false);
-        $responseForm = OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false)
-            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_response_id'))
-            ->select('feedback_form_id');
-        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
-            ->whereIn('id', clone $responseForm);
-        $questions = OwnerUiScope::apply(FeedbackQuestion::query(), includeGlobal: false)
-            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_question_id'))
-            ->whereIn('feedback_form_id', clone $responseForm);
 
-        return $query->addSelect([
-            'form_name' => $forms->select('name'),
-            'question_key' => (clone $questions)->select('key'),
-            'question_label' => (clone $questions)->select('label'),
-        ]);
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->qualifyColumn('*'));
+        }
+
+        $responses = OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false)
+            ->select(['id as export_response_id', 'feedback_form_id as response_form_id']);
+        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
+            ->select(['id as export_form_id', 'name']);
+        $questions = OwnerUiScope::apply(FeedbackQuestion::query(), includeGlobal: false)
+            ->select(['id as export_question_id', 'feedback_form_id as question_form_id', 'key', 'label']);
+
+        return $query
+            ->leftJoinSub(
+                $responses->toBase(),
+                'export_responses',
+                fn ($join) => $join->on(
+                    'export_responses.export_response_id',
+                    '=',
+                    $query->getModel()->qualifyColumn('feedback_response_id'),
+                ),
+            )
+            ->leftJoinSub(
+                $forms->toBase(),
+                'export_forms',
+                fn ($join) => $join->on('export_forms.export_form_id', '=', 'export_responses.response_form_id'),
+            )
+            ->leftJoinSub(
+                $questions->toBase(),
+                'export_questions',
+                function ($join) use ($query): void {
+                    $join->on(
+                        'export_questions.export_question_id',
+                        '=',
+                        $query->getModel()->qualifyColumn('feedback_question_id'),
+                    )->on(
+                        'export_questions.question_form_id',
+                        '=',
+                        'export_responses.response_form_id',
+                    );
+                },
+            )
+            ->addSelect([
+                'export_forms.name as form_name',
+                'export_questions.key as question_key',
+                'export_questions.label as question_label',
+            ]);
     }
 }

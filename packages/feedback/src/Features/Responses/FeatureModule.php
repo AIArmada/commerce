@@ -10,12 +10,15 @@ use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
 use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectFeedbackMetrics;
 use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectResponses;
 use AIArmada\Feedback\Features\Responses\Api\ReadsTestimonialSource;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Policies\FeedbackResponsePolicy;
 use AIArmada\Feedback\Features\Responses\Queries\ReadResponseMetricsQuery;
 use AIArmada\Feedback\Features\Responses\Queries\ReadSubjectFeedbackMetricsQuery;
 use AIArmada\Feedback\Features\Responses\Queries\ReadSubjectResponsesQuery;
 use AIArmada\Feedback\Features\Responses\Queries\ReadTestimonialSourceQuery;
 use AIArmada\Feedback\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -26,6 +29,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(ReadsSubjectFeedbackMetrics::class, ReadSubjectFeedbackMetricsQuery::class);
         $app->bind(ReadsTestimonialSource::class, ReadTestimonialSourceQuery::class);
         $app->bind(DeletesResponseDependencies::class, DeleteResponseDependenciesAction::class);
+        Gate::policy(FeedbackResponse::class, FeedbackResponsePolicy::class);
     }
 
     public function boot(Application $app): void {}

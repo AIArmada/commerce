@@ -37,6 +37,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable|null $failed_at
  * @property CarbonImmutable|null $expires_at
  * @property string|null $failure_reason
+ * @property string|null $claim_token
+ * @property CarbonImmutable|null $claimed_at
+ * @property CarbonImmutable|null $claim_expires_at
+ * @property int $attempts
  * @property array|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
@@ -158,7 +162,10 @@ final class Reminder extends Model
         return [
             'status' => ReminderStatus::class,
             'offset_minutes' => 'integer',
+            'attempts' => 'integer',
             'metadata' => 'array',
+            'claimed_at' => 'immutable_datetime',
+            'claim_expires_at' => 'immutable_datetime',
             'remind_at' => 'immutable_datetime',
             'scheduled_at' => 'immutable_datetime',
             'sent_at' => 'immutable_datetime',

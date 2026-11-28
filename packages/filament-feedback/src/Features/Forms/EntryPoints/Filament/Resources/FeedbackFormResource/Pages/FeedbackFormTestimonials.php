@@ -70,7 +70,8 @@ final class FeedbackFormTestimonials extends Page implements HasTable
                 Tables\Columns\TextColumn::make('rating')->numeric(2),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (FeedbackTestimonialStatus $state): string => match ($state->value) {
+                    ->formatStateUsing(fn (FeedbackTestimonialStatus | string $state): string => $state instanceof FeedbackTestimonialStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackTestimonialStatus | string $state): string => match ($state instanceof FeedbackTestimonialStatus ? $state->value : $state) {
                         'pending' => 'gray',
                         'approved' => 'info',
                         'rejected' => 'danger',

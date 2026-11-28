@@ -11,14 +11,17 @@ use AIArmada\Feedback\Features\Responses\Actions\MarkFeedbackResponseAsSpamActio
 use AIArmada\Feedback\Features\Responses\Actions\RejectFeedbackResponseAction;
 use AIArmada\Feedback\Features\Responses\Actions\ReviewFeedbackResponseAction;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Exports\FeedbackResponsesExport;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 final class FeedbackResponseResource extends Resource
 {
@@ -64,10 +67,11 @@ final class FeedbackResponseResource extends Resource
                     ->label('Subject Type'),
                 Tables\Columns\TextColumn::make('respondent_type')
                     ->label('Respondent')
-                    ->visible(fn (): bool => true),
+                    ->state(fn (FeedbackResponse $record): ?string => $record->is_anonymous ? null : $record->respondent_type),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (FeedbackResponseStatus | string $state): string => $state instanceof FeedbackResponseStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackResponseStatus | string $state): string => match ($state instanceof FeedbackResponseStatus ? $state->value : $state) {
                         'draft' => 'gray',
                         'submitted' => 'info',
                         'reviewed' => 'success',
@@ -133,6 +137,7 @@ final class FeedbackResponseResource extends Resource
                     ->action(function (FeedbackResponse $record): void {
                         app(ReviewFeedbackResponseAction::class)->execute($record);
                     })
+                    ->authorize('review')
                     ->visible(fn (FeedbackResponse $record): bool => $record->status === FeedbackResponseStatus::Submitted)
                     ->requiresConfirmation(),
                 Action::make('reject')
@@ -142,6 +147,7 @@ final class FeedbackResponseResource extends Resource
                     ->action(function (FeedbackResponse $record): void {
                         app(RejectFeedbackResponseAction::class)->execute($record);
                     })
+                    ->authorize('reject')
                     ->visible(fn (FeedbackResponse $record): bool => $record->status === FeedbackResponseStatus::Submitted)
                     ->requiresConfirmation(),
                 Action::make('mark_spam')
@@ -151,8 +157,14 @@ final class FeedbackResponseResource extends Resource
                     ->action(function (FeedbackResponse $record): void {
                         app(MarkFeedbackResponseAsSpamAction::class)->execute($record);
                     })
+                    ->authorize('markSpam')
                     ->visible(fn (FeedbackResponse $record): bool => $record->status !== FeedbackResponseStatus::Spam)
                     ->requiresConfirmation(),
+            ])
+            ->bulkActions([
+                ExportBulkAction::make()
+                    ->exporter(FeedbackResponsesExport::class)
+                    ->authorize(fn (): bool => Gate::allows('export', FeedbackResponse::class)),
             ]);
     }
 

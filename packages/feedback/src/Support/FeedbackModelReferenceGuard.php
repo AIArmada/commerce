@@ -46,6 +46,10 @@ final class FeedbackModelReferenceGuard
             throw new InvalidArgumentException('Model reference type and id must both be present or both be null.');
         }
 
+        if (mb_trim($type) === '' || mb_trim($id) === '') {
+            throw new InvalidArgumentException('Model reference type and id must not be blank.');
+        }
+
         $modelClass = Relation::getMorphedModel($type) ?? $type;
 
         if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
@@ -80,6 +84,16 @@ final class FeedbackModelReferenceGuard
 
     public function validate(Model $model): void
     {
-        $this->resolve($model->getMorphClass(), (string) $model->getKey());
+        if (! $model->exists) {
+            throw new InvalidArgumentException('The referenced model must be persisted.');
+        }
+
+        $key = $model->getKey();
+
+        if ((! is_string($key) && ! is_int($key)) || (string) $key === '') {
+            throw new InvalidArgumentException('The referenced model must have a non-empty key.');
+        }
+
+        $this->resolve($model->getMorphClass(), (string) $key);
     }
 }

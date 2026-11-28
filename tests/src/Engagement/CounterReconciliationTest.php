@@ -8,12 +8,10 @@ use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 it('reconciles keyed response and reaction counters after direct writes', function (): void {
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
 
     Response::query()->create([
         'responder_type' => $actor->getMorphClass(),

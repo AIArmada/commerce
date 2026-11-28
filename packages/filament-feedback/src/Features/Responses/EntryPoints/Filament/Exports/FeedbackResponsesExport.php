@@ -7,6 +7,7 @@ namespace AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Expo
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use BackedEnum;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
@@ -31,7 +32,8 @@ final class FeedbackResponsesExport extends Exporter
             ExportColumn::make('respondent_id')
                 ->label('Respondent ID')
                 ->state(static fn (FeedbackResponse $record): ?string => $record->is_anonymous ? null : $record->respondent_id),
-            ExportColumn::make('status'),
+            ExportColumn::make('status')
+                ->formatStateUsing(fn ($state): string => $state instanceof BackedEnum ? (string) $state->value : (string) $state),
             ExportColumn::make('is_anonymous')
                 ->label('Anonymous'),
             ExportColumn::make('score')
@@ -49,9 +51,24 @@ final class FeedbackResponsesExport extends Exporter
     public static function modifyQuery(Builder $query): Builder
     {
         $query = OwnerUiScope::apply($query, includeGlobal: false);
-        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
-            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_form_id'));
 
-        return $query->addSelect(['form_name' => $forms->select('name')]);
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->qualifyColumn('*'));
+        }
+
+        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
+            ->select(['id as export_form_id', 'name']);
+
+        return $query
+            ->leftJoinSub(
+                $forms->toBase(),
+                'export_forms',
+                fn ($join) => $join->on(
+                    'export_forms.export_form_id',
+                    '=',
+                    $query->getModel()->qualifyColumn('feedback_form_id'),
+                ),
+            )
+            ->addSelect(['export_forms.name as form_name']);
     }
 }

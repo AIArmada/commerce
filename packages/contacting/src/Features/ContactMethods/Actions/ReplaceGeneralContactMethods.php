@@ -37,7 +37,7 @@ final readonly class ReplaceGeneralContactMethods
         }
 
         $connection->transaction(function () use ($contactable, $changes): void {
-            $this->references->resolve($contactable->getMorphClass(), (string) $contactable->getKey());
+            $this->references->resolveModel($contactable, 'contact target');
             $contactable->newQuery()->whereKey($contactable->getKey())->lockForUpdate()->firstOrFail();
 
             foreach ($changes as $type => $value) {

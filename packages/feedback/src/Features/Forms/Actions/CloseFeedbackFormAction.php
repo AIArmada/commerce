@@ -9,6 +9,7 @@ use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Events\FeedbackFormClosed;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 final readonly class CloseFeedbackFormAction
 {
@@ -20,6 +21,10 @@ final readonly class CloseFeedbackFormAction
             }
 
             $form = FeedbackForm::query()->whereKey($form->id)->lockForUpdate()->firstOrFail();
+
+            if ($form->status === FeedbackFormStatus::Archived) {
+                throw new RuntimeException('Archived feedback forms cannot be closed.');
+            }
 
             if ($form->status === FeedbackFormStatus::Closed) {
                 return $form;

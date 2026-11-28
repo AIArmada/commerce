@@ -11,7 +11,6 @@ use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 final class CreateContactMethodAction
@@ -40,12 +39,6 @@ final class CreateContactMethodAction
             $data->value,
             $countryCode ?? config('contacting.defaults.country_code'),
         );
-
-        if ($data->type === 'email' && $result['normalized_value'] === null) {
-            throw ValidationException::withMessages([
-                'value' => 'The value must be a valid email address for the email type.',
-            ]);
-        }
 
         $contactMethod = new ContactMethod;
         $contactMethod->contactable()->associate($contactable);

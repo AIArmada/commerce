@@ -9,6 +9,7 @@ use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Events\FeedbackFormPublished;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 final readonly class PublishFeedbackFormAction
 {
@@ -20,6 +21,10 @@ final readonly class PublishFeedbackFormAction
             }
 
             $form = FeedbackForm::query()->whereKey($form->id)->lockForUpdate()->firstOrFail();
+
+            if ($form->status === FeedbackFormStatus::Archived) {
+                throw new RuntimeException('Archived feedback forms cannot be published.');
+            }
 
             if ($form->status === FeedbackFormStatus::Published) {
                 return $form;

@@ -64,7 +64,7 @@ $resolver = app(ReadsInteractionState::class);
 $resolver->isFollowing($user, $speaker);  // bool
 ```
 
-Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never deletes rows — it transitions statuses.
+Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never deletes rows — it transitions statuses. `FollowRemoved` is dispatched only when an `active` follow becomes `unfollowed`; unfollowing an already muted follow clears `muted_at` without emitting a second removal event or decrementing the active-follower counter again.
 
 ## Bookmarking
 
@@ -264,11 +264,61 @@ $due = app(\AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery
 Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
 Reminder lifecycle events carry immutable identifiers, not Eloquent instances.
-Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
-so overlapping command runs skip reminders already claimed or completed. Direct
-`markSent` and `markFailed` calls only transition pending or scheduled reminders;
-terminal reminders are left unchanged. A dispatch failure marks that reminder
-`failed` with the reason and the command continues with the next one.
+Each due reminder is claimed with a persisted compare-and-set on the reminder
+row (`claim_token`, `claimed_at`, `claim_expires_at`, and `attempts`).
+Finalization runs in a short owned database transaction; `ReminderDue` is
+dispatched after the claim is committed and before finalization starts, so
+listeners must not rely on an open transaction. Finalization is fenced by the claim token:
+a stale worker whose lease was taken over cannot mark the reminder `sent` or
+`failed`. Leases default to `reminder.claim_ttl` seconds. A crashed worker is
+recovered after the lease expires, and `reminder.max_attempts` bounds repeated
+attempts; an exhausted reminder is marked failed instead of retrying forever.
+A worker that misses a live claim does not spend the batch budget. Cancelling a
+reminder during delivery wins, and the stale delivery cannot overwrite the
+cancelled status. Expired reminders are never claimed.
+
+Delivery is at-least-once across crashes: an external effect can complete before
+finalization records it. `ReminderDue` carries the active `claimToken`; listeners
+must ignore events whose token no longer matches the reminder claim, and the
+communications listener also ignores reminders that are no longer pending,
+scheduled, or unexpired. Custom listeners must treat `$event->reminderId` as
+their idempotency key and handle repeat attempts safely, for example by
+creating a unique delivery ledger row keyed by the reminder ID, handing off to
+an idempotent provider API, and recording completion. The communications
+integration reuses an existing `Communication` with idempotency key
+`engagement-reminder:{reminderId}` and attaches its reference idempotently. The
+duplicate check is enforced by an owner-scoped unique index on
+`communications.idempotency_key`, so retries remain safe even when the
+idempotency cache is flushed or per-process. No integration promises
+exactly-once delivery for arbitrary downstream effects.
+Direct `markSent` and `markFailed` calls only transition pending or scheduled
+reminders; terminal reminders are left unchanged. A dispatch failure marks that reminder `failed`
+with the reason and the command continues with the next one.
+
+A custom listener can make repeats safe with the immutable reminder ID:
+
+```php
+use AIArmada\Engagement\Events\ReminderDue;
+use App\Models\ReminderDelivery;
+
+final class DeliverReminder
+{
+    public function handle(ReminderDue $event): void
+    {
+        $delivery = ReminderDelivery::query()->firstOrCreate(
+            ['reminder_id' => $event->reminderId],
+            ['status' => 'pending'],
+        );
+
+        if ($delivery->status === 'sent') {
+            return;
+        }
+
+        // Hand off $event->reminderId to an idempotent provider API.
+        $delivery->update(['status' => 'sent', 'sent_at' => now()]);
+    }
+}
+```
 
 Setting the same pending reminder twice (same recipient, subject, type, channel,
 and instant) returns the existing row instead of creating a duplicate.
@@ -368,7 +418,7 @@ $reminders = app(ReadsReminderState::class)->remindersFor($user, $occurrence);
 
 When `aiarmada/events` is installed, the engagement package can bind an `EventEngagementManager` adapter for explicit calls. Event registration remains transactional attendance intent; engagement responses remain social-graph intent. The package does not automatically translate an `Interested` registration or an event-publication event into an engagement response or subscription match.
 
-Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`.
+Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`. Matching runs once per owner partition: tenant-owned subscriptions only match within their own owner context, and global subscriptions only match in the global context. A subject model without owner columns is treated as a global subject and is resolved in each subscription partition.
 
 ```php
 // Sharing a compatible event subject persists a Share record via ManageInteractionsAction

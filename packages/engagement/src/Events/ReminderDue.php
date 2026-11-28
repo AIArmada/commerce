@@ -15,5 +15,6 @@ final readonly class ReminderDue
         public ?string $ownerType,
         public ?string $ownerId,
         public string $reminderType,
+        public ?string $claimToken = null,
     ) {}
 }

@@ -8,16 +8,9 @@ use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Drivers\AnswerValueNormalizer;
 use AIArmada\Feedback\Drivers\InvitationUrlGenerator as DefaultInvitationUrlGenerator;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
-use AIArmada\Feedback\Features\Forms\Policies\FeedbackFormPolicy;
-use AIArmada\Feedback\Features\Forms\Policies\FeedbackTemplatePolicy;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
-use AIArmada\Feedback\Features\Responses\Policies\FeedbackResponsePolicy;
 use AIArmada\Feedback\Platform\ExtensionRegistry;
 use AIArmada\Feedback\Platform\FeatureCatalog;
 use AIArmada\Feedback\Platform\FeatureModule;
-use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -38,10 +31,6 @@ final class FeedbackServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        Gate::policy(FeedbackForm::class, FeedbackFormPolicy::class);
-        Gate::policy(FeedbackResponse::class, FeedbackResponsePolicy::class);
-        Gate::policy(FeedbackTemplate::class, FeedbackTemplatePolicy::class);
-
         $this->app->bind(InvitationUrlGenerator::class, DefaultInvitationUrlGenerator::class);
         $this->app->bind(AnswerNormalizer::class, AnswerValueNormalizer::class);
 

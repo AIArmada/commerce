@@ -85,6 +85,8 @@ final class FeedbackAnalyticsQuery
             (int) config('feedback.analytics.dashboard_cache_ttl', 30),
             function (): array {
                 $responseMetrics = $this->responseMetrics->dashboardMetrics();
+                $totalResponses = (int) $responseMetrics['total_responses'];
+                $submittedResponses = (int) $responseMetrics['submitted_responses'];
 
                 return [
                     'overview' => array_merge($this->formMetrics->counts(), [
@@ -97,7 +99,9 @@ final class FeedbackAnalyticsQuery
                     'csat' => $this->responseMetrics->csat(),
                     'rating_distribution' => $this->responseMetrics->distribution(),
                     'latest_comments' => $this->responseMetrics->latestComments(),
-                    'completion_rate' => $this->completionRate->calculate(),
+                    'completion_rate' => $totalResponses > 0
+                        ? round(($submittedResponses / $totalResponses) * 100, 2)
+                        : 0.0,
                     'testimonials' => $this->testimonialMetrics->counts(),
                 ];
             },

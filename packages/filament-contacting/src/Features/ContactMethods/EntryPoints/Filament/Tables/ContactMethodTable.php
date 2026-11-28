@@ -8,6 +8,7 @@ use AIArmada\Contacting\Enums\ContactMethodType;
 use AIArmada\Contacting\Features\ContactMethods\Actions\DeleteContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Exports\ContactMethodExporter;
 use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Resources\ContactMethodResource;
 use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
@@ -22,6 +23,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\LazyCollection;
 use Throwable;
 
@@ -156,7 +158,21 @@ final class ContactMethodTable
                     ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
 
                 ExportBulkAction::make()
-                    ->visible(fn (): bool => $config->exportsEnabled()),
+                    ->exporter(ContactMethodExporter::class)
+                    ->visible(fn (): bool => $config->exportsEnabled())
+                    ->authorize(function () use ($config): bool {
+                        if (! $config->exportsEnabled()) {
+                            return false;
+                        }
+
+                        $policy = Gate::getPolicyFor(ContactMethod::class);
+
+                        if ($policy === null) {
+                            return true;
+                        }
+
+                        return Gate::allows(method_exists($policy, 'export') ? 'export' : 'viewAny', ContactMethod::class);
+                    }),
             ]);
     }
 }

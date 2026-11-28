@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,19 @@ final class DispatchReminderThroughCommunications
         $reminder = Reminder::ownerScopeConfig()->enabled
             ? OwnerWriteGuard::findOrFailForOwner(Reminder::class, $event->reminderId)
             : Reminder::query()->whereKey($event->reminderId)->firstOrFail();
+
+        if (! in_array($reminder->status, [ReminderStatus::Pending, ReminderStatus::Scheduled], true)) {
+            return;
+        }
+
+        if ($event->claimToken !== null && $reminder->claim_token !== $event->claimToken) {
+            return;
+        }
+
+        if ($reminder->expires_at !== null && ! $reminder->expires_at->isFuture()) {
+            return;
+        }
+
         $recipient = $reminder->recipient;
 
         if (! $recipient instanceof Model) {

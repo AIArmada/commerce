@@ -13,7 +13,9 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
+use InvalidArgumentException;
 use RuntimeException;
+use Spatie\LaravelData\Optional;
 use Throwable;
 
 class CommunicationManagerService implements CommunicationManager
@@ -31,8 +33,9 @@ class CommunicationManagerService implements CommunicationManager
         CommunicationContextData | Model | array | null $context = null,
     ): Communication {
         [$context, $eventReference] = $this->normalizeContext($context);
+        $idempotencyKey = $this->normalizeIdempotencyKey($context);
 
-        if ($context->idempotencyKey === null) {
+        if ($idempotencyKey === null) {
             $communication = $this->dispatcher->handle($notifiable, $notification, $context);
             $this->attachEventReference($communication, $eventReference);
 
@@ -40,19 +43,27 @@ class CommunicationManagerService implements CommunicationManager
         }
 
         $acquired = $this->idempotencyLock->acquire(
-            $context->idempotencyKey,
+            $idempotencyKey,
             (int) config('communications.cache.idempotency_ttl', 3600),
         );
 
         if (! $acquired) {
-            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $context->idempotencyKey);
+            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $idempotencyKey);
         }
 
         try {
-            $communication = $this->dispatcher->handle($notifiable, $notification, $context);
+            $communication = $this->dispatcher->handleUnique($notifiable, $notification, $context);
             $this->attachEventReference($communication, $eventReference);
+        } catch (RuntimeException $exception) {
+            if ($exception->getMessage() === 'Duplicate communication detected for idempotency key: ' . $idempotencyKey) {
+                throw $exception;
+            }
+
+            $this->idempotencyLock->release($idempotencyKey);
+
+            throw $exception;
         } catch (Throwable $exception) {
-            $this->idempotencyLock->release($context->idempotencyKey);
+            $this->idempotencyLock->release($idempotencyKey);
 
             throw $exception;
         }
@@ -75,6 +86,27 @@ class CommunicationManagerService implements CommunicationManager
             referenceId: $eventReference['id'],
             role: 'event',
         );
+    }
+
+    private function normalizeIdempotencyKey(CommunicationContextData $context): ?string
+    {
+        $key = $context->idempotencyKey;
+
+        if ($key === null || $key instanceof Optional) {
+            return null;
+        }
+
+        if (! is_string($key)) {
+            throw new InvalidArgumentException('Communication idempotency key must be a string.');
+        }
+
+        $key = mb_trim($key);
+
+        if ($key === '') {
+            throw new InvalidArgumentException('Communication idempotency key must not be blank.');
+        }
+
+        return $key;
     }
 
     /**

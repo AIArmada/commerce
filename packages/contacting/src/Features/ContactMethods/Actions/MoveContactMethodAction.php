@@ -25,10 +25,7 @@ final readonly class MoveContactMethodAction
                 OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $record->getKey());
             }
 
-            $target = $this->references->resolve($target->getMorphClass(), (string) $target->getKey());
-            if (! $target instanceof Model) {
-                throw new RuntimeException('Contact target must exist.');
-            }
+            $target = $this->references->resolveModel($target, 'contact target');
 
             if ($target->getConnection() !== $record->getConnection()) {
                 throw new LogicException('Contact moves require a shared database connection.');

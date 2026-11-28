@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use AIArmada\Events\Events\EventPublished;
 use AIArmada\Events\Features\Catalog\Models\Event;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
     $this->manager = app(ManageSubscriptionsAction::class);
-    $this->subscriber = new EngagementActor;
+    $this->subscriber = engagementActor();
 });
 
 it('does not auto-match subscriptions when an events publication is dispatched', function (): void {
@@ -40,9 +39,9 @@ it('does not auto-match subscriptions when an events publication is dispatched',
 });
 
 it('does not match subscriptions with non-matching subject', function (): void {
-    $this->manager->subscribe($this->subscriber, new EngagementSubject, 'updates');
+    $this->manager->subscribe($this->subscriber, engagementSubject(), 'updates');
 
-    $subject = new EngagementSubject;
+    $subject = engagementSubject();
 
     $matches = iterator_to_array(
         $this->manager->matchingSubscriptions($subject, 'event_occurrence_published', [])

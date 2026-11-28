@@ -43,14 +43,7 @@ final class ReadResponseMetricsQuery implements ReadsResponseMetrics
 
     public function latestComments(?string $formId = null, int $limit = 10): array
     {
-        $query = FeedbackAnswer::query()
-            ->whereHas('response', function (Builder $query) use ($formId): void {
-                $query->whereIn('status', ['submitted', 'reviewed']);
-
-                if ($formId !== null) {
-                    $query->where('feedback_form_id', $formId);
-                }
-            });
+        $query = FeedbackAnswer::query();
 
         return AnswerQuestionFilter::apply($query, $formId, types: ['short_text', 'long_text'])
             ->whereNotNull('text_value')
@@ -117,9 +110,23 @@ final class ReadResponseMetricsQuery implements ReadsResponseMetrics
             default => 'DATE(submitted_at)',
         };
 
+        $summary = (clone $responses)
+            ->selectRaw(
+                'COUNT(*) as total, ' .
+                'COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as submitted, ' .
+                'AVG(CASE WHEN status IN (?, ?) THEN score END) as average_rating',
+                [
+                    FeedbackResponseStatus::Submitted->value,
+                    FeedbackResponseStatus::Reviewed->value,
+                    FeedbackResponseStatus::Submitted->value,
+                    FeedbackResponseStatus::Reviewed->value,
+                ],
+            )
+            ->first();
+
         return [
-            'total_responses' => (clone $responses)->count(),
-            'submitted_responses' => (clone $completed)->count(),
+            'total_responses' => (int) ($summary?->getAttribute('total') ?? 0),
+            'submitted_responses' => (int) ($summary?->getAttribute('submitted') ?? 0),
             'response_trend' => (clone $completed)
                 ->selectRaw($date . ' as date, COUNT(*) as count')
                 ->whereNotNull('submitted_at')
@@ -129,7 +136,9 @@ final class ReadResponseMetricsQuery implements ReadsResponseMetrics
                 ->pluck('count', 'date')
                 ->reverse()
                 ->toArray(),
-            'average_rating' => (clone $completed)->whereNotNull('score')->avg('score'),
+            'average_rating' => $summary?->getAttribute('average_rating') !== null
+                ? round((float) $summary->getAttribute('average_rating'), 2)
+                : null,
         ];
     }
 

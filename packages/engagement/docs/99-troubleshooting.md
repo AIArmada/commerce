@@ -32,10 +32,14 @@ Check:
 - The notification channels are configured (`engagement.reminder.default_channels`)
 - The recipient model implements `Illuminate\Notifications\Notifiable`
 
-The due-reminder command locks each candidate while dispatching it. An overlapping
-worker may therefore skip a reminder that another worker has already claimed;
-this is expected. A reminder already marked `sent` or `failed` is not transitioned
-again by `markSent` or `markFailed`.
+The due-reminder command claims each candidate with a persisted token and lease
+before dispatching it outside any database transaction. An overlapping worker
+may therefore skip a reminder that another worker has already claimed; this is
+expected. If a worker crashes mid-delivery, the reminder becomes claimable again
+when `engagement.reminder.claim_ttl` expires, until `engagement.reminder.max_attempts`
+is reached. A reminder already marked `sent`, `failed`, or `cancelled` is not
+transitioned again by `markSent` or `markFailed`, and a stale worker cannot
+finalize a reminder whose claim token has changed.
 
 Offset reminders (`offset_minutes`) resolve `remind_at` at creation time from
 `Remindable::reminderAnchorTime()` minus the offset, so they always carry an
@@ -81,7 +85,3 @@ For custom URL generation, bind your own `ShareUrlGenerator` implementation.
 The engagement traits add methods to your models at runtime. If a method is not found, verify:
 - The trait is imported correctly (`use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow`)
 - The model uses the trait in its class definition
-
-### Model class overrides not applied
-
-If you've configured custom model classes in `config/engagement.php` under the `models` key and they're not being used, check that you're resolving models through the contracts (e.g., `ManageInteractionsAction`) rather than instantiating them directly. The contracts use config-resolved model classes.

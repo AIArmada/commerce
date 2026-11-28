@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 final readonly class ValidateContactMethodData
 {
+    public function __construct(private NormalizesEmailAddress $emails) {}
+
     public function execute(ContactMethodData | array $data): ContactMethodData
     {
         if (is_array($data)) {
@@ -35,12 +39,23 @@ final readonly class ValidateContactMethodData
                 $validated['sortOrder'] = (int) $validated['sortOrder'];
             }
 
-            return ContactMethodData::from($validated);
+            return $this->assertEmailFormat(ContactMethodData::from($validated));
         }
 
         Validator::make($data->toArray(), self::rules())->validate();
 
-        return $data;
+        return $this->assertEmailFormat($data);
+    }
+
+    private function assertEmailFormat(ContactMethodData $data): ContactMethodData
+    {
+        if ($data->type !== 'email' || $this->emails->normalize($data->value) !== null) {
+            return $data;
+        }
+
+        throw ValidationException::withMessages([
+            'value' => 'The value must be a valid email address for the email type.',
+        ]);
     }
 
     /**

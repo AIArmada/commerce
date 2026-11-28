@@ -11,7 +11,6 @@ use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 final class UpdateContactMethodAction
@@ -38,7 +37,13 @@ final class UpdateContactMethodAction
                 OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
             }
 
+            $parent = $contactMethod->contactable()->lockForUpdate()->firstOrFail();
             $contactMethod = ContactMethod::query()->whereKey($contactMethod->getKey())->lockForUpdate()->firstOrFail();
+
+            if ((string) $contactMethod->contactable_id !== (string) $parent->getKey()
+                || $contactMethod->contactable_type !== $parent->getMorphClass()) {
+                throw new RuntimeException('The contact method parent changed while locking.');
+            }
 
             $countryCode = $data->countryCode instanceof MissingValue
                 ? $contactMethod->country_code
@@ -49,12 +54,6 @@ final class UpdateContactMethodAction
                 $data->value,
                 $countryCode ?? config('contacting.defaults.country_code'),
             );
-
-            if ($data->type === 'email' && $result['normalized_value'] === null) {
-                throw ValidationException::withMessages([
-                    'value' => 'The value must be a valid email address for the email type.',
-                ]);
-            }
 
             $contactMethod->type = $data->type;
 

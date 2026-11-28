@@ -60,7 +60,8 @@ final class FeedbackFormResponses extends Page implements HasTable
                     ->state(fn (FeedbackResponse $record): ?string => $record->is_anonymous ? null : $record->respondent_type),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (FeedbackResponseStatus $state): string => match ($state->value) {
+                    ->formatStateUsing(fn (FeedbackResponseStatus | string $state): string => $state instanceof FeedbackResponseStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackResponseStatus | string $state): string => match ($state instanceof FeedbackResponseStatus ? $state->value : $state) {
                         'draft' => 'gray',
                         'submitted' => 'info',
                         'reviewed' => 'success',

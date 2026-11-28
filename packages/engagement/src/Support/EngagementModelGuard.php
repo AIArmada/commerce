@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -79,6 +80,26 @@ final class EngagementModelGuard
             'type' => $value->getMorphClass(),
             'id' => (string) $id,
         ];
+    }
+
+    /**
+     * @return array{type: string, id: string}
+     */
+    public static function assertWritableIdentity(object $value, string $argument): array
+    {
+        $identity = self::identity($value, $argument);
+
+        if (! $value instanceof Model || ! $value->exists) {
+            throw new InvalidArgumentException(sprintf('Engagement %s must be persisted.', $argument));
+        }
+
+        if (method_exists($value::class, 'ownerScopeConfig') && $value::class::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner($value::class, $identity['id']);
+        } elseif (! $value->newQuery()->whereKey($identity['id'])->exists()) {
+            throw new InvalidArgumentException(sprintf('Engagement %s does not exist.', $argument));
+        }
+
+        return $identity;
     }
 
     public static function boundedString(mixed $value, string $field, int $max = self::STRING_MAX_LENGTH): ?string

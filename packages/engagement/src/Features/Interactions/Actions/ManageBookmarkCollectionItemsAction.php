@@ -20,6 +20,7 @@ final readonly class ManageBookmarkCollectionItemsAction
     public function addBookmarkToCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
+        EngagementModelGuard::assertWritableIdentity($actor, 'actor');
         $identity = EngagementModelGuard::identity($actor, 'actor');
 
         $notes = EngagementModelGuard::boundedString($options['notes'] ?? null, 'notes', EngagementModelGuard::TEXT_MAX_LENGTH);
@@ -73,6 +74,7 @@ final readonly class ManageBookmarkCollectionItemsAction
     public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
+        EngagementModelGuard::assertWritableIdentity($actor, 'actor');
         $identity = EngagementModelGuard::identity($actor, 'actor');
 
         (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmark, $collection, $identity): void {

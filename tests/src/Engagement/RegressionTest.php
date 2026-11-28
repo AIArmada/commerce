@@ -41,12 +41,13 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('stores the same share token that is embedded in the share url', function (): void {
@@ -175,6 +176,15 @@ it('rejects offsets that cannot be anchored', function (): void {
         }
     };
     $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
+    DB::table('users')->insert([
+        'id' => $subject->getKey(),
+        'name' => 'Private Response Subject',
+        'email' => 'private-response-' . uniqid() . '@example.com',
+        'password' => 'secret',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $subject->exists = true;
 
     expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $subject, 'event', [
         'offset_minutes' => 15,
@@ -445,7 +455,7 @@ it('returns bounded detached snapshots from the feature state queries', function
     $subscriptions = app(ManageSubscriptionsAction::class);
 
     foreach (['State One', 'State Two', 'State Three'] as $name) {
-        $subscriptions->subscribe($this->actor, new EngagementSubject(['name' => $name]), 'updates');
+        $subscriptions->subscribe($this->actor, engagementSubject(['name' => $name]), 'updates');
     }
 
     $resolved = app(ReadsSubscriptionState::class)->subscriptionsFor($this->actor);
@@ -588,7 +598,7 @@ it('returns interaction snapshots through feature APIs without exposing mutable 
         ->and($state->responseFor($this->actor, $this->subject)['id'])->toBe($response->getKey())
         ->and($state->reactionFor($this->actor, $this->subject, 'like')['id'])->toBe($reaction->getKey())
         ->and($state->shareFor($this->actor, $this->subject)['id'])->toBe($share->getKey())
-        ->and($state->responseFor(new EngagementActor, $this->subject))->toBeNull()
+        ->and($state->responseFor(engagementActor(), $this->subject))->toBeNull()
         ->and(fn () => $state->isFollowing('invalid', $this->subject))->toThrow(InvalidArgumentException::class);
 });
 
@@ -600,7 +610,7 @@ it('prevents another actor from modifying bookmark collection membership', funct
         'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
         'status' => BookmarkCollectionStatus::Active,
     ]);
-    $otherActor = new EngagementActor;
+    $otherActor = engagementActor();
 
     expect(fn () => $manager->addBookmarkToCollection($otherActor, $bookmark, $collection))
         ->toThrow(AuthorizationException::class)
@@ -628,7 +638,7 @@ it('replaces existing share parameters without rewriting unrelated query values'
 });
 
 it('rejects missing model keys at each engagement state boundary', function (): void {
-    $missing = new EngagementActor;
+    $missing = engagementActor();
     $missing->setAttribute($missing->getKeyName(), null);
     $interactions = app(ReadsInteractionState::class);
 
@@ -653,6 +663,15 @@ it('honors a subject private response default without resetting existing visibil
 
     $subject = new class extends Model implements Respondable
     {
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        public function getTable(): string
+        {
+            return 'users';
+        }
+
         public function getMorphClass(): string
         {
             return 'private-response-subject';
@@ -674,6 +693,15 @@ it('honors a subject private response default without resetting existing visibil
         }
     };
     $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
+    DB::table('users')->insert([
+        'id' => $subject->getKey(),
+        'name' => 'Private Response Subject',
+        'email' => 'private-response-' . uniqid() . '@example.com',
+        'password' => 'secret',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $subject->exists = true;
 
     $action = app(ManageInteractionsAction::class);
     $response = $action->respond($this->actor, $subject, 'going');

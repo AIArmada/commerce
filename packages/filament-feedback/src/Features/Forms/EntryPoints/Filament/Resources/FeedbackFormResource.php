@@ -56,10 +56,12 @@ final class FeedbackFormResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('purpose')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (FeedbackFormPurpose | string $state): string => $state instanceof FeedbackFormPurpose ? $state->label() : (FeedbackFormPurpose::tryFrom($state)?->label() ?? $state)),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (FeedbackFormStatus | string $state): string => $state instanceof FeedbackFormStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackFormStatus | string $state): string => match ($state instanceof FeedbackFormStatus ? $state->value : $state) {
                         'draft' => 'gray',
                         'published' => 'success',
                         'closed' => 'warning',
@@ -67,7 +69,8 @@ final class FeedbackFormResource extends Resource
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('visibility')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (FeedbackFormVisibility | string $state): string => $state instanceof FeedbackFormVisibility ? $state->label() : $state),
                 Tables\Columns\TextColumn::make('responses_count')
                     ->label('Responses')
                     ->sortable(),
@@ -94,6 +97,7 @@ final class FeedbackFormResource extends Resource
                     ->action(function (FeedbackForm $record): void {
                         app(PublishFeedbackFormAction::class)->execute($record);
                     })
+                    ->authorize('publish')
                     ->visible(fn (FeedbackForm $record): bool => $record->status === FeedbackFormStatus::Draft)
                     ->requiresConfirmation(),
                 Action::make('close')
@@ -103,6 +107,7 @@ final class FeedbackFormResource extends Resource
                     ->action(function (FeedbackForm $record): void {
                         app(CloseFeedbackFormAction::class)->execute($record);
                     })
+                    ->authorize('close')
                     ->visible(fn (FeedbackForm $record): bool => $record->status === FeedbackFormStatus::Published)
                     ->requiresConfirmation(),
                 Action::make('archive')
@@ -112,6 +117,7 @@ final class FeedbackFormResource extends Resource
                     ->action(function (FeedbackForm $record): void {
                         app(ArchiveFeedbackFormAction::class)->execute($record);
                     })
+                    ->authorize('archive')
                     ->visible(fn (FeedbackForm $record): bool => $record->status !== FeedbackFormStatus::Archived)
                     ->requiresConfirmation(),
             ]);

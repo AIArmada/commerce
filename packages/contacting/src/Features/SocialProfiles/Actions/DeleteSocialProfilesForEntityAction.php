@@ -30,4 +30,17 @@ final readonly class DeleteSocialProfilesForEntityAction
                 }
             });
     }
+
+    /**
+     * @param  list<string>  $entityIds
+     */
+    public function executeForEntities(string $morphClass, array $entityIds): void
+    {
+        foreach (array_chunk($entityIds, 200) as $chunk) {
+            SocialProfile::withoutOwnerScope()
+                ->where('socialable_type', $morphClass)
+                ->whereIn('socialable_id', $chunk)
+                ->delete();
+        }
+    }
 }

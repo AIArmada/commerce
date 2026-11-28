@@ -8,11 +8,21 @@ use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
 use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 it('keeps actor and subject trait calls equivalent to manager calls', function (): void {
     $actor = new class extends Model implements CanInteract
     {
         use CanFollow;
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        public function getTable(): string
+        {
+            return 'users';
+        }
 
         public function interactionDisplayName(): string
         {
@@ -27,6 +37,15 @@ it('keeps actor and subject trait calls equivalent to manager calls', function (
     $subject = new class extends Model implements Followable
     {
         use HasFollowers;
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        public function getTable(): string
+        {
+            return 'users';
+        }
 
         public function followableName(): string
         {
@@ -51,6 +70,18 @@ it('keeps actor and subject trait calls equivalent to manager calls', function (
 
     $actor->setAttribute('id', 'trait-actor');
     $subject->setAttribute('id', 'trait-subject');
+
+    foreach ([$actor, $subject] as $record) {
+        DB::table('users')->insert([
+            'id' => $record->getKey(),
+            'name' => 'Trait record',
+            'email' => 'trait-' . $record->getKey() . '-' . uniqid() . '@example.com',
+            'password' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $record->exists = true;
+    }
 
     $manager = app(ManageInteractionsAction::class);
     $viaTrait = $actor->follow($subject);

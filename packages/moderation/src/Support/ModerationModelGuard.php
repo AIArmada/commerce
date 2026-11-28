@@ -63,6 +63,10 @@ final readonly class ModerationModelGuard
 
         $this->assertAllowedActor($class, $type);
 
+        if (! config('moderation.owner.enabled', true)) {
+            return (new $class)->newQuery()->findOrFail($id);
+        }
+
         if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
             return OwnerWriteGuard::findOrFailForOwner($class, $id);
         }

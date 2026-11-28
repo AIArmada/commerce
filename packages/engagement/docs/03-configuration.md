@@ -62,11 +62,16 @@ blocked by default.
 ```php
 'reminder' => [
     'batch_size' => (int) env('ENGAGEMENT_REMINDER_BATCH_SIZE', 100),
+    'claim_ttl' => (int) env('ENGAGEMENT_REMINDER_CLAIM_TTL', 300),
+    'max_attempts' => (int) env('ENGAGEMENT_REMINDER_MAX_ATTEMPTS', 3),
     'default_channels' => ['mail', 'database'],
 ]
 ```
 
-Controls how many reminders are processed per scheduled run and which notification channels to use by default. Reminders use Laravel Notifications for delivery.
+Controls how many reminders are processed per scheduled run, how long a delivery
+claim is held before another worker may recover it, the maximum number of
+delivery attempts, and which notification channels to use by default. Reminders
+use Laravel Notifications for delivery.
 
 ### Notifications
 

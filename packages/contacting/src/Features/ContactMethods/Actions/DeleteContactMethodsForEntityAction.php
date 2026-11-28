@@ -30,4 +30,17 @@ final readonly class DeleteContactMethodsForEntityAction
                 }
             });
     }
+
+    /**
+     * @param  list<string>  $entityIds
+     */
+    public function executeForEntities(string $morphClass, array $entityIds): void
+    {
+        foreach (array_chunk($entityIds, 200) as $chunk) {
+            ContactMethod::withoutOwnerScope()
+                ->where('contactable_type', $morphClass)
+                ->whereIn('contactable_id', $chunk)
+                ->delete();
+        }
+    }
 }

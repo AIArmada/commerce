@@ -30,6 +30,10 @@ final class SendFeedbackInvitationAction
         ?string $phone = null,
         ?int $expiryDays = null,
     ): array {
+        if (mb_trim($formId) === '') {
+            throw new InvalidArgumentException('An invitation requires a persisted feedback form.');
+        }
+
         if ($recipient !== null) {
             $this->referenceGuard->validate($recipient);
         }

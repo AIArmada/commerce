@@ -19,8 +19,11 @@ final readonly class DeleteFeedbackResponseDependentsAction
         }
 
         $response->getConnection()->transaction(function () use ($response): void {
-            $this->testimonials->deleteForResponse($response->id);
-            $response->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
+            $answerIds = $response->answers()->pluck('id')->all();
+
+            $this->testimonials->deleteForResponses([$response->id], $answerIds);
+
+            $response->answers()->delete();
         });
     }
 }

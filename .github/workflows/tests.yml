@@ -72,4 +72,6 @@ jobs:
       - name: Execute tests
         # Disable TIA explicitly because Pest's parallel test-discovery child
         # process does not inherit the `--ci` flag.
+        env:
+          ENGAGEMENT_POSTGRES_CONCURRENCY: 'true'
         run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20

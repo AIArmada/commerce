@@ -10,6 +10,7 @@ use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -26,6 +27,8 @@ final readonly class SendDueRemindersAction
     {
         $now = CarbonImmutable::now();
         $remaining = max(0, (int) config('engagement.reminder.batch_size', 100));
+        $claimSeconds = max(1, (int) config('engagement.reminder.claim_ttl', 300));
+        $maxAttempts = max(1, (int) config('engagement.reminder.max_attempts', 3));
         $runner = new OwnerBatchRunner(
             Reminder::class,
             [
@@ -34,7 +37,7 @@ final readonly class SendDueRemindersAction
             ],
         );
 
-        $count = (int) $runner->forEachAcrossOwners(function () use ($now, &$remaining): int {
+        $count = (int) $runner->forEachAcrossOwners(function () use ($now, $claimSeconds, $maxAttempts, &$remaining): int {
             if ($remaining === 0) {
                 return 0;
             }
@@ -45,6 +48,7 @@ final readonly class SendDueRemindersAction
 
             do {
                 $query = $this->dueReminders->query($now)
+                    ->where(fn (Builder $query): Builder => $query->whereNull('claim_expires_at')->orWhere('claim_expires_at', '<=', $now))
                     ->orderBy('remind_at')
                     ->orderBy('id');
 
@@ -64,8 +68,15 @@ final readonly class SendDueRemindersAction
                     $lastRemindAt = $reminder->getRawOriginal('remind_at');
                     $lastId = $reminder->getKey();
 
+                    $result = $this->sendReminder($reminder, $claimSeconds, $maxAttempts);
+
+                    if ($result === null) {
+                        continue;
+                    }
+
                     $remaining--;
-                    if ($this->sendReminder($reminder)) {
+
+                    if ($result) {
                         $count++;
                     }
 
@@ -81,41 +92,47 @@ final readonly class SendDueRemindersAction
         return $count;
     }
 
-    private function sendReminder(Reminder $reminder): bool
+    private function sendReminder(Reminder $reminder, int $claimSeconds, int $maxAttempts): ?bool
     {
+        $attemptNow = CarbonImmutable::now();
+        $claimToken = (string) Str::uuid();
+
+        if (! $this->reminderManager->claimForDelivery($reminder, $attemptNow, $claimToken, $attemptNow->addSeconds($claimSeconds), $maxAttempts)) {
+            return $this->reminderManager->failExhaustedClaim($reminder, $attemptNow, $maxAttempts) ? false : null;
+        }
+
         try {
-            return $reminder->getConnection()->transaction(function () use ($reminder): bool {
-                $now = CarbonImmutable::now();
-                $lockedReminder = $this->dueReminders->query($now)
-                    ->whereKey($reminder->getKey())
-                    ->lockForUpdate()
-                    ->first();
+            $claimed = $this->dueReminders->query($attemptNow)
+                ->whereKey($reminder->getKey())
+                ->where('claim_token', $claimToken)
+                ->first();
 
-                if (! $lockedReminder instanceof Reminder) {
-                    return false;
-                }
+            if (! $claimed instanceof Reminder) {
+                $this->reminderManager->releaseClaim($reminder, $claimToken);
 
-                if (! $this->events->hasListeners(ReminderDue::class)) {
-                    throw new RuntimeException('No reminder delivery listener is registered.');
-                }
+                return null;
+            }
 
-                $this->events->dispatch(new ReminderDue(
-                    $lockedReminder->id,
-                    $lockedReminder->recipient_type,
-                    $lockedReminder->recipient_id,
-                    $lockedReminder->remindable_type,
-                    $lockedReminder->remindable_id,
-                    $lockedReminder->owner_type,
-                    $lockedReminder->owner_id,
-                    $lockedReminder->reminder_type,
-                ));
-                $this->reminderManager->markSent($lockedReminder);
+            if (! $this->events->hasListeners(ReminderDue::class)) {
+                throw new RuntimeException('No reminder delivery listener is registered.');
+            }
 
-                return true;
-            });
+            $this->events->dispatch(new ReminderDue(
+                $claimed->id,
+                $claimed->recipient_type,
+                $claimed->recipient_id,
+                $claimed->remindable_type,
+                $claimed->remindable_id,
+                $claimed->owner_type,
+                $claimed->owner_id,
+                $claimed->reminder_type,
+                $claimToken,
+            ));
+
+            return $this->reminderManager->completeClaim($claimed, $claimToken);
         } catch (Throwable $exception) {
             try {
-                $this->reminderManager->markFailed($reminder, Str::limit($exception->getMessage(), 1000) ?: 'Reminder dispatch failed.');
+                $this->reminderManager->failClaim($reminder, $claimToken, Str::limit($exception->getMessage(), 1000) ?: 'Reminder dispatch failed.');
             } catch (Throwable $failure) {
                 report($failure);
             }

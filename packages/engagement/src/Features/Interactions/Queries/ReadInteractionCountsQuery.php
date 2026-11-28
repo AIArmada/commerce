@@ -14,7 +14,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
 {
     public function countBookmarksByIdentity(string $subjectType, string $subjectId): int
     {
-        return Bookmark::query()
+        return Bookmark::query()->forOwner()
             ->where('bookmarkable_type', $subjectType)
             ->where('bookmarkable_id', $subjectId)
             ->where('status', 'active')
@@ -23,7 +23,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
 
     public function countFollowersByIdentity(string $subjectType, string $subjectId): int
     {
-        return Follow::query()
+        return Follow::query()->forOwner()
             ->where('followable_type', $subjectType)
             ->where('followable_id', $subjectId)
             ->where('status', 'active')
@@ -32,7 +32,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
 
     public function countResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): int
     {
-        $query = Response::query()
+        $query = Response::query()->forOwner()
             ->where('respondable_type', $subjectType)
             ->where('respondable_id', $subjectId)
             ->where('status', 'active');
@@ -46,7 +46,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
 
     public function countReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): int
     {
-        $query = Reaction::query()
+        $query = Reaction::query()->forOwner()
             ->where('reactable_type', $subjectType)
             ->where('reactable_id', $subjectId)
             ->where('status', 'active');
@@ -62,7 +62,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
     public function groupedResponseCounts(string $subjectType, string $subjectId): array
     {
         /** @var array<string, int> $counts */
-        $counts = Response::query()
+        $counts = Response::query()->forOwner()
             ->where('respondable_type', $subjectType)
             ->where('respondable_id', $subjectId)
             ->where('status', 'active')
@@ -80,7 +80,7 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
     public function groupedReactionCounts(string $subjectType, string $subjectId): array
     {
         /** @var array<string, int> $counts */
-        $counts = Reaction::query()
+        $counts = Reaction::query()->forOwner()
             ->where('reactable_type', $subjectType)
             ->where('reactable_id', $subjectId)
             ->where('status', 'active')
@@ -97,12 +97,12 @@ final readonly class ReadInteractionCountsQuery implements ReadsInteractionCount
     /** @return array<string, int> */
     public function aggregateCounters(string $subjectType, string $subjectId): array
     {
-        $followers = Follow::query()
+        $followers = Follow::query()->forOwner()
             ->where('followable_type', $subjectType)
             ->where('followable_id', $subjectId)
             ->where('status', 'active')
             ->selectRaw('COUNT(*) as followers');
-        $bookmarks = Bookmark::query()
+        $bookmarks = Bookmark::query()->forOwner()
             ->where('bookmarkable_type', $subjectType)
             ->where('bookmarkable_id', $subjectId)
             ->where('status', 'active')

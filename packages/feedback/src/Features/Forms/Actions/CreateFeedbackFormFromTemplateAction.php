@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Forms\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Features\Forms\Api\CreatesFormsFromTemplates;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final class CreateFeedbackFormFromTemplateAction implements CreatesFormsFromTemplates
 {
@@ -19,15 +21,43 @@ final class CreateFeedbackFormFromTemplateAction implements CreatesFormsFromTemp
 
     public function createForSubject(string $templateSlug, string $subjectType, string $subjectId, array $overrides = []): string
     {
-        $template = FeedbackTemplate::query()
-            ->forOwner(includeGlobal: (bool) config('feedback.owner.include_global_templates', false))
-            ->where('slug', $templateSlug)
-            ->sole();
+        $template = $this->resolveTemplate($templateSlug);
 
         return $this->execute($template, array_merge($overrides, [
             'subject_type' => $subjectType,
             'subject_id' => $subjectId,
         ]))->id;
+    }
+
+    private function resolveTemplate(string $templateSlug): FeedbackTemplate
+    {
+        $config = FeedbackTemplate::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return FeedbackTemplate::query()
+                ->where('slug', $templateSlug)
+                ->sole();
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        try {
+            return FeedbackTemplate::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->where('slug', $templateSlug)
+                ->sole();
+        } catch (ModelNotFoundException $exception) {
+            if ($owner === null || ! (bool) config('feedback.owner.include_global_templates', false)) {
+                throw $exception;
+            }
+        }
+
+        return FeedbackTemplate::query()
+            ->globalOnly()
+            ->where('slug', $templateSlug)
+            ->sole();
     }
 
     public function execute(FeedbackTemplate $template, array $overrides = []): FeedbackForm

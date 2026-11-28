@@ -15,6 +15,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\MissingValue;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ValidateContactMethodData;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
@@ -156,9 +157,7 @@ class Customer extends Model implements Auditable, HasMedia
             OwnerWriteGuard::findOrFailForOwner(static::class, $this->getKey());
         }
 
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
-        }
+        $data = app(ValidateContactMethodData::class)->execute($data);
 
         if ($data->type === 'email') {
             $existingContact = $this->findExistingContactEmail($data->value);

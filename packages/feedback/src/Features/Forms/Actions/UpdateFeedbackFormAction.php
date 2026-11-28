@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Illuminate\Support\Arr;
+use RuntimeException;
 
 final readonly class UpdateFeedbackFormAction
 {
@@ -34,6 +35,10 @@ final readonly class UpdateFeedbackFormAction
 
             $status = $data['status'] ?? $form->status;
             $status = $status instanceof FeedbackFormStatus ? $status : FeedbackFormStatus::from($status);
+
+            if ($form->status === FeedbackFormStatus::Archived && $status !== FeedbackFormStatus::Archived) {
+                throw new RuntimeException('Archived feedback forms cannot be reactivated.');
+            }
 
             return match ($status) {
                 FeedbackFormStatus::Published => $this->publish->execute($form),

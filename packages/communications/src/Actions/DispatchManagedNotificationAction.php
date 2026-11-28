@@ -22,10 +22,12 @@ use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
+use RuntimeException;
+use Spatie\LaravelData\Optional;
 
 final class DispatchManagedNotificationAction
 {
@@ -42,6 +44,38 @@ final class DispatchManagedNotificationAction
         Notification $notification,
         CommunicationContextData $context,
     ): Communication {
+        return $this->execute(
+            $notifiable,
+            $notification,
+            $context,
+            $this->normalizeIdempotencyKey($context),
+        )['communication'];
+    }
+
+    public function handleUnique(
+        mixed $notifiable,
+        Notification $notification,
+        CommunicationContextData $context,
+    ): Communication {
+        $idempotencyKey = $this->normalizeIdempotencyKey($context);
+        $result = $this->execute($notifiable, $notification, $context, $idempotencyKey);
+
+        if (! $result['created']) {
+            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . (string) $idempotencyKey);
+        }
+
+        return $result['communication'];
+    }
+
+    /**
+     * @return array{communication: Communication, created: bool}
+     */
+    private function execute(
+        mixed $notifiable,
+        Notification $notification,
+        CommunicationContextData $context,
+        ?string $idempotencyKey,
+    ): array {
         if (! is_object($notifiable) || ! method_exists($notifiable, 'getKey')) {
             throw new InvalidArgumentException('Notifiable must be an object exposing getKey().');
         }
@@ -50,14 +84,26 @@ final class DispatchManagedNotificationAction
             ? $notifiable->getMorphClass()
             : $notifiable::class;
 
-        [$communication, $deliveryIdsByChannel] = DB::transaction(function () use ($notifiable, $notifiableType, $notification, $context): array {
+        [$communication, $deliveryIdsByChannel, $created] = (new Communication)->getConnection()->transaction(function () use ($notifiable, $notifiableType, $notification, $context, $idempotencyKey): array {
+            if ($idempotencyKey !== null) {
+                $existing = Communication::query()
+                    ->forOwner()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing instanceof Communication) {
+                    return [$existing, [], false];
+                }
+            }
+
             $communication = new Communication;
             $communication->direction = $context->direction;
             $communication->category = $context->category;
             $communication->priority = $context->priority;
             $communication->purpose = $context->purpose;
             $communication->status = CommunicationStatus::Queued;
-            $communication->idempotency_key = $context->idempotencyKey;
+            $communication->idempotency_key = $idempotencyKey;
             $communication->locale = $context->locale;
             $communication->timezone = $context->timezone;
             $scheduledAt = $context->scheduledAt;
@@ -73,7 +119,26 @@ final class DispatchManagedNotificationAction
             $communication->thread_id = $context->threadId;
             $communication->parent_id = $context->parentId;
             $communication->queued_at = CarbonImmutable::now();
-            $communication->save();
+
+            try {
+                $communication->getConnection()->transaction(static fn (): bool => $communication->save());
+            } catch (QueryException $exception) {
+                if ($idempotencyKey === null || ! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+
+                $existing = Communication::query()
+                    ->forOwner()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing instanceof Communication) {
+                    return [$existing, [], false];
+                }
+
+                throw $exception;
+            }
 
             Event::dispatch(new CommunicationCreated(
                 communicationId: $communication->id,
@@ -167,10 +232,10 @@ final class DispatchManagedNotificationAction
                 communicationId: $communication->id,
             ));
 
-            return [$communication, $deliveryIdsByChannel];
+            return [$communication, $deliveryIdsByChannel, true];
         });
 
-        if ($notification instanceof CommunicationContextAware) {
+        if ($created && $notification instanceof CommunicationContextAware) {
             $notification->withCommunicationContext(
                 communicationId: $communication->id,
                 deliveryIdsByChannel: $deliveryIdsByChannel,
@@ -179,7 +244,7 @@ final class DispatchManagedNotificationAction
             );
         }
 
-        if ($deliveryIdsByChannel !== []) {
+        if ($created && $deliveryIdsByChannel !== []) {
             DispatchManagedNotificationJob::dispatch(
                 notifiable: $notifiable,
                 notification: $notification,
@@ -190,6 +255,32 @@ final class DispatchManagedNotificationAction
             )->afterCommit();
         }
 
-        return $communication;
+        return ['communication' => $communication, 'created' => $created];
+    }
+
+    private function normalizeIdempotencyKey(CommunicationContextData $context): ?string
+    {
+        $key = $context->idempotencyKey;
+
+        if ($key === null || $key instanceof Optional) {
+            return null;
+        }
+
+        if (! is_string($key)) {
+            throw new InvalidArgumentException('Communication idempotency key must be a string.');
+        }
+
+        $key = mb_trim($key);
+
+        if ($key === '') {
+            throw new InvalidArgumentException('Communication idempotency key must not be blank.');
+        }
+
+        return $key;
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

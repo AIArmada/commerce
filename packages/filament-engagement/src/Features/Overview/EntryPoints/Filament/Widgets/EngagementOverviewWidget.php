@@ -11,9 +11,9 @@ use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 final class EngagementOverviewWidget extends StatsOverviewWidget
 {
@@ -36,12 +36,17 @@ final class EngagementOverviewWidget extends StatsOverviewWidget
                 $responseQuery = OwnerUiScope::apply(Response::query(), includeGlobal: false);
                 $subscriptionQuery = OwnerUiScope::apply(Subscription::query(), includeGlobal: false);
                 $reminderQuery = OwnerUiScope::apply(Reminder::query(), includeGlobal: false);
-                $totals = DB::query()
+                $now = CarbonImmutable::now();
+                $totals = (new Follow)->getConnection()->query()
                     ->selectSub((clone $followQuery)->where('status', 'active')->selectRaw('COUNT(*)'), 'follows')
                     ->selectSub((clone $bookmarkQuery)->where('status', 'active')->selectRaw('COUNT(*)'), 'bookmarks')
                     ->selectSub((clone $responseQuery)->where('status', 'active')->selectRaw('COUNT(*)'), 'responses')
                     ->selectSub((clone $subscriptionQuery)->where('status', 'active')->selectRaw('COUNT(*)'), 'subscriptions')
-                    ->selectSub((clone $reminderQuery)->whereIn('status', ['pending', 'scheduled'])->selectRaw('COUNT(*)'), 'reminders')
+                    ->selectSub((clone $reminderQuery)
+                        ->whereIn('status', ['pending', 'scheduled'])
+                        ->where('remind_at', '<=', $now)
+                        ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', $now))
+                        ->selectRaw('COUNT(*)'), 'reminders')
                     ->first();
 
                 return [

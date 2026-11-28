@@ -6,8 +6,6 @@ use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
@@ -49,8 +47,8 @@ beforeEach(function (): void {
         }
     });
 
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('enforces every engagement policy decision', function (): void {

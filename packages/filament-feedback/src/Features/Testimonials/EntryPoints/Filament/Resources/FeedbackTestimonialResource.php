@@ -11,11 +11,14 @@ use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialActio
 use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use AIArmada\FilamentFeedback\Features\Testimonials\EntryPoints\Filament\Exports\FeedbackTestimonialsExport;
 use Filament\Actions\Action;
+use Filament\Actions\ExportBulkAction;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 final class FeedbackTestimonialResource extends Resource
 {
@@ -56,7 +59,8 @@ final class FeedbackTestimonialResource extends Resource
                     ->numeric(2),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (FeedbackTestimonialStatus $state): string => match ($state->value) {
+                    ->formatStateUsing(fn (FeedbackTestimonialStatus | string $state): string => $state instanceof FeedbackTestimonialStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackTestimonialStatus | string $state): string => match ($state instanceof FeedbackTestimonialStatus ? $state->value : $state) {
                         'pending' => 'gray',
                         'approved' => 'info',
                         'rejected' => 'danger',
@@ -81,6 +85,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(ApproveFeedbackTestimonialAction::class)->execute($record);
                     })
+                    ->authorize('approve')
                     ->visible(fn (FeedbackTestimonial $record): bool => in_array($record->status, [FeedbackTestimonialStatus::Pending, FeedbackTestimonialStatus::Hidden], true))
                     ->requiresConfirmation(),
                 Action::make('reject')
@@ -90,6 +95,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(RejectFeedbackTestimonialAction::class)->execute($record);
                     })
+                    ->authorize('reject')
                     ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Pending)
                     ->requiresConfirmation(),
                 Action::make('publish')
@@ -99,6 +105,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(PublishFeedbackTestimonialAction::class)->execute($record);
                     })
+                    ->authorize('publish')
                     ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Approved && $record->permission_given_at !== null)
                     ->requiresConfirmation(),
                 Action::make('hide')
@@ -108,8 +115,14 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(HideFeedbackTestimonialAction::class)->execute($record);
                     })
+                    ->authorize('hide')
                     ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Published)
                     ->requiresConfirmation(),
+            ])
+            ->bulkActions([
+                ExportBulkAction::make()
+                    ->exporter(FeedbackTestimonialsExport::class)
+                    ->authorize(fn (): bool => Gate::allows('export', FeedbackTestimonial::class)),
             ]);
     }
 

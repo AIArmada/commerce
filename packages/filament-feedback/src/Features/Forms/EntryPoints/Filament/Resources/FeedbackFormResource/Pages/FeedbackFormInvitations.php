@@ -59,7 +59,8 @@ final class FeedbackFormInvitations extends Page implements HasTable
                 Tables\Columns\TextColumn::make('email'),
                 Tables\Columns\TextColumn::make('effective_status')
                     ->badge()
-                    ->color(fn (FeedbackInvitationStatus $state): string => match ($state->value) {
+                    ->formatStateUsing(fn (FeedbackInvitationStatus | string $state): string => $state instanceof FeedbackInvitationStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackInvitationStatus | string $state): string => match ($state instanceof FeedbackInvitationStatus ? $state->value : $state) {
                         'pending' => 'gray',
                         'sent' => 'info',
                         'opened' => 'warning',

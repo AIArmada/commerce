@@ -18,14 +18,15 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
         $tableName = (string) config('engagement.database.tables.reminders', 'reminders');
-        $connection = Schema::getConnection();
+        $schema = Schema::connection($this->getConnection());
+        $connection = $schema->getConnection();
         $driver = ConnectionDriver::name($connection);
 
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf('Engagement reminder identity migration cannot run on unsupported database driver [%s].', $driver));
         }
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        $schema->create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('remindable_type')->index();
             $table->uuid('remindable_id')->index();
@@ -47,9 +48,14 @@ return new class extends Migration
             $table->timestampTz('expires_at')->nullable();
             $table->text('failure_reason')->nullable();
             $table->{$jsonType}('metadata')->nullable();
+            $table->uuid('claim_token')->nullable();
+            $table->timestampTz('claimed_at')->nullable();
+            $table->timestampTz('claim_expires_at')->nullable();
+            $table->unsignedInteger('attempts')->default(0);
             $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
             $table->index(['status', 'remind_at'], 'engagement_reminders_status_remind_at_idx');
+            $table->index(['status', 'claim_expires_at'], 'engagement_reminders_status_claim_expires_at_idx');
         });
 
         $grammar = $connection->getQueryGrammar();

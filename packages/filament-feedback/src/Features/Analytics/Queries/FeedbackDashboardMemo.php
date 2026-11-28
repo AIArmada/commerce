@@ -25,8 +25,13 @@ final class FeedbackDashboardMemo
     public function dashboard(): array
     {
         $owner = OwnerContext::resolve();
-        OwnerContext::assertResolvedOrExplicitGlobal($owner);
-        $key = OwnerScopeKey::forOwner($owner);
+
+        if ((bool) config('feedback.owner.enabled', true)) {
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $key = OwnerScopeKey::forOwner($owner);
+        } else {
+            $key = 'owner-disabled';
+        }
 
         return $this->dashboards[$key] ??= app(FeedbackAnalyticsQuery::class)->dashboard();
     }

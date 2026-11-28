@@ -25,8 +25,6 @@ use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -190,8 +188,8 @@ it('does not reuse or mutate global engagement records through tenant write acti
     config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
 
     $owner = User::factory()->create();
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
     $interactions = app(ManageInteractionsAction::class);
     $subscriptions = app(ManageSubscriptionsAction::class);
     $reminders = app(ManageRemindersAction::class);
@@ -235,8 +233,8 @@ it('does not reuse or mutate global engagement records through tenant write acti
 it('enforces unique global interaction identities and unbound subscription identities in the database', function (): void {
     config(['engagement.owner.enabled' => true]);
     $owner = User::factory()->create();
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
     $interactions = app(ManageInteractionsAction::class);
     $subscriptions = app(ManageSubscriptionsAction::class);
 
@@ -276,8 +274,8 @@ it('enforces unique global interaction identities and unbound subscription ident
 it('never reuses or removes a globally visible collection item from a tenant write', function (): void {
     config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
     $owner = User::factory()->create();
-    $actor = new EngagementActor;
-    $subject = new EngagementSubject;
+    $actor = engagementActor();
+    $subject = engagementSubject();
     $manager = app(ManageInteractionsAction::class);
 
     [$bookmark, $collection] = OwnerContext::withOwner($owner, fn (): array => [

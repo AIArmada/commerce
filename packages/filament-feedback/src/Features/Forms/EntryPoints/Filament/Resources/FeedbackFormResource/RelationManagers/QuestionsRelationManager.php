@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionAction;
 use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -18,6 +19,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use LogicException;
 
 final class QuestionsRelationManager extends RelationManager
 {
@@ -49,7 +51,7 @@ final class QuestionsRelationManager extends RelationManager
                         TextInput::make('order_column')->numeric()->default(0),
                         Select::make('feedback_section_id')
                             ->label('Section')
-                            ->relationship('section', 'title'),
+                            ->options(fn (): array => $this->sectionOptions()),
                     ])
                     ->action(function (array $data): void {
                         app(SaveFeedbackFormStructureAction::class)->saveQuestion(
@@ -72,7 +74,7 @@ final class QuestionsRelationManager extends RelationManager
                         TextInput::make('order_column')->numeric(),
                         Select::make('feedback_section_id')
                             ->label('Section')
-                            ->relationship('section', 'title'),
+                            ->options(fn (): array => $this->sectionOptions()),
                     ])
                     ->action(function (FeedbackQuestion $record, array $data): void {
                         app(SaveFeedbackFormStructureAction::class)->saveQuestion(
@@ -86,5 +88,22 @@ final class QuestionsRelationManager extends RelationManager
                         app(DeleteFeedbackQuestionAction::class)->execute($record);
                     }),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function sectionOptions(): array
+    {
+        $form = $this->getOwnerRecord();
+
+        if (! $form instanceof FeedbackForm) {
+            throw new LogicException('The question relation manager requires a feedback form owner record.');
+        }
+
+        return $form->sections()
+            ->orderBy('order_column')
+            ->pluck('title', 'id')
+            ->all();
     }
 }

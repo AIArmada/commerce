@@ -157,6 +157,8 @@ final readonly class ManageReactionsAction
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
         EngagementModelGuard::assertContract($subject, $subjectContract, 'subject');
+        EngagementModelGuard::assertWritableIdentity($actor, 'actor');
+        EngagementModelGuard::assertWritableIdentity($subject, 'subject');
     }
 
     private function authorize(bool $allowed, string $message): void

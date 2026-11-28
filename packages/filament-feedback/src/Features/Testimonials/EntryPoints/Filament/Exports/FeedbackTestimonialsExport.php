@@ -6,6 +6,7 @@ namespace AIArmada\FilamentFeedback\Features\Testimonials\EntryPoints\Filament\E
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use BackedEnum;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class FeedbackTestimonialsExport extends Exporter
 {
+    protected static ?string $model = FeedbackTestimonial::class;
+
     public static function getColumns(): array
     {
         return [
@@ -26,7 +29,8 @@ final class FeedbackTestimonialsExport extends Exporter
                 ->label('Organization'),
             ExportColumn::make('rating')
                 ->label('Rating'),
-            ExportColumn::make('status'),
+            ExportColumn::make('status')
+                ->formatStateUsing(fn ($state): string => $state instanceof BackedEnum ? (string) $state->value : (string) $state),
             ExportColumn::make('published_at')
                 ->label('Published At'),
         ];
@@ -37,8 +41,8 @@ final class FeedbackTestimonialsExport extends Exporter
         return 'Your export has been completed.';
     }
 
-    public function query(): Builder
+    public static function modifyQuery(Builder $query): Builder
     {
-        return OwnerUiScope::apply(FeedbackTestimonial::query(), includeGlobal: false);
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 }

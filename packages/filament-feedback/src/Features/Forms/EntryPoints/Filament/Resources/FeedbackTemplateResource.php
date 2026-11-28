@@ -8,12 +8,14 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackTemplateStatus;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 final class FeedbackTemplateResource extends Resource
 {
@@ -51,12 +53,14 @@ final class FeedbackTemplateResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('purpose')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (FeedbackFormPurpose | string $state): string => $state instanceof FeedbackFormPurpose ? $state->label() : (FeedbackFormPurpose::tryFrom($state)?->label() ?? $state)),
                 Tables\Columns\TextColumn::make('category')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (FeedbackTemplateStatus | string $state): string => $state instanceof FeedbackTemplateStatus ? $state->label() : $state)
+                    ->color(fn (FeedbackTemplateStatus | string $state): string => match ($state instanceof FeedbackTemplateStatus ? $state->value : $state) {
                         'draft' => 'gray',
                         'published' => 'success',
                         'archived' => 'danger',
@@ -79,6 +83,7 @@ final class FeedbackTemplateResource extends Resource
                     ->action(function (FeedbackTemplate $record): void {
                         app(CreateFeedbackFormFromTemplateAction::class)->execute($record);
                     })
+                    ->authorize(fn (): bool => Gate::allows('create', FeedbackForm::class))
                     ->requiresConfirmation(),
             ]);
     }

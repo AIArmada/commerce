@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Auth\Access\AuthorizationException;
 
 test('CreateContactSnapshotAction persists snapshots with the source owner', function (): void {
     $customer = Customer::create([
@@ -83,4 +86,33 @@ test('snapshot payloads exclude loaded relations', function (): void {
     expect($snapshot->payload)->not->toHaveKey('owner')
         ->and($snapshot->payload)->not->toHaveKey('contactable')
         ->and($snapshot->payload['value'])->toBe($method->value);
+});
+
+test('snapshots an unscoped target under the verified ambient owner', function (): void {
+    $owner = User::factory()->create();
+
+    config()->set('customers.features.owner.enabled', false);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        $target = Customer::create([
+            'first_name' => 'Ambient',
+            'last_name' => 'Snapshot',
+        ]);
+        $method = $target->addContactMethod(ContactMethodData::email('ambient-' . uniqid() . '@example.com'));
+
+        $snapshot = app(CreateContactSnapshotAction::class)->fromContactMethod($target, $method->id);
+
+        expect($snapshot->owner_type)->toBe($owner->getMorphClass())
+            ->and($snapshot->owner_id)->toBe($owner->getKey());
+    });
+});
+
+test('rejects blank snapshot source references before querying', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Snapshot',
+        'last_name' => 'Blank',
+    ]);
+
+    expect(fn () => app(CreateContactSnapshotAction::class)->fromContactMethod($customer, ' '))
+        ->toThrow(AuthorizationException::class);
 });

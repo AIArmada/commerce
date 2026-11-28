@@ -68,7 +68,7 @@ final class BookmarkResource extends Resource
                     'archived' => 'Archived',
                 ]),
                 Tables\Filters\SelectFilter::make('bookmarker_type')
-                    ->options(fn (): array => Bookmark::query()
+                    ->options(fn (): array => OwnerUiScope::apply(Bookmark::query(), includeGlobal: false)
                         ->select('bookmarker_type')
                         ->distinct()
                         ->orderBy('bookmarker_type')
@@ -76,7 +76,7 @@ final class BookmarkResource extends Resource
                         ->all())
                     ->label('Bookmarker Type'),
                 Tables\Filters\SelectFilter::make('bookmarkable_type')
-                    ->options(fn (): array => Bookmark::query()
+                    ->options(fn (): array => OwnerUiScope::apply(Bookmark::query(), includeGlobal: false)
                         ->select('bookmarkable_type')
                         ->distinct()
                         ->orderBy('bookmarkable_type')
@@ -113,7 +113,6 @@ final class BookmarkResource extends Resource
                                 return;
                             }
 
-                            $record = ActionRecordResolver::resolve($record);
                             app(ManageInteractionsAction::class)
                                 ->removeBookmark($record->bookmarker, $record->bookmarkable);
                         });

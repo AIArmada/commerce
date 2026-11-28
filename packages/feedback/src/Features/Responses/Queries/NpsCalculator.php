@@ -82,14 +82,6 @@ final class NpsCalculator
         /** @var Builder<FeedbackAnswer> $query */
         $query = FeedbackAnswer::query()->whereNotNull('score');
 
-        $query->whereHas('response', function (Builder $q) use ($formId): void {
-            $q->whereIn('status', ['submitted', 'reviewed']);
-
-            if ($formId !== null) {
-                $q->where('feedback_form_id', $formId);
-            }
-        });
-
         AnswerQuestionFilter::apply($query, $formId, $questionKey);
 
         return $query;

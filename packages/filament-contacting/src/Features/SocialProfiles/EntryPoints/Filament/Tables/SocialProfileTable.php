@@ -8,6 +8,7 @@ use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\DeleteSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Exports\SocialProfileExporter;
 use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Resources\SocialProfileResource;
 use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
@@ -21,6 +22,7 @@ use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\LazyCollection;
 use Throwable;
 
@@ -144,7 +146,21 @@ final class SocialProfileTable
                     ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
 
                 ExportBulkAction::make()
-                    ->visible(fn (): bool => $config->exportsEnabled()),
+                    ->exporter(SocialProfileExporter::class)
+                    ->visible(fn (): bool => $config->exportsEnabled())
+                    ->authorize(function () use ($config): bool {
+                        if (! $config->exportsEnabled()) {
+                            return false;
+                        }
+
+                        $policy = Gate::getPolicyFor(SocialProfile::class);
+
+                        if ($policy === null) {
+                            return true;
+                        }
+
+                        return Gate::allows(method_exists($policy, 'export') ? 'export' : 'viewAny', SocialProfile::class);
+                    }),
             ]);
     }
 }

@@ -33,9 +33,11 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
     public function subscribe(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = [], array $options = []): Subscription
     {
         EngagementModelGuard::assertContract($subscriber, CanInteract::class, 'subscriber');
+        EngagementModelGuard::assertWritableIdentity($subscriber, 'subscriber');
 
         if ($subject !== null) {
             EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
+            EngagementModelGuard::assertWritableIdentity($subject, 'subject');
         }
 
         $subscriptionType = EngagementModelGuard::requiredString($subscriptionType, 'subscription_type');
@@ -131,9 +133,11 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
     public function unsubscribe(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = []): void
     {
         EngagementModelGuard::assertContract($subscriber, CanInteract::class, 'subscriber');
+        EngagementModelGuard::assertWritableIdentity($subscriber, 'subscriber');
 
         if ($subject !== null) {
             EngagementModelGuard::assertContract($subject, Subscribable::class, 'subject');
+            EngagementModelGuard::assertWritableIdentity($subject, 'subject');
         }
 
         $subscriptionType = EngagementModelGuard::requiredString($subscriptionType, 'subscription_type');
@@ -217,6 +221,7 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
         $context = SubscriptionCriteria::normalize($context);
 
         $subscriptions = Subscription::query()
+            ->forOwner()
             ->where('status', 'active')
             ->where(function (Builder $query): void {
                 $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
