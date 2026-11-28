@@ -6,6 +6,7 @@ namespace AIArmada\Promotions\Support;
 
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -420,16 +421,6 @@ final class PromotionPerformanceInsights
      */
     private function issuedVoucherModelClass(): ?string
     {
-        foreach ([
-            '\\AIArmada\\Vouchers\\Models\\Voucher',
-        ] as $voucherModelClass) {
-            if (class_exists($voucherModelClass)) {
-                /** @var class-string<Model> $voucherModelClass */
-
-                return $voucherModelClass;
-            }
-        }
-
-        return null;
+        return class_exists(Voucher::class) ? Voucher::class : null;
     }
 }

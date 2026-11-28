@@ -14,6 +14,7 @@ use AIArmada\Promotions\Actions\IncrementPromotionUsage;
 use AIArmada\Promotions\Database\Factories\PromotionFactory;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -225,17 +226,7 @@ class Promotion extends Model implements Auditable
      */
     private static function issuedVoucherModelClass(): ?string
     {
-        foreach ([
-            '\\AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher',
-        ] as $voucherModelClass) {
-            if (class_exists($voucherModelClass)) {
-                /** @var class-string<Model> $voucherModelClass */
-
-                return $voucherModelClass;
-            }
-        }
-
-        return null;
+        return class_exists(Voucher::class) ? Voucher::class : null;
     }
 
     // =========================================================================
