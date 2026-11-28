@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\CarrierOperationResult;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingData;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
 
 // ============================================
 // NullShippingDriver Tests
@@ -34,7 +34,7 @@ it('returns test shipping methods', function (): void {
 
     expect($methods)->not->toBeEmpty();
     expect($methods)->toHaveCount(2);
-    expect($methods->first()->code)->toBe('standard');
+    expect($methods[0]->code)->toBe('standard');
 });
 
 it('returns test rate quotes', function (): void {
@@ -58,8 +58,8 @@ it('returns test rate quotes', function (): void {
 
     expect($rates)->not->toBeEmpty();
     expect($rates)->toHaveCount(2);
-    expect($rates->first())->toBeInstanceOf(RateQuoteData::class);
-    expect($rates->first()->rate)->toBe(0);
+    expect($rates[0])->toBeInstanceOf(RateQuoteData::class);
+    expect($rates[0]->rate)->toBe(0);
 });
 
 it('creates test shipment successfully', function (): void {

@@ -1,0 +1,239 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Jnt\Features\Tracking\Support;
+
+use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
+use AIArmada\Jnt\Data\WebhookData;
+use AIArmada\Jnt\Exceptions\JntConfigurationException;
+use AIArmada\Jnt\Exceptions\JntValidationException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+
+/**
+ * Service for handling J&T Express webhooks.
+ *
+ * Provides signature verification, webhook parsing, and response generation
+ * for J&T Express webhook payloads. All webhook requests must be verified
+ * before processing to ensure they originate from J&T Express.
+ */
+class WebhookService
+{
+    /**
+     * Create a new webhook service instance.
+     *
+     * @param  string  $privateKey  The J&T private key for signature verification
+     */
+    public function __construct(
+        protected ?string $privateKey
+    ) {}
+
+    /**
+     * Verify the webhook signature from J&T Express.
+     *
+     * Uses J&T's signature algorithm: base64_encode(md5($bizContent . $privateKey, true))
+     * with timing-safe comparison to prevent timing attacks.
+     *
+     * @param  string  $digest  The digest header value from J&T webhook request
+     * @param  string  $bizContent  The raw bizContent string from request
+     * @return bool True if signature is valid, false otherwise
+     */
+    public function verifySignature(string $digest, string $bizContent): bool
+    {
+        if ($digest === '' || $digest === '0') {
+            return false;
+        }
+
+        if ($bizContent === '' || $bizContent === '0') {
+            return false;
+        }
+
+        if (mb_strlen($bizContent, '8bit') > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
+            return false;
+        }
+
+        $expected = $this->generateSignature($bizContent);
+
+        // Use timing-safe comparison to prevent timing attacks
+        return hash_equals($expected, $digest);
+    }
+
+    /**
+     * Generate a signature for the given bizContent.
+     *
+     * @param  string  $bizContent  The bizContent to sign
+     * @return string The base64-encoded signature
+     */
+    public function generateSignature(string $bizContent): string
+    {
+        if ($this->privateKey === null || $this->privateKey === '') {
+            throw JntConfigurationException::missingPrivateKey();
+        }
+
+        // J&T's signature algorithm: base64(md5(content + key))
+        return base64_encode(md5($bizContent . $this->privateKey, true));
+    }
+
+    /**
+     * Parse a webhook request into a WebhookData object.
+     *
+     * The request should have already been verified using verifySignature()
+     * before calling this method.
+     *
+     * @param  Request  $request  The incoming webhook request
+     * @return WebhookData The parsed and validated webhook data
+     *
+     * @throws ValidationException If request validation fails
+     */
+    public function parseWebhook(Request $request): WebhookData
+    {
+        // Validate request has required fields
+        $validated = $request->validate([
+            'bizContent' => ['required', 'string'],
+        ]);
+
+        $bizContent = WebhookPayload::decode($validated['bizContent']);
+
+        // Parse tracking details
+        $details = array_map(
+            static function (mixed $detail): TrackingDetailData {
+                if (! is_array($detail)) {
+                    throw JntValidationException::invalidFieldValue('details.*', $detail, 'array');
+                }
+
+                try {
+                    return TrackingDetailData::fromApiArray($detail);
+                } catch (InvalidArgumentException $e) {
+                    throw JntValidationException::fieldValidationFailed('details.*', $e->getMessage());
+                }
+            },
+            $bizContent['details']
+        );
+
+        return new WebhookData(
+            billCode: $bizContent['billCode'],
+            txlogisticId: $bizContent['txlogisticId'] ?? null,
+            details: $details,
+        );
+    }
+
+    /**
+     * Generate a success response for J&T Express.
+     *
+     * Returns the response format expected by J&T Express for successful
+     * webhook processing: {"code":"1","msg":"success","data":"SUCCESS","requestId":"..."}
+     *
+     * @return array<string, string> The success response array
+     */
+    public function successResponse(): array
+    {
+        return [
+            'code' => '1',
+            'msg' => 'success',
+            'data' => 'SUCCESS',
+            'requestId' => (string) Str::uuid(),
+        ];
+    }
+
+    /**
+     * Generate a failure response for J&T Express.
+     *
+     * Returns the response format expected by J&T Express for failed
+     * webhook processing: {"code":"0","msg":"...","data":null,"requestId":"..."}
+     *
+     * @param  string  $message  The error message to include
+     * @return array<string, string|null> The failure response array
+     */
+    public function failureResponse(string $message = 'fail'): array
+    {
+        return [
+            'code' => '0',
+            'msg' => $message,
+            'data' => null,
+            'requestId' => (string) Str::uuid(),
+        ];
+    }
+
+    /**
+     * Extract the digest header from a request.
+     *
+     * J&T Express sends the signature in the 'digest' header.
+     *
+     * @param  Request  $request  The incoming request
+     * @return string The digest value, or empty string if not present
+     */
+    public function extractDigest(Request $request): string
+    {
+        return (string) $request->header('digest', '');
+    }
+
+    /**
+     * Verify and parse a webhook request in one step.
+     *
+     * This is a convenience method that combines signature verification
+     * and webhook parsing. Returns null if signature verification fails.
+     *
+     * @param  Request  $request  The incoming webhook request
+     * @return WebhookData|null The parsed webhook data, or null if signature invalid
+     *
+     * @throws ValidationException If request validation fails
+     * @throws InvalidArgumentException If bizContent is invalid JSON or missing required fields
+     */
+    public function verifyAndParse(Request $request): ?WebhookData
+    {
+        $digest = $this->extractDigest($request);
+        $bizContent = $request->input('bizContent', '');
+
+        if (! is_string($bizContent)) {
+            return null;
+        }
+
+        if (! $this->verifySignature($digest, $bizContent)) {
+            return null;
+        }
+
+        return $this->parseWebhook($request);
+    }
+
+    /**
+     * Parse webhook payload into TrackingData objects.
+     *
+     * @param  array<string, mixed>  $webhookData
+     * @return array<TrackingData>
+     */
+    public function parseBizContent(array $webhookData): array
+    {
+        if (! isset($webhookData['bizContent'])) {
+            throw JntValidationException::requiredFieldMissing('bizContent');
+        }
+
+        $bizContent = is_string($webhookData['bizContent'])
+            ? json_decode($webhookData['bizContent'], true)
+            : $webhookData['bizContent'];
+
+        if (! is_array($bizContent)) {
+            throw JntValidationException::invalidFormat('bizContent', 'valid JSON array', gettype($bizContent));
+        }
+
+        $items = array_is_list($bizContent) ? $bizContent : [$bizContent];
+
+        return array_map(
+            static function (mixed $item): TrackingData {
+                if (! is_array($item)) {
+                    throw JntValidationException::invalidFieldValue('bizContent.*', $item, 'array');
+                }
+
+                try {
+                    return TrackingData::fromApiArray($item);
+                } catch (InvalidArgumentException $e) {
+                    throw JntValidationException::fieldValidationFailed('bizContent.*', $e->getMessage());
+                }
+            },
+            $items
+        );
+    }
+}

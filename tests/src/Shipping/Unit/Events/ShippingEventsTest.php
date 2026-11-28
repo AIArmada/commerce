@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Events\ShipmentCancelled;
-use AIArmada\Shipping\Events\ShipmentCreated;
-use AIArmada\Shipping\Events\ShipmentDelivered;
-use AIArmada\Shipping\Events\ShipmentShipped;
-use AIArmada\Shipping\Events\ShipmentStatusChanged;
-use AIArmada\Shipping\Events\TrackingUpdated;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentEvent;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCancelled;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentDelivered;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentShipped;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentStatusChanged;
+use AIArmada\Shipping\Features\Shipments\Events\TrackingUpdated;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 
 // ============================================
 // ShipmentCreated Event Tests

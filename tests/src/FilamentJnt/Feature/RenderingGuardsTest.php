@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 uses(FilamentJntTestCase::class);
 
@@ -82,7 +82,9 @@ it('caps infolist repeatable state via config', function (): void {
         ]);
     }
 
-    $events = $order->trackingEvents()
+    $events = JntTrackingEvent::query()->where('order_id', $order->id)
+        ->where('owner_type', $order->owner_type)
+        ->where('owner_id', $order->owner_id)
         ->latest('scan_time')
         ->limit((int) config('filament-jnt.infolist.tracking_events_limit', 50))
         ->get();

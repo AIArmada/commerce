@@ -6,33 +6,36 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Console\Commands\Orders\OrderPrintCommand;
-use AIArmada\Jnt\Console\Commands\Webhooks\WebhookTestCommand;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderPrintCommand;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Http\Controllers\AwbController;
+use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
+use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntSpatieSignatureValidator;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookResponse;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
+use AIArmada\Jnt\Features\Waybills\EntryPoints\Http\AwbController;
 use AIArmada\Jnt\JntServiceProvider;
-use AIArmada\Jnt\Listeners\SendShipmentNotifications;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntWebhookLog;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\JntStatusMapper;
-use AIArmada\Jnt\Services\JntTrackingService;
-use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
+use AIArmada\Jnt\Support\ShippingRateCalculator;
 use AIArmada\Jnt\Support\TrackingEventHash;
-use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
-use AIArmada\Jnt\Webhooks\JntWebhookResponse;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
-use AIArmada\Shipping\Data\AddressData;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,9 +56,9 @@ describe('carrier safety guards', function (): void {
     });
 
     it('rejects carrier payloads with missing required keys', function (): void {
-        expect(fn () => OrderData::fromApiArray(['billCode' => 'X']))->toThrow(JntValidationException::class);
-        expect(fn () => TrackingData::fromApiArray(['details' => []]))->toThrow(JntValidationException::class);
-        expect(fn () => TrackingDetailData::fromApiArray(['scanTime' => 'now']))->toThrow(JntValidationException::class);
+        expect(fn () => OrderData::fromApiArray(['billCode' => 'X']))->toThrow(InvalidArgumentException::class);
+        expect(fn () => TrackingData::fromApiArray(['details' => []]))->toThrow(InvalidArgumentException::class);
+        expect(fn () => TrackingDetailData::fromApiArray(['scanTime' => 'now']))->toThrow(InvalidArgumentException::class);
 
         $detail = TrackingDetailData::fromApiArray([
             'scanTime' => '2024-01-15 10:30:00',
@@ -79,6 +82,7 @@ describe('carrier safety guards', function (): void {
         ]);
 
         $service = new JntExpressService(
+            transportFactory: app(CarrierTransportFactory::class),
             customerCode: 'TEST123',
             password: 'password',
             config: [
@@ -200,7 +204,7 @@ describe('carrier safety guards', function (): void {
             ->and(JntTrackingEvent::query()->where('order_id', $order->id)->exists())->toBeFalse();
     });
 
-    it('loads the latest tracking event without per-order queries', function (): void {
+    it('reads the latest tracking scan in a single query', function (): void {
         config()->set('jnt.owner.enabled', false);
 
         $order = JntOrder::query()->create([
@@ -218,14 +222,12 @@ describe('carrier safety guards', function (): void {
             ]);
         }
 
-        $loaded = JntOrder::query()->with('latestTrackingEventRelation')->findOrFail($order->id);
-
         DB::enableQueryLog();
-        $latest = $loaded->latestTrackingEvent();
+        $latest = app(ReadLatestTrackingScan::class)->forOrder($order->id, $order->owner_type, $order->owner_id);
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
-        expect($latest?->scan_type_code)->toBe('602')->and($queries)->toBeEmpty();
+        expect($latest?->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00')->and($queries)->toHaveCount(1);
     });
 
     it('sanitizes waybill output paths and filenames', function (): void {
@@ -256,7 +258,7 @@ describe('carrier safety guards', function (): void {
         config()->set('jnt.owner.enabled', false);
 
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new NotifyShipmentStatusChanged($trackingService);
         $method = new ReflectionMethod($listener, 'resolveNotifiable');
 
         $arrayEmail = new JntOrder;
@@ -268,10 +270,10 @@ describe('carrier safety guards', function (): void {
         $validEmail = new JntOrder;
         $validEmail->forceFill(['metadata' => ['notification_email' => 'ops@example.com']]);
 
-        $resolved = $method->invoke($listener, $validEmail);
+        $resolved = $method->invoke($listener, new NotificationOrder('ORDER123', null, null, 'ops@example.com'), null);
 
-        expect($method->invoke($listener, $arrayEmail))->toBeNull()
-            ->and($method->invoke($listener, $invalidEmail))->toBeNull()
+        expect($method->invoke($listener, new NotificationOrder('ORDER123', null, null, null), null))->toBeNull()
+            ->and($method->invoke($listener, new NotificationOrder('ORDER123', null, null, 'not-an-email'), null))->toBeNull()
             ->and($resolved)->not->toBeNull()
             ->and(unserialize(serialize($resolved)))->toBeInstanceOf($resolved::class);
 
@@ -297,30 +299,11 @@ describe('carrier safety guards', function (): void {
     });
 
     it('classifies only five-digit postcodes into region pricing', function (): void {
-        $driver = new JntShippingDriver(
-            Mockery::mock(JntExpressService::class),
-            Mockery::mock(JntTrackingService::class),
-            Mockery::mock(JntStatusMapper::class),
-        );
-
-        $multiplier = new ReflectionMethod($driver, 'getRegionMultiplierBasisPoints');
-        $days = new ReflectionMethod($driver, 'getEstimatedDays');
-
-        $address = static fn (string $postcode): AddressData => new AddressData(
-            name: 'Test',
-            phone: '+60123456789',
-            line1: '123 Test St',
-            postcode: $postcode,
-            country: 'MYS',
-        );
-
-        expect($multiplier->invoke($driver, $address('88000')))->toBe(15000)
-            ->and($multiplier->invoke($driver, $address('50000')))->toBe(10000)
-            ->and($multiplier->invoke($driver, $address('8ABCD')))->toBe(10000)
-            ->and($multiplier->invoke($driver, $address('880000')))->toBe(10000)
-            ->and($days->invoke($driver, $address('8ABCD')))->toBe((int) config('jnt.shipping.default_estimated_days', 3));
-
-        Mockery::close();
+        expect(ShippingRateCalculator::regionMultiplierBasisPoints('88000'))->toBe(15000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('50000'))->toBe(10000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('8ABCD'))->toBe(10000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('880000'))->toBe(10000)
+            ->and(ShippingRateCalculator::estimatedDays('8ABCD'))->toBe((int) config('jnt.shipping.default_estimated_days', 3));
     });
 
     it('resolves credential-bearing services fresh every time', function (): void {
@@ -399,8 +382,8 @@ describe('carrier safety guards', function (): void {
             'events' => [],
         ]);
 
-        $listener = new SendShipmentNotifications($trackingService);
-        $listener->handle(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered));
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
+        $listener->handle(new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered));
 
         Notification::assertSentTimes(OrderDeliveredNotification::class, 1);
 

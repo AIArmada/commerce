@@ -6,8 +6,8 @@ namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
@@ -166,10 +166,5 @@ final class JntOrderTable
             TrackingStatus::Returned => $query->where('last_status_code', '173'),
             TrackingStatus::DeliveryAttempted => $query->where('last_status_code', '110'),
         };
-    }
-
-    private static function getNormalizedStatus(JntOrder $order): TrackingStatus
-    {
-        return $order->getNormalizedStatus();
     }
 }

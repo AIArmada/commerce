@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Schemas\ReturnAuthorizationForm;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables\ReturnAuthorizationsTable;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class ReturnAuthorizationResource extends Resource
@@ -43,21 +43,15 @@ class ReturnAuthorizationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<ReturnAuthorization> $query */
-        $query = parent::getEloquentQuery()->withoutGlobalScope(OwnerScope::class);
+        $query = parent::getEloquentQuery();
 
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return $query;
-        }
+        return OwnerScopedQuery::apply($query);
+    }
 
-        $owner = OwnerContext::resolve();
-        if ($owner === null) {
-            return $query->whereRaw('0 = 1');
-        }
-
-        /** @var Builder<ReturnAuthorization> $scoped */
-        $scoped = $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-
-        return $scoped;
+    public static function canEdit(Model $record): bool
+    {
+        return parent::canEdit($record)
+            && (! $record instanceof ReturnAuthorization || ! $record->isPackageReturn());
     }
 
     public static function form(Schema $schema): Schema

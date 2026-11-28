@@ -14,20 +14,20 @@ use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Shipping\Actions\ApproveReturnAuthorization;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
-use AIArmada\Shipping\Integrations\PackageReturns;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentItem;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
+use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\States\RmaCompleted;
+use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config([
@@ -159,17 +159,17 @@ it('requires the complete inspected unit and settles its net price and tax exact
     [$order, $item, $first, $second] = orderWithPackageUnits();
     $shipment = shipPackageUnit($order, $item, 1);
     $returns = app(PackageReturns::class);
-    $rma = $returns->request($shipment, $item->id, 1, 'defective');
+    $rma = $returns->request($shipment->id, $item->id, 1, 'defective');
 
-    expect($returns->request($shipment, $item->id, 1, 'defective')->id)->toBe($rma->id);
-    expect(fn () => $returns->request($shipment, $item->id, 2, 'defective'))->toThrow(DomainException::class);
+    expect($returns->request($shipment->id, $item->id, 1, 'defective')->id)->toBe($rma->id);
+    expect(fn () => $returns->request($shipment->id, $item->id, 2, 'defective'))->toThrow(DomainException::class);
     $refund = app(RegisterOrderRefund::class);
     $metadata = ['return_authorization_id' => $rma->id];
 
     expect(fn () => $refund->execute($order, 1000, 'refund-1', 'Return', $metadata))->toThrow(DomainException::class);
     expect(fn () => $refund->createPending($order, 1000, 'refund-1', 'Return'))->toThrow(DomainException::class, 'authorization');
 
-    ApproveReturnAuthorization::run($rma);
+    app(ApproveReturn::class)->execute($rma->id);
     $lines = $rma->items()->get();
     $inspection = $lines->mapWithKeys(fn ($line): array => [$line->id => [
         'quantity' => $line->quantity_requested,
@@ -257,7 +257,7 @@ it('rejects a package return or refund when the current owner owns a different o
     [$shipment, $order, $item, $rma] = OwnerContext::withOwner($owner, function (): array {
         [$order, $item] = orderWithPackageUnits();
         $shipment = shipPackageUnit($order, $item, 1);
-        $rma = app(PackageReturns::class)->request($shipment, $item->id, 1, 'damaged');
+        $rma = app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged');
 
         return [$shipment, $order, $item, $rma];
     });
@@ -265,8 +265,8 @@ it('rejects a package return or refund when the current owner owns a different o
     OwnerContext::withOwner($other, function () use ($shipment, $order, $item, $rma): void {
         expect(ReturnAuthorization::query()->find($rma->id))->toBeNull()
             ->and(Shipment::query()->find($shipment->id))->toBeNull();
-        expect(fn () => app(PackageReturns::class)->request($shipment, $item->id, 1, 'damaged'))
-            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged'))
+            ->toThrow(AuthorizationException::class);
         expect(fn () => app(RegisterOrderRefund::class)->execute($order, 1000, 'foreign-refund', 'Return', [
             'return_authorization_id' => $rma->id,
         ]))->toThrow(RuntimeException::class, 'Cross-owner');
@@ -279,7 +279,9 @@ it('retries only the unsettled part when a package refund spans multiple payment
     $order->payments()->create(['gateway' => 'manual', 'status' => PaymentStatus::Completed, 'amount' => 1898, 'currency' => 'MYR']);
     $shipment = shipPackageUnit($order, $item, 1);
     $returns = app(PackageReturns::class);
-    $rma = ApproveReturnAuthorization::run($returns->request($shipment, $item->id, 1, 'damaged'));
+    $rma = $returns->request($shipment->id, $item->id, 1, 'damaged');
+    app(ApproveReturn::class)->execute($rma->id);
+    $rma->refresh();
     $inspection = $rma->items()->get()->mapWithKeys(fn ($line): array => [$line->id => [
         'quantity' => $line->quantity_approved,
         'condition' => 'damaged',

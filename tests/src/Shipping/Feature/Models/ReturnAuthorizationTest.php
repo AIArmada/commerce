@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
+use AIArmada\Shipping\Features\Returns\States\RmaApproved;
+use AIArmada\Shipping\Features\Returns\States\RmaDraft;
+use AIArmada\Shipping\Features\Returns\States\RmaPending;
+use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 describe('ReturnAuthorization Model', function (): void {
     it('can create a return authorization with required fields', function (): void {
@@ -105,8 +105,7 @@ describe('ReturnAuthorization Model', function (): void {
             'reason' => 'defective',
         ]);
 
-        expect($rma->originalShipment)->toBeInstanceOf(Shipment::class);
-        expect($rma->originalShipment->id)->toBe($shipment->id);
+        expect(app(ReadReturnShipment::class)->find((string) $rma->original_shipment_id)->id)->toBe($shipment->id);
         expect($rma->items())->toBeInstanceOf(HasMany::class);
     });
 
@@ -263,7 +262,7 @@ describe('ReturnAuthorization Model', function (): void {
         expect(ReturnAuthorizationItem::count())->toBe(0);
     });
 
-    it('has returnShipment relationship', function (): void {
+    it('resolves the linked return shipment through its feature API', function (): void {
         $rma = ReturnAuthorization::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
@@ -285,9 +284,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         $rma->refresh();
 
-        expect($rma->returnShipment())->toBeInstanceOf(MorphOne::class);
-        expect($rma->returnShipment)->toBeInstanceOf(Shipment::class);
-        expect($rma->returnShipment->id)->toBe($returnShipment->id);
+        expect(app(ReadReturnShipment::class)->linkedShipmentId($rma->getMorphClass(), $rma->id))->toBe($returnShipment->id);
     });
 
     it('does not delete an authorization while its return shipment exists', function (): void {
@@ -323,7 +320,7 @@ describe('ReturnAuthorization Model', function (): void {
             'reason' => 'defective',
         ]);
 
-        expect($rma->returnShipment)->toBeNull();
+        expect(app(ReadReturnShipment::class)->linkedShipmentId($rma->getMorphClass(), $rma->id))->toBeNull();
     });
 
     it('has isRejected status helper', function (): void {

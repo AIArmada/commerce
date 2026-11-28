@@ -93,7 +93,7 @@ packages/filament-shipping/
 │   │   ├── ShippingZoneResource/
 │   │   ├── ShippingRateResource/
 │   │   └── ReturnAuthorizationResource/
-│   ├── Support/                 # MoneyInput, ShippingStatsAggregator
+│   ├── Support/                 # MoneyInput
 │   ├── Widgets/                 # Dashboard widgets
 │   ├── FilamentShippingPlugin.php
 │   └── FilamentShippingServiceProvider.php
