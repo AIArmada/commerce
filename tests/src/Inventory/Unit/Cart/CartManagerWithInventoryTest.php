@@ -123,3 +123,31 @@ describe('CartManagerWithInventory batch atomicity', function (): void {
             ->and(InventoryAllocation::query()->count())->toBeGreaterThan(0);
     });
 });
+
+it('validates and reserves the explicitly supplied cart instead of the active cart', function (): void {
+    $service = app(InventoryService::class);
+    $location = InventoryLocation::factory()->create([
+        'name' => 'Explicit checkout warehouse',
+        'code' => 'EXPLICIT-CHECKOUT-WH',
+    ]);
+    $activeItem = InventoryItem::create(['name' => 'Active cart item']);
+    $checkoutItem = InventoryItem::create(['name' => 'Checkout cart item']);
+    $service->receive($activeItem, $location->id, 1);
+    $service->receive($checkoutItem, $location->id, 10);
+
+    $activeCart = new Cart(new InMemoryStorage, 'active-cart');
+    $activeCart->add(id: 'active-item', name: 'Active item', price: 100, quantity: 5, associatedModel: $activeItem);
+    $checkoutCart = new Cart(new InMemoryStorage, 'checkout-cart');
+    $checkoutCart->add(id: 'checkout-item', name: 'Checkout item', price: 100, quantity: 3, associatedModel: $checkoutItem);
+
+    $manager = CartManagerWithInventory::fromCartManager(new FakeInventoryCartManager($activeCart));
+
+    expect($manager->validateInventory()['available'])->toBeFalse()
+        ->and($manager->validateInventory($checkoutCart)['available'])->toBeTrue();
+
+    $manager->allocateAllInventory(30, $checkoutCart);
+
+    expect($service->getLevel($activeItem, $location->id)?->fresh()->quantity_reserved)->toBe(0)
+        ->and($service->getLevel($checkoutItem, $location->id)?->fresh()->quantity_reserved)->toBe(3)
+        ->and($manager->getCurrentCart())->toBe($activeCart);
+});
