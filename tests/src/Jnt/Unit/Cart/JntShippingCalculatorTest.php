@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Support\CartMoney;
+use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use Illuminate\Support\Facades\DB;
@@ -389,7 +392,7 @@ it('uses canonical gram weights and ignores nonphysical items', function (): voi
 });
 
 it('uses only physical composite components and expands their quantities', function (): void {
-    $cart = createJntTestCart('composite-grams');
+    $cart = new Cart(new InMemoryStorage, 'composite-grams');
     $component = [
         'product_id' => 'physical-product',
         'variant_id' => null,
@@ -412,7 +415,42 @@ it('uses only physical composite components and expands their quantities', funct
         'weight' => 5000,
     ]);
 
-    $cart->add(['id' => 'composite', 'name' => 'Composite', 'price' => 100, 'quantity' => 2, 'attributes' => ['weight' => 9999, 'components' => [$component, $service]]]);
+    $buyable = Mockery::mock(Buyable::class);
+    $buyable->shouldReceive('getBuyableIdentifier')->andReturn('composite');
+    $buyable->shouldReceive('getBuyableCatalogIdentifier')->andReturnNull();
+    $buyable->shouldReceive('getBuyableName')->andReturn('Composite');
+    $buyable->shouldReceive('getBuyablePrice')->andReturn(100);
+    $buyable->shouldReceive('getBuyableCurrency')->andReturn(CartMoney::currency());
+    $buyable->shouldReceive('getBuyableAttributes')->andReturn([
+        'weight' => 9999,
+        'components' => [$component, $service],
+    ]);
+    $buyable->shouldReceive('canBePurchased')->with(2)->andReturnTrue();
+    $buyable->shouldReceive('getBuyableMinimumQuantity')->andReturn(1);
+    $buyable->shouldReceive('getBuyableMaximumQuantity')->andReturnNull();
+    $buyable->shouldReceive('getBuyableQuantityIncrement')->andReturn(1);
+    $buyable->shouldReceive('getBuyableStock')->andReturnNull();
+
+    $line = $cart->addBuyable($buyable, 2);
+
+    expect($line->getAttribute('components'))->toHaveCount(2);
 
     expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1200);
+});
+
+it('does not trust composite components injected through raw cart additions', function (): void {
+    $cart = createJntTestCart('raw-composite-grams');
+    $line = $cart->add([
+        'id' => 'raw-composite',
+        'name' => 'Raw composite',
+        'price' => 100,
+        'quantity' => 2,
+        'attributes' => [
+            'weight' => 750,
+            'components' => [['requires_shipping' => false]],
+        ],
+    ]);
+
+    expect($line->getAttribute('components'))->toBeNull()
+        ->and((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
 });
