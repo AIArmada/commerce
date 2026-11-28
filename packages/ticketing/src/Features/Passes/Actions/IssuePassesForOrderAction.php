@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class IssuePassesForOrderAction
@@ -62,7 +62,7 @@ final readonly class IssuePassesForOrderAction
             }
 
             $context = new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: $quantity,
                 holderAttributes: $holderAttributes,
                 metadata: ['order_id' => $orderId, 'order_item_id' => $locked->getKey()],

@@ -20,7 +20,7 @@ use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -73,7 +73,7 @@ final class TicketingDriver implements EventTicketingDriver
         $ticketType = TicketType::query()->findOrFail($issuance->ticketTypeId);
 
         $passes = $this->issuePasses->handle(new PassIssuanceContext(
-            ticketType: $ticketType,
+            ticketTypeId: (string) $ticketType->getKey(),
             quantity: max(1, $issuance->quantity),
             holderAttributes: $issuance->holderAttributes,
             metadata: $issuance->metadata,

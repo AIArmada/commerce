@@ -50,12 +50,10 @@ config()->set('ticketing.ticketable_types', [Workshop::class]);
 app(TicketableTypeRegistry::class)->register(Workshop::class);
 ```
 
-The `TicketableInterface` requires four methods:
+The `TicketableInterface` requires two methods. Eloquent relationships are defined on the host model separately:
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `ticketTypes()` | `MorphMany` | Relationship to ticket types |
-| `passes()` | `MorphMany` | Relationship to passes |
 | `effectivePricingMode()` | `PricingMode` | Default pricing mode for this model |
 | `transferWindowEndsAt()` | `?CarbonImmutable` | Deadline for pass transfers, or null for no limit |
 
@@ -139,10 +137,10 @@ Use `IssuePassesAction` to issue passes:
 
 ```php
 use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 
 $context = new PassIssuanceContext(
-    ticketType: $ticketType,
+    ticketTypeId: (string) $ticketType->getKey(),
     quantity: 2,
     holderAttributes: [
         ['name' => 'Alice', 'email' => 'alice@example.com'],

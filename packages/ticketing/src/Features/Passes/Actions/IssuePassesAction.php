@@ -8,8 +8,9 @@ use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
+use RuntimeException;
 
 final readonly class IssuePassesAction
 {
@@ -19,7 +20,14 @@ final readonly class IssuePassesAction
     public function handle(PassIssuanceContext $context): Collection
     {
         return (new Pass)->getConnection()->transaction(function () use ($context): Collection {
-            $passes = $this->issuer->issuePassesFor($context);
+            $ids = $this->issuer->issuePassesFor($context);
+            $byId = Pass::query()->whereKey($ids)->where('ticket_type_id', $context->ticketTypeId)->get()->keyBy('id');
+
+            if (count($ids) !== count(array_unique($ids)) || $byId->count() !== count($ids) || count($ids) !== max(0, $context->quantity)) {
+                throw new RuntimeException('Pass issuer returned an invalid issuance batch.');
+            }
+
+            $passes = new Collection(array_map(static fn (string $id): Pass => $byId->get($id), $ids));
 
             foreach ($passes->values() as $index => $pass) {
                 $holderAttributes = $this->resolveHolderAttributesForPass($context->holderAttributes, $index);

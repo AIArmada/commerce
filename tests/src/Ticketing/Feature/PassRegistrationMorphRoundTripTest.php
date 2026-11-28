@@ -9,8 +9,7 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 
 function createRegistrationMorphTicketType(): TicketType
 {
@@ -29,12 +28,12 @@ it('round-trips a uuid registration id through pass issuance', function (): void
 
     $registration = OwnerContext::withOwner($owner, fn (): EventRegistration => EventRegistration::factory()->create());
 
-    $passes = OwnerContext::withOwner($owner, function () use ($registration): Collection {
+    $passes = OwnerContext::withOwner($owner, function () use ($registration): array {
         $ticketType = createRegistrationMorphTicketType();
 
         return app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: 1,
                 registrationType: $registration->getMorphClass(),
                 registrationId: (string) $registration->getKey(),
@@ -42,7 +41,7 @@ it('round-trips a uuid registration id through pass issuance', function (): void
         );
     });
 
-    $pass = $passes->first()->fresh();
+    $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::query()->findOrFail($passes[0]));
 
     expect($pass->registration_type)->toBe($registration->getMorphClass());
     expect($pass->registration_id)->toBe((string) $registration->getKey());
@@ -80,7 +79,7 @@ it('revokes passes by uuid registration through the string morph', function (): 
 
         app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: 1,
                 registrationType: $registration->getMorphClass(),
                 registrationId: (string) $registration->getKey(),

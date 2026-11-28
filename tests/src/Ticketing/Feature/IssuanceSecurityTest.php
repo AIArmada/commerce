@@ -10,7 +10,7 @@ use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -27,7 +27,7 @@ it('rejects issuance above the configured maximum', function (): void {
     config()->set('ticketing.issuance.max_quantity', 3);
 
     expect(fn () => app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 4,
     )))->toThrow(IssuanceQuantityExceededException::class);
 });
@@ -36,12 +36,12 @@ it('issues batches up to the configured maximum', function (): void {
     config()->set('ticketing.issuance.max_quantity', 3);
 
     $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 3,
     ));
 
     expect($passes)->toHaveCount(3)
-        ->and(Pass::query()->whereIn('id', $passes->modelKeys())->count())->toBe(3);
+        ->and(Pass::query()->whereIn('id', $passes)->count())->toBe(3);
 });
 
 it('regenerates colliding qr codes instead of failing', function (): void {
@@ -52,20 +52,20 @@ it('regenerates colliding qr codes instead of failing', function (): void {
 
     try {
         $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-            ticketType: $ticketType,
+            ticketTypeId: (string) $ticketType->getKey(),
             quantity: 1,
         ));
     } finally {
         Str::createUuidsNormally();
     }
 
-    expect($passes->first()->qr_code)->toBe('QR-FRESH-VALUE')
+    expect(Pass::query()->findOrFail($passes[0])->qr_code)->toBe('QR-FRESH-VALUE')
         ->and($existing->fresh()?->qr_code)->toBe('QR-COLLIDE-VALUE');
 });
 
 it('rejects holder attributes with an invalid email', function (): void {
     expect(fn () => app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 1,
         holderAttributes: ['name' => 'Bad Email', 'email' => 'not-an-email'],
     )))->toThrow(InvalidArgumentException::class, 'email');
@@ -73,7 +73,7 @@ it('rejects holder attributes with an invalid email', function (): void {
 
 it('rejects holder attributes with an overlong name', function (): void {
     expect(fn () => app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 1,
         holderAttributes: ['name' => str_repeat('a', 256)],
     )))->toThrow(InvalidArgumentException::class, 'name');
@@ -81,7 +81,7 @@ it('rejects holder attributes with an overlong name', function (): void {
 
 it('rejects holder references missing one side of the morph pair', function (): void {
     expect(fn () => app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 1,
         holderAttributes: ['holder_type' => User::class],
     )))->toThrow(InvalidArgumentException::class, 'together');
@@ -89,7 +89,7 @@ it('rejects holder references missing one side of the morph pair', function (): 
 
 it('rejects holder types that do not resolve to a model', function (): void {
     expect(fn () => app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 1,
         holderAttributes: ['holder_type' => 'not-a-model', 'holder_id' => (string) Str::uuid()],
     )))->toThrow(InvalidArgumentException::class, 'model');
@@ -99,7 +99,7 @@ it('rejects holder types outside the configured allow-list', function (): void {
     config()->set('ticketing.holders.allowed_types', [User::class]);
 
     expect(fn () => app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: createIssuanceTicketType(),
+        ticketTypeId: (string) createIssuanceTicketType()->getKey(),
         quantity: 1,
         holderAttributes: ['holder_type' => Pass::class, 'holder_id' => Pass::factory()->create()->getKey()],
     )))->toThrow(InvalidArgumentException::class, 'not allowed');
@@ -113,7 +113,7 @@ it('rejects holder links to rows outside the current owner scope', function (): 
 
     expect(fn () => OwnerContext::withOwner($ownerA, fn () => app(IssuePassesAction::class)->handle(
         new PassIssuanceContext(
-            ticketType: createIssuanceTicketType(),
+            ticketTypeId: (string) createIssuanceTicketType()->getKey(),
             quantity: 1,
             holderAttributes: ['holder_type' => $foreignPass->getMorphClass(), 'holder_id' => $foreignPass->getKey()],
         )
@@ -127,7 +127,7 @@ it('accepts holder links within the current owner scope', function (): void {
         $linked = Pass::factory()->create();
 
         return app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-            ticketType: createIssuanceTicketType(),
+            ticketTypeId: (string) createIssuanceTicketType()->getKey(),
             quantity: 1,
             holderAttributes: ['holder_type' => $linked->getMorphClass(), 'holder_id' => $linked->getKey()],
         ));
@@ -152,7 +152,7 @@ it('terminates pass-number generation when the random source repeats indefinitel
 
     try {
         expect(fn () => app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-            ticketType: $ticketType,
+            ticketTypeId: (string) $ticketType->getKey(),
             quantity: 2,
         )))->toThrow(RuntimeException::class, 'Unable to generate unique pass numbers');
     } finally {

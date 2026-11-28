@@ -10,7 +10,8 @@ use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -25,10 +26,10 @@ final readonly class PassIssuer implements PassIssuerInterface
 
     private const int INSERT_CHUNK_SIZE = 200;
 
-    public function issuePassesFor(PassIssuanceContext $context): Collection
+    public function issuePassesFor(PassIssuanceContext $context): array
     {
         if ($context->quantity <= 0) {
-            return new Collection;
+            return [];
         }
 
         $maxQuantity = (int) config('ticketing.issuance.max_quantity', 500);
@@ -37,12 +38,13 @@ final readonly class PassIssuer implements PassIssuerInterface
             throw new IssuanceQuantityExceededException($maxQuantity, $context->quantity);
         }
 
-        $ticketable = $context->ticketType->ticketable;
+        $ticketType = TicketType::query()->with('ticketable')->findOrFail($context->ticketTypeId);
+        $ticketable = $ticketType->ticketable;
         $passNumbers = $this->generatePassNumbers($context->quantity);
         $passes = new Collection;
 
         foreach ($passNumbers as $passNumber) {
-            $passes->push($this->makePass($context, $ticketable, $passNumber));
+            $passes->push($this->makePass($context, $ticketType, $ticketable, $passNumber));
         }
 
         $attempts = 0;
@@ -53,7 +55,7 @@ final readonly class PassIssuer implements PassIssuerInterface
             }
 
             try {
-                return (new Pass)->getConnection()->transaction(function () use ($context, $passes): Collection {
+                return (new Pass)->getConnection()->transaction(function () use ($context, $passes): array {
                     $this->assertHomogeneousBatch($passes);
 
                     /** @var Pass $firstPass */
@@ -72,7 +74,7 @@ final readonly class PassIssuer implements PassIssuerInterface
                         });
                     }
 
-                    return $passes;
+                    return $passes->modelKeys();
                 });
             } catch (UniqueConstraintViolationException $exception) {
                 if (! $this->replaceAllCollisions($passes)) {
@@ -152,14 +154,15 @@ final readonly class PassIssuer implements PassIssuerInterface
 
     private function makePass(
         PassIssuanceContext $context,
+        TicketType $ticketType,
         ?Model $ticketable,
         string $passNumber,
     ): Pass {
         $pass = new Pass;
         $pass->setUniqueIds();
-        $pass->ticketable_type = $ticketable?->getMorphClass() ?? $context->ticketType->ticketable_type;
-        $pass->ticketable_id = $ticketable?->getKey() ?? $context->ticketType->ticketable_id;
-        $pass->ticket_type_id = $context->ticketType->getKey();
+        $pass->ticketable_type = $ticketable?->getMorphClass() ?? $ticketType->ticketable_type;
+        $pass->ticketable_id = $ticketable?->getKey() ?? $ticketType->ticketable_id;
+        $pass->ticket_type_id = $ticketType->getKey();
         $pass->registration_type = $context->registrationType;
         $pass->registration_id = $context->registrationId;
         $pass->occurrence_id = $context->occurrenceId;

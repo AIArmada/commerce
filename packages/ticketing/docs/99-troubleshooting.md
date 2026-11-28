@@ -36,7 +36,7 @@ pass one holder array per pass in order:
 
 ```php
 $context = new PassIssuanceContext(
-    ticketType: $ticketType,
+    ticketTypeId: (string) $ticketType->getKey(),
     quantity: 1,
     holderAttributes: [
         ['name' => 'Alice', 'email' => 'alice@example.com'],

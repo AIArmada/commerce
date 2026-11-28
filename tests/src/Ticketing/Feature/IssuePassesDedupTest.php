@@ -15,7 +15,7 @@ use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfil
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Support\Facades\Event;
 
 function createDedupTicketType(): TicketType
@@ -75,7 +75,7 @@ it('issues only the remainder when passes already exist for the item', function 
     $item = $order->items->first();
 
     app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-        ticketType: $ticketType,
+        ticketTypeId: (string) $ticketType->getKey(),
         quantity: 1,
         metadata: ['order_id' => $order->getKey(), 'order_item_id' => $item->getKey()],
     ));

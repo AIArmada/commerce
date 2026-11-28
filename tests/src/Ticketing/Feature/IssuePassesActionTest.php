@@ -10,7 +10,7 @@ use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -31,7 +31,7 @@ it('rolls back all passes when issuance fails partway through the issuer loop', 
     {
         public int $callCount = 0;
 
-        public function issuePassesFor(PassIssuanceContext $context): Collection
+        public function issuePassesFor(PassIssuanceContext $context): array
         {
             $this->callCount++;
 
@@ -39,7 +39,7 @@ it('rolls back all passes when issuance fails partway through the issuer loop', 
                 $pass = new Pass;
                 $pass->ticketable_type = 'workshop';
                 $pass->ticketable_id = (string) Str::uuid();
-                $pass->ticket_type_id = $context->ticketType->getKey();
+                $pass->ticket_type_id = $context->ticketTypeId;
                 $pass->pass_no = 'PASS-FAIL-' . $this->callCount . '-' . $i;
                 $pass->status = 'issued';
                 $pass->issued_at = $context->issuedAt;
@@ -50,14 +50,14 @@ it('rolls back all passes when issuance fails partway through the issuer loop', 
                 }
             }
 
-            return new Collection;
+            return [];
         }
     };
 
     app()->instance(PassIssuerInterface::class, $failingIssuer);
 
     $context = new PassIssuanceContext(
-        ticketType: $ticketType,
+        ticketTypeId: (string) $ticketType->getKey(),
         quantity: 5,
     );
 
@@ -91,16 +91,16 @@ it('commits all passes on successful issuance', function (): void {
     {
         public function __construct(private Collection $passes) {}
 
-        public function issuePassesFor(PassIssuanceContext $context): Collection
+        public function issuePassesFor(PassIssuanceContext $context): array
         {
-            return $this->passes;
+            return $this->passes->modelKeys();
         }
     };
 
     app()->instance(PassIssuerInterface::class, $issuer);
 
     $result = app(IssuePassesAction::class)->handle(new PassIssuanceContext(
-        ticketType: $ticketType,
+        ticketTypeId: (string) $ticketType->getKey(),
         quantity: 3,
     ));
 
@@ -114,13 +114,13 @@ it('inserts a pass batch and dispatches one event per pass after commit', functi
     Event::fake([PassIssued::class]);
 
     $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-        ticketType: $ticketType,
+        ticketTypeId: (string) $ticketType->getKey(),
         quantity: 3,
     ));
 
     expect($passes)->toHaveCount(3)
-        ->and($passes->pluck('pass_no')->unique())->toHaveCount(3)
-        ->and(Pass::query()->whereIn('id', $passes->modelKeys())->count())->toBe(3);
+        ->and(Pass::query()->whereKey($passes)->pluck('pass_no')->unique())->toHaveCount(3)
+        ->and(Pass::query()->whereIn('id', $passes)->count())->toBe(3);
 
     Event::assertDispatched(PassIssued::class, 3);
 });
@@ -151,9 +151,9 @@ it('generates pass numbers that are unique across owners', function (): void {
     ]);
 
     try {
-        $passes = OwnerContext::withOwner($ownerB, fn (): Collection => app(PassIssuer::class)->issuePassesFor(
+        $passes = OwnerContext::withOwner($ownerB, fn (): array => app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: 1,
             )
         ));
@@ -161,5 +161,5 @@ it('generates pass numbers that are unique across owners', function (): void {
         Str::createRandomStringsNormally();
     }
 
-    expect($passes->first()->pass_no)->toBe('PASS-UNIQUE01');
+    expect(OwnerContext::withOwner($ownerB, fn () => Pass::query()->findOrFail($passes[0])->pass_no))->toBe('PASS-UNIQUE01');
 });
