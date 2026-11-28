@@ -11,7 +11,7 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;

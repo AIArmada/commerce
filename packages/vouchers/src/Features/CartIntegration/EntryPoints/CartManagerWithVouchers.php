@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use Illuminate\Database\Eloquent\Model;

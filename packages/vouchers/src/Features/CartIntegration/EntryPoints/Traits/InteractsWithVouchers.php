@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Traits;
+namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Traits;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
@@ -15,7 +15,7 @@ use AIArmada\Vouchers\Features\CartIntegration\Queries\ReadCartVoucherConditions
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 
 /**
  * InteractsWithVouchers adds voucher management capabilities to the Cart.

@@ -2,23 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Vouchers\Traits\InteractsWithVouchers;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Traits\InteractsWithVouchers;
 
-/**
- * CartWithVouchers provides voucher functionality by wrapping the base Cart class.
- *
- * This class is provided for convenience but is NOT automatically bound.
- * Applications should manually bind this in their AppServiceProvider if desired.
- *
- * Example:
- * ```php
- * // In AppServiceProvider::register()
- * $this->app->bind(\AIArmada\Cart\Cart::class, \AIArmada\Cart\Vouchers\Support\CartWithVouchers::class);
- * ```
- */
+/** Wraps a cart with voucher operations. */
 class CartWithVouchers
 {
     use InteractsWithVouchers;

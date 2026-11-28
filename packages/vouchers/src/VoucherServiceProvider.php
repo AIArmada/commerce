@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use AIArmada\Vouchers\Support\CartManagerWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;

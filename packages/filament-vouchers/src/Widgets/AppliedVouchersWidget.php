@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;

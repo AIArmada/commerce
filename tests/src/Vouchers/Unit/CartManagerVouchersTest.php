@@ -10,8 +10,8 @@ use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use AIArmada\Vouchers\Support\CartManagerWithVouchers;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 
 beforeEach(function (): void {
     $manager = app(CartManagerInterface::class);
@@ -94,15 +94,17 @@ it('removes a cart voucher when its code resolves to a different voucher identit
         'id' => 'replacement-voucher',
     ]);
 
+    $current = $original;
     $this->validator->shouldReceive('validate')
+        ->atLeast()
         ->twice()
-        ->andReturn(
-            VoucherValidationResult::valid(['voucher' => $original->toArray()]),
-            VoucherValidationResult::valid(['voucher' => $replacement->toArray()]),
-        );
+        ->andReturnUsing(function () use (&$current): VoucherValidationResult {
+            return VoucherValidationResult::valid(['voucher' => $current->toArray()]);
+        });
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->applyVoucher('REUSED');
+    $current = $replacement;
 
     expect($cart->validateAppliedVouchers())->toBe(['REUSED'])
         ->and($cart->hasVoucher('REUSED'))->toBeFalse();
@@ -123,15 +125,17 @@ it('removes an applied voucher when its discount terms change without changing i
         'value' => 50,
     ]);
 
+    $current = $original;
     $this->validator->shouldReceive('validate')
+        ->atLeast()
         ->twice()
-        ->andReturn(
-            VoucherValidationResult::valid(['voucher' => $original->toArray()]),
-            VoucherValidationResult::valid(['voucher' => $updated->toArray()]),
-        );
+        ->andReturnUsing(function () use (&$current): VoucherValidationResult {
+            return VoucherValidationResult::valid(['voucher' => $current->toArray()]);
+        });
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->applyVoucher('CHANGED');
+    $current = $updated;
 
     expect($cart->validateAppliedVouchers())->toBe(['CHANGED'])
         ->and($cart->hasVoucher('CHANGED'))->toBeFalse();

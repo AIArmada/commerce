@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;

@@ -20,7 +20,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
-use AIArmada\Vouchers\Support\CartWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
