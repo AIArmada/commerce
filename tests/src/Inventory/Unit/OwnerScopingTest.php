@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
@@ -97,6 +98,12 @@ it('scopes availability to current owner and global locations when enabled', fun
     $service = app(InventoryService::class);
 
     expect($service->getTotalAvailable($inventoryable))->toBe(16);
+
+    $allocation = app(InventoryAllocationService::class);
+
+    expect($allocation->getTotalAvailable($inventoryable))->toBe(5)
+        ->and($allocation->hasAvailableInventory($inventoryable, 6))->toBeFalse()
+        ->and($allocation->validateAvailability([['model' => $inventoryable, 'quantity' => 6]])['issues'][0]['available'])->toBe(5);
 
     expect($service->getAvailability($inventoryable))->toMatchArray([
         $locationA->id => 5,

@@ -11,4 +11,10 @@ interface StockAvailability
      * @return iterable<array{type: string, id: string, location_id: string, available: int}>
      */
     public function byItem(array $items): iterable;
+
+    /**
+     * @param  list<array{type: string, id: string}>  $items
+     * @return iterable<array{type: string, id: string, location_id: string, available: int}>
+     */
+    public function forAllocation(array $items): iterable;
 }

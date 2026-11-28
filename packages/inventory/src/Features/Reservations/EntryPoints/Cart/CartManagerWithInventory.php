@@ -233,12 +233,7 @@ final class CartManagerWithInventory implements CartManagerInterface
 
         foreach (InventoryDemandResolver::forCart($cart->getItems()) as $entry) {
             $model = $entry['model'];
-            $totalAvailable = $this->getAllocationService()->getTotalAvailable($model);
-
-            // Add back own allocations to availability check
-            $ownAllocations = $this->getAllocationService()->getAllocations($model, $cartIdentifier);
-            $ownAllocatedQty = $ownAllocations->sum('quantity');
-            $effectiveAvailable = $totalAvailable + $ownAllocatedQty;
+            $effectiveAvailable = $this->getAllocationService()->effectiveAvailable($model, $cartIdentifier);
 
             if ($effectiveAvailable >= $entry['quantity']) {
                 continue;
@@ -246,7 +241,7 @@ final class CartManagerWithInventory implements CartManagerInterface
 
             $allAvailable = false;
 
-            // Get breakdown by location
+            $ownAllocations = $this->getAllocationService()->getAllocations($model, $cartIdentifier);
             $locationBreakdown = [];
             foreach ($ownAllocations as $allocation) {
                 $locationBreakdown[] = [

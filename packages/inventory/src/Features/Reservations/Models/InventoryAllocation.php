@@ -134,7 +134,7 @@ final class InventoryAllocation extends Model implements Auditable
      */
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        return $this->expires_at->lte(CarbonImmutable::now());
     }
 
     /**

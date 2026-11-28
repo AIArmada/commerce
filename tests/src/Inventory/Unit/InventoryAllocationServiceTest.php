@@ -353,3 +353,26 @@ describe('InventoryAllocationService', function (): void {
         expect($released)->toBe(0);
     });
 });
+
+it('validates the largest eligible location rather than aggregate stock when splitting is disabled', function (): void {
+    config()->set('inventory.allow_split_allocation', false);
+
+    $item = InventoryItem::create(['name' => 'Single warehouse SKU']);
+    $first = InventoryLocation::factory()->create(['priority' => 100, 'is_active' => true]);
+    $second = InventoryLocation::factory()->create(['priority' => 10, 'is_active' => true]);
+    $stock = app(InventoryService::class);
+    $stock->receive($item, $first->id, 6);
+    $stock->receive($item, $second->id, 5);
+
+    $allocations = app(InventoryAllocationService::class);
+    $allocations->allocate($item, 4, 'single-location-cart');
+
+    expect($allocations->getTotalAvailable($item))->toBe(7)
+        ->and($allocations->hasAvailableInventory($item, 6))->toBeFalse()
+        ->and($allocations->validateAvailability([['model' => $item, 'quantity' => 6]])['issues'][0]['available'])->toBe(5)
+        ->and($allocations->effectiveAvailable($item, 'single-location-cart'))->toBe(6);
+
+    $first->update(['is_active' => false]);
+
+    expect($allocations->effectiveAvailable($item, 'single-location-cart'))->toBe(5);
+});

@@ -94,7 +94,7 @@ final readonly class ValidateCartInventory
         $deficits = [];
 
         foreach ($demand as $entry) {
-            $available = $this->effectiveAvailable($entry['model'], $cartId);
+            $available = $this->allocationService->effectiveAvailable($entry['model'], $cartId);
 
             if ($available >= $entry['quantity']) {
                 continue;
@@ -160,7 +160,7 @@ final readonly class ValidateCartInventory
         DB::transaction(function () use ($demand, $cartId, $ttl, $allowPartial): void {
             foreach ($demand as $entry) {
                 $quantity = $allowPartial
-                    ? min($entry['quantity'], $this->effectiveAvailable($entry['model'], $cartId))
+                    ? min($entry['quantity'], $this->allocationService->effectiveAvailable($entry['model'], $cartId))
                     : $entry['quantity'];
 
                 if ($quantity <= 0) {
@@ -220,16 +220,6 @@ final readonly class ValidateCartInventory
                 ]);
             }
         }
-    }
-
-    private function effectiveAvailable(Model $model, string $cartId): int
-    {
-        $available = $this->allocationService->getTotalAvailable($model);
-
-        // The current cart may already hold allocations for this model. Add
-        // them back because this listener re-evaluates the whole cart and
-        // allocation replaces this cart's previous rows.
-        return $available + $this->allocationService->getAllocations($model, $cartId)->sum('quantity');
     }
 
     /**

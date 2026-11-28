@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Queries;
 
+use AIArmada\Inventory\Features\Stock\Api\StockAvailability;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -36,7 +37,7 @@ use Illuminate\Support\Collection;
  */
 final readonly class FulfillmentLocationService
 {
-    public function __construct(private StockAvailabilityQuery $stock) {}
+    public function __construct(private StockAvailability $stock) {}
 
     /**
      * Get the best fulfillment location for an order.

@@ -17,7 +17,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
 use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
 use AIArmada\Inventory\Features\Stock\Api\ReservationStock;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Api\StockAvailability;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -54,7 +54,7 @@ use InvalidArgumentException;
 final class InventoryAllocationService implements CartStockReservations
 {
     public function __construct(
-        private InventoryService $inventoryService,
+        private StockAvailability $availability,
         private ReservationStock $stock,
         private AllocationCandidates $candidates,
     ) {}
@@ -440,7 +440,7 @@ final class InventoryAllocationService implements CartStockReservations
      */
     public function getAllocationsForCart(string $cartId): Collection
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryAllocation::query()
                 ->forCart($cartId)->whereNull('reservation_group_id')
                 ->active()
@@ -457,7 +457,7 @@ final class InventoryAllocationService implements CartStockReservations
      */
     public function getAllocations(Model $model, string $cartId): Collection
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryAllocation::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
@@ -474,7 +474,7 @@ final class InventoryAllocationService implements CartStockReservations
      */
     public function hasAvailableInventory(Model $model, int $quantity): bool
     {
-        return $this->inventoryService->getTotalAvailable($model) >= $quantity;
+        return $quantity > 0 && $this->effectiveAvailable($model) >= $quantity;
     }
 
     /**
@@ -482,7 +482,39 @@ final class InventoryAllocationService implements CartStockReservations
      */
     public function getTotalAvailable(Model $model): int
     {
-        return $this->inventoryService->getTotalAvailable($model);
+        $total = 0;
+
+        foreach ($this->availability->forAllocation([['type' => $model->getMorphClass(), 'id' => (string) $model->getKey()]]) as $row) {
+            $total += $row['available'];
+        }
+
+        return $total;
+    }
+
+    public function effectiveAvailable(Model $model, ?string $cartId = null): int
+    {
+        $held = [];
+
+        if ($cartId !== null) {
+            foreach ($this->getAllocations($model, $cartId) as $allocation) {
+                $held[$allocation->location_id] = ($held[$allocation->location_id] ?? 0) + $allocation->quantity;
+            }
+        }
+
+        $total = 0;
+        $allowsSplit = $this->allowsSplit($model);
+
+        foreach ($this->availability->forAllocation([['type' => $model->getMorphClass(), 'id' => (string) $model->getKey()]]) as $row) {
+            $available = $row['available'] + ($held[$row['location_id']] ?? 0);
+            $total = $allowsSplit ? $total + $available : max($total, $available);
+        }
+
+        return $total;
+    }
+
+    private function allowsSplit(Model $model): bool
+    {
+        return $this->getStrategy($model)->allowsSplit() && (bool) config('inventory.allow_split_allocation', true);
     }
 
     /**
@@ -534,7 +566,20 @@ final class InventoryAllocationService implements CartStockReservations
             $demand[$key]['quantity'] += $requested;
         }
 
-        $totals = $this->inventoryService->getAvailabilityForMany(array_column($demand, 'model'));
+        $totals = [];
+        $identities = [];
+
+        foreach ($demand as $key => $item) {
+            $identities[] = ['type' => $item['model']->getMorphClass(), 'id' => (string) $item['model']->getKey()];
+            $totals[$key] = 0;
+        }
+
+        foreach ($this->availability->forAllocation($identities) as $row) {
+            $key = $row['type'] . ':' . $row['id'];
+            $totals[$key] = $this->allowsSplit($demand[$key]['model'])
+                ? $totals[$key] + $row['available']
+                : max($totals[$key], $row['available']);
+        }
 
         foreach ($demand as $key => $item) {
             $available = $totals[$key] ?? 0;
