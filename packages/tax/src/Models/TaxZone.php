@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Models;
 
-use AIArmada\Tax\Actions\CascadeTaxZoneDeletionAction;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Actions\CascadeTaxZoneDeletionAction;
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Database\Factories\TaxZoneFactory;
 use AIArmada\Tax\Enums\ZoneType;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

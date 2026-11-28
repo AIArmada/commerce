@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use Filament\Facades\Filament;
 use AIArmada\Tax\Models\TaxExemption;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Services\RateApplier;
 
-use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 final class StandardRateApplier implements TaxRateApplierInterface

@@ -57,7 +57,7 @@ final class OwnerUiScope
     /**
      * @template TModel of Model
      *
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function apply(Builder $query, ?string $configKey = null, ?bool $includeGlobal = null, ?string $message = null): Builder
@@ -245,7 +245,7 @@ final class OwnerUiScope
     /**
      * @template TModel of Model
      *
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     private static function failClosed(Builder $query): Builder

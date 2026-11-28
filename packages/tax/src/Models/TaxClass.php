@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Models;
 
-use AIArmada\Tax\Actions\ReassignDeletedTaxClassRatesAction;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Actions\ReassignDeletedTaxClassRatesAction;
 use AIArmada\Tax\Database\Factories\TaxClassFactory;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;

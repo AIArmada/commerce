@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Tax;
 
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
-use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Services\RateApplier\StandardRateApplier;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Services\ZoneResolver\CompositeZoneResolver;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

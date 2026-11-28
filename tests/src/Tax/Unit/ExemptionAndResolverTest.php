@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Tax\Actions\Exemption\RequestTaxExemption;
 use AIArmada\Tax\Actions\Exemption\UpdateTaxExemptionAction;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use Illuminate\Auth\Access\AuthorizationException;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Organizations\Authorization\OrganizationAuthorization;
-use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Services\ZoneResolver;
 
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 

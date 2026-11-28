@@ -6,6 +6,7 @@ namespace AIArmada\FilamentOrganizations;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 final class FilamentOrganizationsPlugin implements Plugin
 {
@@ -19,7 +20,7 @@ final class FilamentOrganizationsPlugin implements Plugin
         $plugin = filament(app(self::class)->getId());
 
         if (! $plugin instanceof static) {
-            throw new \LogicException('The Filament Organizations plugin is not registered.');
+            throw new LogicException('The Filament Organizations plugin is not registered.');
         }
 
         return $plugin;

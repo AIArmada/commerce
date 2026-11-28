@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use Filament\Facades\Filament;
 use AIArmada\Tax\Models\TaxZone;
+use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;

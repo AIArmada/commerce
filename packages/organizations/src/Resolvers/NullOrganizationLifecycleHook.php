@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Resolvers;
 
-use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 

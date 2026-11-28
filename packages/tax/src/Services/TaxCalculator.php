@@ -6,8 +6,6 @@ namespace AIArmada\Tax\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
-use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Events\TaxCalculated;
 use AIArmada\Tax\Events\TaxExemptionApplied;
@@ -16,6 +14,8 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Settings\TaxSettings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;

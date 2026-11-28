@@ -6,9 +6,9 @@ namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

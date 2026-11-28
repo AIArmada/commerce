@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Illuminate\Support\Facades\DB;
 
 describe('AddressZoneResolver', function (): void {
