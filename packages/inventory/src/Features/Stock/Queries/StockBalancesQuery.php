@@ -11,11 +11,17 @@ use Illuminate\Database\Eloquent\Builder;
 
 final readonly class StockBalancesQuery implements StockBalances
 {
-    public function rows(?array $items = null): iterable
+    public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false): iterable
     {
         foreach ($items === null ? [null] : array_chunk($items, 200) as $chunk) {
-            $query = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-                ->where('quantity_on_hand', '>', 0);
+            $query = $exactOwner
+                ? InventoryOwnerScope::forMutation(InventoryLevel::query())
+                : InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query());
+            $query->where('quantity_on_hand', '>', 0);
+
+            if ($locationId !== null) {
+                $query->where('location_id', $locationId);
+            }
 
             if ($chunk !== null) {
                 $query->where(function (Builder $query) use ($chunk): void {

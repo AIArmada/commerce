@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -79,28 +81,12 @@ final class ValuationService
     public function getLocationValuation(string $locationId, CostingMethod $method): array
     {
         $this->getScopedLocationOrFail($locationId);
-
-        $layers = InventoryOwnerScope::applyToLocationQuery(
-            InventoryCostLayer::query()
-                ->where('location_id', $locationId)
-                ->withRemainingQuantity()
-                ->usingMethod($method)
-        )->get();
-
-        $totalQuantity = 0;
-        $totalValue = 0;
-        $skuSet = [];
-
-        foreach ($layers as $layer) {
-            $totalQuantity += $layer->remaining_quantity;
-            $totalValue += $layer->remainingValue();
-            $skuSet[$layer->inventoryable_type . '-' . $layer->inventoryable_id] = true;
-        }
+        $totals = $this->summarize($method, $locationId);
 
         return [
-            'total_quantity' => $totalQuantity,
-            'total_value' => $totalValue,
-            'sku_count' => count($skuSet),
+            'total_quantity' => $totals['total_quantity'],
+            'total_value' => $totals['total_value'],
+            'sku_count' => $totals['sku_count'],
         ];
     }
 
@@ -111,41 +97,13 @@ final class ValuationService
      */
     public function getTotalValuation(CostingMethod $method): array
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryCostLayer::query()
-                ->withRemainingQuantity()
-                ->usingMethod($method)
-        );
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $query->whereNotNull('location_id');
-            }
-        }
-
-        $layers = $query->get();
-
-        $totalQuantity = 0;
-        $totalValue = 0;
-        $skuSet = [];
-        $locationSet = [];
-
-        foreach ($layers as $layer) {
-            $totalQuantity += $layer->remaining_quantity;
-            $totalValue += $layer->remainingValue();
-            $skuSet[$layer->inventoryable_type . '-' . $layer->inventoryable_id] = true;
-            if ($layer->location_id) {
-                $locationSet[$layer->location_id] = true;
-            }
-        }
+        $totals = $this->summarize($method);
 
         return [
-            'total_quantity' => $totalQuantity,
-            'total_value' => $totalValue,
-            'sku_count' => count($skuSet),
-            'location_count' => count($locationSet),
+            'total_quantity' => $totals['total_quantity'],
+            'total_value' => $totals['total_value'],
+            'sku_count' => $totals['sku_count'],
+            'location_count' => $totals['location_count'],
         ];
     }
 
@@ -159,24 +117,27 @@ final class ValuationService
     ): InventoryValuationSnapshot {
         $snapshotDate = $snapshotDate ?? today();
 
-        $location = $locationId !== null
-            ? $this->getScopedLocationOrFail($locationId)
-            : null;
+        if ($locationId !== null && ! app(LocationVisibility::class)->isWritable($locationId)) {
+            throw new InvalidArgumentException('Invalid location for current owner');
+        }
 
-        $valuation = $locationId !== null
-            ? $this->getLocationValuation($locationId, $method)
-            : $this->getTotalValuation($method);
-
-        $previousSnapshot = $this->getLatestSnapshot($method, $locationId);
+        $valuation = $this->summarize($method, $locationId, true);
+        $previousQuery = InventoryOwnerScope::forMutation(InventoryValuationSnapshot::query())
+            ->usingMethod($method)
+            ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+            ->where('location_id', $locationId)
+            ->whereDate('snapshot_date', '<=', $snapshotDate)
+            ->latestBySnapshotDate()
+            ->orderByDesc('id');
+        $previousSnapshot = $previousQuery->first();
         $variance = $previousSnapshot !== null
             ? $valuation['total_value'] - $previousSnapshot->total_value_minor
             : null;
 
-        $breakdown = $this->getBreakdownByCategory($method, $locationId);
+        $owner = InventoryOwnerScope::resolveOwner();
 
-        $owner = $location?->owner ?? InventoryOwnerScope::resolveOwner();
-
-        return InventoryValuationSnapshot::create([
+        $snapshot = new InventoryValuationSnapshot;
+        $snapshot->forceFill([
             'owner_type' => $owner?->getMorphClass(),
             'owner_id' => $owner?->getKey(),
             'location_id' => $locationId,
@@ -190,8 +151,10 @@ final class ValuationService
             'currency' => config('inventory.defaults.currency', 'MYR'),
             'sku_count' => $valuation['sku_count'],
             'variance_from_previous_minor' => $variance,
-            'breakdown' => $breakdown,
-        ]);
+            'breakdown' => $valuation['breakdown'],
+        ])->save();
+
+        return $snapshot;
     }
 
     /**
@@ -201,7 +164,9 @@ final class ValuationService
     {
         $query = InventoryValuationSnapshot::query()
             ->usingMethod($method)
-            ->latestBySnapshotDate();
+            ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
+            ->latestBySnapshotDate()
+            ->orderByDesc('id');
 
         if (InventoryOwnerScope::isEnabled()) {
             $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
@@ -230,6 +195,7 @@ final class ValuationService
     ): Collection {
         $query = InventoryValuationSnapshot::query()
             ->usingMethod($method)
+            ->where('currency', (string) config('inventory.defaults.currency', 'MYR'))
             ->betweenDates($from, $to)
             ->orderBy('snapshot_date');
 
@@ -315,7 +281,7 @@ final class ValuationService
 
             $snapshots->push($this->createSnapshot($method));
 
-            $locations = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+            $locations = InventoryOwnerScope::forMutation(InventoryLocation::query())
                 ->where('is_active', true)
                 ->get();
 
@@ -328,44 +294,67 @@ final class ValuationService
     }
 
     /**
-     * Get breakdown by category/type.
-     *
-     * @return array<string, array{units: int, value: int}>
+     * @return array{total_quantity: int, total_value: int, sku_count: int, location_count: int, breakdown: array<string, array{units: int, value: int}>}
      */
-    private function getBreakdownByCategory(CostingMethod $method, ?string $locationId = null): array
+    private function summarize(CostingMethod $method, ?string $locationId = null, bool $exactOwner = false): array
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryCostLayer::query()
-                ->withRemainingQuantity()
-                ->usingMethod($method)
-                ->selectRaw('inventoryable_type, SUM(remaining_quantity) as units, SUM(remaining_quantity * unit_cost_minor) as value')
-                ->groupBy('inventoryable_type')
-        );
+        $currency = (string) config('inventory.defaults.currency', 'MYR');
 
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
+        if ($method === CostingMethod::Standard) {
+            $rows = app(StandardStockValuesQuery::class)->rows($currency, locationId: $locationId, exactOwner: $exactOwner);
+        } else {
+            $query = $exactOwner
+                ? InventoryOwnerScope::forMutation(InventoryCostLayer::query())
+                : InventoryOwnerScope::applyToLocationQuery(InventoryCostLayer::query());
 
-            if (! $includeNullLocation) {
-                $query->whereNotNull('location_id');
+            $query->withRemainingQuantity()->usingMethod($method)->where('currency', $currency);
+
+            if ($locationId !== null) {
+                $query->where('location_id', $locationId);
             }
+
+            $rows = $query->toBase()
+                ->select('inventoryable_type', 'inventoryable_id', 'location_id')
+                ->selectRaw('SUM(remaining_quantity) AS quantity, SUM(remaining_quantity * unit_cost_minor) AS total_value')
+                ->groupBy('inventoryable_type', 'inventoryable_id', 'location_id')
+                ->cursor()
+                ->map(static fn ($row): array => [
+                    'inventoryable_type' => (string) $row->inventoryable_type,
+                    'inventoryable_id' => (string) $row->inventoryable_id,
+                    'location_id' => $row->location_id === null ? null : (string) $row->location_id,
+                    'quantity' => (int) $row->quantity,
+                    'total_value' => (int) $row->total_value,
+                ]);
         }
 
-        if ($locationId !== null) {
-            $this->getScopedLocationOrFail($locationId);
-            $query->where('location_id', $locationId);
-        }
-
-        $results = $query->get();
-
+        $quantity = 0;
+        $value = 0;
+        $skus = [];
+        $locations = [];
         $breakdown = [];
-        foreach ($results as $result) {
-            $breakdown[$result->inventoryable_type] = [
-                'units' => (int) $result->units,
-                'value' => (int) $result->value,
-            ];
+
+        foreach ($rows as $row) {
+            $type = $row['inventoryable_type'];
+            $quantity += $row['quantity'];
+            $value += $row['total_value'];
+            $skus[$type][$row['inventoryable_id']] = true;
+
+            if ($row['location_id'] !== null) {
+                $locations[$row['location_id']] = true;
+            }
+
+            $breakdown[$type] ??= ['units' => 0, 'value' => 0];
+            $breakdown[$type]['units'] += $row['quantity'];
+            $breakdown[$type]['value'] += $row['total_value'];
         }
 
-        return $breakdown;
+        return [
+            'total_quantity' => $quantity,
+            'total_value' => $value,
+            'sku_count' => array_sum(array_map(count(...), $skus)),
+            'location_count' => count($locations),
+            'breakdown' => $breakdown,
+        ];
     }
 
     private function getScopedLocationOrFail(string $locationId): InventoryLocation

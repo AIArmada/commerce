@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use Carbon\CarbonImmutable;
@@ -163,6 +164,39 @@ describe('getTotalValuation', function (): void {
 });
 
 describe('createSnapshot', function (): void {
+    it('uses standard costs consistently for totals and breakdowns in the configured currency', function (): void {
+        config(['inventory.defaults.currency' => 'MYR']);
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 3,
+        ]);
+        InventoryStandardCost::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'standard_cost_minor' => 250,
+            'currency' => 'MYR',
+            'effective_from' => now()->subDay(),
+            'effective_to' => null,
+        ]);
+        InventoryValuationSnapshot::factory()->create([
+            'costing_method' => CostingMethod::Standard,
+            'location_id' => null,
+            'currency' => 'USD',
+            'snapshot_date' => now()->subDay(),
+        ]);
+
+        $snapshot = $this->service->createSnapshot(CostingMethod::Standard);
+
+        expect($snapshot->total_quantity)->toBe(10)
+            ->and($snapshot->total_value_minor)->toBe(2500)
+            ->and($snapshot->variance_from_previous_minor)->toBeNull()
+            ->and($snapshot->breakdown[$this->product->getMorphClass()])->toBe(['units' => 10, 'value' => 2500])
+            ->and($this->service->getLocationValuation($this->location->id, CostingMethod::Standard)['total_value'])->toBe(2500);
+    });
+
     it('creates a valuation snapshot', function (): void {
         InventoryCostLayer::factory()->create([
             'inventoryable_type' => $this->product->getMorphClass(),

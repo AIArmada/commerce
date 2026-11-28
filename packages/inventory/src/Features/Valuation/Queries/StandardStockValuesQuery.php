@@ -16,14 +16,14 @@ final readonly class StandardStockValuesQuery
 
     /**
      * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string}>|null  $items
-     * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, total_value: int}>
+     * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, quantity: int, total_value: int}>
      */
-    public function rows(string $currency, ?array $items = null): iterable
+    public function rows(string $currency, ?array $items = null, ?string $locationId = null, bool $exactOwner = false): iterable
     {
         $now = CarbonImmutable::now();
         $chunk = [];
 
-        foreach ($this->balances->rows($items) as $balance) {
+        foreach ($this->balances->rows($items, $locationId, $exactOwner) as $balance) {
             $chunk[] = $balance;
 
             if (count($chunk) === 200) {
@@ -39,7 +39,7 @@ final readonly class StandardStockValuesQuery
 
     /**
      * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string, owner_type: string|null, owner_id: string|null, quantity: int}>  $balances
-     * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, total_value: int}>
+     * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, quantity: int, total_value: int}>
      */
     private function valueChunk(array $balances, string $currency, CarbonImmutable $now): iterable
     {
@@ -76,6 +76,7 @@ final readonly class StandardStockValuesQuery
                 'inventoryable_type' => $balance['inventoryable_type'],
                 'inventoryable_id' => $balance['inventoryable_id'],
                 'location_id' => $balance['location_id'],
+                'quantity' => $balance['quantity'],
                 'total_value' => $balance['quantity'] * $unitCosts[$key],
             ];
         }
