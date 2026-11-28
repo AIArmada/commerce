@@ -15,6 +15,7 @@ use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Features\Reservations\Actions\InvalidateBatchReservations;
 use AIArmada\Inventory\Features\Reservations\Api\ActiveAllocationCount;
 use AIArmada\Inventory\Features\Reservations\Api\CartStockReservations;
+use AIArmada\Inventory\Features\Reservations\Api\ReservationReconciliation;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
@@ -24,6 +25,7 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ValidateInven
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\ActiveAllocationCountQuery;
+use AIArmada\Inventory\Features\Reservations\Queries\ReservationReconciliationQuery;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
@@ -37,6 +39,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(InventoryAllocationService::class);
         $app->alias(InventoryAllocationService::class, CartStockReservations::class);
         $app->singleton(ActiveAllocationCount::class, ActiveAllocationCountQuery::class);
+        $app->singleton(ReservationReconciliation::class, ReservationReconciliationQuery::class);
         $app->alias(InventoryAllocationService::class, 'inventory.allocations');
         $app->singleton(CheckoutReservationService::class);
         $app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);

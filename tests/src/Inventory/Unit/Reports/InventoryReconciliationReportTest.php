@@ -89,6 +89,7 @@ it('reconciles completed operations without a query per operation', function ():
 
     $orderId = (string) str()->uuid();
     $inventory->ship($item, $location->id, 1, reason: 'order', reference: $orderId);
+    $inventory->ship($item, $location->id, 1, reason: 'order', reference: $orderId);
 
     InventoryOperation::create([
         'order_id' => $orderId,
