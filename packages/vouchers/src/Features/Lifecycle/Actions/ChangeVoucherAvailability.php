@@ -16,11 +16,9 @@ final readonly class ChangeVoucherAvailability implements VoucherAvailability
     public function handle(Voucher $voucher, bool $active): void
     {
         $voucher->getConnection()->transaction(function () use ($voucher, $active): void {
-            if (config('vouchers.owner.enabled', false)) {
-                OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey());
-            }
-
-            $locked = Voucher::query()->whereKey($voucher->getKey())->lockForUpdate()->firstOrFail();
+            $locked = config('vouchers.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey(), lockForUpdate: true)
+                : Voucher::query()->whereKey($voucher->getKey())->lockForUpdate()->firstOrFail();
             $expected = $active ? Paused::class : Active::class;
             $target = $active ? Active::class : Paused::class;
 

@@ -29,11 +29,9 @@ final class UpdateVoucher implements VoucherUpdater
             : $this->voucherQuery()->where('code', $this->normalizeCode($voucher))->firstOrFail();
 
         return $record->getConnection()->transaction(function () use ($record, $data): VoucherModel {
-            if (config('vouchers.owner.enabled', false)) {
-                $record = OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $record->getKey());
-            }
-
-            $locked = VoucherModel::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+            $locked = config('vouchers.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $record->getKey(), lockForUpdate: true)
+                : VoucherModel::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
             if (isset($data['code'])) {
                 $data['code'] = $this->normalizeCode((string) $data['code']);

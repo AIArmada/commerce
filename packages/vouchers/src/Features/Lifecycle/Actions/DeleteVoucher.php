@@ -24,18 +24,11 @@ final class DeleteVoucher implements VoucherDeletion
         }
 
         return $record->getConnection()->transaction(function () use ($record): bool {
-            $this->authorize($record);
-
-            $locked = Voucher::query()->whereKey($record->getKey())->lockForUpdate()->first();
+            $locked = config('vouchers.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey(), lockForUpdate: true)
+                : Voucher::query()->whereKey($record->getKey())->lockForUpdate()->first();
 
             return $locked instanceof Voucher && $locked->delete() === true;
         });
-    }
-
-    private function authorize(Voucher $voucher): void
-    {
-        if (config('vouchers.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey());
-        }
     }
 }

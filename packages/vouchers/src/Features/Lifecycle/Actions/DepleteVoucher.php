@@ -16,11 +16,9 @@ final readonly class DepleteVoucher implements VoucherDepletion
     public function handle(Voucher $voucher): void
     {
         $voucher->getConnection()->transaction(function () use ($voucher): void {
-            if (config('vouchers.owner.enabled', false)) {
-                OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey());
-            }
-
-            $locked = Voucher::query()->whereKey($voucher->getKey())->lockForUpdate()->firstOrFail();
+            $locked = config('vouchers.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey(), lockForUpdate: true)
+                : Voucher::query()->whereKey($voucher->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->usage_limit === null || $locked->usages()->count() < $locked->usage_limit
                 || (! $locked->status instanceof Active && ! $locked->status instanceof Paused)) {

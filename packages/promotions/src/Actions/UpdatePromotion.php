@@ -16,11 +16,9 @@ final readonly class UpdatePromotion
     public function handle(Promotion $promotion, array $data): Promotion
     {
         return $promotion->getConnection()->transaction(function () use ($promotion, $data): Promotion {
-            if (config('promotions.features.owner.enabled', false)) {
-                $promotion = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
-            }
-
-            $locked = Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
+            $locked = config('promotions.features.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey(), lockForUpdate: true)
+                : Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
             unset($data['owner_type'], $data['owner_id'], $data['usage_count'], $data['deactivated_at']);
             $this->validator->validate(array_replace($locked->getAttributes(), $data), $locked);
             $locked->update($data);

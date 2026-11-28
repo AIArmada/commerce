@@ -20,14 +20,9 @@ final readonly class TransitionWalletTimestamp implements WalletTimestampTransit
         $column = $redeemed ? 'redeemed_at' : 'claimed_at';
 
         $wallet->getConnection()->transaction(function () use ($wallet, $column): void {
-            if (config('vouchers.owner.enabled', false)) {
-                OwnerWriteGuard::findOrFailForOwner(VoucherWallet::class, $wallet->getKey());
-            }
-
-            $fresh = $wallet->newQuery()
-                ->whereKey($wallet->getKey())
-                ->lockForUpdate()
-                ->first();
+            $fresh = config('vouchers.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(VoucherWallet::class, $wallet->getKey(), lockForUpdate: true)
+                : $wallet->newQuery()->whereKey($wallet->getKey())->lockForUpdate()->first();
 
             if (! $fresh instanceof VoucherWallet) {
                 return;

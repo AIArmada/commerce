@@ -31,6 +31,7 @@ final class ResolveOwnedModelOrFailAction
         Model | string | null $owner = OwnerContext::CURRENT,
         bool $includeGlobal = false,
         ?string $message = null,
+        bool $lockForUpdate = false,
     ): Model {
         /** @var Builder<TModel> $query */
         $query = $modelClass::query();
@@ -85,6 +86,10 @@ final class ResolveOwnedModelOrFailAction
                 '%s does not implement owner scoping. Use the HasOwner trait before using OwnerWriteGuard.',
                 $modelClass,
             ));
+        }
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
         }
 
         $model = $query->whereKey($id)->first();

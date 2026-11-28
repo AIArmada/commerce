@@ -20,7 +20,8 @@ final readonly class IncrementPromotionUsage
 
         if (config('promotions.features.owner.enabled', false)) {
             $owned = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
-            $query->forOwner($owned->owner, false);
+            $query->where('owner_type', $owned->owner_type)
+                ->where('owner_id', $owned->owner_id);
         }
 
         if ($query->increment('usage_count') !== 1) {
