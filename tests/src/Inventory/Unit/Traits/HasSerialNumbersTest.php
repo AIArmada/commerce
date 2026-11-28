@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\SerializedInventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
@@ -133,21 +134,27 @@ describe('HasSerialNumbers trait', function (): void {
             expect($serial->serial_number)->toBe('SN-12345');
             expect($serial->status)->toBeInstanceOf(Available::class);
             expect($serial->condition)->toBe(SerialCondition::New->value);
+            expect($serial->history)->toHaveCount(1);
         });
 
         it('creates serial with all parameters', function (): void {
             $warrantyDate = CarbonImmutable::now()->addYear();
+            $batch = InventoryBatch::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+            ]);
 
             $serial = $this->item->registerSerial(
                 'SN-67890',
                 $this->location->id,
-                'batch-123',
+                $batch->id,
                 SerialCondition::Refurbished,
                 5000,
                 $warrantyDate,
             );
 
-            expect($serial->batch_id)->toBe('batch-123');
+            expect($serial->batch_id)->toBe($batch->id);
             expect($serial->condition)->toBe(SerialCondition::Refurbished->value);
             expect($serial->unit_cost_minor)->toBe(5000);
             expect($serial->warranty_expires_at->toDateString())->toBe($warrantyDate->toDateString());
@@ -465,4 +472,29 @@ describe('HasSerialNumbers trait', function (): void {
             expect($this->item->serialsUnderWarranty())->toHaveCount(1);
         });
     });
+});
+
+it('rolls back all serials and their history when registration fails midway', function (): void {
+    $this->item->registerSerial('EXISTING', $this->location->id);
+
+    expect(fn () => $this->item->registerSerials(['NEW', 'EXISTING'], $this->location->id))
+        ->toThrow(\Illuminate\Database\QueryException::class);
+
+    expect($this->item->serials()->count())->toBe(1)
+        ->and($this->item->findSerial('NEW'))->toBeNull()
+        ->and($this->item->findSerial('EXISTING')->history()->count())->toBe(1);
+});
+
+it('rejects a serial registration against a batch for another item', function (): void {
+    $other = SerializedInventoryItem::create(['name' => 'Other item']);
+    $batch = InventoryBatch::factory()->create([
+        'inventoryable_type' => $other->getMorphClass(),
+        'inventoryable_id' => $other->getKey(),
+        'location_id' => $this->location->id,
+    ]);
+
+    expect(fn () => $this->item->registerSerial('WRONG-BATCH', $this->location->id, $batch->id))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($this->item->serials()->count())->toBe(0);
 });

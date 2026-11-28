@@ -706,7 +706,7 @@ coordinate remain valid and sort after coordinate-aware locations.
 ### HasSerialNumbers Trait
 
 ```php
-use AIArmada\Inventory\Traits\HasSerialNumbers;
+use AIArmada\Inventory\Features\Traceability\Traits\HasSerialNumbers;
 
 class Product extends Model
 {

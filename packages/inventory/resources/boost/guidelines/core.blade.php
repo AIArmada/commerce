@@ -31,3 +31,5 @@ Stagnant-stock reporting returns recorded inventory value for the exact SKU/loca
 Cycle counts are recorded through `AdjustInventory` with canonical reason `cycle_count`, including accurate zero-variance counts. Adjustment movements record locked before/after quantities. Cycle-count monetary variance is unavailable (`null`) for nonzero variances without historical cost evidence; percentage is unavailable if any count lacks a meaningful baseline.
 
 Use `Features/Valuation/Api/InventoryValues` for reporting across FIFO, weighted-average and standard costing. Standard-cost lookup matches exact stock owner and item identities, with no cross-owner fallback.
+
+Serial-number tracking uses `Features/Traceability/Traits/HasSerialNumbers`. Single and bulk registration use the Traceability persistence boundary and record registration history atomically.

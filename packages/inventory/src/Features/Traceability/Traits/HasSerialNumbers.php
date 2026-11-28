@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Traits;
+namespace AIArmada\Inventory\Features\Traceability\Traits;
 
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use Carbon\CarbonImmutable;
@@ -97,16 +98,15 @@ trait HasSerialNumbers
         ?int $unitCostMinor = null,
         ?CarbonImmutable $warrantyExpiresAt = null
     ): InventorySerial {
-        return $this->serials()->create([
-            'serial_number' => $serialNumber,
-            'location_id' => $locationId,
-            'batch_id' => $batchId,
-            'status' => SerialStatus::normalize(Available::class),
-            'condition' => $condition->value,
-            'unit_cost_minor' => $unitCostMinor,
-            'warranty_expires_at' => $warrantyExpiresAt,
-            'received_at' => CarbonImmutable::now(),
-        ]);
+        return app(SerialService::class)->register(
+            $this,
+            $serialNumber,
+            $locationId,
+            $batchId,
+            $condition,
+            $unitCostMinor,
+            $warrantyExpiresAt,
+        );
     }
 
     /**
@@ -123,20 +123,22 @@ trait HasSerialNumbers
         ?int $unitCostMinor = null,
         ?CarbonImmutable $warrantyExpiresAt = null
     ): Collection {
-        $serials = new Collection;
+        return DB::transaction(function () use ($serialNumbers, $locationId, $batchId, $condition, $unitCostMinor, $warrantyExpiresAt): Collection {
+            $serials = new Collection;
 
-        foreach ($serialNumbers as $serialNumber) {
-            $serials->push($this->registerSerial(
-                $serialNumber,
-                $locationId,
-                $batchId,
-                $condition,
-                $unitCostMinor,
-                $warrantyExpiresAt
-            ));
-        }
+            foreach ($serialNumbers as $serialNumber) {
+                $serials->push($this->registerSerial(
+                    $serialNumber,
+                    $locationId,
+                    $batchId,
+                    $condition,
+                    $unitCostMinor,
+                    $warrantyExpiresAt,
+                ));
+            }
 
-        return $serials;
+            return $serials;
+        });
     }
 
     /**

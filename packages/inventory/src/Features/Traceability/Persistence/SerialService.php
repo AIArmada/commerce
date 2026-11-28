@@ -87,6 +87,12 @@ final class SerialService
         ?CarbonImmutable $warrantyExpiresAt = null,
         ?string $userId = null
     ): InventorySerial {
+        $serialNumber = mb_trim($serialNumber);
+
+        if (! $model->exists || $model->getKey() === null || $serialNumber === '' || ($unitCostMinor !== null && $unitCostMinor < 0)) {
+            throw new InvalidArgumentException('A persisted item, nonempty serial number and nonnegative cost are required');
+        }
+
         return DB::transaction(function () use (
             $model,
             $serialNumber,
@@ -99,6 +105,23 @@ final class SerialService
         ): InventorySerial {
             $this->assertLocationIdAllowedForCurrentOwner($locationId);
             $this->assertBatchIdAllowedForCurrentOwner($batchId);
+
+            if ($locationId !== null && ! InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId)->exists()) {
+                throw new InvalidArgumentException('Invalid serial location');
+            }
+
+            if ($batchId !== null) {
+                $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
+                    ->whereKey($batchId)
+                    ->where('inventoryable_type', $model->getMorphClass())
+                    ->where('inventoryable_id', $model->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($batch === null || ($locationId !== null && $batch->location_id !== $locationId)) {
+                    throw new InvalidArgumentException('Batch does not match the serial item or location');
+                }
+            }
 
             $serial = InventorySerial::create([
                 'inventoryable_type' => $model->getMorphClass(),

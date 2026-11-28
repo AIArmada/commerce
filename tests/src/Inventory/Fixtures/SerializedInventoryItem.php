@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Inventory\Fixtures;
 
 use AIArmada\Inventory\Contracts\InventoryableInterface;
 use AIArmada\Inventory\Traits\HasInventory;
-use AIArmada\Inventory\Traits\HasSerialNumbers;
+use AIArmada\Inventory\Features\Traceability\Traits\HasSerialNumbers;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
