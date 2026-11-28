@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Actions\SyncWebhook;
 use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Cashier\Events\WebhookHandled;
 use AIArmada\Cashier\Events\WebhookReceived;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Drivers\ChipGateway;
-use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;

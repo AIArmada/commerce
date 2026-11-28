@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Policies\PaymentMethodPolicy;
+use AIArmada\Cashier\Policies\SubscriptionPolicy;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier;
@@ -25,8 +27,6 @@ use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentCashier\Pages\BillingDashboard;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use AIArmada\FilamentCashier\Pages\GatewaySetup;
-use AIArmada\Cashier\Policies\PaymentMethodPolicy;
-use AIArmada\Cashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;

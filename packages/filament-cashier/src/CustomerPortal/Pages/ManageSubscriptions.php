@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
-use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -14,9 +14,9 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
-use Throwable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 final class ManageSubscriptions extends Page
 {
@@ -145,5 +145,4 @@ final class ManageSubscriptions extends Page
                 ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
         ];
     }
-
 }

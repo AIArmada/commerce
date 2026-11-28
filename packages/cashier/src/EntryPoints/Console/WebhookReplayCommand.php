@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\EntryPoints\Console;
 
 use AIArmada\Cashier\Actions\SyncWebhook;
+use AIArmada\Cashier\Contracts\WebhookEventSource;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Contracts\WebhookEventSource;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;

@@ -113,5 +113,4 @@ class GatewayManager extends Manager
 
         return $this->container->make('cashier.gateway.chip');
     }
-
 }

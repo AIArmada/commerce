@@ -227,5 +227,4 @@ final class GatewayManagement extends Page
 
         return 'filament-cashier.default_gateway.' . $panelId;
     }
-
 }

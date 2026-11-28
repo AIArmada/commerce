@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
+use AIArmada\Cashier\Exceptions\Payment\IncompletePayment;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 
@@ -102,7 +103,7 @@ interface PaymentContract extends Arrayable, Jsonable
     /**
      * Validate the payment (throws on failure).
      *
-     * @throws \AIArmada\Cashier\Exceptions\Payment\IncompletePayment
+     * @throws IncompletePayment
      */
     public function validate(): self;
 

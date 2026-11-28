@@ -114,4 +114,3 @@ final class ManageCustomerPaymentMethod
         return false;
     }
 }
-

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Drivers\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
+use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Drivers\ChipGateway;
 use InvalidArgumentException;
 

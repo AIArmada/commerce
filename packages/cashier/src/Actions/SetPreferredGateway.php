@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Actions;
 
+use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Support\ActionGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ final class SetPreferredGateway
     {
         $gateway = ActionGuard::gatewayName($gateway);
 
-        if ($billable instanceof \AIArmada\Cashier\Contracts\BillableContract) {
+        if ($billable instanceof BillableContract) {
             ActionGuard::assertBillableInScope($billable);
         }
 

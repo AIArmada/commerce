@@ -6,12 +6,12 @@ namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\Cashier\Actions\ManageCustomerPaymentMethod;
 use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Throwable;
 
