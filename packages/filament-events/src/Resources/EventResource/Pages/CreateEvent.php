@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventResource\Pages;
 
 use AIArmada\Events\Contracts\EventTemplateService;
+use AIArmada\Events\Features\Catalog\Actions\ManageEventAction;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -18,6 +20,14 @@ use Throwable;
 class CreateEvent extends CreateRecord
 {
     protected static string $resource = EventResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function handleRecordCreation(array $data): Model
+    {
+        return app(ManageEventAction::class)->save(null, $data, Filament::auth()->user());
+    }
 
     protected function getHeaderActions(): array
     {

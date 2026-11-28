@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\Pages;
 
+use AIArmada\Events\Features\Catalog\Actions\DeleteScheduleRecordAction;
 use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource;
@@ -35,7 +36,7 @@ final class EditEventOccurrence extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()->using(fn (Model $record): bool => app(DeleteScheduleRecordAction::class)->handle('occurrence', (string) $record->getKey(), Filament::auth()->user())),
         ];
     }
 }

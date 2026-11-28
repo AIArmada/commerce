@@ -191,7 +191,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->publish((string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
+                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['pending_review', 'scheduled', 'delayed', 'postponed', 'rescheduled'], true))
                 ->requiresConfirmation(),
             Action::make('archive')
                 ->label('Archive')
@@ -203,7 +203,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->archive('event', (string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && (string) $record->status === 'approved')
+                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending_review', 'scheduled', 'published', 'cancelled', 'completed', 'expired'], true))
                 ->requiresConfirmation(),
             Action::make('cancel')
                 ->label('Cancel')
@@ -218,7 +218,7 @@ class EventResource extends Resource
 
                     app(EventLifecycleWorkflow::class)->cancel('event', (string) $record->getKey(), $data['reason']);
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
+                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['pending_review', 'scheduled', 'published', 'delayed', 'postponed', 'rescheduled'], true))
                 ->requiresConfirmation(),
             Action::make('clone')
                 ->label('Clone')
@@ -306,7 +306,7 @@ class EventResource extends Resource
             Section::make('Lifecycle')
                 ->schema([
                     Select::make('status')
-                        ->options(static fn (): array => static::getStatusOptions())
+                        ->options(['draft' => 'Draft', 'pending_review' => 'Pending Review', 'scheduled' => 'Scheduled'])
                         ->default('draft')
                         ->hiddenOn('edit')
                         ->required(),

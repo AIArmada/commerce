@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSessionResource\Pages;
 
+use AIArmada\Events\Features\Catalog\Actions\DeleteScheduleRecordAction;
 use AIArmada\Events\Features\Catalog\Actions\UpdateEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\FilamentEvents\Resources\EventSessionResource;
@@ -35,7 +36,7 @@ final class EditEventSession extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()->using(fn (Model $record): bool => app(DeleteScheduleRecordAction::class)->handle('session', (string) $record->getKey(), Filament::auth()->user())),
         ];
     }
 }
