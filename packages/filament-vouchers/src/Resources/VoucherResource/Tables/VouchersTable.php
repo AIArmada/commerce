@@ -289,8 +289,9 @@ final class VouchersTable
                         ->action(function (Collection $records): void {
                             foreach ($records as $record) {
                                 abort_unless(VoucherResource::canDelete($record), 403);
-                                app(VoucherDeletion::class)->handle($record);
                             }
+
+                            app(VoucherDeletion::class)->handleMany($records);
                         })
                         ->label('Delete selected')
                         ->icon(Heroicon::OutlinedTrash)

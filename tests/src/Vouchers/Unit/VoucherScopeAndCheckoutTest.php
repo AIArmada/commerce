@@ -443,3 +443,21 @@ it('enforces global voucher code uniqueness in the database', function (): void 
         expect(fn () => scopeVoucher(['code' => 'UNIQUE-GLOBAL-CODE']))->toThrow(QueryException::class);
     });
 });
+
+it('rolls back voucher batch deletion when a selected record is not writable by the owner', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = scopeWalletUser('batch-delete-owner');
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-OWNED']));
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-GLOBAL']));
+
+    OwnerContext::withOwner($owner, function () use ($owned, $global): void {
+        expect(fn () => app(\AIArmada\Vouchers\Runtime\VoucherDeletion::class)->handleMany(new \Illuminate\Database\Eloquent\Collection([$owned, $global])))
+            ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+
+        expect(Voucher::query()->whereKey($owned->id)->exists())->toBeTrue();
+    });
+
+    expect(OwnerContext::withOwner(null, fn () => Voucher::query()->whereKey($global->id)->exists()))->toBeTrue();
+});

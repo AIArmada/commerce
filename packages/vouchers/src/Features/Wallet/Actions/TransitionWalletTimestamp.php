@@ -6,6 +6,7 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use Illuminate\Database\Eloquent\Collection;
 use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Carbon\CarbonImmutable;
 
@@ -34,6 +35,20 @@ final readonly class TransitionWalletTimestamp implements WalletTimestampTransit
             }
 
             $wallet->setRawAttributes($fresh->getAttributes(), true);
+        });
+    }
+
+    /** @param Collection<int, VoucherWallet> $records */
+    public function handleMany(Collection $records, bool $redeemed): void
+    {
+        if ($records->isEmpty()) {
+            return;
+        }
+
+        (new VoucherWallet)->getConnection()->transaction(function () use ($records, $redeemed): void {
+            foreach ($records->sortBy(static fn (VoucherWallet $record): string => (string) $record->getKey()) as $record) {
+                $this->handle($record, $redeemed);
+            }
         });
     }
 }

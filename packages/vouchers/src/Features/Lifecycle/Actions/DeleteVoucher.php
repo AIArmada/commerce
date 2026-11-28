@@ -7,6 +7,8 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Database\Eloquent\Collection;
+use RuntimeException;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
 
 final class DeleteVoucher implements VoucherDeletion
@@ -29,6 +31,22 @@ final class DeleteVoucher implements VoucherDeletion
                 : Voucher::query()->whereKey($record->getKey())->lockForUpdate()->first();
 
             return $locked instanceof Voucher && $locked->delete() === true;
+        });
+    }
+
+    /** @param Collection<int, Voucher> $records */
+    public function handleMany(Collection $records): void
+    {
+        if ($records->isEmpty()) {
+            return;
+        }
+
+        (new Voucher)->getConnection()->transaction(function () use ($records): void {
+            foreach ($records->sortBy(static fn (Voucher $record): string => (string) $record->getKey()) as $record) {
+                if (! $this->handle($record)) {
+                    throw new RuntimeException('Unable to delete voucher in the selected batch.');
+                }
+            }
         });
     }
 }
