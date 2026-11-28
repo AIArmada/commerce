@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\References\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\References\Actions\DeleteReference;
+use AIArmada\References\Actions\SaveReference;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferencePartType;
 use AIArmada\References\Enums\ReferenceRecordKind;
@@ -103,6 +103,11 @@ class Reference extends Model implements HasMedia
             $reference->validateParentHierarchy();
             $reference->stampPublishedAt();
         });
+    }
+
+    public function save(array $options = []): bool
+    {
+        return (new SaveReference)->handle($this, fn (): bool => parent::save($options));
     }
 
     public function delete(): ?bool
@@ -423,8 +428,12 @@ class Reference extends Model implements HasMedia
                 default => [],
             };
 
-            if (static::query()->withoutOwnerScope()->where('parent_id', $this->getKey())->whereNotIn('record_kind', $allowedChildren)->exists()) {
+            if ($this->newQuery()->withoutOwnerScope()->where('parent_id', $this->getKey())->whereNotIn('record_kind', $allowedChildren)->exists()) {
                 throw ValidationException::withMessages(['record_kind' => 'The record kind would invalidate existing children.']);
+            }
+
+            if ($kind !== ReferenceRecordKind::Work->value && $this->contributorsForRole(ReferenceContributorRole::Author)->exists()) {
+                throw ValidationException::withMessages(['record_kind' => 'Remove authorship before changing a work to another record kind.']);
             }
         }
 
@@ -437,10 +446,10 @@ class Reference extends Model implements HasMedia
         }
 
         /** @var Reference|null $parent */
-        $parent = $this->newQuery()->withoutOwnerScope()->whereKey($parentId)->first();
+        $parent = $this->newQuery()->whereKey($parentId)->lockForUpdate()->first();
 
         if ($parent === null) {
-            throw ValidationException::withMessages(['parent_id' => 'Invalid parent_id: reference not found.']);
+            throw ValidationException::withMessages(['parent_id' => 'Invalid parent_id: reference not found or inaccessible.']);
         }
 
         if ($this->exists && (string) $parent->getKey() === (string) $this->getKey()) {
@@ -463,12 +472,6 @@ class Reference extends Model implements HasMedia
         if (! (bool) config('references.owner.enabled', false)) {
             return;
         }
-
-        OwnerWriteGuard::findOrFailForOwner(
-            self::class,
-            (string) $parentId,
-            includeGlobal: (bool) config('references.owner.include_global', false),
-        );
 
         $parentGlobal = $parent->owner_type === null && $parent->owner_id === null;
         $includeGlobal = (bool) config('references.owner.include_global', false);
@@ -509,7 +512,7 @@ class Reference extends Model implements HasMedia
             $seen[] = $cursorParentId;
 
             /** @var Reference|null $cursor */
-            $cursor = static::query()->withoutOwnerScope()->whereKey($cursorParentId)->first();
+            $cursor = $this->newQuery()->whereKey($cursorParentId)->first();
 
             if ($cursor === null) {
                 break;
@@ -537,7 +540,8 @@ class Reference extends Model implements HasMedia
             return [$this->owner_type, $this->owner_id];
         }
 
-        $owner = OwnerContext::resolve();
+        $config = static::ownerScopeConfig();
+        $owner = $config->autoAssignOnCreate ? OwnerContext::resolveConfigured($config) : null;
 
         if ($owner === null) {
             return [null, null];

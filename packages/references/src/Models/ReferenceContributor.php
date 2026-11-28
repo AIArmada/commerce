@@ -33,6 +33,15 @@ class ReferenceContributor extends Model
         'role',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope('referenceOwner', static function (Builder $query): void {
+            if (Reference::ownerScopeConfig()->enabled) {
+                $query->whereHas('reference');
+            }
+        });
+    }
+
     public function getTable(): string
     {
         return (string) config('references.database.tables.reference_contributors', $this->table);

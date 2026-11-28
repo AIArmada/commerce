@@ -98,7 +98,7 @@ final readonly class DeleteReference
 
         $contributor = new ReferenceContributor;
         $contributor->setConnection($reference->getConnectionName());
-        $contributor->newQuery()->where('reference_id', $reference->getKey())->delete();
+        $contributor->newQueryWithoutScopes()->where('reference_id', $reference->getKey())->delete();
 
         if ($reference->newQueryWithoutScopes()->whereKey($reference->getKey())->delete() !== 1) {
             throw new RuntimeException('Reference deletion did not remove exactly one row.');

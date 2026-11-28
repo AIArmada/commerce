@@ -330,3 +330,19 @@ test('rejects malformed or duplicate reference parts', function (array $parts): 
     'non-string value' => [[['type' => 'page', 'value' => 1]]],
     'duplicate types' => [[['type' => 'page', 'value' => '1'], ['type' => 'page', 'value' => '2']]],
 ]);
+
+test('rejects saves based on stale hierarchy state', function (): void {
+    $work = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Original work']);
+    $parent = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'New parent']);
+    $stale = $work->fresh();
+
+    $work->update([
+        'record_kind' => ReferenceRecordKind::Edition,
+        'parent_id' => $parent->getKey(),
+    ]);
+
+    expect(fn () => $stale->update(['title' => 'Stale title']))->toThrow(ValidationException::class, 'record_kind');
+
+    expect($work->fresh()->title)->toBe('Original work')
+        ->and($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Edition);
+});

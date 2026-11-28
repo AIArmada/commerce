@@ -12,6 +12,7 @@ use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     config()->set('references.owner.enabled', true);
@@ -227,4 +228,34 @@ test('repeated sync keeps a single contributor identity', function (): void {
 
     expect($work->contributors()->count())->toBe(1)
         ->and($work->contributors()->firstOrFail()->getKey())->toBe($first);
+});
+
+test('contributor queries inherit reference owner visibility', function (): void {
+    $owner = makeContributorUser('contributor-read-owner@example.test');
+    $other = makeContributorUser('contributor-read-other@example.test');
+    $work = OwnerContext::withOwner($owner, function () use ($owner): Reference {
+        $work = makeWork('Private authors');
+        (new SyncReferenceContributors)->handle($work, ReferenceContributorRole::Author, $owner->getMorphClass(), [(string) $owner->getKey()]);
+
+        return $work;
+    });
+
+    expect(OwnerContext::withOwner($owner, fn (): int => ReferenceContributor::query()->count()))->toBe(1)
+        ->and(OwnerContext::withOwner($other, fn (): int => ReferenceContributor::query()->count()))->toBe(0)
+        ->and(OwnerContext::withOwner($other, fn (): int => $work->contributors()->count()))->toBe(0);
+});
+
+test('a work cannot change kind while it owns authors', function (): void {
+    $author = makeContributorUser('contributor-kind@example.test');
+    $parent = makeWork('New parent work');
+    $work = makeWork('Authored work');
+    (new SyncReferenceContributors)->handle($work, ReferenceContributorRole::Author, $author->getMorphClass(), [(string) $author->getKey()]);
+
+    expect(fn () => $work->update([
+        'record_kind' => ReferenceRecordKind::Edition,
+        'parent_id' => $parent->getKey(),
+    ]))->toThrow(ValidationException::class, 'record_kind');
+
+    expect($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Work)
+        ->and($work->contributors()->count())->toBe(1);
 });

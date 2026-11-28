@@ -44,7 +44,7 @@ $children = OwnerContext::withOwner($owner, fn () => $reference->children()->get
 
 Record kind defaults to `work`. An `edition` must belong to a work, while a `part` must belong to a work or edition. A work has no parent. Only editions accept `edition_number` (positive integer) and `edition_label` (maximum 255 characters). Kind changes cannot invalidate existing children.
 
-Parents are validated on save: the parent must exist, must not be the row itself or one of its descendants, and must belong to the same owner (a global parent is accepted only when `include_global` is enabled).
+Saves run inside a transaction and lock persisted reference and parent rows. Stale hierarchy state is rejected rather than silently overwritten. Parents are validated on save: the parent must exist, must not be the row itself or one of its descendants, and must belong to the same owner (a global parent is accepted only when `include_global` is enabled).
 
 ## Working with parts
 
@@ -82,7 +82,7 @@ app(SyncReferenceContributors::class)->handle($reference, ReferenceContributorRo
 $authors = $reference->contributorsForRole(ReferenceContributorRole::Author)->with('contributor')->get();
 ```
 
-Works own authorship: the `author` role can only be stored on works, and editions and parts inherit the effective contributors of their root work via `effectiveContributors()`. Other roles (for example an edition editor) may still be stored directly on any record kind. Contributor IDs must be UUIDs. Sync locks the reference row and enforces write-owner context, including explicit global context for global references. A unique index prevents duplicate contributor identities.
+Works own authorship: the `author` role can only be stored on works, and editions and parts inherit the effective contributors of their root work via `effectiveContributors()`. Other roles (for example an edition editor) may still be stored directly on any record kind. Contributor IDs must be UUIDs. Contributor queries inherit the owning reference's read scope, and a work with authorship cannot be changed to another record kind until its authors are removed. Sync locks the reference row and enforces write-owner context, including explicit global context for global references. A unique index prevents duplicate contributor identities.
 
 ```php
 $editionAuthors = $edition->effectiveContributors(ReferenceContributorRole::Author);
