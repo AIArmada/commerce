@@ -320,6 +320,12 @@ final class PromotionService implements PromotionServiceInterface
                 continue;
             }
 
+            $amount = $allocation['requested_amount'] ?? null;
+
+            if (! is_int($amount) || $amount <= 0) {
+                continue;
+            }
+
             $meta = $allocation['meta'] ?? null;
             $promotionId = is_array($meta) ? ($meta['promotion_id'] ?? null) : null;
 
