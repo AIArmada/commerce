@@ -8,19 +8,20 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\References\Actions\DeleteReference;
+use AIArmada\References\Actions\SaveReference;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferencePartType;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
-use AIArmada\References\Persistence\SavesReferenceAtomically;
+use AIArmada\References\Persistence\ReferencePersistence;
 use AIArmada\References\Rules\Isbn;
 use AIArmada\References\Traits\HasReferenceParts;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
@@ -57,7 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Reference> $children
  * @property-read Collection<int, ReferenceContributor> $contributors
  */
-class Reference extends Model implements HasMedia
+class Reference extends ReferencePersistence implements HasMedia
 {
     use HasFactory;
     use HasOwner;
@@ -65,7 +66,6 @@ class Reference extends Model implements HasMedia
     use HasReferenceParts;
     use HasSlugWithUuids;
     use InteractsWithMedia;
-    use SavesReferenceAtomically;
 
     protected $table = 'references';
 
@@ -104,6 +104,11 @@ class Reference extends Model implements HasMedia
             $reference->validateParentHierarchy();
             $reference->stampPublishedAt();
         });
+    }
+
+    protected function saveReference(Closure $save): bool
+    {
+        return (new SaveReference)->handle($this, $save);
     }
 
     public function delete(): ?bool

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\Cancelled;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\Draft;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\ShipmentStatus;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Data\TrackingStatus;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 
 it('uses the state machine as the canonical shipment status registry', function (): void {
     expect(ShipmentStatus::normalize(Draft::class))->toBe('draft')

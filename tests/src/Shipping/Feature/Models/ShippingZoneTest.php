@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 
 describe('ShippingZone Model', function (): void {
     it('can create a shipping zone with required fields', function (): void {

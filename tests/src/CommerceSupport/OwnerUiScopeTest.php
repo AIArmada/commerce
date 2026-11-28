@@ -175,6 +175,25 @@ it('suppresses include-global matching through the scope override', function ():
     });
 });
 
+it('suppresses included global records for access checks too', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Suppressed Access Owner',
+        'email' => 'owner-ui-scope-suppressed-access@example.com',
+        'password' => 'secret',
+    ]);
+
+    $globalRecord = OwnerContext::withOwner(null, fn (): Model => OwnerUiScopeFixture::query()->create([
+        'label' => 'suppressed-global',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($globalRecord): void {
+        expect(OwnerUiScope::canAccessRecord($globalRecord, includeGlobal: true))->toBeTrue()
+            ->and(OwnerScopeOverride::withoutIncludeGlobal(
+                fn (): bool => OwnerUiScope::canAccessRecord($globalRecord, includeGlobal: true)
+            ))->toBeFalse();
+    });
+});
+
 final class OwnerUiScopePinnedFixture extends Model
 {
     use HasOwner;

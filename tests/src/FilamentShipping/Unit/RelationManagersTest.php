@@ -9,10 +9,10 @@ use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationMana
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\EventsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\ItemsRelationManager as ShipmentItemsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers\RatesRelationManager;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Schemas\Components\Component;
@@ -286,12 +286,11 @@ describe('Relation manager write action authorization', function (): void {
         expect($create)->not()->toBeNull();
         expect($edit)->not()->toBeNull();
         expect($delete)->not()->toBeNull();
-        expect($deleteBulk)->not()->toBeNull();
+        expect($deleteBulk)->toBeNull();
 
         expect($create->isAuthorized())->toBeFalse();
         expect($edit->record($item)->isAuthorized())->toBeFalse();
         expect($delete->record($item)->isAuthorized())->toBeFalse();
-        expect($deleteBulk->isAuthorized())->toBeFalse();
     });
 
     it('shows ReturnAuthorization items write actions with update permission', function (): void {
@@ -331,11 +330,10 @@ describe('Relation manager write action authorization', function (): void {
         expect($create)->not()->toBeNull();
         expect($edit)->not()->toBeNull();
         expect($delete)->not()->toBeNull();
-        expect($deleteBulk)->not()->toBeNull();
+        expect($deleteBulk)->toBeNull();
 
         expect($create->isAuthorized())->toBeTrue();
         expect($edit->record($item)->isAuthorized())->toBeTrue();
         expect($delete->record($item)->isAuthorized())->toBeTrue();
-        expect($deleteBulk->isAuthorized())->toBeTrue();
     });
 });

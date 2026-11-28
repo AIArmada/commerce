@@ -9,16 +9,19 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Services\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
 
 describe('RateShoppingEngine', function (): void {
+    beforeEach(function (): void {
+        config(['shipping.features.owner.enabled' => false]);
+    });
+
     it('can get all rates from multiple carriers', function (): void {
         // Mock ShippingManager
         $shippingManager = Mockery::mock(ShippingManager::class);
@@ -39,14 +42,14 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager->shouldReceive('driver')->with('ups')->andReturn($upsDriver);
 
         // Mock Concurrency to return the rates directly
-        $fedexRates = collect([
+        $fedexRates = [
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
             new RateQuoteData(carrier: 'fedex', service: 'express', rate: 2500, currency: 'USD', estimatedDays: 1),
-        ]);
+        ];
 
-        $upsRates = collect([
+        $upsRates = [
             new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1400, currency: 'USD', estimatedDays: 4),
-        ]);
+        ];
 
         Concurrency::shouldReceive('run')
             ->once()
@@ -89,10 +92,10 @@ describe('RateShoppingEngine', function (): void {
 
         $rates = $engine->getAllRates($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Collection::class);
+        expect($rates)->toBeArray();
         expect($rates)->toHaveCount(3);
-        expect($rates->first()->carrier)->toBe('ups'); // Should be sorted by rate
-        expect($rates->first()->rate)->toBe(1400);
+        expect($rates[0]->carrier)->toBe('ups'); // Should be sorted by rate
+        expect($rates[0]->rate)->toBe(1400);
     });
 
     it('can get best rate using selection strategy', function (): void {
@@ -118,12 +121,12 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-                ]),
-                'ups' => collect([
+                ],
+                'ups' => [
                     new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1400, currency: 'USD', estimatedDays: 4),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [
@@ -231,9 +234,9 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $fallbackRates = collect([
+        $fallbackRates = [
             new RateQuoteData(carrier: 'manual', service: 'standard', rate: 500, currency: 'USD', estimatedDays: 7),
-        ]);
+        ];
 
         $manualDriver->shouldReceive('getRates')
             ->andReturn($fallbackRates);
@@ -297,10 +300,10 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 5),
                     new RateQuoteData(carrier: 'fedex', service: 'express', rate: 2500, currency: 'USD', estimatedDays: 1),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [
@@ -353,12 +356,12 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-                ]),
-                'ups' => collect([
+                ],
+                'ups' => [
                     new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 4),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [
@@ -435,15 +438,17 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 3),
-        ]);
+        ];
 
         $cacheRepository = Mockery::mock(Repository::class);
         $cacheRepository->shouldReceive('getStore')
             ->andReturn(new stdClass); // Not taggable
 
-        // Cache::store()->remember should be called
+        $cacheRepository->shouldReceive('get')->with('shipping:rates:configuration-generation')->once()->andReturn('configuration-generation');
+        $cacheRepository->shouldReceive('get')->with('shipping:rates:generation:' . hash('sha256', 'shipping|shipping:rates'))->once()->andReturn('test-generation');
+
         Cache::shouldReceive('store')
             ->once()
             ->andReturn($cacheRepository);
@@ -465,9 +470,9 @@ describe('RateShoppingEngine', function (): void {
 
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
-        $fedexDriver->shouldReceive('getRates')->andReturn(collect([
+        $fedexDriver->shouldReceive('getRates')->andReturn([
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-        ]));
+        ]);
 
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);
         $shippingManager->shouldReceive('hasDriver')->with('ups')->andReturn(false); // UPS not available
@@ -502,7 +507,7 @@ describe('RateShoppingEngine', function (): void {
         $rates = $engine->getRatesFromCarriers(['fedex', 'ups'], $origin, $destination, $packages);
 
         expect($rates)->toHaveCount(1);
-        expect($rates->first()->carrier)->toBe('fedex');
+        expect($rates[0]->carrier)->toBe('fedex');
     });
 
     it('skips carriers that do not service destination in getRatesFromCarriers', function (): void {
@@ -593,9 +598,9 @@ describe('RateShoppingEngine', function (): void {
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('getCarrierCode')->andReturn('fedex');
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
-        $fedexDriver->shouldReceive('getRates')->andReturn(collect([
+        $fedexDriver->shouldReceive('getRates')->andReturn([
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-        ]));
+        ]);
 
         $shippingManager->shouldReceive('getAvailableDrivers')->andReturn(['fedex']);
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);
@@ -630,7 +635,7 @@ describe('RateShoppingEngine', function (): void {
         $rates = $engine->getAllRates($origin, $destination, $packages, $unsafeOptions);
 
         expect($rates)->toHaveCount(1);
-        expect($rates->first()->carrier)->toBe('fedex');
+        expect($rates[0]->carrier)->toBe('fedex');
     });
 });
 
@@ -697,4 +702,22 @@ it('does not reuse a rate cache key for different shipment details', function ()
 
     expect($baseKey)->not->toBe($differentAddressKey)
         ->and($baseKey)->not->toBe($differentDimensionsKey);
+});
+
+it('uses balanced strategy when configured rather than choosing the cheapest quote', function (): void {
+    config(['shipping.features.owner.enabled' => false]);
+    $manager = Mockery::mock(ShippingManager::class);
+    $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['carrier']);
+    Concurrency::shouldReceive('run')->once()->andReturn([
+        'carrier' => [
+            new RateQuoteData(carrier: 'carrier', service: 'fast', rate: 2000, currency: 'MYR', estimatedDays: 1),
+            new RateQuoteData(carrier: 'carrier', service: 'balanced', rate: 1000, currency: 'MYR', estimatedDays: 2),
+            new RateQuoteData(carrier: 'carrier', service: 'cheap', rate: 500, currency: 'MYR', estimatedDays: 7),
+        ],
+    ]);
+
+    $engine = new RateShoppingEngine($manager, ['strategy' => 'balanced', 'cache_ttl' => 0, 'circuit_failure_threshold' => 0]);
+    $address = new AddressData(name: 'Test', phone: '123456', line1: 'Test Road', postcode: '50000');
+
+    expect($engine->getBestRate($address, $address, [new PackageData(weight: 1000)])?->service)->toBe('balanced');
 });

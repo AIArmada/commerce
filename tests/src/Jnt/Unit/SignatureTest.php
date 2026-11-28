@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Http\JntClient;
+use AIArmada\Jnt\Drivers\JntClient;
 
 it('generates correct signature digest', function (): void {
     $client = new JntClient(

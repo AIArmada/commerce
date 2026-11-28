@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Data\GoodsType;
 use AIArmada\Jnt\Data\ItemData;
+use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
+use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
-use AIArmada\Jnt\Enums\GoodsType;
 
 describe('PackageInfoData', function (): void {
     it('creates from API array', function (): void {
@@ -133,6 +136,20 @@ describe('PackageInfoData', function (): void {
     });
 });
 
+it('exposes immutable J&T request and order DTOs', function (): void {
+    foreach ([
+        AddressData::class,
+        ItemData::class,
+        PackageInfoData::class,
+        OrderData::class,
+    ] as $class) {
+        $reflection = new ReflectionClass($class);
+
+        expect($reflection->isFinal())->toBeTrue()
+            ->and($reflection->isReadOnly())->toBeTrue();
+    }
+});
+
 describe('ItemData', function (): void {
     it('round-trips API money as integer minor units', function (): void {
         $item = ItemData::fromApiArray([
@@ -147,6 +164,24 @@ describe('ItemData', function (): void {
             ->and($item->getTotalValueMinor())->toBe(5997)
             ->and($item->toApiArray()['itemValue'])->toBe('19.99');
     });
+});
+
+it('round-trips cached carrier tracking data using the carrier field names', function (): void {
+    $tracking = TrackingData::fromApiArray([
+        'billCode' => 'JT123',
+        'details' => [[
+            'scanTime' => '2024-01-01 12:00:00',
+            'desc' => 'Delivered',
+            'scanTypeCode' => '1',
+            'scanTypeName' => 'Delivery',
+            'scanType' => 'SIGN',
+        ]],
+    ]);
+
+    $restored = TrackingData::fromApiArray($tracking->toApiArray());
+
+    expect($restored->details[0]->description)->toBe('Delivered')
+        ->and($restored->isDelivered())->toBeTrue();
 });
 
 describe('TrackingDetailData', function (): void {
@@ -273,4 +308,11 @@ describe('TrackingDetailData', function (): void {
         );
         expect($notInTransit->isInTransit())->toBeFalse();
     });
+});
+
+it('rejects malformed carrier data without exposing raw payload values', function (): void {
+    expect(fn () => OrderData::fromApiArray(['txlogisticId' => 'ORDER', 'multipleVoteBillCodes' => ['ok', ['invalid']]]))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => TrackingData::fromApiArray(['billCode' => 'TRACK', 'txlogisticId' => ['invalid']]))
+        ->toThrow(InvalidArgumentException::class);
 });

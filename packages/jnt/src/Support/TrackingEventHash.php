@@ -43,7 +43,7 @@ final class TrackingEventHash
     private static function normalizeScanTime(CarbonImmutable | string | null $scanTime): ?string
     {
         if ($scanTime instanceof CarbonImmutable) {
-            return $scanTime->toIso8601String();
+            return $scanTime->utc()->toIso8601String();
         }
 
         if (! is_string($scanTime) || $scanTime === '') {
@@ -51,7 +51,7 @@ final class TrackingEventHash
         }
 
         try {
-            return CarbonImmutable::parse($scanTime)->toIso8601String();
+            return CarbonImmutable::parse($scanTime)->utc()->toIso8601String();
         } catch (Throwable) {
             return $scanTime;
         }

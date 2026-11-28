@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

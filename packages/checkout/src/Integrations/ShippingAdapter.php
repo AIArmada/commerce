@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
-use AIArmada\Shipping\Actions\CalculateShippingRate;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
-use Illuminate\Support\Collection;
 
 final class ShippingAdapter
 {
@@ -20,8 +18,10 @@ final class ShippingAdapter
 
     public function __construct()
     {
-        $this->hasJnt = class_exists(JntShippingDriver::class)
-            && config('checkout.integrations.shipping.jnt.enabled', true);
+        $this->hasJnt = config('checkout.integrations.shipping.jnt.enabled', true)
+            && interface_exists(CalculateRates::class)
+            && app()->bound(ShippingManager::class)
+            && app(ShippingManager::class)->hasDriver('jnt');
     }
 
     /**
@@ -31,7 +31,7 @@ final class ShippingAdapter
      */
     public function getRates(CheckoutSession $session): array
     {
-        if (! class_exists(ShippingManager::class) || ! class_exists(CalculateShippingRate::class)) {
+        if (! class_exists(ShippingManager::class) || ! interface_exists(CalculateRates::class)) {
             return $this->getDefaultRates($session);
         }
 
@@ -46,18 +46,20 @@ final class ShippingAdapter
             return $this->getDefaultRates($session);
         }
 
-        /** @var Collection<int, RateQuoteData> $rateQuotes */
-        $rateQuotes = app(CalculateShippingRate::class)->handle(
+        /** @var list<RateQuoteData> $rateQuotes */
+        $rateQuotes = app(CalculateRates::class)->handle(
             origin: $origin,
             destination: $destination,
             packages: $packages,
             carrier: null,
             options: [
                 'currency' => $session->currency,
+                'cart_total' => $session->subtotal,
+                'item_count' => array_sum(array_map(static fn (array $item): int => max(0, (int) ($item['quantity'] ?? 1)), array_filter($cartSnapshot['items'] ?? [], 'is_array'))),
             ],
         );
 
-        $rates = $this->normalizeRates($rateQuotes);
+        $rates = $this->normalizeRates(array_values(array_filter($rateQuotes, static fn (RateQuoteData $rate): bool => mb_strtoupper($rate->currency) === mb_strtoupper($session->currency) && $rate->rate >= 0 && ($rate->expiresAt === null || $rate->expiresAt > now()))));
 
         if (! $this->hasJnt || ! config('checkout.integrations.shipping.jnt.auto_detect', true)) {
             $rates = array_values(array_filter($rates, fn (array $rate): bool => ($rate['carrier'] ?? '') !== 'jnt'));
@@ -134,18 +136,18 @@ final class ShippingAdapter
             return null;
         }
 
-        return AddressData::from([
-            'name' => $shippingData['name'] ?? 'Customer',
-            'phone' => $shippingData['phone'] ?? '',
-            'line1' => $line1,
-            'line2' => $shippingData['line2'] ?? null,
-            'city' => $shippingData['city'] ?? null,
-            'state' => $shippingData['state'] ?? null,
-            'postcode' => $postcode,
-            'country' => $shippingData['country'] ?? 'MY',
-            'email' => $shippingData['email'] ?? null,
-            'company' => $shippingData['company'] ?? null,
-        ]);
+        return new AddressData(
+            name: $shippingData['name'] ?? 'Customer',
+            phone: $shippingData['phone'] ?? '',
+            line1: $line1,
+            line2: $shippingData['line2'] ?? null,
+            city: $shippingData['city'] ?? null,
+            state: $shippingData['state'] ?? null,
+            postcode: $postcode,
+            country: $shippingData['country'] ?? 'MY',
+            email: $shippingData['email'] ?? null,
+            company: $shippingData['company'] ?? null,
+        );
     }
 
     /**
@@ -188,14 +190,14 @@ final class ShippingAdapter
                         continue;
                     }
 
-                    $packages[] = PackageData::from([
-                        'weight' => $weight,
-                        'length' => $component['dimensions']['length'] ?? null,
-                        'width' => $component['dimensions']['width'] ?? null,
-                        'height' => $component['dimensions']['height'] ?? null,
-                        'declaredValue' => $allocatedDeclaredValue ? null : $declaredValue,
-                        'quantity' => 1,
-                    ]);
+                    $packages[] = new PackageData(
+                        weight: $weight,
+                        length: $component['dimensions']['length'] ?? null,
+                        width: $component['dimensions']['width'] ?? null,
+                        height: $component['dimensions']['height'] ?? null,
+                        declaredValue: $allocatedDeclaredValue ? null : $declaredValue,
+                        quantity: 1,
+                    );
 
                     $allocatedDeclaredValue = true;
                 }
@@ -225,14 +227,14 @@ final class ShippingAdapter
                 $attributes['dimensions'] ?? null,
             ], $item + $attributes);
 
-            $packages[] = PackageData::from([
-                'weight' => $weight * $quantity,
-                'length' => $dimensions['length'] ?? null,
-                'width' => $dimensions['width'] ?? null,
-                'height' => $dimensions['height'] ?? null,
-                'declaredValue' => $item['price'] ?? null,
-                'quantity' => 1,
-            ]);
+            $packages[] = new PackageData(
+                weight: $weight * $quantity,
+                length: $dimensions['length'] ?? null,
+                width: $dimensions['width'] ?? null,
+                height: $dimensions['height'] ?? null,
+                declaredValue: $item['price'] ?? null,
+                quantity: 1,
+            );
         }
 
         return $packages;
@@ -249,27 +251,27 @@ final class ShippingAdapter
             return null;
         }
 
-        return AddressData::from([
-            'name' => $origin['name'] ?? config('app.name', 'Store'),
-            'phone' => $origin['phone'] ?? '',
-            'line1' => $line1,
-            'line2' => $origin['line2'] ?? null,
-            'city' => $origin['city'] ?? null,
-            'state' => $origin['state'] ?? null,
-            'postcode' => $postcode,
-            'country' => $origin['country'] ?? $origin['country_code'] ?? 'MY',
-            'company' => $origin['company'] ?? null,
-            'email' => $origin['email'] ?? null,
-        ]);
+        return new AddressData(
+            name: $origin['name'] ?? config('app.name', 'Store'),
+            phone: $origin['phone'] ?? '',
+            line1: $line1,
+            line2: $origin['line2'] ?? null,
+            city: $origin['city'] ?? null,
+            state: $origin['state'] ?? null,
+            postcode: $postcode,
+            country: $origin['country'] ?? $origin['country_code'] ?? 'MY',
+            company: $origin['company'] ?? null,
+            email: $origin['email'] ?? null,
+        );
     }
 
     /**
-     * @param  Collection<int, RateQuoteData>  $rates
+     * @param  list<RateQuoteData>  $rates
      * @return array<array<string, mixed>>
      */
-    private function normalizeRates(Collection $rates): array
+    private function normalizeRates(array $rates): array
     {
-        return $rates->map(function (RateQuoteData $rate): array {
+        return array_map(static function (RateQuoteData $rate): array {
             return [
                 'method_id' => $rate->carrier . '_' . $rate->service,
                 'carrier' => $rate->carrier,
@@ -286,7 +288,7 @@ final class ShippingAdapter
                 'note' => $rate->note,
                 'expires_at' => $rate->expiresAt?->format(DATE_ATOM),
             ];
-        })->values()->all();
+        }, $rates);
     }
 
     /**

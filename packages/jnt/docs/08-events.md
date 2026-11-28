@@ -63,6 +63,8 @@ final class NotifyOrderStatus
 }
 ```
 
+`resolveOrder()` returns an immutable, owner-scoped order snapshot rather than an Eloquent model.
+
 The event exposes `currentStatus`, `previousStatusCode`, `ownerType`, `ownerId`, `getOrderId()`, and `getTrackingNumber()`. Predicate helpers include `isDelivered()`, `hasException()`, `isReturning()`, `requiresAttention()`, and `isTerminal()`.
 
 ## Order and waybill events

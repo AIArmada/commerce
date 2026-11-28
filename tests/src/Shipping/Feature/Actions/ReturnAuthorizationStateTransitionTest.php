@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Actions;
 
-use AIArmada\Shipping\Actions\ApproveReturnAuthorization;
-use AIArmada\Shipping\Actions\RejectReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
+use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Spatie\ModelStates\Events\StateChanged;
@@ -24,7 +24,7 @@ describe('Return authorization state transitions', function (): void {
     it('approves through the state machine with audit fields', function (): void {
         Event::fake([StateChanged::class]);
 
-        $approved = ApproveReturnAuthorization::run(pendingReturnAuthorization(), 'Looks valid', 'actor-1');
+        $approved = ReturnAuthorization::query()->findOrFail(app(ApproveReturn::class)->execute(pendingReturnAuthorization()->id, 'Looks valid', 'actor-1'));
 
         expect($approved->isApproved())->toBeTrue()
             ->and($approved->approved_at)->not->toBeNull()
@@ -37,7 +37,7 @@ describe('Return authorization state transitions', function (): void {
     it('rejects through the state machine with audit fields', function (): void {
         Event::fake([StateChanged::class]);
 
-        $rejected = RejectReturnAuthorization::run(pendingReturnAuthorization(), 'Outside window', 'actor-2');
+        $rejected = ReturnAuthorization::query()->findOrFail(app(RejectReturn::class)->execute(pendingReturnAuthorization()->id, 'Outside window', 'actor-2'));
 
         expect($rejected->isRejected())->toBeTrue()
             ->and($rejected->rejected_at)->not->toBeNull()
@@ -48,9 +48,9 @@ describe('Return authorization state transitions', function (): void {
     });
 
     it('refuses to approve or reject non-pending authorizations', function (): void {
-        $approved = ApproveReturnAuthorization::run(pendingReturnAuthorization());
+        $approved = ReturnAuthorization::query()->findOrFail(app(ApproveReturn::class)->execute(pendingReturnAuthorization()->id));
 
-        expect(fn () => ApproveReturnAuthorization::run($approved))->toThrow(RuntimeException::class)
-            ->and(fn () => RejectReturnAuthorization::run($approved, 'Too late'))->toThrow(RuntimeException::class);
+        expect(fn () => app(ApproveReturn::class)->execute($approved->id))->toThrow(RuntimeException::class)
+            ->and(fn () => app(RejectReturn::class)->execute($approved->id, 'Too late'))->toThrow(RuntimeException::class);
     });
 });
