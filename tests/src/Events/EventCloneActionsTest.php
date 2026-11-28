@@ -471,3 +471,63 @@ it('rejects cross-tenant event writes when cloning', function (): void {
         config()->set('events.features.owner.enabled', $originalOwnerEnabled);
     }
 });
+
+it('rejects cloning a session into an occurrence belonging to another event', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+    $otherEvent = Event::factory()->create();
+
+    expect(fn () => app(CloneEventSessionAction::class)->handle($session, [
+        'event_id' => $otherEvent->id,
+        'clone_children' => false,
+    ]))->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+    expect(EventSession::query()->where('event_id', $otherEvent->id)->exists())->toBeFalse();
+});
+
+it('preserves the unknown end time when cloning an open-ended occurrence', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'starts_at' => CarbonImmutable::parse('2027-01-01 09:00:00'),
+        'ends_at' => null,
+    ]);
+
+    $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence, ['clone_sessions' => false]);
+
+    expect($clone->ends_at)->toBeNull();
+});
+
+it('rejects invalid time overrides when cloning a session', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+
+    expect(fn () => app(CloneEventSessionAction::class)->handle($session, [
+        'starts_at' => '2027-01-01 10:00:00',
+        'ends_at' => '2027-01-01 09:00:00',
+    ]))->toThrow(InvalidArgumentException::class);
+});
+
+it('rolls back the cloned event if a scope extension fails', function (): void {
+    $event = Event::factory()->create();
+    $cloner = Mockery::mock(AIArmada\Events\Contracts\EventScopeCloner::class);
+    $cloner->shouldReceive('cloneForScope')->once()->andThrow(new RuntimeException('Extension failed'));
+    app()->instance(AIArmada\Events\Contracts\EventScopeCloner::class, $cloner);
+
+    $registry = new AIArmada\Events\Platform\ExtensionRegistry(app(), [
+        'events.clone-scope' => [AIArmada\Events\Contracts\EventScopeCloner::class],
+    ]);
+    $service = new AIArmada\Events\Features\Catalog\Actions\DefaultEventCloneService(
+        app(CloneEventAction::class),
+        app(CloneEventOccurrenceAction::class),
+        app(CloneEventSessionAction::class),
+        $registry,
+    );
+
+    expect(fn () => $service->cloneEvent($event->id, ['title' => 'Failed clone']))
+        ->toThrow(RuntimeException::class, 'Extension failed');
+
+    expect(Event::query()->where('title', 'Failed clone')->exists())->toBeFalse();
+});

@@ -25,6 +25,7 @@ final class CloneEventOccurrenceAction
      */
     public function handle(EventOccurrence $occurrence, array $options = []): EventOccurrence
     {
+        EventWriteGuard::findOrFail($occurrence->event_id);
         $targetEvent = $this->resolveEvent($occurrence, $options);
         $cloneSessions = $options['clone_sessions'] ?? true;
 
@@ -39,7 +40,7 @@ final class CloneEventOccurrenceAction
                     ? Str::slug($title) . '-' . Str::random(6)
                     : (string) $options['slug'],
                 'starts_at' => $options['starts_at'] ?? CarbonImmutable::parse($occurrence->starts_at),
-                'ends_at' => $options['ends_at'] ?? CarbonImmutable::parse($occurrence->ends_at),
+                'ends_at' => array_key_exists('ends_at', $options) ? $options['ends_at'] : $occurrence->ends_at,
                 'timezone' => $options['timezone'] ?? $occurrence->timezone,
                 'status' => 'scheduled',
                 'visibility' => $options['visibility'] ?? $occurrence->visibility,
