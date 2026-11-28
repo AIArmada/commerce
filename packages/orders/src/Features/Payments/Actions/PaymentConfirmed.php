@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
@@ -15,7 +16,6 @@ use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Processing;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
 
@@ -29,6 +29,8 @@ use Spatie\ModelStates\Transition;
  */
 final class PaymentConfirmed extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
         private string $transactionId,
@@ -50,10 +52,11 @@ final class PaymentConfirmed extends Transition
 
         $originalOrder = $this->order;
 
-        return DB::transaction(function () use ($originalOrder): Order {
+        return $originalOrder->getConnection()->transaction(function () use ($originalOrder): Order {
             $this->order = $this->order->newQuery()
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
             $existingPayment = $this->order->payments()
                 ->where('gateway', $this->gateway)
@@ -81,7 +84,7 @@ final class PaymentConfirmed extends Transition
 
             try {
                 // Record payment
-                DB::transaction(fn (): OrderPayment => $this->order->payments()->create([
+                $this->order->getConnection()->transaction(fn (): OrderPayment => $this->order->payments()->create([
                     'transaction_id' => $this->transactionId,
                     'gateway' => $this->gateway,
                     'amount' => $this->amount,
@@ -141,7 +144,7 @@ final class PaymentConfirmed extends Transition
             $gateway = $this->gateway;
             $amount = $this->amount;
 
-            DB::afterCommit(function () use ($order, $transactionId, $gateway, $amount, $outboxIds): void {
+            $order->getConnection()->afterCommit(function () use ($order, $transactionId, $gateway, $amount, $outboxIds): void {
                 // The payment really happened: its non-replayable event
                 // fires per accepted payment with the actual amount, so
                 // revenue recognition records every receipt exactly once.

@@ -13,7 +13,6 @@ use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Enums\PaymentStatus;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -130,39 +129,6 @@ class OrderPayment extends Model implements Auditable
     public function isRefunded(): bool
     {
         return $this->status === PaymentStatus::Refunded;
-    }
-
-    public function markAsCompleted(?string $transactionId = null): self
-    {
-        $this->status = PaymentStatus::Completed;
-        $this->paid_at = CarbonImmutable::now();
-
-        if ($transactionId !== null) {
-            $this->transaction_id = $transactionId;
-        }
-
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsFailed(string $reason): self
-    {
-        $this->status = PaymentStatus::Failed;
-        $this->failure_reason = $reason;
-        $this->failed_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsRefunded(): self
-    {
-        $this->status = PaymentStatus::Refunded;
-        $this->refunded_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
     }
 
     // ─────────────────────────────────────────────────────────────

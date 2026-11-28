@@ -56,7 +56,7 @@ function ord04Payment(
 
 /**
  * A payment attempt that never received money. It stays pending here;
- * declined charges are covered by calling markAsFailed() in the test.
+ * declined charges are covered by persisting a failed attempt in the test.
  */
 function ord04UnreceivedPayment(Order $order, string $transactionId, int $amount, string $gateway = 'chip'): OrderPayment
 {
@@ -441,7 +441,10 @@ it('rejects a specified refund against a failed payment that never received mone
     $order = ord04Order();
     ord04Payment($order, 'ord04-guard-paid-a', 5000, 'stripe');
     $declined = ord04UnreceivedPayment($order, 'ord04-guard-declined-a', 5000);
-    $declined->markAsFailed('Declined');
+    $declined->status = PaymentStatus::Failed;
+    $declined->failure_reason = 'Declined';
+    $declined->failed_at = now();
+    $declined->save();
     $order->refresh();
 
     $action = app(RegisterOrderRefund::class);
@@ -477,7 +480,10 @@ it('rejects an immediate refund against a failed payment that never received mon
     $order = ord04Order();
     ord04Payment($order, 'ord04-guard-now-paid', 5000, 'stripe');
     $declined = ord04UnreceivedPayment($order, 'ord04-guard-now-declined', 5000);
-    $declined->markAsFailed('Declined');
+    $declined->status = PaymentStatus::Failed;
+    $declined->failure_reason = 'Declined';
+    $declined->failed_at = now();
+    $declined->save();
     $order->refresh();
 
     $action = app(RegisterOrderRefund::class);

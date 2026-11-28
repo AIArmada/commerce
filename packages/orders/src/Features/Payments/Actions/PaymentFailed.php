@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderPaymentFailed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PaymentFailed as PaymentFailedState;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -19,6 +19,8 @@ use Spatie\ModelStates\Transition;
  */
 final class PaymentFailed extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
         private string $reason,
@@ -26,16 +28,20 @@ final class PaymentFailed extends Transition
 
     public function handle(): Order
     {
-        return DB::transaction(function (): Order {
+        return $this->order->getConnection()->transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
             $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
             $now = CarbonImmutable::now();
 
             // Mark the payment record as failed
-            $payment = $this->order->payments()->where('status', PaymentStatus::Pending)->first();
+            $payment = $this->order->payments()->where('status', PaymentStatus::Pending)->orderBy('created_at')->orderBy('id')->lockForUpdate()->first();
             if ($payment !== null) {
-                $payment->markAsFailed($this->reason);
+                $payment->status = PaymentStatus::Failed;
+                $payment->failure_reason = $this->reason;
+                $payment->failed_at = $now;
+                $payment->save();
             }
 
             // Update order state and payment_failed timestamp

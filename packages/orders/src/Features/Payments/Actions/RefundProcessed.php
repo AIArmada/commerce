@@ -105,7 +105,9 @@ final class RefundProcessed extends Transition
                 $completedAmount = (int) $completedByPayment->get((string) $payment->getKey(), 0);
 
                 if ($completedAmount >= (int) $payment->amount && $completedAmount > 0) {
-                    $payment->markAsRefunded();
+                    $payment->status = PaymentStatus::Refunded;
+                    $payment->refunded_at = CarbonImmutable::now();
+                    $payment->save();
                 }
             }
 

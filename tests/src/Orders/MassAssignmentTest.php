@@ -115,7 +115,10 @@ it('still transitions payment and refund lifecycles through model methods', func
         'currency' => 'MYR',
         'status' => PaymentStatus::Pending,
     ]);
-    $payment->markAsFailed('declined');
+    $payment->status = PaymentStatus::Failed;
+    $payment->failure_reason = 'declined';
+    $payment->failed_at = CarbonImmutable::now();
+    $payment->save();
 
     expect($payment->refresh()->failed_at)->not->toBeNull();
 

@@ -106,7 +106,11 @@ it('rejects a specified refund when the payment no longer received money', funct
 
     $stale = $first->fresh();
 
-    $first->fresh()->markAsFailed('Declined by provider');
+    $persisted = $first->fresh();
+    $persisted->status = PaymentStatus::Failed;
+    $persisted->failure_reason = 'Declined by provider';
+    $persisted->failed_at = now();
+    $persisted->save();
     $order->refresh();
 
     expect(fn (): array => app(RegisterOrderRefund::class)->createPending(
