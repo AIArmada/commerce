@@ -16,7 +16,7 @@ use AIArmada\Orders\Features\Outbox\Actions\RelayOrderOutbox;
 use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
 use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
-use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\Canceled;
@@ -452,7 +452,7 @@ it('suppresses staged rows when a processed refund completes the full amount', f
     captureAfterCommitHooks();
     (new PaymentConfirmed($order, 'txn-relay-refproc', 'stripe', 10000))->handle();
 
-    (new RefundProcessed($order->fresh(), 10000, 'txn-refproc-1', 'Returned items'))->handle();
+    (new RegisterOrderRefund)->execute($order->fresh(), 10000, 'txn-refproc-1', 'Returned items');
 
     expect($order->fresh()->status)->toBeInstanceOf(Refunded::class);
 
@@ -467,7 +467,7 @@ it('does not suppress staged rows on partial processed refund', function (): voi
     captureAfterCommitHooks();
     (new PaymentConfirmed($order, 'txn-relay-refproc-part', 'stripe', 10000))->handle();
 
-    (new RefundProcessed($order->fresh(), 4000, 'txn-refproc-part-1', 'Partial return'))->handle();
+    (new RegisterOrderRefund)->execute($order->fresh(), 4000, 'txn-refproc-part-1', 'Partial return');
 
     expect($order->fresh()->status)->toBeInstanceOf(Processing::class);
 

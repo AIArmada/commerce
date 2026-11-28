@@ -235,25 +235,20 @@ $order->status->transitionTo(Returned::class, new OrderReturned(
 ));
 ```
 
-### RefundProcessed
+### Processing a refund
 
-`Processing|Delivered|Completed|Canceled|Returned → Refunded`
-
-`OrderRefunds::processRefund()` is documented for the returned-items path, but
-the transition itself is allowed from every one of those source states.
+Use the Payments feature's public refund contract. The action validates the owner, request identity, remaining refundable amount and package return scope before recording a refund.
 
 ```php
-use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
+use AIArmada\Orders\Contracts\OrderRefunds;
 
-$order->status->transitionTo(Refunded::class, new RefundProcessed(
-    $order,
+app(OrderRefunds::class)->processRefund(
+    (string) $order->getKey(),
     amount: 5000,
-    reason: 'Items returned',
     transactionId: 'ref_789',
-    // optional: attribute the whole amount to one received payment instead
-    // of allocating FIFO across them
-    // payment: $payment,
-));
+    reason: 'Items returned',
+    // paymentId: (string) $payment->getKey(),
+);
 ```
 
 The amount is allocated across the payments that actually received money

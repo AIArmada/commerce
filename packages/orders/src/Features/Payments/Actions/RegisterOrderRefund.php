@@ -8,13 +8,17 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefundFailed;
+use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Shipped;
+use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
@@ -104,8 +108,96 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
 
             $this->assertRefundScope($order, $metadata, $amount);
 
-            return (new RefundProcessed($order, $amount, $transactionId, $reason, $metadata, $payment))->handle();
+            return $this->settleRefund($order, $amount, $transactionId, $reason, $metadata, $payment);
         });
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function settleRefund(Order $order, int $amount, string $transactionId, string $reason, array $metadata, ?OrderPayment $specifiedPayment): Order
+    {
+        $now = CarbonImmutable::now();
+
+        $allocations = RefundAllocator::allocate($order, $amount, $specifiedPayment);
+
+        /** @var list<OrderRefund> $created */
+        $created = [];
+
+        foreach ($allocations as $allocation) {
+            $payment = $allocation['payment'];
+
+            // Record refund. The lifecycle timestamp is assigned directly
+            // because refund lifecycle fields are not mass assignable. The
+            // allocation key carries the caller's request identity while
+            // the transaction id is the provider refund identity.
+            $refund = $order->refunds()->make([
+                'payment_id' => $payment->getKey(),
+                'gateway' => $payment->gateway,
+                'transaction_id' => $transactionId,
+                'allocation_key' => $transactionId,
+                'amount' => $allocation['amount'],
+                'currency' => $payment->currency !== '' ? MoneyFormatter::normalizeCurrency($payment->currency) : MoneyFormatter::normalizeCurrency($order->currency),
+                'status' => RefundStatus::Completed,
+                'reason' => $reason,
+                'metadata' => $metadata,
+            ]);
+            $refund->refunded_at = $now;
+            $refund->save();
+            $order->unsetRelation('refunds');
+            // The created-refund event already synced refunded_total.
+            $order->refresh();
+
+            $created[] = $refund;
+        }
+
+        // A payment reaches its own terminal state as soon as its whole
+        // amount is returned, independent of the order-level remainder.
+        $paidTotal = $order->getTotalPaid();
+        $refundedTotal = $order->getTotalRefunded();
+
+        $completedByPayment = $order->refunds()
+            ->where('status', RefundStatus::Completed->value)
+            ->whereNotNull('payment_id')
+            ->selectRaw('payment_id, SUM(amount) as refunded_amount')
+            ->groupBy('payment_id')
+            ->pluck('refunded_amount', 'payment_id');
+
+        foreach ($order->payments()->where('status', PaymentStatus::Completed->value)->get() as $payment) {
+            $completedAmount = (int) $completedByPayment->get((string) $payment->getKey(), 0);
+
+            if ($completedAmount >= (int) $payment->amount && $completedAmount > 0) {
+                $payment->status = PaymentStatus::Refunded;
+                $payment->refunded_at = CarbonImmutable::now();
+                $payment->save();
+            }
+        }
+
+        // The order is terminal only when the whole received amount has
+        // been returned; a never-paid order never reaches that ceiling.
+        if ($paidTotal > 0 && $refundedTotal >= $paidTotal) {
+            $order->refunded_at = $now;
+            $order->status->transitionTo(Refunded::class);
+
+            // Same terminal marking as cancel and completed refunds:
+            // unrelayed fulfillment must not dispatch after a full
+            // refund. Partial refunds leave staged rows untouched.
+            app(OrderOutboxWriter::class)->suppressForOrder((string) $order->getKey(), 'Order fully refunded; fulfillment suppressed.');
+        }
+
+        $order->save();
+
+        // One event per persisted allocation row: the recorded identity
+        // and amount are per-payment facts, not the aggregate request.
+        foreach ($created as $refund) {
+            event(new OrderRefunded(
+                $order,
+                (int) $refund->amount,
+                $reason,
+                (string) $refund->getKey(),
+                $metadata,
+            ));
+        }
+
+        return $order;
     }
 
     /**
