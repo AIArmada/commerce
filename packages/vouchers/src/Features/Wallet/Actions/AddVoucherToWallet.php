@@ -30,16 +30,21 @@ final class AddVoucherToWallet implements WalletClaim
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function handle(string $code, Model $holder, ?array $metadata = null): VoucherWallet
+    public function handle(string | VoucherModel $code, Model $holder, ?array $metadata = null): VoucherWallet
     {
         return (new VoucherModel)->getConnection()->transaction(function () use ($code, $holder, $metadata): VoucherWallet {
-            $voucher = $this->voucherQuery()
-                ->where('code', $this->normalizeCode($code))
-                ->lockForUpdate()
-                ->first();
+            $query = $this->voucherQuery();
+
+            if ($code instanceof VoucherModel) {
+                $query->whereKey($code->getKey());
+            } else {
+                $query->where('code', $this->normalizeCode($code));
+            }
+
+            $voucher = $query->lockForUpdate()->first();
 
             if (! $voucher instanceof VoucherModel) {
-                throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
+                throw VoucherNotFoundException::withCode($code instanceof VoucherModel ? $code->code : $code);
             }
 
             $assignee = $this->resolveAssignee($voucher);

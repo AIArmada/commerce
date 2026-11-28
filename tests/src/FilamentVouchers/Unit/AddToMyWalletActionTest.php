@@ -10,11 +10,11 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\Models\VoucherWallet;
 
 uses(TestCase::class);
 
-it('uses voucher code when adding to wallet via service fallback', function (): void {
+it('claims the exact voucher with notes through the wallet action', function (): void {
     $user = User::query()->create([
         'name' => 'Wallet Action User',
         'email' => 'wallet-action-user@example.com',
@@ -34,28 +34,6 @@ it('uses voucher code when adding to wallet via service fallback', function (): 
         'starts_at' => now()->subDay(),
     ]);
 
-    $fakeService = new class
-    {
-        public ?string $code = null;
-
-        public mixed $holder = null;
-
-        /** @var array<string, mixed>|null */
-        public ?array $metadata = null;
-
-        /**
-         * @param  array<string, mixed>|null  $metadata
-         */
-        public function addToWallet(string $code, mixed $holder, ?array $metadata = null): void
-        {
-            $this->code = $code;
-            $this->holder = $holder;
-            $this->metadata = $metadata;
-        }
-    };
-
-    app()->instance(VoucherService::class, $fakeService);
-
     $action = AddToMyWalletAction::make();
     $handler = $action->record($voucher)->getActionFunction();
 
@@ -65,9 +43,16 @@ it('uses voucher code when adding to wallet via service fallback', function (): 
         'notes' => 'Remember for checkout',
     ], $voucher);
 
-    expect($fakeService->code)->toBe('WALLET-ACTION-CODE')
-        ->and((string) $fakeService->holder?->getKey())->toBe((string) $user->getKey())
-        ->and($fakeService->metadata)->toBe(['notes' => 'Remember for checkout']);
+    $entry = VoucherWallet::query()->where('voucher_id', $voucher->getKey())->sole();
+
+    expect((string) $entry->holder_id)->toBe((string) $user->getKey())
+        ->and($entry->holder_type)->toBe($user->getMorphClass())
+        ->and($entry->metadata)->toBe(['notes' => 'Remember for checkout']);
+
+    $handler(['notes' => 'Do not overwrite'], $voucher);
+
+    expect(VoucherWallet::query()->where('voucher_id', $voucher->getKey())->count())->toBe(1)
+        ->and($entry->fresh()->metadata)->toBe(['notes' => 'Remember for checkout']);
 });
 
 it('does not add cross-owner voucher to wallet when owner scoping is enabled', function (): void {
@@ -109,28 +94,6 @@ it('does not add cross-owner voucher to wallet when owner scoping is enabled', f
 
     test()->actingAs($user);
 
-    $fakeService = new class
-    {
-        public ?string $code = null;
-
-        public mixed $holder = null;
-
-        /** @var array<string, mixed>|null */
-        public ?array $metadata = null;
-
-        /**
-         * @param  array<string, mixed>|null  $metadata
-         */
-        public function addToWallet(string $code, mixed $holder, ?array $metadata = null): void
-        {
-            $this->code = $code;
-            $this->holder = $holder;
-            $this->metadata = $metadata;
-        }
-    };
-
-    app()->instance(VoucherService::class, $fakeService);
-
     $action = AddToMyWalletAction::make();
     $handler = $action->record($voucherOwnedByB)->getActionFunction();
 
@@ -140,5 +103,5 @@ it('does not add cross-owner voucher to wallet when owner scoping is enabled', f
         'notes' => 'Should be blocked',
     ], $voucherOwnedByB);
 
-    expect($fakeService->code)->toBeNull();
+    expect(VoucherWallet::withoutGlobalScopes()->where('voucher_id', $voucherOwnedByB->getKey())->exists())->toBeFalse();
 });
