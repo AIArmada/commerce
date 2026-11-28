@@ -80,7 +80,7 @@ The Filament actions keep form presentation and notifications in the adapter. Pa
 - `PaymentsRelationManager` (creates route through `RecordDocPayment`, so balance caps, locks, and status transitions apply; recorded amounts are immutable and payments cannot be deleted from the UI)
 - `EmailsRelationManager`
 - `VersionsRelationManager`
-- `ApprovalsRelationManager` (unassigned approvals additionally require the `document_approval.approve` ability)
+- `ApprovalsRelationManager` (requesting and removing pending approvals requires `document.update`; unassigned decisions require `document_approval.approve`; settled approvals cannot be removed)
 
 ## Authorization
 

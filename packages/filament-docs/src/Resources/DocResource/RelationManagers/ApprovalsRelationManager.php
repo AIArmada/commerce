@@ -6,7 +6,9 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentApprovalRequests;
 use AIArmada\Docs\Contracts\DocumentApprovals;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
@@ -15,7 +17,6 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -41,10 +42,6 @@ final class ApprovalsRelationManager extends RelationManager
     {
         return $schema
             ->schema([
-                Hidden::make('requested_by')
-                    ->default(fn (): ?string => auth()->id() !== null ? (string) auth()->id() : null)
-                    ->dehydrated(),
-
                 Select::make('assigned_to')
                     ->label('Assign To')
                     ->options(function (): array {
@@ -122,29 +119,37 @@ final class ApprovalsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Request Approval')
-                    ->mutateFormDataUsing(function (array $data): array {
-                        DocsOwnerScope::assertCanMutateRecord($this->getOwnerRecord(), 'Document not found.');
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
+                    ->using(function (array $data): DocApproval {
+                        abort_unless(DocPermissions::allows(DocPermissions::DOCUMENT, 'update'), 403);
 
-                        $data['requested_by'] = auth()->id() !== null ? (string) auth()->id() : null;
-                        $data['status'] = 'pending';
+                        $doc = $this->getOwnerRecord();
+                        abort_unless($doc instanceof Doc, 404);
+                        DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
 
-                        if ($data['requested_by'] === null) {
-                            throw ValidationException::withMessages([
-                                'requested_by' => __('You must be logged in to request approval.'),
-                            ]);
-                        }
+                        $actorId = auth()->id();
+                        abort_if($actorId === null, 403);
 
-                        if (! empty($data['assigned_to'])) {
+                        $assigneeId = $data['assigned_to'] ?? null;
+                        if ($assigneeId !== null && $assigneeId !== '') {
                             $assignableUserIds = array_keys(self::resolveAssignableUserOptions());
 
-                            if (! in_array((string) $data['assigned_to'], array_map('strval', $assignableUserIds), true)) {
+                            if (! is_scalar($assigneeId) || ! in_array((string) $assigneeId, array_map('strval', $assignableUserIds), true)) {
                                 throw ValidationException::withMessages([
                                     'assigned_to' => __('Invalid assignee selection.'),
                                 ]);
                             }
                         }
 
-                        return $data;
+                        $id = app(DocumentApprovalRequests::class)->request(
+                            (string) $doc->getKey(),
+                            (string) $actorId,
+                            $assigneeId === null || $assigneeId === '' ? null : (string) $assigneeId,
+                            $data['expires_at'] ?? null,
+                            $data['comments'] ?? null,
+                        );
+
+                        return $doc->approvals()->findOrFail($id);
                     }),
             ])
             ->recordActions([
@@ -206,12 +211,18 @@ final class ApprovalsRelationManager extends RelationManager
                         ->icon('heroicon-o-trash')
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->action(function (Collection $records): void {
-                            /** @var Collection<int|string, DocApproval> $records */
-                            $records->each(function (DocApproval $record): void {
-                                DocsOwnerScope::assertCanMutateRecord($record, 'Approval not found.');
-                                $record->delete();
-                            });
+                            abort_unless(DocPermissions::allows(DocPermissions::DOCUMENT, 'update'), 403);
+
+                            $doc = $this->getOwnerRecord();
+                            abort_unless($doc instanceof Doc, 404);
+                            DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
+
+                            app(DocumentApprovalRequests::class)->remove(
+                                (string) $doc->getKey(),
+                                array_map('strval', $records->modelKeys()),
+                            );
                         }),
                 ]),
             ])

@@ -3,7 +3,8 @@
   "name": "Approvals",
   "owns": {
     "table:docs_approvals": [
-      "AIArmada\\Docs\\Features\\Approvals\\Actions\\DecideDocApproval"
+      "AIArmada\\Docs\\Features\\Approvals\\Actions\\DecideDocApproval",
+      "AIArmada\\Docs\\Features\\Approvals\\Actions\\ManageDocApprovalRequests"
     ]
   },
   "extensions": {}
