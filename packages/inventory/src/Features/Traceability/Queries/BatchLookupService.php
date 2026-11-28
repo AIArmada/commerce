@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -45,37 +46,36 @@ final readonly class BatchLookupService
      */
     public function getAllocatableBatches(Model $model, ?string $locationId = null): Collection
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->allocatable()
-                ->fefo()
-        );
-
-        if ($locationId !== null) {
-            $query->atLocation($locationId);
-        }
-
-        return $query->get();
+        return $this->allocatableQuery($model, $locationId)->fefo()->orderBy('id')->get();
     }
 
-    /**
-     * Get total available quantity across all batches.
-     */
+    /** @return Collection<int, InventoryBatch> */
+    public function getFifoBatches(Model $model, ?string $locationId = null): Collection
+    {
+        return $this->allocatableQuery($model, $locationId)->fifo()->orderBy('id')->get();
+    }
+
     public function getTotalAvailable(Model $model, ?string $locationId = null): int
+    {
+        return (int) $this->allocatableQuery($model, $locationId)
+            ->sum(DB::raw('quantity_on_hand - quantity_reserved'));
+    }
+
+    /** @return Builder<InventoryBatch> */
+    private function allocatableQuery(Model $model, ?string $locationId): Builder
     {
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryBatch::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->allocatable()
+                ->whereHas('location', fn (Builder $location): Builder => InventoryOwnerScope::applyToLocationQuery($location)->where('is_active', true))
         );
 
         if ($locationId !== null) {
             $query->atLocation($locationId);
         }
 
-        return (int) $query->sum(DB::raw('quantity_on_hand - quantity_reserved'));
+        return $query;
     }
 }

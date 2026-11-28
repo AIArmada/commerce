@@ -59,19 +59,7 @@ final class BatchAllocationService implements BatchReservationBalances
             }
         }
 
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->allocatable()
-                ->fifo()
-        );
-
-        if ($locationId !== null) {
-            $query->atLocation($locationId);
-        }
-
-        return $this->allocateFromBatches($query->get(), $quantity);
+        return $this->allocateFromBatches($this->batches->getFifoBatches($model, $locationId), $quantity);
     }
 
     /**
@@ -86,7 +74,11 @@ final class BatchAllocationService implements BatchReservationBalances
                 $batch = $allocation['batch'];
                 $quantity = $allocation['quantity'];
 
-                if (! $batch->canAllocate() || $quantity > $batch->available) {
+                if (! $batch->canAllocate() || $quantity > $batch->available
+                    || ! InventoryOwnerScope::forMutation(InventoryLocation::query())
+                        ->whereKey($batch->location_id)
+                        ->where('is_active', true)
+                        ->exists()) {
                     throw new InvalidArgumentException('Insufficient allocatable batch inventory');
                 }
 
@@ -269,6 +261,11 @@ final class BatchAllocationService implements BatchReservationBalances
             }
 
             $id = $allocation['batch']->id;
+
+            if ($quantity > PHP_INT_MAX - ($quantities[$id] ?? 0)) {
+                throw new InvalidArgumentException('Combined batch quantity exceeds the supported quantity');
+            }
+
             $quantities[$id] = ($quantities[$id] ?? 0) + $quantity;
         }
 
@@ -288,6 +285,20 @@ final class BatchAllocationService implements BatchReservationBalances
 
         if ($batches->count() !== count($quantities)) {
             throw new InvalidArgumentException('One or more batches are not accessible for current owner');
+        }
+
+        $byId = $batches->keyBy('id');
+
+        foreach ($allocations as $allocation) {
+            $original = $allocation['batch'];
+            $current = $byId->get($original->id);
+
+            if ($current === null
+                || $current->inventoryable_type !== $original->inventoryable_type
+                || $current->inventoryable_id !== $original->inventoryable_id
+                || $current->location_id !== $original->location_id) {
+                throw new InvalidArgumentException('Batch allocation identity changed; recalculate the allocation');
+            }
         }
 
         $locked = [];

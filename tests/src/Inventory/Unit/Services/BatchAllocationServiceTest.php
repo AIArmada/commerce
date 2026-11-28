@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 
 beforeEach(function (): void {
@@ -384,4 +385,37 @@ it('rejects committing recalled stock but permits releasing its reservation', fu
 
     expect($batch->fresh()->quantity_on_hand)->toBe(50)
         ->and($batch->fresh()->quantity_reserved)->toBe(0);
+});
+
+it('excludes inactive locations consistently from batch allocation and availability', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'inventoryable_type' => $this->product->getMorphClass(),
+        'inventoryable_id' => $this->product->id,
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 20,
+        'quantity_reserved' => 0,
+        'status' => BatchStatus::Active,
+        'expires_at' => null,
+    ]);
+    $plan = $this->service->allocateFefo($this->product, 10);
+    $this->location->update(['is_active' => false]);
+
+    expect($this->service->checkAvailability($this->product, 1))->toBeFalse()
+        ->and($this->service->getFefoAllocationPlan($this->product, 1)['total_available'])->toBe(0)
+        ->and(fn () => $this->service->allocateFifo($this->product, 1))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $this->service->reserveBatches($plan))->toThrow(InvalidArgumentException::class)
+        ->and($batch->fresh()->quantity_reserved)->toBe(0);
+});
+
+it('rejects stale batch allocation plans after a batch changes location', function (): void {
+    $batch = app(BatchService::class)->createBatch($this->product, 'MOVED-BATCH', $this->location->id, 20);
+    $plan = $this->service->allocateFefo($this->product, 10);
+    $destination = InventoryLocation::factory()->create(['is_active' => true]);
+
+    app(BatchService::class)->transferBatch($batch, $destination);
+
+    expect(fn () => $this->service->reserveBatches($plan))
+        ->toThrow(InvalidArgumentException::class, 'Batch allocation identity changed')
+        ->and($batch->fresh()->quantity_reserved)->toBe(0)
+        ->and($batch->fresh()->location_id)->toBe($destination->id);
 });
