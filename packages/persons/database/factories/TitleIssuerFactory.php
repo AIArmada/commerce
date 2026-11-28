@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Factories;
 
 use AIArmada\Persons\Enums\IssuerType;
-use AIArmada\Persons\Models\TitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

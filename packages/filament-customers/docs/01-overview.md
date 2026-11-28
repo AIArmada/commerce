@@ -40,7 +40,7 @@ Use this package when you need panel resources and dashboard widgets for custome
 - `NotesRelationManager`
 - `CustomerStatsWidget`
 - `RecentCustomersWidget`
-- `MergeCustomersPage` + `MergeCustomersAction` — merge duplicate customer records
+- `MergeCustomersPage` + `MergeCustomers` — merge duplicate customer records
 - `SegmentRebuildPage` — one-click segment rebuilds
 - `AddressValidationPage` — validate customer addresses
 

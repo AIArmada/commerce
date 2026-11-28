@@ -6,7 +6,7 @@ namespace AIArmada\Filament\Communications\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\CommunicationCategory;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Filament\Communications\Resources\CommunicationBatchResource\Pages;
 use BackedEnum;
 use Filament\Actions\ViewAction;

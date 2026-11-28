@@ -215,7 +215,7 @@ Action::make('rebuild')
     ->color('warning')
     ->requiresConfirmation()
     ->action(fn ($record) => {
-        $count = $record->rebuildCustomerList();
+        $count = app(\AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments::class)->rebuildSegment($record);
         
         Notification::make()
             ->success()

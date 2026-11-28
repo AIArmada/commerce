@@ -11,7 +11,7 @@ use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\RenderedContentData;
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use Illuminate\Notifications\Messages\MailMessage;
 
 beforeEach(function (): void {
@@ -77,7 +77,7 @@ test('null content renderer render method returns RenderedContentData', function
     ]);
     $template->save();
 
-    $result = $resolver->render($template, 'mail', 'en', []);
+    $result = $resolver->render($template->id, 'mail', 'en', []);
 
     expect($result)->toBeInstanceOf(RenderedContentData::class);
 });

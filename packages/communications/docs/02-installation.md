@@ -13,7 +13,10 @@ title: Installation
 ## Database compatibility
 
 The preference owner/channel/category lookup index is non-unique and uses the
-complete values on PostgreSQL and SQLite.
+complete values on PostgreSQL and SQLite. Thread external identity uniqueness
+uses owner and global partial unique indexes on PostgreSQL and SQLite; the
+thread migration fails fast on unsupported database drivers instead of
+silently dropping per-partition uniqueness.
 
 ## Install
 

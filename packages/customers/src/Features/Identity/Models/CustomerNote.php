@@ -1,0 +1,156 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Customers\Features\Identity\Models;
+
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Customers\Models\Customer;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $customer_id
+ * @property string|null $created_by
+ * @property string $content
+ * @property bool $is_internal
+ * @property bool $is_pinned
+ * @property array<string, mixed>|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Customer $customer
+ * @property-read Model|null $createdBy
+ */
+class CustomerNote extends Model
+{
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
+
+    protected $fillable = [
+        'customer_id',
+        'created_by',
+        'content',
+        'is_internal',
+        'is_pinned',
+        'metadata',
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_internal' => 'boolean',
+        'is_pinned' => 'boolean',
+        'metadata' => 'array',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_internal' => true,
+        'is_pinned' => false,
+    ];
+
+    public function getTable(): string
+    {
+        $tables = config('customers.database.tables', []);
+        $prefix = config('customers.database.table_prefix', 'customer_');
+
+        return $tables['notes'] ?? $prefix . 'notes';
+    }
+
+    // =========================================================================
+    // RELATIONSHIPS
+    // =========================================================================
+
+    /**
+     * Get the customer this note belongs to.
+     *
+     * @return BelongsTo<Customer, $this>
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    /**
+     * Get the user who created this note.
+     *
+     * @return BelongsTo<Model, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        /** @var class-string<Model>|null $userModel */
+        $userModel = config('customers.integrations.user_model');
+
+        /** @var class-string<Model>|null $fallbackUserModel */
+        $fallbackUserModel = config('auth.providers.users.model');
+
+        return $this->belongsTo($userModel ?? $fallbackUserModel ?? User::class, 'created_by');
+    }
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    /**
+     * Check if this is an internal note.
+     */
+    public function isInternal(): bool
+    {
+        return $this->is_internal;
+    }
+
+    /**
+     * Check if this note is visible to customer.
+     */
+    public function isVisibleToCustomer(): bool
+    {
+        return ! $this->is_internal;
+    }
+
+    // =========================================================================
+    // SCOPES
+    // =========================================================================
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeInternal(Builder $query): Builder
+    {
+        return $query->where('is_internal', true);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeVisibleToCustomer(Builder $query): Builder
+    {
+        return $query->where('is_internal', false);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePinned(Builder $query): Builder
+    {
+        return $query->where('is_pinned', true);
+    }
+}

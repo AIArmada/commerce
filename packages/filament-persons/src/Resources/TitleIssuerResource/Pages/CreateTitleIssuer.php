@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource;
+use AIArmada\Persons\Features\Titles\Actions\SaveTitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Resources\Pages\CreateRecord;
@@ -14,6 +16,12 @@ use InvalidArgumentException;
 final class CreateTitleIssuer extends CreateRecord
 {
     protected static string $resource = TitleIssuerResource::class;
+
+    /** @param array<string, mixed> $data */
+    protected function handleRecordCreation(array $data): TitleIssuer
+    {
+        return app(SaveTitleIssuer::class)->create($data);
+    }
 
     /**
      * @param  array<string, mixed>  $data

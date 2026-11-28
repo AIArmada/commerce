@@ -6,14 +6,15 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -98,28 +99,19 @@ final class CustomerForm
      */
     public static function syncManualSegments(Customer $record, ?array $state): void
     {
-        $owner = static::ensureRecordOwnerScope($record);
+        static::ensureRecordOwnerScope($record);
 
-        $ids = array_values(array_filter($state ?? []));
+        $ids = [];
+        foreach ($state ?? [] as $id) {
+            abort_unless(is_string($id) && $id !== '', 403);
+            $ids[] = $id;
+        }
 
-        $allowedManualSegmentIds = Segment::query()
-            ->forOwner($owner, includeGlobal: false)
-            ->where('is_automatic', false)
-            ->whereKey($ids)
-            ->pluck('id')
-            ->all();
-
-        abort_unless(array_diff($ids, $allowedManualSegmentIds) === [], 403);
-
-        $automaticSegmentIds = $record->segments()
-            ->where('is_automatic', true)
-            ->pluck('id')
-            ->all();
-
-        $record->segments()->sync(array_values(array_unique([
-            ...$automaticSegmentIds,
-            ...$allowedManualSegmentIds,
-        ])));
+        try {
+            app(SyncManualSegmentMemberships::class)->forCustomer($record, array_values(array_unique($ids)));
+        } catch (AuthorizationException) {
+            abort(403);
+        }
     }
 
     protected static function ensureRecordOwnerScope(Customer $record): ?Model

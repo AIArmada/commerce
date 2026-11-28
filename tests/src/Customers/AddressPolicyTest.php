@@ -115,7 +115,7 @@ beforeEach(function (): void {
 describe('AddressPolicy', function (): void {
     describe('viewAny', function (): void {
         it('allows viewing any addresses with the view permission', function (): void {
-            expect($this->policy->viewAny($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->viewAny($this->permitted)))->toBeTrue();
         });
 
         it('denies viewing any addresses without the view permission', function (): void {
@@ -258,7 +258,7 @@ describe('AddressPolicy', function (): void {
 
     describe('create', function (): void {
         it('allows creating addresses with the create permission', function (): void {
-            expect($this->policy->create($this->permitted))->toBeTrue();
+            expect(OwnerContext::withOwner(null, fn (): bool => $this->policy->create($this->permitted)))->toBeTrue();
         });
 
         it('denies creating addresses without the create permission', function (): void {

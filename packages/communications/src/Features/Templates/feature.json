@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "Templates",
+  "owns": {
+    "table:communication_templates": [
+      "AIArmada\\Communications\\Features\\Templates\\Actions\\PublishTemplateAction"
+    ],
+    "table:communication_template_versions": [
+      "AIArmada\\Communications\\Features\\Templates\\Actions\\PublishTemplateAction",
+      "AIArmada\\Communications\\Features\\Templates\\Actions\\DeleteTemplateVersions"
+    ]
+  },
+  "extensions": {}
+}

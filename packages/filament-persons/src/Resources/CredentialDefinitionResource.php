@@ -9,7 +9,8 @@ use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\Create
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\EditCredentialDefinition;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\ListCredentialDefinitions;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\ViewCredentialDefinition;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -21,6 +22,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use UnitEnum;
 
 class CredentialDefinitionResource extends Resource
@@ -129,7 +133,18 @@ class CredentialDefinitionResource extends Resource
             ])
             ->toolbarActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    Actions\DeleteBulkAction::make()->using(static function (Actions\DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof CredentialDefinition || ! self::canDelete($record) || ! app(DeleteCredentialDefinition::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }
