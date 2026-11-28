@@ -161,3 +161,22 @@ it('rejects selection outside the requested section', function (): void {
 
     expect($component->picked)->toBe([]);
 });
+
+it('allows deselecting a picked seat that has since become blocked', function (): void {
+    $component = makeSeatMapComponent((string) $this->map->id);
+    $component->toggleSeat((string) $this->seatA->id);
+
+    $this->seatA->update(['status' => SeatStatus::Blocked]);
+    $component->toggleSeat((string) $this->seatA->id);
+
+    expect($component->picked)->toBe([]);
+});
+
+it('does not allow selection on an inactive map supplied by id', function (): void {
+    $this->map->update(['status' => 'inactive']);
+    $component = makeSeatMapComponent((string) $this->map->id);
+
+    $component->toggleSeat((string) $this->seatA->id);
+
+    expect($component->picked)->toBe([]);
+});

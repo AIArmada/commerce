@@ -80,6 +80,20 @@ class SeatMap extends Component
             return;
         }
 
+        $index = array_search($seatId, $this->picked, true);
+
+        if ($index !== false) {
+            unset($this->picked[$index]);
+            $this->picked = array_values($this->picked);
+            $this->dispatch('seat-deselected', seatId: $seatId);
+
+            return;
+        }
+
+        if (count($this->picked) >= self::MAX_SELECTION) {
+            return;
+        }
+
         $seat = Seat::query()
             ->whereKey($seatId)
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $mapId))
@@ -93,11 +107,13 @@ class SeatMap extends Component
         $now = CarbonImmutable::now();
 
         $hasActiveHold = $seat->holds()
+            ->withoutOwnerScope()
             ->where('expires_at', '>', $now)
             ->whereNull('converted_at')
             ->exists();
 
         $hasActiveAllocation = $seat->allocations()
+            ->withoutOwnerScope()
             ->where('status', 'active')
             ->exists();
 
@@ -105,20 +121,8 @@ class SeatMap extends Component
             return;
         }
 
-        $index = array_search($seatId, $this->picked, true);
-
-        if ($index !== false) {
-            unset($this->picked[$index]);
-            $this->picked = array_values($this->picked);
-            $this->dispatch('seat-deselected', seatId: $seatId);
-        } else {
-            if (count($this->picked) >= self::MAX_SELECTION) {
-                return;
-            }
-
-            $this->picked[] = $seatId;
-            $this->dispatch('seat-picked', seatId: $seatId);
-        }
+        $this->picked[] = $seatId;
+        $this->dispatch('seat-picked', seatId: $seatId);
     }
 
     public function clearSelection(): void
@@ -158,10 +162,12 @@ class SeatMap extends Component
             ->with([
                 'seats' => fn ($query): mixed => $query->select('id', 'seat_section_id', 'status'),
                 'seats.holds' => fn ($query): mixed => $query
+                    ->withoutOwnerScope()
                     ->select('id', 'seat_id', 'expires_at')
                     ->where('expires_at', '>', $now)
                     ->whereNull('converted_at'),
                 'seats.allocations' => fn ($query): mixed => $query
+                    ->withoutOwnerScope()
                     ->select('id', 'seat_id', 'status')
                     ->where('status', 'active'),
             ])
@@ -215,7 +221,7 @@ class SeatMap extends Component
     private function resolveMapId(): ?string
     {
         if ($this->seatMapId !== null) {
-            $id = SeatMapModel::query()->whereKey($this->seatMapId)->value('id');
+            $id = SeatMapModel::query()->whereKey($this->seatMapId)->active()->value('id');
 
             return is_string($id) ? $id : null;
         }

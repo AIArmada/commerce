@@ -5,10 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
@@ -242,4 +244,34 @@ it('rejects allocations pointing at nothing or at unknown rows', function (): vo
         'seat_id' => null,
         'seat_section_id' => (string) Str::orderedUuid(),
     ]))->toThrow(InvalidArgumentException::class, 'does not exist in the current scope');
+});
+
+it('does not let different owners hold the same shared global seat', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $map = OwnerContext::withOwner(null, function (): SeatMap {
+        $map = SeatMap::factory()->create();
+        $section = SeatSection::factory()->create(['seat_map_id' => $map->id]);
+        Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+
+        return $map;
+    });
+
+    OwnerContext::withOwner($ownerA, fn () => app(EnsureSeatHoldAction::class)->handle(
+        map: $map,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    ));
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(EnsureSeatHoldAction::class)->handle(
+        map: $map,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    )))->toThrow(InsufficientSeatsException::class);
+
+    expect(SeatHold::query()->withoutOwnerScope()->count())->toBe(1);
 });

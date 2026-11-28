@@ -78,6 +78,7 @@ final readonly class EnsureSeatHoldAction
             }
 
             $heldSeatIds = SeatHold::query()
+                ->withoutOwnerScope()
                 ->whereIn('seat_id', $candidates->pluck('id')->all())
                 ->where('expires_at', '>', CarbonImmutable::now())
                 ->whereNull('converted_at')
@@ -86,6 +87,7 @@ final readonly class EnsureSeatHoldAction
                 ->all();
 
             $allocatedSeatIds = SeatAllocation::query()
+                ->withoutOwnerScope()
                 ->whereIn('seat_id', $candidates->pluck('id')->all())
                 ->where('status', 'active')
                 ->lockForUpdate()
@@ -183,8 +185,8 @@ final readonly class EnsureSeatHoldAction
             ->with('section')
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $map->id))
             ->available()
-            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now())->whereNull('converted_at'))
-            ->whereDoesntHave('activeAllocation');
+            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->withoutOwnerScope()->where('expires_at', '>', CarbonImmutable::now())->whereNull('converted_at'))
+            ->whereDoesntHave('activeAllocation', fn (Builder $query): Builder => $query->withoutOwnerScope());
 
         if ($preferences !== []) {
             $placeholders = implode(',', array_fill(0, count($preferences), '?'));
