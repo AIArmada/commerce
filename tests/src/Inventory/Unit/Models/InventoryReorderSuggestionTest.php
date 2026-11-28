@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
+use AIArmada\Inventory\Features\Replenishment\Actions\AdvanceReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\RejectReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -285,7 +288,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->approve('admin-user');
+            $result = app(ApproveReorderSuggestion::class)->handle($suggestion, 'admin-user');
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Approved);
@@ -305,7 +308,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->approve('admin-user');
+            $result = app(ApproveReorderSuggestion::class)->handle($suggestion, 'admin-user');
 
             expect($result)->toBeFalse();
         });
@@ -324,7 +327,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->reject('Stock manually adjusted');
+            $result = app(RejectReorderSuggestion::class)->handle($suggestion, 'Stock manually adjusted');
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Rejected);
@@ -343,7 +346,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->reject();
+            $result = app(RejectReorderSuggestion::class)->handle($suggestion);
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Rejected);
@@ -361,7 +364,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->reject('Too late');
+            $result = app(RejectReorderSuggestion::class)->handle($suggestion, 'Too late');
 
             expect($result)->toBeFalse();
         });
@@ -380,7 +383,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->markOrdered('PO-12345');
+            $result = app(AdvanceReorderSuggestion::class)->markOrdered($suggestion, 'PO-12345');
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Ordered);
@@ -400,7 +403,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->markOrdered('PO-12345');
+            $result = app(AdvanceReorderSuggestion::class)->markOrdered($suggestion, 'PO-12345');
 
             expect($result)->toBeFalse();
         });
@@ -419,7 +422,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->markReceived();
+            $result = app(AdvanceReorderSuggestion::class)->markReceived($suggestion);
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Received);
@@ -437,7 +440,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->markReceived();
+            $result = app(AdvanceReorderSuggestion::class)->markReceived($suggestion);
 
             expect($result)->toBeFalse();
         });
@@ -456,7 +459,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->expire();
+            $result = app(AdvanceReorderSuggestion::class)->expire($suggestion);
 
             expect($result)->toBeTrue();
             expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Expired);
@@ -474,7 +477,7 @@ describe('InventoryReorderSuggestion', function (): void {
                 'trigger_reason' => 'Test',
             ]);
 
-            $result = $suggestion->expire();
+            $result = app(AdvanceReorderSuggestion::class)->expire($suggestion);
 
             expect($result)->toBeFalse();
         });
@@ -586,4 +589,18 @@ describe('InventoryReorderSuggestion', function (): void {
             expect($suggestion->lead_time_days)->toBeInt();
         });
     });
+});
+
+it('rejects stale reorder transitions after another worker advances the suggestion', function (): void {
+    $suggestion = InventoryReorderSuggestion::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'status' => ReorderSuggestionStatus::Pending,
+    ]);
+    $stale = $suggestion->fresh();
+    expect(app(ApproveReorderSuggestion::class)->handle($suggestion))->toBeTrue();
+    expect(app(AdvanceReorderSuggestion::class)->markOrdered($suggestion, 'PO-STALE'))->toBeTrue()
+        ->and(app(RejectReorderSuggestion::class)->handle($stale))->toBeFalse()
+        ->and(app(AdvanceReorderSuggestion::class)->expire($stale))->toBeFalse()
+        ->and($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Ordered);
 });

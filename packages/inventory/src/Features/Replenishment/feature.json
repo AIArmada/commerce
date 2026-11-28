@@ -11,7 +11,8 @@
     "table:inventory_reorder_suggestions": [
       "AIArmada\\Inventory\\Features\\Replenishment\\Persistence\\ReplenishmentService",
       "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\ApproveReorderSuggestion",
-      "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\RejectReorderSuggestion"
+      "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\RejectReorderSuggestion",
+      "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\AdvanceReorderSuggestion"
     ]
   },
   "extensions": {}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Replenishment\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,19 @@ final class RejectReorderSuggestion
 
             $locked = $query->lockForUpdate()->firstOrFail();
 
-            return $locked->reject($reason);
+            if (! $locked->isActionable()) {
+                return false;
+            }
+
+            $metadata = $locked->metadata ?? [];
+            if ($reason) {
+                $metadata['rejection_reason'] = $reason;
+            }
+
+            return $locked->update([
+                'status' => ReorderSuggestionStatus::Rejected,
+                'metadata' => $metadata,
+            ]);
         });
     }
 }

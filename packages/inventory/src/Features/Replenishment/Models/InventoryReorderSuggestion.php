@@ -249,89 +249,9 @@ final class InventoryReorderSuggestion extends Model implements Auditable
         return (int) CarbonImmutable::now()->diffInDays($this->expected_stockout_date, false);
     }
 
-    /**
-     * Approve the suggestion.
-     */
-    public function approve(?string $approvedBy = null): bool
-    {
-        if ($this->status !== ReorderSuggestionStatus::Pending) {
-            return false;
-        }
-
-        return $this->update([
-            'status' => ReorderSuggestionStatus::Approved,
-            'approved_by' => $approvedBy,
-            'approved_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    /**
-     * Reject the suggestion.
-     */
-    public function reject(?string $reason = null): bool
-    {
-        if (! $this->isActionable()) {
-            return false;
-        }
-
-        $metadata = $this->metadata ?? [];
-        if ($reason) {
-            $metadata['rejection_reason'] = $reason;
-        }
-
-        return $this->update([
-            'status' => ReorderSuggestionStatus::Rejected,
-            'metadata' => $metadata,
-        ]);
-    }
-
     protected function getActivityLogName(): string
     {
         return 'inventory';
-    }
-
-    /**
-     * Mark as ordered.
-     */
-    public function markOrdered(string $orderId): bool
-    {
-        if ($this->status !== ReorderSuggestionStatus::Approved) {
-            return false;
-        }
-
-        return $this->update([
-            'status' => ReorderSuggestionStatus::Ordered,
-            'order_id' => $orderId,
-            'ordered_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    /**
-     * Mark as received.
-     */
-    public function markReceived(): bool
-    {
-        if ($this->status !== ReorderSuggestionStatus::Ordered) {
-            return false;
-        }
-
-        return $this->update([
-            'status' => ReorderSuggestionStatus::Received,
-        ]);
-    }
-
-    /**
-     * Expire the suggestion.
-     */
-    public function expire(): bool
-    {
-        if (! $this->isActionable()) {
-            return false;
-        }
-
-        return $this->update([
-            'status' => ReorderSuggestionStatus::Expired,
-        ]);
     }
 
     protected function casts(): array

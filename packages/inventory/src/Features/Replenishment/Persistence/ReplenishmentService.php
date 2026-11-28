@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
+use AIArmada\Inventory\Features\Replenishment\Actions\AdvanceReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
@@ -265,18 +266,16 @@ final class ReplenishmentService
     {
         $cutoff = CarbonImmutable::now()->subDays($daysOld);
 
-        $oldQuery = InventoryReorderSuggestion::query()
+        $oldQuery = InventoryOwnerScope::forMutation(InventoryReorderSuggestion::query())
             ->actionable()
             ->where('created_at', '<', $cutoff);
-
-        $this->applyOwnerScopeToSuggestionQuery($oldQuery);
 
         $old = $oldQuery->get();
 
         $expired = 0;
 
         foreach ($old as $suggestion) {
-            if ($suggestion->expire()) {
+            if (app(AdvanceReorderSuggestion::class)->expire($suggestion)) {
                 $expired++;
             }
         }

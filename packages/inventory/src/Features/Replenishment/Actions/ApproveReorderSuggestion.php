@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Replenishment\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,7 +32,15 @@ final class ApproveReorderSuggestion
 
             $locked = $query->lockForUpdate()->firstOrFail();
 
-            return $locked->approve($userId);
+            if ($locked->status !== ReorderSuggestionStatus::Pending) {
+                return false;
+            }
+
+            return $locked->update([
+                'status' => ReorderSuggestionStatus::Approved,
+                'approved_by' => $userId,
+                'approved_at' => CarbonImmutable::now(),
+            ]);
         });
     }
 }
