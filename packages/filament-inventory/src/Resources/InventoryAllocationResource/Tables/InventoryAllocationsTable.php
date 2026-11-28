@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Tables;
 
 use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
-use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation as InventoryAllocationFacade;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

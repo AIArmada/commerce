@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Facades;
+namespace AIArmada\Inventory\Features\Reservations\Facades;
 
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Support\Facades\Facade;

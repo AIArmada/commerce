@@ -12,7 +12,6 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Inventory\Contracts\InventoryableInterface;
-use AIArmada\Inventory\Traits\HasInventory;
 use AIArmada\Orders\Models\OrderItem;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
@@ -189,6 +188,6 @@ final class CompositeComponents
             return true;
         }
 
-        return in_array(HasInventory::class, class_uses_recursive($class), true);
+        return false;
     }
 }

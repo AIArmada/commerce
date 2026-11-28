@@ -120,7 +120,7 @@ Use feature-owned actions for writes and named queries for reads. Implement `Con
 
 ```php
 use AIArmada\Inventory\Facades\Inventory;
-use AIArmada\Inventory\Facades\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // Receive inventory
 Inventory::receive($product, $location->id, 100, 'purchase order');

@@ -38,7 +38,7 @@ php artisan vendor:publish --tag=inventory-config
 
 ```php
 use AIArmada\Inventory\Contracts\InventoryableInterface;
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -74,7 +74,7 @@ $product->hasInventory(10);  // true if >= 10 available across all locations
 
 ```php
 use AIArmada\Inventory\Facades\Inventory;
-use AIArmada\Inventory\Facades\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // Inventory operations
 Inventory::receive($product, $locationId, 100, 'Supplier delivery');

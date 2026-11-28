@@ -91,7 +91,7 @@ Ensure you have bound `OwnerResolverInterface` in your service container.
 Add the `HasInventory` trait to any model that should track inventory:
 
 ```php
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 
 class Product extends Model
 {

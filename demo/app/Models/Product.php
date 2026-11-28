@@ -6,7 +6,7 @@ namespace App\Models;
 
 use AIArmada\Inventory\Contracts\InventoryableInterface;
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

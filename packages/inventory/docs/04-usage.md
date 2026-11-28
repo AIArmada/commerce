@@ -299,7 +299,7 @@ $totals = Inventory::getAvailabilityForMany([$variantA, $variantB]);
 ### Cart Flow
 
 ```php
-use AIArmada\Inventory\Facades\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // 1. Allocate when adding to cart
 InventoryAllocation::allocate($product, 5, $cartId, ttlMinutes: 30);
@@ -679,7 +679,7 @@ php artisan inventory:create-valuation-snapshot --date=2026-01-31
 ### HasInventory Trait
 
 ```php
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 
 class Product extends Model
 {

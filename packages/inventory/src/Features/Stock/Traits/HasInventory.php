@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Traits;
+namespace AIArmada\Inventory\Features\Stock\Traits;
 
 use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;

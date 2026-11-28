@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages;
 
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
-use AIArmada\Inventory\Facades\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
