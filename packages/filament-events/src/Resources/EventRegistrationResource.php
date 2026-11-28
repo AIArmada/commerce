@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use AIArmada\Events\Features\Registrations\States\RegistrationStatus\RegistrationStatus;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventRegistrationExporter;
@@ -80,10 +79,14 @@ final class EventRegistrationResource extends Resource
                         $pattern = LikeSearch::contains($search);
 
                         return $query->where(function (Builder $nested) use ($pattern): void {
-                            $nested->whereHasMorph('registrant', [Customer::class], function (Builder $q) use ($pattern): void {
-                                LikeSearch::whereLike($q, 'first_name', $pattern);
-                                LikeSearch::orWhereLike($q, 'last_name', $pattern);
-                            })->orWhereHas('participants', fn (Builder $q) => LikeSearch::whereLike($q, 'name', $pattern));
+                            $nested->whereHas('participants', fn (Builder $q) => LikeSearch::whereLike($q, 'name', $pattern));
+
+                            if (class_exists(Customer::class)) {
+                                $nested->orWhereHasMorph('registrant', [Customer::class], function (Builder $q) use ($pattern): void {
+                                    LikeSearch::whereLike($q, 'first_name', $pattern);
+                                    LikeSearch::orWhereLike($q, 'last_name', $pattern);
+                                });
+                            }
                         });
                     }),
                 Tables\Columns\TextColumn::make('registrant.email')
@@ -92,10 +95,10 @@ final class EventRegistrationResource extends Resource
                         $registrant = $record->registrant;
                         if ($registrant instanceof Customer) {
                             return $registrant->resolveEmail()
-                                ?? static::participantContactValue($record->participants->first(), 'email');
+                                ?? $record->participants->first()?->resolveEmail();
                         }
 
-                        return static::participantContactValue($record->participants->first(), 'email');
+                        return $record->participants->first()?->resolveEmail();
                     })
                     ->copyable()
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -103,17 +106,24 @@ final class EventRegistrationResource extends Resource
 
                         $matchContact = static fn (Builder $contactQuery): Builder => $contactQuery
                             ->where('type', 'email')
+                            ->whereNotNull('normalized_value')
+                            ->where(fn (Builder $validity): Builder => $validity->whereNull('valid_from')->orWhere('valid_from', '<=', now()))
+                            ->where(fn (Builder $validity): Builder => $validity->whereNull('valid_until')->orWhere('valid_until', '>=', now()))
                             ->where(function (Builder $valueQuery) use ($pattern): void {
                                 LikeSearch::whereLike($valueQuery, 'normalized_value', $pattern);
                                 LikeSearch::orWhereLike($valueQuery, 'value', $pattern);
                             });
 
                         return $query->where(function (Builder $nested) use ($matchContact): void {
-                            $nested->whereHasMorph(
-                                'registrant',
-                                [Customer::class],
-                                fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas('contactMethods', $matchContact),
-                            )->orWhereHas('participants.contactMethods', $matchContact);
+                            $nested->whereHas('participants.contactMethods', $matchContact);
+
+                            if (class_exists(Customer::class)) {
+                                $nested->orWhereHasMorph(
+                                    'registrant',
+                                    [Customer::class],
+                                    fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas('contactMethods', $matchContact),
+                                );
+                            }
                         });
                     }),
                 Tables\Columns\TextColumn::make('registrant.phone')
@@ -122,10 +132,10 @@ final class EventRegistrationResource extends Resource
                         $registrant = $record->registrant;
                         if ($registrant instanceof Customer) {
                             return $registrant->resolvePhone()
-                                ?? static::participantContactValue($record->participants->first(), 'phone');
+                                ?? $record->participants->first()?->resolvePhone();
                         }
 
-                        return static::participantContactValue($record->participants->first(), 'phone');
+                        return $record->participants->first()?->resolvePhone();
                     })
                     ->copyable(),
                 Tables\Columns\TextColumn::make('registrant.company')
@@ -205,34 +215,5 @@ final class EventRegistrationResource extends Resource
             'index' => EventRegistrationResource\Pages\ListEventRegistrations::route('/'),
             'view' => EventRegistrationResource\Pages\ViewEventRegistration::route('/{record}'),
         ];
-    }
-
-    private static function participantContactValue(?EventRegistrationParticipant $participant, string $type): ?string
-    {
-        if (! $participant instanceof EventRegistrationParticipant) {
-            return null;
-        }
-
-        $contact = $participant->relationLoaded('contactMethods')
-            ? $participant->contactMethods
-                ->where('type', $type)
-                ->sortByDesc('is_primary')
-                ->sortBy('sort_order')
-                ->first()
-            : $participant->contactMethods()
-                ->where('type', $type)
-                ->orderByDesc('is_primary')
-                ->orderBy('sort_order')
-                ->first();
-
-        $value = $contact?->normalized_value ?? $contact?->value;
-
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $value = mb_trim($value);
-
-        return $value !== '' ? $value : null;
     }
 }
