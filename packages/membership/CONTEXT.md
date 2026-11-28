@@ -17,7 +17,7 @@ keywords:
 - Composer: `aiarmada/membership`
 - Role: Polymorphic membership: applications, invitations, member pivots, Spatie role sync for any subject.
 - Triggers: membership, invitation, application, member-role
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Search first: `src/Models, src/Actions, src/Drivers, src/Support, src/EntryPoints, config, docs`
 - Related: `authz`, `commerce-support`, `organizations`
 
 ## Read next
@@ -29,7 +29,7 @@ keywords:
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
-- Owns models, actions, services, events, calculations, and persistence rules.
+- Owns models, actions, drivers, entry points, events, calculations, and persistence rules.
 - For `organizations.Organization`, the aggregate's `membersTable()` is authoritative. Do not configure an organization membership table through `membership.pivot.table_suffix`; that suffix remains the default for other `HasMembers` subjects.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
@@ -40,7 +40,8 @@ keywords:
 
 ## Key surfaces
 - Models: `MembershipApplication`, `MembershipInvitation`, `MembershipPivot`
-- Actions/Services: `Actions/AcceptInvitationAction`, `Actions/AddMemberAction`, `Actions/ApplyForMembershipAction`, `Actions/ApproveMembershipApplicationAction`, `Actions/CancelMembershipApplicationAction`, `Actions/ChangeMemberRoleAction`, `Actions/InviteMemberAction`, `Actions/RejectMembershipApplicationAction`, `Actions/RemoveMemberAction`, `Actions/RevokeInvitationAction`, `Actions/SyncMembershipRolesAction`, `Support/InvitationChannelManager`
+- Actions/Support: `Actions/AcceptInvitationAction`, `Actions/AddMemberAction`, `Actions/ApplyForMembershipAction`, `Actions/ApproveMembershipApplicationAction`, `Actions/CancelMembershipApplicationAction`, `Actions/ChangeMemberRoleAction`, `Actions/InviteMemberAction`, `Actions/RejectMembershipApplicationAction`, `Actions/RemoveMemberAction`, `Actions/RevokeInvitationAction`, `Actions/SyncMembershipRolesAction`, `Support/InvitationChannelManager`
+- Entry points: `EntryPoints/Commands/SyncRolesCommand` (`membership:sync-roles`)
 - Contracts: `Contracts/InvitationChannel`, `Contracts/InvitationRecipientVerifier`
 - Config `membership.php`: `database` (`json_column_type`, `tables.applications`, `tables.invitations`), `invitations` (`token_length`, `default_expiry_days`, `default_channel`, `channels`, `verifiers`), `pivot.table_suffix`, `role_mapping`, `role_permissions`, `owner` (`enabled`, `include_global`, `auto_assign_on_create`, `owner_type_column`, `owner_id_column`), `features.team_scoped_roles`
 

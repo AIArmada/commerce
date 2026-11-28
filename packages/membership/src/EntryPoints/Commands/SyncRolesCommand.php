@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Membership\Console\Commands;
+namespace AIArmada\Membership\EntryPoints\Commands;
 
 use AIArmada\Membership\Actions\SyncMembershipRolesAction;
 use Illuminate\Console\Command;
