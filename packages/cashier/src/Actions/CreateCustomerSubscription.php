@@ -9,11 +9,11 @@ use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\Cashier\Support\PaymentMethodIdentity;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
+use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
-use Throwable;
 
 final class CreateCustomerSubscription
 {
@@ -46,6 +46,15 @@ final class CreateCustomerSubscription
             throw new RuntimeException("Selected gateway is not available: {$gateway}");
         }
 
+        $paymentMethod = $data['payment_method'] ?? null;
+
+        if ($paymentMethod !== null && $paymentMethod !== '') {
+            if (! is_string($paymentMethod) || ! app(CustomerPaymentMethodsQuery::class)->records($billable, $gateway)
+                ->contains(static fn (PaymentMethodContract $method): bool => $method->id() === $paymentMethod)) {
+                throw new AuthorizationException('Selected payment method is not accessible.');
+            }
+        }
+
         $builder = Cashier::gateway($gateway)
             ->newSubscription($billable, $data['type'] ?? 'default', $data['plan_id']);
 
@@ -57,12 +66,8 @@ final class CreateCustomerSubscription
             $builder->trialDays((int) $data['trial_days']);
         }
 
-        if (! empty($data['payment_method']) && is_string($data['payment_method'])) {
-            if (! $this->billableOwnsPaymentMethod($billable, $gateway, $data['payment_method'])) {
-                throw new AuthorizationException('Selected payment method is not accessible.');
-            }
-
-            $builder->create($data['payment_method']);
+        if (is_string($paymentMethod) && $paymentMethod !== '') {
+            $builder->create($paymentMethod);
 
             return $billable;
         }
@@ -70,52 +75,5 @@ final class CreateCustomerSubscription
         $builder->create();
 
         return $billable;
-    }
-
-    private function billableOwnsPaymentMethod(BillableContract $billable, string $gateway, string $paymentMethodId): bool
-    {
-        if ($gateway === 'stripe') {
-            if (! method_exists($billable, 'paymentMethods')) {
-                return false;
-            }
-
-            try {
-                $methods = $billable->paymentMethods();
-
-                if (! is_iterable($methods)) {
-                    return false;
-                }
-
-                /** @var iterable<int, mixed> $methods */
-                return collect($methods)->contains(
-                    fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
-                );
-            } catch (Throwable) {
-                return false;
-            }
-        }
-
-        if ($gateway === 'chip') {
-            if (! method_exists($billable, 'paymentMethods')) {
-                return false;
-            }
-
-            try {
-                $methods = $billable->paymentMethods();
-
-                if (! is_iterable($methods)) {
-                    return false;
-                }
-
-                /** @var iterable<int, mixed> $methods */
-                return collect($methods)->contains(
-                    fn (mixed $paymentMethod): bool => PaymentMethodIdentity::chipId($paymentMethod) === $paymentMethodId
-                );
-            } catch (Throwable) {
-                return false;
-            }
-        }
-
-        return false;
     }
 }

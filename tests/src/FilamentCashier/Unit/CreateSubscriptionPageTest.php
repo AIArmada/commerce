@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
@@ -102,7 +103,8 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $customerOptions = SubscriptionForm::getCustomerOptions();
     expect($customerOptions)->toBeArray()->toHaveKey((string) $user->getKey());
 
-    expect(SubscriptionForm::getPlansForGateway(null))->toBe([]);
+    expect(SubscriptionForm::getPlansForGateway(null))->toBe([])
+        ->and(SubscriptionForm::getPlansForGateway('chip'))->toBe([]);
 
     CashierChip::useSubscriptionModel(ChipSubscription::class);
 
@@ -122,7 +124,11 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $subscription = Mockery::mock(SubscriptionContract::class);
 
     Cashier::shouldReceive('supportedGateways')->andReturn(['chip']);
-    Cashier::shouldReceive('gateway')->with('chip')->twice()->andReturn($gateway);
+    Cashier::shouldReceive('gateway')->with('chip')->times(3)->andReturn($gateway);
+    $method = Mockery::mock(PaymentMethodContract::class);
+    $method->shouldReceive('gateway')->andReturn('chip');
+    $method->shouldReceive('id')->andReturn('chip_pm_1');
+    $gateway->shouldReceive('paymentMethods')->once()->with(Mockery::type(ChipBillableUser::class))->andReturn(collect([$method]));
 
     $gateway
         ->shouldReceive('newSubscription')
@@ -187,11 +193,8 @@ it('rejects creating a subscription with an inaccessible payment method id', fun
     Cashier::shouldReceive('supportedGateways')->andReturn(['chip']);
     Cashier::shouldReceive('gateway')->with('chip')->once()->andReturn($gateway);
 
-    $gateway
-        ->shouldReceive('newSubscription')
-        ->once()
-        ->with(Mockery::type(ChipBillableUser::class), 'default', 'plan_a')
-        ->andReturn($builder);
+    $gateway->shouldReceive('paymentMethods')->once()->with(Mockery::type(ChipBillableUser::class))->andReturn(collect());
+    $gateway->shouldNotReceive('newSubscription');
 
     $builder->shouldNotReceive('create');
 
