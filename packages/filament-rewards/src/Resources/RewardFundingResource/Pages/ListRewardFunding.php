@@ -6,8 +6,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\RewardFundingResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
 use AIArmada\Rewards\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

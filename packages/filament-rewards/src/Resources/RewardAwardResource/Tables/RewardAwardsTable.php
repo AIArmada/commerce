@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Actions\DismissRewardFraudAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Actions\ReverseRewardFulfillmentAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;

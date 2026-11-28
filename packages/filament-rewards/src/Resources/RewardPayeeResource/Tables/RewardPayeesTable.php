@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\RejectRewardPayeeAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RejectRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Models\RewardPayee;
 use Filament\Actions\Action;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Finance\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
@@ -16,30 +16,43 @@ use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Member payee registration: the recipient submits a payout destination
- * for staff verification. Only methods the bound catalog serves can be
- * registered; an unconfigured method is refused instead of stranding an
- * unpayable row. The row lands Pending and never activates itself; any
- * prior Pending registration for the same recipient + method is
- * superseded, while a live Verified destination stays in force until
- * staff verify the replacement.
+ * Register and verify a recipient payout destination.
+ *
+ * Registration stores an operator handle plus a masked display value; full
+ * credentials stay with the operator/provider. Verification is an
+ * independent staff act: the verifier must be a staff/admin user who is
+ * not the recipient. Only methods the bound catalog serves can be
+ * verified; an unconfigured method is refused. For served methods the
+ * destination SHAPE is validated by the bound catalog's own
+ * validateDetails contract, so a payee that can never be paid is refused
+ * instead of stranded. A new registration for the same recipient + method
+ * supersedes prior rows; frozen per-operation snapshots keep reconciling
+ * against the original terms.
  */
-final readonly class RegisterRewardPayeeAction
+final readonly class VerifyRewardPayeeAction
 {
     use AsAction;
 
+    /**
+     * @param  array<string, mixed>|null  $evidence
+     */
     public function handle(
         string $recipientType,
         string $recipientId,
         string $method,
         string $accountRef,
         string $accountDisplay,
-        string $actorType,
-        ?string $actorId,
-        string $actorRole,
+        string $verifierType,
+        ?string $verifierId,
+        string $verifierRole,
+        ?array $evidence = null,
         ?CarbonInterface $decidedAt = null,
     ): RewardPayee {
-        RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
+        RewardLedgerEntries::assertActor($verifierType, $verifierId, $verifierRole);
+
+        if ($verifierType !== 'user' || ! in_array($verifierRole, ['staff', 'admin'], true)) {
+            throw new InvalidArgumentException('Payee verification requires a staff/admin user identity.');
+        }
 
         $recipientType = mb_trim($recipientType);
         $recipientId = mb_trim($recipientId);
@@ -49,10 +62,6 @@ final readonly class RegisterRewardPayeeAction
 
         if ($recipientType === '' || $recipientId === '') {
             throw new InvalidArgumentException('Recipient type and id must be non-empty.');
-        }
-
-        if ($actorType !== 'user' || $actorId !== $recipientId) {
-            throw new InvalidArgumentException('Payee registration is only for the recipient themselves.');
         }
 
         if ($method === '' || mb_strlen($method) > 32) {
@@ -65,6 +74,10 @@ final readonly class RegisterRewardPayeeAction
 
         if ($accountDisplay === '' || mb_strlen($accountDisplay) > 191) {
             throw new InvalidArgumentException('Payee account display must be 1..191 characters.');
+        }
+
+        if ($verifierId === $recipientId) {
+            throw new InvalidArgumentException('Payee self-verification is prohibited: the verifier must not be the recipient.');
         }
 
         $catalog = app(RewardPayoutMethodCatalog::class);
@@ -88,18 +101,20 @@ final readonly class RegisterRewardPayeeAction
             $method,
             $accountRef,
             $accountDisplay,
+            $verifierId,
+            $evidence,
             $decided,
         ): RewardPayee {
-            $pending = RewardPayee::query()
+            $prior = RewardPayee::query()
                 ->where('recipient_type', $recipientType)
                 ->where('recipient_id', $recipientId)
                 ->where('method', $method)
-                ->where('status', RewardPayeeStatus::Pending->value)
+                ->whereIn('status', [RewardPayeeStatus::Pending->value, RewardPayeeStatus::Verified->value])
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
 
-            foreach ($pending as $row) {
+            foreach ($prior as $row) {
                 $row->forceFill([
                     'status' => RewardPayeeStatus::Superseded,
                     'superseded_at' => $decided,
@@ -112,7 +127,10 @@ final readonly class RegisterRewardPayeeAction
                 'method' => $method,
                 'account_ref' => $accountRef,
                 'account_display' => $accountDisplay,
-                'status' => RewardPayeeStatus::Pending,
+                'status' => RewardPayeeStatus::Verified,
+                'evidence' => $evidence,
+                'verified_by' => $verifierId,
+                'verified_at' => $decided,
             ]);
         });
     }

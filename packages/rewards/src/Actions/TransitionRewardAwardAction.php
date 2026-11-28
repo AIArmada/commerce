@@ -36,7 +36,7 @@ use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
-use AIArmada\Rewards\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;

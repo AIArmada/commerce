@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\RewardPayeeResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;

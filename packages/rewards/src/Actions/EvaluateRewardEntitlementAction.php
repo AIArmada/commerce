@@ -26,7 +26,7 @@ use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Models\RewardSourceCoordinator;
-use AIArmada\Rewards\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardEvaluationResult;
 use AIArmada\Rewards\Persistence\RewardLedgerWriter;

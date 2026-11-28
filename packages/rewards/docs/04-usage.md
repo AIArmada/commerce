@@ -144,15 +144,15 @@ context. The host supplies its canonical source reader and binds
 the manual payout executor and method catalog.
 
 ```php
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingAction;
-use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
-use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
+use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
+use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 
 RecordRewardFundingSourceAction::run('sponsor-2026', 'MYR', 100000, 'user', $staffId, 'staff');

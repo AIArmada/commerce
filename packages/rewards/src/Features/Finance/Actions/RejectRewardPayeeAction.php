@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Finance\Actions;
 
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Models\RewardPayee;

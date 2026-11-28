@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Finance\Queries;
 
 use AIArmada\Rewards\Data\RewardFinancialReadinessAssessment;
 
@@ -16,7 +16,7 @@ use AIArmada\Rewards\Data\RewardAwardSnapshot;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use InvalidArgumentException;
 
 /**

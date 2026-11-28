@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Persistence;
+namespace AIArmada\Rewards\Features\Finance\Persistence;
+
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Models\RewardBudgetMovement;

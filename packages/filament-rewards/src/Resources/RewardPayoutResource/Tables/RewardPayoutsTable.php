@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardPayoutResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
-use AIArmada\Rewards\Actions\CancelRewardPayoutAction;
-use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\ReconcileRewardPayoutAction;
-use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\CancelRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;
+use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
