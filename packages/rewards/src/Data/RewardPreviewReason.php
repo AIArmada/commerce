@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Enums;
+namespace AIArmada\Rewards\Data;
 
 /**
  * Golden reason codes for deterministic qualification preview. Order is
