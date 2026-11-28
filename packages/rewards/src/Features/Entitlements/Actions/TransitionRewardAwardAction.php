@@ -20,12 +20,11 @@ use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
-use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Models\RewardAward;
@@ -991,18 +990,14 @@ final readonly class TransitionRewardAwardAction
             return;
         }
 
-        $currency = RewardBudgetLedger::normalizeCurrency($currency);
         $programId = (string) $award->program_id;
 
-        RewardBudgetLedger::lockFunding($programId, $currency);
-
-        RewardBudgetLedger::append(
-            RewardBudgetMovementKind::Release,
-            RewardBudgetLedger::releaseObligateKey((string) $award->getKey(), $epoch),
+        app(RewardBudgetApi::class)->releaseObligation(
             $programId,
             $currency,
-            $minor,
             (string) $award->getKey(),
+            $minor,
+            $epoch,
             $actorType,
             $actorId,
             $actorRole,
@@ -1036,19 +1031,15 @@ final readonly class TransitionRewardAwardAction
             throw new InvalidArgumentException('Cash awards must freeze a positive minor-unit amount and currency.');
         }
 
-        $currency = RewardBudgetLedger::normalizeCurrency($currency);
         $programId = (string) $award->program_id;
         $epoch = (is_int($award->obligation_epoch) ? $award->obligation_epoch : 0) + 1;
 
-        RewardBudgetLedger::lockFunding($programId, $currency);
-
-        RewardBudgetLedger::append(
-            RewardBudgetMovementKind::Reserve,
-            RewardBudgetLedger::obligateKey((string) $award->getKey(), $epoch),
+        app(RewardBudgetApi::class)->reserveObligation(
             $programId,
             $currency,
-            $minor,
             (string) $award->getKey(),
+            $minor,
+            $epoch,
             $actorType,
             $actorId,
             $actorRole,

@@ -15,10 +15,9 @@ use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
-use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardCapCounter;
 use AIArmada\Rewards\Models\RewardEnrollment;
@@ -861,18 +860,14 @@ final readonly class EvaluateRewardEntitlementAction
             throw new InvalidArgumentException('Cash awards must freeze a positive minor-unit amount and currency.');
         }
 
-        $currency = RewardBudgetLedger::normalizeCurrency($currency);
         $programId = (string) $program->getKey();
 
-        RewardBudgetLedger::lockFunding($programId, $currency);
-
-        RewardBudgetLedger::append(
-            RewardBudgetMovementKind::Reserve,
-            RewardBudgetLedger::obligateKey((string) $award->getKey(), 0),
+        app(RewardBudgetApi::class)->reserveObligation(
             $programId,
             $currency,
-            $minor,
             (string) $award->getKey(),
+            $minor,
+            0,
             $actorType,
             $actorId,
             $actorRole,

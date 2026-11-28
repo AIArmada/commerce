@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
-use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
+use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -79,55 +77,16 @@ final readonly class SettleRewardRecoveryAction
             if ($locked->amount_minor !== null && $locked->currency !== null) {
                 $award = RewardAward::query()->whereKey((string) $locked->award_id)->lockForUpdate()->firstOrFail();
                 $programId = (string) $award->program_id;
-                $currency = RewardBudgetLedger::normalizeCurrency((string) $locked->currency);
-                $amount = (int) $locked->amount_minor;
-
-                // Every budget writer holds the common funding lock and
-                // proves the legs; a recovery can only return value the
-                // award actually spent, never mint budget.
-                $funded = RewardBudgetLedger::lockFunding($programId, $currency);
-                RewardBudgetLedger::assertNonNegativeLegs(
-                    RewardBudgetLedger::lockedBalances($programId, $currency, $funded)
-                );
-
-                $spent = (int) RewardBudgetMovement::query()
-                    ->where('program_id', $programId)
-                    ->where('currency', $currency)
-                    ->where('award_id', (string) $locked->award_id)
-                    ->where('kind', RewardBudgetMovementKind::Spend)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->pluck('amount_minor')
-                    ->sum();
-                $recovered = (int) RewardBudgetMovement::query()
-                    ->where('program_id', $programId)
-                    ->where('currency', $currency)
-                    ->where('award_id', (string) $locked->award_id)
-                    ->where('kind', RewardBudgetMovementKind::Recover)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->pluck('amount_minor')
-                    ->sum();
-
-                if ($amount <= 0 || $recovered + $amount > $spent) {
-                    throw new InvalidArgumentException('Recovery exceeds the award\'s outstanding confirmed spend; refusing to mint budget.');
-                }
-
-                RewardBudgetLedger::append(
-                    RewardBudgetMovementKind::Recover,
-                    "recover:{$locked->recovery_key}",
+                app(RewardBudgetApi::class)->recoverConfirmedSpend(
                     $programId,
-                    $currency,
-                    $amount,
+                    (string) $locked->currency,
                     (string) $locked->award_id,
+                    (int) $locked->amount_minor,
+                    (string) $locked->recovery_key,
                     $actorType,
                     $actorId,
                     $actorRole,
                     $decided,
-                );
-
-                RewardBudgetLedger::assertNonNegativeLegs(
-                    RewardBudgetLedger::lockedBalances($programId, $currency, $funded)
                 );
             }
 
