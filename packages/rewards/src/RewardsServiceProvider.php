@@ -13,7 +13,6 @@ use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
-use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
@@ -29,11 +28,18 @@ use AIArmada\Rewards\Support\NullRewardReadinessChecker;
 use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Actions\RewardBenefitCatalogService;
+use AIArmada\Rewards\Platform\FeatureCatalog;
+use AIArmada\Rewards\Platform\FeatureModule;
+use AIArmada\Rewards\Platform\ExtensionRegistry;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class RewardsServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule> */
+    private array $featureModules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -63,6 +69,26 @@ final class RewardsServiceProvider extends PackageServiceProvider
         $this->app->bind(RewardCorrectionKeySource::class, NullRewardCorrectionKeySource::class);
         $this->app->bind(RewardGratitudePlanner::class, NullRewardGratitudePlanner::class);
 
-        $this->app->bind(RewardPreviewEvaluator::class, Support\RewardPreviewEngine::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+            $module = $this->app->make($class);
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException("Invalid Rewards feature module [{$class}].");
+            }
+
+            $this->featureModules[$feature] = $module;
+            $module->register($this->app);
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->featureModules as $module) {
+            $module->boot($this->app);
+        }
     }
 }

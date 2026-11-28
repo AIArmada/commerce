@@ -14,7 +14,6 @@ use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Data\RewardPreviewContext;
-use AIArmada\Rewards\Support\RewardPreviewEngine;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Data\RewardPreviewResult;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -202,7 +201,7 @@ final readonly class PreviewRewardQualificationAction
             decisionTime: $decision,
         );
 
-        return ($this->evaluator ?? new RewardPreviewEngine)->evaluate($context);
+        return ($this->evaluator ?? app(RewardPreviewEvaluator::class))->evaluate($context);
     }
 
     /**

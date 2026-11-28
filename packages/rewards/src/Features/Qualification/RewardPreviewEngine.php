@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Features\Qualification;
 
 use AIArmada\Rewards\Data\RewardPreviewContext;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
@@ -10,7 +10,6 @@ use AIArmada\Rewards\Data\RewardPreviewResult;
 
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
@@ -47,7 +46,7 @@ use AIArmada\Rewards\Enums\RewardVerificationLevel;
  * No database, clock, or request access. Gates run in fixed order; identical
  * inputs always yield identical outputs.
  */
-final class RewardPreviewEngine implements RewardPreviewEvaluator
+final readonly class RewardPreviewEngine implements RewardPreviewEvaluator
 {
     /**
      * Resolve the one policy row that applies to a component, outcome, and beneficiary role.
@@ -55,14 +54,14 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
      * @param  array<string, mixed>  $rules
      * @return array{configuration: array<string, mixed>, is_variant: bool}|null
      */
-    public static function resolveComponentConfiguration(
+    public function resolveComponentConfiguration(
         array $rules,
-        RewardComponent $component,
+        string $component,
         string $outcome,
-        RewardBeneficiaryRole $role,
+        string $role,
     ): ?array {
         foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
-            if (! is_array($entry) || ($entry['type'] ?? null) !== $component->value) {
+            if (! is_array($entry) || ($entry['type'] ?? null) !== $component) {
                 continue;
             }
 
@@ -79,9 +78,9 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             foreach ($variants as $variant) {
                 if (is_array($variant)
                     && in_array($outcome, $variant['outcomes'] ?? [], true)
-                    && in_array($role->value, $variant['roles'] ?? [], true)) {
+                    && in_array($role, $variant['roles'] ?? [], true)) {
                     return [
-                        'configuration' => ['type' => $component->value, ...$variant],
+                        'configuration' => ['type' => $component, ...$variant],
                         'is_variant' => true,
                     ];
                 }
@@ -143,11 +142,11 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }
 
-        $componentResolution = self::resolveComponentConfiguration(
+        $componentResolution = $this->resolveComponentConfiguration(
             $rules,
-            $context->requestedComponent,
+            $context->requestedComponent->value,
             $fixture->outcome,
-            $fixture->beneficiaryRole,
+            $fixture->beneficiaryRole->value,
         );
 
         if ($componentResolution === null) {

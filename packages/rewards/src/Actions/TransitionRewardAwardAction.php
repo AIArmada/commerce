@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
+
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
@@ -40,7 +42,6 @@ use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Data\RewardPreviewContext;
-use AIArmada\Rewards\Support\RewardPreviewEngine;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Data\RewardSourceFact;
@@ -749,7 +750,7 @@ final readonly class TransitionRewardAwardAction
             decisionTime: $decision,
         );
 
-        $verdict = (new RewardPreviewEngine)->evaluate($context);
+        $verdict = (app(RewardPreviewEvaluator::class))->evaluate($context);
         $reasons = array_map(static fn (RewardPreviewReason $reason): string => $reason->value, $verdict->reasons);
 
         if ($verdict->decision === RewardPreviewDecision::Ineligible) {

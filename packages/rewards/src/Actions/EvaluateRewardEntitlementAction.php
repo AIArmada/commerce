@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
+
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
@@ -30,7 +32,6 @@ use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Data\RewardPreviewContext;
-use AIArmada\Rewards\Support\RewardPreviewEngine;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Data\RewardSourceFact;
@@ -90,7 +91,7 @@ final readonly class EvaluateRewardEntitlementAction
 
     public function __construct(
         private ?RewardSourceFactReader $sourceReader = null,
-        private ?RewardPreviewEngine $policyEngine = null,
+        private ?RewardPreviewEvaluator $policyEngine = null,
     ) {}
 
     public function handle(
@@ -273,11 +274,11 @@ final readonly class EvaluateRewardEntitlementAction
             throw new InvalidArgumentException('Refused: component_not_enabled by the applicable version.');
         }
 
-        $componentResolution = RewardPreviewEngine::resolveComponentConfiguration(
+        $componentResolution = ($this->policyEngine ?? app(RewardPreviewEvaluator::class))->resolveComponentConfiguration(
             $rules,
-            $component,
+            $component->value,
             $firstRead->outcome,
-            $role,
+            $role->value,
         );
 
         if ($componentResolution === null) {
@@ -470,7 +471,7 @@ final readonly class EvaluateRewardEntitlementAction
             decisionTime: $decision,
         );
 
-        $policy = ($this->policyEngine ?? new RewardPreviewEngine)->evaluate($context);
+        $policy = ($this->policyEngine ?? app(RewardPreviewEvaluator::class))->evaluate($context);
 
         if ($policy->decision === RewardPreviewDecision::Ineligible) {
             $reason = $this->primaryReason($policy->reasons);
