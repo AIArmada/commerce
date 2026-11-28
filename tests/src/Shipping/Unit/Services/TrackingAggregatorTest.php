@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\AwaitingPickup;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\ExceptionStatus;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\OutForDelivery;
+use AIArmada\Shipping\Features\Shipments\States\ReturnToSender;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus as ShipmentStatusState;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\AwaitingPickup;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\ExceptionStatus;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\OutForDelivery;
-use AIArmada\Shipping\States\ReturnToSender;
-use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
 
 // ============================================
 // TrackingAggregator Tests

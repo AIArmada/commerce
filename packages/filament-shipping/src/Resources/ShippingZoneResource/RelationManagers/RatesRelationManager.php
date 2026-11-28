@@ -6,12 +6,13 @@ namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManag
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -249,17 +250,29 @@ class RatesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->authorize($canManageRates),
+                    ->authorize($canManageRates)
+                    ->using(function (array $data): ShippingRate {
+                        $id = app(ManageRateConfiguration::class)->createRate((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return ShippingRate::query()->findOrFail($id);
+                    }),
             ])
             ->actions([
                 EditAction::make()
-                    ->authorize($canManageRates),
+                    ->authorize($canManageRates)
+                    ->using(function (ShippingRate $record, array $data): ShippingRate {
+                        unset($data['zone_id']);
+                        app(ManageRateConfiguration::class)->updateRate((string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
                 DeleteAction::make()
-                    ->authorize($canManageRates),
+                    ->authorize($canManageRates)
+                    ->using(fn (ShippingRate $record): bool => app(ManageRateConfiguration::class)->deleteRate((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteRateConfigurationBulkAction::make()
                         ->authorize($canManageRates),
                 ]),
             ]);

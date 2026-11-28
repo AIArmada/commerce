@@ -6,8 +6,9 @@ use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
+use AIArmada\Jnt\Features\Orders\Api\SyncStoredTracking;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Illuminate\Support\Facades\Gate;
 
 uses(FilamentJntTestCase::class);
@@ -67,12 +68,12 @@ it('syncs tracking and shows a success notification when authenticated', functio
 
     $called = false;
 
-    app()->bind(JntTrackingService::class, function () use (&$called) {
-        return new class($called)
+    app()->bind(SyncStoredTracking::class, function () use (&$called) {
+        return new class($called) implements SyncStoredTracking
         {
             public function __construct(private bool &$called) {}
 
-            public function syncOrderTracking(JntOrder $order): void
+            public function execute(string $orderId): void
             {
                 $this->called = true;
             }
@@ -106,9 +107,9 @@ it('handles sync failures and shows a failure notification', function (): void {
 
     $this->actingAs($user);
 
-    app()->bind(JntTrackingService::class, fn () => new class
+    app()->bind(SyncStoredTracking::class, fn () => new class implements SyncStoredTracking
     {
-        public function syncOrderTracking(JntOrder $order): void
+        public function execute(string $orderId): void
         {
             throw new RuntimeException('fail');
         }
@@ -144,12 +145,12 @@ it('blocks syncing global rows without explicit global context', function (): vo
 
     $called = false;
 
-    app()->bind(JntTrackingService::class, function () use (&$called) {
-        return new class($called)
+    app()->bind(SyncStoredTracking::class, function () use (&$called) {
+        return new class($called) implements SyncStoredTracking
         {
             public function __construct(private bool &$called) {}
 
-            public function syncOrderTracking(JntOrder $order): void
+            public function execute(string $orderId): void
             {
                 $this->called = true;
             }
@@ -171,4 +172,19 @@ it('blocks syncing global rows without explicit global context', function (): vo
 
     $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
+});
+
+it('rejects synchronization without a tracking number at the domain boundary', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-DOMAIN-NO-TRACKING',
+        'customer_code' => 'CUST',
+        'tracking_number' => null,
+    ]);
+
+    $service = Mockery::mock(SyncOrderTracking::class);
+    $service->shouldNotReceive('syncOrderTracking');
+    app()->instance(SyncOrderTracking::class, $service);
+
+    expect(fn () => app(SyncStoredTracking::class)->execute($order->id))
+        ->toThrow(DomainException::class);
 });

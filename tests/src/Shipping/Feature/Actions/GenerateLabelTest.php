@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\GenerateLabel;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\LabelData;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\Draft;
-use AIArmada\Shipping\States\Shipped;
 
 describe('GenerateLabel Action', function (): void {
     it('generates a label for a shipped shipment', function (): void {

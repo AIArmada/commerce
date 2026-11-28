@@ -107,9 +107,9 @@
             <div class="p-6">
                 <h3 class="font-semibold text-gray-900 mb-6">📍 Tracking History</h3>
                 
-                @if($shipment->trackingEvents->count() > 0)
+                @if($trackingEvents->count() > 0)
                 <div class="space-y-4">
-                    @foreach($shipment->trackingEvents->sortByDesc('scan_time') as $event)
+                    @foreach($trackingEvents as $event)
                     <div class="flex gap-4">
                         <div class="flex flex-col items-center">
                             <div class="w-4 h-4 rounded-full 

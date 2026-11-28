@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping;
 
-use AIArmada\Shipping\Cart\CartBridge;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -16,10 +15,5 @@ final class FilamentShippingServiceProvider extends PackageServiceProvider
             ->name('filament-shipping')
             ->hasConfigFile()
             ->hasViews('filament-shipping');
-    }
-
-    public function packageRegistered(): void
-    {
-        $this->app->singleton(CartBridge::class);
     }
 }

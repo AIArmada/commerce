@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Services\BatchRateLimiter;
+use AIArmada\Shipping\Features\Shipments\Persistence\BatchRateLimiter;
 use Illuminate\Support\Facades\RateLimiter;
 
 // ============================================
@@ -21,7 +21,7 @@ describe('BatchRateLimiter', function (): void {
         $results = BatchRateLimiter::make()
             ->keyPrefix('shipping:test')
             ->maxAttempts(100)
-            ->batchSize(10)
+
             ->execute($items, fn ($item) => $item * 2, 'process');
 
         expect($results)->toHaveCount(5);
@@ -61,6 +61,22 @@ describe('BatchRateLimiter', function (): void {
         expect($results)->toHaveKeys(['a', 'b', 'c']);
     });
 
+    it('reports excess operations without invoking their callbacks or waiting', function (): void {
+        $calls = [];
+        $results = BatchRateLimiter::make()
+            ->keyPrefix('shipping:test:' . bin2hex(random_bytes(8)))
+            ->maxAttempts(2)
+            ->execute([1, 2, 3, 4], function ($item) use (&$calls) {
+                $calls[] = $item;
+
+                return $item;
+            });
+
+        expect($calls)->toBe([1, 2])
+            ->and($results[2]['success'])->toBeFalse()
+            ->and($results[3]['success'])->toBeFalse();
+    });
+
     it('handles empty items gracefully', function (): void {
         $results = BatchRateLimiter::make()
             ->keyPrefix('shipping:test')
@@ -69,15 +85,14 @@ describe('BatchRateLimiter', function (): void {
         expect($results)->toBeEmpty();
     });
 
-    it('processes items in batches', function (): void {
+    it('preserves iteration order', function (): void {
         $items = range(1, 10);
         $processedOrder = [];
 
         BatchRateLimiter::make()
             ->keyPrefix('shipping:test')
             ->maxAttempts(100)
-            ->batchSize(3)
-            ->batchDelay(0)
+
             ->execute($items, function ($item) use (&$processedOrder) {
                 $processedOrder[] = $item;
 

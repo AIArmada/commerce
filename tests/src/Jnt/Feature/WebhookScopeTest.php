@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Support\Facades\DB;
 
 it('limits the JNT webhook model to JNT rows in the shared webhook table', function (): void {

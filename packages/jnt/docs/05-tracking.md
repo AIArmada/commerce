@@ -48,7 +48,7 @@ $tracking = JntExpress::trackParcel(orderId: 'ORDER-2024-001');
 // Main properties
 $tracking->trackingNumber;  // J&T tracking number
 $tracking->orderId;         // Your order reference
-$tracking->details;         // DataCollection of TrackingDetailData
+$tracking->details;         // List of TrackingDetailData
 
 // Helper methods
 $tracking->getLatestDetail();   // Most recent event
@@ -98,8 +98,8 @@ foreach ($tracking->details as $detail) {
 The package normalizes J&T scan types to a unified `TrackingStatus` enum:
 
 ```php
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 $status = $mapper->fromCode('100');  // ScanTypeCode for "signed"
@@ -132,7 +132,7 @@ $status->requiresAttention(); // Needs action?
 The `JntTrackingService` provides high-level tracking operations:
 
 ```php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 
 $trackingService = app(JntTrackingService::class);
 
@@ -156,10 +156,10 @@ foreach ($result['events'] as $event) {
 Sync tracking events to your database:
 
 ```php
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 
-$trackingService = app(JntTrackingService::class);
+$trackingService = app(SyncOrderTracking::class);
 
 // Sync a single order
 $order = JntOrder::where('order_id', 'ORDER-2024-001')->first();
@@ -213,11 +213,11 @@ Set up scheduled tracking sync in your scheduler:
 
 ```php
 // routes/console.php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
-    $trackingService = app(JntTrackingService::class);
+    $trackingService = app(SyncOrderTracking::class);
     
     $orders = $trackingService->getOrdersNeedingTrackingUpdate(100);
     $trackingService->batchSyncTracking($orders);
@@ -233,12 +233,14 @@ Schedule::call(function () {
 When tracking is synced, events are stored in `jnt_tracking_events`:
 
 ```php
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 // Get events for an order
 $order = JntOrder::find($orderId);
-$events = $order->trackingEvents()->latest('scan_time')->get();
+$events = JntTrackingEvent::query()->where('order_id', $order->id)
+    ->where('owner_type', $order->owner_type)->where('owner_id', $order->owner_id)
+    ->latest('scan_time')->get();
 
 foreach ($events as $event) {
     echo $event->scan_time;           // Event timestamp
@@ -309,7 +311,7 @@ class OrderStatusListener
             $order = $event->resolveOrder();
 
             if ($order !== null) {
-                // $order has no `customer` relation; resolve your own order
+                // The immutable order snapshot has no customer relation; resolve your own order
                 // aggregate here and dispatch from it.
             }
         }
@@ -347,7 +349,7 @@ The package implements `StatusMapperInterface` for unified tracking:
 
 ```php
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 
@@ -365,8 +367,8 @@ Each carrier defines a strategy implementing `StatusMappingStrategyInterface`:
 
 ```php
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Shipping\Enums\TrackingStatus as NormalizedTrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;
 
 class MyCarrierStrategy implements StatusMappingStrategyInterface
 {
@@ -423,7 +425,7 @@ $strategies = $registry->all();
 `JntStatusMapper` implements both `StatusMapperInterface` (shipping abstraction) and `StatusMappingStrategyInterface` (strategy pattern), registering itself with carrier code `jnt`:
 
 ```php
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 

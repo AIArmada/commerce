@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\Tables;
 
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -67,7 +67,7 @@ final class ShippingZonesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteRateConfigurationBulkAction::make(true),
                 ]),
             ])
             ->defaultSort('priority', 'desc');

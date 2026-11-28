@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Models;
 
 use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 
 function conditionedRate(array $attributes): ShippingRate
 {

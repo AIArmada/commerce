@@ -7,8 +7,8 @@ namespace App\Listeners;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Vouchers\Models\Voucher;
@@ -284,7 +284,7 @@ final class HandleChipPaymentSuccess
                 ]);
             }
 
-            if (! $shipment->trackingEvents()->exists()) {
+            if (! JntTrackingEvent::query()->where('order_id', $shipment->id)->where('owner_type', $shipment->owner_type)->where('owner_id', $shipment->owner_id)->exists()) {
                 $this->createInitialTrackingEvent($shipment);
             }
         });

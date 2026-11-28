@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Tables\JntOrderTable;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Tables\JntTrackingEventTable;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 
 uses(FilamentJntTestCase::class);
 
@@ -84,5 +84,5 @@ it('treats delivery-like tracking events as delivered even when the raw code is 
 
     expect($query->pluck('id')->all())->toContain($deliveredEvent->id)
         ->and($deliveredEvent->getNormalizedStatus())->toBe(TrackingStatus::Delivered)
-        ->and((new ReflectionClass(JntOrderTable::class))->getMethod('getNormalizedStatus')->invoke(null, $order))->toBe(TrackingStatus::Delivered);
+        ->and($order->getNormalizedStatus())->toBe(TrackingStatus::Delivered);
 });
