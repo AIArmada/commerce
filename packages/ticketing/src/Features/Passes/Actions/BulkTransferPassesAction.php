@@ -41,6 +41,7 @@ final readonly class BulkTransferPassesAction
         $requestedPassIds = array_values(array_unique($passIds));
 
         return (new Pass)->getConnection()->transaction(function () use ($requestedPassIds, $newHolder, $reason, $holderAttributes, $authorizedBy): Collection {
+            /** @var Collection<int, Pass> $passes */
             $passes = OwnerUiScope::apply(Pass::query(), includeGlobal: false)->whereIn('id', $requestedPassIds)->orderBy('id')->lockForUpdate()->get();
             $missingPassIds = array_values(array_diff($requestedPassIds, $passes->modelKeys()));
 
