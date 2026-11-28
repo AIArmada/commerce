@@ -7,7 +7,7 @@ namespace AIArmada\Ticketing\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
-use AIArmada\Seating\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
 use AIArmada\Ticketing\Events\PassCancelled;
 use AIArmada\Ticketing\Events\PassExpired;

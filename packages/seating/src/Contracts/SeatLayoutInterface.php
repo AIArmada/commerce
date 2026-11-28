@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Contracts;
 
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 
 interface SeatLayoutInterface
 {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\EntryPoints\Filament\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Pages\Page;
 use Livewire\Attributes\Locked;

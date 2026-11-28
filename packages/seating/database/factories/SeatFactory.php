@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Database\Factories;
 
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 final class SeatFactory extends Factory

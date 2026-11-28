@@ -5,9 +5,9 @@ title: Seating Usage
 ## Creating a Seat Map
 
 ```php
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
-use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Enums\SeatStatus;
 
 $map = SeatMap::query()->create([
@@ -94,7 +94,7 @@ Options:
 
 ```php
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\Seat;
 
 $open = Seat::query()->available()->get();
 $seat->status === SeatStatus::Available;

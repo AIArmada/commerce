@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
 use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
 use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
 use AIArmada\FilamentSeating\Tables\SeatMapTable;
 use Filament\Actions\CreateAction;

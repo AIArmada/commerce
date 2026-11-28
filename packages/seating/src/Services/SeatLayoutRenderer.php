@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Services;
 
 use AIArmada\Seating\Contracts\SeatLayoutInterface;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 
 final class SeatLayoutRenderer implements SeatLayoutInterface
 {

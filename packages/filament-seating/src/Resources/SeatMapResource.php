@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
 use AIArmada\FilamentSeating\Tables\SeatMapTable;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;

@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {

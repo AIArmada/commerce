@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Maps\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;

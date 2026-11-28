@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Models;
+namespace AIArmada\Seating\Features\Maps\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;

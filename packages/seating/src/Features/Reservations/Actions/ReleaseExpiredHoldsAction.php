@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Seating\Models\SeatHold;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 

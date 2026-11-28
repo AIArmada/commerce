@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Models;
+namespace AIArmada\Seating\Features\Reservations\Models;
+
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;

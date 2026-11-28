@@ -31,8 +31,8 @@ arch('seating enums')
     ->expect('AIArmada\Seating\Enums')
     ->toBeEnums();
 
-arch('seating actions')
-    ->expect('AIArmada\Seating\Actions')
+arch('seating map actions')
+    ->expect('AIArmada\Seating\Features\Maps\Actions')
     ->toHaveMethod('handle');
 
 arch('seating exceptions')

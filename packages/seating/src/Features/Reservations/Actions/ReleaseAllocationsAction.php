@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\Seating\Events\SeatAllocationReleased;
-use AIArmada\Seating\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 

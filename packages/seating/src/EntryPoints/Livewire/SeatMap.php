@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Seating\EntryPoints\Livewire;
 
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Services\SeatLayoutRenderer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

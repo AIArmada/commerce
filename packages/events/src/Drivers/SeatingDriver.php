@@ -11,13 +11,14 @@ use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Features\Maps\Queries\ResolveSeatMapForHostAction;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Models\TicketTypeSeatingOption;
@@ -33,6 +34,7 @@ final class SeatingDriver implements EventSeatingDriver
         private readonly ConvertHoldsToAllocationsAction $convertHolds,
         private readonly ResolveSeatMapForHostAction $resolveSeatMap,
         private readonly ReleaseAllocationsAction $releaseAllocations,
+        private readonly DeleteSeatMap $deleteSeatMap,
     ) {}
 
     public function hasActiveSeatMap(string $scopeType, string $scopeId): bool
@@ -247,7 +249,7 @@ final class SeatingDriver implements EventSeatingDriver
             ->where('seatable_id', $scopeId)
             ->chunkById(200, function (iterable $maps): void {
                 foreach ($maps as $map) {
-                    $map->delete();
+                    $this->deleteSeatMap->handle($map);
                 }
             });
     }

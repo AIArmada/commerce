@@ -6,7 +6,7 @@ namespace AIArmada\Seating\Services;
 
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Support\Collection;
 
 final class NullSeatAllocator implements SeatAllocatorInterface

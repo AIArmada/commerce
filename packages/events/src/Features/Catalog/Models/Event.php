@@ -18,7 +18,7 @@ use AIArmada\Events\Features\Catalog\States\EventStatus\Published;
 use AIArmada\Events\Features\Governance\Api\GovernanceApi;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\RegistersEventMedia;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\Pass;

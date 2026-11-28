@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Services\NullSeatAllocator;
 
 it('returns empty collection', function (): void {

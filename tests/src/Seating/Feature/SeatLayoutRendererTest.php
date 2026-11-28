@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Services\SeatLayoutRenderer;
 
 it('describes seat map bounds from rendered seats', function (): void {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

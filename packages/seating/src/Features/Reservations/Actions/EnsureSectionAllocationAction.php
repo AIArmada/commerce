@@ -6,8 +6,8 @@ namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

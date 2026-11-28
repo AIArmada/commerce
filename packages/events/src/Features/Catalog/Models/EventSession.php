@@ -15,7 +15,7 @@ use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\RegistersEventMedia;
 use AIArmada\Events\Platform\ScopesByEventOwner;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;

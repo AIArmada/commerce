@@ -6,7 +6,7 @@ namespace AIArmada\Ticketing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Ticketing\Database\Factories\TicketTypeSeatingOptionFactory;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

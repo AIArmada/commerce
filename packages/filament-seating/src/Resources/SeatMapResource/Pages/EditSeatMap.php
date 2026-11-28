@@ -8,7 +8,7 @@ use AIArmada\FilamentSeating\Resources\SeatMapResource;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Database\Eloquent\Model;
 
 final class EditSeatMap extends EditRecord

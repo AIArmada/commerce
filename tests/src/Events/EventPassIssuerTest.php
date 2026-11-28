@@ -8,9 +8,9 @@ use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Ticketing\Models\Pass;
 
 it('issues passes for registration items', function (): void {

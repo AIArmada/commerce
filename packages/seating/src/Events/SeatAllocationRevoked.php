@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Events;
 
-use AIArmada\Seating\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

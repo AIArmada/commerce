@@ -8,8 +8,8 @@ use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Support\Collection;
 
 final readonly class DefaultSeatAllocator implements SeatAllocatorInterface

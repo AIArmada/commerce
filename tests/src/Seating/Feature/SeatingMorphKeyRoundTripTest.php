@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 

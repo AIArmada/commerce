@@ -7,7 +7,7 @@ namespace AIArmada\Seating\Contracts;
 use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Support\Collection;
 
 interface SeatAllocatorInterface
