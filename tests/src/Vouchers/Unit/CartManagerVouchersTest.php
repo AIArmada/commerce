@@ -44,11 +44,7 @@ it('proxies voucher interactions via cart manager wrapper', function (): void {
     Voucher::shouldReceive('validate')
         ->atLeast()
         ->once()
-        ->andReturn(VoucherValidationResult::valid());
-
-    Voucher::shouldReceive('find')
-        ->once()
-        ->andReturn($voucherData);
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
 
     $result = Cart::applyVoucher('STACK10');
 
@@ -68,8 +64,7 @@ it('rejects vouchers when stacking is disabled even if auto replacement is enabl
         'currency' => 'USD',
     ]);
 
-    Voucher::shouldReceive('validate')->once()->andReturn(VoucherValidationResult::valid());
-    Voucher::shouldReceive('find')->once()->andReturn($voucherData);
+    Voucher::shouldReceive('validate')->once()->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
     $cart->setStackingPolicy(new StackingPolicy(
