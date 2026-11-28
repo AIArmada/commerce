@@ -66,26 +66,6 @@ function createFreeTestOrder(
     return $order;
 }
 
-function captureAfterCommit(): Closure
-{
-    $captured = null;
-
-    $spy = Mockery::mock(DB::getFacadeRoot())->makePartial();
-    $spy->shouldReceive('afterCommit')->once()->with(Mockery::on(
-        function (mixed $callback) use (&$captured): bool {
-            $captured = $callback;
-
-            return true;
-        }
-    ));
-    DB::swap($spy);
-
-    return function () use (&$captured): void {
-        expect($captured)->not->toBeNull();
-        $captured();
-    };
-}
-
 it('moves a free order to processing', function (): void {
     $order = createFreeTestOrder('ORD-FREE-001');
 
@@ -257,7 +237,7 @@ it('schedules the processing-started dispatch after commit', function (): void {
 
     Event::fake([OrderPaid::class, OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
 
-    $invokeCommitHooks = captureAfterCommit();
+    $invokeCommitHooks = captureAfterCommitHooks();
 
     (new FreeOrderConfirmed($order))->handle();
 

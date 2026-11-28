@@ -134,6 +134,9 @@ it('builds template select options from configured model', function (): void {
 });
 
 it('sends email successfully and pushes a success notification to the session', function (): void {
+    Mail::fake();
+    config()->set('docs.email.queue_enabled', false);
+
     $doc = Doc::factory()->create([
         'customer_data' => [
             'email' => 'to@example.test',
@@ -146,6 +149,7 @@ it('sends email successfully and pushes a success notification to the session', 
     $method->invoke(null, $doc, ['to' => 'to@example.test']);
 
     expect($doc->emails()->count())->toBe(1);
+    Mail::assertSent(DocMail::class);
 
     $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();

@@ -159,7 +159,7 @@ test('payment recording and document deletion reject mismatched financial eviden
         ]);
 
         // Simulate an inconsistent document state without hiding the financial evidence.
-        $doc->forceFill(['status' => Sent::class, 'paid_at' => null])->save();
+        $doc->refresh()->forceFill(['status' => Sent::class, 'paid_at' => null])->save();
 
         expect(fn () => app(DocumentRecords::class)->update($doc, ['currency' => 'USD']))
             ->toThrow(InvalidArgumentException::class, 'financial terms cannot change')

@@ -15,9 +15,14 @@ use AIArmada\Docs\States\Sent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    Mail::fake();
+});
 
 test('sends reminder for specific doc', function (): void {
     $doc = Doc::factory()->create([

@@ -227,10 +227,10 @@ it('ships the package and the standalone line as five units of the same stock id
 
     $driver = mock(ShippingDriverInterface::class);
     $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
+    $quotedPackages = [];
     $driver->shouldReceive('getRates')->once()->andReturnUsing(
-        static function (AddressData $origin, AddressData $destination, array $packages): array {
-            expect(array_column($packages, 'weight'))->toBe([1000, 250])
-                ->and(array_column($packages, 'length'))->toBe([12, 12]);
+        static function (AddressData $origin, AddressData $destination, array $packages) use (&$quotedPackages): array {
+            $quotedPackages = $packages;
 
             return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
         },
@@ -242,7 +242,13 @@ it('ships the package and the standalone line as five units of the same stock id
     app()->instance(ShippingManager::class, $manager);
 
     $handler = app(FulfillmentHandler::class);
+    expect($order->primaryAddress('shipping'))->not->toBeNull();
     expect($handler->getRates((string) $order->getKey()))->toHaveCount(1);
+
+    $weights = array_column($quotedPackages, 'weight');
+    sort($weights);
+    expect($weights)->toBe([250, 1000])
+        ->and(array_column($quotedPackages, 'length'))->toBe([12, 12]);
 
     $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual']);
     expect($result['error'])->toBeNull();

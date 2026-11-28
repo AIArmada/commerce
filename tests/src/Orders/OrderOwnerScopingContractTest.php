@@ -320,6 +320,8 @@ it('dispatches payment receipts inside the original owner context after commit',
     $owner = TestOwner::query()->create(['name' => 'Receipt tenant']);
     $other = TestOwner::query()->create(['name' => 'Other receipt tenant']);
     $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
         'status' => PendingPayment::class,
         'currency' => 'MYR',
         'subtotal' => 1000,
