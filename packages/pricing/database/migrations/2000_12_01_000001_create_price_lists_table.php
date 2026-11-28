@@ -53,11 +53,34 @@ return new class extends Migration
         });
 
         $grammar = $connection->getQueryGrammar();
+        $indexPrefix = str_replace(['.', '-', ' '], '_', $tableName);
         $connection->statement(sprintf(
             'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NULL AND %s IS NULL',
-            $grammar->wrap(str_replace(['.', '-', ' '], '_', $tableName) . '_global_slug_unique'),
+            $grammar->wrap($indexPrefix . '_global_slug_unique'),
             $grammar->wrapTable($tableName),
             $grammar->wrap('slug'),
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+        ));
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s, %s, %s) WHERE %s AND %s IS NOT NULL AND %s IS NOT NULL',
+            $grammar->wrap($indexPrefix . '_owner_currency_default_unique'),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+            $grammar->wrap('currency'),
+            $grammar->wrap('is_default'),
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+        ));
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s IS NULL AND %s IS NULL',
+            $grammar->wrap($indexPrefix . '_global_currency_default_unique'),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('currency'),
+            $grammar->wrap('is_default'),
             $grammar->wrap('owner_type'),
             $grammar->wrap('owner_id'),
         ));

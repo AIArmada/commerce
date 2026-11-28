@@ -89,6 +89,7 @@ class PriceList extends Model implements Auditable
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'currency' => 'MYR',
         'priority' => 0,
         'is_default' => false,
         'is_active' => true,

@@ -7,3 +7,5 @@ Use `CreatePriceList`, `UpdatePriceList`, `DeletePriceList`, `SavePrice` and `Sa
 Price amounts are integer minor units. Share an effective timestamp and currency when calculating a batch; inactive lists and prices must not participate in resolution.
 
 Use `CopyPriceablePrices` to copy price-list entries and quantity tiers between distinct persisted priceable records in the authorized owner scope.
+
+Default price lists are unique per owner and currency; changing the default for one currency does not demote another currency's default.

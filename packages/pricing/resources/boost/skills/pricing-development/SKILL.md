@@ -13,3 +13,5 @@ description: Develop integrations using AIArmada Pricing's immutable results, tr
 - Run the package architecture checks and affected pricing, checkout and Filament regression tests after changes.
 
 - `AIArmada\Pricing\Actions\CopyPriceablePrices` copies price-list entries and quantity tiers between distinct persisted priceable records in the authorized owner scope.
+
+- Maintain one default price list per owner and currency. Selecting a new default only replaces the default in the same currency.

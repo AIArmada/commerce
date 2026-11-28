@@ -29,6 +29,8 @@ final readonly class ClearOtherDefaultPriceLists
             $query->whereKeyNot($priceList->getKey());
         }
 
-        $query->where('is_default', true)->update(['is_default' => false]);
+        $query->where('currency', $priceList->currency)
+            ->where('is_default', true)
+            ->update(['is_default' => false]);
     }
 }
