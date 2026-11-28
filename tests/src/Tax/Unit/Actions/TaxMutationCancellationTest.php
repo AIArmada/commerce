@@ -98,6 +98,8 @@ it('rejects renewal of non-approved exemptions', function (): void {
     $revoked = TaxExemption::factory()->approved()->create();
     $revoked->revoke();
 
+    expect($revoked->fresh()->revoked_at)->not->toBeNull();
+
     $action = app(RenewTaxExemptionAction::class);
 
     foreach ([$pending, $rejected, $revoked] as $exemption) {
