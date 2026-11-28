@@ -104,8 +104,9 @@ final class CompositePackageService
             return new CompositeAvailability(0, null, null, []);
         }
 
-        $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant);
-        if ($leaves === []) {
+        $complete = true;
+        $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant, complete: $complete);
+        if (! $complete || $leaves === []) {
             return new CompositeAvailability(0, null, null, []);
         }
 
@@ -337,11 +338,18 @@ final class CompositePackageService
      * @param  list<array{product_id: string, component_id: string, quantity: int}>  $path
      * @return list<array{product: Product|Buyable, component: ProductComponent, quantity: int, sellable: bool, path: list<array<string, mixed>>}>
      */
-    private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path, ?Variant $parentVariant = null): array
+    private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path, ?Variant $parentVariant = null, bool $ancestorsSellable = true, ?bool &$complete = null): array
     {
         $this->assertNotCyclic($product, $ancestors);
         $ancestors[] = (string) $product->getKey();
         $components ??= $this->componentsFor($product, $parentVariant);
+
+        if ($components->isEmpty()) {
+            $complete = false;
+
+            return [];
+        }
+
         $leaves = [];
 
         foreach ($components as $component) {
@@ -373,7 +381,11 @@ final class CompositePackageService
             $childPath = [...$path, $step];
 
             if ($child instanceof Product && $child->isCompositeProduct()) {
-                array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath, $component->variant));
+                $variant = $component->variant;
+                $sellable = $ancestorsSellable && $child->isPurchasable()
+                    && (! $variant instanceof Variant || $variant->is_enabled);
+
+                array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath, $variant, $sellable, $complete));
 
                 continue;
             }
@@ -382,7 +394,7 @@ final class CompositePackageService
                 'product' => $child,
                 'component' => $component,
                 'quantity' => $quantity,
-                'sellable' => $child instanceof Product ? $child->isPurchasable() : $child->canBePurchased(),
+                'sellable' => $ancestorsSellable && ($child instanceof Product ? $child->isPurchasable() : $child->canBePurchased()),
                 'path' => $childPath,
             ];
         }

@@ -279,3 +279,40 @@ it('rejects a direct model mutation that would introduce a cycle', function (): 
 
     expect($b->components()->count())->toBe(0);
 });
+
+it('reports zero availability when an intermediate composite is not purchasable', function (): void {
+    $resolver = new NestedCompositeCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
+
+    $stock = nestedLeaf(ProductType::Simple, 'Draft Nested Stock', 100);
+    $resolver->capacities[(string) $stock->id] = 20;
+    $child = nestedPackage('Draft Nested Branch', 'sum', [
+        ['component_product_id' => $stock->id, 'quantity' => 2],
+    ], active: false);
+    $root = nestedPackage('Draft Nested Root', 'sum', [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+        ['component_product_id' => $stock->id, 'quantity' => 1],
+    ], active: false);
+
+    expect($child->compositeAvailability()->packages)->toBe(10)
+        ->and($root->compositeAvailability()->packages)->toBe(0)
+        ->and($root->compositeSnapshot()->entries)->toHaveCount(2)
+        ->and($root->fresh()->requires_shipping)->toBeTrue();
+});
+
+it('does not report capacity for a composition with an empty nested branch', function (): void {
+    $resolver = new NestedCompositeCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
+
+    $stock = nestedLeaf(ProductType::Simple, 'Incomplete Nested Stock', 100);
+    $resolver->capacities[(string) $stock->id] = 20;
+    $empty = nestedPackage('Empty Nested Branch', 'sum', [], active: false);
+    $root = nestedPackage('Incomplete Nested Root', 'sum', [
+        ['component_product_id' => $empty->id, 'quantity' => 1],
+        ['component_product_id' => $stock->id, 'quantity' => 1],
+    ], active: false);
+
+    expect($root->compositeAvailability()->packages)->toBe(0)
+        ->and($root->compositeSnapshot()->entries)->toHaveCount(1)
+        ->and($root->fresh()->requires_shipping)->toBeTrue();
+});
