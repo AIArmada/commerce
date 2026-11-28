@@ -90,6 +90,7 @@ it('duplicates a product with its relations and unique identity', function (): v
         $variant = Variant::query()->create([
             'product_id' => $product->id,
             'sku' => 'ORIG-1-L',
+            'combination_key' => Variant::combinationKeyFor($product->id, [$value->id]),
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => $owner->getKey(),
         ]);
@@ -146,6 +147,8 @@ it('duplicates a product with its relations and unique identity', function (): v
         ->and($copy->variants)->toHaveCount(1)
         ->and($copy->variants->first()->optionValues)->toHaveCount(1)
         ->and($copy->variants->first()->sku)->toBe('ORIG-1-L-COPY')
+        ->and($copy->variants->first()->combination_key)->toBe(Variant::combinationKeyFor($copy->id, [$copy->options->first()->values->first()->id]))
+        ->and($copy->variants->first()->combination_key)->not->toBe($product->variants->first()->combination_key)
         ->and($copy->prices()->count())->toBe(1);
 
     OwnerContext::withOwner($owner, static function () use ($copy): void {
@@ -196,5 +199,30 @@ it('applies validated bulk price adjustments in minor units', function (): void 
         expect(fn () => $action->adjustPrices([$product], 'increase_percent', 500))->toThrow(ValidationException::class)
             ->and(fn () => $action->adjustPrices([$product], 'bogus', 10))->toThrow(ValidationException::class)
             ->and($product->fresh()->price)->toBe(1018);
+    });
+});
+
+it('bounds duplicated product identities to the schema even on repeated copies', function (): void {
+    OwnerContext::withOwner($this->owner, function (): void {
+        $product = Product::query()->create([
+            'name' => str_repeat('N', 255),
+            'slug' => str_repeat('s', 255),
+            'sku' => str_repeat('S', 255),
+            'price' => 1000,
+            'status' => ProductStatus::Active,
+        ]);
+
+        $first = duplicateTestProduct($product);
+        $second = duplicateTestProduct($product);
+
+        expect(mb_strlen($first->name))->toBe(255)
+            ->and(mb_strlen($first->slug))->toBe(255)
+            ->and(mb_strlen($first->sku))->toBe(255)
+            ->and($first->slug)->toEndWith('-copy')
+            ->and($first->sku)->toEndWith('-COPY')
+            ->and(mb_strlen($second->slug))->toBe(255)
+            ->and(mb_strlen($second->sku))->toBe(255)
+            ->and($second->slug)->toEndWith('-copy-2')
+            ->and($second->sku)->toEndWith('-COPY-2');
     });
 });

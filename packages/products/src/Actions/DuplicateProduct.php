@@ -34,7 +34,7 @@ final readonly class DuplicateProduct
             $ownerId = $record->getAttribute('owner_id');
 
             $newProduct = $record->replicate();
-            $newProduct->name = $record->name . ' (Copy)';
+            $newProduct->name = mb_substr($record->name, 0, 248) . ' (Copy)';
             $newProduct->slug = self::uniqueOwnerValue(Product::class, 'slug', $record->slug . '-copy', $ownerType, $ownerId);
             $newProduct->sku = $record->sku !== null && $record->sku !== ''
                 ? self::uniqueOwnerValue(Product::class, 'sku', $record->sku . '-COPY', $ownerType, $ownerId)
@@ -68,17 +68,19 @@ final readonly class DuplicateProduct
             $copyPricing = class_exists(Price::class) && Schema::hasTable((new Price)->getTable());
 
             foreach ($record->variants()->with('optionValues')->get() as $variant) {
+                $remapped = $variant->optionValues
+                    ->map(static fn ($optionValue): string => $valueMap[(string) $optionValue->getKey()] ?? throw new RuntimeException('Unable to remap variant option value.'))
+                    ->values()
+                    ->all();
+
                 $newVariant = $variant->replicate();
                 $newVariant->product_id = $newProduct->getKey();
                 $newVariant->sku = self::uniqueOwnerValue(Variant::class, 'sku', $variant->sku . '-COPY', $ownerType, $ownerId);
+                $newVariant->combination_key = $variant->combination_key === null
+                    ? null
+                    : Variant::combinationKeyFor((string) $newProduct->getKey(), $remapped);
                 $newVariant->save();
                 $variantMap[(string) $variant->getKey()] = (string) $newVariant->getKey();
-
-                $remapped = $variant->optionValues
-                    ->map(static fn ($optionValue): ?string => $valueMap[(string) $optionValue->getKey()] ?? null)
-                    ->filter()
-                    ->all();
-
                 $newVariant->optionValues()->sync($remapped);
 
                 if ($copyPricing) {
@@ -110,9 +112,12 @@ final readonly class DuplicateProduct
      */
     private static function uniqueOwnerValue(string $modelClass, string $column, string $base, mixed $ownerType, mixed $ownerId): string
     {
-        $candidate = $base;
+        $copySuffix = $column === 'slug' ? '-copy' : '-COPY';
+        $stem = mb_substr($base, 0, mb_strlen($base) - mb_strlen($copySuffix));
 
-        for ($suffix = 2; $suffix <= 100; $suffix++) {
+        for ($suffix = 1; $suffix <= 100; $suffix++) {
+            $ending = $copySuffix . ($suffix === 1 ? '' : '-' . $suffix);
+            $candidate = mb_substr($stem, 0, 255 - mb_strlen($ending)) . $ending;
             $query = $modelClass::query()->withoutGlobalScope(OwnerScope::class)->where($column, $candidate);
 
             if ($ownerType === null || $ownerId === null) {
@@ -124,8 +129,6 @@ final readonly class DuplicateProduct
             if (! $query->exists()) {
                 return $candidate;
             }
-
-            $candidate = $base . '-' . $suffix;
         }
 
         throw new RuntimeException("Unable to generate a unique {$column} for the duplicated product.");
