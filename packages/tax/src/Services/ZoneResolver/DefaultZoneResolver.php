@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Services\ZoneResolver;
 
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
@@ -56,6 +55,8 @@ final class DefaultZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
         $defaultZone = TaxOwnerScope::apply(TaxZone::query(), $context)
             ->default()
             ->active()
+            ->orderByDesc('priority')
+            ->orderBy('id')
             ->first();
 
         if ($defaultZone !== null) {
@@ -67,6 +68,7 @@ final class DefaultZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
         if ($fallbackZoneId !== null) {
             $fallbackZone = TaxOwnerScope::apply(TaxZone::query(), $context)
                 ->whereKey($fallbackZoneId)
+                ->active()
                 ->first();
 
             if ($fallbackZone !== null) {

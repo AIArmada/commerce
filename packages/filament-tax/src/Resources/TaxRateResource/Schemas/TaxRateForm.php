@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Tax\Actions\SaveTaxZoneAction;
 use AIArmada\Tax\Models\TaxClass;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Gate;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -37,10 +40,15 @@ final class TaxRateForm
                                     ->required()
                                     ->searchable()
                                     ->preload()
-                                    ->createOptionForm([
-                                        TextInput::make('name')->required(),
-                                        TextInput::make('code')->required(),
-                                    ]),
+                                    ->createOptionForm(fn (): ?array => Filament::auth()->user()?->can('tax.zones.create') ? [
+                                        TextInput::make('name')->required()->maxLength(255),
+                                        TextInput::make('code')->required()->maxLength(20),
+                                    ] : null)
+                                    ->createOptionUsing(function (array $data): string {
+                                        Gate::forUser(Filament::auth()->user())->authorize('tax.zones.create');
+
+                                        return (string) app(SaveTaxZoneAction::class)->execute($data)->getKey();
+                                    }),
 
                                 TextInput::make('name')
                                     ->label('Rate Name')

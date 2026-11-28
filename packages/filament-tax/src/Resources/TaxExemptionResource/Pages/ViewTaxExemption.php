@@ -21,8 +21,10 @@ class ViewTaxExemption extends ViewRecord
                 ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.update') ?? false),
             Actions\DeleteAction::make()
                 ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
-                ->using(function (Model $record): void {
+                ->using(function (Model $record): bool {
                     app(DeleteTaxExemptionsAction::class)->execute([$record->getKey()]);
+
+                    return true;
                 }),
         ];
     }

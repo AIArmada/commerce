@@ -187,8 +187,10 @@ final class TaxExemptionsTable
                         ->successNotificationTitle('Exemption renewed'),
                     DeleteAction::make()
                         ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
-                        ->using(function (TaxExemption $record): void {
+                        ->using(function (TaxExemption $record): bool {
                             app(DeleteTaxExemptionsAction::class)->execute([$record->getKey()]);
+
+                            return true;
                         }),
                 ]),
             ])

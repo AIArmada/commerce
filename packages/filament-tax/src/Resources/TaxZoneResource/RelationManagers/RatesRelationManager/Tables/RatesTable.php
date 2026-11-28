@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables;
 
+use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager;
 use AIArmada\Tax\Actions\DeleteTaxRatesAction;
+use AIArmada\Tax\Actions\SaveTaxRateAction;
+use AIArmada\Tax\Models\TaxRate;
 use Filament\Actions\BulkAction;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -48,13 +51,24 @@ final class RatesTable
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.create') ?? false),
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.create') ?? false)
+                    ->using(function (array $data, RatesRelationManager $livewire): TaxRate {
+                        $data['zone_id'] = $livewire->getOwnerRecord()->getKey();
+
+                        return app(SaveTaxRateAction::class)->execute($data);
+                    }),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.update') ?? false),
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.update') ?? false)
+                    ->using(fn (TaxRate $record, array $data): TaxRate => app(SaveTaxRateAction::class)->execute($data, $record->getKey())),
                 DeleteAction::make()
-                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.delete') ?? false),
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.rates.delete') ?? false)
+                    ->using(function (TaxRate $record): bool {
+                        app(DeleteTaxRatesAction::class)->execute([$record->getKey()]);
+
+                        return true;
+                    }),
             ])
             ->toolbarActions([
                 BulkAction::make('delete')
