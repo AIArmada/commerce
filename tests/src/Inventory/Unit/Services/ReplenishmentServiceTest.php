@@ -92,13 +92,13 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion)->toBeInstanceOf(InventoryReorderSuggestion::class);
         expect($suggestion->status)->toBe(ReorderSuggestionStatus::Pending);
         expect($suggestion->current_stock)->toBe(10);
         expect($suggestion->lead_time_days)->toBe(7);
-        expect($this->service->createSuggestion($this->product, $level))->toBeNull();
+        expect($this->service->createSuggestion($this->product, $level->id))->toBeNull();
     });
 
     it('uses supplier lead time when available', function (): void {
@@ -120,7 +120,7 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion->lead_time_days)->toBe(14);
         expect($suggestion->supplier_leadtime_id)->toBe($supplier->id);
@@ -137,7 +137,7 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion->urgency)->toBeInstanceOf(ReorderUrgency::class);
     });
@@ -397,4 +397,18 @@ it('generates replenishment suggestions only for writable stock and same-owner s
             ->and($suggestions->first()->supplier_leadtime_id)->toBeNull()
             ->and($suggestions->first()->lead_time_days)->toBe(9);
     });
+});
+
+it('uses fresh stock balances and rejects mismatched stock identities', function (): void {
+    $level = InventoryLevel::factory()->forInventoryable($this->product->getMorphClass(), $this->product->getKey())
+        ->forLocation($this->location)->create(['quantity_on_hand' => 10, 'quantity_reserved' => 0]);
+    $other = InventoryItem::create(['name' => 'Unrelated inventory item']);
+
+    expect(fn () => $this->service->createSuggestion($other, $level->id))
+        ->toThrow(InvalidArgumentException::class, 'does not belong');
+
+    $level->fresh()->update(['quantity_on_hand' => 4]);
+    $suggestion = $this->service->createSuggestion($this->product, $level->id);
+
+    expect($suggestion->current_stock)->toBe(4);
 });

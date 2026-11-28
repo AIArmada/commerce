@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
 use AIArmada\Inventory\Features\Replenishment\Actions\AdvanceReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Stock\Api\ReorderStock;
+use AIArmada\Inventory\Features\Stock\Api\ReorderStockLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class ReplenishmentService
 {
@@ -42,24 +44,23 @@ final class ReplenishmentService
             }
         }
 
-        $query = InventoryOwnerScope::forMutation(
-            InventoryLevel::query()->needsReorder()->with(['location', 'inventoryable'])
-        )->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::forMutation($query)->where('is_active', true));
-
-        if ($locationId !== null) {
-            $query->where('location_id', $locationId);
-        }
-
-        $levels = $query->get();
         $suggestions = new Collection;
+        $stock = app(ReorderStock::class);
 
-        foreach ($levels as $level) {
-            $model = $level->inventoryable;
-            if ($model === null) {
+        foreach ($stock->candidates($locationId) as $level) {
+            $class = Relation::getMorphedModel($level->inventoryableType) ?? $level->inventoryableType;
+
+            if (! is_a($class, Model::class, true)) {
                 continue;
             }
 
-            $suggestion = $this->createSuggestion($model, $level);
+            $model = $class::query()->find($level->inventoryableId);
+
+            if (! $model instanceof Model) {
+                continue;
+            }
+
+            $suggestion = $this->createSuggestion($model, $level->id);
             if ($suggestion !== null) {
                 $suggestions->push($suggestion);
             }
@@ -73,24 +74,16 @@ final class ReplenishmentService
      */
     public function createSuggestion(
         Model $model,
-        InventoryLevel $level
+        string $levelId
     ): ?InventoryReorderSuggestion {
-        return DB::transaction(function () use ($model, $level): ?InventoryReorderSuggestion {
-            $query = InventoryLevel::query()->whereKey($level->getKey());
+        return DB::transaction(function () use ($model, $levelId): ?InventoryReorderSuggestion {
+            $level = app(ReorderStock::class)->locked($levelId);
 
-            if (InventoryOwnerScope::isEnabled()) {
-                $owner = InventoryOwnerScope::resolveOwner();
-                OwnerContext::assertResolvedOrExplicitGlobal($owner);
-                $query->forOwner($owner, false);
-            }
-
-            $level = $query->lockForUpdate()->firstOrFail();
-
-            if ($level->inventoryable_type !== $model->getMorphClass() || (string) $level->inventoryable_id !== (string) $model->getKey()) {
+            if ($level->inventoryableType !== $model->getMorphClass() || $level->inventoryableId !== (string) $model->getKey()) {
                 throw new InvalidArgumentException('Stock level does not belong to the requested inventory item.');
             }
 
-            $existing = InventoryReorderSuggestion::query()->forModel($model)->where('location_id', $level->location_id)->actionable();
+            $existing = InventoryReorderSuggestion::query()->forModel($model)->where('location_id', $level->locationId)->actionable();
 
             if (InventoryOwnerScope::isEnabled()) {
                 $existing->forOwner(InventoryOwnerScope::resolveOwner(), false);
@@ -101,12 +94,12 @@ final class ReplenishmentService
             }
 
             $supplier = $this->getPrimarySupplier($model);
-            $leadTimeDays = $supplier?->lead_time_days ?? $level->lead_time_days ?? 7;
+            $leadTimeDays = $supplier?->lead_time_days ?? $level->leadTimeDays ?? 7;
 
             $avgDailyDemand = (int) ceil($this->demandForecastService->calculateAverageDailyDemand(
                 $model,
                 30,
-                $level->location_id
+                $level->locationId
             ));
 
             if ($avgDailyDemand === 0) {
@@ -114,7 +107,7 @@ final class ReplenishmentService
             }
 
             $currentStock = $level->available;
-            $reorderPoint = ($level->safety_stock ?? 0) + ($avgDailyDemand * $leadTimeDays);
+            $reorderPoint = ($level->safetyStock ?? 0) + ($avgDailyDemand * $leadTimeDays);
             $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
             $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
 
@@ -127,10 +120,10 @@ final class ReplenishmentService
 
             $urgency = ReorderUrgency::fromDaysUntilStockout($daysUntilStockout, $leadTimeDays);
 
-            return InventoryReorderSuggestion::create([
+            $suggestion = InventoryReorderSuggestion::create([
                 'inventoryable_type' => $model->getMorphClass(),
                 'inventoryable_id' => $model->getKey(),
-                'location_id' => $level->location_id,
+                'location_id' => $level->locationId,
                 'supplier_leadtime_id' => $supplier?->id,
                 'status' => ReorderSuggestionStatus::Pending,
                 'current_stock' => $currentStock,
@@ -143,12 +136,18 @@ final class ReplenishmentService
                 'urgency' => $urgency,
                 'trigger_reason' => 'Stock below reorder point',
                 'calculation_details' => [
-                    'safety_stock' => $level->safety_stock,
-                    'max_stock' => $level->max_stock,
-                    'current_reserved' => $level->quantity_reserved,
+                    'safety_stock' => $level->safetyStock,
+                    'max_stock' => $level->maxStock,
+                    'current_reserved' => $level->reserved,
                     'demand_period_days' => 30,
                 ],
             ]);
+
+            if (! $suggestion->exists) {
+                throw new RuntimeException('Reorder suggestion creation was cancelled.');
+            }
+
+            return $suggestion;
         });
     }
 
@@ -337,13 +336,13 @@ final class ReplenishmentService
      * Calculate suggested quantity.
      */
     private function calculateSuggestedQuantity(
-        InventoryLevel $level,
+        ReorderStockLevel $level,
         int $avgDailyDemand,
         int $leadTimeDays,
         ?int $eoq
     ): int {
-        $safetyStock = $level->safety_stock ?? 0;
-        $maxStock = $level->max_stock ?? ($safetyStock * 4);
+        $safetyStock = $level->safetyStock ?? 0;
+        $maxStock = $level->maxStock ?? ($safetyStock * 4);
         $currentStock = $level->available;
 
         $orderUpToLevel = $maxStock;
