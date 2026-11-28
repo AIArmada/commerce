@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Features\Delivery\Mail;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Features\Delivery\Models\DocEmail;
-use AIArmada\Docs\Support\DocPdfPath;
-use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailable;
@@ -19,6 +19,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -77,33 +78,23 @@ final class DocMail extends Mailable
             return [];
         }
 
-        try {
-            $docService = app(DocServiceInterface::class);
-            $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
+        $docService = app(DocServiceInterface::class);
+        $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
 
-            $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
-            $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));
+        $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
+        $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));
 
-            if ($pdfPath !== DocPdfPath::forDocument($this->doc->doc_type, (string) $this->doc->getKey()) || ! Storage::disk($disk)->exists($pdfPath)) {
-                throw new \RuntimeException('Document PDF is unavailable.');
-            }
-
-            $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));
-
-            return [
-                Attachment::fromStorageDisk($disk, $pdfPath)
-                    ->as("{$docType}-{$this->doc->doc_number}.pdf")
-                    ->withMime('application/pdf'),
-            ];
-        } catch (Throwable $exception) {
-            Log::warning('Failed to attach document PDF in queued mailable.', [
-                'doc_id' => $this->doc->getKey(),
-                'doc_number' => $this->doc->doc_number,
-                'error' => $exception->getMessage(),
-            ]);
-
-            return [];
+        if ($pdfPath !== DocPdfPath::forDocument($this->doc->doc_type, (string) $this->doc->getKey()) || ! Storage::disk($disk)->exists($pdfPath)) {
+            throw new RuntimeException('Document PDF is unavailable.');
         }
+
+        $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));
+
+        return [
+            Attachment::fromStorageDisk($disk, $pdfPath)
+                ->as("{$docType}-{$this->doc->doc_number}.pdf")
+                ->withMime('application/pdf'),
+        ];
     }
 
     private function getTrackingPixelUrl(): ?string
