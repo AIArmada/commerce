@@ -28,6 +28,7 @@ final class SendDocEmailJob implements ShouldQueue
         public bool $attachPdf = true,
     ) {
         $this->queue = (string) config('docs.email.queue', 'default');
+        $this->afterCommit();
     }
 
     public function handle(DeliverDocEmail $deliverDocEmail): void

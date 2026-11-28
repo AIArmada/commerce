@@ -23,10 +23,16 @@ final readonly class DeliverDocEmail
     {
         Cache::lock('docs.email.delivery.' . $docEmailId, 300)->block(10, function () use ($docEmailId, $docId, $attachPdf): void {
             $email = DocEmail::query()->withoutOwnerScope()->find($docEmailId);
+
+            if (! $email instanceof DocEmail
+                || (string) $email->doc_id !== $docId
+                || in_array($email->status, [EmailStatus::Sent, EmailStatus::Delivered, EmailStatus::Bounced], true)) {
+                return;
+            }
+
             $doc = Doc::query()->withoutOwnerScope()->find($docId);
 
-            if (! $email instanceof DocEmail || ! $doc instanceof Doc
-                || (string) $email->doc_id !== (string) $doc->getKey()
+            if (! $doc instanceof Doc
                 || $email->owner_type !== $doc->owner_type
                 || (string) $email->owner_id !== (string) $doc->owner_id) {
                 return;
@@ -39,10 +45,6 @@ final readonly class DeliverDocEmail
             }
 
             OwnerContext::withOwner($owner, function () use ($email, $doc, $attachPdf): void {
-                if (in_array($email->status, [EmailStatus::Sent, EmailStatus::Delivered, EmailStatus::Bounced], true)) {
-                    return;
-                }
-
                 try {
                     Mail::send(new DocMail($email, $doc, $attachPdf));
 

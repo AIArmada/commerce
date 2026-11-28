@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -284,4 +286,22 @@ it('rejects malformed and future email tracking tokens', function (): void {
     ], JSON_THROW_ON_ERROR));
 
     expect($service->trackClick($token))->toBeNull();
+});
+
+test('queued document email delivery waits for the database commit', function (): void {
+    Bus::fake();
+    config()->set('docs.email.queue_enabled', true);
+
+    $doc = Doc::factory()->create();
+
+    $email = app(DocEmailService::class)->send(
+        doc: $doc,
+        recipientEmail: 'customer@example.com',
+    );
+
+    expect($email->status)->toBe(EmailStatus::Queued);
+
+    Bus::assertDispatched(SendDocEmailJob::class, fn (SendDocEmailJob $job): bool => $job->afterCommit === true
+        && $job->docEmailId === (string) $email->getKey()
+        && $job->docId === (string) $doc->getKey());
 });
