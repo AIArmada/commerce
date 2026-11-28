@@ -188,9 +188,9 @@ final class PromotionPerformanceInsights
 
         foreach ($orders as $order) {
             $totalOrders++;
-            $appliedPromotions = data_get($order->metadata, 'discount_data.promotions');
+            $appliedPromotions = $this->promotionAllocations($order->metadata);
 
-            if (! is_array($appliedPromotions) || $appliedPromotions === []) {
+            if ($appliedPromotions === []) {
                 continue;
             }
 
@@ -209,14 +209,10 @@ final class PromotionPerformanceInsights
             $countedPromotionsForOrder = [];
 
             foreach ($appliedPromotions as $promotionPayload) {
-                if (! is_array($promotionPayload)) {
-                    continue;
-                }
-
                 $label = $this->labelFromPromotionPayload($promotionPayload);
-                $promotionKey = $this->promotionMetricKey($promotionPayload, $label);
-                $promotionCode = $this->normalizeString($promotionPayload['code'] ?? null);
-                $discountMinor = max(0, (int) ($promotionPayload['discount'] ?? 0));
+                $promotionKey = $promotionPayload['promotion_id'];
+                $promotionCode = $promotionPayload['code'];
+                $discountMinor = $promotionPayload['discount'];
 
                 $attributedDiscountMinor += $discountMinor;
 
@@ -352,32 +348,51 @@ final class PromotionPerformanceInsights
     }
 
     /**
-     * @param  array<string, mixed>  $promotionPayload
+     * @return list<array{promotion_id: string, name: string, code: string|null, discount: int}>
      */
-    private function labelFromPromotionPayload(array $promotionPayload): string
+    private function promotionAllocations(mixed $metadata): array
     {
-        $name = $this->normalizeString($promotionPayload['name'] ?? null) ?? 'Promotion';
-        $code = $this->normalizeString($promotionPayload['code'] ?? null);
+        $allocations = data_get($metadata, 'discount_data.allocations');
 
-        return $code !== null ? "{$name} ({$code})" : $name;
+        if (! is_array($allocations)) {
+            return [];
+        }
+
+        $promotions = [];
+
+        foreach ($allocations as $allocation) {
+            if (! is_array($allocation) || ($allocation['provider_key'] ?? null) !== 'promotions') {
+                continue;
+            }
+
+            $meta = $allocation['meta'] ?? null;
+            $promotionId = is_array($meta) ? $this->normalizeString($meta['promotion_id'] ?? null) : null;
+            $amount = $allocation['requested_amount'] ?? null;
+
+            if ($promotionId === null || ! is_int($amount) || $amount <= 0) {
+                continue;
+            }
+
+            $promotions[] = [
+                'promotion_id' => $promotionId,
+                'name' => $this->normalizeString($allocation['label'] ?? null) ?? 'Promotion',
+                'code' => $this->normalizeString($allocation['code'] ?? null),
+                'discount' => $amount,
+            ];
+        }
+
+        return $promotions;
     }
 
     /**
-     * @param  array<string, mixed>  $promotionPayload
+     * @param  array{promotion_id: string, name: string, code: string|null, discount: int}  $promotionPayload
      */
-    private function promotionMetricKey(array $promotionPayload, string $label): string
+    private function labelFromPromotionPayload(array $promotionPayload): string
     {
-        $promotionId = $promotionPayload['promotion_id'] ?? null;
+        $name = $promotionPayload['name'];
+        $code = $promotionPayload['code'];
 
-        if (is_scalar($promotionId)) {
-            $normalizedId = $this->normalizeString((string) $promotionId);
-
-            if ($normalizedId !== null) {
-                return 'promotion:' . $normalizedId;
-            }
-        }
-
-        return 'label:' . mb_strtolower($label);
+        return $code !== null ? "{$name} ({$code})" : $name;
     }
 
     private function normalizeString(mixed $value): ?string

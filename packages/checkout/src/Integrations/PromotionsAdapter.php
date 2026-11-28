@@ -157,13 +157,13 @@ final class PromotionsAdapter implements DiscountProvider
         foreach ($result['applied'] as $applied) {
             $proposals[] = new DiscountProposal(
                 providerKey: 'promotions',
-                candidateKey: 'promotion:' . ($applied['id'] ?? $applied['promotion_id'] ?? ''),
+                candidateKey: 'promotion:' . $applied['promotion_id'],
                 requestedAmount: $applied['discount'] ?? 0,
                 label: $applied['name'] ?? null,
                 code: $applied['code'] ?? null,
                 priority: 60,
                 meta: [
-                    'promotion_id' => $applied['id'] ?? $applied['promotion_id'] ?? null,
+                    'promotion_id' => $applied['promotion_id'],
                     'promotion_code' => $applied['code'] ?? null,
                 ],
             );
