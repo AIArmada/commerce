@@ -14,6 +14,8 @@ it('prevents cross-taxonomy parents, cycles, and flattening a populated hierarch
     $taxonomy = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $other = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $action = app(ManageEventTermAction::class);
+    $outsider = User::factory()->create();
+    expect(fn () => $action->save($taxonomy->id, null, ['name' => 'Denied', 'code' => 'denied'], $outsider))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
     $root = $action->save($taxonomy->id, null, ['name' => 'Root', 'code' => 'root'], $actor);
     $child = $action->save($taxonomy->id, null, ['name' => 'Child', 'code' => 'child', 'parent_id' => $root->id], $actor);
 

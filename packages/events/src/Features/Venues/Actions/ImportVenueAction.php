@@ -44,6 +44,10 @@ final readonly class ImportVenueAction
 
             Gate::forUser($actor)->authorize($venueId === null ? 'create' : 'update', $subject);
 
+            if ($venueId === null) {
+                $venue->visibility = 'public';
+            }
+
             $venue->fill(Arr::only($data, ['name', 'slug', 'venue_type', 'status']));
             $venue->save();
 

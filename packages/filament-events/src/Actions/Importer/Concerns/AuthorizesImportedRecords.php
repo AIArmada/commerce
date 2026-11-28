@@ -18,11 +18,15 @@ trait AuthorizesImportedRecords
     {
         $modelClass = static::getModel();
 
+        $user = $this->resolveImportUser();
+
+        if ($user === null) {
+            throw new RowImportFailedException('You are not authorized to create this record.');
+        }
+
         if (Gate::getPolicyFor($modelClass) === null) {
             return;
         }
-
-        $user = $this->resolveImportUser();
 
         if (! Gate::forUser($user)->allows('create', $modelClass)) {
             throw new RowImportFailedException('You are not authorized to create this record.');
@@ -43,11 +47,15 @@ trait AuthorizesImportedRecords
             throw new RowImportFailedException('Unable to resolve existing record for update authorization.');
         }
 
+        $user = $this->resolveImportUser();
+
+        if ($user === null) {
+            throw new RowImportFailedException('You are not authorized to update this record.');
+        }
+
         if (Gate::getPolicyFor($persisted) === null) {
             return;
         }
-
-        $user = $this->resolveImportUser();
 
         if (! Gate::forUser($user)->allows('update', $persisted)) {
             throw new RowImportFailedException('You are not authorized to update this record.');

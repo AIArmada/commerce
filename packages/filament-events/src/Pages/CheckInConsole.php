@@ -6,11 +6,11 @@ namespace AIArmada\FilamentEvents\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
-use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -37,11 +37,7 @@ final class CheckInConsole extends Page implements HasTable
 
     protected static ?string $slug = 'events/check-in';
 
-    public ?string $search = '';
-
     public ?string $passOrRegistration = '';
-
-    public array $checkInResult = [];
 
     public function table(Table $table): Table
     {
@@ -91,10 +87,10 @@ final class CheckInConsole extends Page implements HasTable
     {
         $query = Pass::query()
             ->with('registration')
-            ->where('registration_type', (new EventRegistration)->getMorphClass())
+            ->where('registration_type', (new (ModelResolver::registrationClass()))->getMorphClass())
             ->whereHasMorph(
                 'registration',
-                [EventRegistration::class],
+                [ModelResolver::registrationClass()],
                 fn (Builder $registrationQuery): Builder => $registrationQuery
                     ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
             );
@@ -121,7 +117,7 @@ final class CheckInConsole extends Page implements HasTable
                 ->label('Search')
                 ->form([
                     TextInput::make('query')
-                        ->label('Pass Number, Registration #, or Name')
+                        ->label('Pass Number or Registration #')
                         ->placeholder('e.g. PASS-ABC123 or REG-001')
                         ->autocomplete(false),
                 ])
@@ -137,7 +133,7 @@ final class CheckInConsole extends Page implements HasTable
                         ->label('Event')
                         ->searchable()
                         ->getSearchResultsUsing(function (string $search): array {
-                            $query = OwnerUiScope::apply(Event::query(), includeGlobal: false);
+                            $query = OwnerUiScope::apply(ModelResolver::eventClass()::query(), includeGlobal: false);
                             LikeSearch::whereLike($query, 'title', LikeSearch::contains($search));
 
                             return $query
@@ -146,7 +142,7 @@ final class CheckInConsole extends Page implements HasTable
                                 ->pluck('title', 'id')
                                 ->all();
                         })
-                        ->getOptionLabelUsing(fn (mixed $value): ?string => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => OwnerUiScope::apply(ModelResolver::eventClass()::query(), includeGlobal: false)
                             ->whereKey($value)
                             ->value('title'))
                         ->required(),
@@ -154,7 +150,7 @@ final class CheckInConsole extends Page implements HasTable
                     TextInput::make('attendee_email')->label('Email'),
                 ])
                 ->action(function (array $data): void {
-                    OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
+                    EventWriteGuard::findOrFail($data['event_id']);
                     app(CatalogApi::class)->authorizeManageAdmissions(Filament::auth()->user(), $data['event_id']);
 
                     app(EventCheckInService::class)->checkInWithResult([

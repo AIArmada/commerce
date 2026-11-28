@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Venues\Models\Venue;
@@ -162,8 +163,10 @@ it('enforces model policies on venue, session, and registration importers for cr
     Gate::policy(EventSession::class, DenySessionImportPolicy::class);
 
     $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->getKey()]);
     $sessionImporter = new EventSessionImporter($venueImport, [
         'event_id' => 'event_id',
+        'event_occurrence_id' => 'event_occurrence_id',
         'title' => 'title',
         'starts_at' => 'starts_at',
         'ends_at' => 'ends_at',
@@ -173,6 +176,7 @@ it('enforces model policies on venue, session, and registration importers for cr
 
     expect(fn () => $sessionImporter([
         'event_id' => $event->getKey(),
+        'event_occurrence_id' => $occurrence->getKey(),
         'title' => 'Unauthorized Session',
         'starts_at' => now()->toIso8601String(),
         'ends_at' => now()->addHour()->toIso8601String(),

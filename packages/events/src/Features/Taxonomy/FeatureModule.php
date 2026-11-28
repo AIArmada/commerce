@@ -33,6 +33,12 @@ final class FeatureModule implements FeatureModuleContract
 
     public function boot(Application $app): void
     {
+        foreach ([EventTaxonomy::class, EventTerm::class] as $model) {
+            if (Gate::getPolicyFor($model) === null) {
+                Gate::policy($model, SharedCatalogPolicy::class);
+            }
+        }
+
         EventTaxonomy::saved(EventTaxonomyHierarchyService::flushRequestCache(...));
         EventTaxonomy::deleted(EventTaxonomyHierarchyService::flushRequestCache(...));
         EventTerm::saved(EventTaxonomyHierarchyService::flushRequestCache(...));
