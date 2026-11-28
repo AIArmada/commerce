@@ -82,6 +82,7 @@ final class CloneEventSessionAction
                     targetOccurrenceId: $targetOccurrence->getKey(),
                     sourceSessionId: $session->getKey(),
                     targetSessionId: $clone->getKey(),
+                    options: $options,
                 );
             }
 

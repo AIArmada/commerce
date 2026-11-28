@@ -68,6 +68,7 @@ final class CloneEventAction
             $this->cloneContents->handle(
                 sourceEventId: $event->getKey(),
                 targetEventId: $clone->getKey(),
+                options: $options,
             );
 
             if ($cloneOccurrences) {

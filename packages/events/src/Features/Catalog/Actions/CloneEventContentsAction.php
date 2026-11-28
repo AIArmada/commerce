@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
+use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
 use AIArmada\Events\Features\Catalog\Models\EventAudience;
 use AIArmada\Events\Features\Catalog\Models\EventAudienceProfile;
@@ -18,6 +19,7 @@ use AIArmada\Events\Features\Catalog\Models\EventReference;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\Models\EventTimeExpression;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ExtensionRegistry;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -28,6 +30,8 @@ use Throwable;
 
 final class CloneEventContentsAction
 {
+    public function __construct(private readonly ExtensionRegistry $extensions) {}
+
     /**
      * @return array<string, class-string<Model>>
      */
@@ -58,6 +62,7 @@ final class CloneEventContentsAction
 
     /**
      * @param  array<int, string>  $relations
+     * @param  array<string, mixed>  $options
      */
     public function handle(
         string $sourceEventId,
@@ -67,6 +72,7 @@ final class CloneEventContentsAction
         ?string $sourceSessionId = null,
         ?string $targetSessionId = null,
         array $relations = [],
+        array $options = [],
     ): Collection {
         $relations = $relations !== [] ? $relations : self::BLUEPRINT_RELATIONS;
 
@@ -87,6 +93,7 @@ final class CloneEventContentsAction
             $targetEventId,
             $targetOccurrenceId,
             $targetSessionId,
+            $options,
         ): Collection {
             if (($sourceOccurrenceId === null) !== ($targetOccurrenceId === null)
                 || ($sourceSessionId === null) !== ($targetSessionId === null)) {
@@ -140,6 +147,18 @@ final class CloneEventContentsAction
                         $cloned->push($replica);
                     }
                 });
+            }
+
+            $scopeType = $sourceSessionId !== null ? 'session' : ($sourceOccurrenceId !== null ? 'occurrence' : 'event');
+            $sourceScopeId = $sourceSessionId ?? $sourceOccurrenceId ?? $sourceEventId;
+            $targetScopeId = $targetSessionId ?? $targetOccurrenceId ?? $targetEventId;
+
+            foreach ($this->extensions->resolve('events.clone-scope', EventScopeCloner::class) as $cloner) {
+                $cloner->cloneForScope($scopeType, $sourceScopeId, $scopeType, $targetScopeId, [
+                    ...$options,
+                    'target_event_id' => $targetEventId,
+                    'target_occurrence_id' => $targetOccurrenceId,
+                ]);
             }
 
             $this->cloneSpatieMedia(

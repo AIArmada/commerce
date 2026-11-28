@@ -57,27 +57,18 @@ final class CloneEventOccurrenceAction
                 targetEventId: $targetEvent->getKey(),
                 sourceOccurrenceId: $occurrence->getKey(),
                 targetOccurrenceId: $clone->getKey(),
+                options: $options,
             );
 
             if ($cloneSessions) {
                 $occurrence->loadMissing('sessions');
 
                 foreach ($occurrence->sessions as $session) {
-                    $clonedSession = $this->cloneSession->handle($session, [
+                    $this->cloneSession->handle($session, [
                         'event_id' => $targetEvent->getKey(),
                         'event_occurrence_id' => $clone->getKey(),
                         'status' => 'scheduled',
-                        'clone_children' => false,
                     ]);
-
-                    $this->cloneContents->handle(
-                        sourceEventId: $occurrence->event_id,
-                        targetEventId: $targetEvent->getKey(),
-                        sourceSessionId: $session->getKey(),
-                        targetSessionId: $clonedSession->getKey(),
-                        sourceOccurrenceId: $occurrence->getKey(),
-                        targetOccurrenceId: $clone->getKey(),
-                    );
                 }
             }
 

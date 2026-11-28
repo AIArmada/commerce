@@ -11,7 +11,6 @@ use AIArmada\Events\Features\Catalog\Actions\CloneEventAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventContentsAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
-use AIArmada\Events\Features\Catalog\Actions\DefaultEventCloneService;
 use AIArmada\Events\Features\Catalog\Actions\SaveEventTemplateAction;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventInvolvement;
@@ -540,12 +539,9 @@ it('rolls back the cloned event if a scope extension fails', function (): void {
     $registry = new ExtensionRegistry(app(), [
         'events.clone-scope' => [EventScopeCloner::class],
     ]);
-    $service = new DefaultEventCloneService(
-        app(CloneEventAction::class),
-        app(CloneEventOccurrenceAction::class),
-        app(CloneEventSessionAction::class),
-        $registry,
-    );
+    app()->instance(ExtensionRegistry::class, $registry);
+    app()->forgetInstance(EventCloneService::class);
+    $service = app(EventCloneService::class);
 
     expect(fn () => $service->cloneEvent($event->id, ['title' => 'Failed clone']))
         ->toThrow(RuntimeException::class, 'Extension failed');
@@ -665,4 +661,26 @@ it('remaps occurrence location parent IDs when cloning across events', function 
     expect($location->event_id)->toBe($target->id)
         ->and($location->event_session_id)->toBeNull()
         ->and($location->label)->toBe('Occurrence hall');
+});
+
+it('clones nested location scopes to the corresponding cloned occurrence and session', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+
+    EventLocation::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id, 'event_session_id' => null, 'label' => 'Occurrence hall']);
+    EventLocation::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id, 'event_session_id' => $session->id, 'label' => 'Session hall']);
+
+    $id = app(EventCloneService::class)->cloneEvent($event->id, ['clone_occurrences' => true]);
+    $clone = Event::query()->findOrFail($id);
+    $clonedOccurrence = $clone->occurrences()->sole();
+    $clonedSession = $clonedOccurrence->sessions()->sole();
+
+    $locations = EventLocation::query()->where('event_id', $id)->get()->keyBy('label');
+
+    expect($locations)->toHaveCount(2)
+        ->and($locations['Occurrence hall']->event_occurrence_id)->toBe($clonedOccurrence->id)
+        ->and($locations['Occurrence hall']->event_session_id)->toBeNull()
+        ->and($locations['Session hall']->event_occurrence_id)->toBe($clonedOccurrence->id)
+        ->and($locations['Session hall']->event_session_id)->toBe($clonedSession->id);
 });
