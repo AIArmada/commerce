@@ -56,6 +56,8 @@ final class ShipInventory
                 throw InsufficientInventoryException::forLocation($locationId, $quantity, $available);
             }
 
+            $before = $level->quantity_on_hand;
+            $level->suppressLedgerAudit = true;
             $level->decrement('quantity_on_hand', $quantity);
 
             $movement = InventoryMovement::create([
@@ -63,6 +65,8 @@ final class ShipInventory
                 'inventoryable_id' => $model->getKey(),
                 'from_location_id' => $locationId,
                 'quantity' => $quantity,
+                'quantity_before' => $before,
+                'quantity_after' => $level->quantity_on_hand,
                 'type' => MovementType::Shipment->value,
                 'reason' => $reason,
                 'reference' => $reference,
@@ -76,6 +80,6 @@ final class ShipInventory
             $this->thresholds->handle($model, $level);
 
             return $movement;
-        });
+        }, 3);
     }
 }

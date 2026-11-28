@@ -6,8 +6,10 @@ namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryReceived;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +41,13 @@ final class ReceiveInventory
 
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
             $level = $this->levels->getOrCreate($model, $locationId);
+            $level = InventoryOwnerScope::forMutation(InventoryLevel::query())
+                ->whereKey($level->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $before = $level->quantity_on_hand;
+            $level->suppressLedgerAudit = true;
             $level->increment('quantity_on_hand', $quantity);
             $level->refresh();
 
@@ -47,6 +56,8 @@ final class ReceiveInventory
                 'inventoryable_id' => $model->getKey(),
                 'to_location_id' => $locationId,
                 'quantity' => $quantity,
+                'quantity_before' => $before,
+                'quantity_after' => $level->quantity_on_hand,
                 'type' => MovementType::Receipt->value,
                 'reason' => $reason,
                 'user_id' => $userId,
@@ -57,6 +68,6 @@ final class ReceiveInventory
             Event::dispatch(new InventoryReceived($model, $level, $movement));
 
             return $movement;
-        });
+        }, 3);
     }
 }

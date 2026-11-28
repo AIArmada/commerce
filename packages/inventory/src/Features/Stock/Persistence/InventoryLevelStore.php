@@ -88,6 +88,8 @@ final readonly class InventoryLevelStore
             'from_location_id' => $difference < 0 ? $level->location_id : null,
             'to_location_id' => $difference > 0 ? $level->location_id : null,
             'quantity' => abs($difference),
+            'quantity_before' => $old,
+            'quantity_after' => $new,
             'type' => MovementType::Adjustment->value,
             'reason' => 'direct-level-update',
             'note' => sprintf('Direct level update from %d to %d', $old, $new),

@@ -12,6 +12,7 @@ use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
@@ -137,6 +138,23 @@ describe('InventoryService', function (): void {
             $other->getMorphClass() . ':' . $other->getKey() => 3,
             $unstocked->getMorphClass() . ':' . $unstocked->getKey() => 0,
         ]);
+    });
+
+    it('records exact before and after balances without duplicate ledger movements', function (): void {
+        $first = $this->inventoryService->receive($this->item, $this->locationA->id, 10);
+        $second = $this->inventoryService->receive($this->item, $this->locationA->id, 5);
+        $shipment = $this->inventoryService->ship($this->item, $this->locationA->id, 4);
+        $adjustment = $this->inventoryService->adjust($this->item, $this->locationA->id, 8);
+
+        expect([$first->quantity_before, $first->quantity_after])->toBe([0, 10])
+            ->and([$second->quantity_before, $second->quantity_after])->toBe([10, 15])
+            ->and([$shipment->quantity_before, $shipment->quantity_after])->toBe([15, 11])
+            ->and([$adjustment->quantity_before, $adjustment->quantity_after])->toBe([11, 8])
+            ->and($this->inventoryService->getTotalOnHand($this->item))->toBe(8)
+            ->and(InventoryMovement::query()
+                ->where('inventoryable_type', $this->item->getMorphClass())
+                ->where('inventoryable_id', $this->item->getKey())
+                ->count())->toBe(4);
     });
 
     it('returns an empty map for an empty bulk availability request', function (): void {
