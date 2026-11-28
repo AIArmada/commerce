@@ -133,6 +133,58 @@ describe('StockLevelExport', function (): void {
         expect($rows[0][3])->toBe(0); // Out of stock quantity
     });
 
+    it('includes fully reserved stock in out of stock exports', function (): void {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+            'quantity_reserved' => 20,
+            'reorder_point' => 10,
+        ]);
+
+        $rows = iterator_to_array((new StockLevelExport(['out_of_stock_only' => true]))->getRows());
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0][5])->toBe(0)
+            ->and($rows[0][9])->toBe('Out of Stock')
+            ->and(iterator_to_array((new StockLevelExport(['low_stock_only' => true]))->getRows()))->toBe([]);
+    });
+
+    it('applies the level reorder point consistently to low stock exports', function (): void {
+        config()->set('inventory.default_reorder_point', 10);
+
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 25,
+            'quantity_reserved' => 5,
+            'reorder_point' => 30,
+        ]);
+
+        $rows = iterator_to_array((new StockLevelExport(['low_stock_only' => true]))->getRows());
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0][5])->toBe(20)
+            ->and($rows[0][9])->toBe('Low Stock');
+    });
+
+    it('reports a safety stock breach above the reorder point', function (): void {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 25,
+            'reorder_point' => 10,
+            'safety_stock' => 30,
+        ]);
+
+        $rows = iterator_to_array((new StockLevelExport)->getRows());
+
+        expect($rows[0][9])->toBe('Reorder Needed');
+    });
+
     it('determines correct status for in stock items', function (): void {
         InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),

@@ -37,19 +37,20 @@ final readonly class StockExportRowsQuery implements StockExportRows
         }
 
         if (isset($filters['low_stock_only']) && $filters['low_stock_only']) {
-            $query->lowStock();
+            $query->whereRaw('quantity_on_hand > quantity_reserved')
+                ->whereRaw('quantity_on_hand - quantity_reserved <= COALESCE(reorder_point, ?)', [(int) config('inventory.default_reorder_point', 10)]);
         }
 
         if (isset($filters['out_of_stock_only']) && $filters['out_of_stock_only']) {
-            $query->where('quantity_on_hand', '<=', 0);
+            $query->whereColumn('quantity_on_hand', '<=', 'quantity_reserved');
         }
 
         foreach ($query->lazyById(500) as $level) {
             $available = $level->available;
             $status = match (true) {
-                $level->quantity_on_hand <= 0 => 'Out of Stock',
+                $available === 0 => 'Out of Stock',
                 $level->isLowStock() => 'Low Stock',
-                $level->needsReorder() => 'Reorder Needed',
+                $level->isSafetyStockBreached() => 'Reorder Needed',
                 default => 'In Stock',
             };
 
