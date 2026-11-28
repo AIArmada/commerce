@@ -75,7 +75,7 @@ final readonly class TrackDocEmail
     {
         $data = $this->decodeTrackingToken($token);
 
-        if (! $data || $data['type'] !== 'click') {
+        if (! $data || $data['type'] !== 'click' || ! is_string($data['url'] ?? null)) {
             return null;
         }
 
