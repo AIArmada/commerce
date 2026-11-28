@@ -11,12 +11,13 @@ use Illuminate\Support\Facades\Notification;
 
 final class DefaultPassDeliveryService implements PassDeliveryServiceInterface
 {
-    public function deliver(Pass $pass): void
+    public function deliver(string $passId): void
     {
         if (! config('ticketing.notifications.ticket.enabled', true)) {
             return;
         }
 
+        $pass = Pass::query()->with('holder')->findOrFail($passId);
         $holder = $pass->holder;
 
         if ($holder === null || blank($holder->email)) {

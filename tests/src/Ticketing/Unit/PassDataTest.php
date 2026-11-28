@@ -30,13 +30,13 @@ it('creates a PassData DTO with named arguments', function (): void {
         ->and($data->status)->toBe('issued');
 });
 
-it('creates a PassData DTO from array', function (): void {
-    $data = PassData::from([
-        'pass_no' => 'PASS-FROM-ARRAY',
-        'qr_code' => 'qr-from-array',
-        'status' => 'activated',
-        'issued_at' => '2026-06-01T12:00:00Z',
-    ]);
+it('creates a PassData DTO with an immutable issuance timestamp', function (): void {
+    $data = new PassData(
+        pass_no: 'PASS-FROM-ARRAY',
+        qr_code: 'qr-from-array',
+        status: 'activated',
+        issued_at: new CarbonImmutable('2026-06-01T12:00:00Z'),
+    );
 
     expect($data->pass_no)->toBe('PASS-FROM-ARRAY')
         ->and($data->qr_code)->toBe('qr-from-array')

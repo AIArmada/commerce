@@ -49,7 +49,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
                 return OwnerContext::withOwner(null, fn (): PassHolder => $this->transferLocked($freshPass, $newHolder, $reason));
             }
 
-            return $this->transferLocked($pass, $freshPass, $newHolder, $reason);
+            return $this->transferLocked($freshPass, $newHolder, $reason);
         });
     }
 

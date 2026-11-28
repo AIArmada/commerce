@@ -120,7 +120,7 @@ it('delivers ticket notifications through the default delivery service', functio
             'is_current' => true,
         ]);
 
-        app(PassDeliveryServiceInterface::class)->deliver($pass);
+        app(PassDeliveryServiceInterface::class)->deliver((string) $pass->getKey());
 
         NotificationFacade::assertSentOnDemand(
             TicketNotification::class,

@@ -14,7 +14,7 @@ use AIArmada\Ticketing\Support\PassIssuanceContext;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -74,7 +74,7 @@ final readonly class PassIssuer implements PassIssuerInterface
 
                     return $passes;
                 });
-            } catch (QueryException $exception) {
+            } catch (UniqueConstraintViolationException $exception) {
                 if (! $this->replaceAllCollisions($passes)) {
                     throw $exception;
                 }
@@ -240,7 +240,7 @@ final readonly class PassIssuer implements PassIssuerInterface
 
         foreach ($generators as $column => $generate) {
             $values = $passes->map(fn (Pass $pass): ?string => $pass->getAttribute($column))->filter()->values()->all();
-            $collisions = $this->findCollisions($column, $values);
+            $collisions = array_values(array_unique([...$this->findCollisions($column, $values), ...array_keys(array_filter(array_count_values($values), static fn (int $count): bool => $count > 1))]));
 
             if ($collisions === []) {
                 continue;
@@ -256,17 +256,27 @@ final readonly class PassIssuer implements PassIssuerInterface
                     continue;
                 }
 
-                do {
-                    $candidate = $generate();
-                } while (isset($reserved[$candidate]));
+                $candidate = $this->uniqueCandidate($generate, $reserved);
 
-                unset($reserved[$current]);
                 $reserved[$candidate] = true;
                 $pass->setAttribute($column, $candidate);
             }
         }
 
         return $repaired;
+    }
+
+    private function uniqueCandidate(callable $generate, array $reserved): string
+    {
+        for ($attempt = 0; $attempt < self::MAX_COLLISION_ATTEMPTS; $attempt++) {
+            $candidate = $generate();
+
+            if (! isset($reserved[$candidate])) {
+                return $candidate;
+            }
+        }
+
+        throw new RuntimeException('Unable to generate unique pass codes.');
     }
 
     /**
@@ -300,11 +310,8 @@ final readonly class PassIssuer implements PassIssuerInterface
                 continue;
             }
 
-            do {
-                $candidate = $generate();
-            } while (isset($reserved[$candidate]));
+            $candidate = $this->uniqueCandidate($generate, $reserved);
 
-            unset($reserved[$value]);
             $reserved[$candidate] = true;
             $values[$index] = $candidate;
         }

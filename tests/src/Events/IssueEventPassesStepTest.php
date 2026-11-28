@@ -85,7 +85,7 @@ it('issues and delivers all passes created for matching registrations', function
         ]);
 
         $delivery = mock(PassDeliveryServiceInterface::class);
-        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
+        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type('string'));
 
         $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
@@ -200,7 +200,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
         ]);
 
         $delivery = mock(PassDeliveryServiceInterface::class);
-        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
+        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type('string'));
 
         $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),

@@ -19,7 +19,7 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Ticketing\Data\TicketTypeData;
+use AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 beforeEach(function (): void {
@@ -62,7 +62,7 @@ it('ensures ticket types for sessions', function (): void {
             'event_session_id' => $session->id,
         ])
         ->and($ticketType->code)->toBe($session->id)
-        ->and(TicketTypeData::fromTicketType($ticketType)->quota)->toBe($session->capacity);
+        ->and(app(MapTicketTypeData::class)->handle($ticketType)->quota)->toBe($session->capacity);
 });
 
 it('syncs session ticket quotas to the default inventory location', function (): void {
@@ -96,7 +96,7 @@ it('syncs session ticket quotas to the default inventory location', function ():
 
     expect($level->quantity_on_hand)->toBe(10)
         ->and($level->quantity_reserved)->toBe(0);
-    expect(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(10);
+    expect(app(MapTicketTypeData::class)->handle($ticketType)->quota)->toBe(10);
 
     $level->incrementReserved(4);
 
@@ -110,7 +110,7 @@ it('syncs session ticket quotas to the default inventory location', function ():
 
     expect($level->quantity_on_hand)->toBe(14)
         ->and($level->quantity_reserved)->toBe(4)
-        ->and(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(14);
+        ->and(app(MapTicketTypeData::class)->handle($ticketType)->quota)->toBe(14);
 });
 
 it('adds session ticket types to the cart', function (): void {

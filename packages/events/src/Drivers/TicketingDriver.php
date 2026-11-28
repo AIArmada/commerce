@@ -153,7 +153,7 @@ final class TicketingDriver implements EventTicketingDriver
         $passes = Pass::query()->whereKey($passIds)->get();
 
         foreach ($passes as $pass) {
-            $delivery->deliver($pass);
+            $delivery->deliver((string) $pass->getKey());
         }
     }
 

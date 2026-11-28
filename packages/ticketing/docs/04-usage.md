@@ -297,8 +297,9 @@ use Illuminate\Support\Facades\Mail;
 
 class EmailPassDeliveryService implements PassDeliveryServiceInterface
 {
-    public function deliver(Pass $pass): void
+    public function deliver(string $passId): void
     {
+        $pass = Pass::query()->with('holder')->findOrFail($passId);
         $email = $pass->holder?->email;
 
         if ($email === null) {
@@ -379,8 +380,8 @@ use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAc
 use AIArmada\Ticketing\Data\PassData;
 use AIArmada\Ticketing\Data\TicketTypeData;
 
-$typeDto = TicketTypeData::fromTicketType($ticketType);
-$passDto = PassData::fromPass($pass);
+$typeDto = app(\AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData::class)->handle($ticketType);
+$passDto = app(\AIArmada\Ticketing\Features\Passes\Queries\MapPassData::class)->handle($pass);
 $components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType, multiplier: 2);
 ```
 
