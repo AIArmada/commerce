@@ -7,7 +7,10 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Tables;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\SubscriptionStatus;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
+use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
+use AIArmada\Cashier\Policies\SubscriptionPolicy;
+use AIArmada\Cashier\Queries\FindCustomerSubscription;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -110,15 +113,11 @@ class SubscriptionsTable
                     ->action(function (UnifiedSubscription $record): void {
                         $user = auth()->user();
 
-                        if ($user === null || ! app(SubscriptionPolicy::class)->cancel($user, $record->original)) {
+                        if (! $user instanceof Model || ! app(SubscriptionPolicy::class)->cancel($user, $record->original)) {
                             throw new AuthorizationException('Not authorized to cancel this subscription.');
                         }
 
-                        $original = $record->original;
-
-                        if (method_exists($original, 'cancel')) {
-                            $original->cancel();
-                        }
+                        app(ChangeCustomerSubscription::class)->cancel($user, $record->gateway, $record->id);
                     })
                     ->successNotificationTitle(__('filament-cashier::subscriptions.actions.cancel_success')),
 
@@ -131,15 +130,11 @@ class SubscriptionsTable
                     ->action(function (UnifiedSubscription $record): void {
                         $user = auth()->user();
 
-                        if ($user === null || ! app(SubscriptionPolicy::class)->resume($user, $record->original)) {
+                        if (! $user instanceof Model || ! app(SubscriptionPolicy::class)->resume($user, $record->original)) {
                             throw new AuthorizationException('Not authorized to resume this subscription.');
                         }
 
-                        $original = $record->original;
-
-                        if (method_exists($original, 'resume')) {
-                            $original->resume();
-                        }
+                        app(ChangeCustomerSubscription::class)->resume($user, $record->gateway, $record->id);
                     })
                     ->successNotificationTitle(__('filament-cashier::subscriptions.actions.resume_success')),
 
@@ -161,23 +156,26 @@ class SubscriptionsTable
                         ->action(function (Collection $records): void {
                             $user = auth()->user();
 
-                            if ($user === null) {
+                            if (! $user instanceof Model) {
                                 throw new AuthorizationException('Not authorized to cancel subscriptions.');
                             }
 
+                            $query = app(FindCustomerSubscription::class);
                             $policy = app(SubscriptionPolicy::class);
 
-                            $records->each(function (UnifiedSubscription $record) use ($user, $policy): void {
-                                $original = $record->original;
+                            foreach ($records as $record) {
+                                $subscription = $query->handle($user, $record->gateway, $record->id);
 
-                                if (! $policy->cancel($user, $original)) {
+                                if ($subscription === null || ! $policy->cancel($user, $subscription->original) || ! $subscription->status->isCancelable()) {
                                     throw new AuthorizationException('Not authorized to cancel this subscription.');
                                 }
+                            }
 
-                                if (method_exists($original, 'cancel')) {
-                                    $original->cancel();
-                                }
-                            });
+                            $action = app(ChangeCustomerSubscription::class);
+
+                            foreach ($records as $record) {
+                                $action->cancel($user, $record->gateway, $record->id);
+                            }
                         }),
                 ]),
             ])

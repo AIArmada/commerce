@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentCashier\Policies;
+namespace AIArmada\Cashier\Policies;
 
 use Illuminate\Database\Eloquent\Model;
 

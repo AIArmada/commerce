@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
-use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
-use Laravel\Cashier\Subscription;
 
 final class ManageSubscriptions extends Page
 {
@@ -60,7 +57,9 @@ final class ManageSubscriptions extends Page
     {
         $user = auth()->user();
 
-        if ($user === null) {
+        if (! $user instanceof Model) {
+            $this->hasMoreSubscriptions = false;
+
             return collect();
         }
 
@@ -82,90 +81,46 @@ final class ManageSubscriptions extends Page
 
     public function cancelSubscription(string $gateway, string $id): void
     {
-        $subscription = $this->findSubscription($gateway, $id);
-
-        if ($subscription === null || ! $subscription->status->isCancelable()) {
-            Notification::make()
-                ->title(__('filament-cashier::portal.subscriptions.cancel_error'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        // Policy authorization check
-        if (! $this->authorizeAction('cancel', $subscription)) {
-            Notification::make()
-                ->title(__('filament-cashier::portal.subscriptions.unauthorized'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        if (method_exists($subscription->original, 'cancel')) {
-            $subscription->original->cancel();
-
-            Notification::make()
-                ->title(__('filament-cashier::portal.subscriptions.cancel_success'))
-                ->success()
-                ->send();
-        }
+        $this->changeSubscription($gateway, $id, 'cancel');
     }
 
     public function resumeSubscription(string $gateway, string $id): void
     {
-        $subscription = $this->findSubscription($gateway, $id);
+        $this->changeSubscription($gateway, $id, 'resume');
+    }
 
-        if ($subscription === null || ! $subscription->status->isResumable()) {
-            Notification::make()
-                ->title(__('filament-cashier::portal.subscriptions.resume_error'))
-                ->danger()
-                ->send();
+    private function changeSubscription(string $gateway, string $id, string $operation): void
+    {
+        $user = auth()->user();
 
+        if (! $user instanceof Model) {
             return;
         }
 
-        // Policy authorization check
-        if (! $this->authorizeAction('resume', $subscription)) {
+        try {
+            $action = app(ChangeCustomerSubscription::class);
+
+            if ($operation === 'cancel') {
+                $action->cancel($user, $gateway, $id);
+            } else {
+                $action->resume($user, $gateway, $id);
+            }
+
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.' . $operation . '_success'))
+                ->success()
+                ->send();
+        } catch (AuthorizationException) {
             Notification::make()
                 ->title(__('filament-cashier::portal.subscriptions.unauthorized'))
                 ->danger()
                 ->send();
-
-            return;
-        }
-
-        if (method_exists($subscription->original, 'resume')) {
-            $subscription->original->resume();
-
+        } catch (Throwable) {
             Notification::make()
-                ->title(__('filament-cashier::portal.subscriptions.resume_success'))
-                ->success()
+                ->title(__('filament-cashier::portal.subscriptions.' . $operation . '_error'))
+                ->danger()
                 ->send();
         }
-    }
-
-    /**
-     * Authorize an action using the SubscriptionPolicy.
-     */
-    protected function authorizeAction(string $ability, UnifiedSubscription $subscription): bool
-    {
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        $policy = app(SubscriptionPolicy::class);
-
-        return match ($ability) {
-            'cancel' => $policy->cancel($user, $subscription->original),
-            'resume' => $policy->resume($user, $subscription->original),
-            'view' => $policy->view($user, $subscription->original),
-            'update' => $policy->update($user, $subscription->original),
-            default => false,
-        };
     }
 
     /**
@@ -191,83 +146,4 @@ final class ManageSubscriptions extends Page
         ];
     }
 
-    protected function findSubscription(string $gateway, string $id): ?UnifiedSubscription
-    {
-        $detector = app(GatewayDetector::class);
-        $user = auth()->user();
-
-        if ($user === null) {
-            return null;
-        }
-
-        $userId = $this->resolveAuthIdentifier($user);
-
-        if ($userId === null) {
-            return null;
-        }
-
-        if (
-            $gateway === 'stripe'
-            && $detector->isAvailable('stripe')
-            && class_exists(Subscription::class)
-            && Schema::hasTable((new Subscription)->getTable())
-        ) {
-            $sub = OwnerScopedQuery::apply(Subscription::query())
-                ->with('items')
-                ->where('user_id', $userId)
-                ->whereKey($id)
-                ->first();
-
-            if ($sub) {
-                return UnifiedSubscription::fromStripe($sub);
-            }
-        }
-
-        if ($gateway === 'chip' && $detector->isAvailable('chip')) {
-            $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = OwnerScopedQuery::apply($subscriptionModel::query())
-                ->with(['billable', 'items'])
-                ->where('billable_type', $user->getMorphClass())
-                ->where('billable_id', (string) $user->getKey())
-                ->whereKey($id)
-                ->first();
-
-            if ($sub) {
-                return UnifiedSubscription::fromChip($sub);
-            }
-        }
-
-        return null;
-    }
-
-    private function resolveAuthIdentifier(mixed $user): int | string | null
-    {
-        if ($user instanceof Model) {
-            $identifierName = $user->getKeyName();
-            $attributes = $user->getAttributes();
-            $attributeIdentifier = $attributes[$identifierName] ?? null;
-
-            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
-                return $attributeIdentifier;
-            }
-
-            $rawIdentifier = $user->getRawOriginal($identifierName);
-
-            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
-                return $rawIdentifier;
-            }
-
-            return null;
-        }
-
-        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
-            $identifier = $user->getAuthIdentifier();
-
-            if (is_int($identifier) || is_string($identifier)) {
-                return $identifier;
-            }
-        }
-
-        return null;
-    }
 }
