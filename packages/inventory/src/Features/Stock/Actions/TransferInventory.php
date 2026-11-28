@@ -83,8 +83,8 @@ final class TransferInventory
                 throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
             }
 
-            $fromLevel->decrementOnHand($quantity);
-            $toLevel->incrementOnHand($quantity);
+            $fromLevel->decrement('quantity_on_hand', $quantity);
+            $toLevel->increment('quantity_on_hand', $quantity);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),

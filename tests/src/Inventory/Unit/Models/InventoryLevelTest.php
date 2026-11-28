@@ -6,8 +6,11 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
+use AIArmada\Inventory\Services\InventoryService;
 
 describe('InventoryLevel', function (): void {
     beforeEach(function (): void {
@@ -187,32 +190,39 @@ describe('InventoryLevel', function (): void {
         expect($level->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::Priority);
     });
 
-    it('increment on hand', function (): void {
+    it('receives stock through the owning action', function (): void {
         $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
             'quantity_on_hand' => 100,
         ]);
 
-        $level->incrementOnHand(25);
+        app(InventoryService::class)->receive($this->item, $this->location->id, 25);
 
         expect($level->fresh()->quantity_on_hand)->toBe(125);
     });
 
-    it('decrement on hand', function (): void {
+    it('ships stock through the owning action', function (): void {
         $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
             'quantity_on_hand' => 100,
         ]);
 
-        $level->decrementOnHand(30);
+        app(InventoryService::class)->ship($this->item, $this->location->id, 30);
 
         expect($level->fresh()->quantity_on_hand)->toBe(70);
     });
 
     it('increment reserved', function (): void {
         $level = InventoryLevel::factory()->create([
+            'quantity_on_hand' => 100,
             'quantity_reserved' => 20,
         ]);
 
-        $level->incrementReserved(10);
+        app(ReservationStockStore::class)->reserve($level->id, 10);
 
         expect($level->fresh()->quantity_reserved)->toBe(30);
     });
@@ -222,7 +232,7 @@ describe('InventoryLevel', function (): void {
             'quantity_reserved' => 30,
         ]);
 
-        $level->decrementReserved(15);
+        app(ReservationStockStore::class)->release($level->id, 15);
 
         expect($level->fresh()->quantity_reserved)->toBe(15);
     });
@@ -234,10 +244,10 @@ describe('InventoryLevel', function (): void {
         ]);
 
         foreach ([-1, 0] as $quantity) {
-            expect(fn () => $level->incrementOnHand($quantity))->toThrow(InvalidArgumentException::class)
-                ->and(fn () => $level->decrementOnHand($quantity))->toThrow(InvalidArgumentException::class)
-                ->and(fn () => $level->incrementReserved($quantity))->toThrow(InvalidArgumentException::class)
-                ->and(fn () => $level->decrementReserved($quantity))->toThrow(InvalidArgumentException::class);
+            expect(fn () => app(InventoryService::class)->receive($this->item, $this->location->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(InventoryService::class)->ship($this->item, $this->location->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(ReservationStockStore::class)->reserve($level->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(ReservationStockStore::class)->release($level->id, $quantity))->toThrow(InvalidArgumentException::class);
         }
 
         expect($level->fresh()->quantity_on_hand)->toBe(100)
@@ -390,7 +400,7 @@ it('rejects deleting a stale level after stock is received', function (): void {
         'quantity_reserved' => 0,
     ]);
     $stale = $level->fresh();
-    $level->incrementOnHand(5);
+    app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 5]);
 
     expect($stale->delete())->toBeFalse()
         ->and($level->fresh()->quantity_on_hand)->toBe(5);

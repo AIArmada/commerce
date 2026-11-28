@@ -27,7 +27,7 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Reservation quantity exceeds available stock.');
             }
 
-            $record->incrementReserved($quantity);
+            $record->increment('quantity_reserved', $quantity);
         });
     }
 
@@ -40,7 +40,7 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Release quantity exceeds reserved stock.');
             }
 
-            $record->decrementReserved($quantity);
+            $record->decrement('quantity_reserved', $quantity);
         });
     }
 
@@ -53,8 +53,8 @@ final readonly class ReservationStockStore implements ReservationStock
                 throw new InvalidArgumentException('Commit quantity exceeds reserved or on-hand stock.');
             }
 
-            $record->decrementOnHand($quantity);
-            $record->decrementReserved($quantity);
+            $record->decrement('quantity_on_hand', $quantity);
+            $record->decrement('quantity_reserved', $quantity);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $record->inventoryable_type,

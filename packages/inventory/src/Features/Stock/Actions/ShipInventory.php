@@ -56,7 +56,7 @@ final class ShipInventory
                 throw InsufficientInventoryException::forLocation($locationId, $quantity, $available);
             }
 
-            $level->decrementOnHand($quantity);
+            $level->decrement('quantity_on_hand', $quantity);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),

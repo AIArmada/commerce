@@ -54,7 +54,8 @@ final readonly class RestoreOrderStock implements RestoreOrderStockContract
                 }
 
                 $level = $this->levels->getOrCreate($movement->inventoryable, $movement->from_location_id);
-                $level->incrementOnHand($movement->quantity);
+                $level->increment('quantity_on_hand', $movement->quantity);
+                $level->refresh();
 
                 $receipt = InventoryMovement::create([
                     'inventoryable_type' => $movement->inventoryable_type,

@@ -19,6 +19,7 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Ticketing\Data\TicketTypeData;
 use AIArmada\Ticketing\Models\TicketType;
 
@@ -98,7 +99,7 @@ it('syncs session ticket quotas to the default inventory location', function ():
         ->and($level->quantity_reserved)->toBe(0);
     expect(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(10);
 
-    $level->incrementReserved(4);
+    app(ReservationStockStore::class)->reserve($level->id, 4);
 
     app(EnsureTicketTypeForOccurrenceAction::class)->handle('session', (string) $session->getKey(), [
         'name' => 'Session Access',

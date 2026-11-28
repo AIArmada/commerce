@@ -39,7 +39,8 @@ final class ReceiveInventory
 
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
             $level = $this->levels->getOrCreate($model, $locationId);
-            $level->incrementOnHand($quantity);
+            $level->increment('quantity_on_hand', $quantity);
+            $level->refresh();
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),

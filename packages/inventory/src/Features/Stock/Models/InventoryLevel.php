@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -233,62 +232,6 @@ final class InventoryLevel extends Model implements Auditable
         $global = config('inventory.allocation_strategy', 'priority');
 
         return AllocationStrategy::from($global);
-    }
-
-    /**
-     * Increment on-hand quantity.
-     */
-    public function incrementOnHand(int $quantity): self
-    {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive.');
-        }
-
-        $this->increment('quantity_on_hand', $quantity);
-
-        return $this;
-    }
-
-    /**
-     * Decrement on-hand quantity.
-     */
-    public function decrementOnHand(int $quantity): self
-    {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive.');
-        }
-
-        $this->decrement('quantity_on_hand', $quantity);
-
-        return $this;
-    }
-
-    /**
-     * Increment reserved quantity.
-     */
-    public function incrementReserved(int $quantity): self
-    {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive.');
-        }
-
-        $this->increment('quantity_reserved', $quantity);
-
-        return $this;
-    }
-
-    /**
-     * Decrement reserved quantity.
-     */
-    public function decrementReserved(int $quantity): self
-    {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive.');
-        }
-
-        $this->decrement('quantity_reserved', $quantity);
-
-        return $this;
     }
 
     /**

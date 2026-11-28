@@ -15,6 +15,7 @@ use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationServ
 use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
@@ -111,7 +112,7 @@ describe('InventoryAllocationService', function (): void {
             'expires_at' => now()->subMinute(),
         ]);
 
-        $level?->incrementReserved($allocation->quantity);
+        app(ReservationStockStore::class)->reserve($allocation->level_id, $allocation->quantity);
 
         $removed = $this->allocationService->cleanupExpired();
 

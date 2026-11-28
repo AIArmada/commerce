@@ -12,6 +12,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -37,7 +38,7 @@ beforeEach(function (): void {
         'quantity_on_hand' => 20,
         'reorder_point' => 10,
     ]);
-    $levelA->incrementReserved(5);
+    app(ReservationStockStore::class)->reserve($levelA->id, 5);
 
     $levelB = InventoryLevel::create([
         'inventoryable_type' => 'Product',
@@ -46,7 +47,7 @@ beforeEach(function (): void {
         'quantity_on_hand' => 3,
         'reorder_point' => 5,
     ]);
-    $levelB->incrementReserved(1);
+    app(ReservationStockStore::class)->reserve($levelB->id, 1);
 
     // Movement history within window
     InventoryMovement::create([
