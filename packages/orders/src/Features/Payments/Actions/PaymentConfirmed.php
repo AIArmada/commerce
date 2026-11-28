@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
@@ -14,6 +13,7 @@ use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;

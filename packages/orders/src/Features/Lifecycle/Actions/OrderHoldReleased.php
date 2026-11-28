@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderHoldReleased as OrderHoldReleasedEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\OnHold;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use RuntimeException;
 use Spatie\ModelStates\Transition;
 

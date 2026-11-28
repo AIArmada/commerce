@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\PackageShipmentVerifier;
@@ -12,6 +11,7 @@ use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
 use AIArmada\Orders\Events\OrderCancelInitiated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use Carbon\CarbonImmutable;
 use DomainException;
 use InvalidArgumentException;

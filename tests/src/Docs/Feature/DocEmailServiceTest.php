@@ -7,6 +7,7 @@ use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
@@ -15,7 +16,6 @@ use AIArmada\Docs\States\Pending;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
-use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 

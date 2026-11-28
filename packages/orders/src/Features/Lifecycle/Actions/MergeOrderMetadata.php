@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use RuntimeException;
 
 final readonly class MergeOrderMetadata implements OrderMetadataWriter

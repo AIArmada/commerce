@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 
 final readonly class RegisterOrderPayment
 {

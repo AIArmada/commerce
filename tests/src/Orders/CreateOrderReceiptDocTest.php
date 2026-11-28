@@ -5,8 +5,9 @@ declare(strict_types=1);
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
 use AIArmada\Orders\Models\Order;
 
 it('creates a receipt document for a paid order', function (): void {
@@ -95,7 +96,7 @@ it('refuses to issue paid documents for an order with an outstanding balance', f
         'paid_at' => null,
     ]);
 
-    $documents = app(\AIArmada\Orders\Contracts\OrderDocuments::class);
+    $documents = app(OrderDocuments::class);
 
     foreach (['invoice', 'receipt'] as $type) {
         expect(fn () => $documents->issue((string) $order->getKey(), $type, 'unsettled', 'chip'))

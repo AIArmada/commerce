@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderCompleted as OrderCompletedEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Spatie\ModelStates\Transition;

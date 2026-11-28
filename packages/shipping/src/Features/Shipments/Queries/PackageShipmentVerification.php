@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Queries;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 
 final readonly class PackageShipmentVerification implements PackageShipmentVerifier
 {

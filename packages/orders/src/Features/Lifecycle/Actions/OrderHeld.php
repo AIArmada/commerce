@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Events\OrderHeld as OrderHeldEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\OnHold;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use Carbon\CarbonImmutable;
 use RuntimeException;
 use Spatie\ModelStates\Transition;

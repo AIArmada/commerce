@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Documents\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use InvalidArgumentException;
 
 final readonly class IssueOrderDocument implements OrderDocuments

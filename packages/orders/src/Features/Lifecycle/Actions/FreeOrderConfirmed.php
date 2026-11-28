@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -13,6 +12,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
 

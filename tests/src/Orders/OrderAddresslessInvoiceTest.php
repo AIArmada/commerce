@@ -7,11 +7,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
-use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -300,7 +301,7 @@ it('requires the owning context to render an owned order invoice', function (): 
     view()->addNamespace('orders', dirname(__DIR__, 3) . '/packages/orders/resources/views');
 
     expect(fn () => (new GenerateInvoice)->download((string) $order->getKey()))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 
     $response = OwnerContext::withOwner($owner, fn () => (new GenerateInvoice)->download((string) $order->getKey()));
     expect($response)->toBeInstanceOf(StreamedResponse::class);
