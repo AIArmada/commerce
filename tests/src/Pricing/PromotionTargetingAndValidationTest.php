@@ -13,6 +13,7 @@ use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Services\PromotionService;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -48,6 +49,53 @@ it('matches category rules against the real priceable model', function (): void 
     expect($result)->not->toBeNull()
         ->and($result['name'])->toBe('Category Deal')
         ->and($result['price'])->toBe(9000);
+});
+
+it('matches category rules for registered priceable morph aliases', function (): void {
+    $category = Category::factory()->create();
+    $product = Product::factory()->create(['price' => 10000]);
+    $product->categories()->attach($category->getKey());
+
+    Promotion::create([
+        'name' => 'Alias Category Deal',
+        'type' => PromotionType::Percentage,
+        'discount_value' => 10,
+        'is_active' => true,
+        'conditions' => [
+            'mode' => 'all',
+            'rules' => [
+                ['type' => 'category_in_cart', 'operator' => 'in', 'values' => [$category->slug]],
+            ],
+        ],
+    ]);
+
+    $previousMorphMap = Relation::morphMap();
+
+    try {
+        Relation::morphMap(['pricing-test-product' => Product::class]);
+
+        $result = app(ApplyPromotionalAdjustment::class)->apply(
+            'pricing-test-product',
+            (string) $product->getKey(),
+            10000,
+            1,
+            now()->toImmutable(),
+        );
+
+        expect($result)->toBe(['price' => 9000, 'name' => 'Alias Category Deal']);
+    } finally {
+        Relation::morphMap($previousMorphMap, false);
+    }
+});
+
+it('rejects promotion subtotals outside the integer monetary range', function (): void {
+    $action = app(ApplyPromotionalAdjustment::class);
+    $effectiveAt = now()->toImmutable();
+
+    expect(fn () => $action->apply('unresolved', 'item', PHP_INT_MAX, 2, $effectiveAt))
+        ->toThrow(InvalidArgumentException::class, 'monetary range')
+        ->and(fn () => $action->apply('unresolved', 'item', -1, 1, $effectiveAt))
+        ->toThrow(InvalidArgumentException::class, 'monetary range');
 });
 
 it('keeps id-only matching when the priceable cannot be resolved', function (): void {

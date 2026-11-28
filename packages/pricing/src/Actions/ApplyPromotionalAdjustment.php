@@ -9,8 +9,9 @@ use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
-use Throwable;
+use InvalidArgumentException;
 
 final class ApplyPromotionalAdjustment
 {
@@ -34,10 +35,15 @@ final class ApplyPromotionalAdjustment
             return null;
         }
 
+        if ($basePrice < 0 || $basePrice > intdiv(PHP_INT_MAX, $quantity)) {
+            throw new InvalidArgumentException('Promotion subtotal exceeds the supported monetary range.');
+        }
+
+        $subtotal = $basePrice * $quantity;
         $targetingContext = $this->makeTargetingContext(
             $promotionableType,
             $promotionableId,
-            $basePrice,
+            $subtotal,
             $quantity,
             $effectiveAt,
             $context,
@@ -45,7 +51,7 @@ final class ApplyPromotionalAdjustment
 
         /** @var PromotionServiceInterface $promotionService */
         $promotionService = app(PromotionServiceInterface::class);
-        $discountResult = $promotionService->calculateDiscounts($targetingContext, $basePrice * $quantity);
+        $discountResult = $promotionService->calculateDiscounts($targetingContext, $subtotal);
 
         /** @var Collection<int, Promotion> $appliedPromotions */
         $appliedPromotions = $discountResult['applied'];
@@ -55,7 +61,7 @@ final class ApplyPromotionalAdjustment
             return null;
         }
 
-        $finalPrice = max(0, intdiv(($basePrice * $quantity) - $discountResult['discount'], $quantity));
+        $finalPrice = max(0, intdiv($subtotal - $discountResult['discount'], $quantity));
 
         return [
             'price' => $finalPrice,
@@ -69,7 +75,7 @@ final class ApplyPromotionalAdjustment
     private function makeTargetingContext(
         string $promotionableType,
         string $promotionableId,
-        int $basePrice,
+        int $subtotal,
         int $quantity,
         CarbonImmutable $effectiveAt,
         array $context,
@@ -90,7 +96,7 @@ final class ApplyPromotionalAdjustment
             }
         };
 
-        $cart = new class($item, $basePrice * $quantity)
+        $cart = new class($item, $subtotal)
         {
             public function __construct(
                 private readonly object $item,
@@ -121,21 +127,14 @@ final class ApplyPromotionalAdjustment
         );
     }
 
-    /**
-     * Best-effort priceable resolution so attribute/category targeting rules
-     * can match. Unresolvable references keep the previous id-only behavior.
-     */
     private function resolvePriceable(string $type, string $id): ?Model
     {
-        if (! class_exists($type) || ! is_a($type, Model::class, true)) {
+        $type = Relation::getMorphedModel($type) ?? $type;
+
+        if (! is_a($type, Model::class, true)) {
             return null;
         }
 
-        try {
-            /** @var class-string<Model> $type */
-            return $type::query()->whereKey($id)->first();
-        } catch (Throwable) {
-            return null;
-        }
+        return $type::query()->whereKey($id)->first();
     }
 }
