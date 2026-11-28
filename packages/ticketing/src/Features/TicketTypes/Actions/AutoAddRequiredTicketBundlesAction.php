@@ -11,6 +11,7 @@ use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Models\TicketTypeProduct;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 final readonly class AutoAddRequiredTicketBundlesAction
 {
@@ -37,9 +38,15 @@ final readonly class AutoAddRequiredTicketBundlesAction
                 continue;
             }
 
-            $lineId = $this->lineIdentifier($ticketType, $target);
+            $lineId = $this->lineIdentifier($ticketType, $bundle, $target);
             $expectedLineIds[$lineId] = true;
-            $requiredQuantity = max(0, (int) $bundle->quantity * $ticketLine->quantity);
+            $quantity = (int) $bundle->quantity;
+
+            if ($quantity > intdiv(PHP_INT_MAX, max(1, $ticketLine->quantity))) {
+                throw new InvalidArgumentException('Required bundle quantity exceeds the supported range.');
+            }
+
+            $requiredQuantity = max(0, $quantity * $ticketLine->quantity);
 
             if ($requiredQuantity === 0) {
                 $cart->remove($lineId);
@@ -56,25 +63,22 @@ final readonly class AutoAddRequiredTicketBundlesAction
                 continue;
             }
 
-            if ($existingItem->quantity === $requiredQuantity) {
-                continue;
-            }
-
             $cart->updateBuyable($target, $requiredQuantity, $lineId, $attributes);
         }
 
         $this->removeUnexpectedBundlesFor($cart, $ticketType, $expectedLineIds);
     }
 
-    private function lineIdentifier(TicketType $ticketType, Buyable $target): string
+    private function lineIdentifier(TicketType $ticketType, TicketTypeProduct $bundle, Buyable $target): string
     {
         $type = $target instanceof Model
             ? $target->getMorphClass()
             : $target::class;
 
         return sprintf(
-            'ticket-bundle:%s:%s:%s',
+            'ticket-bundle:%s:%s:%s:%s',
             $ticketType->getKey(),
+            $bundle->getKey(),
             $type,
             $target->getBuyableIdentifier(),
         );

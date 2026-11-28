@@ -66,3 +66,29 @@ it('stores validated participants and preserves system attributes', function ():
         ->and($item->getAttribute('participants'))->toHaveCount(2)
         ->and($item->getAttribute('note'))->toBe('front row');
 });
+
+it('refreshes ticket price on repeated additions', function (): void {
+    $action = app(AddTicketTypeToCartAction::class);
+    $action->handle($this->cart, $this->ticketType);
+    $this->ticketType->fresh()->update(['price' => 7500]);
+
+    $item = $action->handle($this->cart, $this->ticketType);
+
+    expect($item->quantity)->toBe(2)
+        ->and($item->price)->toBe(7500);
+});
+
+it('rejects a stale ticket type after it becomes unavailable', function (): void {
+    $this->ticketType->fresh()->update(['visibility' => 'hidden']);
+
+    expect(fn () => app(AddTicketTypeToCartAction::class)->handle($this->cart, $this->ticketType))
+        ->toThrow(InvalidArgumentException::class, 'not available');
+});
+
+it('rejects forged bundle source attributes', function (): void {
+    expect(fn () => app(AddTicketTypeToCartAction::class)->handle(
+        $this->cart,
+        $this->ticketType,
+        extraAttributes: ['bundle_parent_line_id' => 'forged'],
+    ))->toThrow(InvalidArgumentException::class, 'reserved keys');
+});

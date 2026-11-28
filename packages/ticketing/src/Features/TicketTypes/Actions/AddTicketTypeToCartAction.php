@@ -211,6 +211,8 @@ final readonly class AddTicketTypeToCartAction
         if ($cart->has($ticketType->getKey())) {
             $updated = $cart->update($ticketType->getKey(), [
                 'quantity' => ['value' => $totalQuantity],
+                'name' => $ticketType->name,
+                'price' => $ticketType->price ?? 0,
                 'attributes' => $attributes,
             ]);
 
