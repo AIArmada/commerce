@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Features\Reservations\Queries;
+namespace AIArmada\Inventory\Queries;
 
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;

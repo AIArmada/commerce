@@ -12,7 +12,7 @@ use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationServ
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\OrderInventoryIdentity;
 use AIArmada\Inventory\Features\Stock\Api\DeductionCandidates;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Events\InventoryDeductionRequired;

@@ -16,7 +16,7 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockO
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Reservations\Queries\CompositeComponents;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 

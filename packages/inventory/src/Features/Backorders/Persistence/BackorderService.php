@@ -443,7 +443,7 @@ final class BackorderService
         $newPriority = match ($backorder->priority) {
             BackorderPriority::Low => BackorderPriority::Normal,
             BackorderPriority::Normal => BackorderPriority::High,
-            BackorderPriority::High, BackorderPriority::Urgent => BackorderPriority::Urgent,
+            BackorderPriority::High => BackorderPriority::Urgent,
         };
 
         return $backorder->update(['priority' => $newPriority]);
