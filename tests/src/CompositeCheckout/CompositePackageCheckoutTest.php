@@ -223,47 +223,49 @@ it('ships the package and the standalone line as five units of the same stock id
     $checkoutResult = $checkout->processCheckout($session);
     expect($checkoutResult->success)->toBeTrue();
 
-    $order = Order::query()->findOrFail($checkoutResult->orderId);
+    OwnerContext::withOwner(null, function () use ($checkoutResult, $mouse): void {
+        $order = Order::query()->findOrFail($checkoutResult->orderId);
 
-    $driver = mock(ShippingDriverInterface::class);
-    $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
-    $quotedPackages = [];
-    $driver->shouldReceive('getRates')->once()->andReturnUsing(
-        static function (AddressData $origin, AddressData $destination, array $packages) use (&$quotedPackages): array {
-            $quotedPackages = $packages;
+        $driver = mock(ShippingDriverInterface::class);
+        $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
+        $quotedPackages = [];
+        $driver->shouldReceive('getRates')->once()->andReturnUsing(
+            static function (AddressData $origin, AddressData $destination, array $packages) use (&$quotedPackages): array {
+                $quotedPackages = $packages;
 
-            return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
-        },
-    );
-    $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));
-    $manager = mock(ShippingManager::class);
-    $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
-    $manager->shouldReceive('driver')->with('manual')->andReturn($driver);
-    app()->instance(ShippingManager::class, $manager);
+                return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
+            },
+        );
+        $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));
+        $manager = mock(ShippingManager::class);
+        $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
+        $manager->shouldReceive('driver')->with('manual')->andReturn($driver);
+        app()->instance(ShippingManager::class, $manager);
 
-    $handler = app(FulfillmentHandler::class);
-    expect($order->primaryAddress('shipping'))->not->toBeNull();
-    expect($handler->getRates((string) $order->getKey()))->toHaveCount(1);
+        $handler = app(FulfillmentHandler::class);
+        expect($order->primaryAddress('shipping'))->not->toBeNull();
+        expect($handler->getRates((string) $order->getKey()))->toHaveCount(1);
 
-    $weights = array_column($quotedPackages, 'weight');
-    sort($weights);
-    expect($weights)->toBe([250, 1000])
-        ->and(array_column($quotedPackages, 'length'))->toBe([12, 12]);
+        $weights = array_column($quotedPackages, 'weight');
+        sort($weights);
+        expect($weights)->toBe([250, 1000])
+            ->and(array_column($quotedPackages, 'length'))->toBe([12, 12]);
 
-    $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual']);
-    expect($result['error'])->toBeNull();
+        $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual']);
+        expect($result['error'])->toBeNull();
 
-    $shipment = Shipment::query()->findOrFail($result['shipment_id']);
-    $items = $shipment->items()->get();
-    $packageItems = $items->whereNotNull('package_unit_ordinal')->sortBy('package_unit_ordinal')->values();
-    $standaloneItems = $items->whereNull('package_unit_ordinal');
+        $shipment = Shipment::query()->findOrFail($result['shipment_id']);
+        $items = $shipment->items()->get();
+        $packageItems = $items->whereNotNull('package_unit_ordinal')->sortBy('package_unit_ordinal')->values();
+        $standaloneItems = $items->whereNull('package_unit_ordinal');
 
-    expect($shipment->total_weight)->toBe(1250)
-        ->and($items->sum('quantity'))->toBe(5)
-        ->and($items->pluck('shippable_item_id')->unique()->values()->all())->toBe([(string) $mouse->getKey()])
-        ->and($packageItems->pluck('package_unit_ordinal')->all())->toBe([1, 2])
-        ->and($packageItems->pluck('quantity')->all())->toBe([2, 2])
-        ->and($standaloneItems->pluck('quantity')->values()->all())->toBe([1]);
+        expect($shipment->total_weight)->toBe(1250)
+            ->and($items->sum('quantity'))->toBe(5)
+            ->and($items->pluck('shippable_item_id')->unique()->values()->all())->toBe([(string) $mouse->getKey()])
+            ->and($packageItems->pluck('package_unit_ordinal')->all())->toBe([1, 2])
+            ->and($packageItems->pluck('quantity')->all())->toBe([2, 2])
+            ->and($standaloneItems->pluck('quantity')->values()->all())->toBe([1]);
+    });
 });
 
 it('rolls the reservation back and creates no order when component stock runs out before payment', function (): void {
