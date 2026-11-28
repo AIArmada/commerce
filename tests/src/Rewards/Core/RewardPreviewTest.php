@@ -12,7 +12,7 @@ use AIArmada\Rewards\Enums\RewardPreviewDecision;
 use AIArmada\Rewards\Enums\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardPreviewFixture;
+use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

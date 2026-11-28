@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardPreviewContext;
+use AIArmada\Rewards\Data\RewardPreviewFixture;
+use AIArmada\Rewards\Data\RewardPreviewResult;
+
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
