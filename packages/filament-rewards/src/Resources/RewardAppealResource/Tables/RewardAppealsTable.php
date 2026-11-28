@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardAppealResource\Tables;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;

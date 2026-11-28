@@ -9,7 +9,7 @@ use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use InvalidArgumentException;

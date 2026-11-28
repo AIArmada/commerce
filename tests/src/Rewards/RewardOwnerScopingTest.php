@@ -30,7 +30,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

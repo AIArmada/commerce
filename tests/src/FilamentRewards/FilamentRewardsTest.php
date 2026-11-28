@@ -18,7 +18,7 @@ use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\RewardRecoveryReso
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;

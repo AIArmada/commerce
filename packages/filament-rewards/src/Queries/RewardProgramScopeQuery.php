@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Queries;
 
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

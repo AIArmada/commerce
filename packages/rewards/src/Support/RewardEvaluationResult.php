@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Support;
 
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 
 /**
  * Deterministic entitlement-evaluation result.

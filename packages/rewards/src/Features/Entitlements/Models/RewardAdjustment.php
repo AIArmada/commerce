@@ -7,7 +7,6 @@ namespace AIArmada\Rewards\Features\Entitlements\Models;
 use AIArmada\Rewards\Database\Factories\RewardAdjustmentFactory;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAdjustmentStatus;
-use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

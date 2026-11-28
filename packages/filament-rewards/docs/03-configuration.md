@@ -54,7 +54,7 @@ Hosts must therefore define the abilities these decisions consult — or a `Gate
 | `decide` | Appeal **Decide** |
 | `reward-fraud-steward` | Fraud stewardship page access and fraud **Dismiss** |
 
-`RewardAdminPresenter::canDecideAward($record, $ability)` runs `Gate::forUser($user)->allows($ability, $record)`, so the record is passed as the Gate argument — define policies or abilities against `AIArmada\Rewards\Models\RewardAward` / `AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal` accordingly. A host that defines none of these abilities denies every decision (fail-closed). Role-less hosts must define `reward-staff` in addition to the decision abilities. Authentication alone never grants staff access.
+`RewardAdminPresenter::canDecideAward($record, $ability)` runs `Gate::forUser($user)->allows($ability, $record)`, so the record is passed as the Gate argument — define policies or abilities against `AIArmada\Rewards\Features\Entitlements\Models\RewardAward` / `AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal` accordingly. A host that defines none of these abilities denies every decision (fail-closed). Role-less hosts must define `reward-staff` in addition to the decision abilities. Authentication alone never grants staff access.
 
 ## Owners
 

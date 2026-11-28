@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

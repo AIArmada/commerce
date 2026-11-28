@@ -9,7 +9,7 @@ use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

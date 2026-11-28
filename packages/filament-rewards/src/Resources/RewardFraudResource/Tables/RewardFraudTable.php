@@ -8,7 +8,7 @@ use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;

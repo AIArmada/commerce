@@ -12,7 +12,7 @@ use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardMilestoneGuard;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

@@ -6,7 +6,6 @@ namespace AIArmada\Rewards\Features\Entitlements\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardMilestoneCycleFactory;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
-use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
