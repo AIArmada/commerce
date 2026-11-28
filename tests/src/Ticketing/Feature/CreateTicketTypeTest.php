@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

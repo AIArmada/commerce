@@ -8,10 +8,10 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 
 beforeEach(function (): void {

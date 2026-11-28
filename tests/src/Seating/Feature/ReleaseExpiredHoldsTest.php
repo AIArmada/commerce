@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 
 beforeEach(function (): void {
     $map = SeatMap::factory()->create();

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\TicketTypes\Models;
 
-use AIArmada\Ticketing\Features\Passes\Models\Pass;
-
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Models\InventoryAllocation;
@@ -16,6 +14,7 @@ use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Support\TicketingOwnerGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;

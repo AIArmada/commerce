@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating;
 
-use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
+use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\Platform\ExtensionRegistry;
 use AIArmada\Seating\Platform\FeatureCatalog;
 use AIArmada\Seating\Platform\FeatureModule;
-use RuntimeException;
 use Livewire\Livewire;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

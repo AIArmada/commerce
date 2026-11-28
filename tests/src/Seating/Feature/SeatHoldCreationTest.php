@@ -7,12 +7,12 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 use Illuminate\Database\Eloquent\Model;
 

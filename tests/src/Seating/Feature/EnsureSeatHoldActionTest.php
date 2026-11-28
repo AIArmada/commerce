@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 
 beforeEach(function (): void {
     $this->map = SeatMap::factory()->create();

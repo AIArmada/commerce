@@ -6,11 +6,11 @@ namespace AIArmada\FilamentSeating\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
-use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
-use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
-use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
 use AIArmada\FilamentSeating\Tables\SeatMapTable;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
+use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;

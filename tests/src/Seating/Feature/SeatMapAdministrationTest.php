@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
 use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
+use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Validation\ValidationException;
 

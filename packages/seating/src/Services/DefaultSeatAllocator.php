@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Services;
 
-use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 
 final readonly class DefaultSeatAllocator implements SeatAllocatorInterface
 {

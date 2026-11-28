@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\Resources\SeatMapResource\Pages;
 
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
-use Filament\Resources\Pages\CreateRecord;
 use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
 final class CreateSeatMap extends CreateRecord

@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Features\Maps\Models;
 
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
-
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Database\Factories\SeatFactory;
 use AIArmada\Seating\Enums\SeatStatus;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

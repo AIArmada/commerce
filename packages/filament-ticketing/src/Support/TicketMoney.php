@@ -18,6 +18,7 @@ final class TicketMoney
         }
 
         $sign = $minor < 0 ? '-' : '';
+
         return $sign . abs(intdiv($minor, 100)) . '.' . mb_str_pad((string) abs($minor % 100), 2, '0', STR_PAD_LEFT);
     }
 
@@ -34,10 +35,10 @@ final class TicketMoney
         }
 
         $sign = $matches[1] === '-' ? -1 : 1;
-        $digits = ltrim($matches[2], '0');
+        $digits = mb_ltrim($matches[2], '0');
         $maxWhole = (string) intdiv(PHP_INT_MAX, 100);
 
-        if (strlen($digits) > strlen($maxWhole) || (strlen($digits) === strlen($maxWhole) && strcmp($digits, $maxWhole) > 0)) {
+        if (mb_strlen($digits) > mb_strlen($maxWhole) || (mb_strlen($digits) === mb_strlen($maxWhole) && strcmp($digits, $maxWhole) > 0)) {
             return null;
         }
 

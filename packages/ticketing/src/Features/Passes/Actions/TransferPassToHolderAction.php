@@ -8,6 +8,7 @@ use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -27,7 +28,7 @@ final readonly class TransferPassToHolderAction
             $lockedPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
 
             if (! $lockedPass instanceof Pass) {
-                throw new \Illuminate\Auth\Access\AuthorizationException('The pass is not accessible in the current owner scope.');
+                throw new AuthorizationException('The pass is not accessible in the current owner scope.');
             }
 
             if ($authorizedBy !== null) {

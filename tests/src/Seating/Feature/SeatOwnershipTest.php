@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
-use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

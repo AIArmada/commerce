@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Seating\Features\Maps\Models\Seat;
-use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Features\Passes\Models;
 
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
-
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
@@ -15,6 +13,7 @@ use AIArmada\Ticketing\Events\PassCancelled;
 use AIArmada\Ticketing\Events\PassExpired;
 use AIArmada\Ticketing\Events\PassRevoked;
 use AIArmada\Ticketing\Events\PassVoided;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\States\Activated;
 use AIArmada\Ticketing\States\Cancelled;
 use AIArmada\Ticketing\States\Expired;

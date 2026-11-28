@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\EntryPoints\Livewire;
 
+use AIArmada\Seating\Contracts\SeatLayoutInterface;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
-use AIArmada\Seating\Contracts\SeatLayoutInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

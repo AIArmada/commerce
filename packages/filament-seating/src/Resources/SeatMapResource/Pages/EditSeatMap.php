@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSeating\Resources\SeatMapResource\Pages;
 
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
-use Filament\Actions\ViewAction;
-use Filament\Resources\Pages\EditRecord;
 use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use Filament\Actions\ViewAction;
+use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
 final class EditSeatMap extends EditRecord

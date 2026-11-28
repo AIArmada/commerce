@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use Carbon\CarbonImmutable;

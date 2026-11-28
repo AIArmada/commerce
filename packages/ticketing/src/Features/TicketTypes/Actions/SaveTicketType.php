@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\TicketTypes\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
-use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;

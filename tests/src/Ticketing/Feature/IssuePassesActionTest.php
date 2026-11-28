@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Events\PassIssued;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;

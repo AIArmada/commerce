@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\Pages;
 
-use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
+use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
 use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Filament\Resources\Pages\CreateRecord;
 
 final class CreateTicketType extends CreateRecord
 {

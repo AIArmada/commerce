@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeComponent;
 use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeProduct;

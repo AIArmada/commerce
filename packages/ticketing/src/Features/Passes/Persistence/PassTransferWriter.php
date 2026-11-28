@@ -10,6 +10,7 @@ use AIArmada\Ticketing\Events\PassTransferred;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
+use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
@@ -24,7 +25,7 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         }
 
         $this->assertHolderBelongsToPass($pass, $newHolder);
-        \AIArmada\Ticketing\Support\HolderAttributesValidator::validateAttributes($newHolder->getAttributes());
+        HolderAttributesValidator::validateAttributes($newHolder->getAttributes());
 
         return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $reason) {
             $freshPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
