@@ -45,3 +45,5 @@ The Stock feature owns the public inventory service registration. Model read hel
 Use the pure `AIArmada\Inventory\Data\AllocationStrategy` enum when selecting allocation strategies across the stock and reservation boundaries.
 
 Read per-location sellable quantity through the canonical `InventoryLevel::$available` attribute. Aggregate availability by clamping each location's on-hand minus reserved quantity to zero before summing.
+
+Persisted inventory level identity (inventoryable type, inventoryable ID and location ID) is immutable. Use `TransferInventory` to move stock between locations rather than reassigning an existing level.

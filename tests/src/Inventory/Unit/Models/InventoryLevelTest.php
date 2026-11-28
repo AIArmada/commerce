@@ -438,3 +438,38 @@ it('does not record a direct adjustment when the stock update is cancelled', fun
         ->and($level->fresh()->quantity_on_hand)->toBe(100)
         ->and(InventoryMovement::query()->count())->toBe($movements);
 });
+
+it('rejects changing a persisted stock level identity without affecting balances or movements', function (): void {
+    $item = InventoryItem::create(['name' => 'Original Stock Item']);
+    $other = InventoryItem::create(['name' => 'Other Stock Item']);
+    $location = InventoryLocation::factory()->create();
+    $destination = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 20,
+    ]);
+
+    $movements = InventoryMovement::query()->count();
+
+    foreach ([
+        ['inventoryable_id' => $other->getKey()],
+        ['inventoryable_type' => 'another-type'],
+        ['location_id' => $destination->id],
+        ['location_id' => $destination->id, 'quantity_on_hand' => 90],
+    ] as $attributes) {
+        expect(fn () => $level->fresh()->update($attributes))
+            ->toThrow(InvalidArgumentException::class, 'identity cannot be changed');
+    }
+
+    $level->refresh();
+
+    expect($level->inventoryable_id)->toBe($item->getKey())
+        ->and($level->inventoryable_type)->toBe($item->getMorphClass())
+        ->and($level->location_id)->toBe($location->id)
+        ->and($level->quantity_on_hand)->toBe(100)
+        ->and($level->quantity_reserved)->toBe(20)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});

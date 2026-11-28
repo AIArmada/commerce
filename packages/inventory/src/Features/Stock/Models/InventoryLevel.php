@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -315,6 +316,10 @@ final class InventoryLevel extends Model implements Auditable
     protected static function booted(): void
     {
         static::saving(function (InventoryLevel $level): void {
+            if ($level->exists && $level->isDirty(['inventoryable_type', 'inventoryable_id', 'location_id'])) {
+                throw new InvalidArgumentException('Inventory level identity cannot be changed. Transfer stock through the owning action instead.');
+            }
+
             if (! InventoryOwnerScope::isEnabled()) {
                 return;
             }
