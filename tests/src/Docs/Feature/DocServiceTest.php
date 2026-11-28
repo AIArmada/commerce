@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocData;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Services\DocService;
@@ -139,8 +140,8 @@ test('it can mark doc as paid', function (): void {
 
     expect($doc->isPaid())->toBeFalse();
 
-    $doc->markAsSent();
-    $doc->markAsPaid();
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
+    app(DocumentLifecycle::class)->markPaid((string) $doc->getKey());
     $doc->refresh();
 
     expect($doc->isPaid())->toBeTrue()
@@ -168,10 +169,12 @@ test('it can check if doc is overdue', function (): void {
         'due_date' => now()->subDay(),
     ]));
 
-    $doc->markAsSent();
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
+    $doc->refresh();
     expect($doc->isOverdue())->toBeTrue();
 
-    $doc->markAsPaid();
+    app(DocumentLifecycle::class)->markPaid((string) $doc->getKey());
+    $doc->refresh();
     expect($doc->isOverdue())->toBeFalse();
 });
 

@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPdfCleanup;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
@@ -18,11 +17,8 @@ use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
-use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
-use AIArmada\Docs\States\Pending;
-use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\States\Refunded;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -205,7 +201,7 @@ final class Doc extends Model implements Auditable
 
     public function isOverdue(): bool
     {
-        if ($this->status->equals(Paid::class) || $this->status->equals(Cancelled::class)) {
+        if ($this->status->equals(Paid::class) || $this->status->equals(Cancelled::class) || $this->status->equals(Refunded::class)) {
             return false;
         }
 
@@ -220,43 +216,6 @@ final class Doc extends Model implements Auditable
     public function canBePaid(): bool
     {
         return $this->status->isPayable();
-    }
-
-    public function markAsPaid(?string $notes = null): void
-    {
-        if (! $this->canBePaid()) {
-            return;
-        }
-
-        app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Paid::class, $notes);
-        $this->refresh();
-    }
-
-    public function markAsSent(?string $notes = null): void
-    {
-        if ($this->status->equals(Draft::class) || $this->status->equals(Pending::class)) {
-            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Sent::class, $notes);
-            $this->refresh();
-        }
-    }
-
-    public function cancel(?string $notes = null): void
-    {
-        if (! $this->status->equals(Paid::class)) {
-            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Cancelled::class, $notes);
-            $this->refresh();
-        }
-    }
-
-    /**
-     * Update status and check for overdue
-     */
-    public function updateStatus(): void
-    {
-        if ($this->isOverdue() && ! $this->status->equals(Overdue::class)) {
-            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Overdue::class, 'Automatic overdue detection');
-            $this->refresh();
-        }
     }
 
     public function delete(): ?bool

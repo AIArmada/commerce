@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
@@ -154,7 +155,7 @@ test('mark as paid updates status and paid_at', function (): void {
     CarbonImmutable::setTestNow('2024-06-15 10:30:00');
 
     $doc = Doc::factory()->create(['status' => Sent::class]);
-    $doc->markAsPaid();
+    app(DocumentLifecycle::class)->markPaid((string) $doc->getKey());
 
     expect($doc->fresh()->status->equals(Paid::class))->toBeTrue()
         ->and($doc->fresh()->paid_at)->not->toBeNull();
@@ -164,7 +165,7 @@ test('mark as paid updates status and paid_at', function (): void {
 
 test('mark as paid creates status history', function (): void {
     $doc = Doc::factory()->create(['status' => Sent::class]);
-    $doc->markAsPaid('Payment received via bank transfer');
+    app(DocumentLifecycle::class)->markPaid((string) $doc->getKey(), 'Payment received via bank transfer');
 
     expect($doc->statusHistories)->toHaveCount(1)
         ->and($doc->statusHistories->first()->status->equals(Paid::class))->toBeTrue()
@@ -173,14 +174,14 @@ test('mark as paid creates status history', function (): void {
 
 test('mark as sent updates status from draft', function (): void {
     $doc = Doc::factory()->create(['status' => Draft::class]);
-    $doc->markAsSent();
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
 
     expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
 
 test('mark as sent updates status from pending', function (): void {
     $doc = Doc::factory()->create(['status' => Pending::class]);
-    $doc->markAsSent();
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
 
     expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
@@ -189,7 +190,7 @@ test('mark as sent does not update status if already sent', function (): void {
     $doc = Doc::factory()->create(['status' => Sent::class]);
     $initialHistoryCount = $doc->statusHistories()->count();
 
-    $doc->markAsSent();
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
 
     expect($doc->fresh()->status->equals(Sent::class))->toBeTrue()
         ->and($doc->statusHistories()->count())->toBe($initialHistoryCount);
@@ -197,7 +198,7 @@ test('mark as sent does not update status if already sent', function (): void {
 
 test('mark as sent creates status history', function (): void {
     $doc = Doc::factory()->create(['status' => Draft::class]);
-    $doc->markAsSent('Sent to customer');
+    app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()], 'Sent to customer');
 
     expect($doc->statusHistories)->toHaveCount(1)
         ->and($doc->statusHistories->first()->status->equals(Sent::class))->toBeTrue()
@@ -206,21 +207,21 @@ test('mark as sent creates status history', function (): void {
 
 test('cancel updates status to cancelled', function (): void {
     $doc = Doc::factory()->create(['status' => Sent::class]);
-    $doc->cancel();
+    app(DocumentLifecycle::class)->cancel((string) $doc->getKey());
 
     expect($doc->fresh()->status->equals(Cancelled::class))->toBeTrue();
 });
 
 test('cancel does not work on paid docs', function (): void {
     $doc = Doc::factory()->create(['status' => Paid::class]);
-    $doc->cancel();
+    app(DocumentLifecycle::class)->cancel((string) $doc->getKey());
 
     expect($doc->fresh()->status->equals(Paid::class))->toBeTrue();
 });
 
 test('cancel creates status history', function (): void {
     $doc = Doc::factory()->create(['status' => Sent::class]);
-    $doc->cancel('Customer requested cancellation');
+    app(DocumentLifecycle::class)->cancel((string) $doc->getKey(), 'Customer requested cancellation');
 
     expect($doc->statusHistories)->toHaveCount(1)
         ->and($doc->statusHistories->first()->status->equals(Cancelled::class))->toBeTrue()
@@ -233,7 +234,7 @@ test('update status marks overdue docs as overdue', function (): void {
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
-    $doc->updateStatus();
+    app(DocumentLifecycle::class)->detectOverdue((string) $doc->getKey());
 
     expect($doc->fresh()->status->equals(Overdue::class))->toBeTrue();
 });
@@ -244,7 +245,7 @@ test('update status does not change non-overdue docs', function (): void {
         'due_date' => CarbonImmutable::now()->addDays(5),
     ]);
 
-    $doc->updateStatus();
+    app(DocumentLifecycle::class)->detectOverdue((string) $doc->getKey());
 
     expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
@@ -255,7 +256,7 @@ test('update status creates history when marking as overdue', function (): void 
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
-    $doc->updateStatus();
+    app(DocumentLifecycle::class)->detectOverdue((string) $doc->getKey());
 
     expect($doc->statusHistories)->toHaveCount(1)
         ->and($doc->statusHistories->first()->status->equals(Overdue::class))->toBeTrue();

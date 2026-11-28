@@ -12,17 +12,22 @@ This page covers state transitions and history once a document already exists.
 
 `DocPaymentStatus` and `DocApprovalStatus` remain separate enums because they describe payment and approval sub-lifecycles, not the document lifecycle.
 
-## Common model helpers
+## Lifecycle actions
 
 ```php
-$document->markAsPaid();
-$document->markAsPaid('Payment received via bank transfer');
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 
-$document->markAsSent();
-$document->markAsSent('Emailed to customer');
+$lifecycle = app(DocumentLifecycle::class);
+$id = (string) $document->getKey();
 
-$document->cancel();
-$document->cancel('Customer requested cancellation');
+$lifecycle->markPaid($id);
+$lifecycle->markPaid($id, 'Payment received via bank transfer');
+
+$lifecycle->markSent([$id]);
+$lifecycle->markSent([$id], 'Emailed to customer');
+
+$lifecycle->cancel($id);
+$lifecycle->cancel($id, 'Customer requested cancellation');
 ```
 
 ## Updating Status
@@ -40,7 +45,7 @@ app(DocService::class)->updateStatus(
 );
 ```
 
-All model helpers and service payment transitions delegate to the same state machine and status-history path. Unknown status strings throw `InvalidArgumentException` instead of resolving to draft. `DocService::update()` also accepts a `status` key and routes it through the same machine (unreachable transitions throw; unchanged values are a no-op).
+Lifecycle actions and service payment transitions delegate to the same state machine and status-history path. Unknown status strings throw `InvalidArgumentException` instead of resolving to draft. `DocService::update()` also accepts a `status` key and routes it through the same machine (unreachable transitions throw; unchanged values are a no-op).
 
 ## Checking Status
 
@@ -88,7 +93,7 @@ foreach ($history as $entry) {
 
 ```php
 // Update status if document is past due
-$document->updateStatus();
+app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->detectOverdue((string) $document->getKey());
 
 // Query overdue documents
 $overdue = Doc::query()
@@ -97,6 +102,6 @@ $overdue = Doc::query()
     ->get();
 
 foreach ($overdue as $doc) {
-    $doc->updateStatus();
+    app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->detectOverdue((string) $doc->getKey());
 }
 ```

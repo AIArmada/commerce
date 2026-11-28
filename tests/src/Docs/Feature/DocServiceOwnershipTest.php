@@ -44,7 +44,7 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
         ],
         $ownerA,
     );
-    OwnerContext::withOwner($ownerA, static fn (): mixed => $doc->markAsSent());
+    OwnerContext::withOwner($ownerA, static fn (): mixed => app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]));
 
     expect($doc->owner_type)->toBe($ownerA->getMorphClass())
         ->and((string) $doc->owner_id)->toBe((string) $ownerA->getKey());
@@ -67,7 +67,7 @@ test('global document visibility does not grant tenant write access', function (
             'total_minor' => 100,
             'currency' => 'MYR',
         ]);
-        $doc->markAsSent();
+        app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
 
         return $doc;
     });

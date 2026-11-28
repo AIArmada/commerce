@@ -56,9 +56,9 @@ Use `DocService::create()` with `DocData::from([...])`.
 ### Update or transition status
 
 - `app(DocService::class)->updateStatus($doc, $statusClass, $notes)`
-- `$doc->markAsSent()`
-- `$doc->markAsPaid()`
-- `$doc->cancel()`
+- `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markSent([(string) $doc->getKey()])`
+- `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markPaid((string) $doc->getKey())`
+- `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->cancel((string) $doc->getKey())`
 
 ### Generate or locate PDFs
 

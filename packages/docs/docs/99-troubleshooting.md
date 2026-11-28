@@ -185,14 +185,14 @@ DocTemplate::create([
 
 ### Status Not Updating
 
-**Symptom:** `markAsPaid()` or similar methods have no effect.
+**Symptom:** `DocumentLifecycle::markPaid()` or similar methods have no effect.
 
 **Solutions:**
 
 1. **Check current status**
    Some transitions are blocked:
    ```php
-   $doc->cancel(); // Does nothing if already PAID
+   app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->cancel((string) $doc->getKey()); // Does nothing if already PAID
    ```
 
 2. **Use service method for full tracking**
@@ -206,9 +206,9 @@ DocTemplate::create([
 
 **Solutions:**
 
-1. **Use model methods** which auto-create history:
+1. **Use lifecycle actions** which auto-create history:
    ```php
-   $doc->markAsPaid();  // Creates history entry
+   app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markPaid((string) $doc->getKey());  // Creates history entry
    ```
 
 2. **Check owner columns** when owner mode is enabled, history needs owner data

@@ -8,6 +8,7 @@ use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Support\Facades\Storage;
@@ -100,4 +101,16 @@ it('serializes status changes and records a single history for a repeated transi
         ->and($doc->sent_at)->not->toBeNull()
         ->and($doc->statusHistories()->count())->toBe(1)
         ->and($doc->statusHistories()->firstOrFail()->notes)->toBe('Sent once');
+});
+
+it('does not mark a refunded document as overdue or cancelled', function (): void {
+    $doc = Doc::factory()->create(['status' => Refunded::class, 'due_date' => now()->subDays(2)]);
+    $id = (string) $doc->getKey();
+    $lifecycle = app(DocumentLifecycle::class);
+
+    expect($doc->isOverdue())->toBeFalse()
+        ->and($lifecycle->detectOverdue($id))->toBeFalse()
+        ->and($lifecycle->cancel($id))->toBeFalse()
+        ->and($doc->refresh()->status->equals(Refunded::class))->toBeTrue()
+        ->and($doc->statusHistories()->count())->toBe(0);
 });
