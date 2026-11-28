@@ -7,7 +7,6 @@ namespace AIArmada\Events\Features\Commerce\Queries;
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
-use Illuminate\Database\Eloquent\Model;
 
 final class ResolveEventScopeSeatMapQuery
 {
@@ -45,6 +44,7 @@ final class ResolveEventScopeSeatMapQuery
     {
         $sessionClass = ModelResolver::sessionClass();
         $occurrenceClass = ModelResolver::occurrenceClass();
+        $eventClass = ModelResolver::eventClass();
         $ticketable = $pass->ticketable;
 
         $sessionId = $pass->session_id ?? ($ticketable instanceof $sessionClass ? $ticketable->getKey() : null);
@@ -59,7 +59,7 @@ final class ResolveEventScopeSeatMapQuery
             return ['type' => 'occurrence', 'id' => (string) $occurrenceId];
         }
 
-        if ($ticketable instanceof Model) {
+        if ($ticketable instanceof $eventClass) {
             return ['type' => 'event', 'id' => (string) $ticketable->getKey()];
         }
 
