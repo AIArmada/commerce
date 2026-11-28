@@ -11,6 +11,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
@@ -230,10 +231,9 @@ it('covers the filament-cashier public surface', function (): void {
         });
     }
 
-    /** @var class-string<Model> $userModel */
-    $userModel = config('auth.providers.users.model');
+    $userModel = ChipBillableUser::class;
+    config()->set('cashier.models.billable', $userModel);
 
-    /** @var Model $dbUser */
     $dbUser = $userModel::query()->create([
         'name' => 'Test User',
         'email' => 'cashier-test@example.com',
