@@ -25,6 +25,7 @@ use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
 use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -234,6 +235,14 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
             'refund',
             'payment:' . $paymentId,
             function () use ($paymentId, $amount): StripePayment {
+                if ($this->cashierOwnerScopingEnabled()) {
+                    $payment = $this->client()->paymentIntents->retrieve($paymentId);
+
+                    if (! $this->stripeCustomerBelongsToCurrentOwner($payment->customer ?? null)) {
+                        throw new AuthorizationException('Payment is not accessible in the current owner scope.');
+                    }
+                }
+
                 $parameters = ['payment_intent' => $paymentId];
 
                 if ($amount !== null) {

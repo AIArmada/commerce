@@ -186,7 +186,14 @@ class ChipGateway extends AbstractGateway
             $this->name(),
             'refund',
             'payment:' . $paymentId,
-            fn (): mixed => $this->client()->refundPurchase($paymentId, $amount),
+            function () use ($paymentId, $amount): mixed {
+                if ($this->cashierOwnerScopingEnabled()
+                    && ! $this->purchaseBelongsToCurrentBillable($this->client()->getPurchase($paymentId))) {
+                    throw new AuthorizationException('Purchase is not accessible in the current owner scope.');
+                }
+
+                return $this->client()->refundPurchase($paymentId, $amount);
+            },
         );
 
         if ($purchase instanceof PaymentData) {
