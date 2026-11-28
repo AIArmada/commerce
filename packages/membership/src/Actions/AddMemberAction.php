@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
 use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonImmutable;
@@ -49,7 +50,7 @@ final class AddMemberAction
         });
 
         if (app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
+            app(MembershipHook::class)->onMemberAdded(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role->value);
         }
     }
 
@@ -78,7 +79,7 @@ final class AddMemberAction
         try {
             DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $role, $subject, $user): void {
                 if ($subject instanceof MembershipMutationGuard) {
-                    $subject->assertMemberCanBeAdded($user, $role, $existingMember);
+                    $subject->assertMemberCanBeAdded(MembershipIdentityMapper::fromModel($user), $role->value, MemberRole::fromSpatieRoleName((string) $existingRole)?->value);
                 }
 
                 $pivotData = [
@@ -116,7 +117,7 @@ final class AddMemberAction
         }
 
         if ($notifyAdded && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
+            app(MembershipHook::class)->onMemberAdded(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role->value);
         }
     }
 

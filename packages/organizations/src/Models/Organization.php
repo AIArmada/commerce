@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Organizations\Models;
 
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
+use AIArmada\Membership\Data\MembershipIdentity;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Traits\HasMembers;
 use AIArmada\Organizations\Enums\OrganizationStatus;
@@ -93,7 +94,7 @@ class Organization extends Model implements MembershipMutationGuard
         return $this->visibility === OrganizationVisibility::Private;
     }
 
-    public function assertMemberCanBeAdded(Model $member, MemberRole $role, ?Model $existingMember): void
+    public function assertMemberCanBeAdded(MembershipIdentity $member, string $role, ?string $existingRole): void
     {
         if ($this->exists) {
             $this->newQuery()
@@ -102,37 +103,31 @@ class Organization extends Model implements MembershipMutationGuard
                 ->firstOrFail();
         }
 
-        $existingRole = $this->memberRole($existingMember);
-
-        if ($existingRole === MemberRole::Owner && $role !== MemberRole::Owner) {
+        if ($existingRole === MemberRole::Owner->value && $role !== MemberRole::Owner->value) {
             throw new AuthorizationException('Transfer organization ownership before changing the owner role.');
         }
 
-        if ($role === MemberRole::Owner
-            && $existingRole !== MemberRole::Owner
+        if ($role === MemberRole::Owner->value
+            && $existingRole !== MemberRole::Owner->value
             && $this->ownerMember()->lockForUpdate()->exists()) {
             throw new AuthorizationException('Transfer organization ownership instead of assigning a second owner.');
         }
     }
 
-    public function assertMemberCanBeRemoved(Model $member): void
+    public function assertMemberCanBeRemoved(MembershipIdentity $member, ?string $currentRole): void
     {
-        $role = $this->memberRole($member);
-
-        if ($role === MemberRole::Owner) {
+        if ($currentRole === MemberRole::Owner->value) {
             throw new AuthorizationException('Transfer organization ownership before removing the owner.');
         }
     }
 
-    public function assertMemberRoleCanChange(Model $member, MemberRole $role): void
+    public function assertMemberRoleCanChange(MembershipIdentity $member, string $role, ?string $currentRole): void
     {
-        $currentRole = $this->memberRole($member);
-
-        if ($currentRole === MemberRole::Owner && $role !== MemberRole::Owner) {
+        if ($currentRole === MemberRole::Owner->value && $role !== MemberRole::Owner->value) {
             throw new AuthorizationException('Transfer organization ownership before changing the owner role.');
         }
 
-        if ($role === MemberRole::Owner && $currentRole !== MemberRole::Owner) {
+        if ($role === MemberRole::Owner->value && $currentRole !== MemberRole::Owner->value) {
             throw new AuthorizationException('Use the ownership transfer workflow to assign an owner.');
         }
     }
@@ -161,17 +156,6 @@ class Organization extends Model implements MembershipMutationGuard
             OrganizationStatus::Archived => $this->archived_at = $at,
             OrganizationStatus::Active => null,
         };
-    }
-
-    private function memberRole(?Model $member): ?MemberRole
-    {
-        $pivot = $member?->getRelationValue('pivot');
-
-        if (! $pivot instanceof Model) {
-            return null;
-        }
-
-        return MemberRole::fromSpatieRoleName((string) $pivot->getAttribute('role'));
     }
 
     protected function casts(): array

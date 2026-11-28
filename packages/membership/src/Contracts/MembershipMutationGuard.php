@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Contracts;
 
-use AIArmada\Membership\Enums\MemberRole;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Membership\Data\MembershipIdentity;
 
 /**
  * Allows a membership subject to enforce invariants around membership writes.
@@ -15,9 +14,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 interface MembershipMutationGuard
 {
-    public function assertMemberCanBeAdded(Model $member, MemberRole $role, ?Model $existingMember): void;
+    public function assertMemberCanBeAdded(MembershipIdentity $member, string $role, ?string $existingRole): void;
 
-    public function assertMemberCanBeRemoved(Model $member): void;
+    public function assertMemberCanBeRemoved(MembershipIdentity $member, ?string $currentRole): void;
 
-    public function assertMemberRoleCanChange(Model $member, MemberRole $role): void;
+    public function assertMemberRoleCanChange(MembershipIdentity $member, string $role, ?string $currentRole): void;
 }

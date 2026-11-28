@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
 use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +41,7 @@ final class ChangeMemberRoleAction
             }
 
             if ($subject instanceof MembershipMutationGuard) {
-                $subject->assertMemberRoleCanChange($freshMember, $role);
+                $subject->assertMemberRoleCanChange(MembershipIdentityMapper::fromModel($freshMember), $role->value, MemberRole::fromSpatieRoleName((string) $this->members->role($freshMember))?->value);
             }
 
             $oldRole = MemberRole::fromSpatieRoleName((string) $this->members->role($freshMember));
@@ -50,10 +51,10 @@ final class ChangeMemberRoleAction
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {
             app(MembershipHook::class)->onMemberRoleChanged(
-                $subject,
-                $user,
-                $oldRole,
-                $role,
+                MembershipIdentityMapper::fromModel($subject),
+                MembershipIdentityMapper::fromModel($user),
+                $oldRole->value,
+                $role->value,
             );
         }
     }

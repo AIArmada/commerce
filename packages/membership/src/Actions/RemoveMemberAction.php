@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Queries\MembershipIdentityMapper;
 use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +41,7 @@ final class RemoveMemberAction
             $role = MemberRole::fromSpatieRoleName((string) $this->members->role($member));
 
             if ($subject instanceof MembershipMutationGuard) {
-                $subject->assertMemberCanBeRemoved($member);
+                $subject->assertMemberCanBeRemoved(MembershipIdentityMapper::fromModel($member), $role?->value);
             }
 
             $this->members->relation($subject)->detach($user->getKey());
@@ -53,7 +54,7 @@ final class RemoveMemberAction
         });
 
         if ($removed && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberRemoved($subject, $user, $role);
+            app(MembershipHook::class)->onMemberRemoved(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role?->value);
         }
     }
 }

@@ -15,6 +15,7 @@ use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Contracts\MembershipHook;
+use AIArmada\Membership\Data\MembershipIdentity;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
@@ -365,18 +366,18 @@ final class RecordingMembershipHook implements MembershipHook
     /** @var list<array{string, string, string, string}> */
     public array $roleChanged = [];
 
-    public function onMemberAdded(Model $subject, Model $user, MemberRole $role): void
+    public function onMemberAdded(MembershipIdentity $subject, MembershipIdentity $user, string $role): void
     {
-        $this->added[] = [(string) $subject->getKey(), (string) $user->getKey(), $role->value];
+        $this->added[] = [$subject->id, $user->id, $role];
     }
 
-    public function onMemberRemoved(Model $subject, Model $user, ?MemberRole $previousRole): void
+    public function onMemberRemoved(MembershipIdentity $subject, MembershipIdentity $user, ?string $previousRole): void
     {
         //
     }
 
-    public function onMemberRoleChanged(Model $subject, Model $user, MemberRole $oldRole, MemberRole $newRole): void
+    public function onMemberRoleChanged(MembershipIdentity $subject, MembershipIdentity $user, string $oldRole, string $newRole): void
     {
-        $this->roleChanged[] = [(string) $subject->getKey(), (string) $user->getKey(), $oldRole->value, $newRole->value];
+        $this->roleChanged[] = [$subject->id, $user->id, $oldRole, $newRole];
     }
 }

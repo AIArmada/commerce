@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Contracts;
 
-use AIArmada\Membership\Enums\MemberRole;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Membership\Data\MembershipIdentity;
 
 interface MembershipHook
 {
-    public function onMemberAdded(Model $subject, Model $user, MemberRole $role): void;
+    public function onMemberAdded(MembershipIdentity $subject, MembershipIdentity $user, string $role): void;
 
-    public function onMemberRemoved(Model $subject, Model $user, ?MemberRole $previousRole): void;
+    public function onMemberRemoved(MembershipIdentity $subject, MembershipIdentity $user, ?string $previousRole): void;
 
-    public function onMemberRoleChanged(Model $subject, Model $user, MemberRole $oldRole, MemberRole $newRole): void;
+    public function onMemberRoleChanged(MembershipIdentity $subject, MembershipIdentity $user, string $oldRole, string $newRole): void;
 }
