@@ -187,13 +187,17 @@ class TaxZone extends Model implements Auditable
             return false;
         }
 
-        // Check state match (if states are specified)
-        if (! empty($this->states) && $state && ! in_array($state, $this->states, true)) {
+        // A restricted zone requires a matching state.
+        if (! empty($this->states) && ($state === null || mb_trim($state) === '' || ! in_array($state, $this->states, true))) {
             return false;
         }
 
         // Check postcode match (if postcodes are specified)
-        if (! empty($this->postcodes) && $postcode) {
+        if (! empty($this->postcodes)) {
+            if ($postcode === null || mb_trim($postcode) === '') {
+                return false;
+            }
+
             $matches = false;
             foreach ($this->postcodes as $pattern) {
                 if ($this->matchesPostcode($postcode, $pattern)) {
