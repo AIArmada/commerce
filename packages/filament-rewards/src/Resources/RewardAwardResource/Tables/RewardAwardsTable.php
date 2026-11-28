@@ -15,7 +15,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPayee;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -187,12 +187,9 @@ class RewardAwardsTable
                     ->action(function (RewardAward $record, array $data, TransitionRewardAwardAction $transition): void {
                         $staff = self::authorize($record, 'fulfill');
 
-                        $confirmed = RewardPayoutRequest::query()
-                            ->where('award_id', $record->getKey())
-                            ->where('status', RewardPayoutRequestStatus::Confirmed->value)
-                            ->first();
+                        $confirmed = app(RewardPayoutQueryApi::class)->forAward((string) $record->getKey());
 
-                        if (! $confirmed instanceof RewardPayoutRequest) {
+                        if ($confirmed === null || $confirmed->status !== RewardPayoutRequestStatus::Confirmed) {
                             throw ValidationException::withMessages(['reason' => 'No confirmed payout exists for this award.']);
                         }
 
@@ -204,7 +201,7 @@ class RewardAwardsTable
                                 (string) $staff->getKey(),
                                 RewardAdminPresenter::staffRole(),
                                 (string) $data['reason'],
-                                ['payout_request_id' => (string) $confirmed->getKey()],
+                                ['payout_request_id' => $confirmed->id],
                             );
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);

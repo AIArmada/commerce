@@ -27,6 +27,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardAwardEntry;
@@ -35,7 +36,6 @@ use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
@@ -1323,12 +1323,9 @@ final readonly class TransitionRewardAwardAction
      */
     private function fulfillCash(RewardAward $award, CarbonImmutable $decided): void
     {
-        $request = RewardPayoutRequest::query()
-            ->where('award_id', $award->getKey())
-            ->lockForUpdate()
-            ->first();
+        $request = app(RewardPayoutQueryApi::class)->forAward((string) $award->getKey(), lock: true);
 
-        if (! $request instanceof RewardPayoutRequest) {
+        if ($request === null) {
             throw new InvalidArgumentException('Refused: cash fulfillment requires a confirmed payout request.');
         }
 
@@ -1339,7 +1336,7 @@ final readonly class TransitionRewardAwardAction
             );
         }
 
-        if ($request->confirmed_at === null || $request->external_payout_id === null) {
+        if (! $request->hasConfirmation) {
             throw new InvalidArgumentException(
                 'Refused: cash fulfillment requires a confirmed payout timestamp and a payout operation.'
             );

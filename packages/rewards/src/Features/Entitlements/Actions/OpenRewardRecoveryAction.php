@@ -6,9 +6,9 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -38,7 +38,7 @@ final readonly class OpenRewardRecoveryAction
     public function handle(
         RewardAward | string $award,
         RewardRecoveryKind | string $kind,
-        RewardPayoutRequest | string | null $payoutRequest,
+        ?string $payoutRequest,
         RewardBenefitGrant | string | null $grant,
         ?int $amountMinor,
         ?string $currency,
@@ -69,7 +69,7 @@ final readonly class OpenRewardRecoveryAction
         $hasCash = $amountMinor !== null || $currency !== null;
         $hasPoints = $points !== null || $unit !== null;
 
-        $payoutIdEarly = $payoutRequest instanceof RewardPayoutRequest ? (string) $payoutRequest->getKey() : $payoutRequest;
+        $payoutIdEarly = $payoutRequest;
         $grantIdEarly = $grant instanceof RewardBenefitGrant ? (string) $grant->getKey() : $grant;
         $benefitUnit = ! $hasCash && ! $hasPoints && $grantIdEarly !== null && $kindEnum === RewardRecoveryKind::Dispute;
 
@@ -140,9 +140,9 @@ final readonly class OpenRewardRecoveryAction
             }
 
             if ($payoutId !== null) {
-                $payout = RewardPayoutRequest::query()->whereKey($payoutId)->lockForUpdate()->first();
+                $payout = app(RewardPayoutQueryApi::class)->forAward($awardId, lock: true);
 
-                if (! $payout instanceof RewardPayoutRequest || (string) $payout->award_id !== $awardId) {
+                if ($payout === null || $payout->id !== $payoutId) {
                     throw new InvalidArgumentException('Recovery payout source must belong to the award.');
                 }
             }

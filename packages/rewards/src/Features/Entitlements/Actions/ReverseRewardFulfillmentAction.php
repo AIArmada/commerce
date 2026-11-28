@@ -9,9 +9,9 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
+use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
-use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -128,12 +128,9 @@ final readonly class ReverseRewardFulfillmentAction
         string $reason,
         CarbonImmutable $decided,
     ): array {
-        $request = RewardPayoutRequest::query()
-            ->where('award_id', $award->getKey())
-            ->lockForUpdate()
-            ->first();
+        $request = app(RewardPayoutQueryApi::class)->forAward((string) $award->getKey(), lock: true);
 
-        if (! $request instanceof RewardPayoutRequest) {
+        if ($request === null) {
             throw new InvalidArgumentException('Cash reversal requires the payout request; refusing blind reversal.');
         }
 
@@ -158,10 +155,10 @@ final readonly class ReverseRewardFulfillmentAction
         $recovery = OpenRewardRecoveryAction::run(
             $award,
             RewardRecoveryKind::Receivable,
-            $request,
+            $request->id,
             null,
-            (int) $request->amount_minor,
-            (string) $request->currency,
+            $request->amountMinor,
+            $request->currency,
             null,
             null,
             $actorType,
