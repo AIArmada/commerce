@@ -90,7 +90,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Model> $updates
  * @property-read Collection<int, SeatMap> $seatMaps
  */
-final class EventSession extends Model implements HasMedia
+class EventSession extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;

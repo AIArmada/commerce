@@ -92,7 +92,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read EventOccurrence|null $rescheduledFromOccurrence
  * @property-read EventOccurrence|null $rescheduledToOccurrence
  */
-final class EventOccurrence extends Model implements HasMedia
+class EventOccurrence extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;

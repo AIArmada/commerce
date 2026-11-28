@@ -16,6 +16,10 @@ use AIArmada\FilamentEvents\Actions\Exporter\EventSessionExporter;
 
 final class ExportConfiguredEvent extends Event {}
 
+final class ExportConfiguredOccurrence extends EventOccurrence {}
+
+final class ExportConfiguredSession extends EventSession {}
+
 final class ExportConfiguredRegistration extends EventRegistration {}
 
 final class ExportConfiguredAttendance extends EventAttendance {}
@@ -34,17 +38,11 @@ it('resolves configured models for event exports without caching the binding', f
     expect($exporter::getModel())->toBe($default);
 })->with([
     'event' => ['event', EventExporter::class, Event::class, ExportConfiguredEvent::class],
+    'occurrence' => ['occurrence', EventOccurrenceExporter::class, EventOccurrence::class, ExportConfiguredOccurrence::class],
+    'session' => ['session', EventSessionExporter::class, EventSession::class, ExportConfiguredSession::class],
     'registration' => ['registration', EventRegistrationExporter::class, EventRegistration::class, ExportConfiguredRegistration::class],
     'attendance' => ['attendance', EventAttendanceExporter::class, EventAttendance::class, ExportConfiguredAttendance::class],
 ]);
-
-it('resolves the configured schedule models for exports', function (): void {
-    config()->set('events.models.occurrence', EventOccurrence::class);
-    config()->set('events.models.session', EventSession::class);
-
-    expect(EventOccurrenceExporter::getModel())->toBe(EventOccurrence::class)
-        ->and(EventSessionExporter::getModel())->toBe(EventSession::class);
-});
 
 it('rejects incompatible catalog model bindings before reads or writes', function (string $key, string $wrongModel): void {
     config()->set('events.models.' . $key, $wrongModel);
