@@ -19,8 +19,8 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Support\PackageUnit;
-use AIArmada\Orders\Support\RefundAllocationValidator;
-use AIArmada\Orders\Support\RefundAllocator;
+use AIArmada\Orders\Features\Payments\Support\RefundAllocationValidator;
+use AIArmada\Orders\Features\Payments\Queries\RefundAllocator;
 use Carbon\CarbonImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -141,12 +141,13 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             ]);
             $refund->refunded_at = $now;
             $refund->save();
-            $order->unsetRelation('refunds');
-            // The created-refund event already synced refunded_total.
-            $order->refresh();
-
             $created[] = $refund;
         }
+
+        // The created-refund events have synced the totals. Refresh once
+        // after all allocations, not once per payment.
+        $order->unsetRelation('refunds');
+        $order->refresh();
 
         // A payment reaches its own terminal state as soon as its whole
         // amount is returned, independent of the order-level remainder.
@@ -335,7 +336,7 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
             // Only money actually received is refundable: the shared
             // allocator never falls back to the order total, so an order that
             // was never paid reserves nothing.
-            $remaining = RefundAllocator::remainingForOrder($lockedOrder);
+            $remaining = $lockedOrder->getRemainingRefundable();
 
             if ($remaining <= 0) {
                 return [];

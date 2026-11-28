@@ -121,8 +121,8 @@ actions (`RegisterOrderRefund`) pick the payment for you. A refund's
 **Cause**: The amount exceeds the money actually received on the order (or
 on the specified payment).
 
-**Solution**: `RefundAllocator::remainingForOrder()` is `paid_total` minus
-settled minus pending refunds; `RefundAllocator::remainingForPayment()` is the
+**Solution**: `Order::getRemainingRefundable()` is `paid_total` minus
+settled minus pending refunds; the Payments feature's per-payment allocation capacity is the
 payment's amount minus refunds already attributed to it, and only
 Completed/Refunded payments have capacity at all: attributing a refund to a
 payment that never received money (Pending or Failed) is rejected with

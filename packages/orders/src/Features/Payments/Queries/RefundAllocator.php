@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Support;
+namespace AIArmada\Orders\Features\Payments\Queries;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
-use AIArmada\Orders\Models\OrderRefund;
 use InvalidArgumentException;
 
 /**
@@ -23,46 +22,6 @@ use InvalidArgumentException;
  */
 final class RefundAllocator
 {
-    /**
-     * A payment's own remaining refundable amount: its amount minus every
-     * pending/completed refund attributed to it. Failed refunds reserve
-     * nothing. Only payments that actually received money (Completed or
-     * Refunded) have capacity.
-     */
-    public static function remainingForPayment(OrderPayment $payment): int
-    {
-        if (! in_array($payment->status, [PaymentStatus::Completed, PaymentStatus::Refunded], true)) {
-            return 0;
-        }
-
-        $order = $payment->order;
-
-        if ($order instanceof Order
-            && MoneyFormatter::normalizeCurrency($payment->currency) !== MoneyFormatter::normalizeCurrency($order->currency)) {
-            return 0;
-        }
-
-        $reserved = (int) OrderRefund::query()
-            ->where('payment_id', $payment->getKey())
-            ->whereIn('status', [RefundStatus::Pending->value, RefundStatus::Completed->value])
-            ->sum('amount');
-
-        return max(0, (int) $payment->amount - $reserved);
-    }
-
-    /**
-     * The order's remaining refundable amount: total received money minus
-     * settled and pending refunds. Never falls back to the order total, so an
-     * order that never received money has no refundable cash.
-     */
-    public static function remainingForOrder(Order $order): int
-    {
-        return max(
-            0,
-            $order->getTotalPaid() - $order->getTotalRefunded() - $order->getTotalPendingRefunded(),
-        );
-    }
-
     /**
      * Split a refund amount across the payments that received money.
      *
@@ -82,7 +41,7 @@ final class RefundAllocator
             throw new InvalidArgumentException('Refund amount must be greater than zero.');
         }
 
-        $remaining = self::remainingForOrder($order);
+        $remaining = $order->getRemainingRefundable();
 
         if ($amount > $remaining) {
             throw new InvalidArgumentException(sprintf(
@@ -115,7 +74,7 @@ final class RefundAllocator
                 throw new InvalidArgumentException('The specified payment currency does not match the order currency.');
             }
 
-            $paymentRemaining = self::remainingForPayment($resolved);
+            $paymentRemaining = self::remainingByPayment($order, [$resolved])[(string) $resolved->getKey()];
 
             if ($amount > $paymentRemaining) {
                 throw new InvalidArgumentException(sprintf(

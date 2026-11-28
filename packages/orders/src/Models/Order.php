@@ -17,7 +17,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Contracts\OrderPaymentRetention;
 use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
-use AIArmada\Orders\Support\RefundAllocator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -388,7 +387,7 @@ class Order extends Model implements Auditable
 
     public function getRemainingRefundable(): int
     {
-        return RefundAllocator::remainingForOrder($this);
+        return max(0, max(0, $this->getTotalPaid() - $this->getTotalRefunded()) - $this->getTotalPendingRefunded());
     }
 
     public function getBalanceDue(): int
