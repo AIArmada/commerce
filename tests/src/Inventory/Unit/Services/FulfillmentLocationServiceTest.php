@@ -29,7 +29,7 @@ it('aggregates duplicate order item demand and prefers a fully stocked location'
     $lines = new Collection;
 
     foreach ([3, 3] as $quantity) {
-        $line = new OrderItem(['quantity' => $quantity]);
+        $line = new OrderItem(['name' => 'Fulfillment SKU', 'quantity' => $quantity, 'metadata' => null]);
         $line->setRelation('purchasable', $item);
         $lines->push($line);
     }
@@ -64,7 +64,7 @@ it('excludes inactive locations from the order availability summary and plan', f
     }
 
     $order = new Order;
-    $line = new OrderItem(['quantity' => 5]);
+    $line = new OrderItem(['name' => 'Active fulfillment SKU', 'quantity' => 5, 'metadata' => null]);
     $line->setRelation('purchasable', $item);
     $order->setRelation('items', new Collection([$line]));
 
@@ -80,4 +80,53 @@ it('excludes inactive locations from the order availability summary and plan', f
         ->and($plan)->toHaveCount(1)
         ->and($plan->first()['location']->id)->toBe($active->id)
         ->and($plan->first()['items'][0]['quantity'])->toBe(2);
+});
+
+it('uses frozen composite component demand and combines standalone quantities', function (): void {
+    $item = InventoryItem::create(['name' => 'Component']);
+    $warehouse = InventoryLocation::factory()->create(['is_active' => true]);
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $warehouse->id,
+        'quantity_on_hand' => 6,
+        'quantity_reserved' => 0,
+    ]);
+
+    $component = [
+        'product_id' => null,
+        'buyable_type' => $item->getMorphClass(),
+        'buyable_id' => (string) $item->getKey(),
+        'variant_id' => null,
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => (string) $item->getKey(),
+        'quantity' => 2,
+        'sku' => 'COMPONENT',
+        'name' => 'Component',
+        'weight' => null,
+        'dimensions' => null,
+        'requires_shipping' => true,
+        'tracks_inventory' => true,
+    ];
+
+    $package = new OrderItem([
+        'name' => 'Package',
+        'quantity' => 3,
+        'metadata' => ['components' => [$component]],
+    ]);
+    $package->setRelation('purchasable', null);
+    $standalone = new OrderItem(['name' => 'Component', 'quantity' => 1, 'metadata' => null]);
+    $standalone->setRelation('purchasable', $item);
+    $order = new Order;
+    $order->setRelation('items', new Collection([$package, $standalone]));
+
+    $service = app(FulfillmentLocationService::class);
+    $summary = $service->getAvailabilitySummary($order);
+    $key = $item->getMorphClass() . ':' . $item->getKey();
+
+    expect($summary['total_required'])->toBe(7)
+        ->and($summary['by_item'][$key]['shortage'])->toBe(1)
+        ->and($summary['fully_available'])->toBeFalse()
+        ->and($service->canFulfillFromSingleLocation($order))->toBeFalse()
+        ->and($service->getFulfillmentPlan($order)->first()['items'][0]['quantity'])->toBe(6);
 });

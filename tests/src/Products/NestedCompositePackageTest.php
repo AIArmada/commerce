@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\CompositeComponents;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Products\Actions\CreateCompositeProduct;

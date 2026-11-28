@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Database\Eloquent\Builder;
@@ -103,6 +104,7 @@ final class FulfillmentLocationService
         $locations = $this->getActiveLocations();
         $plan = new Collection;
         $availability = $this->getAvailabilityByLocation($itemRequirements);
+
         foreach ($locations as $location) {
             if ($this->locationCanFulfillAll($location, $itemRequirements, $availability)) {
                 $locations = new Collection([$location]);
@@ -208,31 +210,14 @@ final class FulfillmentLocationService
      */
     private function getItemRequirements(Order $order): Collection
     {
-        /** @var Collection<int, array{model: Model, quantity: int, key: string}> $requirements */
-        $requirements = $order->items
-            ->filter(fn ($item) => $item->purchasable instanceof Model)
-            ->filter(fn ($item) => $this->tracksInventory($item->purchasable))
-            ->map(function ($item): array {
-                /** @var Model $purchasable */
-                $purchasable = $item->purchasable;
+        $order->loadMissing('items.purchasable');
 
-                return [
-                    'model' => $purchasable,
-                    'quantity' => (int) $item->quantity,
-                    'key' => $purchasable->getMorphClass() . ':' . (string) $purchasable->getKey(),
-                ];
-            });
-
-        return $requirements->groupBy('key')->map(static function (Collection $items): array {
-            /** @var array{model: Model, quantity: int, key: string} $first */
-            $first = $items->firstOrFail();
-
-            return [
-                'model' => $first['model'],
-                'quantity' => (int) $items->sum('quantity'),
-                'key' => $first['key'],
-            ];
-        })->values();
+        return collect(InventoryDemandResolver::forOrder($order->items))
+            ->map(static fn (array $entry, string $key): array => [
+                'model' => $entry['model'],
+                'quantity' => $entry['quantity'],
+                'key' => $key,
+            ])->values();
     }
 
     /**
@@ -328,15 +313,4 @@ final class FulfillmentLocationService
         return $availability;
     }
 
-    /**
-     * Check if a model tracks inventory.
-     */
-    private function tracksInventory(Model $model): bool
-    {
-        if (method_exists($model, 'tracksInventory')) {
-            return $model->tracksInventory();
-        }
-
-        return true;
-    }
 }

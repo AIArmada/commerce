@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

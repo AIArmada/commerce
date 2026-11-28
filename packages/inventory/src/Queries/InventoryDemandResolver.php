@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Features\Reservations\Queries;
+namespace AIArmada\Inventory\Queries;
 
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -154,6 +155,10 @@ final class InventoryDemandResolver
 
             $quantity = $component['quantity'] * $packageQuantity;
 
+            if (! is_int($quantity)) {
+                throw new InvalidArgumentException('Composite inventory demand exceeds the supported quantity.');
+            }
+
             self::addDemand($demand, $model, $quantity, $sourceId, $sourceName);
         }
     }
@@ -184,6 +189,10 @@ final class InventoryDemandResolver
                 'quantity' => 0,
                 'sources' => [],
             ];
+        }
+
+        if ($quantity > PHP_INT_MAX - $demand[$key]['quantity']) {
+            throw new InvalidArgumentException('Aggregate inventory demand exceeds the supported quantity.');
         }
 
         $demand[$key]['quantity'] += $quantity;

@@ -14,8 +14,8 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\InventoryValidator
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockOnCheckout;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-use AIArmada\Inventory\Features\Reservations\Queries\CompositeComponents;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 
