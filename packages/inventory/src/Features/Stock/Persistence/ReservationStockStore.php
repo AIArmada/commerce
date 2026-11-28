@@ -16,10 +16,10 @@ use InvalidArgumentException;
 
 final readonly class ReservationStockStore
 {
-    public function reserve(InventoryLevel $level, int $quantity): void
+    public function reserve(string $levelId, int $quantity): void
     {
-        DB::transaction(function () use ($level, $quantity): void {
-            $record = $this->lock($level);
+        DB::transaction(function () use ($levelId, $quantity): void {
+            $record = $this->lock($levelId);
 
             if ($quantity <= 0 || $record->available < $quantity) {
                 throw new InvalidArgumentException('Reservation quantity exceeds available stock.');
@@ -32,7 +32,7 @@ final readonly class ReservationStockStore
     public function release(InventoryLevel $level, int $quantity): void
     {
         DB::transaction(function () use ($level, $quantity): void {
-            $record = $this->lock($level);
+            $record = $this->lock((string) $level->getKey());
 
             if ($quantity <= 0 || $record->quantity_reserved < $quantity) {
                 throw new InvalidArgumentException('Release quantity exceeds reserved stock.');
@@ -45,7 +45,7 @@ final readonly class ReservationStockStore
     public function commit(InventoryLevel $level, int $quantity, ?string $orderId, string $note, ?string $batchId = null): InventoryMovement
     {
         return DB::transaction(function () use ($level, $quantity, $orderId, $note, $batchId): InventoryMovement {
-            $record = $this->lock($level);
+            $record = $this->lock((string) $level->getKey());
 
             if ($quantity <= 0 || $record->quantity_reserved < $quantity || $record->quantity_on_hand < $quantity) {
                 throw new InvalidArgumentException('Commit quantity exceeds reserved or on-hand stock.');
@@ -75,10 +75,10 @@ final readonly class ReservationStockStore
         });
     }
 
-    private function lock(InventoryLevel $level): InventoryLevel
+    private function lock(string $levelId): InventoryLevel
     {
         return InventoryOwnerScope::forMutation(InventoryLevel::query())
-            ->whereKey($level->getKey())
+            ->whereKey($levelId)
             ->lockForUpdate()
             ->firstOrFail();
     }

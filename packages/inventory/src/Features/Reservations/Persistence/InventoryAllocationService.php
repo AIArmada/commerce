@@ -13,13 +13,12 @@ use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +55,7 @@ final class InventoryAllocationService
     public function __construct(
         private InventoryService $inventoryService,
         private ReservationStockStore $stock,
+        private AllocationCandidates $candidates,
     ) {}
 
     /**
@@ -114,7 +114,7 @@ final class InventoryAllocationService
             $strategy = $this->getStrategy($model);
             $allowSplit = $strategy->allowsSplit() && config('inventory.allow_split_allocation', true);
 
-            $levels = $this->getLevelsForAllocation($model, $strategy);
+            $levels = $this->candidates->locked($model->getMorphClass(), (string) $model->getKey(), $strategy);
             /** @var Collection<int, InventoryAllocation> $allocations */
             $allocations = new Collection;
             $remaining = $quantity;
@@ -125,7 +125,7 @@ final class InventoryAllocationService
                     break;
                 }
 
-                $available = $level->available;
+                $available = $level['available'];
 
                 if ($available <= 0) {
                     continue;
@@ -141,8 +141,8 @@ final class InventoryAllocationService
                 $allocation = InventoryAllocation::create([
                     'inventoryable_type' => $model->getMorphClass(),
                     'inventoryable_id' => $model->getKey(),
-                    'location_id' => $level->location_id,
-                    'level_id' => $level->id,
+                    'location_id' => $level['location_id'],
+                    'level_id' => $level['id'],
                     'cart_id' => $cartId,
                     'reservation_group_id' => $reservationGroupId,
                     'quantity' => $toAllocate,
@@ -150,7 +150,7 @@ final class InventoryAllocationService
                 ]);
 
                 // Update reserved quantity
-                $this->stock->reserve($level, $toAllocate);
+                $this->stock->reserve($level['id'], $toAllocate);
 
                 $allocations->push($allocation);
                 $remaining -= $toAllocate;
@@ -514,25 +514,45 @@ final class InventoryAllocationService
     public function validateAvailability(array $items): array
     {
         $issues = [];
-        $allAvailable = true;
+        $demand = [];
 
         foreach ($items as $item) {
             $model = $item['model'];
             $requested = $item['quantity'];
-            $available = $this->inventoryService->getTotalAvailable($model);
 
-            if ($available < $requested) {
-                $allAvailable = false;
+            if ($requested <= 0) {
+                throw new InvalidArgumentException('Quantity must be positive');
+            }
+
+            $key = $model->getMorphClass() . ':' . $model->getKey();
+
+            if (! isset($demand[$key])) {
+                $demand[$key] = ['model' => $model, 'quantity' => 0];
+            }
+
+            if ($requested > PHP_INT_MAX - $demand[$key]['quantity']) {
+                throw new InvalidArgumentException('Aggregate inventory demand exceeds the supported quantity');
+            }
+
+            $demand[$key]['quantity'] += $requested;
+        }
+
+        $totals = $this->inventoryService->getAvailabilityForMany(array_column($demand, 'model'));
+
+        foreach ($demand as $key => $item) {
+            $available = $totals[$key] ?? 0;
+
+            if ($available < $item['quantity']) {
                 $issues[] = [
-                    'model' => $model,
-                    'requested' => $requested,
+                    'model' => $item['model'],
+                    'requested' => $item['quantity'],
                     'available' => $available,
                 ];
             }
         }
 
         return [
-            'available' => $allAvailable,
+            'available' => $issues === [],
             'issues' => $issues,
         ];
     }
@@ -637,58 +657,5 @@ final class InventoryAllocationService
         $global = config('inventory.allocation_strategy', 'priority');
 
         return AllocationStrategy::from($global);
-    }
-
-    /**
-     * @return array{enabled: bool, owner: Model|null, includeGlobal: bool}
-     */
-    /**
-     * Get inventory levels ordered by allocation strategy.
-     *
-     * @return Collection<int, InventoryLevel>
-     */
-    private function getLevelsForAllocation(Model $model, AllocationStrategy $strategy): Collection
-    {
-        $query = InventoryOwnerScope::forMutation(
-            InventoryLevel::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
-                ->with('location')
-                ->lockForUpdate()
-        );
-
-        return match ($strategy) {
-            AllocationStrategy::Priority => $query
-                ->join(
-                    config('inventory.database.tables.locations', 'inventory_locations'),
-                    config('inventory.database.tables.levels', 'inventory_levels') . '.location_id',
-                    '=',
-                    config('inventory.database.tables.locations', 'inventory_locations') . '.id'
-                )
-                ->orderByDesc(config('inventory.database.tables.locations', 'inventory_locations') . '.priority')
-                ->select(config('inventory.database.tables.levels', 'inventory_levels') . '.*')
-                ->get(),
-
-            AllocationStrategy::FIFO => $query
-                ->orderBy('created_at')
-                ->get(),
-
-            AllocationStrategy::LeastStock => $query
-                // Allocate from locations with MOST available stock first to balance inventory
-                ->orderByRaw('(quantity_on_hand - quantity_reserved) DESC')
-                ->get(),
-
-            AllocationStrategy::SingleLocation => $query
-                ->join(
-                    config('inventory.database.tables.locations', 'inventory_locations'),
-                    config('inventory.database.tables.levels', 'inventory_levels') . '.location_id',
-                    '=',
-                    config('inventory.database.tables.locations', 'inventory_locations') . '.id'
-                )
-                ->orderByDesc(config('inventory.database.tables.locations', 'inventory_locations') . '.priority')
-                ->select(config('inventory.database.tables.levels', 'inventory_levels') . '.*')
-                ->get(),
-        };
     }
 }

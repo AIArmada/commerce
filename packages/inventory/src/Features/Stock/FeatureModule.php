@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock;
 
+use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;
+use AIArmada\Inventory\Features\Stock\Queries\AllocationCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Features\Stock\Queries\LocationVisibilityQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(FulfillmentLocationService::class);
+        $app->singleton(AllocationCandidates::class, AllocationCandidatesQuery::class);
         $app->singleton(LocationVisibility::class, LocationVisibilityQuery::class);
         $app->singleton(StockBalances::class, StockBalancesQuery::class);
         $app->singleton(StockHealth::class, StockHealthQuery::class);

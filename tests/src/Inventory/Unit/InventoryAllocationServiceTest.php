@@ -226,6 +226,27 @@ describe('InventoryAllocationService', function (): void {
         expect($result['issues'][0]['available'])->toBe(16);
     });
 
+    it('validates combined demand for repeated inventory identities', function (): void {
+        $result = $this->allocationService->validateAvailability([
+            ['model' => $this->item, 'quantity' => 9],
+            ['model' => $this->item, 'quantity' => 8],
+        ]);
+
+        expect($result['available'])->toBeFalse()
+            ->and($result['issues'])->toHaveCount(1)
+            ->and($result['issues'][0]['requested'])->toBe(17)
+            ->and($result['issues'][0]['available'])->toBe(16);
+    });
+
+    it('does not allocate stock at an inactive location', function (): void {
+        $this->locationA->update(['is_active' => false]);
+
+        $allocations = $this->allocationService->allocate($this->item, 6, 'active-location-only');
+
+        expect($allocations)->toHaveCount(1)
+            ->and($allocations->first()->location_id)->toBe($this->locationB->id);
+    });
+
     it('resolves every configured allocation strategy', function (): void {
         foreach (AllocationStrategy::cases() as $configuredStrategy) {
             config()->set('inventory.allocation_strategy', $configuredStrategy->value);
