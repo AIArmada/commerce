@@ -35,8 +35,8 @@ final readonly class DeliverDocReminders
                 return;
             }
 
-            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue, false);
-            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue, false);
+            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue);
+            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue);
         });
     }
 
@@ -82,9 +82,9 @@ final readonly class DeliverDocReminders
         }
     }
 
-    private function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysBeforeDue, bool $includeGlobal): void
+    private function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysBeforeDue): void
     {
-        $docs = $dueDocReminders->dueSoon($daysBeforeDue, includeGlobal: $includeGlobal);
+        $docs = $dueDocReminders->dueSoon($daysBeforeDue, includeGlobal: false);
 
         /** @var array<string, ?DocEmailTemplate> $templates */
         $templates = [];
@@ -129,9 +129,9 @@ final readonly class DeliverDocReminders
         }
     }
 
-    private function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysAfterOverdue, bool $includeGlobal): void
+    private function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysAfterOverdue): void
     {
-        $docs = $dueDocReminders->overdue($daysAfterOverdue, includeGlobal: $includeGlobal);
+        $docs = $dueDocReminders->overdue($daysAfterOverdue, includeGlobal: false);
 
         /** @var array<string, ?DocEmailTemplate> $templates */
         $templates = [];

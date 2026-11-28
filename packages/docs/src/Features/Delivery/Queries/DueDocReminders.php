@@ -28,13 +28,13 @@ final class DueDocReminders
     public function dueSoon(int $daysBeforeDue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
         $today = CarbonImmutable::today();
-        $dueDate = $today->addDays($daysBeforeDue);
+        $endExclusive = $today->addDays($daysBeforeDue)->addDay();
 
         return $this->forCurrentOwner($includeGlobal)
             ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
             ->where('due_date', '>=', $today->toDateString())
-            ->where('due_date', '<=', $dueDate->toDateString())
+            ->where('due_date', '<', $endExclusive->toDateString())
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'due_soon');
             })
@@ -50,12 +50,12 @@ final class DueDocReminders
      */
     public function overdue(int $daysAfterOverdue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
-        $overdueDate = CarbonImmutable::now()->subDays($daysAfterOverdue);
+        $endExclusive = CarbonImmutable::today()->subDays($daysAfterOverdue)->addDay();
 
         return $this->forCurrentOwner($includeGlobal)
             ->where('status', Overdue::value())
             ->whereNotNull('due_date')
-            ->where('due_date', '<=', $overdueDate->toDateString())
+            ->where('due_date', '<', $endExclusive->toDateString())
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'overdue');
             })
