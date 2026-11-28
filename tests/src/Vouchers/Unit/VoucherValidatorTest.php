@@ -425,3 +425,28 @@ test('rejects customer-limited vouchers for an unidentified guest', function ():
     expect($result->isValid)->toBeFalse()
         ->and($result->reason)->toBe('Sign in to use this voucher.');
 });
+
+test('rejects a voucher in a different currency from the live cart', function (): void {
+    Config::set('cart.money.default_currency', 'USD');
+
+    Voucher::create([
+        'code' => 'CURRENCY',
+        'name' => 'Currency restricted voucher',
+        'type' => VoucherType::Fixed->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $cart = new BaseCart(new InMemoryStorage, 'currency-validator', events: null, eventsEnabled: false);
+    $validator = app(VoucherValidator::class);
+
+    $result = $validator->validate('CURRENCY', $cart);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->reason)->toBe('Voucher currency does not match the cart currency.');
+
+    Config::set('cart.money.default_currency', 'MYR');
+
+    expect($validator->validate('CURRENCY', $cart)->isValid)->toBeTrue();
+});
