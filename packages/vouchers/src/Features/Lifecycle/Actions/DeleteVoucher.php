@@ -7,9 +7,9 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
 
 final class DeleteVoucher implements VoucherDeletion
 {

@@ -14,6 +14,7 @@ use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVou
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
@@ -22,6 +23,8 @@ use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use AIArmada\Vouchers\Traits\HasVouchers;
 use Akaunting\Money\Money;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -453,8 +456,8 @@ it('rolls back voucher batch deletion when a selected record is not writable by 
     $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-GLOBAL']));
 
     OwnerContext::withOwner($owner, function () use ($owned, $global): void {
-        expect(fn () => app(\AIArmada\Vouchers\Runtime\VoucherDeletion::class)->handleMany(new \Illuminate\Database\Eloquent\Collection([$owned, $global])))
-            ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        expect(fn () => app(VoucherDeletion::class)->handleMany(new Collection([$owned, $global])))
+            ->toThrow(AuthorizationException::class);
 
         expect(Voucher::query()->whereKey($owned->id)->exists())->toBeTrue();
     });

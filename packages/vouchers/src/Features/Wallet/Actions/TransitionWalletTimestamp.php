@@ -6,9 +6,9 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use Illuminate\Database\Eloquent\Collection;
 use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 
 final readonly class TransitionWalletTimestamp implements WalletTimestampTransition
 {

@@ -6,9 +6,9 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Runtime\WalletEntryDeletion;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
-use AIArmada\Vouchers\Runtime\WalletEntryDeletion;
 
 final readonly class DeleteWalletEntry implements WalletEntryDeletion
 {

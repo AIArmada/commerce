@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart as LiveCart;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Testing\InMemoryStorage;
@@ -105,7 +106,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     // Cart branch (Throwable)
     app()->instance(CartInstanceManager::class, new class
     {
-        public function resolveForSnapshot(\AIArmada\Cart\Data\CartSnapshotData $snapshot): object
+        public function resolveForSnapshot(CartSnapshotData $snapshot): object
         {
             throw new RuntimeException('Boom');
         }

@@ -6,9 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
 use AIArmada\Promotions\Actions\DeletePromotion;
-use Illuminate\Database\Eloquent\Collection;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 
 describe('Promotions owner scope consolidation', function (): void {
     beforeEach(function (): void {

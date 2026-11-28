@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -143,9 +144,9 @@ it('blocks global and foreign cart access even when voucher ownership is disable
     $owned = OwnerContext::withOwner($owner, fn () => Cart::query()->create($attributes));
 
     OwnerContext::withOwner($owner, function () use ($global, $foreign, $owned): void {
-        expect(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($global))->toBeFalse()
-            ->and(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($foreign))->toBeFalse()
-            ->and(\AIArmada\FilamentVouchers\Support\CartSnapshotAccess::allows($owned))->toBeTrue();
+        expect(CartSnapshotAccess::allows($global))->toBeFalse()
+            ->and(CartSnapshotAccess::allows($foreign))->toBeFalse()
+            ->and(CartSnapshotAccess::allows($owned))->toBeTrue();
 
         $manager = Mockery::mock(CartInstanceManager::class);
         $manager->shouldNotReceive('resolveForSnapshot');

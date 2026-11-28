@@ -21,7 +21,8 @@ final class CartSnapshotAccess
 
     /**
      * @template TModel of Model
-     * @param Builder<TModel> $query
+     *
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function scope(Builder $query): Builder
