@@ -9,6 +9,8 @@ use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Sent;
@@ -185,5 +187,40 @@ test('raw PDF rendering rejects a document from another owner even with a loaded
             ->toThrow(AuthorizationException::class)
             ->and(fn () => app(\AIArmada\Docs\Contracts\DocServiceInterface::class)->generatePdf((string) $doc->getKey(), save: false))
             ->toThrow(AuthorizationException::class);
+    });
+});
+
+test('automatic email templates prefer the document owner and only fall back to visible global templates', function (): void {
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $attributes = [
+        'name' => 'Invoice template',
+        'slug' => 'invoice-send',
+        'doc_type' => DocType::Invoice->value,
+        'trigger' => 'send',
+        'subject' => 'Invoice',
+        'body' => 'Body',
+        'is_active' => true,
+    ];
+
+    $global = OwnerContext::withOwner(null, fn (): DocEmailTemplate => DocEmailTemplate::query()->create($attributes));
+    OwnerContext::withOwner($other, fn (): DocEmailTemplate => DocEmailTemplate::query()->create($attributes));
+
+    OwnerContext::withOwner($owner, function () use ($attributes, $global): void {
+        $doc = Doc::factory()->create(['doc_type' => DocType::Invoice->value]);
+        $owned = DocEmailTemplate::query()->create($attributes);
+        $service = app(DocEmailService::class);
+
+        expect($service->findTemplate($doc, 'send')?->getKey())->toBe($owned->getKey());
+
+        $owned->update(['is_active' => false]);
+
+        expect($service->findTemplate($doc, 'send')?->getKey())->toBe($global->getKey());
+
+        config()->set('docs.owner.include_global', false);
+
+        expect($service->findTemplate($doc, 'send'))->toBeNull();
     });
 });

@@ -137,11 +137,16 @@ final class DocEmailService implements DocumentEmailSender
      */
     public function findTemplate(Doc $doc, string $trigger): ?DocEmailTemplate
     {
-        return $this->getTemplateQueryForDoc($doc)
+        $query = $this->getTemplateQueryForDoc($doc)
             ->where('doc_type', $doc->doc_type)
             ->where('trigger', $trigger)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
+
+        if (config('docs.owner.enabled', false)) {
+            $query->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END');
+        }
+
+        return $query->orderBy('id')->first();
     }
 
     public function resolveTemplate(Doc $doc, ?string $templateId = null, string $trigger = 'send'): ?DocEmailTemplate
