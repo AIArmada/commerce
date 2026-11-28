@@ -3,14 +3,23 @@
 declare(strict_types=1);
 
 use AIArmada\Authz\Features\Authorization\Models\Role;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppeals;
+use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
+use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
+use AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Pages\ListRewardBenefitGrants;
+use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\RewardFraudResource;
+use AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages\ListRewardFunding;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
+use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\CreateRewardProgram;
+use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ListRewardPrograms;
+use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardProgram;
+use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
@@ -346,4 +355,41 @@ it('requires both staff membership and fraud stewardship to list fraud cases', f
     Gate::define('reward-fraud-steward', static fn (): bool => false);
 
     expect(RewardFraudResource::canViewAny())->toBeFalse();
+});
+
+it('denies non-staff access to administrative resource lists even with permissive host policies', function (string $page): void {
+    $outsider = User::factory()->create();
+    Gate::before(static fn (): bool => true);
+
+    Livewire::actingAs($outsider)->test($page)->assertStatus(403);
+})->with([
+    ListRewardPrograms::class,
+    ListRewardAwards::class,
+    ListRewardAppeals::class,
+    ListRewardFunding::class,
+    ListRewardPayees::class,
+    ListRewardPayouts::class,
+    ListRewardBenefitItems::class,
+    ListRewardBenefitGrants::class,
+    ListRewardRecoveries::class,
+    ListRewardFraudCases::class,
+]);
+
+it('denies non-staff direct access to administrative record pages', function (): void {
+    $award = rewardAuthzHeldAward();
+    $appeal = OpenRewardAppealAction::run(
+        $award,
+        'user',
+        (string) $award->recipient_id,
+        'member',
+        'Please review my award.',
+        null,
+        CarbonImmutable::parse('2026-06-16T00:00:00Z'),
+    );
+    $outsider = User::factory()->create();
+    Gate::before(static fn (): bool => true);
+
+    Livewire::actingAs($outsider)->test(ViewRewardProgram::class, ['record' => $award->program_id])->assertStatus(403);
+    Livewire::actingAs($outsider)->test(ViewRewardAward::class, ['record' => $award->getKey()])->assertStatus(403);
+    Livewire::actingAs($outsider)->test(ViewRewardAppeal::class, ['record' => $appeal->getKey()])->assertStatus(403);
 });

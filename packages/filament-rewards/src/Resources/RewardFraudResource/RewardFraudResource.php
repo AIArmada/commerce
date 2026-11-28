@@ -7,17 +7,17 @@ namespace AIArmada\FilamentRewards\Resources\RewardFraudResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables\RewardFraudTable;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardFraudResource extends Resource
+class RewardFraudResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -40,7 +40,7 @@ class RewardFraudResource extends Resource
     #[Override]
     public static function canViewAny(): bool
     {
-        return RewardAdminPresenter::canStewardFraud();
+        return RewardAdminPresenter::canStewardFraud() && parent::canViewAny();
     }
 
     #[Override]

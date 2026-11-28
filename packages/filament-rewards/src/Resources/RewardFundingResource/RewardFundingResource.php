@@ -7,16 +7,16 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Pages\ListRewardFunding;
 use AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables\RewardFundingTable;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardFundingResource extends Resource
+class RewardFundingResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {

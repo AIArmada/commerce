@@ -40,7 +40,8 @@ Roles consulted when the authenticated user carries role methods (for example Sp
 
 The staff role is a hard boundary, not just navigation:
 
-- **Payees** (`RewardPayeeResource::canViewAny()`) and **program creation** (`RewardProgramResource::canCreate()`) refuse non-staff users with `403`. The create page repeats the check inside `handleRecordCreation()`, so a crafted Livewire call cannot bypass the resource gate.
+- All ten administrative resources require staff access for list and record pages, in addition to Filament's normal resource policies. Non-staff users receive `403` even when they can enter the host panel. Program creation also checks staff access inside `handleRecordCreation()`.
+- Fraud stewardship additionally requires `reward-fraud-steward`. Payee rows are recipient-keyed rather than program-scoped and remain staff-only.
 - Every award, appeal, and fraud decision **re-checks the staff role and its Gate ability inside the action handler**. `visible()` only decides whether the button renders; the handler is the authorization boundary.
 
 Hosts must therefore define the abilities these decisions consult — or a `Gate::before` that grants them:

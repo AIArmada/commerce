@@ -6,16 +6,15 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource;
 
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Tables\RewardPayeesTable;
-use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Override;
 use UnitEnum;
 
-class RewardPayeeResource extends Resource
+class RewardPayeeResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -32,16 +31,6 @@ class RewardPayeeResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedIdentification;
 
     protected static ?string $navigationLabel = 'Payees';
-
-    /**
-     * Payee rows are recipient-keyed by design and carry no program/owner
-     * column to scope on, so panel access is gated on the staff role instead.
-     */
-    #[Override]
-    public static function canViewAny(): bool
-    {
-        return RewardAdminPresenter::staffActor() !== null;
-    }
 
     #[Override]
     public static function table(Table $table): Table

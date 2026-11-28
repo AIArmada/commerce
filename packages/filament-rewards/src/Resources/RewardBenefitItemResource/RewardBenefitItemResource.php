@@ -7,16 +7,16 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables\RewardBenefitItemsTable;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardBenefitItemResource extends Resource
+class RewardBenefitItemResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {

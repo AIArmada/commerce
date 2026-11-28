@@ -7,17 +7,16 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayoutResource;
 use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Tables\RewardPayoutsTable;
-use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardPayoutResource extends Resource
+class RewardPayoutResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -34,16 +33,6 @@ class RewardPayoutResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
 
     protected static ?string $navigationLabel = 'Payouts';
-
-    /**
-     * Payout rows carry the frozen transfer destination, so panel access
-     * is gated on the staff role instead — same as payees.
-     */
-    #[Override]
-    public static function canViewAny(): bool
-    {
-        return RewardAdminPresenter::staffActor() !== null;
-    }
 
     #[Override]
     public static function getEloquentQuery(): Builder

@@ -9,9 +9,9 @@ use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAward
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Schemas\RewardAwardInfolist;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables\RewardAwardsTable;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Override;
 use UnitEnum;
 
-class RewardAwardResource extends Resource
+class RewardAwardResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {

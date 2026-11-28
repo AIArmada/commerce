@@ -10,17 +10,17 @@ use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardPro
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgramForm;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgramInfolist;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Tables\RewardProgramsTable;
+use AIArmada\FilamentRewards\Resources\StaffRewardResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Override;
 use UnitEnum;
 
-class RewardProgramResource extends Resource
+class RewardProgramResource extends StaffRewardResource
 {
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -46,7 +46,7 @@ class RewardProgramResource extends Resource
     #[Override]
     public static function canCreate(): bool
     {
-        return RewardAdminPresenter::staffActor() !== null;
+        return RewardAdminPresenter::staffActor() !== null && parent::canCreate();
     }
 
     #[Override]
