@@ -20,6 +20,21 @@ it('loads more than 100 paid invoices using bounded Stripe cursor pages', functi
         /** @var list<array<string, mixed>> */
         public array $requests = [];
 
+        public function customerAddress(): array
+        {
+            return [];
+        }
+
+        public function preferredCurrency(): string
+        {
+            return 'USD';
+        }
+
+        public function preferredLocale(): ?string
+        {
+            return null;
+        }
+
         public function invoices(bool $includePending = false, array $parameters = []): Collection
         {
             $this->requests[] = $parameters;
