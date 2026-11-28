@@ -47,6 +47,23 @@ test('can add voucher to wallet using trait', function (): void {
         ->and($walletEntry->claimed_at)->not->toBeNull();
 });
 
+test('rejects wallet writes for an unpersisted holder', function (): void {
+    $user = new TestWalletUser(['name' => 'Unsaved', 'email' => 'unsaved@example.com']);
+
+    Voucher::create([
+        'code' => 'UNSAVED-HOLDER',
+        'name' => 'Unsaved Holder Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    expect(fn () => $user->addVoucherToWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $user->removeVoucherFromWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
+        ->and(VoucherWallet::query()->count())->toBe(0);
+});
+
 test('can check if voucher exists in wallet', function (): void {
     $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
 

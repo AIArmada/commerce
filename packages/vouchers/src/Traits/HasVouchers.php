@@ -6,10 +6,10 @@ namespace AIArmada\Vouchers\Traits;
 
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\WalletClaim;
-use AIArmada\Vouchers\Runtime\WalletRemoval;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -58,7 +58,11 @@ trait HasVouchers
      */
     public function removeVoucherFromWallet(string $voucherCode): bool
     {
-        return app(WalletRemoval::class)->handle($voucherCode, $this);
+        return app(WalletRemoval::class)->handle(
+            $voucherCode,
+            $this->getMorphClass(),
+            $this->exists ? (string) $this->getKey() : '',
+        );
     }
 
     /**

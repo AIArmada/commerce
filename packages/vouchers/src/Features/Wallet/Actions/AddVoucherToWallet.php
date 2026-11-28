@@ -11,6 +11,7 @@ use AIArmada\Vouchers\Runtime\WalletClaim;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -29,6 +30,10 @@ final class AddVoucherToWallet implements WalletClaim
      */
     public function handle(string $code, Model $holder, ?array $metadata = null, ?string $voucherId = null): VoucherWallet
     {
+        if (! $holder->exists || (string) $holder->getKey() === '') {
+            throw new InvalidArgumentException('A persisted wallet holder is required.');
+        }
+
         $connection = (new VoucherWallet)->getConnection();
 
         return $connection->transaction(function () use ($code, $holder, $metadata, $voucherId, $connection): VoucherWallet {

@@ -14,6 +14,7 @@ use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
@@ -23,7 +24,6 @@ use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
-use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
@@ -162,7 +162,11 @@ class VoucherService implements VoucherServiceInterface
      */
     public function removeFromWallet(string $code, Model $holder): bool
     {
-        return app(WalletRemoval::class)->handle($code, $holder);
+        return app(WalletRemoval::class)->handle(
+            $code,
+            $holder->getMorphClass(),
+            $holder->exists ? (string) $holder->getKey() : '',
+        );
     }
 
     /**
