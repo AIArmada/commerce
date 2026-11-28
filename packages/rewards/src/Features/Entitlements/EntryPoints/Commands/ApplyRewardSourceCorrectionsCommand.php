@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Commands;
+namespace AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands;
 
 use AIArmada\Rewards\Features\Entitlements\Actions\ApplyRewardSourceCorrectionsAction;
 use Carbon\CarbonImmutable;

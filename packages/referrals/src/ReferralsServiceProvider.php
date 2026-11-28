@@ -65,7 +65,7 @@ final class ReferralsServiceProvider extends PackageServiceProvider
         if (is_array($configuredDrivers['reward_points'] ?? null)
             && ($configuredDrivers['reward_points']['enabled'] ?? false)
             && $this->symbolsExist([
-                'AIArmada\\Rewards\\EntryPoints\\Jobs\\EvaluateRewardEntitlementJob',
+                'AIArmada\\Rewards\\Features\\Entitlements\\EntryPoints\\Jobs\\EvaluateRewardEntitlementJob',
                 'AIArmada\\Rewards\\Contracts\\RewardSourceFactReader',
                 'AIArmada\\Rewards\\Data\\RewardSourceFact',
                 'AIArmada\\Rewards\\Models\\RewardAward',

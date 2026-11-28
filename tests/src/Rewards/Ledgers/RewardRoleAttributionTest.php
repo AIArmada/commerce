@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
-use AIArmada\Rewards\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;

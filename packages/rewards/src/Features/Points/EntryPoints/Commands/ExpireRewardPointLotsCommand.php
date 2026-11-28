@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Commands;
+namespace AIArmada\Rewards\Features\Points\EntryPoints\Commands;
 
 use AIArmada\Rewards\Features\Points\Actions\ExpireDueRewardPointLotsAction;
 use Carbon\CarbonImmutable;

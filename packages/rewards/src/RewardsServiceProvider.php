@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards;
 
-use AIArmada\Rewards\Commands\ApplyRewardSourceCorrectionsCommand;
-use AIArmada\Rewards\Commands\ExpireRewardPointLotsCommand;
+use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourceCorrectionsCommand;
+use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;

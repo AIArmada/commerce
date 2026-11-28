@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\EntryPoints\Jobs;
+namespace AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs;
 
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
