@@ -8,6 +8,7 @@ use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -20,8 +21,11 @@ trait HasInventory
      */
     public function inventoryLevels(): MorphMany
     {
-        return $this->morphMany(InventoryLevel::class, 'inventoryable')
-            ->orderByDesc('quantity_on_hand');
+        $relation = $this->morphMany(InventoryLevel::class, 'inventoryable');
+
+        InventoryOwnerScope::applyToLocationQuery($relation->getQuery())->orderByDesc('quantity_on_hand');
+
+        return $relation;
     }
 
     /**
@@ -31,8 +35,11 @@ trait HasInventory
      */
     public function inventoryMovements(): MorphMany
     {
-        return $this->morphMany(InventoryMovement::class, 'inventoryable')
-            ->orderByDesc('occurred_at');
+        $relation = $this->morphMany(InventoryMovement::class, 'inventoryable');
+
+        InventoryOwnerScope::applyToLocationQuery($relation->getQuery())->orderByDesc('occurred_at');
+
+        return $relation;
     }
 
     /**
@@ -101,11 +108,11 @@ trait HasInventory
      */
     public function isLowInventory(?int $threshold = null): bool
     {
-        $threshold ??= config('inventory.default_reorder_point', 10);
+        $threshold ??= (int) config('inventory.default_reorder_point', 10);
 
-        return $this->inventoryLevels()
-            ->get()
-            ->contains(fn (InventoryLevel $level): bool => $level->isLowStock($threshold));
+        return $threshold >= 0 && $this->inventoryLevels()
+            ->whereRaw('(quantity_on_hand - quantity_reserved) <= ?', [$threshold])
+            ->exists();
     }
 
     /**

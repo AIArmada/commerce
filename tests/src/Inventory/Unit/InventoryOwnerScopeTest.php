@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Commerce\Tests\Inventory\Fixtures\SerializedInventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
@@ -115,5 +116,43 @@ it('does not allow tenants to mutate visible global stock', function (): void {
 
     OwnerContext::withOwner(null, function () use ($level): void {
         expect($level->fresh()->quantity_on_hand)->toBe(10);
+    });
+});
+
+it('scopes inventory and serial relationships for shared catalog identities', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', false);
+
+    $ownerA = InventoryItem::create(['name' => 'Relationship tenant A']);
+    $ownerB = InventoryItem::create(['name' => 'Relationship tenant B']);
+    $sku = SerializedInventoryItem::create(['name' => 'Shared serialized SKU']);
+
+    foreach ([[$ownerA, 20, 'REL-A'], [$ownerB, 1, 'REL-B']] as [$owner, $quantity, $code]) {
+        OwnerContext::withOwner($owner, function () use ($sku, $quantity, $code): void {
+            $location = InventoryLocation::factory()->create(['code' => $code]);
+            app(InventoryService::class)->receive($sku, $location->id, $quantity);
+            $sku->registerSerial($code, $location->id);
+        });
+    }
+
+    OwnerContext::withOwner($ownerA, function () use ($sku): void {
+        $loaded = SerializedInventoryItem::query()
+            ->with(['inventoryLevels', 'inventoryMovements', 'serials'])
+            ->findOrFail($sku->getKey());
+
+        expect($loaded->inventoryLevels)->toHaveCount(1)
+            ->and($loaded->inventoryLevels->first()->quantity_on_hand)->toBe(20)
+            ->and($loaded->inventoryMovements->pluck('quantity')->all())->toBe([20])
+            ->and($loaded->serials->pluck('serial_number')->all())->toBe(['REL-A'])
+            ->and($loaded->findSerial('REL-B'))->toBeNull()
+            ->and($loaded->serials()->count())->toBe(1)
+            ->and($loaded->isLowInventory(5))->toBeFalse();
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($sku): void {
+        expect($sku->inventoryLevels()->count())->toBe(1)
+            ->and($sku->inventoryMovements()->count())->toBe(1)
+            ->and($sku->findSerial('REL-A'))->toBeNull()
+            ->and($sku->isLowInventory(5))->toBeTrue();
     });
 });

@@ -9,6 +9,7 @@ use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -24,7 +25,11 @@ trait HasSerialNumbers
      */
     public function serials(): MorphMany
     {
-        return $this->morphMany(InventorySerial::class, 'inventoryable');
+        $relation = $this->morphMany(InventorySerial::class, 'inventoryable');
+
+        InventoryOwnerScope::applyToLocationQuery($relation->getQuery());
+
+        return $relation;
     }
 
     /**
