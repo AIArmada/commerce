@@ -37,6 +37,7 @@ final class TaxExemptionPolicy
     public function update(Authorizable $user, TaxExemption $exemption): bool
     {
         return self::hasPermission($user, 'tax.exemptions.update')
+            && $exemption->isPending()
             && OwnerUiScope::canMutateRecord($exemption);
     }
 

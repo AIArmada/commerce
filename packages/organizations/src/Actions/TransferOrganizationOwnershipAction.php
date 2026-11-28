@@ -54,7 +54,7 @@ final class TransferOrganizationOwnershipAction
                 throw new RuntimeException('The new owner must already be an organization member.');
             }
 
-            if ($target->getMorphClass() !== $newOwner->getMorphClass()) {
+            if (! $target->is($newOwner)) {
                 throw new InvalidArgumentException('The new owner must use the organization member model.');
             }
 

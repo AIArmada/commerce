@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use AIArmada\Tax\Models\TaxZone;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 final class ZoneCoverageWidget extends Widget
@@ -38,7 +39,7 @@ final class ZoneCoverageWidget extends Widget
         $query = OwnerUiScope::apply(TaxZone::query(), includeGlobal: false);
 
         $zones = $query
-            ->with(['rates' => fn (Builder $rates): Builder => OwnerUiScope::apply($rates, includeGlobal: false)])
+            ->with(['rates' => fn (HasMany $rates): Builder => OwnerUiScope::apply($rates->getQuery(), includeGlobal: false)])
             ->active()
             ->orderBy('priority', 'desc')
             ->limit(50)
@@ -79,6 +80,7 @@ final class ZoneCoverageWidget extends Widget
                 'rate_count' => $zone->rates->count(),
             ];
         })->values();
+
         return $formattedZones;
     }
 }

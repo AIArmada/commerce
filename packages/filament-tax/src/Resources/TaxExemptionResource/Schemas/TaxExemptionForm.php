@@ -164,7 +164,8 @@ final class TaxExemptionForm
                                     ->maxSize(5120)
                                     ->disk((string) config('filament-tax.certificates.disk', 'local'))
                                     ->directory((string) config('filament-tax.certificates.directory', 'tax-exemptions'))
-                                    ->visibility('private'),
+                                    ->visibility('private')
+                                    ->preventFilePathTampering(),
 
                                 Textarea::make('reason')
                                     ->label('Exemption Reason')

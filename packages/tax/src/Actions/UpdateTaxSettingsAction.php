@@ -33,6 +33,12 @@ final readonly class UpdateTaxSettingsAction
             throw new InvalidArgumentException('The default tax rate must be between 0 and 100.');
         }
 
+        $taxIdLabel = Arr::get($state, 'taxIdLabel', 'Tax ID');
+
+        if (! in_array($taxIdLabel, ['VAT Number', 'GST Number', 'SST Number', 'Tax ID'], true)) {
+            throw new InvalidArgumentException('Unsupported tax ID label.');
+        }
+
         $this->settings->enabled = (bool) Arr::get($state, 'enabled', true);
         $this->settings->defaultTaxRate = (float) Arr::get($state, 'defaultTaxRate', 0.0);
         $this->settings->defaultTaxName = (string) Arr::get($state, 'defaultTaxName', 'Tax');
@@ -40,7 +46,7 @@ final readonly class UpdateTaxSettingsAction
         $this->settings->taxBasedOnShippingAddress = (bool) Arr::get($state, 'taxBasedOnShippingAddress', true);
         $this->settings->digitalGoodsTaxable = (bool) Arr::get($state, 'digitalGoodsTaxable', true);
         $this->settings->shippingTaxable = (bool) Arr::get($state, 'shippingTaxable', false);
-        $this->settings->taxIdLabel = (string) Arr::get($state, 'taxIdLabel', 'Tax ID');
+        $this->settings->taxIdLabel = $taxIdLabel;
         $this->settings->validateTaxIds = (bool) Arr::get($state, 'validateTaxIds', false);
         $this->settings->requireExemptionCertificate = (bool) Arr::get($state, 'requireExemptionCertificate', false);
 

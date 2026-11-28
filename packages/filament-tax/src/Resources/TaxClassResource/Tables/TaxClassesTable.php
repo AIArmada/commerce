@@ -7,6 +7,7 @@ namespace AIArmada\FilamentTax\Resources\TaxClassResource\Tables;
 use AIArmada\Tax\Actions\DeleteTaxClassesAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -48,7 +49,7 @@ final class TaxClassesTable
                     ->sortable(),
             ])
             ->defaultSort('position')
-            ->reorderable('position')
+            ->reorderable('position', condition: fn (): bool => Filament::auth()->user()?->can('tax.classes.update') ?? false)
             ->filters([
                 TernaryFilter::make('is_active')
                     ->label('Active'),
