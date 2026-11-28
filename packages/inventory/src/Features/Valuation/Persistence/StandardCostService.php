@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -130,7 +131,7 @@ final readonly class StandardCostService
 
         return [
             'quantity' => $quantity,
-            'value' => $standardCost !== null ? $quantity * $standardCost : 0,
+            'value' => CostArithmetic::multiply($quantity, $standardCost ?? 0),
             'unit_cost' => $standardCost,
         ];
     }

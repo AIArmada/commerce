@@ -8,6 +8,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -63,7 +64,7 @@ final class FifoCostService
             'quantity' => $quantity,
             'remaining_quantity' => $quantity,
             'unit_cost_minor' => $unitCostMinor,
-            'total_cost_minor' => $quantity * $unitCostMinor,
+            'total_cost_minor' => CostArithmetic::multiply($quantity, $unitCostMinor),
             'currency' => config('inventory.defaults.currency', 'MYR'),
             'reference' => $reference,
             'costing_method' => CostingMethod::Fifo,
@@ -130,7 +131,7 @@ final class FifoCostService
                 $consumed = (new CostLayerStore)->consumeLocked($layer, $neededQuantity);
 
                 $totalConsumed += $consumed;
-                $totalCost += $consumed * $layer->unit_cost_minor;
+                $totalCost = CostArithmetic::add($totalCost, CostArithmetic::multiply($consumed, $layer->unit_cost_minor));
 
                 $consumedLayers[] = [
                     'layer_id' => $layer->id,
@@ -190,7 +191,7 @@ final class FifoCostService
         return [
             'quantity' => $totalQuantity,
             'value' => $totalValue,
-            'average_cost' => $totalQuantity > 0 ? (int) round($totalValue / $totalQuantity) : 0,
+            'average_cost' => CostArithmetic::average($totalValue, $totalQuantity),
             'layers' => $layerCount,
         ];
     }
@@ -240,7 +241,7 @@ final class FifoCostService
             }
 
             $take = min($remaining, $layer->remaining_quantity);
-            $cost += $take * $layer->unit_cost_minor;
+            $cost = CostArithmetic::add($cost, CostArithmetic::multiply($take, $layer->unit_cost_minor));
             $remaining -= $take;
         }
 

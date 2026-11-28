@@ -8,6 +8,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Api\BatchIdentity;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -60,9 +61,9 @@ final class WeightedAverageCostService
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
             $currentValuation = $this->valuation($model, $locationId, true);
 
-            $totalQuantity = $currentValuation['quantity'] + $quantity;
-            $totalValue = $currentValuation['value'] + ($quantity * $unitCostMinor);
-            $newAverageCost = $totalQuantity > 0 ? (int) round($totalValue / $totalQuantity) : $unitCostMinor;
+            $totalQuantity = CostArithmetic::add($currentValuation['quantity'], $quantity);
+            $totalValue = CostArithmetic::add($currentValuation['value'], CostArithmetic::multiply($quantity, $unitCostMinor));
+            $newAverageCost = CostArithmetic::average($totalValue, $totalQuantity);
 
             $layer = InventoryCostLayer::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -72,7 +73,7 @@ final class WeightedAverageCostService
                 'quantity' => $quantity,
                 'remaining_quantity' => $quantity,
                 'unit_cost_minor' => $newAverageCost,
-                'total_cost_minor' => $quantity * $newAverageCost,
+                'total_cost_minor' => CostArithmetic::multiply($quantity, $newAverageCost),
                 'currency' => config('inventory.defaults.currency', 'MYR'),
                 'reference' => $reference,
                 'costing_method' => CostingMethod::WeightedAverage,
@@ -155,7 +156,7 @@ final class WeightedAverageCostService
 
             return [
                 'consumed' => $quantity - $remaining,
-                'cost' => ($quantity - $remaining) * $unitCost,
+                'cost' => CostArithmetic::multiply($quantity - $remaining, $unitCost),
                 'unit_cost' => $unitCost,
             ];
         });
@@ -210,7 +211,7 @@ final class WeightedAverageCostService
         return [
             'quantity' => $totalQuantity,
             'value' => $totalValue,
-            'average_cost' => $totalQuantity > 0 ? (int) round($totalValue / $totalQuantity) : 0,
+            'average_cost' => CostArithmetic::average($totalValue, $totalQuantity),
         ];
     }
 

@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Features\Valuation\Queries;
 
 use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Support\CostArithmetic;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -77,7 +78,7 @@ final readonly class StandardStockValuesQuery
                 'inventoryable_id' => $balance['inventoryable_id'],
                 'location_id' => $balance['location_id'],
                 'quantity' => $balance['quantity'],
-                'total_value' => $balance['quantity'] * ($unitCosts[$key] ?? 0),
+                'total_value' => CostArithmetic::multiply($balance['quantity'], $unitCosts[$key] ?? 0),
             ];
         }
     }

@@ -45,6 +45,13 @@ describe('WeightedAverageCostService', function (): void {
             ->toThrow(InvalidArgumentException::class);
     });
 
+    it('rejects overflowing purchase values without creating a layer', function (): void {
+        expect(fn () => $this->service->recordPurchase($this->item, 2, PHP_INT_MAX, $this->location->id))
+            ->toThrow(OverflowException::class);
+
+        expect(InventoryCostLayer::query()->forModel($this->item)->count())->toBe(0);
+    });
+
     it('record purchase first purchase', function (): void {
         $result = $this->service->recordPurchase(
             $this->item,
