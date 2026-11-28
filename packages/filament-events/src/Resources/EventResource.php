@@ -17,6 +17,7 @@ use AIArmada\FilamentEvents\Contracts\EventFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
@@ -36,6 +37,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 class EventResource extends Resource
@@ -183,7 +185,10 @@ class EventResource extends Resource
                 ->label('Publish')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('publish', $record))
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('publish', $record);
+
                     app(EventLifecycleWorkflow::class)->publish((string) $record->getKey());
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
@@ -192,7 +197,10 @@ class EventResource extends Resource
                 ->label('Archive')
                 ->icon('heroicon-o-archive-box')
                 ->color('warning')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('archive', $record))
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('archive', $record);
+
                     app(EventLifecycleWorkflow::class)->archive('event', (string) $record->getKey());
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && (string) $record->status === 'approved')
@@ -204,7 +212,10 @@ class EventResource extends Resource
                 ->form([
                     Textarea::make('reason')->required(),
                 ])
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('cancel', $record))
                 ->action(static function (array $data, Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('cancel', $record);
+
                     app(EventLifecycleWorkflow::class)->cancel('event', (string) $record->getKey(), $data['reason']);
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
@@ -213,7 +224,11 @@ class EventResource extends Resource
                 ->label('Clone')
                 ->icon('heroicon-o-document-duplicate')
                 ->color('gray')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record) && static::canCreate())
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                    Gate::forUser(Filament::auth()->user())->authorize('create', static::getModel());
+
                     $cloneId = app(EventCloneService::class)->cloneEvent((string) $record->getKey(), [
                         'clone_occurrences' => false,
                     ]);

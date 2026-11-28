@@ -115,11 +115,11 @@ final class UpdateEventOccurrenceAction
         });
 
         if ($changes !== []) {
-            event(new EventOccurrenceUpdated(
+            DB::afterCommit(static fn () => event(new EventOccurrenceUpdated(
                 (string) $occurrence->getKey(),
                 (string) $occurrence->event_id,
                 $changes,
-            ));
+            )));
         }
 
         if (isset($changes['status'])) {

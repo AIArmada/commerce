@@ -68,6 +68,21 @@ final class UpdateEventSessionAction
                 $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
             }
 
+            if (array_key_exists('starts_at', $allowed) && blank($allowed['starts_at'])) {
+                throw new InvalidArgumentException('Session start time is required.');
+            }
+
+            $startsAt = array_key_exists('starts_at', $allowed)
+                ? CarbonImmutable::parse($allowed['starts_at'])
+                : $session->starts_at;
+            $endsAt = ! array_key_exists('ends_at', $allowed)
+                ? $session->ends_at
+                : ($allowed['ends_at'] === null ? null : CarbonImmutable::parse($allowed['ends_at']));
+
+            if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
+                throw new InvalidArgumentException('Session end time must be after the start time.');
+            }
+
             $statusValue = $allowed['status'] ?? null;
             unset($allowed['status']);
 
@@ -103,11 +118,11 @@ final class UpdateEventSessionAction
         });
 
         if ($changes !== []) {
-            event(new EventSessionUpdated(
+            DB::afterCommit(static fn () => event(new EventSessionUpdated(
                 (string) $session->getKey(),
                 (string) $session->event_id,
                 $changes,
-            ));
+            )));
         }
 
         if (isset($changes['status'])) {

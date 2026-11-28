@@ -16,6 +16,7 @@ use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
 use Filament\Actions\ViewAction;
@@ -33,6 +34,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 final class EventSessionResource extends Resource
@@ -136,7 +138,10 @@ final class EventSessionResource extends Resource
                         Textarea::make('reason'),
                         DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
                     ])
+                    ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventSession $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->delay('session', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
                     ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
@@ -148,7 +153,10 @@ final class EventSessionResource extends Resource
                     ->form([
                         Textarea::make('reason')->required(),
                     ])
+                    ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventSession $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->postpone('session', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
@@ -160,7 +168,10 @@ final class EventSessionResource extends Resource
                     ->form([
                         Textarea::make('reason')->required(),
                     ])
+                    ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventSession $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->cancel('session', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventSession $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
@@ -169,7 +180,10 @@ final class EventSessionResource extends Resource
                     ->label('Complete')
                     ->icon('heroicon-o-check')
                     ->color('success')
+                    ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (EventSession $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->complete('session', (string) $record->getKey());
                     })
                     ->visible(fn (?EventSession $record) => (string) ($record?->status ?? '') === 'published')
@@ -178,7 +192,11 @@ final class EventSessionResource extends Resource
                     ->label('Clone')
                     ->icon('heroicon-o-document-duplicate')
                     ->color('gray')
+                    ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record) && static::canCreate())
                     ->action(function (EventSession $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                        Gate::forUser(Filament::auth()->user())->authorize('create', static::getModel());
+
                         $cloneId = app(EventCloneService::class)->cloneSession((string) $record->getKey());
                         redirect(EventSessionResource::getUrl('edit', ['record' => $cloneId]));
                     })
