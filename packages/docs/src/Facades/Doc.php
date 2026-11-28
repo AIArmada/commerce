@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Facades;
 
-use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocType;
-use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Models\DocVersion;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Data\DocData;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\DocStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
@@ -20,21 +18,19 @@ use Illuminate\Support\Facades\Facade;
  * @method static \AIArmada\Docs\Models\Doc createFromType(DocType $type, array $data, ?Model $owner = null)
  * @method static \AIArmada\Docs\Models\Doc update(\AIArmada\Docs\Models\Doc $doc, array $data)
  * @method static \AIArmada\Docs\Models\Doc convert(\AIArmada\Docs\Models\Doc $source, DocType $targetType, ?Model $owner = null)
- * @method static DocPayment recordPayment(\AIArmada\Docs\Models\Doc $doc, array $paymentData)
  * @method static \AIArmada\Docs\Models\Doc clone(\AIArmada\Docs\Models\Doc $source, ?Model $owner = null)
- * @method static DocVersion createVersion(\AIArmada\Docs\Models\Doc $doc, ?string $summary = null)
  * @method static string generatePdf(\AIArmada\Docs\Models\Doc $doc, bool $save = true)
  * @method static string downloadPdf(\AIArmada\Docs\Models\Doc $doc)
  * @method static void markAsSent(\AIArmada\Docs\Models\Doc $doc, ?string $notes = null)
  * @method static void updateStatus(\AIArmada\Docs\Models\Doc $doc, DocStatus|string $status, ?string $notes = null)
  * @method static array calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null)
  *
- * @see DocService
+ * @see DocumentRecords
  */
 class Doc extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return 'doc';
+        return DocumentRecords::class;
     }
 }

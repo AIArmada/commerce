@@ -12,8 +12,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderAccountingTotals;
 use AIArmada\Orders\Enums\RefundStatus;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -145,30 +145,6 @@ final class OrderRefund extends Model implements Auditable
         return $this->provider_submission_started_at !== null;
     }
 
-    public function markAsCompleted(?string $transactionId = null): self
-    {
-        $this->status = RefundStatus::Completed;
-        $this->refunded_at = CarbonImmutable::now();
-
-        if ($transactionId !== null) {
-            $this->transaction_id = $transactionId;
-        }
-
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsFailed(string $reason): self
-    {
-        $this->status = RefundStatus::Failed;
-        $this->failed_at = CarbonImmutable::now();
-        $this->notes = $reason;
-        $this->save();
-
-        return $this;
-    }
-
     // ─────────────────────────────────────────────────────────────
     // MONEY HELPERS
     // ─────────────────────────────────────────────────────────────
@@ -200,9 +176,7 @@ final class OrderRefund extends Model implements Auditable
             if (! (bool) config('orders.owner.enabled', false)) {
                 $order = Order::query()->withoutOwnerScope()->findOrFail($refund->order_id);
             } else {
-                $owner = OwnerContext::resolve();
-                $includeGlobal = (bool) config('orders.owner.include_global', false);
-                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $refund->order_id, $owner, $includeGlobal);
+                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $refund->order_id);
             }
 
             if ($order->owner_type !== null && $order->owner_id !== null) {
@@ -217,21 +191,14 @@ final class OrderRefund extends Model implements Auditable
 
             $refund->currency = MoneyFormatter::normalizeCurrency($refund->currency);
 
-            // Owner-safe order lookup is already done above; reuse a
-            // scope-bypassing read here because owner context may be absent on
-            // direct model/import paths.
-            $order = Order::query()->withoutOwnerScope()->find($refund->order_id);
+            $orderCurrency = MoneyFormatter::normalizeCurrency($order->currency);
 
-            if ($order instanceof Order) {
-                $orderCurrency = MoneyFormatter::normalizeCurrency($order->currency);
-
-                if ($refund->currency !== $orderCurrency) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Refund currency %s does not match the order currency %s.',
-                        $refund->currency,
-                        $orderCurrency,
-                    ));
-                }
+            if ($refund->currency !== $orderCurrency) {
+                throw new InvalidArgumentException(sprintf(
+                    'Refund currency %s does not match the order currency %s.',
+                    $refund->currency,
+                    $orderCurrency,
+                ));
             }
 
             if ($refund->payment_id !== null) {
@@ -266,7 +233,7 @@ final class OrderRefund extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($refund->order_id)->increment($column, $amount);
+            app(OrderAccountingTotals::class)->adjust($refund->order_id, $column, $amount);
         });
 
         static::updated(function (OrderRefund $refund): void {
@@ -296,20 +263,20 @@ final class OrderRefund extends Model implements Auditable
                 $delta = $newAmount - $oldAmount;
 
                 if ($delta > 0) {
-                    Order::query()->whereKey($refund->order_id)->increment($newColumn, $delta);
+                    app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, $delta);
                 } elseif ($delta < 0) {
-                    Order::query()->whereKey($refund->order_id)->decrement($newColumn, abs($delta));
+                    app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, -abs($delta));
                 }
 
                 return;
             }
 
             if ($oldColumn !== null && $oldAmount > 0) {
-                Order::query()->whereKey($refund->order_id)->decrement($oldColumn, $oldAmount);
+                app(OrderAccountingTotals::class)->adjust($refund->order_id, $oldColumn, -$oldAmount);
             }
 
             if ($newColumn !== null && $newAmount > 0) {
-                Order::query()->whereKey($refund->order_id)->increment($newColumn, $newAmount);
+                app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, $newAmount);
             }
         });
 
@@ -328,7 +295,7 @@ final class OrderRefund extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($refund->order_id)->decrement($column, $amount);
+            app(OrderAccountingTotals::class)->adjust($refund->order_id, $column, -$amount);
         });
 
         static::updating(function (OrderRefund $refund): void {
@@ -372,9 +339,7 @@ final class OrderRefund extends Model implements Auditable
         if (! (bool) config('orders.owner.enabled', false)) {
             $payment = OrderPayment::query()->withoutOwnerScope()->findOrFail($refund->payment_id);
         } else {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('orders.owner.include_global', false);
-            $payment = OwnerWriteGuard::findOrFailForOwner(OrderPayment::class, $refund->payment_id, $owner, $includeGlobal);
+            $payment = OwnerWriteGuard::findOrFailForOwner(OrderPayment::class, $refund->payment_id);
         }
 
         if ($payment->order_id !== $refund->order_id) {

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Contracts;
 
-use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Support\PackageUnit;
+use AIArmada\Orders\Data\ReturnedPackageUnit;
 
 interface PackageReturnVerifier
 {
-    public function receivedUnit(Order $order, string $authorizationId): PackageUnit;
+    public function receivedUnit(string $orderId, string $authorizationId): ReturnedPackageUnit;
 }

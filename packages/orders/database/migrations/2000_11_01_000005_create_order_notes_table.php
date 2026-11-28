@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create(config('orders.database.tables.order_notes', 'order_notes'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id');
+            $table->foreignUuid('order_id')->constrained(config('orders.database.tables.orders', 'orders'))->cascadeOnDelete();
 
             $table->foreignUuid('user_id')->nullable();
             $table->text('content');

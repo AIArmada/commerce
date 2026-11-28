@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "name": "Lifecycle",
+  "owns": {
+    "table:orders": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\DeliveryConfirmed",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCompleted",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHeld",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHoldReleased",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderReturned",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\FreeOrderConfirmed",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\AssignOrderInvoiceNumber",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageOrders",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\MergeOrderMetadata",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\AdjustOrderAccountingTotals",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ApplyOrderPaymentLifecycle"
+    ],
+    "table:order_items": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\DeliveryConfirmed",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageItemFulfillmentMarker"
+    ],
+    "table:order_notes": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHeld",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHoldReleased",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderReturned",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageOrderNotes"
+    ],
+    "store:orders-intake": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder"
+    ]
+  },
+  "extensions": {}
+}

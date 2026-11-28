@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Mail\DocMail;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
 use AIArmada\FilamentDocs\Actions\SendEmailAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -134,6 +134,9 @@ it('builds template select options from configured model', function (): void {
 });
 
 it('sends email successfully and pushes a success notification to the session', function (): void {
+    Mail::fake();
+    config()->set('docs.email.queue_enabled', false);
+
     $doc = Doc::factory()->create([
         'customer_data' => [
             'email' => 'to@example.test',
@@ -146,6 +149,7 @@ it('sends email successfully and pushes a success notification to the session', 
     $method->invoke(null, $doc, ['to' => 'to@example.test']);
 
     expect($doc->emails()->count())->toBe(1);
+    Mail::assertSent(DocMail::class);
 
     $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();
@@ -195,7 +199,7 @@ it('handles email failures and pushes an error notification to the session', fun
         ],
     ]);
 
-    app()->bind(DocEmailService::class, fn (): never => throw new Exception('fail'));
+    app()->bind(DocumentEmailSender::class, fn (): never => throw new Exception('fail'));
 
     $method = new ReflectionMethod(SendEmailAction::class, 'sendEmail');
 

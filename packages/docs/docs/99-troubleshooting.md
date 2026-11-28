@@ -51,16 +51,16 @@ Common issues and solutions for the Docs package.
 2. **Render the canonical HTML output directly**
    ```php
    use AIArmada\Docs\Enums\RenderAudience;
-   use AIArmada\Docs\Services\DocRenderService;
+   use AIArmada\Docs\Runtime\DocumentRendering;
 
-   app(DocRenderService::class)->renderHtml($doc, RenderAudience::CustomerView);
+   app(DocumentRendering::class)->renderHtml($doc, RenderAudience::CustomerView);
    ```
 
 3. **Check template/payload compatibility**
    ```php
    // Throws when body is present without a rich_body block,
    // or when the selected template requires line items but items are empty.
-   app(DocRenderService::class)->validateDocPayload($doc->template, $doc->body, $doc->items ?? []);
+   app(DocumentRendering::class)->validateDocPayload($doc->template, $doc->body, $doc->items ?? []);
    ```
 
 ### Background Colors Not Printing
@@ -185,14 +185,14 @@ DocTemplate::create([
 
 ### Status Not Updating
 
-**Symptom:** `markAsPaid()` or similar methods have no effect.
+**Symptom:** `DocumentLifecycle::markPaid()` or similar methods have no effect.
 
 **Solutions:**
 
 1. **Check current status**
    Some transitions are blocked:
    ```php
-   $doc->cancel(); // Does nothing if already PAID
+   app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->cancel((string) $doc->getKey()); // Does nothing if already PAID
    ```
 
 2. **Use service method for full tracking**
@@ -206,9 +206,9 @@ DocTemplate::create([
 
 **Solutions:**
 
-1. **Use model methods** which auto-create history:
+1. **Use lifecycle actions** which auto-create history:
    ```php
-   $doc->markAsPaid();  // Creates history entry
+   app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markPaid((string) $doc->getKey());  // Creates history entry
    ```
 
 2. **Check owner columns** when owner mode is enabled, history needs owner data
@@ -233,7 +233,7 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 ### Tracking Tokens Invalid
 
-**Symptom:** `trackOpen()` returns false.
+**Symptom:** `TrackDocEmail::trackOpen()` returns false.
 
 **Solutions:**
 
@@ -260,8 +260,8 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 2. **Check allowed actions**
    ```php
-   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::View);
-   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::Pdf);
+   $shareLink->allows(\AIArmada\Docs\Data\ShareLinkAction::View);
+   $shareLink->allows(\AIArmada\Docs\Data\ShareLinkAction::Pdf);
    ```
 
 3. **Check owner context on the linked document**
@@ -299,15 +299,9 @@ php artisan cache:clear
 
 ## Common Errors
 
-### Class Not Found: DocData
+### Document data namespace
 
-**Error:** `Class AIArmada\Docs\Data\DocData not found`
-
-**Solution:** Use correct namespace:
-```php
-use AIArmada\Docs\DataObjects\DocData; // Correct
-// NOT: use AIArmada\Docs\Data\DocData;
-```
+Use `AIArmada\Docs\Data\DocData` when creating a document.
 
 ### Migration Failed
 

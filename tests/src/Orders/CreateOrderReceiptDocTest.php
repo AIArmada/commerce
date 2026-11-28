@@ -3,15 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
+use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
 use AIArmada\Orders\Models\Order;
 
 it('creates a receipt document for a paid order', function (): void {
     $order = receiptDocumentOrder('receipt-test');
 
-    $receipt = app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_123', 'chip');
+    $receipt = Doc::query()->findOrFail(app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_123', 'chip'));
 
     expect($receipt->doc_type)->toBe(DocType::Receipt->value)
         ->and($receipt->docable_type)->toBe($order->getMorphClass())
@@ -27,7 +29,7 @@ it('returns the existing receipt document when one already exists', function ():
     $firstReceipt = app(CreateOrderReceiptDoc::class)->execute($order, 'txn_receipt_abc', 'chip');
     $secondReceipt = app(CreateOrderReceiptDoc::class)->execute($order->fresh(['items', 'addresses']) ?? $order, 'txn_receipt_abc', 'chip');
 
-    expect((string) $secondReceipt->getKey())->toBe((string) $firstReceipt->getKey())
+    expect($secondReceipt)->toBe($firstReceipt)
         ->and(Doc::query()
             ->where('docable_type', $order->getMorphClass())
             ->where('docable_id', $order->getKey())
@@ -45,6 +47,15 @@ function receiptDocumentOrder(string $suffix): Order
         'tax_total' => 0,
         'grand_total' => 9700,
         'currency' => 'MYR',
+        'paid_at' => now(),
+    ]);
+
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-receipt-' . $suffix,
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
         'paid_at' => now(),
     ]);
 
@@ -76,3 +87,21 @@ function receiptDocumentOrder(string $suffix): Order
 
     return $order->fresh(['items', 'addresses']) ?? $order;
 }
+
+it('refuses to issue paid documents for an order with an outstanding balance', function (): void {
+    $order = Order::factory()->create([
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+        'currency' => 'MYR',
+        'paid_at' => null,
+    ]);
+
+    $documents = app(OrderDocuments::class);
+
+    foreach (['invoice', 'receipt'] as $type) {
+        expect(fn () => $documents->issue((string) $order->getKey(), $type, 'unsettled', 'chip'))
+            ->toThrow(DomainException::class, 'full payment settlement');
+    }
+
+    expect(Doc::query()->where('docable_id', $order->getKey())->exists())->toBeFalse();
+});

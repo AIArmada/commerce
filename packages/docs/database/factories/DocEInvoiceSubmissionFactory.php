@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Database\Factories;
 
 use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEInvoiceSubmission;
+use AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DocEInvoiceSubmissionFactory extends Factory

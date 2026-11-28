@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Support\RefundAllocationValidator;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\PendingPayment;
@@ -111,6 +112,9 @@ describe('RegisterOrderRefund', function (): void {
         $first = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
         $second = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
 
+        expect(fn () => $action->createPending($order, 4000, 'same-key', 'Conflicting replay'))
+            ->toThrow(DomainException::class, 'amount does not match');
+
         expect($second[0]->getKey())->toBe($first[0]->getKey())
             ->and($order->refresh()->refunds()->count())->toBe(1);
     });
@@ -141,6 +145,36 @@ describe('RegisterOrderRefund', function (): void {
             ->and($refund[0]->fresh()->hasProviderSubmissionStarted())->toBeTrue();
     });
 
+    it('does not correlate the payment reference as a refund reference after trimming', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-REF-CORRELATE-' . uniqid(),
+            'status' => Returned::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'transaction_id' => 'payment-reference',
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'status' => PaymentStatus::Completed,
+            'paid_at' => now(),
+        ]);
+
+        $action = new RegisterOrderRefund;
+        $refund = $action->createPending($order, 5000, 'correlation-key', 'Partial refund')[0];
+
+        expect($action->correlateProviderReference($refund, ' payment-reference ', 'payment-reference'))->toBeTrue()
+            ->and($refund->fresh()->metadata['provider_refund_id'] ?? null)->toBeNull()
+            ->and($action->correlateProviderReference($refund, ' refund-reference ', 'payment-reference'))->toBeTrue()
+            ->and($refund->fresh()->metadata['provider_refund_id'])->toBe('refund-reference')
+            ->and($action->correlateProviderReference($refund, 'refund-reference', 'payment-reference'))->toBeTrue()
+            ->and($action->correlateProviderReference($refund, 'another-reference', 'payment-reference'))->toBeFalse();
+    });
+
     it('does not create another refund after a transaction has failed', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-REF-FAILED-' . uniqid(),
@@ -161,10 +195,60 @@ describe('RegisterOrderRefund', function (): void {
 
         $action = new RegisterOrderRefund;
         $refund = $action->createPending($order, 5000, 'failed-key', 'Failed refund');
-        $refund[0]->markAsFailed('Provider rejected the refund.');
+        $action->failPending($refund[0], 'Provider rejected the refund.');
 
         expect(fn () => $action->createPending($order, 5000, 'failed-key', 'Retry refund'))
             ->toThrow(RuntimeException::class, 'has already failed')
             ->and($order->refresh()->refunds()->count())->toBe(1);
     });
+});
+
+it('does not refund again when a provider has replaced the original request transaction id', function (): void {
+    $order = Order::create([
+        'order_number' => 'ORD-REPLAY-' . uniqid(),
+        'status' => Returned::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    OrderPayment::create([
+        'order_id' => $order->id,
+        'gateway' => 'stripe',
+        'amount' => 10000,
+        'currency' => 'MYR',
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
+    $action = app(RegisterOrderRefund::class);
+    $pending = $action->createPending($order, 3000, 'original-request', 'Refund');
+    $action->completePending($pending[0], 'provider-reference');
+
+    $action->execute($order, 3000, 'original-request', 'Refund');
+    $action->execute($order, 3000, 'provider-reference', 'Refund');
+
+    $replayed = $action->createPending($order, 3000, 'provider-reference', 'Refund');
+
+    expect($replayed)->toHaveCount(1)
+        ->and($replayed[0]->getKey())->toBe($pending[0]->getKey())
+        ->and($replayed[0]->isCompleted())->toBeTrue()
+        ->and($action->claimPendingSubmission($replayed[0]))->toBeFalse();
+
+    expect(fn () => $action->createPending($order, 2000, 'provider-reference', 'Conflicting refund'))
+        ->toThrow(DomainException::class, 'amount does not match');
+
+    expect($order->refunds()->count())->toBe(1)
+        ->and($order->refresh()->getTotalRefunded())->toBe(3000);
+
+    expect(fn () => $action->execute($order, 3000, 'original-request', 'Refund', ['refund_allocations' => ['entity' => 1]]))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects overflowing refund allocation amounts without integer coercion', function (): void {
+    expect(fn () => RefundAllocationValidator::assertAmount(['refund_allocations' => ['entity' => (string) PHP_INT_MAX . '0']], PHP_INT_MAX))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => RefundAllocationValidator::assertAmount(['refund_allocations' => ['a' => PHP_INT_MAX, 'b' => 1]], PHP_INT_MAX))
+        ->toThrow(InvalidArgumentException::class);
 });

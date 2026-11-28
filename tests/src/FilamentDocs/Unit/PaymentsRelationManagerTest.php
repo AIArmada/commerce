@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocPaymentStatus;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;
@@ -122,6 +122,12 @@ it('keeps recorded payment amounts immutable but allows note edits (H3)', functi
         'currency' => 'MYR',
         'payment_method' => 'cash',
     ]))->toThrow(ValidationException::class);
+
+    expect(fn (): DocPayment => PaymentsRelationManager::updatePaymentForDoc($doc, $payment, ['transaction_id' => 'replacement']))
+        ->toThrow(ValidationException::class);
+
+    expect(fn (): DocPayment => PaymentsRelationManager::updatePaymentForDoc($doc, $payment, ['paid_at' => '']))
+        ->toThrow(ValidationException::class);
 
     $updated = PaymentsRelationManager::updatePaymentForDoc($doc, $payment, [
         'amount_minor' => 40,

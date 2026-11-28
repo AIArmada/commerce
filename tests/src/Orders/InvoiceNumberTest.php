@@ -2,19 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use AIArmada\Orders\States\Completed;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-beforeEach(function (): void {
-    if (! Schema::hasColumn('orders', 'invoice_number')) {
-        Schema::table('orders', function (Blueprint $table): void {
-            $table->string('invoice_number')->nullable()->unique();
-        });
-    }
-});
 
 it('mints an invoice number once and reuses it on later downloads', function (): void {
     $order = Order::create([
@@ -27,12 +18,12 @@ it('mints an invoice number once and reuses it on later downloads', function ():
 
     expect($order->invoice_number)->toBeNull();
 
-    app(GenerateInvoice::class)->download($order->refresh());
+    app(OrderInvoiceDownload::class)->download((string) $order->getKey());
     $first = $order->refresh()->invoice_number;
 
     expect($first)->not->toBeNull();
 
-    app(GenerateInvoice::class)->download($order->refresh());
+    app(OrderInvoiceDownload::class)->download((string) $order->getKey());
 
     expect($order->refresh()->invoice_number)->toBe($first);
 });
@@ -53,8 +44,27 @@ it('gives every order its own invoice number', function (): void {
         'grand_total' => 20000,
     ]);
 
-    app(GenerateInvoice::class)->download($first);
-    app(GenerateInvoice::class)->download($second);
+    app(OrderInvoiceDownload::class)->download((string) $first->getKey());
+    app(OrderInvoiceDownload::class)->download((string) $second->getKey());
 
     expect($first->refresh()->invoice_number)->not->toBe($second->refresh()->invoice_number);
+});
+
+it('reuses the persisted invoice number when the caller holds a stale order', function (): void {
+    $order = Order::create([
+        'order_number' => 'ORD-INV-STALE-' . uniqid(),
+        'status' => Completed::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    $stale = Order::query()->findOrFail($order->getKey());
+    $action = app(OrderInvoiceNumber::class);
+
+    $first = $action->assign((string) $order->getKey());
+
+    expect($stale->invoice_number)->toBeNull()
+        ->and($action->assign((string) $stale->getKey()))->toBe($first)
+        ->and($order->refresh()->invoice_number)->toBe($first);
 });

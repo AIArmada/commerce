@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocType;
-use AIArmada\Docs\Models\DocSequence;
-use AIArmada\Docs\Models\SequenceNumber;
-use AIArmada\Docs\Services\SequenceManager;
+use AIArmada\Docs\Contracts\DocumentSequenceSettings;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Models\SequenceNumber;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    DocSequence::query()->delete();
     SequenceNumber::query()->delete();
+    DocSequence::query()->delete();
 });
 
 test('it creates default sequence when none exists', function (): void {
@@ -156,4 +158,41 @@ test('sequence respects padding configuration', function (): void {
     $numericPart = array_pop($numericParts);
 
     expect($numericPart)->toBe('000001');
+});
+
+test('rejects nonpositive reserved numbers', function (): void {
+    expect(fn () => app(SequenceManager::class)->reserve('invoice', 0))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('sequence settings preserve issued numbering and reject duplicate active sequences', function (): void {
+    $settings = app(DocumentSequenceSettings::class);
+    $data = [
+        'name' => 'Invoice Sequence',
+        'doc_type' => 'invoice',
+        'prefix' => 'INV',
+        'format' => '{PREFIX}-{YYMM}-{NUMBER}',
+        'reset_frequency' => 'yearly',
+        'start_number' => 1,
+        'increment' => 1,
+        'padding' => 6,
+        'is_active' => true,
+    ];
+
+    $id = $settings->create($data);
+    expect(fn () => $settings->create(array_merge($data, ['name' => 'Another'])))
+        ->toThrow(ValidationException::class);
+
+    app(SequenceManager::class)->generate('invoice');
+
+    expect(fn () => $settings->update($id, ['start_number' => 100]))
+        ->toThrow(ValidationException::class);
+    expect(fn () => $settings->update($id, ['is_active' => false]))
+        ->toThrow(ValidationException::class);
+    expect(fn () => $settings->remove([$id]))
+        ->toThrow(ValidationException::class);
+
+    $settings->update($id, ['name' => 'Renamed']);
+    expect(DocSequence::query()->findOrFail($id)->name)->toBe('Renamed');
+    expect(app(SequenceManager::class)->generate('invoice'))->toEndWith('000002');
 });

@@ -18,7 +18,11 @@ use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OrderIntakeData;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
@@ -105,27 +109,40 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createFromCart')
         ->once()
-        ->withArgs(function (...$arguments) use ($cart, $customer, $session): bool {
-            return ($arguments[0] ?? null) === $cart
-                && ($arguments[1] ?? null) === $customer
-                && ($arguments[2] ?? null) === ['line1' => 'Billing Street']
-                && ($arguments[3] ?? null) === ['line1' => 'Shipping Street']
-                && ($arguments[4] ?? null) === 'checkout'
-                && ($arguments[5] ?? null) === $session->getKey()
-                && ($arguments[6] ?? null) === $session->id;
+        ->withArgs(function (...$arguments) use ($customer, $session): bool {
+            return ($arguments[0] ?? null) === $session->cart_id
+                && ($arguments[1] ?? null) === $customer->getMorphClass()
+                && ($arguments[2] ?? null) === (string) $customer->getKey()
+                && ($arguments[3] ?? null) === ['line1' => 'Billing Street']
+                && ($arguments[4] ?? null) === ['line1' => 'Shipping Street']
+                && ($arguments[5] ?? null) === 'checkout'
+                && ($arguments[6] ?? null) === $session->getKey()
+                && ($arguments[7] ?? null) === $session->id;
         })
-        ->andReturn($order);
+        ->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $metadataWriter->shouldReceive('merge')->once()->withArgs(fn (string $id, array $patch): bool => $id === (string) $order->getKey()
+        && data_get($patch, 'checkout_session_id') === $session->id
+        && data_get($patch, 'payment_data.affiliate_commission.strategy') === 'registration_lines')->andReturnNull();
     $orderService->shouldReceive('createOrder')->never();
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
 
     expect($result->isSuccessful())->toBeTrue()
-        ->and(data_get($order->metadata, 'checkout_session_id'))->toBe($session->id)
-        ->and(data_get($order->metadata, 'payment_data.affiliate_commission.strategy'))->toBe('registration_lines')
         ->and($session->fresh()?->order_id)->toBe($order->id);
 });
 
@@ -174,15 +191,22 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
 
     $capturedOrderData = null;
     $orderService = mock(OrderServiceInterface::class);
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+    $fulfillment = mock(OrderFulfillment::class);
+    $payments = mock(OrderPaymentConfirmation::class);
+    app()->instance(OrderFulfillment::class, $fulfillment);
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')
         ->once()
-        ->andReturnUsing(function (array $orderData) use (&$capturedOrderData, $order): Order {
+        ->andReturnUsing(function (array $orderData) use (&$capturedOrderData, $order): OrderIntakeData {
             $capturedOrderData = $orderData;
 
-            return $order;
+            return intakeSnapshotForCreateOrderStep($order);
         });
     $orderService->shouldReceive('createFromCart')->never();
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
@@ -284,18 +308,29 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
     $capturedOrderData = null;
 
     $orderService = mock(OrderServiceInterface::class);
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')
         ->once()
-        ->andReturnUsing(function (array $orderData) use (&$capturedOrderData): Order {
+        ->andReturnUsing(function (array $orderData) use (&$capturedOrderData): OrderIntakeData {
             $capturedOrderData = $orderData;
 
             $order = new Order;
             $order->id = (string) Str::uuid();
             $order->order_number = 'ORD-AFFILIATE-VOUCHER-OVERRIDE';
 
-            return $order;
+            return intakeSnapshotForCreateOrderStep($order);
         });
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andReturnUsing(fn (Order $order): Order => $order);
+    $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
 
     app()->instance(OrderServiceInterface::class, $orderService);
 
@@ -320,11 +355,22 @@ it('confirms payment when the reported amount exactly matches the checkout total
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')
         ->once()
         ->withArgs(fn (...$arguments): bool => ($arguments[3] ?? null) === 1000)
-        ->andReturn($order);
+        ->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -346,8 +392,19 @@ it('blocks payment confirmation when the reported amount mismatches the checkout
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 999]);
@@ -377,8 +434,19 @@ it('blocks payment confirmation when the reported currency mismatches the checko
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([
@@ -411,8 +479,19 @@ it('blocks payment confirmation when the payment currency is missing', function 
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([
@@ -442,8 +521,19 @@ it('fails closed when the payment amount is missing', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([]);
@@ -471,8 +561,19 @@ it('blocks payment confirmation when the order total drifted from the checkout t
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -502,8 +603,19 @@ it('blocks payment confirmation when the order currency drifted from the checkou
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -531,8 +643,19 @@ it('blocks payment confirmation when the order carries no total', function (): v
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -557,9 +680,20 @@ it('confirms free orders for processing without payment', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $cartManager = mock(CartManagerInterface::class);
@@ -589,8 +723,19 @@ it('fails the step when free order confirmation throws', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(new RuntimeException('boom'));
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(new RuntimeException('boom'));
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $cartManager = mock(CartManagerInterface::class);
@@ -622,8 +767,19 @@ it('records a reconciliation mismatch when a session-marked free order owes a ba
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(
         new InvalidArgumentException('Only orders with no total can be confirmed as free orders.')
     );
     app()->instance(OrderServiceInterface::class, $orderService);
@@ -665,8 +821,19 @@ it('classifies state rejections from the exception rather than its copy of the r
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
-    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+    $metadataWriter = mock(OrderMetadataWriter::class);
+    $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+    app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
+    $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCreateOrderStep($order));
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(
         OrderNotAwaitingPayment::forState('OnHold')
     );
     app()->instance(OrderServiceInterface::class, $orderService);
@@ -693,3 +860,14 @@ it('classifies state rejections from the exception rather than its copy of the r
         ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.reason'))->toBe('order_state_not_confirmable')
         ->and($freshSession?->error_message)->toBe('The order cannot be confirmed for processing in its current state.');
 });
+
+function intakeSnapshotForCreateOrderStep(Order $order): OrderIntakeData
+{
+    return new OrderIntakeData(
+        id: (string) $order->getKey(),
+        orderNumber: $order->order_number,
+        grandTotal: (int) $order->grand_total,
+        currency: $order->currency,
+        paidTotal: $order->getTotalPaid(),
+    );
+}

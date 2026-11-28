@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Docs\EntryPoints\Http\Controllers;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Runtime\DocumentRendering;
+use AIArmada\Docs\Contracts\DocServiceInterface;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+final class DocDownloadController
+{
+    public function __invoke(Doc | string $doc, DocumentRendering $renderer, DocumentPdfPublisher $storePdf): BinaryFileResponse | StreamedResponse
+    {
+        $ownerEnabled = (bool) config('docs.owner.enabled', false);
+
+        if ($doc instanceof Doc) {
+            if ($ownerEnabled) {
+                try {
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(
+                        Doc::class,
+                        (string) $doc->getKey(),
+                        OwnerContext::CURRENT,
+                        (bool) config('docs.owner.include_global', false),
+                    );
+                } catch (AuthorizationException) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            } else {
+                $docModel = $doc;
+            }
+        } else {
+            $includeGlobal = (bool) config('docs.owner.include_global', false);
+
+            if ($ownerEnabled) {
+                try {
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(Doc::class, $doc, OwnerContext::CURRENT, $includeGlobal);
+                } catch (AuthorizationException) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            } else {
+                $docModel = Doc::query()->find($doc);
+
+                if (! $docModel instanceof Doc) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            }
+        }
+
+        if ($ownerEnabled && ! $docModel->hasOwner() && ! OwnerContext::isExplicitGlobal()) {
+            $content = OwnerContext::withOwner(null, fn (): string => $renderer->renderPdf($docModel));
+
+            return response()->streamDownload(static fn () => print($content), $this->generateFilename($docModel), [
+                'Content-Type' => 'application/pdf',
+                'Cache-Control' => 'private, no-store',
+            ]);
+        }
+
+        $path = $storePdf->execute((string) $docModel->getKey());
+        $disk = app(DocServiceInterface::class)->resolveStorageDiskForDocType($docModel->doc_type);
+
+        return Storage::disk($disk)->download($path, $this->generateFilename($docModel), [
+            'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    private function generateFilename(Doc $doc): string
+    {
+        $type = ucfirst((string) $doc->doc_type);
+
+        $type = preg_replace('/[^A-Za-z0-9_-]+/', '-', $type) ?? 'Document';
+        $number = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $doc->doc_number) ?? '';
+
+        $base = mb_trim($type . '-' . $number, '-');
+        $base = mb_ltrim($base, '.');
+        $base = mb_substr($base, 0, 150);
+
+        if ($base === '') {
+            $base = 'Document';
+        }
+
+        return $base . '.pdf';
+    }
+}

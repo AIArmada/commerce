@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Versioning",
+  "owns": {
+    "table:docs_versions": [
+      "AIArmada\\Docs\\Features\\Versioning\\Actions\\CreateDocVersion"
+    ]
+  },
+  "extensions": {}
+}

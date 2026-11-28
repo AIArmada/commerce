@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;
 use AIArmada\Orders\States\Delivered;
@@ -21,8 +26,6 @@ beforeEach(function (): void {
 
 describe('Order Lifecycle Integration', function (): void {
     it('can handle complete order lifecycle from creation to completion', function (): void {
-        $service = app(OrderService::class);
-
         // 1. Create order
         $orderData = [
             'order_number' => 'ORD-LIFECYCLE-' . uniqid(),
@@ -61,7 +64,7 @@ describe('Order Lifecycle Integration', function (): void {
             'email' => 'john@test.com',
         ];
 
-        $order = $service->createOrder($orderData, $items, $billingAddress);
+        $order = app(CreateOrder::class)->execute($orderData, $items, $billingAddress);
 
         expect($order)->toBeInstanceOf(Order::class);
         expect($order->status)->toBeInstanceOf(PendingPayment::class);
@@ -69,20 +72,20 @@ describe('Order Lifecycle Integration', function (): void {
         expect($order->primaryAddress('billing'))->not->toBeNull();
 
         // 2. Confirm payment
-        $order = $service->confirmPayment($order, 'txn_integration_123', 'stripe', 22200);
+        $order = app(RegisterOrderPayment::class)->execute($order, 'txn_integration_123', 'stripe', 22200);
 
         expect($order->status)->toBeInstanceOf(Processing::class);
         expect($order->paid_at)->not->toBeNull();
         expect($order->payments)->toHaveCount(1);
 
         // 3. Ship order
-        $order = $service->ship($order, 'Test Carrier', 'TC123456789', 'ship_integration_123');
+        $order = (new ShipmentCreated($order, 'Test Carrier', 'TC123456789', 'ship_integration_123'))->handle();
 
         expect($order->status)->toBeInstanceOf(Shipped::class);
         expect($order->shipped_at)->not->toBeNull();
 
         // 4. Confirm delivery
-        $order = $service->confirmDelivery($order, ['delivered_by' => 'integration_test']);
+        $order = (new DeliveryConfirmed($order, ['delivered_by' => 'integration_test']))->handle();
 
         expect($order->status)->toBeInstanceOf(Delivered::class);
         expect($order->delivered_at)->not->toBeNull();
@@ -94,8 +97,6 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order return and refund process', function (): void {
-        $service = app(OrderService::class);
-
         // Create and process order to delivered state
         $order = Order::create([
             'order_number' => 'ORD-RETURN-' . uniqid(),
@@ -121,7 +122,7 @@ describe('Order Lifecycle Integration', function (): void {
         expect($order->status)->toBeInstanceOf(Returned::class);
 
         // 2. Process refund
-        $order = $service->processRefund($order, 15000, 'ref_integration_123', 'Full return');
+        $order = app(RegisterOrderRefund::class)->execute($order, 15000, 'ref_integration_123', 'Full return');
 
         expect($order->status)->toBeInstanceOf(Refunded::class);
         expect($order->refunds)->toHaveCount(1);
@@ -129,8 +130,6 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order cancellation with refund', function (): void {
-        $service = app(OrderService::class);
-
         // Create order in pending payment state
         $order = Order::create([
             'order_number' => 'ORD-CANCEL-REFUND-' . uniqid(),
@@ -152,7 +151,7 @@ describe('Order Lifecycle Integration', function (): void {
         ]);
 
         // Cancel with refund
-        $order = $service->cancel($order, 'Customer changed mind');
+        $order = (new OrderCanceled($order, 'Customer changed mind'))->handle();
 
         expect($order->status)->toBeInstanceOf(Canceled::class);
         expect($order->cancellation_reason)->toBe('Customer changed mind');

@@ -2,14 +2,23 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Data\OutboxStatus;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
+use AIArmada\Orders\Features\Lifecycle\Actions\FreeOrderConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
+use AIArmada\Orders\Features\Outbox\Actions\RelayOrderOutbox;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\Canceled;
@@ -17,13 +26,8 @@ use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
-use AIArmada\Orders\Transitions\FreeOrderConfirmed;
-use AIArmada\Orders\Transitions\OrderCanceled;
-use AIArmada\Orders\Transitions\OrderFlaggedAsFraud;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
-use AIArmada\Orders\Transitions\RefundCompleted;
-use AIArmada\Orders\Transitions\RefundProcessed;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -172,7 +176,7 @@ it('relays backdated pending rows and marks them relayed', function (): void {
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['relayed'])->toBe(1);
 
@@ -196,7 +200,7 @@ it('skips rows within the grace window', function (): void {
 
     insertOutboxRelayRow($order);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['relayed'])->toBe(0)
         ->and($result['skipped'])->toBe(0);
@@ -220,7 +224,7 @@ it('dispatches inside the order owner context', function (): void {
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    RelayOrderOutbox::run();
+    app(RelayOrderOutbox::class)->execute();
 
     expect($seen)->toHaveCount(1)
         ->and($seen[0]->is($order->owner))->toBeTrue();
@@ -244,7 +248,7 @@ it('fails with backoff when dispatch throws, then deads after max attempts', fun
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['failed'])->toBe(1);
 
@@ -256,13 +260,13 @@ it('fails with backoff when dispatch throws, then deads after max attempts', fun
         ->and($row->last_error)->toContain('boom');
 
     // Not due yet: relay leaves it alone.
-    expect(RelayOrderOutbox::run()['failed'])->toBe(0);
+    expect(app(RelayOrderOutbox::class)->execute()['failed'])->toBe(0);
 
     DB::table($table)->where('id', $id)->update([
         'next_retry_at' => CarbonImmutable::now()->subMinute(),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['dead'])->toBe(1)
         ->and(DB::table($table)->find($id)->status)->toBe(OutboxStatus::Dead->value);
@@ -280,7 +284,7 @@ it('deads unknown event classes immediately without dispatching', function (): v
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['dead'])->toBe(1)
         ->and(DB::table($table)->find($id)->status)->toBe(OutboxStatus::Dead->value);
@@ -299,7 +303,7 @@ it('deads rows whose order is gone', function (): void {
 
     $order->delete();
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['dead'])->toBe(1)
         ->and(DB::table($table)->find($id)->status)->toBe(OutboxStatus::Dead->value);
@@ -346,7 +350,7 @@ it('suppresses staged rows when the order is cancelled', function (): void {
 
     Event::fake([OrderFulfillmentRequired::class, OrderProcessingStarted::class]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['relayed'])->toBe(0)
         ->and($result['suppressed'])->toBe(0);
@@ -366,7 +370,7 @@ it('relay suppresses aged rows for cancelled orders instead of dispatching', fun
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['suppressed'])->toBe(1)
         ->and($result['relayed'])->toBe(0);
@@ -450,7 +454,7 @@ it('suppresses staged rows when a processed refund completes the full amount', f
     captureAfterCommitHooks();
     (new PaymentConfirmed($order, 'txn-relay-refproc', 'stripe', 10000))->handle();
 
-    (new RefundProcessed($order->fresh(), 10000, 'txn-refproc-1', 'Returned items'))->handle();
+    (new RegisterOrderRefund)->execute($order->fresh(), 10000, 'txn-refproc-1', 'Returned items');
 
     expect($order->fresh()->status)->toBeInstanceOf(Refunded::class);
 
@@ -465,7 +469,7 @@ it('does not suppress staged rows on partial processed refund', function (): voi
     captureAfterCommitHooks();
     (new PaymentConfirmed($order, 'txn-relay-refproc-part', 'stripe', 10000))->handle();
 
-    (new RefundProcessed($order->fresh(), 4000, 'txn-refproc-part-1', 'Partial return'))->handle();
+    (new RegisterOrderRefund)->execute($order->fresh(), 4000, 'txn-refproc-part-1', 'Partial return');
 
     expect($order->fresh()->status)->toBeInstanceOf(Processing::class);
 
@@ -504,7 +508,7 @@ it('relay suppresses aged rows for fraud orders instead of dispatching', functio
         'created_at' => CarbonImmutable::now()->subMinutes(10),
     ]);
 
-    $result = RelayOrderOutbox::run();
+    $result = app(RelayOrderOutbox::class)->execute();
 
     expect($result['suppressed'])->toBe(1)
         ->and($result['relayed'])->toBe(0);
@@ -558,4 +562,90 @@ it('does not suppress staged rows on partial refund', function (): void {
     foreach (outboxRelayRows() as $row) {
         expect($row->status)->toBe(OutboxStatus::Pending->value);
     }
+});
+
+it('rejects invalid relay batch limits', function (): void {
+    expect(fn () => app(RelayOrderOutbox::class)->execute(0))
+        ->toThrow(InvalidArgumentException::class);
+
+    $this->app->make(Kernel::class)->registerCommand(new RelayOrderOutboxCommand);
+
+    $this->artisan('orders:outbox-relay', ['--limit' => 'invalid'])
+        ->assertExitCode(2);
+});
+
+it('skips previously relayed rows during live dispatch', function (): void {
+    $order = makeOutboxRelayOrder('ORD-RELAY-LIVE-RACE');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    $alreadyRelayed = insertOutboxRelayRow($order, [
+        'event_class' => OrderProcessingStarted::class,
+        'status' => OutboxStatus::Relayed->value,
+    ]);
+    $pending = insertOutboxRelayRow($order, [
+        'event_class' => OrderFulfillmentRequired::class,
+    ]);
+
+    $writer = app(OrderOutboxWriter::class);
+    $writer->dispatchReplayable((string) $order->getKey(), [$alreadyRelayed, $pending], 'txn-relay-1', 'stripe');
+    $writer->dispatchReplayable((string) $order->getKey(), [$alreadyRelayed, $pending], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertDispatchedTimes(OrderFulfillmentRequired::class, 1);
+
+    expect(array_column(outboxRelayRows(), 'status'))->toBe([OutboxStatus::Relayed->value, OutboxStatus::Relayed->value]);
+});
+
+it('leaves a claimed outbox row to its relay worker', function (): void {
+    $order = makeOutboxRelayOrder('ORD-RELAY-CLAIMED');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    $claimed = insertOutboxRelayRow($order, [
+        'event_class' => OrderProcessingStarted::class,
+        'status' => OutboxStatus::Relaying->value,
+        'claimed_at' => CarbonImmutable::now(),
+    ]);
+
+    app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$claimed], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertNotDispatched(OrderFulfillmentRequired::class);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Relaying->value);
+});
+
+it('blocks live outbox dispatch across owner boundaries', function (): void {
+    config()->set('orders.owner.enabled', true);
+    config()->set('orders.owner.include_global', false);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $order = OwnerContext::withOwner($owner, fn (): Order => makeOutboxRelayOrder('ORD-RELAY-OWNER-BOUNDARY'));
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+    $id = insertOutboxRelayRow($order);
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$id], 'txn-relay-1', 'stripe')))
+        ->toThrow(RuntimeException::class, 'Cross-owner mutation blocked');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Pending->value);
+
+    OwnerContext::withOwner($owner, fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$id], 'txn-relay-1', 'stripe'));
+
+    Event::assertDispatchedTimes(OrderProcessingStarted::class, 1);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Relayed->value);
+});
+
+it('does not dispatch unstaged events when the outbox is enabled', function (): void {
+    config()->set('orders.outbox.enabled', true);
+    $order = makeOutboxRelayOrder('ORD-RELAY-UNSTAGED');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [null, null], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertNotDispatched(OrderFulfillmentRequired::class);
 });

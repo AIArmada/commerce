@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Docs\Enums\DocMergeTag;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Filament\Forms\Components\Builder;

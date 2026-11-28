@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "Outbox",
+  "owns": {
+    "table:order_outbox_messages": [
+      "AIArmada\\Orders\\Features\\Outbox\\Persistence\\OrderOutbox",
+      "AIArmada\\Orders\\Features\\Outbox\\Actions\\RelayOrderOutbox",
+      "AIArmada\\Orders\\Features\\Outbox\\Actions\\SweepOrderOutbox"
+    ]
+  },
+  "extensions": {}
+}

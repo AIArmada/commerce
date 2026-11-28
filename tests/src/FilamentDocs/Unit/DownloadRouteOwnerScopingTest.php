@@ -9,10 +9,16 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
+use AIArmada\Docs\Contracts\PdfRenderer;
+use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 uses(TestCase::class);
 
@@ -24,6 +30,7 @@ beforeEach(function (): void {
 
     config()->set('docs.storage.disk', 'local');
     Storage::fake('local');
+    Gate::define('document.view', static fn (): bool => true);
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
@@ -49,20 +56,22 @@ it('allows same-tenant document routes and blocks cross-tenant document routes',
         'password' => bcrypt('password'),
     ]);
 
-    Storage::disk('local')->put('docs/a.pdf', 'pdf-bytes');
-    Storage::disk('local')->put('docs/b.pdf', 'pdf-bytes');
-
     $docA = OwnerContext::withOwner($ownerA, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => "INV/2025\n0001",
-        'pdf_path' => 'docs/a.pdf',
     ]));
 
     $docB = OwnerContext::withOwner($ownerB, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => 'INV/2025 0002',
-        'pdf_path' => 'docs/b.pdf',
     ]));
+
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->twice()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    OwnerContext::withOwner($ownerA, fn () => app(DocumentPdfPublisher::class)->execute((string) $docA->getKey()));
+    OwnerContext::withOwner($ownerB, fn () => app(DocumentPdfPublisher::class)->execute((string) $docB->getKey()));
 
     $this->actingAs($ownerA);
 
@@ -77,6 +86,29 @@ it('allows same-tenant document routes and blocks cross-tenant document routes',
 
     $this->get(route('filament-docs.documents.view', ['doc' => (string) $docB->getKey()]))
         ->assertNotFound();
+});
+
+it('renders a visible global document under its own global attachment scope', function (): void {
+    config()->set('docs.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $doc = OwnerContext::withOwner(null, fn (): Doc => Doc::factory()->create([
+        'doc_number' => 'INV-GLOBAL-PREVIEW',
+    ]));
+
+    $renderer = Mockery::mock(RichContentRendererInterface::class);
+    $renderer->shouldReceive('render')->atLeast()->once()->andReturnUsing(function (): HtmlString {
+        expect(OwnerContext::isExplicitGlobal())->toBeTrue();
+
+        return new HtmlString('Global document content');
+    });
+    app()->instance(RichContentRendererInterface::class, $renderer);
+    app()->forgetInstance(DocRenderService::class);
+
+    $this->actingAs($owner)
+        ->get(route('filament-docs.documents.view', ['doc' => $doc->getKey()]))
+        ->assertOk()
+        ->assertSee('INV-GLOBAL-PREVIEW');
 });
 
 it('fails closed when owner context is missing', function (): void {

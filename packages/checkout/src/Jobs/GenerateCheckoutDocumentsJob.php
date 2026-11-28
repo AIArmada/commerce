@@ -8,8 +8,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -46,7 +45,7 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        $session = CheckoutSession::find($this->sessionId);
+        $session = CheckoutSession::query()->forOwner(includeGlobal: false)->find($this->sessionId);
 
         if ($session === null) {
             return;
@@ -54,7 +53,7 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 
         $order = $this->resolveOrder($session);
 
-        if (! $order instanceof Order) {
+        if (! $order instanceof Order || ! $order->isFullyPaid()) {
             return;
         }
 
@@ -62,14 +61,15 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
         $gateway = $this->resolveGateway($session);
 
         foreach ($this->documentTypes as $type) {
-            $this->generateDocument($order, $type, $transactionId, $gateway);
+            if (in_array($type, ['invoice', 'receipt'], true)) {
+                app(OrderDocuments::class)->issue((string) $order->getKey(), $type, $transactionId, $gateway);
+            }
         }
     }
 
     private function resolveOrder(CheckoutSession $session): ?Order
     {
         $order = $session->order()
-            ->with(['items', 'addresses'])
             ->whereKey($this->orderId)
             ->first();
 
@@ -78,15 +78,6 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
         }
 
         return $order;
-    }
-
-    private function generateDocument(Order $order, string $type, string $transactionId, string $gateway): void
-    {
-        match ($type) {
-            'invoice' => app(CreateOrderInvoiceDoc::class)->execute($order, $transactionId, $gateway),
-            'receipt' => app(CreateOrderReceiptDoc::class)->execute($order, $transactionId, $gateway),
-            default => null,
-        };
     }
 
     private function resolveTransactionId(CheckoutSession $session): string

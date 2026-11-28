@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentTemplates;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -32,7 +33,7 @@ test('doc template set as default logic', function (): void {
     ]);
 
     // Set new as default
-    $new->setAsDefault();
+    app(DocumentTemplates::class)->setDefault((string) $new->getKey());
 
     expect($new->fresh()->is_default)->toBeTrue();
     expect($default->fresh()->is_default)->toBeFalse();
@@ -68,7 +69,7 @@ test('doc template set as default respects owner', function (): void {
             'is_default' => false,
         ]);
 
-        $ownedNew->setAsDefault();
+        app(DocumentTemplates::class)->setDefault((string) $ownedNew->getKey());
     });
 
     expect($ownedDefault)->toBeInstanceOf(DocTemplate::class);
@@ -84,7 +85,7 @@ test('doc template deleting logic', function (): void {
     $template = DocTemplate::factory()->create();
     $doc = Doc::factory()->create(['doc_template_id' => $template->id]);
 
-    $template->delete();
+    app(DocumentTemplates::class)->remove((string) $template->getKey());
 
     expect($doc->fresh()->doc_template_id)->toBeNull();
 });
@@ -101,4 +102,24 @@ test('doc template default scope', function (): void {
 
     $found = DocTemplate::query()->default('invoice')->first();
     expect($found->id)->toBe($default->id);
+});
+
+test('creating or editing a default template clears the previous default', function (): void {
+    $old = DocTemplate::factory()->create(['doc_type' => 'invoice', 'is_default' => true]);
+    $templates = app(DocumentTemplates::class);
+    $id = $templates->create([
+        'name' => 'New template',
+        'slug' => 'new-template',
+        'doc_type' => 'invoice',
+        'layout' => $old->layout,
+        'is_default' => true,
+    ]);
+
+    expect($old->fresh()->is_default)->toBeFalse()
+        ->and(DocTemplate::query()->findOrFail($id)->is_default)->toBeTrue();
+
+    $templates->update((string) $old->getKey(), ['is_default' => true]);
+
+    expect($old->fresh()->is_default)->toBeTrue()
+        ->and(DocTemplate::query()->findOrFail($id)->is_default)->toBeFalse();
 });

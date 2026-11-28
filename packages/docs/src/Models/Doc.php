@@ -6,18 +6,20 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocumentPdfCleanup;
+use AIArmada\Docs\Runtime\ApprovalRelationModel;
+use AIArmada\Docs\Runtime\DeliveryRelationModels;
+use AIArmada\Docs\Runtime\LifecycleRelationModels;
+use AIArmada\Docs\Runtime\PaymentRelationModel;
+use AIArmada\Docs\Runtime\TemplateRelationModel;
+use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
-use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
-use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Refunded;
-use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -27,12 +29,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
-use Throwable;
 
 /**
  * @property string $id
@@ -64,16 +63,25 @@ use Throwable;
  * @property array<int, array<string, mixed>>|null $items
  * @property array<string, mixed>|null $metadata
  * @property string|null $pdf_path
+ * @property string|null $pdf_fingerprint
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read DocTemplate|null $template
- * @property-read Collection<int, DocStatusHistory> $statusHistories
- * @property-read Collection<int, DocPayment> $payments
- * @property-read Collection<int, DocVersion> $versions
- * @property-read Collection<int, DocEmail> $emails
- * @property-read Collection<int, DocApproval> $approvals
- * @property-read Collection<int, DocShareLink> $shareLinks
- * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
+ * @property-read RelatedDocTemplate|null $template
+ * @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate
+ * @property-read Collection<int, RelatedDocStatusHistory> $statusHistories
+ * @phpstan-type RelatedDocStatusHistory \AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory
+ * @property-read Collection<int, RelatedDocPayment> $payments
+ * @phpstan-type RelatedDocPayment \AIArmada\Docs\Features\Payments\Models\DocPayment
+ * @property-read Collection<int, RelatedDocVersion> $versions
+ * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
+ * @property-read Collection<int, RelatedDocEmail> $emails
+ * @phpstan-type RelatedDocEmail \AIArmada\Docs\Features\Delivery\Models\DocEmail
+ * @property-read Collection<int, RelatedDocApproval> $approvals
+ * @phpstan-type RelatedDocApproval \AIArmada\Docs\Features\Approvals\Models\DocApproval
+ * @property-read Collection<int, RelatedDocShareLink> $shareLinks
+ * @phpstan-type RelatedDocShareLink \AIArmada\Docs\Features\Delivery\Models\DocShareLink
+ * @property-read RelatedDocEInvoiceSubmission|null $eInvoiceSubmission
+ * @phpstan-type RelatedDocEInvoiceSubmission \AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission
  * @property-read Model|null $docable
  */
 final class Doc extends Model implements Auditable
@@ -130,72 +138,72 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<DocTemplate, $this>
+     * @return BelongsTo<RelatedDocTemplate, $this>
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(DocTemplate::class, 'doc_template_id');
+        return $this->belongsTo(app(TemplateRelationModel::class)->template(), 'doc_template_id');
     }
 
     /**
-     * @return HasMany<DocStatusHistory, $this>
+     * @return HasMany<RelatedDocStatusHistory, $this>
      */
     public function statusHistories(): HasMany
     {
-        return $this->hasMany(DocStatusHistory::class);
+        return $this->hasMany(app(LifecycleRelationModels::class)->statusHistory(), 'doc_id');
     }
 
     /**
-     * @return HasMany<DocPayment, $this>
+     * @return HasMany<RelatedDocPayment, $this>
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(DocPayment::class);
+        return $this->hasMany(app(PaymentRelationModel::class)->payment(), 'doc_id');
     }
 
     /**
-     * @return HasMany<DocVersion, $this>
+     * @return HasMany<RelatedDocVersion, $this>
      */
     public function versions(): HasMany
     {
-        return $this->hasMany(DocVersion::class);
+        return $this->hasMany(app(VersionRelationModel::class)->version(), 'doc_id');
     }
 
     /**
-     * @return HasMany<DocEmail, $this>
+     * @return HasMany<RelatedDocEmail, $this>
      */
     public function emails(): HasMany
     {
-        return $this->hasMany(DocEmail::class);
+        return $this->hasMany(app(DeliveryRelationModels::class)->email(), 'doc_id');
     }
 
     /**
-     * @return HasMany<DocApproval, $this>
+     * @return HasMany<RelatedDocApproval, $this>
      */
     public function approvals(): HasMany
     {
-        return $this->hasMany(DocApproval::class);
+        return $this->hasMany(app(ApprovalRelationModel::class)->approval(), 'doc_id');
     }
 
     /**
-     * @return HasMany<DocShareLink, $this>
+     * @return HasMany<RelatedDocShareLink, $this>
      */
     public function shareLinks(): HasMany
     {
-        return $this->hasMany(DocShareLink::class);
+        return $this->hasMany(app(DeliveryRelationModels::class)->shareLink(), 'doc_id');
     }
 
     /**
-     * @return HasOne<DocEInvoiceSubmission, $this>
+     * @return HasOne<RelatedDocEInvoiceSubmission, $this>
      */
     public function eInvoiceSubmission(): HasOne
     {
-        return $this->hasOne(DocEInvoiceSubmission::class);
+        return $this->hasOne(app(LifecycleRelationModels::class)->eInvoiceSubmission(), 'doc_id');
     }
 
     public function isOverdue(): bool
     {
-        if ($this->status->equals(Paid::class) || $this->status->equals(Cancelled::class)) {
+        if ($this->status->equals(Paid::class) || $this->status->equals(Cancelled::class) || $this->status->equals(Refunded::class)) {
             return false;
         }
 
@@ -212,110 +220,42 @@ final class Doc extends Model implements Auditable
         return $this->status->isPayable();
     }
 
-    public function transitionStatusTo(DocStatus | string $status, ?string $notes = null): void
+    public function hasFinancialEvidence(): bool
     {
-        $statusClass = DocStatus::resolveStateClassFor($status, $this);
+        return $this->isPaid()
+            || $this->status->equals(PartiallyPaid::class)
+            || $this->status->equals(Refunded::class)
+            || $this->paid_at !== null
+            || $this->payments()->withoutOwnerScope()->exists()
+            || $this->eInvoiceSubmission()->withoutOwnerScope()->exists();
+    }
 
-        if ($this->status->equals($statusClass)) {
-            return;
-        }
-
-        $oldStatus = $this->status;
-
-        DB::transaction(function () use ($oldStatus, $statusClass, $notes): void {
-            $this->status->transitionTo($statusClass);
-
-            $transitionTimestamp = match ($statusClass) {
-                Sent::class => 'sent_at',
-                Paid::class => 'paid_at',
-                Cancelled::class => 'cancelled_at',
-                Overdue::class => 'overdue_at',
-                Refunded::class => 'refunded_at',
-                default => null,
-            };
-
-            if ($transitionTimestamp !== null && $this->{$transitionTimestamp} === null) {
-                $this->update([$transitionTimestamp => CarbonImmutable::now()]);
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(function (): ?bool {
+            if ($this->exists) {
+                $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+                $this->refresh();
             }
 
-            OwnerContext::withOwner($this->owner, function () use ($oldStatus, $statusClass, $notes): void {
-                $this->statusHistories()->create([
-                    'status' => $statusClass,
-                    'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $this),
-                    'created_at' => CarbonImmutable::now(),
-                ]);
-            });
+            return parent::delete();
         });
-    }
-
-    public function markAsPaid(?string $notes = null): void
-    {
-        if (! $this->canBePaid()) {
-            return;
-        }
-
-        $this->transitionStatusTo(Paid::class, $notes);
-    }
-
-    public function markAsSent(?string $notes = null): void
-    {
-        if ($this->status->equals(Draft::class) || $this->status->equals(Pending::class)) {
-            $this->transitionStatusTo(Sent::class, $notes);
-        }
-    }
-
-    public function cancel(?string $notes = null): void
-    {
-        if (! $this->status->equals(Paid::class)) {
-            $this->transitionStatusTo(Cancelled::class, $notes);
-        }
-    }
-
-    /**
-     * Update status and check for overdue
-     */
-    public function updateStatus(): void
-    {
-        if ($this->isOverdue() && ! $this->status->equals(Overdue::class)) {
-            $this->transitionStatusTo(Overdue::class, 'Automatic overdue detection');
-        }
     }
 
     protected static function booted(): void
     {
         self::deleting(function (Doc $doc): void {
-            $doc->statusHistories()->delete();
-            $doc->payments()->delete();
-            $doc->versions()->delete();
-            $doc->emails()->delete();
-            $doc->approvals()->delete();
-            $doc->shareLinks()->delete();
-            $doc->eInvoiceSubmission?->delete();
-            $doc->deleteStoredPdf();
+            if ($doc->hasFinancialEvidence()) {
+                throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
+            }
         });
-    }
 
-    /**
-     * Best-effort removal of the stored PDF. Disk failures are logged and
-     * never veto the database delete.
-     */
-    public function deleteStoredPdf(): void
-    {
-        if ($this->pdf_path === null || $this->pdf_path === '') {
-            return;
-        }
-
-        try {
-            $disk = app(DocService::class)->resolveStorageDiskForDocType($this->doc_type ?? 'invoice');
-
-            Storage::disk($disk)->delete($this->pdf_path);
-        } catch (Throwable $exception) {
-            Log::warning('Failed to delete stored document PDF.', [
-                'doc_id' => $this->getKey(),
-                'pdf_path' => $this->pdf_path,
-                'error' => $exception->getMessage(),
-            ]);
-        }
+        self::deleted(function (Doc $doc): void {
+            $id = (string) $doc->getKey();
+            $type = $doc->doc_type;
+            $path = $doc->pdf_path;
+            $doc->getConnection()->afterCommit(static fn () => app(DocumentPdfCleanup::class)->execute($id, $type, $path));
+        });
     }
 
     /**

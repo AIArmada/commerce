@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
@@ -17,11 +22,6 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
-use AIArmada\Orders\Transitions\OrderCanceled;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
-use AIArmada\Orders\Transitions\RefundProcessed;
-use AIArmada\Orders\Transitions\ShipmentCreated;
 
 describe('Order State Machine - Full Coverage', function (): void {
     describe('Complete Order Flow', function (): void {
@@ -138,15 +138,13 @@ describe('Order State Machine - Full Coverage', function (): void {
             $order->status->transitionTo(Returned::class);
             expect($order->status)->toBeInstanceOf(Returned::class);
 
-            // Returned -> Refunded (via RefundProcessed transition)
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer return', [], $payment);
-            $order = $transition->handle();
+            // Returned -> Refunded via the refund action
+            $order = (new RegisterOrderRefund)->execute($order, 5000, 'ref_txn_123', 'Customer return', [], $payment);
             expect($order->status)->toBeInstanceOf(Returned::class);
 
             // A second partial refund closes the order once the full amount
             // has been returned.
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer return', [], $payment);
-            $order = $transition->handle();
+            $order = (new RegisterOrderRefund)->execute($order, 5000, 'ref_txn_124', 'Customer return', [], $payment);
             expect($order->status)->toBeInstanceOf(Refunded::class);
         });
     });

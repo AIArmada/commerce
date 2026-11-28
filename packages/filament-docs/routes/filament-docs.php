@@ -5,9 +5,10 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerRouteBinding;
+use AIArmada\Docs\EntryPoints\Http\Controllers\DocDownloadController;
+use AIArmada\Docs\EntryPoints\Http\Controllers\DocPreviewController;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Http\Controllers\DocDownloadController;
-use AIArmada\Docs\Http\Controllers\DocPreviewController;
+use AIArmada\FilamentDocs\EntryPoints\Http\Middleware\AuthorizeDocumentView;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -33,6 +34,8 @@ if ((bool) config('docs.owner.enabled', false)) {
 
     $middleware[] = NeedsOwner::class;
 }
+
+$middleware[] = AuthorizeDocumentView::class;
 
 Route::middleware($middleware)
     ->prefix('filament-docs')

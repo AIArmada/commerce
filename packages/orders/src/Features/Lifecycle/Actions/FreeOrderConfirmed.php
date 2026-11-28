@@ -1,0 +1,90 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Orders\Events\OrderProcessingStarted;
+use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Created;
+use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use InvalidArgumentException;
+use Spatie\ModelStates\Transition;
+
+final class FreeOrderConfirmed extends Transition
+{
+    use AssertsOrderOwnerBoundary;
+
+    public function __construct(
+        private Order $order,
+    ) {}
+
+    public function handle(): Order
+    {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+        return $this->order->getConnection()->transaction(function (): Order {
+            $order = $this->order->newQuery()
+                ->lockForUpdate()
+                ->findOrFail($this->order->getKey());
+            $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+            // Money guards first: "free" means nothing owed AND nothing
+            // paid. A zero balance alone is not enough — a fully paid
+            // order also owes nothing.
+            if ((int) $order->grand_total > 0) {
+                throw new InvalidArgumentException('Only orders with no total can be confirmed as free orders.');
+            }
+
+            if ($order->getTotalPaid() !== 0) {
+                throw new InvalidArgumentException('Only unpaid orders can be confirmed as free orders.');
+            }
+
+            if ($order->status->equals(Processing::class)) {
+                $this->syncCallerOrder($order);
+
+                return $order;
+            }
+
+            if (! $order->status->equals(Created::class) && ! $order->status->equals(PendingPayment::class)) {
+                throw OrderNotAwaitingPayment::forState(class_basename($order->status));
+            }
+
+            $order->status->transitionTo(Processing::class);
+            $order->save();
+
+            $this->syncCallerOrder($order);
+
+            // Stage outbox rows in-transaction so a crash between commit and
+            // dispatch stays recoverable.
+            $outboxIds = [
+                app(OrderOutboxWriter::class)->stage((string) $order->getKey(), OrderProcessingStarted::class, (string) $order->getKey(), 'free'),
+                app(OrderOutboxWriter::class)->stage((string) $order->getKey(), OrderFulfillmentRequired::class, (string) $order->getKey(), 'free'),
+            ];
+
+            $order->getConnection()->afterCommit(function () use ($order, $outboxIds): void {
+                $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
+                OwnerContext::withOwner($owner, static fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, (string) $order->getKey(), 'free'));
+            });
+
+            return $order;
+        });
+    }
+
+    /**
+     * Mirror the locked copy back onto the caller's instance so code
+     * holding the original model does not read stale state.
+     */
+    private function syncCallerOrder(Order $order): void
+    {
+        $this->order->setRawAttributes($order->getAttributes());
+        $this->order->setRelations($order->getRelations());
+        $this->order->syncOriginal();
+    }
+}

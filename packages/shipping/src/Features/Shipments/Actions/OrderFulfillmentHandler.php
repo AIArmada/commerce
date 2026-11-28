@@ -9,10 +9,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Integrations\FulfillmentLocationService;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
@@ -79,9 +79,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
     /**
      * {@inheritDoc}
      */
-    public function createShipment(Order $order, array $shipmentData): array
+    public function createShipment(string $orderId, array $shipmentData): array
     {
         try {
+            $order = Order::query()->findOrFail($orderId);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
             $shippingAddress = $order->primaryAddress('shipping');
 
@@ -212,8 +213,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
     /**
      * {@inheritDoc}
      */
-    public function getRates(Order $order): array
+    public function getRates(string $orderId): array
     {
+        $order = Order::query()->findOrFail($orderId);
+        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
         $shippingAddress = $order->primaryAddress('shipping');
 
         if ($shippingAddress === null) {

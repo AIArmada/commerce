@@ -85,7 +85,7 @@ it('maps the canonical shipping attachment into shipment data', function (): voi
     $order->attachAddress($address, type: 'shipping', isPrimary: true);
 
     $handler = new OrderFulfillmentHandler($shippingManager, $shipmentService);
-    $result = $handler->createShipment($order, ['carrier' => 'manual', 'service' => 'standard']);
+    $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual', 'service' => 'standard']);
 
     expect($result)->toMatchArray([
         'success' => true,
@@ -141,7 +141,7 @@ it('maps the canonical shipping attachment into carrier rate requests', function
     $order->attachAddress($address, type: 'shipping', isPrimary: true);
 
     $handler = new OrderFulfillmentHandler($shippingManager, $shipmentService);
-    $rates = $handler->getRates($order);
+    $rates = $handler->getRates((string) $order->getKey());
 
     expect($rates)->toBe([[
         'carrier' => 'manual',
@@ -173,7 +173,7 @@ it('refuses shipments to destinations that fail address validation', function ()
     $order->attachAddress($address, type: 'shipping', isPrimary: true);
 
     $handler = new OrderFulfillmentHandler($shippingManager, $shipmentService);
-    $result = $handler->createShipment($order, ['carrier' => 'manual', 'service' => 'standard']);
+    $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual', 'service' => 'standard']);
 
     expect($result['success'])->toBeFalse()
         ->and($result['error'])->toContain('not shippable');
@@ -185,8 +185,8 @@ it('keeps fulfillment addressless when no canonical shipping attachment exists',
     $order = Order::factory()->create();
     $handler = new OrderFulfillmentHandler($shippingManager, $shipmentService);
 
-    expect($handler->getRates($order))->toBeEmpty()
-        ->and($handler->createShipment($order, []))->toMatchArray([
+    expect($handler->getRates((string) $order->getKey()))->toBeEmpty()
+        ->and($handler->createShipment((string) $order->getKey(), []))->toMatchArray([
             'success' => false,
             'shipment_id' => null,
             'tracking_number' => null,

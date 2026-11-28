@@ -44,7 +44,11 @@ use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OrderIntakeData;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Data\PriceResultData;
@@ -1166,14 +1170,21 @@ describe('pricing join by item id', function (): void {
 
         $capturedItems = null;
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $orderService->shouldReceive('createOrder')
             ->once()
-            ->andReturnUsing(function (array $orderData, array $items) use (&$capturedItems, $order): Order {
+            ->andReturnUsing(function (array $orderData, array $items) use (&$capturedItems, $order): OrderIntakeData {
                 $capturedItems = $items;
 
-                return $order;
+                return intakeSnapshotForCheckoutRegression($order);
             });
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $result = app(CreateOrderStep::class)->handle($session);
@@ -1192,8 +1203,19 @@ describe('incomplete payment reference', function (): void {
         $order->forceFill(['id' => (string) Str::uuid(), 'order_number' => 'ORD-REF-MISSING']);
 
         $orderService = mock(OrderServiceInterface::class);
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->never();
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForCheckoutRegression($order));
+        $payments->shouldReceive('confirmCheckout')->never();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -1435,3 +1457,14 @@ describe('resumeCheckout id validation', function (): void {
             ->toThrow(InvalidCheckoutStateException::class);
     });
 });
+
+function intakeSnapshotForCheckoutRegression(Order $order): OrderIntakeData
+{
+    return new OrderIntakeData(
+        id: (string) $order->getKey(),
+        orderNumber: $order->order_number,
+        grandTotal: (int) $order->grand_total,
+        currency: $order->currency,
+        paidTotal: $order->getTotalPaid(),
+    );
+}

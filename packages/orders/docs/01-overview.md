@@ -32,8 +32,8 @@ The `aiarmada/orders` package owns order records, order lifecycle transitions, p
 ## Main models services or surfaces
 
 - **Models** — order, order items, addresses, payments, refunds, and notes
-- **Actions** — `CreateOrder`, `CreateOrderFromCart`, `CancelOrder`, `CompleteOrder`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus invoice/receipt doc generation
-- **Services** — `OrderService` (public service API delegating to Actions)
+- **Actions** — `CreateOrder`, `CreateOrderFromCart`, `OrderCanceled`, `OrderCompleted`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus invoice/receipt doc generation
+- **Contracts** — `OrderServiceInterface`, `OrderAdministration`, `OrderPaymentConfirmation`, `OrderRefunds`, `OrderFulfillment`, and `OrderDocuments`
 - **State machine** — order state classes and transitions
 - **Events** — lifecycle events including `OrderCreated`, `OrderPaid`, `OrderCanceled`, `OrderCancelInitiated`, `OrderProcessingStarted`
 - **Transitions** — state transition classes (`PaymentConfirmed`, `OrderCanceled`, `OrderCompleted`, etc.)
@@ -75,16 +75,16 @@ The Orders package provides a complete order management system for e-commerce ap
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       Actions (Canonical)                    │
-│  CreateOrder  CreateOrderFromCart  CancelOrder               │
-│  CompleteOrder  RegisterOrderPayment  RegisterOrderRefund    │
+│  CreateOrder  CreateOrderFromCart  OrderCanceled               │
+│  OrderCompleted  RegisterOrderPayment  RegisterOrderRefund    │
 │  DetermineOrderDocumentType  CreateOrderInvoiceDoc           │
 │  CreateOrderReceiptDoc  GenerateInvoice                      │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                       OrderService                           │
-│  (Compatibility facade delegating to Actions)                │
+│                    Public Contracts                         │
+│  (Scalar IDs and immutable data)                             │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -118,20 +118,18 @@ packages/orders/
 │   ├── lang/               # Translations
 │   └── views/              # Invoice templates
 └── src/
-    ├── Actions/            # 10+ Actions (canonical orchestration API)
-    │   └── Concerns/       # Action helper traits
+    ├── Features/           # Lifecycle, Payments, Documents, Outbox
+    ├── Platform/           # Feature registration and extensions
     ├── Contracts/          # Service & Handler interfaces
     ├── Enums/              # PaymentStatus, RefundStatus, OrderItemStatus
     ├── Events/             # 13+ lifecycle events
     │   └── Concerns/       # Event helper traits
     ├── Health/             # Health checks
-    ├── Listeners/          # Inventory deduction, invoice creation
+    ├── EntryPoints/Listeners/ # Inventory deduction, invoice creation
     ├── Models/             # Eloquent models
     ├── Policies/           # Authorization policies
-    ├── Services/           # OrderService (public service API)
     ├── States/             # Order state classes
-    ├── Support/            # OrderHandlerRegistrar and helpers
-    └── Transitions/        # State transition classes
+    └── Support/            # OrderHandlerRegistrar and helpers
 ```
 
 ## Requirements
@@ -145,38 +143,34 @@ packages/orders/
 ## Quick Start
 
 ```php
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-// Create an order — $orderData and $items are both required
-$order = app(OrderService::class)->createOrder(
+$order = app(OrderServiceInterface::class)->createOrder(
     orderData: [
         'currency' => 'MYR',
+        'subtotal' => 19800,
+        'grand_total' => 19800,
         'notes' => 'Customer notes',
     ],
-    items: [],
+    items: [[
+        'name' => 'Product Name',
+        'sku' => 'SKU-001',
+        'quantity' => 2,
+        'unit_price' => 9900,
+    ]],
 );
 
-// Add items
-app(OrderService::class)->addItem($order, [
-    'name' => 'Product Name',
-    'sku' => 'SKU-001',
-    'quantity' => 2,
-    'unit_price' => 9900, // cents
-]);
-
-// Confirm payment
-app(OrderService::class)->confirmPayment(
-    $order,
+app(OrderPaymentConfirmation::class)->confirm(
+    $order->id,
     'txn_123456',
     'stripe',
-    9900 // cents
+    19800,
 );
 
-// Ship the order
-app(OrderService::class)->ship($order, 'DHL', 'TRACK123');
-
-// Confirm delivery
-app(OrderService::class)->confirmDelivery($order);
+app(OrderFulfillment::class)->ship($order->id, 'DHL', 'TRACK123');
+app(OrderFulfillment::class)->confirmDelivery($order->id);
 ```
 
 ## Read next

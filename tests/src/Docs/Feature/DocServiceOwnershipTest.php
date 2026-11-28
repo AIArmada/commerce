@@ -4,10 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Enums\DocType;
-use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
+use AIArmada\Docs\Contracts\DocumentVersions;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\States\Sent;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function (): void {
     config()->set('docs.owner.enabled', true);
@@ -27,7 +37,7 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
         'password' => bcrypt('password'),
     ]);
 
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
     $doc = $service->createFromType(
         DocType::Invoice,
         [
@@ -36,12 +46,12 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
         ],
         $ownerA,
     );
-    OwnerContext::withOwner($ownerA, static fn (): mixed => $doc->markAsSent());
+    OwnerContext::withOwner($ownerA, static fn (): mixed => app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]));
 
     expect($doc->owner_type)->toBe($ownerA->getMorphClass())
         ->and((string) $doc->owner_id)->toBe((string) $ownerA->getKey());
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): DocPayment => $service->recordPayment($doc, [
+    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): string => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 25,
         'payment_method' => 'cash',
     ])))->toThrow(AuthorizationException::class);
@@ -49,4 +59,193 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
     OwnerContext::withOwner($ownerA, function () use ($doc): void {
         expect($doc->payments()->count())->toBe(0);
     });
+});
+
+test('global document visibility does not grant tenant write access', function (): void {
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $doc = OwnerContext::withOwner(null, function (): Doc {
+        $doc = app(DocumentRecords::class)->createFromType(DocType::Invoice, [
+            'total_minor' => 100,
+            'currency' => 'MYR',
+        ]);
+        app(DocumentLifecycle::class)->markSent([(string) $doc->getKey()]);
+
+        return $doc;
+    });
+
+    $docId = (string) $doc->getKey();
+    $payment = ['amount_minor' => 25, 'payment_method' => 'cash'];
+
+    OwnerContext::withOwner($owner, function () use ($docId, $payment): void {
+        expect(Doc::query()->forOwner(OwnerContext::resolve(), true)->find($docId))->not->toBeNull();
+        expect(fn () => app(DocumentPaymentRecorder::class)->record($docId, $payment))->toThrow(AuthorizationException::class);
+        expect(fn () => app(DocumentVersions::class)->capture($docId))->toThrow(AuthorizationException::class);
+        expect(fn () => app(DocumentLifecycle::class)->delete([$docId]))->toThrow(AuthorizationException::class);
+        expect(fn () => app(DocumentEmailSender::class)->sendTo($docId, 'recipient@example.test'))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($docId, $payment): void {
+        expect(app(DocumentPaymentRecorder::class)->record($docId, $payment))->not->toBeEmpty();
+    });
+});
+
+test('copies documents only inside the source owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $service = app(DocumentRecords::class);
+
+    $source = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
+        DocType::Quotation,
+        [
+            'currency' => 'MYR',
+            'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 1000]],
+            'discount_amount_minor' => 100,
+        ],
+        $owner,
+    ));
+
+    OwnerContext::withOwner($other, function () use ($service, $source, $other): void {
+        expect(fn () => $service->clone($source, $other))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->convert($source, DocType::Invoice, $other))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($service, $source, $owner, $other): void {
+        expect(fn () => $service->clone($source, $other))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->convert($source, DocType::Invoice, $other))->toThrow(AuthorizationException::class);
+
+        $clone = $service->clone($source);
+        $converted = $service->convert($source, DocType::Invoice);
+
+        expect((string) $clone->owner_id)->toBe((string) $owner->getKey())
+            ->and((string) $converted->owner_id)->toBe((string) $owner->getKey())
+            ->and($clone->discount_amount_minor)->toBe(100)
+            ->and($converted->discount_amount_minor)->toBe(100);
+    });
+});
+
+test('orphaned document owners cannot be silently treated as global', function (): void {
+    $owner = User::factory()->create();
+    $service = app(DocumentRecords::class);
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
+        DocType::Invoice,
+        ['total_minor' => 100, 'currency' => 'MYR'],
+        $owner,
+    ));
+
+    $owner->delete();
+
+    OwnerContext::withOwner($owner, function () use ($doc): void {
+        expect(fn () => app(DocumentVersions::class)->capture((string) $doc->getKey()))
+            ->toThrow(ModelNotFoundException::class);
+    });
+});
+
+test('payment recording and document deletion reject mismatched financial evidence', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($other): void {
+        $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100, 'currency' => 'MYR']);
+        $docId = (string) $doc->getKey();
+        $recorder = app(DocumentPaymentRecorder::class);
+        $payment = ['amount_minor' => 25, 'payment_method' => 'cash', 'transaction_id' => 'owner-boundary-test'];
+        $paymentId = $recorder->record($docId, $payment);
+
+        $model = new DocPayment;
+        $model->getConnection()->table($model->getTable())->where('id', $paymentId)->update([
+            'owner_type' => $other->getMorphClass(),
+            'owner_id' => $other->getKey(),
+        ]);
+
+        // Simulate an inconsistent document state without hiding the financial evidence.
+        $doc->refresh()->forceFill(['status' => Sent::class, 'paid_at' => null])->save();
+
+        expect(fn () => app(DocumentRecords::class)->update($doc, ['currency' => 'USD']))
+            ->toThrow(InvalidArgumentException::class, 'financial terms cannot change')
+            ->and(fn () => $doc->delete())
+            ->toThrow(LogicException::class, 'payment or e-invoice evidence')
+            ->and(fn () => $recorder->record($docId, $payment))
+            ->toThrow(LogicException::class, 'ownership is inconsistent')
+            ->and(fn () => $recorder->record($docId, ['amount_minor' => 75, 'payment_method' => 'cash']))
+            ->toThrow(LogicException::class, 'ownership is inconsistent')
+            ->and(fn () => app(DocumentLifecycle::class)->delete([$docId]))
+            ->toThrow(LogicException::class, 'payment or e-invoice evidence');
+
+        expect($doc->refresh()->status->equals(Sent::class))->toBeTrue()
+            ->and($doc->currency)->toBe('MYR')
+            ->and($doc->payments()->withoutOwnerScope()->count())->toBe(1);
+    });
+});
+
+test('raw PDF rendering rejects a document from another owner even with a loaded model', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create());
+
+    OwnerContext::withOwner($other, function () use ($doc): void {
+        expect(fn () => app(DocumentRecords::class)->generatePdf($doc, save: false))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => app(DocServiceInterface::class)->generatePdf((string) $doc->getKey(), save: false))
+            ->toThrow(AuthorizationException::class);
+    });
+});
+
+test('automatic email templates prefer the document owner and only fall back to visible global templates', function (): void {
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $attributes = [
+        'name' => 'Invoice template',
+        'slug' => 'invoice-send',
+        'doc_type' => DocType::Invoice->value,
+        'trigger' => 'send',
+        'subject' => 'Invoice',
+        'body' => 'Body',
+        'is_active' => true,
+    ];
+
+    $global = OwnerContext::withOwner(null, fn (): DocEmailTemplate => DocEmailTemplate::query()->create($attributes));
+    OwnerContext::withOwner($other, fn (): DocEmailTemplate => DocEmailTemplate::query()->create($attributes));
+
+    OwnerContext::withOwner($owner, function () use ($attributes, $global): void {
+        $doc = Doc::factory()->create(['doc_type' => DocType::Invoice->value]);
+        $owned = DocEmailTemplate::query()->create($attributes);
+        $service = app(DocEmailService::class);
+
+        expect($service->findTemplate($doc, 'send')?->getKey())->toBe($owned->getKey());
+
+        $owned->update(['is_active' => false]);
+
+        expect($service->findTemplate($doc, 'send')?->getKey())->toBe($global->getKey());
+
+        config()->set('docs.owner.include_global', false);
+
+        expect($service->findTemplate($doc, 'send'))->toBeNull();
+    });
+});
+
+test('subject lookup does not reuse globally visible documents for tenant issuance', function (): void {
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $attributes = [
+        'doc_type' => DocType::Invoice->value,
+        'docable_type' => $owner->getMorphClass(),
+        'docable_id' => (string) $owner->getKey(),
+    ];
+    $global = OwnerContext::withOwner(null, fn (): Doc => Doc::factory()->create($attributes));
+    $service = app(DocServiceInterface::class);
+
+    OwnerContext::withOwner($owner, function () use ($attributes, $service): void {
+        expect($service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type']))->toBeNull();
+
+        $doc = Doc::factory()->create($attributes);
+
+        expect($service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type']))->toBe((string) $doc->getKey());
+    });
+
+    expect(OwnerContext::withOwner($other, fn (): ?string => $service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type'])))->toBeNull()
+        ->and(OwnerContext::withOwner(null, fn (): ?string => $service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type'])))->toBe((string) $global->getKey());
 });

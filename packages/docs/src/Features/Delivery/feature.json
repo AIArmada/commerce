@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "Delivery",
+  "owns": {
+    "table:docs_emails": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DocEmailService",
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DeliverDocEmail",
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\TrackDocEmail"
+    ],
+    "store:docs.email.delivery": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DeliverDocEmail"
+    ],
+    "table:doc_share_links": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\ManageDocShareLinks"
+    ],
+    "table:docs_email_templates": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\ManageDocEmailTemplates"
+    ]
+  },
+  "extensions": {}
+}

@@ -41,8 +41,10 @@ keywords:
 - Owner/security: Owner-scoped (all 6 models).
 
 ## Key surfaces
-- Models: `Order`, `OrderItem`, `OrderNote`, `OrderOutboxMessage`, `OrderPayment`, `OrderRefund`
-- Actions/Services: `Actions/CancelOrder`, `Actions/CompleteOrder`, `Actions/Concerns/AssertsOrderOwnerBoundary`, `Actions/Concerns/BuildsOrderDocs`, `Actions/Concerns/BuildsOrderPdf`, `Actions/CreateOrder`, `Actions/CreateOrderFromCart`, `Actions/CreateOrderInvoiceDoc`
+- Payments feature: `Features/Payments` owns payment and refund workflows, including settlement transitions.
+- Outbox feature: `Features/Outbox` owns `order_outbox_messages`; lifecycle callers use `Contracts/OrderOutboxWriter`.
+- Models: `Order`, `OrderItem`, `OrderNote`, `OrderPayment`, `OrderRefund`
+- Actions/Services: `Features/Lifecycle/Actions/OrderCanceled`, `Features/Lifecycle/Actions/OrderCompleted`, `Support/AssertsOrderOwnerBoundary`, `Features/Documents/Actions/Concerns/BuildsOrderDocs`, `Actions/Concerns/BuildsOrderPdf`, `Features/Lifecycle/Actions/CreateOrder`, `Features/Lifecycle/Actions/CreateOrderFromCart`, `Features/Documents/Actions/CreateOrderInvoiceDoc`
 - Config `orders.php`: `database`, `currency`, `company`, `owner`, `address_snapshots`, `order_number`, `invoice`, `integrations`, `audit`, `notifications`, `outbox`
 
 ## Docs map

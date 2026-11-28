@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Mail\Attachment;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,12 +16,14 @@ afterEach(function (): void {
 
 test('it builds PDF attachments from the configured storage disk', function (): void {
     Storage::fake('local');
-    Storage::disk('local')->put('docs/test.pdf', 'pdf-bytes');
 
     $doc = Doc::factory()->create([
         'doc_type' => 'invoice',
         'doc_number' => 'INV-ATTACH-001',
     ]);
+
+    $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
+    Storage::disk('local')->put($path, 'pdf-bytes');
 
     $docEmail = DocEmail::query()->create([
         'doc_id' => $doc->id,
@@ -33,11 +35,11 @@ test('it builds PDF attachments from the configured storage disk', function (): 
     ]);
 
     $docService = Mockery::mock(DocServiceInterface::class);
-    app()->instance(DocService::class, $docService);
+    app()->instance(DocServiceInterface::class, $docService);
     $docService->shouldReceive('generatePdf')
         ->once()
-        ->withArgs(fn (Doc $mailDoc, bool $save): bool => $mailDoc->is($doc) && $save === true)
-        ->andReturn('docs/test.pdf');
+        ->with((string) $doc->getKey(), true)
+        ->andReturn($path);
     $docService->shouldReceive('resolveStorageDiskForDocType')
         ->once()
         ->with('invoice')
@@ -49,8 +51,42 @@ test('it builds PDF attachments from the configured storage disk', function (): 
 
     expect($attachments)->toHaveCount(1);
     expect($attachments[0]->isEquivalent(
-        Attachment::fromStorageDisk('local', 'docs/test.pdf')
+        Attachment::fromStorageDisk('local', $path)
             ->as('Invoice-INV-ATTACH-001.pdf')
             ->withMime('application/pdf')
     ))->toBeTrue();
+});
+
+test('it fails delivery when a required PDF is missing', function (): void {
+    Storage::fake('local');
+
+    $doc = Doc::factory()->create(['doc_type' => 'invoice']);
+    $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
+
+    $docEmail = new DocEmail;
+
+    $docService = Mockery::mock(DocServiceInterface::class);
+    app()->instance(DocServiceInterface::class, $docService);
+    $docService->shouldReceive('generatePdf')
+        ->once()
+        ->with((string) $doc->getKey(), true)
+        ->andReturn($path);
+    $docService->shouldReceive('resolveStorageDiskForDocType')
+        ->once()
+        ->with('invoice')
+        ->andReturn('local');
+
+    $mail = new DocMail($docEmail, $doc, attachPdf: true);
+
+    expect(fn () => $mail->attachments())->toThrow(RuntimeException::class, 'Document PDF is unavailable.');
+});
+
+test('it skips PDF generation only when attachment is explicitly disabled', function (): void {
+    $docService = Mockery::mock(DocServiceInterface::class);
+    app()->instance(DocServiceInterface::class, $docService);
+    $docService->shouldNotReceive('generatePdf');
+
+    $mail = new DocMail(new DocEmail, new Doc, attachPdf: false);
+
+    expect($mail->attachments())->toBe([]);
 });

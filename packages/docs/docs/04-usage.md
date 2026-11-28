@@ -6,14 +6,14 @@ title: Usage
 
 ## Creating Documents
 
-Use the `DocService` to create documents:
+Use the `DocumentRecords` to create documents:
 
 ```php
-use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$docService = app(DocService::class);
+$docService = app(DocumentRecords::class);
 
 $document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
@@ -69,7 +69,7 @@ Configure numbering per type in `config/docs.php`:
 ],
 ```
 
-Default template selection no longer lives in config. `DocService` resolves the default template from `DocTemplate` records for the current `doc_type`, or you can pass `doc_template_id` / `template_slug` when you want a specific layout.
+Default template selection no longer lives in config. `DocumentRecords` resolves the default template from `DocTemplate` records for the current `doc_type`, or you can pass `doc_template_id` / `template_slug` when you want a specific layout.
 
 ## Selecting a Template Explicitly
 
@@ -86,7 +86,7 @@ $document = $docService->create(DocData::from([
 ]));
 ```
 
-If the selected template contains a `rich_body` block, you can also pass Tiptap JSON in `body`. `DocRenderService::validateDocPayload()` rejects bodies when the template has no rich-body block, and rejects templates with a `line_items` block when you submit an empty `items` array.
+If the selected template contains a `rich_body` block, you can also pass Tiptap JSON in `body`. `DocumentRendering::validateDocPayload()` rejects bodies when the template has no rich-body block, and rejects templates with a `line_items` block when you submit an empty `items` array.
 
 ## Automatic Calculations
 
@@ -163,10 +163,10 @@ Use `OwnerContext::withOwner($owner, ...)` around background or explicit tenant 
 
 ## Updating Documents
 
-`DocService::update()` persists an explicit allowlist only: template selection, docable link, dates, body, notes, terms, customer/company data, items, metadata, currency, discount, and pdf options. `doc_number`, `doc_type`, `pdf_path`, lifecycle timestamps, and derived totals are immutable here and silently ignored when passed.
+`DocumentRecords::update()` persists an explicit allowlist only: template selection, docable link, dates, body, notes, terms, customer/company data, items, metadata, currency, discount, and pdf options. `doc_number`, `doc_type`, `pdf_path`, lifecycle timestamps, and derived totals are immutable here and silently ignored when passed.
 
 ```php
-$document = app(DocService::class)->update($document, [
+$document = app(DocumentRecords::class)->update($document, [
     'notes' => 'Updated payment terms',
     'items' => [
         ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000],
@@ -185,12 +185,12 @@ $version->restore(); // or $version->restore('Rollback to signed copy');
 
 ## Recording Payments
 
-Use `DocService::recordPayment()` for document payments. Recorded payments are always stored with status `paid` and a server-set `paid_at`; the method must exist in `docs.payment_methods`.
+Use `DocumentPaymentRecorder::record()` for document payments. Recorded payments are always stored with status `paid` and a server-set `paid_at`; the method must exist in `docs.payment_methods`.
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 
-$payment = app(DocService::class)->recordPayment($document, [
+$paymentId = app(DocumentPaymentRecorder::class)->record((string) $document->getKey(), [
     'amount_minor' => 10_000,
     'currency' => 'MYR',
     'payment_method' => 'bank_transfer',
@@ -202,20 +202,21 @@ Payment recording is transactional, locks the document inside its owner scope, r
 
 ## Rendering and Share Links
 
-`DocService` delegates HTML/PDF rendering and share-link generation to `DocRenderService`.
+HTML/PDF rendering uses `DocumentRendering`; share-link issuance and revocation use `DocumentSharing`.
 
 ```php
-use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Contracts\DocumentSharing;
+use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Enums\ShareLinkAction;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Data\ShareLinkAction;
+use AIArmada\Docs\Runtime\DocumentRendering;
 
-$renderer = app(DocRenderService::class);
+$renderer = app(DocumentRendering::class);
 
 $html = $renderer->renderHtml($document, RenderAudience::CustomerView);
 $pdf = $renderer->renderPdf($document);
 
-$shareLink = $renderer->createShareLink($document, new ShareLinkData(
+$shareLink = app(DocumentSharing::class)->issue((string) $document->getKey(), new ShareLinkData(
     allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
 ));
 

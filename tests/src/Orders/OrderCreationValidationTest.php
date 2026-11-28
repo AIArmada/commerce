@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -221,4 +221,18 @@ it('omits the existing order key from intake conflict errors', function (): void
     } catch (OrderIntakeConflictException $e) {
         expect($e->getMessage())->not->toContain((string) $existing->getKey());
     }
+});
+
+it('rejects incomplete and blank intake identities', function (): void {
+    foreach ([[null, 'id'], ['checkout', null], [' ', 'id'], ['checkout', ' ']] as [$source, $id]) {
+        expect(fn () => app(CreateOrder::class)->execute(makeValidOrderData(), [makeValidItem()], intakeSource: $source, intakeId: $id))
+            ->toThrow(InvalidArgumentException::class, 'Intake source and ID');
+    }
+});
+
+it('rejects integer strings outside the supported monetary range', function (): void {
+    expect(fn () => app(CreateOrder::class)->execute(
+        makeValidOrderData(['grand_total' => (string) PHP_INT_MAX . '0']),
+        [makeValidItem()],
+    ))->toThrow(InvalidArgumentException::class, 'integer range');
 });

@@ -11,8 +11,8 @@ The canonical orchestration surface is the `Actions` tree. Prefer these over dir
 ### Creating Orders
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
-use AIArmada\Orders\Actions\CreateOrderFromCart;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderFromCart;
 
 // Basic creation — $orderData and $items are both required
 $order = app(CreateOrder::class)->execute(
@@ -46,7 +46,7 @@ $order = app(CreateOrderFromCart::class)->execute(
 Prevent duplicate orders from retries and concurrent submissions using intake identity. Pass `intakeSource` and `intakeId` to make order creation idempotent:
 
 ```php
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 
 // Idempotent creation — same intake identity returns the existing order
 $order = app(CreateOrder::class)->execute(
@@ -87,8 +87,8 @@ The Checkout `CreateOrderStep` uses `intakeSource: 'checkout'` with the session 
 ### Payment & Refunds
 
 ```php
-use AIArmada\Orders\Actions\RegisterOrderPayment;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 
 // Confirm payment
 app(RegisterOrderPayment::class)->execute(
@@ -150,25 +150,24 @@ existing reservations, and a failed request stays failed.
 ### Cancellation & Completion
 
 ```php
-use AIArmada\Orders\Actions\CancelOrder;
-use AIArmada\Orders\Actions\CompleteOrder;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
 // Cancel
-app(CancelOrder::class)->execute(
-    order: $order,
+app(OrderFulfillment::class)->cancel(
+    orderId: (string) $order->getKey(),
     reason: 'Customer requested cancellation',
     canceledBy: (string) auth()->id(),
 );
 
 // Complete (marks as completed)
-app(CompleteOrder::class)->execute($order);
+app(OrderFulfillment::class)->complete((string) $order->getKey());
 ```
 
 Cancelling an order that has received money reserves its remaining refundable balance as pending refunds in the same transaction: `RegisterOrderRefund::createCancellationReservations()` allocates across the completed payments in FIFO order, never beyond each payment's own remaining amount and never more than total paid minus settled and pending refunds. Reservations use the stable identity `cancel:{order}:{payment}` in `allocation_key`, so retried or concurrent cancellations cannot double-reserve; never-paid orders reserve nothing. See the [state machine](05-state-machine.md) for the transition contract.
 
 ### Deleting Orders (Prefer Cancel/Refund)
 
-Prefer `CancelOrder` / `RegisterOrderRefund` over deleting. `Order::delete()` refuses paid or final orders with a `LogicException`; pass `delete(force: true)` only for an explicit administrative retention override. Deletes run in a transaction that removes items, payments, refunds, and notes and detaches addresses.
+Prefer `OrderFulfillment::cancel()` / `OrderRefunds::processRefund()` over deleting. `Order::delete()` refuses paid or final orders with a `LogicException`; pass `delete(force: true)` only for an explicit administrative retention override. Deletes run in a transaction that removes items, payments, refunds, and notes and detaches addresses.
 
 ```php
 use AIArmada\Orders\Models\Order;
@@ -177,41 +176,27 @@ $order->delete(); // throws on paid/final orders
 $order->delete(force: true); // admin retention override only
 ```
 
-## OrderService (Compatibility)
+## Public contracts
 
-The `OrderServiceInterface` is a public service contract that delegates to Actions:
+Inject the relevant contract instead of importing an internal feature action. Order intake accepts scalar identifiers and returns an immutable `OrderIntakeData` snapshot.
 
-```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
-
-class CheckoutController
-{
-    public function __construct(
-        private OrderServiceInterface $orderService
-    ) {}
-}
-```
-
-Available through the service:
-
-| Method | Delegates To |
-|--------|-------------|
-| `createOrder()` | `CreateOrder` |
-| `createFromCart()` | `CreateOrderFromCart` |
-| `cancel()` | `OrderCanceled` transition |
-| `confirmPayment()` | `RegisterOrderPayment` |
-| `confirmFreeOrder()` | `FreeOrderConfirmed` transition |
-| `processRefund()` | `RegisterOrderRefund` |
-| `ship()` | `ShipmentCreated` transition |
-| `confirmDelivery()` | `DeliveryConfirmed` transition |
-| `complete()` | `OrderCompleted` transition |
+| Contract | Operations |
+| --- | --- |
+| `OrderServiceInterface` | Create from supplied data or a cart ID; find an order snapshot |
+| `OrderPaymentConfirmation` | Confirm payments, reconcile checkout payments, settle the outstanding balance |
+| `OrderRefunds` | Process and reserve refunds, claim submission, complete or fail reservations |
+| `OrderFulfillment` | Ship, confirm delivery, complete, cancel and confirm free orders |
+| `OrderAdministration` | Create drafts, edit notes and delete eligible unpaid drafts |
+| `OrderMetadataWriter` | Merge metadata under a row lock |
+| `OrderNotes` | Add, edit and remove notes |
+| `OrderDocuments` | Issue persisted invoices and receipts |
 
 ### Confirming free orders
 
 ```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-$order = $orderService->confirmFreeOrder($order); // Created/PendingPayment → Processing
+app(OrderFulfillment::class)->confirmFree((string) $order->getKey());
 ```
 
 Use this only for orders with `grand_total <= 0` and `paid_total === 0`. Paid, partially paid, and balance-owing Processing orders are rejected with `InvalidArgumentException`; held, canceled, or failed orders throw the `OrderNotAwaitingPayment` subclass. On success the order moves to Processing and stock deduction is scheduled after commit; no payment record, `paid_at`, or `OrderPaid` event is produced. See the [state machine](05-state-machine.md) for the full contract and known limitations.
@@ -285,9 +270,11 @@ if ($order->isFullyPaid()) {
 }
 ```
 
+Order intake and item administration enforce a single accounting currency. Equivalent currency aliases are normalized before validation and idempotent replay; mismatched line currencies are rejected.
+
 ### Cached payment/refund totals
 
-`paid_total`, `refunded_total`, and `pending_refunded_total` are cached on the order so balance checks (`getTotalPaid()`, `getTotalRefunded()`, `getRemainingRefundable()`, `getBalanceDue()`, `isFullyPaid()`) never fan out into per-relation sums. The caches are the single source of truth for reads and are kept in sync by `OrderPayment`/`OrderRefund` model events — every write path (transitions, actions, and direct creates) flows through them, so do not assign these columns manually. Item totals still come from `recalculateTotals()`, which uses ex-tax subtotals: `grand_total = subtotal + tax_total + shipping_total - discount_total`.
+`paid_total`, `refunded_total`, and `pending_refunded_total` are cached on the order so balance checks (`getTotalPaid()`, `getTotalRefunded()`, `getRemainingRefundable()`, `getBalanceDue()`, `isFullyPaid()`) never fan out into per-relation sums. The caches are the single source of truth for reads and are kept in sync by `OrderPayment`/`OrderRefund` model events — every write path (transitions, actions, and direct creates) flows through them, so do not assign these columns manually. Recalculate editable, unpaid order totals through `OrderAdministration::recalculateTotals()`. The action uses ex-tax subtotals, validates folded line discounts and floors the grand total at zero.
 
 ### Package unit refunds
 
@@ -314,9 +301,9 @@ A unit can have one pending refund request at a time. Replaying the same request
 Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. `ship()` runs the `ShipmentCreated` transition, which records the carrier and tracking number in order metadata. Carrier API operations go through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract, which the shipping package binds in the container when installed.
 
 ```php
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-app(OrderService::class)->ship($order, 'DHL', 'TRACK123');
+app(OrderFulfillment::class)->ship((string) $order->getKey(), 'DHL', 'TRACK123');
 ```
 
 Addresses are normalized through the canonical `AIArmada\Addressing\Contracts\AddressNormalizer`; contact fields stay in address metadata. Each `addAddress()` call attaches one fresh `Address` copy per order and type, and additionally writes an immutable `AddressSnapshot` (`order_billing` / `order_shipping`) when `orders.address_snapshots.enabled` is set. `status` is always a Spatie `AIArmada\Orders\States\OrderStatus` instance (see `05-state-machine.md`).
@@ -380,11 +367,11 @@ Run the relay frequently (every minute) and the sweep less often (hourly):
 
 ```php
 // routes/console.php
-use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\SweepOrderOutboxCommand;
 
-Schedule::command(RelayOrderOutbox::class)->everyMinute();
-Schedule::command(SweepOrderOutbox::class)->hourly();
+Schedule::command(RelayOrderOutboxCommand::class)->everyMinute();
+Schedule::command(SweepOrderOutboxCommand::class)->hourly();
 ```
 
 Or run them directly:
@@ -394,7 +381,7 @@ php artisan orders:outbox-relay --limit=100
 php artisan orders:outbox-sweep
 ```
 
-Both entrypoints are [Laravel Actions](https://www.laravelactions.com/): call `RelayOrderOutbox::run()` / `SweepOrderOutbox::run()` from code to get result counts, or run the artisan signatures above (same class, command entrypoint).
+Commands delegate to the concrete `Features\\Outbox\\Actions\\RelayOrderOutbox::execute()` and `Features\\Outbox\\Actions\\SweepOrderOutbox::execute()` actions. Resolve these actions through the container to use them from code.
 
 The sweep requeues rows stuck in `relaying` past the claim timeout, purges `relayed` history past retention, and reports `dead` rows. Dead rows need operator review — the sweep never repairs or invents rows.
 
@@ -409,16 +396,17 @@ Use `CreateOrderInvoiceDoc` when you want to create a Docs record for a paid ord
 Automatic `OrderPaid` invoice generation is disabled by default. Turn on `orders.integrations.docs.enabled` only when you want that event listener to create persisted Docs invoices automatically.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 
-$invoice = app(CreateOrderInvoiceDoc::class)->execute(
-    order: $order,
+$invoiceId = app(OrderDocuments::class)->issue(
+    orderId: (string) $order->getKey(),
+    type: 'invoice',
     transactionId: 'txn_abc123',
     gateway: 'chip',
 );
 ```
 
-The action re-enters the order's owner scope automatically and creates a Docs invoice only when one does not already exist for that order.
+The contract requires the current owner scope to match the order and creates a Docs invoice only when one does not already exist for that order.
 
 ### Persisted Receipt Documents
 
@@ -427,10 +415,11 @@ Use `CreateOrderReceiptDoc` when payment confirmation should also create a recei
 Checkout-driven receipt generation is also opt-in from the checkout package side; manual action usage remains available regardless of the listener defaults.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 
-$receipt = app(CreateOrderReceiptDoc::class)->execute(
-    order: $order,
+$receiptId = app(OrderDocuments::class)->issue(
+    orderId: (string) $order->getKey(),
+    type: 'receipt',
     transactionId: 'txn_abc123',
     gateway: 'chip',
 );
@@ -442,23 +431,18 @@ Both actions share the same internal order-doc builder, so customer data, order 
 
 ### Shared Builder: `BuildsOrderDocs`
 
-`CreateOrderInvoiceDoc`, `CreateOrderReceiptDoc`, `GenerateInvoice`, and `GenerateReceipt` all share the `AIArmada\Orders\Actions\Concerns\BuildsOrderDocs` trait. Persist actions write `Docs` rows through that builder; generators are render-only — they return a PDF download (or HTML fallback without a PDF runtime) and never create `Docs` records.
+`CreateOrderInvoiceDoc`, `CreateOrderReceiptDoc`, `GenerateInvoice`, and `GenerateReceipt` all share the `AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs` trait. Persist actions write `Docs` rows through that builder; generators are render-only — they return a PDF download (or HTML fallback without a PDF runtime) and never create `Docs` records.
 
 ### PDF Invoice Output
 
 ```php
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 
-$generator = app(GenerateInvoice::class);
-
-// Get a download response (PDF when a PDF runtime is present, HTML fallback otherwise)
-return $generator->download($order);
-
-// Or write the rendered document to a path and get the path back
-$path = $generator->save($order, storage_path('app/invoices/'.$order->order_number.'.pdf'));
+// After authorizing access to the order:
+return app(OrderInvoiceDownload::class)->download((string) $order->getKey());
 ```
 
-Use `GenerateInvoice` for ad-hoc PDF generation and download responses. Use `CreateOrderInvoiceDoc` / `CreateOrderReceiptDoc` when you want persisted Docs records that integrate with the Docs package.
+Use `OrderInvoiceDownload` for invoice download responses. Use the `OrderDocuments` contract when you want persisted Docs records that integrate with the Docs package.
 
 ## Health Checks
 

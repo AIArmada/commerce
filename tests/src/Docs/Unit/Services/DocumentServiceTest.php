@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Services\DocPaymentRecorder;
-use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\Services\DocTotals;
-use AIArmada\Docs\Services\SequenceManager;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
@@ -20,11 +20,10 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $this->sequenceManager = new SequenceManager;
     $this->numberRegistry = new DocumentNumberRegistry;
-    $this->service = new DocService(
+    $this->service = new ManageDocumentRecords(
         $this->numberRegistry,
         $this->sequenceManager,
-        new DocTotals,
-        new DocPaymentRecorder,
+        new CalculateDocumentTotals,
     );
 });
 
@@ -119,17 +118,18 @@ test('can record payment', function (): void {
         'status' => Sent::class,
     ]);
 
-    $payment = $this->service->recordPayment($doc, [
+    $paymentId = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 50,
         'payment_method' => 'bank_transfer',
         'reference' => 'REF123',
     ]);
+    $payment = $doc->payments()->findOrFail($paymentId);
 
     expect($payment->amount_minor)->toBe(50);
     expect($doc->fresh()->status->equals(PartiallyPaid::class))->toBeTrue();
 
     // Pay remaining
-    $this->service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 50,
         'payment_method' => 'bank_transfer',
     ]);
@@ -156,6 +156,8 @@ test('can convert a document', function (): void {
         'doc_type' => DocType::Quotation,
         'doc_number' => 'QUO-123',
         'subtotal_minor' => 100,
+        'tax_amount_minor' => 10,
+        'discount_amount_minor' => 0,
         'total_minor' => 110,
         'items' => [['name' => 'Item 1', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]);
@@ -166,7 +168,102 @@ test('can convert a document', function (): void {
         ->toBeInstanceOf(Doc::class)
         ->doc_type->toBe(DocType::Invoice->value)
         ->subtotal_minor->toBe(100)
-        ->total_minor->toBe(100)
+        ->tax_amount_minor->toBe(10)
+        ->total_minor->toBe(110)
         ->metadata->toHaveKey('converted_from')
         ->metadata->converted_from->doc_number->toBe('QUO-123');
+});
+
+test('preserves document financial terms after a partial payment while allowing notes', function (): void {
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'currency' => 'MYR',
+        'subtotal_minor' => 100,
+        'tax_amount_minor' => 0,
+        'discount_amount_minor' => 0,
+        'total_minor' => 100,
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100]],
+    ]);
+
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
+        'amount_minor' => 50,
+        'payment_method' => 'bank_transfer',
+    ]);
+
+    foreach ([
+        ['currency' => 'USD'],
+        ['items' => [['quantity' => 1, 'unit_price_minor' => 20]]],
+        ['discount_amount_minor' => 75],
+    ] as $changes) {
+        expect(fn () => $this->service->update($doc, $changes))
+            ->toThrow(InvalidArgumentException::class, 'Document financial terms cannot change');
+    }
+
+    $updated = $this->service->update($doc, [
+        'currency' => 'MYR',
+        'items' => $doc->items,
+        'discount_amount_minor' => 0,
+        'notes' => 'Payment reference confirmed.',
+    ]);
+
+    expect($updated->currency)->toBe('MYR')
+        ->and($updated->total_minor)->toBe(100)
+        ->and($updated->notes)->toBe('Payment reference confirmed.')
+        ->and($updated->status->equals(PartiallyPaid::class))->toBeTrue();
+});
+
+test('cloning and converting itemless documents preserve their financial snapshot', function (): void {
+    $source = Doc::factory()->create([
+        'doc_type' => DocType::Quotation,
+        'currency' => 'MYR',
+        'items' => [],
+        'subtotal_minor' => 1000,
+        'tax_amount_minor' => 60,
+        'discount_amount_minor' => 100,
+        'total_minor' => 960,
+    ]);
+
+    $source->total_minor = 1;
+
+    foreach ([$this->service->clone($source), $this->service->convert($source, DocType::Invoice)] as $copy) {
+        expect($copy->subtotal_minor)->toBe(1000)
+            ->and($copy->tax_amount_minor)->toBe(60)
+            ->and($copy->discount_amount_minor)->toBe(100)
+            ->and($copy->total_minor)->toBe(960)
+            ->and($copy->items)->toBe([])
+            ->and($copy->status->equals(Draft::class))->toBeTrue();
+    }
+});
+
+test('typed creation validates line currencies against the resolved document default', function (): void {
+    config()->set('docs.types.invoice.defaults.currency', 'JPY');
+
+    expect(fn () => $this->service->createFromType(DocType::Invoice, [
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'MYR']],
+    ]))->toThrow(InvalidArgumentException::class, 'currency does not match');
+
+    $doc = $this->service->createFromType(DocType::Invoice, [
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'JPY']],
+    ]);
+
+    expect($doc->currency)->toBe('JPY')
+        ->and($doc->total_minor)->toBe(100);
+});
+
+test('typed draft creation cannot inject lifecycle timestamps', function (): void {
+    $doc = $this->service->createFromType(DocType::Invoice, [
+        'status' => Paid::class,
+        'paid_at' => now(),
+        'sent_at' => now(),
+        'cancelled_at' => now(),
+        'refunded_at' => now(),
+        'overdue_at' => now(),
+    ]);
+
+    expect($doc->fresh()->status)->toBeInstanceOf(Draft::class)
+        ->and($doc->paid_at)->toBeNull()
+        ->and($doc->sent_at)->toBeNull()
+        ->and($doc->cancelled_at)->toBeNull()
+        ->and($doc->refunded_at)->toBeNull()
+        ->and($doc->overdue_at)->toBeNull();
 });

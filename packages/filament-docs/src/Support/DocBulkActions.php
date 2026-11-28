@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;
-use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
+use AIArmada\FilamentDocs\EntryPoints\Jobs\GenerateDocPdfsJob;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 final class DocBulkActions
 {
@@ -65,25 +64,11 @@ final class DocBulkActions
      */
     public static function markSelectedAsSent(Collection $records): array
     {
-        $result = DB::transaction(function () use ($records): array {
-            $marked = 0;
-            $skipped = 0;
+        foreach ($records as $record) {
+            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
+        }
 
-            foreach ($records as $record) {
-                DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-
-                if (! DocsTable::canMarkAsSent($record)) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $record->markAsSent();
-                $marked++;
-            }
-
-            return ['marked' => $marked, 'skipped' => $skipped];
-        });
+        $result = app(DocumentLifecycle::class)->markSent(array_map('strval', $records->modelKeys()));
 
         Notification::make()
             ->title($result['marked'] . ' documents marked as sent')

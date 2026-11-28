@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -36,6 +37,7 @@ final class RecordPaymentAction
     public static function make(): Action
     {
         return Action::make('record_payment')
+            ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
             ->label('Record Payment')
             ->icon(Heroicon::OutlinedBanknotes)
             ->color('success')
@@ -115,7 +117,7 @@ final class RecordPaymentAction
         $amountMinor = (int) $data['amount_minor'];
 
         try {
-            app(DocPaymentRecorder::class)->record($record, [
+            app(DocumentPaymentRecorder::class)->record((string) $record->getKey(), [
                 'amount_minor' => $amountMinor,
                 'currency' => $record->currency,
                 'payment_method' => $data['payment_method'],

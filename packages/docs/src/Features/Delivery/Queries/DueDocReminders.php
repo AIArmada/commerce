@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Docs\Features\Delivery\Queries;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\CommerceSupport\Support\OwnerTuple\ParsedOwnerTuple;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
+
+/**
+ * Owns due-document queries and owner batching for reminder delivery.
+ */
+final class DueDocReminders
+{
+    /**
+     * @return EloquentCollection<int, Doc>
+     */
+    public function dueSoon(int $daysBeforeDue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
+    {
+        return $this->dueSoonQuery($daysBeforeDue, $includeGlobal)
+            ->orderBy('due_date')
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /** @return Builder<Doc> */
+    public function dueSoonQuery(int $daysBeforeDue, ?bool $includeGlobal = null): Builder
+    {
+        $today = CarbonImmutable::today();
+        $endExclusive = $today->addDays($daysBeforeDue)->addDay();
+
+        return $this->forCurrentOwner($includeGlobal)
+            ->whereIn('status', [Sent::value(), Pending::value()])
+            ->whereNotNull('due_date')
+            ->where('due_date', '>=', $today->toDateString())
+            ->where('due_date', '<', $endExclusive->toDateString())
+            ->whereDoesntHave('emails', function (Builder $query): void {
+                $query->where('metadata->reminder_type', 'due_soon');
+            })
+            ->whereJsonContainsKey('customer_data->email');
+    }
+
+    /**
+     * @return EloquentCollection<int, Doc>
+     */
+    public function overdue(int $daysAfterOverdue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
+    {
+        return $this->overdueQuery($daysAfterOverdue, $includeGlobal)
+            ->orderBy('due_date')
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /** @return Builder<Doc> */
+    public function overdueQuery(int $daysAfterOverdue, ?bool $includeGlobal = null): Builder
+    {
+        $endExclusive = CarbonImmutable::today()->subDays($daysAfterOverdue)->addDay();
+
+        return $this->forCurrentOwner($includeGlobal)
+            ->where('status', Overdue::value())
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', $endExclusive->toDateString())
+            ->whereDoesntHave('emails', function (Builder $query): void {
+                $query->where('metadata->reminder_type', 'overdue');
+            })
+            ->whereJsonContainsKey('customer_data->email');
+    }
+
+    /**
+     * @return Builder<Doc>
+     */
+    public function forCurrentOwner(?bool $includeGlobal = null): Builder
+    {
+        $query = Doc::query();
+
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
+        }
+
+        return $query->forOwner(
+            OwnerContext::resolve(),
+            $includeGlobal ?? (bool) config('docs.owner.include_global', false),
+        );
+    }
+
+    /**
+     * Enumerate the owner tuples that have documents for reminder fan-out.
+     *
+     * @return Collection<int, ParsedOwnerTuple>
+     */
+    public function ownerTuples(): Collection
+    {
+        $columns = OwnerTupleColumns::forModelClass(Doc::class);
+
+        return Doc::query()
+            ->withoutOwnerScope()
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
+            ->distinct()
+            ->get()
+            ->map(static fn (object $row): ParsedOwnerTuple => OwnerTupleParser::fromRow($row, $columns));
+    }
+}

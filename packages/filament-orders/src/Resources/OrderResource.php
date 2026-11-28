@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources;
 
+use AIArmada\FilamentOrders\Persistence\FilamentOrdersCache;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages;
 use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderForm;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderInfolist;
 use AIArmada\FilamentOrders\Resources\OrderResource\Tables\OrdersTable;
-use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;

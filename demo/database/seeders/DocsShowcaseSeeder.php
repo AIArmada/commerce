@@ -6,14 +6,15 @@ namespace Database\Seeders;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocApprovalStatus;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
-use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Models\DocSequence;
-use AIArmada\Docs\Models\DocStatusHistory;
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory;
+use AIArmada\Docs\Contracts\DocumentTemplates;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
@@ -61,7 +62,7 @@ final class DocsShowcaseSeeder extends Seeder
                 ],
             ],
         );
-        $invoiceTemplate->setAsDefault();
+        app(DocumentTemplates::class)->setDefault((string) $invoiceTemplate->getKey());
 
         $quotationTemplate = DocTemplate::query()->updateOrCreate(
             ['slug' => 'quotation-default'],

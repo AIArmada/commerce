@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "Payments",
+  "owns": {
+    "table:order_payments": [
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\PaymentConfirmed",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RegisterOrderRefund",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RefundCompleted",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\PaymentFailed",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RemoveOrderPaymentRecords"
+    ],
+    "table:order_refunds": [
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RegisterOrderRefund",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RefundCompleted",
+      "AIArmada\\Orders\\Features\\Payments\\Actions\\RemoveOrderPaymentRecords"
+    ]
+  },
+  "extensions": {}
+}

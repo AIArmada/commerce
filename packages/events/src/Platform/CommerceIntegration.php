@@ -6,7 +6,7 @@ namespace AIArmada\Events\Platform;
 
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
@@ -21,7 +21,7 @@ final class CommerceIntegration
     {
         return class_exists(Order::class)
             && class_exists(OrderItem::class)
-            && interface_exists(OrderServiceInterface::class)
+            && interface_exists(OrderRefunds::class)
             && class_exists(Processing::class);
     }
 

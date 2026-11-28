@@ -6,8 +6,9 @@ namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
+use AIArmada\Docs\Contracts\DocumentEmailSender;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -26,6 +27,7 @@ final class SendEmailAction
     public static function make(string $name = 'send_email'): Action
     {
         return Action::make($name)
+            ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
             ->label(__('Send Email'))
             ->icon('heroicon-o-envelope')
             ->color('info')
@@ -85,20 +87,13 @@ final class SendEmailAction
         DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
 
         try {
-            $emailService = app(DocEmailService::class);
-
-            $template = $emailService->resolveTemplate(
-                $record,
-                isset($data['template_id']) ? (string) $data['template_id'] : null,
-            );
-
-            $emailService->send(
-                doc: $record,
+            app(DocumentEmailSender::class)->sendTo(
+                docId: (string) $record->getKey(),
                 recipientEmail: $data['to'],
                 recipientName: self::getRecipientName($record),
-                template: $template,
-                subjectOverride: $data['subject'] ?? null,
-                bodyOverride: $data['message'] ?? null,
+                templateId: isset($data['template_id']) ? (string) $data['template_id'] : null,
+                subject: $data['subject'] ?? null,
+                body: $data['message'] ?? null,
                 metadata: array_filter([
                     'cc' => $data['cc'] ?? null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== ''),

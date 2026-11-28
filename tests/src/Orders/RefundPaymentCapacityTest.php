@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\CancelOrder;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Events\OrderRefundFailed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Queries\RefundAllocator;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
@@ -56,7 +57,7 @@ function ord04Payment(
 
 /**
  * A payment attempt that never received money. It stays pending here;
- * declined charges are covered by calling markAsFailed() in the test.
+ * declined charges are covered by persisting a failed attempt in the test.
  */
 function ord04UnreceivedPayment(Order $order, string $transactionId, int $amount, string $gateway = 'chip'): OrderPayment
 {
@@ -412,7 +413,7 @@ it('routes cancellation reservations through the shared allocator after a split 
     $settled = $action->createPending($order, 3000, 'ord04-cancel-refund', 'Partial return', [], $first);
     $action->completePending($settled[0], 'ord04-cancel-provider');
 
-    app(CancelOrder::class)->execute($order->refresh(), 'Customer request');
+    (new OrderCanceled($order->refresh(), 'Customer request'))->handle();
 
     $order->refresh();
 
@@ -441,7 +442,10 @@ it('rejects a specified refund against a failed payment that never received mone
     $order = ord04Order();
     ord04Payment($order, 'ord04-guard-paid-a', 5000, 'stripe');
     $declined = ord04UnreceivedPayment($order, 'ord04-guard-declined-a', 5000);
-    $declined->markAsFailed('Declined');
+    $declined->status = PaymentStatus::Failed;
+    $declined->failure_reason = 'Declined';
+    $declined->failed_at = now();
+    $declined->save();
     $order->refresh();
 
     $action = app(RegisterOrderRefund::class);
@@ -477,7 +481,10 @@ it('rejects an immediate refund against a failed payment that never received mon
     $order = ord04Order();
     ord04Payment($order, 'ord04-guard-now-paid', 5000, 'stripe');
     $declined = ord04UnreceivedPayment($order, 'ord04-guard-now-declined', 5000);
-    $declined->markAsFailed('Declined');
+    $declined->status = PaymentStatus::Failed;
+    $declined->failure_reason = 'Declined';
+    $declined->failed_at = now();
+    $declined->save();
     $order->refresh();
 
     $action = app(RegisterOrderRefund::class);
@@ -515,4 +522,38 @@ it('dispatches the refund failed event with the persisted failure state', functi
             && $event->refund->failed_at !== null
             && $event->refund->notes === 'Provider rejected',
     );
+});
+
+it('computes multi-receipt refund capacities in one aggregate query', function (): void {
+    $order = ord04Order(6000);
+    $first = ord04Payment($order, 'ord04-group-a', 2000);
+    $second = ord04Payment($order, 'ord04-group-b', 2000);
+    $third = ord04Payment($order, 'ord04-group-c', 2000);
+    $order->refresh();
+
+    $action = app(RegisterOrderRefund::class);
+    $action->createPending($order, 500, 'ord04-group-pending', 'Pending', [], $first);
+    $settled = $action->createPending($order->refresh(), 750, 'ord04-group-settled', 'Settled', [], $second);
+    $action->completePending($settled[0], 'ord04-group-provider');
+    $failed = $action->createPending($order->refresh(), 250, 'ord04-group-failed', 'Failed', [], $third);
+    $action->failPending($failed[0], 'Declined');
+
+    $order->refresh();
+    $payments = RefundAllocator::eligiblePayments($order);
+    $connection = $order->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $capacities = RefundAllocator::remainingByPayment($order, $payments);
+        $queries = $connection->getQueryLog();
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
+
+    expect($capacities[(string) $first->getKey()])->toBe(1500)
+        ->and($capacities[(string) $second->getKey()])->toBe(1250)
+        ->and($capacities[(string) $third->getKey()])->toBe(2000)
+        ->and($queries)->toHaveCount(1);
 });

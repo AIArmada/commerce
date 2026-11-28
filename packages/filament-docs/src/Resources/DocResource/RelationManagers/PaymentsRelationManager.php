@@ -6,9 +6,11 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentPaymentEditor;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Services\DocPaymentRecorder;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\CreateAction;
@@ -102,10 +104,12 @@ final class PaymentsRelationManager extends RelationManager
             ->filters([])
             ->headerActions([
                 CreateAction::make()
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->using(fn (array $data): DocPayment => static::recordPaymentForDoc($this->getOwnerDoc(), $data)),
             ])
             ->recordActions([
                 EditAction::make()
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->using(fn (DocPayment $record, array $data): DocPayment => static::updatePaymentForDoc($this->getOwnerDoc(), $record, $data)),
             ])
             ->defaultSort('paid_at', 'desc');
@@ -125,9 +129,11 @@ final class PaymentsRelationManager extends RelationManager
         DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
 
         try {
-            return app(DocPaymentRecorder::class)->record($doc, array_merge($data, [
+            $id = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), array_merge($data, [
                 'currency' => $doc->currency,
             ]));
+
+            return $doc->payments()->findOrFail($id);
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw ValidationException::withMessages([
                 'amount_minor' => $exception->getMessage(),
@@ -149,23 +155,9 @@ final class PaymentsRelationManager extends RelationManager
             ]);
         }
 
-        foreach (['amount_minor', 'currency', 'payment_method'] as $immutable) {
-            if (array_key_exists($immutable, $data)
-                && (string) $data[$immutable] !== (string) $payment->getAttribute($immutable)) {
-                throw ValidationException::withMessages([
-                    $immutable => __('This field cannot be changed after recording.'),
-                ]);
-            }
-        }
+        app(DocumentPaymentEditor::class)->edit((string) $doc->getKey(), (string) $payment->getKey(), $data);
 
-        $payment->update(array_intersect_key($data, array_flip([
-            'reference',
-            'transaction_id',
-            'notes',
-            'paid_at',
-        ])));
-
-        return $payment;
+        return $payment->refresh();
     }
 
     private function getOwnerDoc(): Doc

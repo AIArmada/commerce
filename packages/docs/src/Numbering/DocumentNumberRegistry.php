@@ -7,7 +7,6 @@ namespace AIArmada\Docs\Numbering;
 use AIArmada\Docs\Numbering\Contracts\DocumentNumberStrategy;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\Docs\Support\DocTypeKey;
-use Illuminate\Support\Str;
 
 /**
  * Resolves document numbering strategies lazily for the current container scope.
@@ -58,12 +57,6 @@ final class DocumentNumberRegistry
                 && is_subclass_of($explicitStrategy, DocumentNumberStrategy::class)) {
                 return app($explicitStrategy);
             }
-        }
-
-        $conventionClass = 'App\\Numbering\\' . Str::studly($docType) . 'NumberStrategy';
-
-        if (class_exists($conventionClass) && is_subclass_of($conventionClass, DocumentNumberStrategy::class)) {
-            return app($conventionClass);
         }
 
         return app(DefaultNumberStrategy::class);

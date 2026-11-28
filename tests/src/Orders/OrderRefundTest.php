@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
@@ -156,10 +157,10 @@ describe('OrderRefund Model', function (): void {
                 'status' => RefundStatus::Pending,
             ]);
 
-            $result = $refund->markAsCompleted('ref_txn_123');
+            app(OrderRefunds::class)->completePendingRefund((string) $refund->getKey(), 'ref_txn_123');
+            $refund->refresh();
 
-            expect($result)->toBe($refund)
-                ->and($refund->status)->toBe(RefundStatus::Completed)
+            expect($refund->status)->toBe(RefundStatus::Completed)
                 ->and($refund->transaction_id)->toBe('ref_txn_123')
                 ->and($refund->refunded_at)->not->toBeNull();
         });
@@ -182,10 +183,10 @@ describe('OrderRefund Model', function (): void {
                 'status' => RefundStatus::Pending,
             ]);
 
-            $result = $refund->markAsFailed('Gateway error');
+            app(OrderRefunds::class)->failPendingRefund((string) $refund->getKey(), 'Gateway error');
+            $refund->refresh();
 
-            expect($result)->toBe($refund)
-                ->and($refund->status)->toBe(RefundStatus::Failed)
+            expect($refund->status)->toBe(RefundStatus::Failed)
                 ->and($refund->notes)->toBe('Gateway error');
         });
 

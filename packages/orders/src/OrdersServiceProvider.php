@@ -5,20 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Orders;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\SweepOrderOutboxCommand;
 use AIArmada\Orders\Notifications\PaymentConfirmationNotification;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Platform\ExtensionRegistry;
+use AIArmada\Orders\Platform\FeatureCatalog;
+use AIArmada\Orders\Platform\FeatureModule;
 use AIArmada\Orders\Support\OrderHandlerRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class OrdersServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -27,17 +32,30 @@ final class OrdersServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->hasViews()
             ->hasCommands([
-                RelayOrderOutbox::class,
-                SweepOrderOutbox::class,
+                RelayOrderOutboxCommand::class,
+                SweepOrderOutboxCommand::class,
             ])
             ->runsMigrations()
             ->discoversMigrations();
     }
 
-    public function registeringPackage(): void
+    public function packageRegistered(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid orders feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+
         $this->app->singleton(OrderHandlerRegistrar::class);
-        $this->app->bind(OrderServiceInterface::class, OrderService::class);
         $this->registerEventListeners();
         $this->registerTransitionListeners();
     }
@@ -45,6 +63,13 @@ final class OrdersServiceProvider extends PackageServiceProvider
     public function bootingPackage(): void
     {
         $this->registerPolicies();
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     protected function registerPolicies(): void
@@ -68,7 +93,7 @@ final class OrdersServiceProvider extends PackageServiceProvider
 
         if (config('orders.integrations.docs.enabled', false)) {
             if (interface_exists(DocServiceInterface::class)) {
-                $dispatcher->listen(Events\OrderPaid::class, Listeners\CreateInvoiceForPaidOrder::class);
+                $dispatcher->listen(Events\OrderPaid::class, EntryPoints\Listeners\CreateInvoiceForPaidOrder::class);
             }
         }
 
@@ -96,12 +121,12 @@ final class OrdersServiceProvider extends PackageServiceProvider
         $dispatcher = $this->app->make(Dispatcher::class);
 
         if (config('orders.integrations.inventory.enabled', true)) {
-            $dispatcher->listen(Events\OrderProcessingStarted::class, Listeners\DeductInventoryOnPaymentConfirmed::class);
-            $dispatcher->listen(Events\OrderCancelInitiated::class, Listeners\ReleaseInventoryOnOrderCanceled::class);
+            $dispatcher->listen(Events\OrderProcessingStarted::class, EntryPoints\Listeners\DeductInventoryOnPaymentConfirmed::class);
+            $dispatcher->listen(Events\OrderCancelInitiated::class, EntryPoints\Listeners\ReleaseInventoryOnOrderCanceled::class);
         }
 
         // Registered unconditionally: the affiliates toggle is evaluated at
         // handle time, preserving the previous inline-call semantics.
-        $dispatcher->listen(Events\OrderFulfillmentRequired::class, Listeners\AttributeCommissionOnFulfillment::class);
+        $dispatcher->listen(Events\OrderFulfillmentRequired::class, EntryPoints\Listeners\AttributeCommissionOnFulfillment::class);
     }
 }

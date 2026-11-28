@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Created;
 
 beforeEach(function (): void {
@@ -40,9 +40,9 @@ describe('Order address snapshots', function (): void {
     it('attaches a per-order copy without a snapshot by default', function (): void {
         $order = createSnapshotOrder();
 
-        app(OrderService::class)->addAddress($order, snapshotAddressData(), 'shipping');
+        app(OrderAdministration::class)->addAddress((string) $order->getKey(), snapshotAddressData(), 'shipping');
 
-        expect($order->primaryAddress('shipping'))->not->toBeNull()
+        expect($order->refresh()->primaryAddress('shipping'))->not->toBeNull()
             ->and(AddressSnapshot::query()->withoutGlobalScopes()->count())->toBe(0);
     });
 
@@ -50,10 +50,10 @@ describe('Order address snapshots', function (): void {
         config()->set('orders.address_snapshots.enabled', true);
 
         $order = createSnapshotOrder();
-        $service = app(OrderService::class);
+        $service = app(OrderAdministration::class);
 
-        $service->addAddress($order, snapshotAddressData(), 'billing');
-        $service->addAddress($order, snapshotAddressData(), 'shipping');
+        $service->addAddress((string) $order->getKey(), snapshotAddressData(), 'billing');
+        $service->addAddress((string) $order->getKey(), snapshotAddressData(), 'shipping');
 
         $snapshots = AddressSnapshot::query()->withoutGlobalScopes()
             ->where('snapshotable_type', Order::class)
@@ -67,7 +67,7 @@ describe('Order address snapshots', function (): void {
             ->and($snapshots->firstWhere('reason', 'order_shipping')->city)->toBe('KL')
             ->and($snapshots->firstWhere('reason', 'order_shipping')->country_code)->toBe('MY');
 
-        $copy = $order->primaryAddress('shipping');
+        $copy = $order->refresh()->primaryAddress('shipping');
         $copy->update(['line1' => 'Changed after the fact']);
 
         expect(AddressSnapshot::query()->withoutGlobalScopes()->where('reason', 'order_shipping')->value('line1'))

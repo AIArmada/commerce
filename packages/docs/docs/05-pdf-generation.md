@@ -9,11 +9,11 @@ Use this page when you need rendering, storage, or download behavior rather than
 ## Generating PDFs
 
 ```php
-$docService = app(DocService::class);
+$docService = app(DocumentRecords::class);
 
 // Generate and save to disk
 $pdfPath = $docService->generatePdf($document, save: true);
-// Returns the disk-relative path, e.g. "docs/INV-2501-000001.pdf"
+// Returns the disk-relative path, e.g. "docs/<document-uuid>.pdf"
 // (path prefix comes from docs.storage.path or docs.types.{type}.storage.path)
 
 // Generate without saving (returns PDF content)
@@ -33,7 +33,7 @@ return response($pdfContent)
 ## Download PDF
 
 ```php
-// Generates the PDF if it does not exist, then returns the relative path
+// Reuses the PDF only when its rendered input fingerprint matches.
 $pdfPath = $docService->downloadPdf($document);
 ```
 
@@ -79,6 +79,8 @@ $document = $docService->create(DocData::from([
 
 ## Storage Configuration
 
+Stored PDF filenames use the immutable document UUID, not the invoice number, so equal numbers across owners cannot overwrite one another. Customer download filenames still use the document number.
+
 Configure global defaults in `config/docs.php`:
 
 ```php
@@ -104,10 +106,10 @@ You can override storage per document type under `docs.types.{type}.storage`:
 Access stored PDFs:
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Support\Facades\Storage;
 
-$disk = app(DocService::class)->resolveStorageDiskForDocType($document->doc_type);
+$disk = app(DocumentRecords::class)->resolveStorageDiskForDocType($document->doc_type);
 $path = $document->pdf_path;
 
 // Get URL (if disk supports it)

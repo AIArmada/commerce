@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\RegisterOrderPayment;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\RefundStatus;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\PendingPayment;
-use AIArmada\Orders\Transitions\OrderCanceled;
 
 function makeCancelableOrder(int $grandTotal = 10000): Order
 {

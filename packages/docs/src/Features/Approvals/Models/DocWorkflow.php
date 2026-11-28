@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Docs\Features\Approvals\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Approvals\Support\WorkflowConditions;
+use AIArmada\Docs\Models\Doc;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $name
+ * @property DocType|null $doc_type
+ * @property bool $is_active
+ * @property array<string, mixed>|null $rules
+ * @property int $priority
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, DocWorkflowStep> $steps
+ */
+final class DocWorkflow extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
+
+    protected $fillable = [
+        'name',
+        'doc_type',
+        'is_active',
+        'rules',
+        'priority',
+    ];
+
+    public function getTable(): string
+    {
+        $tables = config('docs.database.tables', []);
+        $prefix = config('docs.database.table_prefix', 'docs_');
+
+        return $tables['workflows'] ?? $prefix . 'workflows';
+    }
+
+    /**
+     * @return HasMany<DocWorkflowStep, $this>
+     */
+    public function steps(): HasMany
+    {
+        return $this->hasMany(DocWorkflowStep::class, 'workflow_id')->orderBy('order');
+    }
+
+    /**
+     * Check if this workflow applies to the given document.
+     */
+    public function appliesTo(Doc $doc): bool
+    {
+        if (config('docs.owner.enabled', false) && ! WorkflowConditions::matchesOwner(
+            $this->owner_type,
+            $this->owner_id,
+            $doc->owner_type,
+            $doc->owner_id,
+            (bool) config('docs.owner.include_global', false),
+        )) {
+            return false;
+        }
+
+        if (! $this->is_active) {
+            return false;
+        }
+
+        if ($this->doc_type !== null && $this->doc_type->value !== $doc->doc_type) {
+            return false;
+        }
+
+        if (empty($this->rules)) {
+            return true;
+        }
+
+        return WorkflowConditions::matches($doc->attributesToArray(), $this->rules ?? []);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'doc_type' => DocType::class,
+            'is_active' => 'boolean',
+            'rules' => 'array',
+            'priority' => 'integer',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
+}

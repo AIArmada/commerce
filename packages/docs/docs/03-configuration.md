@@ -135,7 +135,7 @@ Each type configures numbering only. Default templates are now resolved from `Do
 
 Use this block when you need to align document numbers with external finance or ERP expectations.
 
-Document creation numbers come from the atomic per-owner `SequenceManager` (unique per owner tuple, so two owners may hold identically formatted numbers). `DocumentNumberRegistry` strategies only power the standalone `DocService::generateNumber()` helper. The registry reads `docs.types.{type}.numbering.strategy` when a strategy is first resolved, not in its constructor. The service container binds it as a scoped service, so runtime configuration changes are observed before resolution without leaking strategies across long-lived requests.
+Document creation numbers come from the atomic per-owner `SequenceManager` (unique per owner tuple, so two owners may hold identically formatted numbers). `DocumentNumberRegistry` strategies only power the standalone `DocumentRecords::generateNumber()` helper. The registry reads `docs.types.{type}.numbering.strategy` when a strategy is first resolved, not in its constructor. Configure custom strategies explicitly; the package does not discover classes from the host application namespace. The service container binds it as a scoped service, so runtime configuration changes are observed before resolution without leaking strategies across long-lived requests.
 
 ## Storage
 
@@ -158,7 +158,7 @@ Global storage defaults can be overridden again per document type. Rich-content 
 ],
 ```
 
-Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocRenderService::createShareLink()`.
+Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocumentSharing::issue()`.
 
 The plain token is returned only from the creation call. The database stores its SHA-256 hash, and share responses use private no-store and no-referrer headers.
 

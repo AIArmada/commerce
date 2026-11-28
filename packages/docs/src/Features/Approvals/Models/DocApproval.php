@@ -1,0 +1,173 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Docs\Features\Approvals\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Database\Factories\DocApprovalFactory;
+use AIArmada\Docs\Enums\DocApprovalStatus;
+use AIArmada\Docs\Models\Doc;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User as FoundationUser;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * Document approval request for workflow management.
+ *
+ * @property string $id
+ * @property string $doc_id
+ * @property string $requested_by
+ * @property string|null $assigned_to
+ * @property DocApprovalStatus $status
+ * @property string|null $comments
+ * @property CarbonImmutable|null $approved_at
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $expired_at
+ * @property CarbonImmutable|null $expires_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
+ * @property-read Doc $doc
+ * @property-read Model $requestedBy
+ * @property-read Model|null $assignedTo
+ */
+final class DocApproval extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    /** @use HasFactory<DocApprovalFactory> */
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
+
+    protected $fillable = [
+        'doc_id',
+        'requested_by',
+        'assigned_to',
+        'status',
+        'comments',
+        'approved_at',
+        'rejected_at',
+        'expired_at',
+        'expires_at',
+    ];
+
+    protected static function newFactory(): DocApprovalFactory
+    {
+        return DocApprovalFactory::new();
+    }
+
+    public function getTable(): string
+    {
+        return config('docs.database.tables.doc_approvals', 'docs_approvals');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (DocApproval $approval): void {
+            if ($approval->owner_type !== null && $approval->owner_id !== null) {
+                return;
+            }
+
+            if ($approval->doc_id === null || $approval->doc_id === '') {
+                return;
+            }
+
+            $doc = Doc::query()
+                ->withoutOwnerScope()
+                ->whereKey($approval->doc_id)
+                ->first();
+
+            if ($doc === null) {
+                return;
+            }
+
+            if ($doc->owner instanceof Model) {
+                $approval->assignOwner($doc->owner);
+            }
+        });
+    }
+
+    /**
+     * @return BelongsTo<Doc, $this>
+     */
+    public function doc(): BelongsTo
+    {
+        return $this->belongsTo(Doc::class);
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function requestedBy(): BelongsTo
+    {
+        return $this->belongsTo($this->resolveUserModelClass(), 'requested_by');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo($this->resolveUserModelClass(), 'assigned_to');
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === DocApprovalStatus::Pending;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === DocApprovalStatus::Approved;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === DocApprovalStatus::Rejected;
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => DocApprovalStatus::class,
+            'approved_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'expired_at' => 'immutable_datetime',
+            'expires_at' => 'immutable_datetime',
+        ];
+    }
+
+    /**
+     * @return class-string<Model>
+     */
+    private function resolveUserModelClass(): string
+    {
+        $configured = config('auth.providers.users.model');
+
+        if (is_string($configured) && class_exists($configured)) {
+            /** @var class-string<Model> $configured */
+            return $configured;
+        }
+
+        return FoundationUser::class;
+    }
+}

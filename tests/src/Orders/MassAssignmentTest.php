@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
@@ -114,7 +115,10 @@ it('still transitions payment and refund lifecycles through model methods', func
         'currency' => 'MYR',
         'status' => PaymentStatus::Pending,
     ]);
-    $payment->markAsFailed('declined');
+    $payment->status = PaymentStatus::Failed;
+    $payment->failure_reason = 'declined';
+    $payment->failed_at = CarbonImmutable::now();
+    $payment->save();
 
     expect($payment->refresh()->failed_at)->not->toBeNull();
 
@@ -127,7 +131,7 @@ it('still transitions payment and refund lifecycles through model methods', func
         'status' => RefundStatus::Pending,
         'reason' => 'test',
     ]);
-    $refund->markAsCompleted();
+    app(OrderRefunds::class)->completePendingRefund((string) $refund->getKey());
 
     expect($refund->refresh()->refunded_at)->not->toBeNull();
 });

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Orders\Contracts\OrderNotes;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderNote;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +19,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 
 final class NotesRelationManager extends RelationManager
@@ -108,12 +111,13 @@ final class NotesRelationManager extends RelationManager
 
                         return Gate::forUser($user)->allows('addNote', $order);
                     })
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $userId = Filament::auth()->id();
+                    ->using(function (array $data): OrderNote {
+                        $order = $this->getOrderRecordOrNull();
+                        abort_unless($order instanceof Order, 404);
+                        $actor = Filament::auth()->id();
+                        $id = app(OrderNotes::class)->add((string) $order->getKey(), $data['content'], $data['visibility'], $actor === null ? null : (string) $actor);
 
-                        $data['user_id'] = $userId ? (string) $userId : null;
-
-                        return $data;
+                        return $order->orderNotes()->findOrFail($id);
                     }),
             ])
             ->actions([
@@ -128,6 +132,13 @@ final class NotesRelationManager extends RelationManager
                         }
 
                         return Gate::forUser($user)->allows('update', $order);
+                    })
+                    ->using(function (OrderNote $record, array $data): OrderNote {
+                        $order = $this->getOrderRecordOrNull();
+                        abort_unless($order instanceof Order, 404);
+                        app(OrderNotes::class)->edit((string) $order->getKey(), (string) $record->getKey(), $data['content'], $data['visibility']);
+
+                        return $record->refresh();
                     }),
                 DeleteAction::make()
                     ->authorize(function (): bool {
@@ -140,6 +151,13 @@ final class NotesRelationManager extends RelationManager
                         }
 
                         return Gate::forUser($user)->allows('update', $order);
+                    })
+                    ->using(function (OrderNote $record): bool {
+                        $order = $this->getOrderRecordOrNull();
+                        abort_unless($order instanceof Order, 404);
+                        app(OrderNotes::class)->remove((string) $order->getKey(), [(string) $record->getKey()]);
+
+                        return true;
                     }),
             ])
             ->bulkActions([
@@ -155,6 +173,11 @@ final class NotesRelationManager extends RelationManager
                             }
 
                             return Gate::forUser($user)->allows('update', $order);
+                        })
+                        ->action(function (Collection $records): void {
+                            $order = $this->getOrderRecordOrNull();
+                            abort_unless($order instanceof Order, 404);
+                            app(OrderNotes::class)->remove((string) $order->getKey(), array_map('strval', $records->modelKeys()));
                         }),
                 ]),
             ])

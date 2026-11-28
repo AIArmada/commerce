@@ -20,7 +20,6 @@ use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Actions\CreateCompositeProduct;
@@ -211,55 +210,62 @@ it('ships the package and the standalone line as five units of the same stock id
     $cartId = compositeCheckoutCart($package, $mouse);
 
     $checkout = app(CheckoutServiceInterface::class);
-    $checkoutResult = $checkout->processCheckout($checkout->startCheckout($cartId));
-    expect($checkoutResult->success)->toBeTrue();
-
-    $order = Order::query()->findOrFail(
-        CheckoutSession::query()->where('cart_id', $cartId)->value('order_id'),
-    );
-
-    app(OrderService::class)->addAddress($order, [
-        'name' => 'Checkout Customer',
+    $session = $checkout->startCheckout($cartId);
+    $session->update(['shipping_data' => [
+        'first_name' => 'Checkout',
+        'last_name' => 'Customer',
         'line1' => '456 Shipping Road',
         'city' => 'Johor Bahru',
         'state' => 'Johor',
         'postcode' => '80000',
-        'country' => 'MY',
-    ], 'shipping');
+        'country_code' => 'MY',
+    ]]);
+    $checkoutResult = $checkout->processCheckout($session);
+    expect($checkoutResult->success)->toBeTrue();
 
-    $driver = mock(ShippingDriverInterface::class);
-    $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
-    $driver->shouldReceive('getRates')->once()->andReturnUsing(
-        static function (AddressData $origin, AddressData $destination, array $packages): array {
-            expect(array_column($packages, 'weight'))->toBe([1000, 250])
-                ->and(array_column($packages, 'length'))->toBe([12, 12]);
+    OwnerContext::withOwner(null, function () use ($checkoutResult, $mouse): void {
+        $order = Order::query()->findOrFail($checkoutResult->orderId);
 
-            return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
-        },
-    );
-    $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));
-    $manager = mock(ShippingManager::class);
-    $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
-    $manager->shouldReceive('driver')->with('manual')->andReturn($driver);
-    app()->instance(ShippingManager::class, $manager);
+        $driver = mock(ShippingDriverInterface::class);
+        $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
+        $quotedPackages = [];
+        $driver->shouldReceive('getRates')->once()->andReturnUsing(
+            static function (AddressData $origin, AddressData $destination, array $packages) use (&$quotedPackages): array {
+                $quotedPackages = $packages;
 
-    $handler = app(FulfillmentHandler::class);
-    expect($handler->getRates($order))->toHaveCount(1);
+                return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
+            },
+        );
+        $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));
+        $manager = mock(ShippingManager::class);
+        $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
+        $manager->shouldReceive('driver')->with('manual')->andReturn($driver);
+        app()->instance(ShippingManager::class, $manager);
 
-    $result = $handler->createShipment($order, ['carrier' => 'manual']);
-    expect($result['error'])->toBeNull();
+        $handler = app(FulfillmentHandler::class);
+        expect($order->primaryAddress('shipping'))->not->toBeNull();
+        expect($handler->getRates((string) $order->getKey()))->toHaveCount(1);
 
-    $shipment = Shipment::query()->findOrFail($result['shipment_id']);
-    $items = $shipment->items()->get();
-    $packageItems = $items->whereNotNull('package_unit_ordinal')->sortBy('package_unit_ordinal')->values();
-    $standaloneItems = $items->whereNull('package_unit_ordinal');
+        $weights = array_column($quotedPackages, 'weight');
+        sort($weights);
+        expect($weights)->toBe([250, 1000])
+            ->and(array_column($quotedPackages, 'length'))->toBe([12, 12]);
 
-    expect($shipment->total_weight)->toBe(1250)
-        ->and($items->sum('quantity'))->toBe(5)
-        ->and($items->pluck('shippable_item_id')->unique()->values()->all())->toBe([(string) $mouse->getKey()])
-        ->and($packageItems->pluck('package_unit_ordinal')->all())->toBe([1, 2])
-        ->and($packageItems->pluck('quantity')->all())->toBe([2, 2])
-        ->and($standaloneItems->pluck('quantity')->values()->all())->toBe([1]);
+        $result = $handler->createShipment((string) $order->getKey(), ['carrier' => 'manual']);
+        expect($result['error'])->toBeNull();
+
+        $shipment = Shipment::query()->findOrFail($result['shipment_id']);
+        $items = $shipment->items()->get();
+        $packageItems = $items->whereNotNull('package_unit_ordinal')->sortBy('package_unit_ordinal')->values();
+        $standaloneItems = $items->whereNull('package_unit_ordinal');
+
+        expect($shipment->total_weight)->toBe(1250)
+            ->and($items->sum('quantity'))->toBe(5)
+            ->and($items->pluck('shippable_item_id')->unique()->values()->all())->toBe([(string) $mouse->getKey()])
+            ->and($packageItems->pluck('package_unit_ordinal')->all())->toBe([1, 2])
+            ->and($packageItems->pluck('quantity')->all())->toBe([2, 2])
+            ->and($standaloneItems->pluck('quantity')->values()->all())->toBe([1]);
+    });
 });
 
 it('rolls the reservation back and creates no order when component stock runs out before payment', function (): void {

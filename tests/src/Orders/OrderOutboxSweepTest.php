@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Data\OutboxStatus;
 use AIArmada\Orders\Events\OrderProcessingStarted;
+use AIArmada\Orders\Features\Outbox\Actions\SweepOrderOutbox;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\PendingPayment;
@@ -79,7 +79,7 @@ it('requeues rows stuck in relaying past the claim timeout', function (): void {
         'claimed_at' => CarbonImmutable::now()->subMinute(),
     ]);
 
-    $result = SweepOrderOutbox::run();
+    $result = app(SweepOrderOutbox::class)->execute();
 
     expect($result['requeued'])->toBe(1)
         ->and(DB::table(outboxSweepTable())->find($stuckId)->status)->toBe(OutboxStatus::Pending->value)
@@ -102,7 +102,7 @@ it('purges relayed rows past retention and keeps recent ones', function (): void
         'relayed_at' => CarbonImmutable::now()->subDay(),
     ]);
 
-    $result = SweepOrderOutbox::run();
+    $result = app(SweepOrderOutbox::class)->execute();
 
     expect($result['purged'])->toBe(1)
         ->and(DB::table(outboxSweepTable())->find($oldId))->toBeNull()
@@ -118,7 +118,7 @@ it('reports dead rows without touching them', function (): void {
         'last_error' => 'boom',
     ]);
 
-    $result = SweepOrderOutbox::run();
+    $result = app(SweepOrderOutbox::class)->execute();
 
     expect($result['dead'])->toBe(1)
         ->and(DB::table(outboxSweepTable())->find($deadId)->status)->toBe(OutboxStatus::Dead->value);

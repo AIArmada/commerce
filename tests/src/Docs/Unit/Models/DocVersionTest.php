@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentVersions;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocVersion;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -18,7 +22,7 @@ test('doc version restore', function (): void {
         'snapshot' => $snapshot,
     ]);
 
-    $version->restore();
+    app(DocumentVersions::class)->restore((string) $version->getKey());
 
     expect($doc->fresh()->notes)->toBe('Old Notes');
 });
@@ -35,4 +39,20 @@ test('doc version diff', function (): void {
         ->and($diff['field']['new'])->toBe('New Value');
 
     expect($diff)->not->toHaveKey('static');
+});
+
+test('version restoration cannot cross owner boundaries', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', false);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create(['notes' => 'Original']));
+    $version = OwnerContext::withOwner($owner, fn (): string => app(DocumentVersions::class)->capture((string) $doc->getKey()));
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(DocumentVersions::class)->restore($version)))
+        ->toThrow(ModelNotFoundException::class);
+
+    expect(OwnerContext::withOwner($owner, fn () => $doc->fresh()->notes))->toBe('Original');
 });

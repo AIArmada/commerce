@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
-use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 use AIArmada\FilamentDocs\Rendering\DocsRichContentFileAttachmentProvider;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
@@ -23,6 +24,13 @@ afterEach(function (): void {
 });
 
 it('duplicates email templates with collision-free slugs and feedback (L3)', function (): void {
+    $user = User::query()->create(['name' => 'Template Editor', 'email' => 'template-editor@example.test', 'password' => bcrypt('password')]);
+    foreach (['document_email_template.create', 'document_email_template.view'] as $ability) {
+        Permission::query()->firstOrCreate(['name' => $ability, 'guard_name' => 'web']);
+        $user->givePermissionTo($ability);
+    }
+    $this->actingAs($user);
+
     $template = DocEmailTemplate::query()->create([
         'name' => 'Welcome',
         'slug' => 'welcome',

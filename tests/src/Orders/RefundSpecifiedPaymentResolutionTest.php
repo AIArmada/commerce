@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Processing;
@@ -106,7 +106,11 @@ it('rejects a specified refund when the payment no longer received money', funct
 
     $stale = $first->fresh();
 
-    $first->fresh()->markAsFailed('Declined by provider');
+    $persisted = $first->fresh();
+    $persisted->status = PaymentStatus::Failed;
+    $persisted->failure_reason = 'Declined by provider';
+    $persisted->failed_at = now();
+    $persisted->save();
     $order->refresh();
 
     expect(fn (): array => app(RegisterOrderRefund::class)->createPending(

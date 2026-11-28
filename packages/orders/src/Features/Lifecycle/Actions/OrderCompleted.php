@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
+
+use AIArmada\Orders\Events\OrderCompleted as OrderCompletedEvent;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Completed;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Arr;
+use Spatie\ModelStates\Transition;
+
+/**
+ * Transition from Processing → Completed.
+ *
+ * This transition is used when an order's fulfillment lifecycle is complete
+ * without requiring a shipping / delivery path.
+ */
+final class OrderCompleted extends Transition
+{
+    use AssertsOrderOwnerBoundary;
+
+    public function __construct(
+        private Order $order,
+        /** @var array<string, mixed> */
+        private array $metadata = [],
+    ) {}
+
+    public function handle(): Order
+    {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+        return $this->order->getConnection()->transaction(function (): Order {
+            $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
+            $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+            $completedAt = CarbonImmutable::now();
+
+            $existingMetadata = $this->order->metadata ?? [];
+            if (! is_array($existingMetadata)) {
+                $existingMetadata = [];
+            }
+
+            $existingCompletion = Arr::get($existingMetadata, 'completion', []);
+            if (! is_array($existingCompletion)) {
+                $existingCompletion = [];
+            }
+
+            $existingCompletionMetadata = Arr::get($existingCompletion, 'metadata', []);
+            if (! is_array($existingCompletionMetadata)) {
+                $existingCompletionMetadata = [];
+            }
+
+            if ($this->metadata !== [] || $existingCompletionMetadata !== []) {
+                $completion = array_merge($existingCompletion, [
+                    'completed_at' => $completedAt->toIso8601String(),
+                ]);
+
+                if ($this->metadata !== []) {
+                    $completion['metadata'] = array_merge($existingCompletionMetadata, $this->metadata);
+                }
+
+                $existingMetadata['completion'] = $completion;
+                $this->order->metadata = $existingMetadata;
+            }
+
+            $this->order->completed_at = $completedAt;
+            $this->order->status->transitionTo(Completed::class);
+
+            event(new OrderCompletedEvent($this->order));
+
+            return $this->order;
+        });
+    }
+}

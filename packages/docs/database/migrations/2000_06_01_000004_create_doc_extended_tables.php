@@ -14,14 +14,15 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
         $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
+        $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
 
         // Phase 2: Payments
         $paymentsTable = $tables['doc_payments'] ?? $tablePrefix . 'payments';
-        Schema::create($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType): void {
+        Schema::create($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('status', 50)->default('paid');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->restrictOnDelete();
             $table->unsignedBigInteger('amount_minor');
             $table->string('currency', 3)->default('MYR');
             $table->string('payment_method');
@@ -33,6 +34,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
+            $table->unique(['doc_id', 'transaction_id'], $paymentsTable . '_doc_transaction_unique');
             $table->index('doc_id', $paymentsTable . '_doc_id_index');
             $table->index('paid_at', $paymentsTable . '_paid_at_index');
         });
@@ -58,10 +60,10 @@ return new class extends Migration
 
         // Phase 3: Email Logs
         $emailsTable = $tables['doc_emails'] ?? $tablePrefix . 'emails';
-        Schema::create($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType): void {
+        Schema::create($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->cascadeOnDelete();
             $table->foreignUuid('doc_email_template_id')->nullable();
             $table->string('recipient_email');
             $table->string('recipient_name')->nullable();
@@ -86,10 +88,10 @@ return new class extends Migration
 
         // Phase 4: Versions
         $versionsTable = $tables['doc_versions'] ?? $tablePrefix . 'versions';
-        Schema::create($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType): void {
+        Schema::create($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->cascadeOnDelete();
             $table->unsignedInteger('version_number');
             $table->{$jsonType}('snapshot');
             $table->text('change_summary')->nullable();
@@ -105,10 +107,10 @@ return new class extends Migration
 
         // Phase 4: Approvals
         $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix . 'approvals';
-        Schema::create($approvalsTable, function (Blueprint $table) use ($approvalsTable): void {
+        Schema::create($approvalsTable, function (Blueprint $table) use ($approvalsTable, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->cascadeOnDelete();
             $table->foreignUuid('requested_by');
             $table->foreignUuid('assigned_to')->nullable();
             $table->string('status')->default('pending'); // pending, approved, rejected
@@ -126,10 +128,10 @@ return new class extends Migration
 
         // Phase 5: E-Invoice Submissions
         $einvoiceTable = $tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions';
-        Schema::create($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType): void {
+        Schema::create($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->restrictOnDelete();
             $table->string('submission_uid');
             $table->string('document_uuid')->nullable();
             $table->string('long_id')->nullable();
@@ -145,7 +147,7 @@ return new class extends Migration
             $table->timestampTz('failed_at')->nullable();
             $table->timestampsTz();
 
-            $table->index('doc_id', $einvoiceTable . '_doc_id_index');
+            $table->unique(['doc_id', 'submission_uid'], $einvoiceTable . '_doc_submission_unique');
             $table->index('submission_uid', $einvoiceTable . '_submission_uid_index');
             $table->index('status', $einvoiceTable . '_status_index');
         });

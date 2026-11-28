@@ -6,13 +6,13 @@ namespace AIArmada\CashierChip\Invoices;
 
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Data\InvoiceRenderData;
-use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Data\DocData;
 
 class DocsInvoiceRenderer implements InvoiceRenderer
 {
     public function __construct(
-        protected DocService $docService
+        protected DocServiceInterface $docService
     ) {}
 
     /**

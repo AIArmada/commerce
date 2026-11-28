@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Features\Payments\Actions;
+
+use AIArmada\Orders\Contracts\OrderPaymentRetention;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use Illuminate\Database\Eloquent\Builder;
+use LogicException;
+
+final readonly class RemoveOrderPaymentRecords implements OrderPaymentRetention
+{
+    use AssertsOrderOwnerBoundary;
+
+    public function deleteOrder(string $orderId, bool $force, callable $deleteOrder): bool
+    {
+        return (new Order)->getConnection()->transaction(function () use ($orderId, $force, $deleteOrder): bool {
+            $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
+            $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+            if (! $force && ($order->isPaid() || $order->getTotalPaid() > 0 || $order->isFinal())) {
+                throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
+            }
+
+            foreach ([$order->refunds(), $order->payments()] as $relation) {
+                $mismatched = $relation->withoutOwnerScope()
+                    ->where(function (Builder $query) use ($order): void {
+                        foreach (['owner_type' => $order->owner_type, 'owner_id' => $order->owner_id] as $column => $value) {
+                            if ($value === null) {
+                                $query->orWhereNotNull($column);
+                            } else {
+                                $query->orWhereNull($column)->orWhere($column, '<>', $value);
+                            }
+                        }
+                    })->exists();
+
+                if ($mismatched) {
+                    throw new LogicException('Order payment or refund ownership is inconsistent.');
+                }
+            }
+
+            $order->refunds()->withoutOwnerScope()->delete();
+            $order->payments()->withoutOwnerScope()->delete();
+
+            if (! $deleteOrder() || Order::query()->withoutOwnerScope()->whereKey($orderId)->exists()) {
+                throw new LogicException('Payment retention requires deletion of the parent order.');
+            }
+
+            return true;
+        });
+    }
+}

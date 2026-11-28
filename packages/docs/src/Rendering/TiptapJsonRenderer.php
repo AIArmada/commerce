@@ -6,9 +6,9 @@ namespace AIArmada\Docs\Rendering;
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\Docs\Support\RichContentUrlGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class TiptapJsonRenderer implements RichContentRendererInterface
@@ -153,7 +153,7 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
     {
         $href = (string) data_get($mark, 'attrs.href', '');
 
-        if (! $this->isSafeUrl($href)) {
+        if (! RichContentUrlGuard::allows($href, $this->urlGuard)) {
             return $text;
         }
 
@@ -178,7 +178,7 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
     {
         $src = (string) data_get($node, 'attrs.src', '');
 
-        if (! $this->isSafeUrl($src)) {
+        if (! RichContentUrlGuard::allows($src, $this->urlGuard)) {
             return '';
         }
 
@@ -205,25 +205,5 @@ final class TiptapJsonRenderer implements RichContentRendererInterface
         }
 
         return $attrs;
-    }
-
-    private function isSafeUrl(string $url): bool
-    {
-        if ($url === '') {
-            return false;
-        }
-
-        if (Str::startsWith($url, '/') && ! Str::startsWith($url, '//') && ! str_contains($url, '..')) {
-            return true;
-        }
-
-        if (! Str::startsWith(Str::lower($url), ['https://', 'http://'])) {
-            return false;
-        }
-
-        // Rendered HTML is fetched server-side during PDF generation, so
-        // absolute embeds must resolve exclusively to public IPs (no
-        // link-local/cloud-metadata targets).
-        return $this->urlGuard->isAllowed($url);
     }
 }

@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\OrdersServiceProvider;
-use AIArmada\Orders\Services\OrderService;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -32,9 +33,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         expect(interface_exists(DocServiceInterface::class))->toBeTrue();
 
-        $service = app(OrderService::class);
-
-        $order = $service->createOrder(
+        $order = app(CreateOrder::class)->execute(
             [
                 'order_number' => 'ORD-DOCS-' . uniqid(),
                 'subtotal' => 20000,
@@ -64,7 +63,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ],
         );
 
-        $service->confirmPayment($order, 'txn_docs_123', 'stripe', 22700);
+        app(RegisterOrderPayment::class)->execute($order, 'txn_docs_123', 'stripe', 22700);
 
         expect($eventFired)->toBeTrue();
 
@@ -78,7 +77,9 @@ describe('Orders ↔ Docs Integration', function (): void {
             ->first();
 
         expect($doc)->not->toBeNull();
-        expect($doc->status->equals(Paid::class))->toBeTrue();
+        expect($doc->status->equals(Paid::class))->toBeTrue()
+            ->and($doc->tax_amount_minor)->toBe(1200)
+            ->and($doc->total_minor)->toBe(22700);
     });
 
     it('waits for full settlement before creating the paid invoice', function (): void {
@@ -87,9 +88,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         app()->register(OrdersServiceProvider::class);
 
-        $service = app(OrderService::class);
-
-        $order = $service->createOrder(
+        $order = app(CreateOrder::class)->execute(
             [
                 'order_number' => 'ORD-DOCS-PARTIAL-' . uniqid(),
                 'subtotal' => 22700,
@@ -115,7 +114,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ->where('docable_id', $order->getKey())
             ->where('doc_type', DocType::Invoice->value);
 
-        $service->confirmPayment($order, 'txn_docs_partial_1', 'stripe', 20000);
+        app(RegisterOrderPayment::class)->execute($order, 'txn_docs_partial_1', 'stripe', 20000);
 
         $order->refresh();
 
@@ -123,7 +122,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ->and($order->isFullyPaid())->toBeFalse()
             ->and($invoiceQuery()->exists())->toBeFalse();
 
-        $service->confirmPayment($order, 'txn_docs_partial_2', 'stripe', 2700);
+        app(RegisterOrderPayment::class)->execute($order, 'txn_docs_partial_2', 'stripe', 2700);
 
         $order->refresh();
 
@@ -138,9 +137,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         app()->register(OrdersServiceProvider::class);
 
-        $service = app(OrderService::class);
-
-        $order = $service->createOrder(
+        $order = app(CreateOrder::class)->execute(
             [
                 'order_number' => 'ORD-NODOCS-' . uniqid(),
                 'subtotal' => 10000,
@@ -161,7 +158,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ],
         );
 
-        $service->confirmPayment($order, 'txn_docs_456', 'stripe', 10000);
+        app(RegisterOrderPayment::class)->execute($order, 'txn_docs_456', 'stripe', 10000);
 
         $exists = Doc::query()
             ->where('docable_type', $order->getMorphClass())

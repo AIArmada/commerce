@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -13,9 +14,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderPaymentRetention;
 use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
-use AIArmada\Orders\Support\RefundAllocator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -314,7 +314,24 @@ class Order extends Model implements Auditable
         $this->allowUnsafeDelete = $force;
 
         try {
-            return DB::transaction(fn (): ?bool => parent::delete());
+            return $this->getConnection()->transaction(function (): ?bool {
+                if (! $this->exists) {
+                    return parent::delete();
+                }
+
+                $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+                $this->refresh();
+
+                return app(OrderPaymentRetention::class)->deleteOrder(
+                    (string) $this->getKey(),
+                    $this->allowUnsafeDelete,
+                    function (): bool {
+                        app(AddressAttachmentWriter::class)->detachAll($this->getMorphClass(), (string) $this->getKey());
+
+                        return parent::delete() === true;
+                    },
+                );
+            });
         } finally {
             $this->allowUnsafeDelete = $previous;
         }
@@ -370,7 +387,7 @@ class Order extends Model implements Auditable
 
     public function getRemainingRefundable(): int
     {
-        return RefundAllocator::remainingForOrder($this);
+        return max(0, max(0, $this->getTotalPaid() - $this->getTotalRefunded()) - $this->getTotalPendingRefunded());
     }
 
     public function getBalanceDue(): int
@@ -390,26 +407,6 @@ class Order extends Model implements Auditable
     public function getItemCount(): int
     {
         return $this->items()->sum('quantity');
-    }
-
-    /**
-     * Recompute subtotal, tax, and grand totals from the order lines.
-     *
-     * The order-level discount_total is the authoritative total discount: it
-     * already includes any per-line discount_amount breakdown (both cart
-     * intake paths fold line discounts into it), so the line breakdown is
-     * informational here and must not be subtracted a second time.
-     */
-    public function recalculateTotals(): self
-    {
-        $subtotal = (int) $this->items()->sum(DB::raw('quantity * unit_price'));
-        $taxTotal = (int) $this->items()->sum('tax_amount');
-
-        $this->subtotal = $subtotal;
-        $this->tax_total = $taxTotal;
-        $this->grand_total = $subtotal + $taxTotal + $this->shipping_total - $this->discount_total;
-
-        return $this;
     }
 
     public function getAuditThreshold(): int
@@ -501,15 +498,9 @@ class Order extends Model implements Auditable
         });
 
         static::deleting(function (Order $order): void {
-            if (! $order->allowUnsafeDelete && ($order->isPaid() || $order->isFinal())) {
+            if (! $order->allowUnsafeDelete && ($order->isPaid() || $order->getTotalPaid() > 0 || $order->isFinal())) {
                 throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
             }
-
-            $order->items()->delete();
-            $order->addresses()->detach();
-            $order->payments()->delete();
-            $order->refunds()->delete();
-            $order->orderNotes()->delete();
         });
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ViewDoc;
 
 it('prefers the PDF share route when online viewing is not allowed', function (): void {

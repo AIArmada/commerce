@@ -8,7 +8,7 @@ use AIArmada\Chip\Features\Collect\Models\Payment as ChipPayment;
 use AIArmada\Chip\Features\Collect\Models\Purchase as ChipPurchase;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Orders\Actions\CreateOrder;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -43,7 +43,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
             $order->save();
         }
 
-        app(CreateOrder::class)->addAddress($order, [
+        app(OrderAdministration::class)->addAddress((string) $order->getKey(), [
             'first_name' => 'Demo',
             'last_name' => 'Buyer',
             'line1' => '1 Jalan Demo',
@@ -103,7 +103,7 @@ test('payment success replays a real CHIP purchase into local storage before ren
             $order->save();
         }
 
-        app(CreateOrder::class)->addAddress($order, [
+        app(OrderAdministration::class)->addAddress((string) $order->getKey(), [
             'first_name' => 'Demo',
             'last_name' => 'Buyer',
             'line1' => '1 Jalan Demo',

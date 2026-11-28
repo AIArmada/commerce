@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
+use AIArmada\Docs\Contracts\PdfRenderer;
+use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
+use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Services\DocPaymentRecorder;
-use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\Services\DocTotals;
-use AIArmada\Docs\Services\SequenceManager;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,11 +23,10 @@ beforeEach(function (): void {
     config()->set('docs.storage.disk', 'docs');
     $this->numberRegistry = new DocumentNumberRegistry;
     $this->sequenceManager = new SequenceManager;
-    $this->service = new DocService(
+    $this->service = new ManageDocumentRecords(
         $this->numberRegistry,
         $this->sequenceManager,
-        new DocTotals,
-        new DocPaymentRecorder,
+        new CalculateDocumentTotals,
     );
 });
 
@@ -54,9 +55,9 @@ test('generatePdf creates and stores pdf', function (): void {
 
     $path = $this->service->generatePdf($doc);
 
-    expect($path)->toBe('docs/INV-001.pdf');
-    Storage::disk('docs')->assertExists('docs/INV-001.pdf');
-    expect($doc->fresh()->pdf_path)->toBe('docs/INV-001.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
+    Storage::disk('docs')->assertExists('docs/' . $doc->id . '.pdf');
+    expect($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('generatePdf sanitizes doc_number to prevent path traversal', function (): void {
@@ -79,9 +80,9 @@ test('generatePdf sanitizes doc_number to prevent path traversal', function (): 
 
     $path = $this->service->generatePdf($doc);
 
-    expect($path)->toBe('docs/INV-evil.pdf');
-    Storage::disk('docs')->assertExists('docs/INV-evil.pdf');
-    expect($doc->fresh()->pdf_path)->toBe('docs/INV-evil.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
+    Storage::disk('docs')->assertExists('docs/' . $doc->id . '.pdf');
+    expect($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('downloadPdf returns existing path if exists', function (): void {
@@ -91,15 +92,14 @@ test('downloadPdf returns existing path if exists', function (): void {
         'doc_type' => 'invoice',
         'doc_number' => 'INV-001',
     ]);
-    $doc->forceFill(['pdf_path' => 'docs/INV-001.pdf'])->save();
-
-    Storage::disk('docs')->put('docs/INV-001.pdf', 'dummy content');
-
-    // Should NOT call generatePdf (Pdf facade)
-    Pdf::shouldReceive('html')->never();
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocumentRendering::class);
+    app(DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $path = $this->service->downloadPdf($doc);
-    expect($path)->toBe('docs/INV-001.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('downloadPdf generates pdf if missing', function (): void {
@@ -110,7 +110,7 @@ test('downloadPdf generates pdf if missing', function (): void {
         'doc_number' => 'INV-002',
     ]);
     // pdf_path might be set but file missing
-    $doc->forceFill(['pdf_path' => 'docs/INV-002.pdf'])->save();
+    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
 
     // File content missing in storage
 
@@ -125,7 +125,7 @@ test('downloadPdf generates pdf if missing', function (): void {
     Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
     $path = $this->service->downloadPdf($doc);
-    expect($path)->toBe('docs/INV-002.pdf');
+    expect($path)->toBe('docs/' . $doc->id . '.pdf');
 });
 
 test('markAsSent marks doc as sent', function (): void {

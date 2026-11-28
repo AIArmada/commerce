@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Database\Factories;
 
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DocApprovalFactory extends Factory

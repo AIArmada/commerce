@@ -2,14 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentWorkflows;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocWorkflow;
-use AIArmada\Docs\Models\DocWorkflowStep;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
-    DocWorkflow::query()->delete();
     DocWorkflowStep::query()->delete();
+    DocWorkflow::query()->delete();
 });
 
 describe('DocWorkflow', function (): void {
@@ -151,7 +155,7 @@ describe('DocWorkflow', function (): void {
         ]);
 
         $workflowId = $workflow->id;
-        $workflow->delete();
+        app(DocumentWorkflows::class)->remove((string) $workflow->getKey());
 
         expect(DocWorkflowStep::where('workflow_id', $workflowId)->count())->toBe(0);
     });
@@ -296,5 +300,111 @@ describe('DocWorkflowStep', function (): void {
         expect($steps->first()->name)->toBe('First')
             ->and($steps->get(1)->name)->toBe('Second')
             ->and($steps->last()->name)->toBe('Third');
+    });
+});
+
+test('workflow and step rules reject unknown fields and malformed operators consistently', function (): void {
+    $doc = Doc::factory()->create(['currency' => 'MYR', 'total_minor' => 5000]);
+    $workflow = new DocWorkflow(['is_active' => true]);
+    $step = new DocWorkflowStep;
+
+    foreach ([
+        ['total_minor' => ['operator' => 'unknown', 'value' => 5000]],
+        ['total_minor' => ['operator' => null, 'value' => 5000]],
+        ['missing_field' => null],
+        ['total_minor' => ['operator' => '>']],
+        ['total_minor' => ['operator' => '>', 'value' => '100']],
+        ['currency' => ['operator' => 'not_in', 'value' => 'USD']],
+    ] as $rules) {
+        $workflow->rules = $rules;
+        $step->conditions = $rules;
+
+        expect($workflow->appliesTo($doc))->toBeFalse()
+            ->and($step->conditionsMet($doc))->toBeFalse();
+    }
+
+    $rules = ['currency' => ['operator' => 'in', 'value' => ['MYR', 'SGD']]];
+    $workflow->rules = $rules;
+    $step->conditions = $rules;
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
+});
+
+test('workflow rules and steps reject documents outside their owner boundary', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', false);
+
+    $doc = new Doc;
+    $doc->forceFill(['owner_type' => 'tenant', 'owner_id' => 'tenant-a']);
+
+    $workflow = new DocWorkflow(['is_active' => true]);
+    $step = new DocWorkflowStep;
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_type' => 'tenant', 'owner_id' => 'tenant-b']);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_id' => 'tenant-a']);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
+
+    foreach ([$workflow, $step] as $rule) {
+        $rule->forceFill(['owner_type' => null, 'owner_id' => null]);
+    }
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
+
+    config()->set('docs.owner.include_global', true);
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
+
+    $workflow->forceFill(['owner_type' => 'tenant']);
+    $step->forceFill(['owner_type' => 'tenant']);
+
+    expect($workflow->appliesTo($doc))->toBeFalse()
+        ->and($step->conditionsMet($doc))->toBeFalse();
+});
+
+test('workflow write actions serialize steps and enforce the workflow owner', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', true);
+    config()->set('docs.owner.auto_assign_on_create', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $workflows = app(DocumentWorkflows::class);
+
+    $workflowId = OwnerContext::withOwner($owner, fn (): string => $workflows->create([
+        'name' => 'Tenant approval',
+        'doc_type' => DocType::Invoice->value,
+    ]));
+
+    $attributes = ['name' => 'Review', 'action_type' => DocWorkflowStep::ACTION_APPROVAL];
+
+    OwnerContext::withOwner($other, function () use ($workflows, $workflowId, $attributes): void {
+        expect(fn () => $workflows->addStep($workflowId, $attributes))->toThrow(AuthorizationException::class)
+            ->and(fn () => $workflows->remove($workflowId))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($workflows, $workflowId, $attributes, $owner): void {
+        $stepId = $workflows->addStep($workflowId, $attributes);
+        $step = DocWorkflowStep::query()->findOrFail($stepId);
+
+        expect($step->workflow_id)->toBe($workflowId)
+            ->and($step->belongsToOwner($owner))->toBeTrue();
+
+        $workflows->remove($workflowId);
+
+        expect(DocWorkflowStep::query()->find($stepId))->toBeNull()
+            ->and(DocWorkflow::query()->find($workflowId))->toBeNull();
     });
 });

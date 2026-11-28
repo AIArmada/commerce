@@ -8,11 +8,12 @@ use AIArmada\Inventory\Cart\CompositeComponents;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Data\ReturnedPackageUnit;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
@@ -184,14 +185,22 @@ final class PackageReturns implements PackageReturnVerifier
         });
     }
 
-    public function receivedUnit(Order $order, string $authorizationId): PackageUnit
+    public function receivedUnit(string $orderId, string $authorizationId): ReturnedPackageUnit
+    {
+        $unit = $this->resolveReceivedUnit($orderId, $authorizationId);
+
+        return new ReturnedPackageUnit((string) $unit->item->getKey(), $unit->ordinal);
+    }
+
+    private function resolveReceivedUnit(string $orderId, string $authorizationId): PackageUnit
     {
         $rma = ReturnAuthorization::query()->findOrFail($authorizationId);
         [$returnOrder, $unit] = $this->resolve($rma);
-        if (! $returnOrder->is($order) || $rma->received_at === null || (! $rma->isReceived() && ! $rma->isCompleted())) {
+        if ((string) $returnOrder->getKey() !== $orderId || $rma->received_at === null || (! $rma->isReceived() && ! $rma->isCompleted())) {
             throw new DomainException('A received package return on this order is required for the refund.');
         }
 
+        $this->assertOwnerBoundaryForMutation($returnOrder, __METHOD__);
         $this->assertContents($rma, $unit, approved: true, inspected: true);
 
         return $unit;
@@ -202,7 +211,7 @@ final class PackageReturns implements PackageReturnVerifier
         return DB::transaction(function () use ($rma, $transactionId): ReturnAuthorization {
             [$rma, $order] = $this->lockReturn($rma);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
-            $unit = $this->receivedUnit($order, $rma->id);
+            $unit = $this->resolveReceivedUnit((string) $order->getKey(), $rma->id);
 
             if ($rma->isCompleted()) {
                 return $rma;
@@ -210,7 +219,7 @@ final class PackageReturns implements PackageReturnVerifier
 
             $remaining = $unit->refundAmount() - $this->settledRefundAmount($order, $rma);
             if ($transactionId !== null && $remaining > 0) {
-                app(RegisterOrderRefund::class)->execute($order, $remaining, $transactionId, $rma->reason, [
+                app(OrderRefunds::class)->processRefund((string) $order->getKey(), $remaining, $transactionId, $rma->reason, [
                     'return_authorization_id' => $rma->id,
                 ]);
             }

@@ -16,7 +16,8 @@ use AIArmada\Events\Data\EventOrderItemData;
 use AIArmada\Events\Data\EventRefundMatchData;
 use AIArmada\Events\Data\EventRefundResultData;
 use AIArmada\Events\Data\EventRefundStateData;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -25,15 +26,15 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
 final class OrdersDriver implements EventOrderDriver
 {
     public function __construct(
-        private readonly ?OrderServiceInterface $orders,
+        private readonly ?OrderRefunds $orders,
         private readonly ?PaymentGatewayResolverInterface $gateways,
+        private readonly ?OrderItemFulfillmentMarker $itemMarkers,
     ) {}
 
     public function isPaidOrder(string $orderId): bool
@@ -131,37 +132,17 @@ final class OrdersDriver implements EventOrderDriver
 
     public function markItemFulfillment(string $orderItemId): ?array
     {
-        /** @var OrderItem|null $orderItem */
-        $orderItem = OrderItem::query()->find($orderItemId);
-
-        if (! $orderItem instanceof OrderItem) {
-            return null;
-        }
-
-        $originalOptions = $orderItem->getAttribute('options');
-        $options = is_array($originalOptions) ? $originalOptions : [];
-
-        if (($options['event_fulfillment'] ?? null) === 'event_registration') {
-            return null;
-        }
-
-        $orderItem->forceFill([
-            'options' => [...$options, 'event_fulfillment' => 'event_registration'],
-        ])->save();
-
-        return ['options' => $originalOptions];
+        return $this->itemMarkerService()->mark($orderItemId, 'event_fulfillment', 'event_registration');
     }
 
     public function restoreItemOptions(string $orderItemId, ?array $options): void
     {
-        /** @var OrderItem|null $orderItem */
-        $orderItem = OrderItem::query()->find($orderItemId);
+        $this->itemMarkerService()->restore($orderItemId, 'event_fulfillment', 'event_registration', $options);
+    }
 
-        if (! $orderItem instanceof OrderItem) {
-            return;
-        }
-
-        $orderItem->forceFill(['options' => $options])->save();
+    private function itemMarkerService(): OrderItemFulfillmentMarker
+    {
+        return $this->itemMarkers ?? throw new RuntimeException('The AIArmada order item fulfillment integration is unavailable.');
     }
 
     public function createRefund(
@@ -183,19 +164,19 @@ final class OrdersDriver implements EventOrderDriver
         $metadata['provider'] = $this->paymentProvider($payment);
 
         $refunds = OwnerContext::withOwner($this->ownerOf($order), fn (): array => $this->orderService()->createPendingRefund(
-            order: $order,
+            orderId: (string) $order->getKey(),
             amount: $amount,
             transactionId: $transactionId ?? 'event-refund-' . $orderId,
             reason: $reason,
             metadata: $metadata,
-            payment: $payment,
+            paymentId: (string) $payment->getKey(),
         ));
 
         if (count($refunds) !== 1) {
             throw new RuntimeException('The selected payment did not produce exactly one refund reservation.');
         }
 
-        return (string) $refunds[0]->getKey();
+        return $refunds[0];
     }
 
     public function refundIdForRegistration(string $orderId, string $registrationId): ?string
@@ -213,7 +194,7 @@ final class OrdersDriver implements EventOrderDriver
 
         return OwnerContext::withOwner(
             $this->ownerOf($refund),
-            fn (): bool => $this->orderService()->claimPendingRefundSubmission($refund),
+            fn (): bool => $this->orderService()->claimPendingRefundSubmission((string) $refund->getKey()),
         );
     }
 
@@ -222,7 +203,7 @@ final class OrdersDriver implements EventOrderDriver
         $refund = $this->refund($refundId);
 
         OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $transactionId): void {
-            $this->orderService()->completePendingRefund($refund, $transactionId);
+            $this->orderService()->completePendingRefund((string) $refund->getKey(), $transactionId);
         });
     }
 
@@ -233,7 +214,7 @@ final class OrdersDriver implements EventOrderDriver
 
         OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $reason): void {
             $this->orderService()->failPendingRefund(
-                $refund,
+                (string) $refund->getKey(),
                 $reason !== '' ? mb_substr($reason, 0, 500) : 'Refund failed.',
             );
         });
@@ -317,25 +298,13 @@ final class OrdersDriver implements EventOrderDriver
         ?string $providerRefundId,
         ?string $relatedPaymentId,
     ): bool {
-        if (in_array($providerRefundId, [null, '', $relatedPaymentId], true)) {
-            return true;
-        }
+        $refund = $this->refund($refundId);
 
-        return DB::transaction(function () use ($refundId, $providerRefundId): bool {
-            $refund = $this->refund($refundId, lock: true);
-            $metadata = is_array($refund->metadata) ? $refund->metadata : [];
-            $existingId = data_get($metadata, 'provider_refund_id');
-
-            if (is_scalar($existingId) && mb_trim((string) $existingId) !== '') {
-                return mb_trim((string) $existingId) === $providerRefundId;
-            }
-
-            $metadata['provider_refund_id'] = $providerRefundId;
-
-            $refund->forceFill(['metadata' => $metadata])->save();
-
-            return true;
-        });
+        return OwnerContext::withOwner($this->ownerOf($refund), fn (): bool => $this->orderService()->correlateProviderReference(
+            $refundId,
+            $providerRefundId,
+            $relatedPaymentId,
+        ));
     }
 
     public function submitRefund(string $refundId): EventRefundResultData
@@ -347,7 +316,12 @@ final class OrdersDriver implements EventOrderDriver
             throw new RuntimeException('The refund is not attached to an order.');
         }
 
-        $payment = $this->completedPayment($order);
+        $payment = $order->payments()->whereKey($refund->payment_id)->firstOrFail();
+
+        if (! $payment->isCompleted()) {
+            throw new InvalidArgumentException('The reserved payment is not completed.');
+        }
+
         $this->assertOnlinePayment($payment);
 
         $processor = $this->resolveProcessor($payment);
@@ -373,11 +347,10 @@ final class OrdersDriver implements EventOrderDriver
         return Order::query()->with(['payments'])->findOrFail($orderId);
     }
 
-    private function refund(string $refundId, bool $lock = false): OrderRefund
+    private function refund(string $refundId): OrderRefund
     {
         return OwnerScopeOverride::withoutIncludeGlobal(
             static fn (): OrderRefund => OrderRefund::query()
-                ->when($lock, fn (Builder $query): Builder => $query->lockForUpdate())
                 ->findOrFail($refundId),
         );
     }
@@ -399,13 +372,13 @@ final class OrdersDriver implements EventOrderDriver
     {
         $config = $model::ownerScopeConfig();
 
-        return OwnerContext::fromTypeAndId(
+        return OwnerContext::fromTypeAndIdOrFail(
             $model->getAttribute($config->ownerTypeColumn),
             $model->getAttribute($config->ownerIdColumn),
         );
     }
 
-    private function orderService(): OrderServiceInterface
+    private function orderService(): OrderRefunds
     {
         return $this->orders ?? throw new RuntimeException('The AIArmada orders integration is unavailable.');
     }

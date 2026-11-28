@@ -1,0 +1,250 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Data\DocData;
+use AIArmada\Docs\Data\DocType;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use Carbon\CarbonImmutable;
+use DomainException;
+use Illuminate\Support\Facades\View;
+use InvalidArgumentException;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+trait BuildsOrderDocs
+{
+    use AssertsOrderOwnerBoundary;
+
+    protected function resolveOrderForDocument(string $orderId): Order
+    {
+        $order = Order::query()->forOwner(includeGlobal: false)->findOrFail($orderId);
+        $this->assertOwnerBoundaryForMutation($order, 'generate order document');
+
+        return $order;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function buildOrderPdf(
+        Order $order,
+        string $view,
+        string $filename,
+        array $data,
+    ): PdfBuilder {
+        $pdf = Pdf::view($view, $this->orderViewData($order, $data))
+            ->format('a4')
+            ->margins(15, 15, 15, 15)
+            ->name($filename);
+
+        $nodeModulePath = base_path('node_modules');
+
+        if (is_dir($nodeModulePath)) {
+            $pdf->withBrowsershot(function (Browsershot $browsershot) use ($nodeModulePath): void {
+                $browsershot
+                    ->setNodeModulePath($nodeModulePath)
+                    ->setEnvironmentOptions([
+                        'NODE_PATH' => $nodeModulePath,
+                    ])
+                    ->timeout(30);
+            });
+        }
+
+        return $pdf;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function downloadOrderHtmlFallback(
+        Order $order,
+        string $view,
+        string $filename,
+        array $data,
+    ): StreamedResponse {
+        return response()->streamDownload(function () use ($order, $view, $data): void {
+            echo View::make($view, $this->orderViewData($order, $data))->render();
+        }, $filename, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    protected function hasPdfRuntime(): bool
+    {
+        return is_file(base_path('node_modules/puppeteer/package.json'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    protected function buildDocData(
+        Order $order,
+        DocType $docType,
+        string $transactionId,
+        string $gateway,
+        array $metadata = [],
+        bool $generatePdf = false,
+    ): DocData {
+        if (! $order->isFullyPaid()) {
+            throw new DomainException('Paid order documents require full payment settlement.');
+        }
+
+        // Preserve exact allocated taxes rather than reconstructing a rounded rate.
+        $linesSubtotalMinor = (int) $order->subtotal + max(0, (int) $order->shipping_total);
+
+        return new DocData(
+            docType: $docType->value,
+            docableType: $order->getMorphClass(),
+            docableId: (string) $order->getKey(),
+            status: 'paid',
+            issueDate: $order->paid_at ?? CarbonImmutable::now(),
+            items: $this->buildItems($order),
+            subtotalMinor: $linesSubtotalMinor,
+            totalMinor: $order->grand_total,
+            taxAmountMinor: $order->tax_total,
+            discountAmountMinor: $order->discount_total,
+            currency: $order->currency,
+            notes: $order->notes,
+            customerData: $this->buildCustomerData($order),
+            metadata: array_filter(array_merge([
+                'order_id' => $order->getKey(),
+                'order_number' => $order->order_number,
+                'payment_gateway' => $gateway,
+                'payment_transaction_id' => $transactionId,
+            ], $metadata), static fn (mixed $value): bool => $value !== null && $value !== ''),
+            generatePdf: $generatePdf,
+        );
+    }
+
+    protected function findExistingDoc(Order $order, DocType $docType): ?string
+    {
+        return app(DocServiceInterface::class)->findForSubject($order->getMorphClass(), (string) $order->getKey(), $docType->value);
+    }
+
+    protected function runWithinOrderOwnerScope(Order $order, callable $callback): mixed
+    {
+        $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
+
+        return OwnerContext::withOwner($owner, $callback);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildItems(Order $order): array
+    {
+        $items = $order->items
+            ->map(function (OrderItem $item): array {
+                return array_filter([
+                    'name' => $item->name,
+                    'description' => $item->sku ? "SKU: {$item->sku}" : null,
+                    'quantity' => $item->quantity,
+                    'unit_price_minor' => $item->unit_price,
+                    'tax_amount_minor' => $item->tax_amount,
+                ], static fn (mixed $value): bool => $value !== null && $value !== '');
+            })
+            ->values()
+            ->all();
+
+        if ($order->shipping_total > 0) {
+            $items[] = [
+                'name' => 'Shipping',
+                'quantity' => 1,
+                'unit_price_minor' => $order->shipping_total,
+            ];
+        }
+
+        // Order-level tax can include charges that are not stored on item rows.
+        // Allocate the remainder once to a line so subsequent document edits
+        // preserve the exact tax amount without recomputing a rate.
+        $lineTax = array_sum(array_column($items, 'tax_amount_minor'));
+        $remainder = $order->tax_total - $lineTax;
+
+        if ($remainder < 0) {
+            throw new InvalidArgumentException('Order item taxes exceed the order tax total.');
+        }
+
+        if ($remainder > 0 && $items !== []) {
+            $last = array_key_last($items);
+            $items[$last]['tax_amount_minor'] = ($items[$last]['tax_amount_minor'] ?? 0) + $remainder;
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buildCustomerData(Order $order): ?array
+    {
+        $address = $order->primaryAddress('billing') ?? $order->primaryAddress('shipping');
+
+        if ($address === null) {
+            return null;
+        }
+
+        $metadata = $address->metadata;
+        $contact = is_array($metadata)
+            && is_array($metadata[Order::ADDRESS_CONTACT_METADATA_KEY] ?? null)
+            ? $metadata[Order::ADDRESS_CONTACT_METADATA_KEY]
+            : [];
+        $hasText = static fn (mixed $value): bool => is_string($value) && $value !== '';
+        $name = mb_trim(implode(' ', array_filter([
+            $contact['first_name'] ?? null,
+            $contact['last_name'] ?? null,
+        ], $hasText)));
+        $locality = implode(', ', array_filter([
+            $address->city,
+            $address->state,
+        ], $hasText));
+        $location = mb_trim(implode(' ', array_filter([
+            $locality,
+            $address->postcode,
+        ], $hasText)));
+
+        return array_filter([
+            'name' => $name !== '' ? $name : null,
+            'email' => is_string($contact['email'] ?? null) ? $contact['email'] : null,
+            'phone' => is_string($contact['phone'] ?? null) ? $contact['phone'] : null,
+            'address' => implode("\n", array_filter([
+                $name,
+                $contact['company'] ?? null,
+                $address->line1,
+                $address->line2,
+                $location,
+                $address->country_code ?? $address->country,
+            ], $hasText)),
+            'city' => $address->city,
+            'state' => $address->state,
+            'postcode' => $address->postcode,
+            'country_code' => $address->country_code ?? $address->country,
+            'company' => is_string($contact['company'] ?? null) ? $contact['company'] : null,
+        ], $hasText);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function orderViewData(Order $order, array $data): array
+    {
+        return $this->runWithinOrderOwnerScope($order, function () use ($order, $data): array {
+            return array_merge([
+                'order' => $order,
+                'items' => $order->items,
+                'billing' => $order->primaryAddress('billing'),
+                'shipping' => $order->primaryAddress('shipping'),
+                'payments' => $order->payments()->where('status', 'completed')->get(),
+            ], $data);
+        });
+    }
+}

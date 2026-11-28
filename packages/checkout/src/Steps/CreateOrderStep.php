@@ -9,9 +9,12 @@ use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Checkout\Support\CompositeCartRevalidator;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OrderIntakeData;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
-use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\CartLineSnapshot;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -69,8 +72,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         // Reuse existing order if already created for this session (retry-safe)
         if ($session->order_id !== null) {
-            /** @var Order|null $order */
-            $order = $session->order;
+            $order = $orderService->find((string) $session->order_id);
 
             if ($order === null) {
                 return $this->failed('Previously created order not found');
@@ -93,8 +95,9 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 }
 
                 $order = $orderService->createFromCart(
-                    cart: $liveCart,
-                    customer: $customer,
+                    cartId: (string) $session->cart_id,
+                    customerType: $customer->getMorphClass(),
+                    customerId: (string) $customer->getKey(),
                     billingAddress: $billingData ?: null,
                     shippingAddress: $shippingData ?: null,
                     intakeSource: 'checkout',
@@ -137,16 +140,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
         // carts created through the live-cart bridge as well as the snapshot
         // builder path. This must be persisted before payment confirmation
         // dispatches the paid event.
-        $order->forceFill([
-            'metadata' => array_merge(
-                is_array($order->metadata) ? $order->metadata : [],
-                $this->buildOrderMetadata($session, $paymentData),
-            ),
-        ]);
-
-        if ($order->exists) {
-            $order->save();
-        }
+        app(OrderMetadataWriter::class)->merge($order->id, $this->buildOrderMetadata($session, $paymentData));
 
         // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
@@ -154,7 +148,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         if ($isFreeOrder) {
             try {
-                $orderService->confirmFreeOrder($order);
+                app(OrderFulfillment::class)->confirmFree($order->id);
             } catch (OrderNotAwaitingPayment $e) {
                 // Classified from the exception, not the step's copy of
                 // the row: the seam judged the locked row, which may have
@@ -176,7 +170,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ]);
             } catch (Throwable $e) {
                 Log::warning('Free order confirmation failed.', [
-                    'order_id' => $order->getKey(),
+                    'order_id' => $order->id,
                     'error' => $e->getMessage(),
                 ]);
 
@@ -185,7 +179,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ]);
             }
         } elseif ($paymentConfirmationEnabled) {
-            $paymentWasConfirmed = $this->confirmPayment($orderService, $order, $session, $paymentData);
+            $paymentWasConfirmed = $this->confirmPayment(app(OrderPaymentConfirmation::class), $order, $session, $paymentData);
 
             if (! $paymentWasConfirmed) {
                 return $this->failed('Payment confirmation failed', [
@@ -196,7 +190,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         return $this->success('Order created successfully', [
             'order_id' => $order->id,
-            'order_number' => $order->order_number ?? $order->id,
+            'order_number' => $order->orderNumber ?? $order->id,
         ]);
     }
 
@@ -430,8 +424,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
      * @param  array<string, mixed>  $paymentData
      */
     private function confirmPayment(
-        OrderServiceInterface $orderService,
-        Order $order,
+        OrderPaymentConfirmation $payments,
+        OrderIntakeData $order,
         CheckoutSession $session,
         array $paymentData,
     ): bool {
@@ -479,7 +473,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
         // The order must still match the session that priced it: a live-cart
         // reprice between order creation and payment confirmation must not
         // turn a session-total payment into an underpaid fulfilled order.
-        $orderTotal = $this->minorAmount($order->grand_total);
+        $orderTotal = $this->minorAmount($order->grandTotal);
         $orderCurrency = $this->normalizeCurrency($order->currency);
 
         if (
@@ -508,17 +502,18 @@ final class CreateOrderStep extends AbstractCheckoutStep
         ];
 
         try {
-            $orderService->confirmPayment(
-                order: $order,
+            $payments->confirmCheckout(
+                orderId: $order->id,
                 transactionId: $transactionId,
                 gateway: $gateway,
                 amount: (int) $amount,
+                currency: $expectedCurrency,
                 metadata: $metadata,
             );
 
             Log::debug('Payment confirmed for order via checkout', [
                 'order_id' => $order->id,
-                'order_number' => $order->order_number,
+                'order_number' => $order->orderNumber,
                 'transaction_id' => $transactionId,
                 'gateway' => $gateway,
             ]);
@@ -626,7 +621,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
     private function recordOrderReconciliationMismatch(
         CheckoutSession $session,
-        Order $order,
+        OrderIntakeData $order,
         int $sessionAmount,
         ?int $orderAmount,
         ?string $sessionCurrency,
@@ -665,7 +660,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 : 'Payment confirmation aborted because the order currency mismatched the checkout currency',
             [
                 'session_id' => $session->id,
-                'order_id' => $order->getKey(),
+                'order_id' => $order->id,
                 'session_grand_total' => $sessionAmount,
                 'order_grand_total' => $orderAmount,
                 'session_currency' => $sessionCurrency,
@@ -676,7 +671,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
     private function recordFreeOrderReconciliationMismatch(
         CheckoutSession $session,
-        Order $order,
+        OrderIntakeData $order,
         string $detail,
         bool $stateRejection = false,
     ): void {
@@ -685,8 +680,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
             'status' => 'mismatch',
             'reason' => $stateRejection ? 'order_state_not_confirmable' : 'session_free_order_mismatch',
             'session_grand_total' => (int) $session->grand_total,
-            'order_grand_total' => (int) $order->grand_total,
-            'order_paid_total' => $order->getTotalPaid(),
+            'order_grand_total' => (int) $order->grandTotal,
+            'order_paid_total' => $order->paidTotal,
             'detail' => $detail,
             'recorded_at' => CarbonImmutable::now()->toIso8601String(),
         ];
@@ -702,10 +697,10 @@ final class CreateOrderStep extends AbstractCheckoutStep
             ? 'Free order confirmation aborted because the order cannot be confirmed in its current state'
             : 'Free order confirmation aborted because the order no longer qualifies as free', [
                 'session_id' => $session->id,
-                'order_id' => $order->getKey(),
+                'order_id' => $order->id,
                 'session_grand_total' => (int) $session->grand_total,
-                'order_grand_total' => (int) $order->grand_total,
-                'order_paid_total' => $order->getTotalPaid(),
+                'order_grand_total' => (int) $order->grandTotal,
+                'order_paid_total' => $order->paidTotal,
             ]);
     }
 

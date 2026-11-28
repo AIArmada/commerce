@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Contracts;
 
-use AIArmada\Orders\Models\Order;
-
 /**
  * Contract for order payment handling.
  *
@@ -19,14 +17,14 @@ interface PaymentHandler
      * @param  array<string, mixed>  $paymentData  Payment method data
      * @return array{success: bool, transaction_id: ?string, error: ?string}
      */
-    public function processPayment(Order $order, array $paymentData): array;
+    public function processPayment(string $orderId, array $paymentData): array;
 
     /**
      * Process refund for an order.
      *
      * @return array{success: bool, transaction_id: ?string, error: ?string}
      */
-    public function processRefund(Order $order, int $amount, string $reason): array;
+    public function processRefund(string $orderId, int $amount, string $reason): array;
 
     /**
      * Get available payment methods.

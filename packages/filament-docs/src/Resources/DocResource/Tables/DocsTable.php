@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
 use AIArmada\FilamentDocs\Support\DocBulkActions;
@@ -118,7 +121,7 @@ final class DocsTable
                     ->query(
                         fn (Builder $query): Builder => $query
                             ->where('due_date', '<', CarbonImmutable::now())
-                            ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class)])
+                            ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class), DocStatus::normalize(Refunded::class)])
                     ),
 
                 Filter::make('paid')
@@ -157,45 +160,49 @@ final class DocsTable
 
                 ActionGroup::make([
                     Action::make('generate_pdf')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Generate PDF')
                         ->icon(Heroicon::OutlinedDocumentArrowDown)
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            app(DocService::class)->generatePdf($record, save: true);
+                            app(DocServiceInterface::class)->generatePdf((string) $record->getKey(), save: true);
                             Notification::make()->title('PDF generated')->success()->send();
                         }),
 
                     RecordPaymentAction::make(),
 
                     Action::make('mark_sent')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Mark as Sent')
                         ->icon(Heroicon::OutlinedPaperAirplane)
                         ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->markAsSent();
+                            app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'sent');
                             Notification::make()->title('Marked as sent')->success()->send();
                         }),
 
                     Action::make('mark_paid')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                         ->label('Mark as Paid')
                         ->icon(Heroicon::OutlinedBanknotes)
                         ->color('success')
                         ->visible(fn (Doc $record): bool => $record->canBePaid())
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->markAsPaid();
+                            app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'paid');
                             Notification::make()->title('Marked as paid')->success()->send();
                         }),
 
                     Action::make('delete')
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                         ->label('Delete')
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->delete();
+                            app(DocumentLifecycle::class)->delete([(string) $record->getKey()]);
                         }),
                 ])
                     ->icon(Heroicon::OutlinedEllipsisVertical)
@@ -203,6 +210,7 @@ final class DocsTable
             ])
             ->toolbarActions([
                 BulkAction::make('generate_pdfs')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Generate PDFs')
                     ->icon(Heroicon::OutlinedDocumentArrowDown)
                     ->requiresConfirmation()
@@ -213,6 +221,7 @@ final class DocsTable
                     ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('mark_as_sent')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Sent')
                     ->icon(Heroicon::OutlinedPaperAirplane)
                     ->action(function (Collection $records): void {
@@ -222,16 +231,15 @@ final class DocsTable
                     ->deselectRecordsAfterCompletion(),
 
                 BulkAction::make('delete_selected')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                     ->label('Delete Selected')
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
-                        $records->each(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            $record->delete();
-                        });
+                        $records->each(fn (Doc $record) => DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.'));
+                        app(DocumentLifecycle::class)->delete(array_map('strval', $records->modelKeys()));
                     })
                     ->deselectRecordsAfterCompletion(),
             ])

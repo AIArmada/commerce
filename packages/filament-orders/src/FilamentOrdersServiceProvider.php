@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\FilamentOrders\EntryPoints\Http\Controllers\DownloadOrderInvoiceController;
+use AIArmada\FilamentOrders\Persistence\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
-use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate as FilamentAuthenticate;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -42,21 +39,7 @@ final class FilamentOrdersServiceProvider extends PackageServiceProvider
     {
         Route::middleware(['web', FilamentAuthenticate::class, 'throttle:30,1'])
             ->group(function (): void {
-                Route::get('/orders/{order}/invoice/download', function (string $order) {
-                    if ((bool) config('orders.owner.enabled', false) && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
-                        abort(404);
-                    }
-
-                    $record = Order::query()
-                        ->forOwner(includeGlobal: (bool) config('orders.owner.include_global', false))
-                        ->findOrFail($order);
-
-                    $user = Filament::auth()->user();
-
-                    abort_unless($user && Gate::forUser($user)->allows('view', $record), 403);
-
-                    return app(GenerateInvoice::class)->download($record);
-                })->name('filament-orders.invoice.download');
+                Route::get('/orders/{order}/invoice/download', DownloadOrderInvoiceController::class)->name('filament-orders.invoice.download');
             });
     }
 }

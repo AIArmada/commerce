@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Support;
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 
 /**
  * Sanitizes persisted doc types before they are interpolated into config keys.

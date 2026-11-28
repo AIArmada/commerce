@@ -321,8 +321,7 @@ Customize model classes if you've extended the defaults:
 ```
 
 When using a custom order model, ensure your implementation of
-`AIArmada\Orders\Contracts\OrderServiceInterface` returns that model and
-binds the interface in the container.
+`AIArmada\Orders\Contracts\OrderServiceInterface` returns immutable `OrderIntakeData` snapshots. Bind the payment confirmation, fulfillment and metadata writer contracts in the container as well.
 
 ### Session Data Transformers
 

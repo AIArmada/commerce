@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables;
 
-use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Contracts\DocumentTemplates;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -101,9 +103,11 @@ final class DocTemplatesTable
                         ->label('Set as Default')
                         ->icon(Heroicon::OutlinedStar)
                         ->color('warning')
+                        ->authorize(fn (DocTemplate $record): bool => DocTemplateResource::canEdit($record))
                         ->visible(fn (DocTemplate $record): bool => ! $record->is_default)
                         ->action(function (DocTemplate $record): void {
-                            $record->setAsDefault();
+                            abort_unless(DocTemplateResource::canEdit($record), 403);
+                            app(DocumentTemplates::class)->setDefault((string) $record->getKey());
                             Notification::make()
                                 ->title('Template set as default')
                                 ->success()
@@ -111,12 +115,14 @@ final class DocTemplatesTable
                         }),
 
                     Action::make('delete')
+                        ->authorize(fn (DocTemplate $record): bool => DocTemplateResource::canDelete($record))
                         ->label('Delete')
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (DocTemplate $record): void {
-                            $record->delete();
+                            abort_unless(DocTemplateResource::canDelete($record), 403);
+                            app(DocumentTemplates::class)->remove((string) $record->getKey());
                         }),
                 ])
                     ->icon(Heroicon::OutlinedEllipsisVertical)

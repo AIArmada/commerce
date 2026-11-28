@@ -6,6 +6,7 @@ namespace AIArmada\Shipping;
 
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
@@ -14,6 +15,7 @@ use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Queries\PackageShipmentVerification;
 use AIArmada\Shipping\Platform\ExtensionRegistry;
 use AIArmada\Shipping\Platform\FeatureCatalog;
 use AIArmada\Shipping\Platform\FeatureModule;
@@ -69,6 +71,7 @@ final class ShippingServiceProvider extends PackageServiceProvider
         }
 
         $this->app->bind(PackageReturnVerifier::class, PackageReturns::class);
+        $this->app->bind(PackageShipmentVerifier::class, PackageShipmentVerification::class);
 
         $this->app->bind(
             FulfillmentHandler::class,

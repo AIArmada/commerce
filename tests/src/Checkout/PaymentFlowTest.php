@@ -38,7 +38,11 @@ use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationOutcome;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OrderIntakeData;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
@@ -500,15 +504,22 @@ describe('ProcessPaymentStep', function (): void {
 describe('CreateOrderStep', function (): void {
     it('creates an order when the order service is bound', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
             'order_number' => 'TEST-ORDER-1',
         ]);
 
-        $orderService->shouldReceive('createOrder')->andReturn($order);
+        $orderService->shouldReceive('createOrder')->andReturn(intakeSnapshotForPaymentFlow($order));
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -545,6 +556,17 @@ describe('CreateOrderStep', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -553,8 +575,8 @@ describe('CreateOrderStep', function (): void {
             'currency' => 'USD',
         ]);
 
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForPaymentFlow($order));
+        $payments->shouldReceive('confirmCheckout')->once()->andThrow(new RuntimeException('gateway unavailable'));
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -594,8 +616,20 @@ describe('CreateOrderStep', function (): void {
         ]);
 
         $orderService = mock(OrderServiceInterface::class);
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->twice()->andReturnUsing(function () use ($order) {
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForPaymentFlow($order));
+        $orderService->shouldReceive('find')->once()->with((string) $order->getKey())->andReturn(intakeSnapshotForPaymentFlow($order));
+        $payments->shouldReceive('confirmCheckout')->twice()->andReturnUsing(function (): void {
             static $call = 0;
             $call++;
 
@@ -603,7 +637,6 @@ describe('CreateOrderStep', function (): void {
                 throw new RuntimeException('gateway unavailable');
             }
 
-            return $order;
         });
 
         app()->instance(OrderServiceInterface::class, $orderService);
@@ -651,6 +684,17 @@ describe('CreateOrderStep', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -659,8 +703,8 @@ describe('CreateOrderStep', function (): void {
             'currency' => 'USD',
         ]);
 
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->once()->andReturn($order);
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForPaymentFlow($order));
+        $payments->shouldReceive('confirmCheckout')->once()->andReturnNull();
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
@@ -705,14 +749,25 @@ describe('CreateOrderStep', function (): void {
         config()->set('checkout.create_order.confirm_payment', false);
 
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
             'order_number' => 'TEST-ORDER-PAID-WITHOUT-CONFIRM',
         ]);
 
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->never();
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForPaymentFlow($order));
+        $payments->shouldReceive('confirmCheckout')->never();
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
@@ -753,16 +808,23 @@ describe('CreateOrderStep', function (): void {
 
     it('creates the order for free orders', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
             'order_number' => 'TEST-ORDER-FREE-INVENTORY',
         ]);
 
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->never();
+        $orderService->shouldReceive('createOrder')->once()->andReturn(intakeSnapshotForPaymentFlow($order));
+        $payments->shouldReceive('confirmCheckout')->never();
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -808,6 +870,17 @@ describe('CreateOrderStep', function (): void {
         ]);
 
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -834,9 +907,9 @@ describe('CreateOrderStep', function (): void {
 
                 return true;
             })
-            ->andReturn($order);
+            ->andReturn(intakeSnapshotForPaymentFlow($order));
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -885,6 +958,13 @@ describe('CreateOrderStep', function (): void {
 
     it('passes voucher codes and promo code from the cart snapshot into order metadata', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -900,9 +980,9 @@ describe('CreateOrderStep', function (): void {
 
                 return true;
             })
-            ->andReturn($order);
+            ->andReturn(intakeSnapshotForPaymentFlow($order));
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -937,6 +1017,13 @@ describe('CreateOrderStep', function (): void {
 
     it('prefers an explicit purchasable over a plain product id when building order items', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -953,9 +1040,9 @@ describe('CreateOrderStep', function (): void {
 
                 return true;
             })
-            ->andReturn($order);
+            ->andReturn(intakeSnapshotForPaymentFlow($order));
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -990,6 +1077,13 @@ describe('CreateOrderStep', function (): void {
 
     it('prefers an explicit attribute purchasable over an attribute product id when building order items', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $order = new Order;
         $order->forceFill([
             'id' => (string) Str::uuid(),
@@ -1006,9 +1100,9 @@ describe('CreateOrderStep', function (): void {
 
                 return true;
             })
-            ->andReturn($order);
+            ->andReturn(intakeSnapshotForPaymentFlow($order));
 
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -1143,6 +1237,13 @@ describe('CreateOrderStep', function (): void {
 
     it('surfaces free order failure instead of logging', function (): void {
         $orderService = mock(OrderServiceInterface::class);
+        $metadataWriter = mock(OrderMetadataWriter::class);
+        $metadataWriter->shouldReceive('merge')->byDefault()->andReturnNull();
+        app()->instance(OrderMetadataWriter::class, $metadataWriter);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $orderService->shouldReceive('createOrder')
             ->once()
             ->andThrow(new RuntimeException('Simulated order creation failure'));
@@ -1775,3 +1876,14 @@ describe('CheckoutState behavior methods', function (): void {
             ->and((new Cancelled($session))->isTerminal())->toBeTrue();
     });
 });
+
+function intakeSnapshotForPaymentFlow(Order $order): OrderIntakeData
+{
+    return new OrderIntakeData(
+        id: (string) $order->getKey(),
+        orderNumber: $order->order_number,
+        grandTotal: (int) $order->grand_total,
+        currency: $order->currency,
+        paidTotal: $order->getTotalPaid(),
+    );
+}

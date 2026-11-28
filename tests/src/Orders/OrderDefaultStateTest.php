@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
 
 it('defaults direct creates to the Created state', function (): void {
     $order = Order::create([

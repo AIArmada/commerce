@@ -121,7 +121,7 @@ payment timestamps.
 - A payment above the outstanding balance is rejected with `InvalidArgumentException`.
 
 ```php
-use AIArmada\Orders\Transitions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 
 $order->status->transitionTo(Processing::class, new PaymentConfirmed(
     $order,
@@ -136,7 +136,7 @@ $order->status->transitionTo(Processing::class, new PaymentConfirmed(
 `Processing` → `Shipped`
 
 ```php
-use AIArmada\Orders\Transitions\ShipmentCreated;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 
 $order->status->transitionTo(Shipped::class, new ShipmentCreated(
     $order,
@@ -152,7 +152,7 @@ $order->status->transitionTo(Shipped::class, new ShipmentCreated(
 `Shipped` → `Delivered`
 
 ```php
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
 
 $order->status->transitionTo(Delivered::class, new DeliveryConfirmed($order));
 ```
@@ -162,7 +162,7 @@ $order->status->transitionTo(Delivered::class, new DeliveryConfirmed($order));
 `PendingPayment|Processing|OnHold` → `Canceled`
 
 ```php
-use AIArmada\Orders\Transitions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 
 $order->status->transitionTo(Canceled::class, new OrderCanceled(
     $order,
@@ -180,7 +180,7 @@ When the order has received money (`paid_total > 0`) and `issueRefund` is enable
 Records `held_at` as a toggle timestamp (set on hold, cleared by `OrderHoldReleased`).
 
 ```php
-use AIArmada\Orders\Transitions\OrderHeld;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHeld;
 
 $order->status->transitionTo(OnHold::class, new OrderHeld(
     $order,
@@ -196,7 +196,7 @@ $order->status->transitionTo(OnHold::class, new OrderHeld(
 Clears `held_at` to signal the order is no longer on hold.
 
 ```php
-use AIArmada\Orders\Transitions\OrderHoldReleased;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHoldReleased;
 
 $order->status->transitionTo(Processing::class, new OrderHoldReleased(
     $order,
@@ -211,7 +211,7 @@ $order->status->transitionTo(Processing::class, new OrderHoldReleased(
 Records `flagged_at` once. Fraud is terminal — the timestamp is never cleared.
 
 ```php
-use AIArmada\Orders\Transitions\OrderFlaggedAsFraud;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
 
 $order->status->transitionTo(Fraud::class, new OrderFlaggedAsFraud(
     $order,
@@ -227,7 +227,7 @@ $order->status->transitionTo(Fraud::class, new OrderFlaggedAsFraud(
 Records `returned_at` as a historical fact (mirrors `order_items.returned_at` at the order level). A subsequent refund transitions `Returned` → `Refunded`.
 
 ```php
-use AIArmada\Orders\Transitions\OrderReturned;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderReturned;
 
 $order->status->transitionTo(Returned::class, new OrderReturned(
     $order,
@@ -235,25 +235,20 @@ $order->status->transitionTo(Returned::class, new OrderReturned(
 ));
 ```
 
-### RefundProcessed
+### Processing a refund
 
-`Processing|Delivered|Completed|Canceled|Returned → Refunded`
-
-`OrderServiceInterface::processRefund()` is documented for the returned-items path, but
-the transition itself is allowed from every one of those source states.
+Use the Payments feature's public refund contract. The action validates the owner, request identity, remaining refundable amount and package return scope before recording a refund.
 
 ```php
-use AIArmada\Orders\Transitions\RefundProcessed;
+use AIArmada\Orders\Contracts\OrderRefunds;
 
-$order->status->transitionTo(Refunded::class, new RefundProcessed(
-    $order,
+app(OrderRefunds::class)->processRefund(
+    (string) $order->getKey(),
     amount: 5000,
-    reason: 'Items returned',
     transactionId: 'ref_789',
-    // optional: attribute the whole amount to one received payment instead
-    // of allocating FIFO across them
-    // payment: $payment,
-));
+    reason: 'Items returned',
+    // paymentId: (string) $payment->getKey(),
+);
 ```
 
 The amount is allocated across the payments that actually received money
@@ -271,7 +266,7 @@ refund id and amount.
 Marks the pending `OrderPayment` as failed and records `payment_failed_at`.
 
 ```php
-use AIArmada\Orders\Transitions\PaymentFailed as PaymentFailedTransition;
+use AIArmada\Orders\Features\Payments\Actions\PaymentFailed as PaymentFailedTransition;
 
 $order->status->transitionTo(PaymentFailed::class, new PaymentFailedTransition(
     $order,
@@ -291,7 +286,7 @@ $order->status->transitionTo(PaymentFailed::class, new PaymentFailedTransition(
 The no-shipping path for digital goods and admissions. Records `completed_at`.
 
 ```php
-use AIArmada\Orders\Transitions\OrderCompleted;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCompleted;
 
 $order->status->transitionTo(Completed::class, new OrderCompleted($order));
 ```
@@ -304,33 +299,33 @@ completed refunds is marked `PaymentStatus::Refunded`; the order transitions to
 `Refunded` only when settled refunds reach `paid_total`:
 
 ```php
-use AIArmada\Orders\Transitions\RefundCompleted;
+use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
 
 // handle() takes no arguments — the refund is passed to the constructor
 $order = (new RefundCompleted($refund, 'ref_789'))->handle();
 ```
 
-## Using OrderService
-
-The recommended way to transition states is through `OrderService`:
+## Using public lifecycle contracts
 
 ```php
-use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderRefunds;
 
-// Preferred approach
-$service = app(OrderServiceInterface::class);
+$orderId = (string) $order->getKey();
+app(OrderPaymentConfirmation::class)->confirm($orderId, 'txn_123', 'stripe', 9900);
 
-$service->confirmPayment($order, 'txn_123', 'stripe', 9900);
-$service->ship($order, 'DHL', 'DHL123');
-$service->confirmDelivery($order);
-$service->complete($order);
-$service->cancel($order, 'Customer requested', auth()->id());
+$fulfillment = app(OrderFulfillment::class);
+$fulfillment->ship($orderId, 'DHL', 'DHL123');
+$fulfillment->confirmDelivery($orderId);
+$fulfillment->complete($orderId);
 
-// processRefund() takes transactionId as the 3rd argument and reason as the 4th.
-// Both are required — a 3-argument call is an ArgumentCountError. Pass a payment
-// (6th argument) to attribute the whole amount to that received payment.
-$service->processRefund($order, 5000, 'ref_789', 'Returned items');
-$service->processRefund($order, 5000, 'ref_790', 'Returned items', payment: $payment);
+// For a cancellable order:
+$fulfillment->cancel($orderId, 'Customer requested', (string) auth()->id());
+
+// For an eligible refund:
+app(OrderRefunds::class)->processRefund($orderId, 5000, 'ref_789', 'Returned items');
+// Specify paymentId to attribute a refund to a particular receipt.
 ```
 
 ## Custom State Logic

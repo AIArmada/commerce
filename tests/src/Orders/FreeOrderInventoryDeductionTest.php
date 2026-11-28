@@ -14,15 +14,15 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
+use AIArmada\Orders\EntryPoints\Listeners\DeductInventoryOnPaymentConfirmed;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
-use AIArmada\Orders\Listeners\DeductInventoryOnPaymentConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\FreeOrderConfirmed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\OnHold;
@@ -66,30 +66,10 @@ function createFreeTestOrder(
     return $order;
 }
 
-function captureAfterCommit(): Closure
-{
-    $captured = null;
-
-    $spy = Mockery::mock(DB::getFacadeRoot())->makePartial();
-    $spy->shouldReceive('afterCommit')->once()->with(Mockery::on(
-        function (mixed $callback) use (&$captured): bool {
-            $captured = $callback;
-
-            return true;
-        }
-    ));
-    DB::swap($spy);
-
-    return function () use (&$captured): void {
-        expect($captured)->not->toBeNull();
-        $captured();
-    };
-}
-
 it('moves a free order to processing', function (): void {
     $order = createFreeTestOrder('ORD-FREE-001');
 
-    $result = app(OrderService::class)->confirmFreeOrder($order);
+    $result = (new FreeOrderConfirmed($order))->handle();
 
     expect($result->status)->toBeInstanceOf(Processing::class)
         ->and($result->paid_at)->toBeNull()
@@ -99,7 +79,7 @@ it('moves a free order to processing', function (): void {
 it('rejects orders with a balance due', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002', 1000);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -108,7 +88,7 @@ it('rejects fully paid orders', function (): void {
 
     Event::fake([OrderProcessingStarted::class]);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class);
 
     expect($order->fresh()->status)->toBeInstanceOf(Created::class);
@@ -118,7 +98,7 @@ it('rejects fully paid orders', function (): void {
 it('rejects partially paid orders', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002B', 1000, [], 400);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class);
 
     expect($order->fresh()->status)->toBeInstanceOf(Created::class);
@@ -131,14 +111,14 @@ it('rejects processing orders that still owe a balance', function (): void {
     $spy->shouldReceive('afterCommit')->never();
     DB::swap($spy);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class);
 });
 
 it('rejects processing orders that were paid out of band', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002D', 1000, [], 1000, Processing::class);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -146,7 +126,7 @@ it('rejects held orders without clearing the hold', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002E', 0, [], 0, OnHold::class);
     $order->forceFill(['held_at' => now()->toImmutable()])->save();
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(OrderNotAwaitingPayment::class);
 
     $fresh = $order->fresh();
@@ -157,7 +137,7 @@ it('rejects held orders without clearing the hold', function (): void {
 it('rejects canceled orders', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002J', 0, [], 0, Canceled::class);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class, 'current state: Canceled');
 
     expect($order->fresh()->status)->toBeInstanceOf(Canceled::class);
@@ -166,7 +146,7 @@ it('rejects canceled orders', function (): void {
 it('rejects failed orders', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002K', 0, [], 0, PaymentFailed::class);
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(InvalidArgumentException::class, 'current state: PaymentFailed');
 
     expect($order->fresh()->status)->toBeInstanceOf(PaymentFailed::class);
@@ -175,7 +155,7 @@ it('rejects failed orders', function (): void {
 it('confirms free orders awaiting payment', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002L', 0, [], 0, PendingPayment::class);
 
-    $result = app(OrderService::class)->confirmFreeOrder($order);
+    $result = (new FreeOrderConfirmed($order))->handle();
 
     expect($result->status)->toBeInstanceOf(Processing::class);
 });
@@ -183,7 +163,7 @@ it('confirms free orders awaiting payment', function (): void {
 it('accepts over-discounted orders with nothing paid', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002F', -500);
 
-    $result = app(OrderService::class)->confirmFreeOrder($order);
+    $result = (new FreeOrderConfirmed($order))->handle();
 
     expect($result->status)->toBeInstanceOf(Processing::class);
 });
@@ -191,7 +171,7 @@ it('accepts over-discounted orders with nothing paid', function (): void {
 it('syncs the caller instance to processing', function (): void {
     $order = createFreeTestOrder('ORD-FREE-002G');
 
-    app(OrderService::class)->confirmFreeOrder($order);
+    (new FreeOrderConfirmed($order))->handle();
 
     expect($order->status)->toBeInstanceOf(Processing::class);
 });
@@ -201,7 +181,7 @@ it('syncs the caller instance even when status was read before confirmation', fu
 
     expect($order->status)->toBeInstanceOf(Created::class);
 
-    app(OrderService::class)->confirmFreeOrder($order);
+    (new FreeOrderConfirmed($order))->handle();
 
     expect($order->status)->toBeInstanceOf(Processing::class);
 });
@@ -237,21 +217,19 @@ it('blocks cross-owner free order confirmation', function (): void {
         }
     });
 
-    expect(fn () => app(OrderService::class)->confirmFreeOrder($order))
+    expect(fn () => (new FreeOrderConfirmed($order))->handle())
         ->toThrow(RuntimeException::class, 'Cross-owner mutation blocked');
 });
 
 it('is idempotent for orders already processing', function (): void {
     $order = createFreeTestOrder('ORD-FREE-003');
-    $service = app(OrderService::class);
-
-    $service->confirmFreeOrder($order);
+    (new FreeOrderConfirmed($order))->handle();
 
     $spy = Mockery::mock(DB::getFacadeRoot())->makePartial();
     $spy->shouldReceive('afterCommit')->never();
     DB::swap($spy);
 
-    expect($service->confirmFreeOrder($order->fresh())->status)->toBeInstanceOf(Processing::class);
+    expect((new FreeOrderConfirmed($order->fresh()))->handle()->status)->toBeInstanceOf(Processing::class);
 });
 
 it('schedules the processing-started dispatch after commit', function (): void {
@@ -259,9 +237,9 @@ it('schedules the processing-started dispatch after commit', function (): void {
 
     Event::fake([OrderPaid::class, OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
 
-    $invokeCommitHooks = captureAfterCommit();
+    $invokeCommitHooks = captureAfterCommitHooks();
 
-    app(OrderService::class)->confirmFreeOrder($order);
+    (new FreeOrderConfirmed($order))->handle();
 
     $invokeCommitHooks();
 
@@ -293,7 +271,7 @@ it('deducts stock exactly once for a free order end to end', function (): void {
         900,
     );
 
-    app(OrderService::class)->confirmFreeOrder($order);
+    (new FreeOrderConfirmed($order))->handle();
 
     // Drive the queued deduction chain directly: the suite does not load
     // the provider registrations, and the seam-to-event link is proven by

@@ -2,15 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmail;
-use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     Doc::query()->delete();
@@ -176,7 +183,7 @@ test('it generates tracking pixel url', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $emailService = app(DocEmailService::class);
+    $emailService = app(TrackDocEmail::class);
     $url = $emailService->getTrackingPixelUrl($email);
 
     expect($url)->toBeString()->toContain('docs/track/open');
@@ -193,7 +200,7 @@ test('it generates tracked link url', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $emailService = app(DocEmailService::class);
+    $emailService = app(TrackDocEmail::class);
     $originalUrl = 'https://example.com/document';
     $trackedUrl = $emailService->getTrackedLinkUrl($email, $originalUrl);
 
@@ -259,7 +266,102 @@ test('email tracks opened timestamp', function (): void {
 
     expect($email->opened_at)->toBeNull();
 
-    $email->markAsOpened();
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => $email->getKey(),
+        'type' => 'open',
+        'issued_at' => now()->timestamp,
+    ], JSON_THROW_ON_ERROR));
 
-    expect($email->opened_at)->not->toBeNull();
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeTrue();
+    $firstOpenedAt = $email->refresh()->opened_at;
+
+    expect($firstOpenedAt)->not->toBeNull()
+        ->and($email->open_count)->toBe(1);
+
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeTrue();
+
+    expect($email->refresh()->open_count)->toBe(2)
+        ->and($email->opened_at?->toDateTimeString())->toBe($firstOpenedAt?->toDateTimeString());
+});
+
+it('rejects malformed and future email tracking tokens', function (): void {
+    $service = app(TrackDocEmail::class);
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => ['not-a-scalar'],
+        'type' => 'open',
+        'issued_at' => now()->timestamp,
+    ], JSON_THROW_ON_ERROR));
+
+    expect($service->trackOpen($token))->toBeFalse();
+
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => (string) Str::uuid(),
+        'type' => 'click',
+        'url' => 'https://example.com',
+        'issued_at' => now()->addDay()->timestamp,
+    ], JSON_THROW_ON_ERROR));
+
+    expect($service->trackClick($token))->toBeNull();
+});
+
+test('queued document email delivery waits for the database commit', function (): void {
+    Bus::fake();
+    config()->set('docs.email.queue_enabled', true);
+
+    $doc = Doc::factory()->create();
+
+    $email = app(DocEmailService::class)->send(
+        doc: $doc,
+        recipientEmail: 'customer@example.com',
+    );
+
+    expect($email->status)->toBe(EmailStatus::Queued);
+
+    Bus::assertDispatched(SendDocEmailJob::class, fn (SendDocEmailJob $job): bool => $job->afterCommit === true
+        && $job->docEmailId === (string) $email->getKey()
+        && $job->docId === (string) $doc->getKey());
+});
+
+it('rejects unsafe rendered email headers before persisting an email', function (): void {
+    $doc = Doc::factory()->create();
+    $service = app(DocEmailService::class);
+
+    expect(fn () => $service->send($doc, 'customer@example.com', subjectOverride: "Invoice\r\nBcc: other@example.com"))
+        ->toThrow(InvalidArgumentException::class)
+        ->and($doc->emails()->count())->toBe(0);
+});
+
+it('normalizes recipient details and handles malformed document names', function (): void {
+    $doc = Doc::factory()->create([
+        'company_data' => ['name' => ['unexpected']],
+        'customer_data' => ['name' => ['unexpected']],
+    ]);
+
+    $email = app(DocEmailService::class)->send($doc, ' customer@example.com ', ' Customer ');
+
+    expect($email->recipient_email)->toBe('customer@example.com')
+        ->and($email->recipient_name)->toBe('Customer')
+        ->and($email->status)->toBe(EmailStatus::Sent);
+});
+
+it('does not send a synchronous email before the surrounding transaction commits', function (): void {
+    Mail::fake();
+    $doc = Doc::factory()->create();
+    $service = app(DocEmailService::class);
+
+    expect(fn () => $doc->getConnection()->transaction(function () use ($doc, $service): void {
+        $email = $service->send($doc, 'customer@example.com');
+
+        expect($email->status)->toBe(EmailStatus::Queued);
+        Mail::assertNothingSent();
+
+        throw new RuntimeException('Rollback email');
+    }))->toThrow(RuntimeException::class, 'Rollback email');
+
+    Mail::assertNothingSent();
+    expect($doc->emails()->count())->toBe(0);
+
+    $email = $service->send($doc, 'customer@example.com');
+    Mail::assertSent(DocMail::class, 1);
+    expect($email->status)->toBe(EmailStatus::Sent);
 });

@@ -158,7 +158,9 @@ it('fails refund creation when the referenced payment does not exist', function 
 it('still applies supported child updates without owner scoping', function (): void {
     $order = cpiuOrder();
     $payment = cpiuPayment($order, 1000);
-    $payment->markAsCompleted();
+    $payment->status = PaymentStatus::Completed;
+    $payment->paid_at = now();
+    $payment->save();
 
     expect($order->refresh()->paid_total)->toBe(1000);
 
@@ -192,7 +194,9 @@ it('preserves payment status transitions without owner scoping', function (): vo
     $order = cpiuOrder();
     $payment = cpiuPayment($order, 1000);
 
-    $payment->markAsCompleted();
+    $payment->status = PaymentStatus::Completed;
+    $payment->paid_at = now();
+    $payment->save();
 
     expect($payment->refresh()->status)->toBe(PaymentStatus::Completed)
         ->and($order->refresh()->paid_total)->toBe(1000);

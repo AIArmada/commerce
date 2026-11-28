@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
-use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Exceptions\OrderIntakeConflictException;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use Illuminate\Database\QueryException;
@@ -271,4 +271,30 @@ it('dispatches OrderCreated only once and not on retry', function (): void {
     ));
 
     Event::assertDispatched(OrderCreated::class, 1);
+});
+
+it('normalizes currency aliases and rejects mixed-currency lines even on intake replay', function (): void {
+    OwnerContext::withOwner(null, function (): void {
+        $action = app(CreateOrder::class);
+        $data = ['currency' => 'RM', 'subtotal' => 5000, 'grand_total' => 5000];
+        $items = [['name' => 'Item A', 'quantity' => 1, 'unit_price' => 5000, 'currency' => 'MYR']];
+
+        $first = $action->execute($data, $items, intakeSource: 'checkout', intakeId: 'currency-replay');
+        $replay = $action->execute(array_merge($data, ['currency' => 'myr']), $items, intakeSource: 'checkout', intakeId: 'currency-replay');
+
+        expect($replay->getKey())->toBe($first->getKey())
+            ->and($first->currency)->toBe('MYR')
+            ->and($first->items->first()->currency)->toBe('MYR');
+
+        $invalid = [array_merge($items[0], ['currency' => 'USD'])];
+
+        expect(fn () => $action->execute($data, $invalid, intakeSource: 'checkout', intakeId: 'currency-replay'))
+            ->toThrow(InvalidArgumentException::class, 'Order item currency must match');
+        expect(fn () => $action->execute($data, $invalid, intakeSource: 'checkout', intakeId: 'currency-new'))
+            ->toThrow(InvalidArgumentException::class, 'Order item currency must match');
+        expect(fn () => $action->addItem($first, $invalid[0]))
+            ->toThrow(InvalidArgumentException::class, 'Order item currency must match');
+
+        expect($first->items()->count())->toBe(1);
+    });
 });

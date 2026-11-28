@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;
@@ -17,7 +18,7 @@ it('formats minor units using each currency exponent', function (): void {
 });
 
 it('calculates large totals with exact integer arithmetic', function (): void {
-    $totals = app(DocService::class)->calculateTotals([
+    $totals = app(DocumentRecords::class)->calculateTotals([
         ['quantity' => 3, 'unit_price_minor' => 9_000_000_000],
         ['quantity' => 2, 'unit_price_minor' => 7_000_000_000, 'tax_amount_minor' => 17],
     ], 11, 'KWD');
@@ -44,8 +45,8 @@ it('uses exact integer payment comparisons and rejects overpayment and currency 
         'total_minor' => 1_001,
     ]);
 
-    $service = app(DocService::class);
-    $service->recordPayment($doc, [
+    $service = app(DocumentRecords::class);
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1_000,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
@@ -53,23 +54,94 @@ it('uses exact integer payment comparisons and rejects overpayment and currency 
 
     expect($doc->fresh()->status->equals(PartiallyPaid::class))->toBeTrue();
 
-    expect(fn () => $service->recordPayment($doc, [
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 2,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
     ]))->toThrow(InvalidArgumentException::class);
 
-    expect(fn () => $service->recordPayment($doc, [
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1,
         'currency' => 'USD',
         'payment_method' => 'bank_transfer',
     ]))->toThrow(InvalidArgumentException::class);
 
-    $service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
     ]);
 
     expect($doc->fresh()->status->equals(Paid::class))->toBeTrue();
+});
+
+it('rejects overflowing line totals instead of converting money to floating point', function (): void {
+    expect(fn () => app(DocumentRecords::class)->calculateTotals([
+        ['quantity' => 2, 'unit_price_minor' => PHP_INT_MAX],
+    ]))->toThrow(InvalidArgumentException::class, 'Document monetary amount exceeds the supported integer range.');
+});
+
+it('rejects overflowing accumulated line totals', function (): void {
+    expect(fn () => app(DocumentRecords::class)->calculateTotals([
+        ['unit_price_minor' => PHP_INT_MAX],
+        ['unit_price_minor' => 1],
+    ]))->toThrow(InvalidArgumentException::class, 'Document monetary amount exceeds the supported integer range.');
+});
+
+it('applies discounts without overflowing an intermediate gross total', function (): void {
+    expect(app(DocumentRecords::class)->calculateTotals([
+        ['unit_price_minor' => PHP_INT_MAX, 'tax_amount_minor' => 1],
+    ], 1)['total_minor'])->toBe(PHP_INT_MAX);
+});
+
+it('captures immutable document dates rather than retaining mutable caller objects', function (): void {
+    $date = new DateTimeImmutable('2026-11-28T00:00:00+00:00');
+    $data = new DocData(issueDate: $date, dueDate: $date);
+
+    $date = $date->modify('+1 day');
+    expect($date->format('Y-m-d'))->toBe('2026-11-29');
+
+    expect($data->issueDate?->format('Y-m-d'))->toBe('2026-11-28')
+        ->and($data->dueDate?->format('Y-m-d'))->toBe('2026-11-28');
+});
+
+it('replays the same document payment transaction without recording it twice', function (): void {
+    $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100, 'currency' => 'MYR']);
+    $service = app(DocumentRecords::class);
+    $data = ['amount_minor' => 100, 'currency' => 'MYR', 'payment_method' => 'cash', 'transaction_id' => 'payment-replay-1'];
+
+    $first = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), $data);
+    $second = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), $data);
+
+    expect($second)->toBe($first)
+        ->and($doc->payments()->count())->toBe(1);
+
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), array_replace($data, ['amount_minor' => 99])))
+        ->toThrow(InvalidArgumentException::class, 'different payment details');
+});
+
+it('creates documents without overflowing the discounted gross line total', function (): void {
+    $doc = app(DocumentRecords::class)->create(new DocData(
+        items: [['quantity' => 1, 'unit_price_minor' => PHP_INT_MAX, 'tax_amount_minor' => 1]],
+        discountAmountMinor: 1,
+        currency: 'MYR',
+    ));
+
+    expect($doc->total_minor)->toBe(PHP_INT_MAX);
+});
+
+it('rejects currency-only updates that conflict with existing item currencies', function (): void {
+    $doc = Doc::factory()->draft()->create([
+        'currency' => 'MYR',
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'MYR']],
+        'subtotal_minor' => 100,
+        'tax_amount_minor' => 0,
+        'discount_amount_minor' => 0,
+        'total_minor' => 100,
+    ]);
+
+    expect(fn () => app(DocumentRecords::class)->update($doc, ['currency' => 'USD']))
+        ->toThrow(InvalidArgumentException::class, 'currency does not match');
+
+    expect($doc->fresh()->currency)->toBe('MYR');
 });

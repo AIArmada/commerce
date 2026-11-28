@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
@@ -12,11 +17,6 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
-use AIArmada\Orders\Transitions\OrderCanceled;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
-use AIArmada\Orders\Transitions\RefundProcessed;
-use AIArmada\Orders\Transitions\ShipmentCreated;
 
 describe('Order Transitions', function (): void {
     describe('PaymentConfirmed Transition', function (): void {
@@ -147,7 +147,7 @@ describe('Order Transitions', function (): void {
         });
     });
 
-    describe('RefundProcessed Transition', function (): void {
+    describe('RegisterOrderRefund', function (): void {
         it('keeps a partially refunded order open and closes it after the balance is returned', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-TRANS5-' . uniqid(),
@@ -166,16 +166,14 @@ describe('Order Transitions', function (): void {
                 'paid_at' => now(),
             ]);
 
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer request', [], $payment);
-            $result = $transition->handle();
+            $result = (new RegisterOrderRefund)->execute($order, 5000, 'ref_txn_123', 'Customer request', [], $payment);
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Returned::class);
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(5000);
 
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer request', [], $payment);
-            $transition->handle();
+            (new RegisterOrderRefund)->execute($order, 5000, 'ref_txn_124', 'Customer request', [], $payment);
 
             expect($order->status)->toBeInstanceOf(Refunded::class)
                 ->and($order->refunds)->toHaveCount(2);

@@ -9,10 +9,17 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderFromCart;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\Delivered;
@@ -32,7 +39,7 @@ beforeEach(function (): void {
     config()->set('orders.owner.auto_assign_on_create', false);
 });
 
-describe('OrderService', function (): void {
+describe('Order actions', function (): void {
     describe('Order Creation', function (): void {
         it('ignores caller-supplied owner fields and assigns current owner context', function (): void {
             config()->set('orders.owner.enabled', true);
@@ -60,9 +67,7 @@ describe('OrderService', function (): void {
                 }
             });
 
-            $service = app(OrderService::class);
-
-            $order = $service->createOrder([
+            $order = app(CreateOrder::class)->execute([
                 'order_number' => 'ORD-SVC-OWNER-' . uniqid(),
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
@@ -83,8 +88,6 @@ describe('OrderService', function (): void {
         });
 
         it('can create an order with items and addresses', function (): void {
-            $service = app(OrderService::class);
-
             $orderData = [
                 'order_number' => 'ORD-SVC1-' . uniqid(),
                 'subtotal' => 10000,
@@ -128,8 +131,8 @@ describe('OrderService', function (): void {
                 'country' => 'MY',
             ];
 
-            $order = OwnerContext::withOwner(null, function () use ($service, $orderData, $items, $billingAddress, $shippingAddress): Order {
-                return $service->createOrder($orderData, $items, $billingAddress, $shippingAddress);
+            $order = OwnerContext::withOwner(null, function () use ($orderData, $items, $billingAddress, $shippingAddress): Order {
+                return app(CreateOrder::class)->execute($orderData, $items, $billingAddress, $shippingAddress);
             });
 
             expect($order)->toBeInstanceOf(Order::class)
@@ -146,7 +149,6 @@ describe('OrderService', function (): void {
         });
 
         it('can add items to an order', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-SVC2-' . uniqid(),
                 'status' => Created::class,
@@ -163,7 +165,7 @@ describe('OrderService', function (): void {
                 'sku' => 'TEST-001',
             ];
 
-            $item = $service->addItem($order, $itemData);
+            $item = $order->items()->findOrFail(app(OrderAdministration::class)->addItem((string) $order->getKey(), $itemData));
 
             expect($item->name)->toBe('Test Product')
                 ->and($item->quantity)->toBe(3)
@@ -172,7 +174,6 @@ describe('OrderService', function (): void {
         });
 
         it('can add addresses to an order', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-SVC3-' . uniqid(),
                 'status' => Created::class,
@@ -192,7 +193,7 @@ describe('OrderService', function (): void {
             ];
             $addressSnapshot = $addressData;
 
-            $service->addAddress($order, $addressData, 'billing');
+            app(OrderAdministration::class)->addAddress((string) $order->getKey(), $addressData, 'billing');
 
             $order->refresh();
 
@@ -205,7 +206,6 @@ describe('OrderService', function (): void {
 
     describe('Order Operations', function (): void {
         it('can recalculate order totals', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-SVC4-' . uniqid(),
                 'status' => Created::class,
@@ -215,14 +215,14 @@ describe('OrderService', function (): void {
             ]);
 
             // Add items
-            $service->addItem($order, [
+            app(OrderAdministration::class)->addItem((string) $order->getKey(), [
                 'name' => 'Item 1',
                 'quantity' => 1,
                 'unit_price' => 5000,
                 'tax_amount' => 300,
             ]);
 
-            $service->addItem($order, [
+            app(OrderAdministration::class)->addItem((string) $order->getKey(), [
                 'name' => 'Item 2',
                 'quantity' => 2,
                 'unit_price' => 2500,
@@ -233,7 +233,8 @@ describe('OrderService', function (): void {
             $order->discount_total = 200;
             $order->save();
 
-            $updatedOrder = $service->recalculateTotals($order);
+            app(OrderAdministration::class)->recalculateTotals((string) $order->getKey());
+            $updatedOrder = $order->refresh();
 
             expect($updatedOrder->subtotal)->toBe(10000) // (1 * 5000) + (2 * 2500), ex-tax
                 ->and($updatedOrder->tax_total)->toBe(450) // 300 + 150 (tax_amounts)
@@ -241,8 +242,6 @@ describe('OrderService', function (): void {
         });
 
         it('maps the typed cart contract through a cart manager', function (): void {
-            $service = app(OrderService::class);
-
             $cart = new Cart(new InMemoryStorage, 'cart_123');
             $cart->setMetadata('currency', 'MYR');
             $cart->add('prod_1', 'Test Product', 8000, 2, [
@@ -282,8 +281,8 @@ describe('OrderService', function (): void {
                 'country' => 'MY',
             ];
 
-            $order = OwnerContext::withOwner(null, function () use ($service, $cartManager, $customer, $billingAddress): Order {
-                return $service->createFromCart(
+            $order = OwnerContext::withOwner(null, function () use ($cartManager, $customer, $billingAddress): Order {
+                return app(CreateOrderFromCart::class)->execute(
                     $cartManager,
                     $customer,
                     $billingAddress,
@@ -316,10 +315,9 @@ describe('OrderService', function (): void {
         });
 
         it('rejects the former duck-typed cart payload', function (): void {
-            $service = app(OrderService::class);
             $customer = new class extends Model {};
 
-            expect(fn () => $service->createFromCart((object) [], $customer))
+            expect(fn () => app(CreateOrderFromCart::class)->execute((object) [], $customer))
                 ->toThrow(TypeError::class);
         });
 
@@ -333,8 +331,6 @@ describe('OrderService', function (): void {
                     return null;
                 }
             });
-
-            $service = app(OrderService::class);
 
             $orderData = [
                 'order_number' => 'ORD-SVC-NOCTX-' . Str::upper(Str::random(8)),
@@ -352,7 +348,7 @@ describe('OrderService', function (): void {
                 ],
             ];
 
-            expect(fn () => $service->createOrder($orderData, $items))
+            expect(fn () => app(CreateOrder::class)->execute($orderData, $items))
                 ->toThrow(RuntimeException::class, 'Owner context is required');
         });
 
@@ -388,9 +384,7 @@ describe('OrderService', function (): void {
                 }
             });
 
-            $service = app(OrderService::class);
-
-            expect(fn () => $service->confirmPayment($order, 'txn_mut_ctx_1', 'stripe', 10000))
+            expect(fn () => app(RegisterOrderPayment::class)->execute($order, 'txn_mut_ctx_1', 'stripe', 10000))
                 ->toThrow(RuntimeException::class, 'matching owner context is required');
         });
 
@@ -431,16 +425,13 @@ describe('OrderService', function (): void {
                 }
             });
 
-            $service = app(OrderService::class);
-
-            expect(fn () => $service->cancel($order, 'Cross owner test'))
+            expect(fn () => (new OrderCanceled($order, 'Cross owner test'))->handle())
                 ->toThrow(RuntimeException::class, 'Cross-owner mutation blocked');
         });
     });
 
     describe('Order Operations', function (): void {
         it('can cancel an order', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-CANCEL-' . uniqid(),
                 'status' => PendingPayment::class,
@@ -449,7 +440,7 @@ describe('OrderService', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $result = $service->cancel($order, 'Customer request', 'admin@example.com');
+            $result = (new OrderCanceled($order, 'Customer request', 'admin@example.com'))->handle();
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Canceled::class);
@@ -458,7 +449,6 @@ describe('OrderService', function (): void {
         });
 
         it('can confirm payment for an order', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-PAY-CONFIRM-' . uniqid(),
                 'status' => PendingPayment::class,
@@ -467,7 +457,7 @@ describe('OrderService', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $result = $service->confirmPayment($order, 'txn_123', 'stripe', 10000);
+            $result = app(RegisterOrderPayment::class)->execute($order, 'txn_123', 'stripe', 10000);
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Processing::class);
@@ -476,7 +466,6 @@ describe('OrderService', function (): void {
         });
 
         it('can ship an order', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-SHIP-' . uniqid(),
                 'status' => Processing::class,
@@ -485,7 +474,7 @@ describe('OrderService', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $result = $service->ship($order, 'J&T', 'JT123456789', 'ship_123');
+            $result = (new ShipmentCreated($order, 'J&T', 'JT123456789', 'ship_123'))->handle();
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Shipped::class);
@@ -493,7 +482,6 @@ describe('OrderService', function (): void {
         });
 
         it('can confirm delivery', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-DELIVER-' . uniqid(),
                 'status' => Shipped::class,
@@ -502,7 +490,7 @@ describe('OrderService', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $result = $service->confirmDelivery($order, ['delivered_by' => 'customer']);
+            $result = (new DeliveryConfirmed($order, ['delivered_by' => 'customer']))->handle();
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Delivered::class);
@@ -510,7 +498,6 @@ describe('OrderService', function (): void {
         });
 
         it('can process refund', function (): void {
-            $service = app(OrderService::class);
             $order = Order::create([
                 'order_number' => 'ORD-REFUND-' . uniqid(),
                 'status' => Returned::class,
@@ -528,18 +515,31 @@ describe('OrderService', function (): void {
                 'paid_at' => now(),
             ]);
 
-            $result = $service->processRefund($order, 5000, 'ref_txn_123', 'Customer return');
+            $result = app(RegisterOrderRefund::class)->execute($order, 5000, 'ref_txn_123', 'Customer return');
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Returned::class);
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(5000);
 
-            $result = $service->processRefund($order, 5000, 'ref_txn_124', 'Customer return');
+            $result = app(RegisterOrderRefund::class)->execute($order, 5000, 'ref_txn_124', 'Customer return');
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Refunded::class);
             expect($order->refunds)->toHaveCount(2);
         });
     });
+});
+
+it('rejects draft mutations when the persisted order is no longer editable', function (): void {
+    $order = Order::factory()->create(['status' => PendingPayment::class]);
+    $stale = Order::query()->findOrFail($order->getKey());
+    $order->status->transitionTo(Processing::class);
+
+    expect(fn () => app(OrderAdministration::class)->addItem((string) $stale->getKey(), ['name' => 'Extra', 'unit_price' => 100]))
+        ->toThrow(LogicException::class);
+    expect(fn () => app(OrderAdministration::class)->addAddress((string) $stale->getKey(), [], 'shipping'))
+        ->toThrow(LogicException::class);
+    expect(fn () => app(OrderAdministration::class)->recalculateTotals((string) $stale->getKey()))
+        ->toThrow(LogicException::class);
 });

@@ -9,9 +9,29 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Orders\Contracts\OrderAdministration;
+use AIArmada\Orders\Contracts\OrderDocuments;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
+use AIArmada\Orders\Contracts\OrderNotes;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Enums\RefundStatus;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderPayment;
+use AIArmada\Orders\Models\OrderRefund;
+use AIArmada\Orders\States\PendingPayment;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 
 trait OrderOwnerScopingPestTests
@@ -196,4 +216,131 @@ it('verifies removing an owner from an unsaved model is allowed', function (): v
 
 it('prevents cross-tenant access', function (): void {
     $this->test_cross_tenant_access_prevented();
+});
+
+it('excludes globally visible orders from tenant-local mutation and intake contracts', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Contract tenant']);
+    $global = OwnerContext::withOwner(null, fn (): Order => Order::factory()->create([
+        'status' => PendingPayment::class,
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Order::query()->find($global->id))->not->toBeNull()
+            ->and(app(OrderServiceInterface::class)->find($global->id))->toBeNull();
+
+        expect(fn () => app(OrderAdministration::class)->updateNotes($global->id, ['notes' => 'foreign']))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderNotes::class)->add($global->id, 'foreign', 'internal'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderInvoiceNumber::class)->assign($global->id))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderPaymentConfirmation::class)->confirm($global->id, 'foreign-payment', 'manual', 1000))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderFulfillment::class)->cancel($global->id, 'foreign cancellation'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(OrderDocuments::class)->issue($global->id, 'invoice', 'foreign-payment', 'manual'))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($global): void {
+        expect($global->refresh()->status)->toBeInstanceOf(PendingPayment::class)
+            ->and($global->payments()->count())->toBe(0)
+            ->and(app(OrderServiceInterface::class)->find($global->id)?->id)->toBe($global->id);
+    });
+});
+
+it('does not stage or suppress another owner\'s order outbox messages', function (): void {
+    config()->set('orders.outbox.enabled', true);
+
+    $owner = TestOwner::query()->create(['name' => 'Outbox tenant']);
+    $other = TestOwner::query()->create(['name' => 'Other outbox tenant']);
+    $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ]));
+    $writer = app(OrderOutboxWriter::class);
+    $id = OwnerContext::withOwner($owner, fn (): ?string => $writer->stage($order->id, OrderFulfillmentRequired::class, 'outbox-scope', 'manual'));
+
+    OwnerContext::withOwner($other, function () use ($writer, $order): void {
+        expect(fn () => $writer->stage($order->id, OrderFulfillmentRequired::class, 'foreign', 'manual'))
+            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => $writer->suppressForOrder($order->id, 'foreign suppression'))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($writer, $order, $id): void {
+        expect(OrderOutboxMessage::query()->findOrFail($id)->status)->toBe(OutboxStatus::Pending)
+            ->and($writer->suppressForOrder($order->id, 'owner suppression'))->toBe(1)
+            ->and(OrderOutboxMessage::query()->findOrFail($id)->status)->toBe(OutboxStatus::Suppressed);
+    });
+});
+
+it('rejects tenant-local writes to globally readable payment and refund records before persistence', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Financial tenant']);
+    $global = OwnerContext::withOwner(null, fn (): Order => Order::factory()->create([
+        'status' => PendingPayment::class,
+        'currency' => 'MYR',
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Order::query()->find($global->id))->not->toBeNull();
+
+        expect(fn () => OrderPayment::query()->create([
+            'order_id' => $global->id,
+            'gateway' => 'manual',
+            'transaction_id' => 'forbidden-global-payment',
+            'currency' => 'MYR',
+            'amount' => 1000,
+            'status' => PaymentStatus::Completed,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => OrderRefund::query()->create([
+            'order_id' => $global->id,
+            'gateway' => 'manual',
+            'currency' => 'MYR',
+            'amount' => 1000,
+            'status' => RefundStatus::Pending,
+            'reason' => 'Forbidden refund',
+        ]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($global): void {
+        expect($global->payments()->count())->toBe(0)
+            ->and($global->refunds()->count())->toBe(0)
+            ->and($global->refresh()->getTotalPaid())->toBe(0)
+            ->and($global->getTotalPendingRefunded())->toBe(0);
+    });
+});
+
+it('dispatches payment receipts inside the original owner context after commit', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Receipt tenant']);
+    $other = TestOwner::query()->create(['name' => 'Other receipt tenant']);
+    $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+        'status' => PendingPayment::class,
+        'currency' => 'MYR',
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+    ]));
+
+    $seen = [];
+    Event::listen(OrderPaid::class, function () use (&$seen): void {
+        $seen[] = OwnerContext::resolve()?->getKey();
+    });
+
+    $flush = captureAfterCommitHooks();
+
+    OwnerContext::withOwner($owner, fn () => app(OrderPaymentConfirmation::class)->confirm($order->id, 'owner-receipt', 'manual', 100));
+
+    OwnerContext::withOwner($other, function () use ($flush, $other): void {
+        $flush();
+        expect(OwnerContext::resolve()?->is($other))->toBeTrue();
+    });
+
+    expect($seen)->toBe([$owner->getKey()]);
 });

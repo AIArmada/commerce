@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
+
+use AIArmada\Orders\Enums\OrderItemStatus;
+use AIArmada\Orders\Events\OrderDelivered;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Delivered;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Arr;
+use Spatie\ModelStates\Transition;
+
+/**
+ * Transition from Shipped → Delivered.
+ *
+ * This transition is triggered when delivery is confirmed.
+ */
+final class DeliveryConfirmed extends Transition
+{
+    use AssertsOrderOwnerBoundary;
+
+    public function __construct(
+        private Order $order,
+        /** @var array<string, mixed> */
+        private array $metadata = [],
+    ) {}
+
+    public function handle(): Order
+    {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+        return $this->order->getConnection()->transaction(function (): Order {
+            $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
+            $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
+            $deliveredAt = CarbonImmutable::now();
+
+            $existingMetadata = $this->order->metadata ?? [];
+            if (! is_array($existingMetadata)) {
+                $existingMetadata = [];
+            }
+
+            $existingShipping = Arr::get($existingMetadata, 'shipping', []);
+            if (! is_array($existingShipping)) {
+                $existingShipping = [];
+            }
+
+            $existingDeliveryMetadata = Arr::get($existingShipping, 'delivery_metadata', []);
+            if (! is_array($existingDeliveryMetadata)) {
+                $existingDeliveryMetadata = [];
+            }
+
+            $shipping = array_merge($existingShipping, [
+                'delivered_at' => $deliveredAt->toIso8601String(),
+            ]);
+
+            if ($this->metadata !== []) {
+                $shipping['delivery_metadata'] = array_merge($existingDeliveryMetadata, $this->metadata);
+            }
+
+            $existingMetadata['shipping'] = $shipping;
+            $this->order->metadata = $existingMetadata;
+            $this->order->delivered_at = $deliveredAt;
+
+            // Mark all shipped items as delivered
+            $this->order->items()
+                ->where('status', OrderItemStatus::Shipped)
+                ->update([
+                    'status' => OrderItemStatus::Delivered,
+                    'delivered_at' => $deliveredAt,
+                ]);
+
+            $this->order->status->transitionTo(Delivered::class);
+
+            // Dispatch event
+            event(new OrderDelivered($this->order));
+
+            return $this->order;
+        });
+    }
+}

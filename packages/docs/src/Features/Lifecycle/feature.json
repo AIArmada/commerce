@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "Lifecycle",
+  "owns": {
+    "table:docs": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments",
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\StoreDocumentPdf",
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocumentRecords"
+    ],
+    "table:docs_status_histories": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocuments"
+    ],
+    "store:docs.pdf": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\StoreDocumentPdf",
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\DeleteStoredDocumentPdf"
+    ],
+    "table:docs_einvoice_submissions": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocEInvoiceSubmissions"
+    ]
+  },
+  "extensions": {}
+}

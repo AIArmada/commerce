@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
-use AIArmada\Docs\DataObjects\ShareLinkData;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkData;
+use AIArmada\Docs\Data\ShareLinkAction;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocumentSharing;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
+use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
@@ -39,6 +42,7 @@ final class ViewDoc extends ViewRecord
                 ->openUrlInNewTab(),
 
             Actions\Action::make('generate_pdf')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Generate PDF')
                 ->icon(Heroicon::OutlinedDocumentArrowDown)
                 ->color('info')
@@ -46,8 +50,8 @@ final class ViewDoc extends ViewRecord
                 ->modalHeading('Generate PDF')
                 ->modalDescription('This will generate a new PDF for this document. Any existing PDF will be overwritten.')
                 ->action(function (Doc $record): void {
-                    $docService = app(DocService::class);
-                    $docService->generatePdf($record, save: true);
+                    $docService = app(DocServiceInterface::class);
+                    $docService->generatePdf((string) $record->getKey(), save: true);
 
                     Notification::make()
                         ->title('PDF Generated')
@@ -56,6 +60,7 @@ final class ViewDoc extends ViewRecord
                 }),
 
             Actions\Action::make('create_share_link')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Share')
                 ->icon(Heroicon::OutlinedLink)
                 ->form([
@@ -73,12 +78,12 @@ final class ViewDoc extends ViewRecord
                         ->default(CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30))),
                 ])
                 ->action(function (Doc $record, array $data): void {
-                    $shareLink = app(DocRenderService::class)->createShareLink($record, new ShareLinkData(
+                    $shareLink = app(DocumentSharing::class)->issue((string) $record->getKey(), new ShareLinkData(
                         allowedActions: $data['allowed_actions'] ?? [ShareLinkAction::View->value],
                         expiresAt: filled($data['expires_at'] ?? null) ? CarbonImmutable::parse($data['expires_at']) : null,
                     ));
 
-                    $url = route(self::shareLinkRouteName($shareLink->allowed_actions), ['token' => $shareLink->plainToken()]);
+                    $url = route(self::shareLinkRouteName($shareLink->allowedActions), ['token' => $shareLink->plainToken()]);
 
                     Notification::make()
                         ->title('Share link created')
@@ -88,14 +93,13 @@ final class ViewDoc extends ViewRecord
                 }),
 
             Actions\Action::make('revoke_share_links')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                 ->label('Revoke Links')
                 ->icon(Heroicon::OutlinedNoSymbol)
                 ->color('warning')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    $record->shareLinks()
-                        ->whereNull('revoked_at')
-                        ->update(['revoked_at' => CarbonImmutable::now()]);
+                    app(DocumentSharing::class)->revokeAll((string) $record->getKey());
 
                     Notification::make()
                         ->title('Public links revoked')
@@ -112,28 +116,31 @@ final class ViewDoc extends ViewRecord
 
             Actions\ActionGroup::make([
                 Actions\Action::make('mark_sent')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Sent')
                     ->icon(Heroicon::OutlinedPaperAirplane)
                     ->color('info')
                     ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        $record->markAsSent();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'sent');
                         Notification::make()->title('Document marked as sent')->success()->send();
                     }),
 
                 Actions\Action::make('mark_paid')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Mark as Paid')
                     ->icon(Heroicon::OutlinedBanknotes)
                     ->color('success')
                     ->visible(fn (Doc $record): bool => $record->canBePaid())
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        $record->markAsPaid();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'paid');
                         Notification::make()->title('Document marked as paid')->success()->send();
                     }),
 
                 Actions\Action::make('cancel')
+                    ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'update'))
                     ->label('Cancel Document')
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
@@ -142,7 +149,7 @@ final class ViewDoc extends ViewRecord
                     ->modalHeading('Cancel Document')
                     ->modalDescription('Are you sure you want to cancel this document? This action cannot be undone.')
                     ->action(function (Doc $record): void {
-                        $record->cancel();
+                        app(DocumentLifecycle::class)->changeStatus((string) $record->getKey(), 'cancelled');
                         Notification::make()->title('Document cancelled')->warning()->send();
                     }),
             ])
@@ -151,12 +158,13 @@ final class ViewDoc extends ViewRecord
                 ->color('gray'),
 
             Actions\Action::make('delete')
+                ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT, 'delete'))
                 ->label('Delete')
                 ->icon(Heroicon::OutlinedTrash)
                 ->color('danger')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    $record->delete();
+                    app(DocumentLifecycle::class)->delete([(string) $record->getKey()]);
                 }),
         ];
     }
@@ -168,7 +176,7 @@ final class ViewDoc extends ViewRecord
 
     private static function canCancel(Doc $record): bool
     {
-        return ! $record->status->equals(Paid::class) && ! $record->status->equals(Cancelled::class);
+        return ! $record->status->equals(Paid::class) && ! $record->status->equals(Cancelled::class) && ! $record->status->equals(Refunded::class);
     }
 
     /**

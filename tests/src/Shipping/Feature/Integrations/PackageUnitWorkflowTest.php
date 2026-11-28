@@ -6,11 +6,13 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderRefunds;
+use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Data\ReturnedPackageUnit;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
@@ -28,6 +30,7 @@ use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function (): void {
     config([
@@ -96,7 +99,7 @@ function orderWithPackageUnits(string $status = Processing::class): array
 
 function shipPackageUnit(Order $order, OrderItem $item, int $ordinal, array $extra = []): Shipment
 {
-    $result = app(OrderFulfillmentHandler::class)->createShipment($order, $extra + [
+    $result = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), $extra + [
         'carrier' => 'manual',
         'package_units' => [$item->id => [$ordinal]],
     ]);
@@ -117,20 +120,20 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
         ->and($shipment->items()->pluck('package_unit_ordinal')->unique()->values()->all())->toBe([2])
         ->and(shipPackageUnit($order, $item, 2)->id)->toBe($shipment->id);
 
-    expect(fn () => app(OrderService::class)->ship($order, 'Manual', 'unlinked'))
+    expect(fn () => app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', 'unlinked'))
         ->toThrow(DomainException::class, 'Use an order shipment');
 
-    app(OrderService::class)->ship($order, 'Manual', $shipment->tracking_number, $shipment->id);
-    expect($order->isShipped())->toBeFalse();
+    app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $shipment->tracking_number, $shipment->id);
+    expect($order->refresh()->isShipped())->toBeFalse();
 
-    $overlap = app(OrderFulfillmentHandler::class)->createShipment($order, ['package_units' => [$item->id => [1, 2]]]);
+    $overlap = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), ['package_units' => [$item->id => [1, 2]]]);
     expect($overlap['success'])->toBeFalse()
         ->and($overlap['error'])->toContain('already assigned');
 
     $other = shipPackageUnit($order, $item, 1);
     expect($other->id)->not->toBe($shipment->id);
-    app(OrderService::class)->ship($order, 'Manual', $other->tracking_number, $other->id);
-    expect($order->isShipped())->toBeTrue();
+    app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $other->tracking_number, $other->id);
+    expect($order->refresh()->isShipped())->toBeTrue();
 });
 
 it('rejects an incomplete package shipment at the shipment service boundary', function (): void {
@@ -163,11 +166,13 @@ it('requires the complete inspected unit and settles its net price and tax exact
 
     expect($returns->request($shipment->id, $item->id, 1, 'defective')->id)->toBe($rma->id);
     expect(fn () => $returns->request($shipment->id, $item->id, 2, 'defective'))->toThrow(DomainException::class);
-    $refund = app(RegisterOrderRefund::class);
+    $refund = app(OrderRefunds::class);
     $metadata = ['return_authorization_id' => $rma->id];
+    $verifier = app(PackageReturnVerifier::class);
 
-    expect(fn () => $refund->execute($order, 1000, 'refund-1', 'Return', $metadata))->toThrow(DomainException::class);
-    expect(fn () => $refund->createPending($order, 1000, 'refund-1', 'Return'))->toThrow(DomainException::class, 'authorization');
+    expect(fn () => $verifier->receivedUnit($order->id, $rma->id))->toThrow(DomainException::class);
+    expect(fn () => $refund->processRefund($order->id, 1000, 'refund-1', 'Return', $metadata))->toThrow(DomainException::class);
+    expect(fn () => $refund->createPendingRefund($order->id, 1000, 'refund-1', 'Return'))->toThrow(DomainException::class, 'authorization');
 
     app(ApproveReturn::class)->execute($rma->id);
     $lines = $rma->items()->get();
@@ -184,6 +189,14 @@ it('requires the complete inspected unit and settles its net price and tax exact
 
     $returns->receive($rma, $inspection);
     $returns->receive($rma, $inspection);
+
+    $verified = $verifier->receivedUnit($order->id, $rma->id);
+    expect($verified)->toBeInstanceOf(ReturnedPackageUnit::class)
+        ->and($verified->orderItemId)->toBe($item->id)
+        ->and($verified->ordinal)->toBe(1);
+    expect(fn () => $verifier->receivedUnit(Order::factory()->create()->id, $rma->id))
+        ->toThrow(DomainException::class, 'on this order');
+
     $movements = InventoryMovement::query()->where('reason', $rma->rma_number)->get();
     expect($movements)->toHaveCount(1)
         ->and($movements->first()->inventoryable_id)->toBe($first->id)
@@ -192,14 +205,14 @@ it('requires the complete inspected unit and settles its net price and tax exact
         ->and($movements->first()->inventoryable_id)->not->toBe($second->id);
 
     expect(fn () => $returns->complete($rma))->toThrow(DomainException::class, 'Settle');
-    expect(fn () => $refund->createPending($order, 999, 'wrong-amount', 'Return', $metadata))->toThrow(DomainException::class, 'remaining net paid');
+    expect(fn () => $refund->createPendingRefund($order->id, 999, 'wrong-amount', 'Return', $metadata))->toThrow(DomainException::class, 'remaining net paid');
 
-    $pending = $refund->createPending($order, 1000, 'refund-1', 'Return', $metadata)[0];
-    expect($refund->createPending($order, 1000, 'refund-1', 'Return', $metadata)[0]->id)->toBe($pending->id)
-        ->and($pending->metadata['package_unit'])->toBe(['order_item_id' => $item->id, 'ordinal' => 1]);
-    expect(fn () => $refund->createPending($order, 1000, 'refund-again', 'Return', $metadata))->toThrow(DomainException::class, 'already');
-    $refund->completePending($pending, 'provider-refund-1');
-    $refund->completePending($pending, 'provider-refund-1');
+    $pending = $refund->createPendingRefund($order->id, 1000, 'refund-1', 'Return', $metadata)[0];
+    expect($refund->createPendingRefund($order->id, 1000, 'refund-1', 'Return', $metadata)[0])->toBe($pending)
+        ->and($order->refunds()->findOrFail($pending)->metadata['package_unit'])->toBe(['order_item_id' => $item->id, 'ordinal' => 1]);
+    expect(fn () => $refund->createPendingRefund($order->id, 1000, 'refund-again', 'Return', $metadata))->toThrow(DomainException::class, 'already');
+    $refund->completePendingRefund($pending, 'provider-refund-1');
+    $refund->completePendingRefund($pending, 'provider-refund-1');
 
     expect($returns->complete($rma)->status)->toBeInstanceOf(RmaCompleted::class)
         ->and($returns->complete($rma)->status)->toBeInstanceOf(RmaCompleted::class)
@@ -239,13 +252,13 @@ it('reuses the same shipment after a definite carrier failure and blocks an ambi
 
     $handler = app(OrderFulfillmentHandler::class);
     $selection = ['carrier' => 'package-retry', 'package_units' => [$item->id => [1]]];
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Carrier refused');
-    expect($handler->createShipment($order, $selection)['tracking_number'])->toBe('TRACK-RETRY')
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Carrier refused');
+    expect($handler->createShipment((string) $order->getKey(), $selection)['tracking_number'])->toBe('TRACK-RETRY')
         ->and(Shipment::query()->where('shippable_id', $order->id)->count())->toBe(1);
 
     $selection['package_units'][$item->id] = [2];
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Carrier timed out');
-    expect($handler->createShipment($order, $selection)['error'])->toContain('Reconcile')
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Carrier timed out');
+    expect($handler->createShipment((string) $order->getKey(), $selection)['error'])->toContain('Reconcile')
         ->and(Shipment::query()->where('shippable_id', $order->id)->count())->toBe(2);
 });
 
@@ -267,9 +280,9 @@ it('rejects a package return or refund when the current owner owns a different o
             ->and(Shipment::query()->find($shipment->id))->toBeNull();
         expect(fn () => app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged'))
             ->toThrow(AuthorizationException::class);
-        expect(fn () => app(RegisterOrderRefund::class)->execute($order, 1000, 'foreign-refund', 'Return', [
+        expect(fn () => app(OrderRefunds::class)->processRefund($order->id, 1000, 'foreign-refund', 'Return', [
             'return_authorization_id' => $rma->id,
-        ]))->toThrow(RuntimeException::class, 'Cross-owner');
+        ]))->toThrow(ModelNotFoundException::class);
     });
 });
 
@@ -288,17 +301,17 @@ it('retries only the unsettled part when a package refund spans multiple payment
     ]])->all();
     $returns->receive($rma, $inspection);
 
-    $refund = app(RegisterOrderRefund::class);
+    $refund = app(OrderRefunds::class);
     $metadata = ['return_authorization_id' => $rma->id];
-    $parts = $refund->createPending($order, 1000, 'split-refund', 'Return', $metadata);
+    $parts = $refund->createPendingRefund($order->id, 1000, 'split-refund', 'Return', $metadata);
     expect($parts)->toHaveCount(2);
-    $refund->completePending($parts[0], 'settled-first-payment');
-    $refund->failPending($parts[1], 'Payment provider declined');
+    $refund->completePendingRefund($parts[0], 'settled-first-payment');
+    $refund->failPendingRefund($parts[1], 'Payment provider declined');
 
-    expect(fn () => $refund->createPending($order, 1000, 'retry-full', 'Return', $metadata))
+    expect(fn () => $refund->createPendingRefund($order->id, 1000, 'retry-full', 'Return', $metadata))
         ->toThrow(DomainException::class, 'remaining net paid');
-    $retry = $refund->createPending($order, $parts[1]->amount, 'retry-balance', 'Return', $metadata)[0];
-    $refund->completePending($retry, 'settled-second-payment');
+    $retry = $refund->createPendingRefund($order->id, $order->refunds()->findOrFail($parts[1])->amount, 'retry-balance', 'Return', $metadata)[0];
+    $refund->completePendingRefund($retry, 'settled-second-payment');
 
     expect($returns->complete($rma)->isCompleted())->toBeTrue()
         ->and($order->refresh()->getTotalRefunded())->toBe(1000);

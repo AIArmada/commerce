@@ -12,8 +12,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderAccountingTotals;
 use AIArmada\Orders\Enums\PaymentStatus;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -132,39 +132,6 @@ class OrderPayment extends Model implements Auditable
         return $this->status === PaymentStatus::Refunded;
     }
 
-    public function markAsCompleted(?string $transactionId = null): self
-    {
-        $this->status = PaymentStatus::Completed;
-        $this->paid_at = CarbonImmutable::now();
-
-        if ($transactionId !== null) {
-            $this->transaction_id = $transactionId;
-        }
-
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsFailed(string $reason): self
-    {
-        $this->status = PaymentStatus::Failed;
-        $this->failure_reason = $reason;
-        $this->failed_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
-    }
-
-    public function markAsRefunded(): self
-    {
-        $this->status = PaymentStatus::Refunded;
-        $this->refunded_at = CarbonImmutable::now();
-        $this->save();
-
-        return $this;
-    }
-
     // ─────────────────────────────────────────────────────────────
     // MONEY HELPERS
     // ─────────────────────────────────────────────────────────────
@@ -201,9 +168,7 @@ class OrderPayment extends Model implements Auditable
             if (! (bool) config('orders.owner.enabled', false)) {
                 $order = Order::query()->withoutOwnerScope()->findOrFail($payment->order_id);
             } else {
-                $owner = OwnerContext::resolve();
-                $includeGlobal = (bool) config('orders.owner.include_global', false);
-                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $payment->order_id, $owner, $includeGlobal);
+                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $payment->order_id);
             }
 
             if ($order->owner_type !== null && $order->owner_id !== null) {
@@ -246,7 +211,7 @@ class OrderPayment extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($payment->order_id)->increment('paid_total', (int) $payment->amount);
+            app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', (int) $payment->amount);
         });
 
         static::updated(function (OrderPayment $payment): void {
@@ -260,7 +225,7 @@ class OrderPayment extends Model implements Auditable
 
             if (! $wasCompleted && $isCompleted) {
                 if ($amount > 0 && $currencyMatches) {
-                    Order::query()->whereKey($payment->order_id)->increment('paid_total', $amount);
+                    app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', $amount);
                 }
 
                 return;
@@ -277,9 +242,9 @@ class OrderPayment extends Model implements Auditable
             $delta = $amount - (int) $payment->getRawOriginal('amount');
 
             if ($delta > 0) {
-                Order::query()->whereKey($payment->order_id)->increment('paid_total', $delta);
+                app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', $delta);
             } elseif ($delta < 0) {
-                Order::query()->whereKey($payment->order_id)->decrement('paid_total', abs($delta));
+                app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', -abs($delta));
             }
         });
 
@@ -295,7 +260,7 @@ class OrderPayment extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($payment->order_id)->decrement('paid_total', (int) $payment->amount);
+            app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', -(int) $payment->amount);
         });
 
         static::updating(function (OrderPayment $payment): void {

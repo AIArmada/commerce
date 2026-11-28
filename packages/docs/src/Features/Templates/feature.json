@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Templates",
+  "owns": {
+    "table:doc_templates": [
+      "AIArmada\\Docs\\Features\\Templates\\Actions\\ManageDocTemplates"
+    ],
+    "store:docs.templates.write": [
+      "AIArmada\\Docs\\Features\\Templates\\Actions\\ManageDocTemplates"
+    ]
+  },
+  "extensions": {}
+}

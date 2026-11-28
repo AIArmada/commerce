@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Actions\SendEmailAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
