@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
-use InvalidArgumentException;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -31,11 +31,11 @@ final class AddVoucherToWallet implements WalletClaim
      */
     public function handle(string $code, RecordReference $holder, ?array $metadata = null, ?string $voucherId = null): WalletClaimData
     {
-        if ($holder->type === '' || $holder->id === '') {
-            throw new InvalidArgumentException('A persisted wallet holder is required.');
-        }
-
         $connection = (new VoucherWallet)->getConnection();
+
+        if ($connection->getName() !== $this->catalog->connectionName()) {
+            throw new LogicException('Wallet claims require a shared voucher database connection.');
+        }
 
         return $connection->transaction(function () use ($code, $holder, $metadata, $voucherId, $connection): WalletClaimData {
             $id = $this->catalog->lockForWalletClaim($code, $voucherId, $holder->type, $holder->id);

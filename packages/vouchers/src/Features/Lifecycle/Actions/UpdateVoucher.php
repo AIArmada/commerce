@@ -9,10 +9,10 @@ use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
+use AIArmada\Vouchers\Features\Lifecycle\Support\VoucherAffiliateOwnershipGuard;
+use AIArmada\Vouchers\Features\Lifecycle\Support\VoucherInputValidator;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\States\VoucherStatus;
-use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
-use AIArmada\Vouchers\Support\VoucherInputValidator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,10 +31,6 @@ final class UpdateVoucher implements VoucherUpdater
                 ? OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $voucherId, lockForUpdate: true)
                 : VoucherModel::query()->whereKey($voucherId)->lockForUpdate()->firstOrFail();
 
-            if (isset($data['code'])) {
-                $data['code'] = $this->normalizeCode((string) $data['code']);
-            }
-
             $data = VoucherAffiliateOwnershipGuard::sanitize($data);
             $status = $data['status'] ?? null;
             unset(
@@ -48,6 +44,10 @@ final class UpdateVoucher implements VoucherUpdater
             );
 
             $this->validator->validate(array_replace($locked->getAttributes(), $data));
+
+            if (isset($data['code']) && is_string($data['code'])) {
+                $data['code'] = $this->normalizeCode($data['code']);
+            }
 
             if (isset($data['currency']) && is_string($data['currency'])) {
                 $data['currency'] = mb_strtoupper($data['currency']);

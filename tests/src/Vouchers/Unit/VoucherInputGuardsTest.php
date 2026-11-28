@@ -348,3 +348,16 @@ it('rejects noncanonical voucher input fields', function (): void {
             ->toThrow(ValidationException::class);
     }
 });
+
+it('rejects empty or non-string explicit voucher codes on creation and update', function (): void {
+    $voucher = guardVoucher();
+
+    foreach (['', '   ', null, 123, ['invalid']] as $code) {
+        expect(fn () => CreateVoucher::run(['code' => $code, 'type' => 'fixed', 'value' => 100]))
+            ->toThrow(ValidationException::class)
+            ->and(fn () => app(VoucherUpdater::class)->handle($voucher->id, ['code' => $code]))
+            ->toThrow(ValidationException::class);
+    }
+
+    expect($voucher->fresh()->code)->toBe($voucher->code);
+});

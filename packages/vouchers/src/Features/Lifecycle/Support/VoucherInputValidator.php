@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\Lifecycle\Support;
 
 use AIArmada\Vouchers\Data\VoucherType;
 use Akaunting\Money\Currency;
@@ -26,6 +26,10 @@ final readonly class VoucherInputValidator
             if (is_string($key) && (preg_match('/[A-Z]/', $key) || in_array($key, ['max_uses', 'max_uses_per_user', 'min_order_value', 'max_discount_value'], true))) {
                 $errors[$key] = 'Use the canonical snake_case voucher field.';
             }
+        }
+
+        if (array_key_exists('code', $data) && (! is_string($data['code']) || mb_trim($data['code']) === '')) {
+            $errors['code'] = 'The voucher code must be a non-empty string.';
         }
 
         $type = $data['type'] ?? null;

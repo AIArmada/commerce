@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\Lifecycle\Support;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
