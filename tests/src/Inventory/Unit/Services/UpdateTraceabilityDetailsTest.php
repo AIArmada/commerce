@@ -59,3 +59,22 @@ it('rejects negative traceability unit costs', function (): void {
     expect(fn () => $action->batch($batch, ['unit_cost_minor' => -1]))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('rejects fractional costs and blank traceability identifiers without changing stored records', function (): void {
+    $batch = InventoryBatch::factory()->create(['unit_cost_minor' => 100]);
+    $serial = InventorySerial::factory()->create(['unit_cost_minor' => 200]);
+    $action = app(UpdateTraceabilityDetails::class);
+
+    foreach (['12.5', 'invalid', -1] as $cost) {
+        expect(fn () => $action->batch($batch, ['unit_cost_minor' => $cost]))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $action->serial($serial, ['unit_cost_minor' => $cost]))->toThrow(InvalidArgumentException::class);
+    }
+
+    expect(fn () => $action->batch($batch, ['batch_number' => '   ']))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $action->serial($serial, ['serial_number' => '   ']))->toThrow(InvalidArgumentException::class)
+        ->and($batch->fresh()->unit_cost_minor)->toBe(100)
+        ->and($serial->fresh()->unit_cost_minor)->toBe(200);
+
+    expect($action->batch($batch, ['batch_number' => '  CLEAN-BATCH  ', 'unit_cost_minor' => '120'])->batch_number)->toBe('CLEAN-BATCH')
+        ->and($action->serial($serial, ['serial_number' => '  CLEAN-SERIAL  ', 'unit_cost_minor' => '220'])->serial_number)->toBe('CLEAN-SERIAL');
+});

@@ -355,7 +355,7 @@ final class InventoryBatch extends Model implements Auditable
                 return;
             }
 
-            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+            $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
                 ->whereKey($batch->location_id)
                 ->first();
 

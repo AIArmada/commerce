@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 function setBatchServiceOwnerResolver(?Model $owner): void
@@ -213,4 +214,15 @@ it('does not allow a tenant to create stock in a visible global location', funct
 
     expect(fn () => $fixture['service']->createBatch($fixture['sku'], 'GLOBAL-WRITE', $fixture['locationGlobal']->id, 10))
         ->toThrow(InvalidArgumentException::class, 'Invalid location for current owner');
+});
+
+it('rejects direct batch creation in a tenant-visible global location', function (): void {
+    $fixture = makeOwnerScopedBatchServiceFixture();
+
+    expect(fn () => InventoryBatch::factory()->create([
+        'inventoryable_type' => $fixture['sku']->getMorphClass(),
+        'inventoryable_id' => $fixture['sku']->getKey(),
+        'location_id' => $fixture['locationGlobal']->id,
+        'batch_number' => 'DIRECT-GLOBAL-WRITE',
+    ]))->toThrow(AuthorizationException::class);
 });

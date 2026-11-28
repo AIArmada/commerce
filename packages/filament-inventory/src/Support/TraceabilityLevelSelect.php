@@ -40,13 +40,9 @@ final class TraceabilityLevelSelect
     /** @return Builder<InventoryLevel> */
     private static function query(): Builder
     {
-        $query = InventoryLevel::query()->with('location');
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $query->forOwner(InventoryOwnerScope::resolveOwner(), false);
-        }
-
-        return $query;
+        return InventoryOwnerScope::forMutation(InventoryLevel::query())
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::forMutation($query))
+            ->with('location');
     }
 
     private static function label(InventoryLevel $level): string

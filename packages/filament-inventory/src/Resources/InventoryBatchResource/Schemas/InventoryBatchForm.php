@@ -123,7 +123,7 @@ final class InventoryBatchForm
 
                             TextInput::make('unit_cost_minor')
                                 ->label('Unit Cost (Minor)')
-                                ->numeric()
+                                ->integer()
                                 ->minValue(0)
                                 ->prefix(config('inventory.defaults.currency', 'MYR')),
                         ]),

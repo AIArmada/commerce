@@ -32,7 +32,7 @@ final readonly class UpdateTraceabilityDetails
                 'manufactured_at', 'received_at', 'expires_at', 'unit_cost_minor', 'metadata',
             ]);
 
-            $this->assertCost($details);
+            $this->validateDetails($details, 'batch_number');
 
             if (isset($details['metadata']) && is_array($details['metadata'])) {
                 $details['metadata'] = array_replace($record->metadata ?? [], $details['metadata']);
@@ -58,7 +58,7 @@ final readonly class UpdateTraceabilityDetails
 
             $record = $query->whereKey($serial->getKey())->lockForUpdate()->firstOrFail();
             $details = Arr::only($attributes, ['serial_number', 'unit_cost_minor', 'received_at']);
-            $this->assertCost($details);
+            $this->validateDetails($details, 'serial_number');
             $record->update($details);
 
             return $record;
@@ -66,10 +66,26 @@ final readonly class UpdateTraceabilityDetails
     }
 
     /** @param array<string, mixed> $attributes */
-    private function assertCost(array $attributes): void
+    private function validateDetails(array &$attributes, string $identifier): void
     {
-        if (isset($attributes['unit_cost_minor']) && (int) $attributes['unit_cost_minor'] < 0) {
-            throw new InvalidArgumentException('Unit cost cannot be negative');
+        if (array_key_exists($identifier, $attributes)) {
+            $value = $attributes[$identifier];
+
+            if (! is_string($value) || mb_trim($value) === '') {
+                throw new InvalidArgumentException('Traceability identifier is required');
+            }
+
+            $attributes[$identifier] = mb_trim($value);
+        }
+
+        if (isset($attributes['unit_cost_minor'])) {
+            $cost = filter_var($attributes['unit_cost_minor'], FILTER_VALIDATE_INT);
+
+            if ($cost === false || $cost < 0) {
+                throw new InvalidArgumentException('Unit cost must be a nonnegative integer');
+            }
+
+            $attributes['unit_cost_minor'] = $cost;
         }
     }
 }

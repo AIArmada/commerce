@@ -14,6 +14,7 @@ use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -270,4 +271,15 @@ it('allows different owners to register the same serial identifier', function ()
 
     expect($second->id)->not->toBe($first->id)
         ->and($second->owner_id)->toBe($fixture['ownerB']->getKey());
+});
+
+it('rejects direct serial creation in a tenant-visible global location', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    expect(fn () => InventorySerial::factory()->create([
+        'inventoryable_type' => $fixture['sku']->getMorphClass(),
+        'inventoryable_id' => $fixture['sku']->getKey(),
+        'location_id' => $fixture['locationGlobal']->id,
+        'serial_number' => 'DIRECT-GLOBAL-WRITE',
+    ]))->toThrow(AuthorizationException::class);
 });

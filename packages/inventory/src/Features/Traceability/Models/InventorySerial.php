@@ -400,7 +400,7 @@ final class InventorySerial extends Model implements Auditable
             $ownerResolvedFromRelation = false;
 
             if ($serial->location_id !== null) {
-                $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($serial->location_id)
                     ->first();
 
@@ -414,8 +414,10 @@ final class InventorySerial extends Model implements Auditable
             }
 
             if ($serial->batch_id !== null) {
-                $batch = InventoryBatch::query()
+                $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
                     ->whereKey($serial->batch_id)
+                    ->where('inventoryable_type', $serial->inventoryable_type)
+                    ->where('inventoryable_id', $serial->inventoryable_id)
                     ->first();
 
                 if ($batch === null) {

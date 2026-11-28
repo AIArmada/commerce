@@ -57,7 +57,7 @@ final class InventorySerialForm
                                 ->relationship(
                                     name: 'batch',
                                     titleAttribute: 'batch_number',
-                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query),
+                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::forMutation($query),
                                 )
                                 ->searchable()
                                 ->preload(),
@@ -88,7 +88,7 @@ final class InventorySerialForm
                         ->schema([
                             TextInput::make('unit_cost_minor')
                                 ->label('Unit Cost (Minor)')
-                                ->numeric()
+                                ->integer()
                                 ->minValue(0)
                                 ->prefix(config('inventory.defaults.currency', 'MYR')),
 
