@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
@@ -80,7 +79,7 @@ final class ValuationService
      */
     public function getLocationValuation(string $locationId, CostingMethod $method): array
     {
-        $this->getScopedLocationOrFail($locationId);
+        $this->assertLocationVisible($locationId);
         $totals = $this->summarize($method, $locationId);
 
         return [
@@ -173,7 +172,7 @@ final class ValuationService
         }
 
         if ($locationId !== null) {
-            $this->getScopedLocationOrFail($locationId);
+            $this->assertLocationVisible($locationId);
             $query->forLocation($locationId);
         } else {
             $query->allLocations();
@@ -204,7 +203,7 @@ final class ValuationService
         }
 
         if ($locationId !== null) {
-            $this->getScopedLocationOrFail($locationId);
+            $this->assertLocationVisible($locationId);
             $query->forLocation($locationId);
         } else {
             $query->allLocations();
@@ -247,17 +246,15 @@ final class ValuationService
      */
     public function generateLocationReport(CostingMethod $method): array
     {
-        $locations = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-            ->where('is_active', true)
-            ->get();
+        $locations = app(LocationVisibility::class)->activeLocations();
 
         $report = [];
 
         foreach ($locations as $location) {
-            $valuation = $this->getLocationValuation($location->id, $method);
+            $valuation = $this->getLocationValuation($location['id'], $method);
 
-            $report[$location->id] = [
-                'location_name' => $location->name,
+            $report[$location['id']] = [
+                'location_name' => $location['name'],
                 'quantity' => $valuation['total_quantity'],
                 'value' => $valuation['total_value'],
                 'average_cost' => $valuation['total_quantity'] > 0
@@ -281,12 +278,10 @@ final class ValuationService
 
             $snapshots->push($this->createSnapshot($method));
 
-            $locations = InventoryOwnerScope::forMutation(InventoryLocation::query())
-                ->where('is_active', true)
-                ->get();
+            $locations = app(LocationVisibility::class)->activeLocations(exactOwner: true);
 
             foreach ($locations as $location) {
-                $snapshots->push($this->createSnapshot($method, $location->id));
+                $snapshots->push($this->createSnapshot($method, $location['id']));
             }
 
             return $snapshots;
@@ -357,16 +352,10 @@ final class ValuationService
         ];
     }
 
-    private function getScopedLocationOrFail(string $locationId): InventoryLocation
+    private function assertLocationVisible(string $locationId): void
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
-
-        $location = $query->whereKey($locationId)->first();
-
-        if ($location === null) {
+        if (! app(LocationVisibility::class)->isVisible($locationId)) {
             throw new InvalidArgumentException('Invalid location for current owner');
         }
-
-        return $location;
     }
 }

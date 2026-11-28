@@ -80,8 +80,7 @@ final readonly class StandardCostService
      */
     public function getCurrentStandardCost(Model $model): ?InventoryStandardCost
     {
-        return InventoryStandardCost::query()
-            ->forModel($model)
+        return $this->readQuery($model)
             ->current()
             ->orderByDesc('effective_from')
             ->orderBy('id')
@@ -93,8 +92,7 @@ final readonly class StandardCostService
      */
     public function getStandardCostAt(Model $model, CarbonImmutable $date): ?InventoryStandardCost
     {
-        return InventoryStandardCost::query()
-            ->forModel($model)
+        return $this->readQuery($model)
             ->effectiveAt($date)
             ->orderByDesc('effective_from')
             ->orderBy('id')
@@ -173,8 +171,7 @@ final readonly class StandardCostService
      */
     public function getCostHistory(Model $model): Collection
     {
-        return InventoryStandardCost::query()
-            ->forModel($model)
+        return $this->readQuery($model)
             ->orderBy('effective_from', 'desc')
             ->get();
     }
@@ -186,8 +183,7 @@ final readonly class StandardCostService
      */
     public function getFutureCosts(Model $model): Collection
     {
-        return InventoryStandardCost::query()
-            ->forModel($model)
+        return $this->readQuery($model)
             ->future()
             ->orderBy('effective_from', 'asc')
             ->get();
@@ -211,8 +207,7 @@ final readonly class StandardCostService
      */
     public function hasStandardCost(Model $model): bool
     {
-        return InventoryStandardCost::query()
-            ->forModel($model)
+        return $this->readQuery($model)
             ->current()
             ->exists();
     }
@@ -250,6 +245,7 @@ final readonly class StandardCostService
             $predecessor = InventoryOwnerScope::forMutation(InventoryStandardCost::query())
                 ->where('inventoryable_type', $locked->inventoryable_type)
                 ->where('inventoryable_id', $locked->inventoryable_id)
+                ->where('currency', $locked->currency)
                 ->where('effective_to', $locked->effective_from)
                 ->where('effective_from', '<', $locked->effective_from)
                 ->orderByDesc('effective_from')
@@ -266,6 +262,14 @@ final readonly class StandardCostService
     /** @return Builder<InventoryStandardCost> */
     private function mutationQuery(Model $model): Builder
     {
-        return InventoryOwnerScope::forMutation(InventoryStandardCost::query())->forModel($model);
+        return InventoryOwnerScope::forMutation(InventoryStandardCost::query())->forModel($model)
+            ->where('currency', (string) config('inventory.defaults.currency', 'MYR'));
+    }
+
+    /** @return Builder<InventoryStandardCost> */
+    private function readQuery(Model $model): Builder
+    {
+        return InventoryOwnerScope::applyToLocationQuery(InventoryStandardCost::query())->forModel($model)
+            ->where('currency', (string) config('inventory.defaults.currency', 'MYR'));
     }
 }

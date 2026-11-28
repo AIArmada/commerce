@@ -15,6 +15,22 @@ describe('StandardCostService', function (): void {
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
 
+    it('keeps standard cost timelines isolated by currency', function (): void {
+        config(['inventory.defaults.currency' => 'USD']);
+        $usd = $this->service->setStandardCost($this->item, 700, CarbonImmutable::now()->subDays(2));
+
+        config(['inventory.defaults.currency' => 'MYR']);
+        $myr = $this->service->setStandardCost($this->item, 250, CarbonImmutable::now()->subDay());
+
+        expect($usd->fresh()->effective_to)->toBeNull()
+            ->and($this->service->getCurrentStandardCost($this->item)?->id)->toBe($myr->id)
+            ->and($this->service->getCostHistory($this->item))->toHaveCount(1);
+
+        config(['inventory.defaults.currency' => 'USD']);
+
+        expect($this->service->getCurrentCostValue($this->item))->toBe(700);
+    });
+
     it('set standard cost', function (): void {
         $cost = $this->service->setStandardCost(
             $this->item,

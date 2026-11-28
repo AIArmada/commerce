@@ -194,7 +194,8 @@ describe('createSnapshot', function (): void {
             ->and($snapshot->total_value_minor)->toBe(2500)
             ->and($snapshot->variance_from_previous_minor)->toBeNull()
             ->and($snapshot->breakdown[$this->product->getMorphClass()])->toBe(['units' => 10, 'value' => 2500])
-            ->and($this->service->getLocationValuation($this->location->id, CostingMethod::Standard)['total_value'])->toBe(2500);
+            ->and($this->service->getLocationValuation($this->location->id, CostingMethod::Standard)['total_value'])->toBe(2500)
+            ->and($this->service->calculateValuation($this->product, CostingMethod::Standard, $this->location->id))->toBe(['quantity' => 10, 'value' => 2500, 'average_cost' => 250]);
     });
 
     it('creates a valuation snapshot', function (): void {

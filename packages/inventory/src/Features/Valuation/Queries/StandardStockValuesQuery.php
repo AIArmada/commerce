@@ -18,22 +18,22 @@ final readonly class StandardStockValuesQuery
      * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string}>|null  $items
      * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, quantity: int, total_value: int}>
      */
-    public function rows(string $currency, ?array $items = null, ?string $locationId = null, bool $exactOwner = false): iterable
+    public function rows(string $currency, ?array $items = null, ?string $locationId = null, bool $exactOwner = false, ?string $inventoryableType = null, ?string $inventoryableId = null, bool $includeUnpriced = false): iterable
     {
         $now = CarbonImmutable::now();
         $chunk = [];
 
-        foreach ($this->balances->rows($items, $locationId, $exactOwner) as $balance) {
+        foreach ($this->balances->rows($items, $locationId, $exactOwner, $inventoryableType, $inventoryableId) as $balance) {
             $chunk[] = $balance;
 
             if (count($chunk) === 200) {
-                yield from $this->valueChunk($chunk, $currency, $now);
+                yield from $this->valueChunk($chunk, $currency, $now, $includeUnpriced);
                 $chunk = [];
             }
         }
 
         if ($chunk !== []) {
-            yield from $this->valueChunk($chunk, $currency, $now);
+            yield from $this->valueChunk($chunk, $currency, $now, $includeUnpriced);
         }
     }
 
@@ -41,7 +41,7 @@ final readonly class StandardStockValuesQuery
      * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string, owner_type: string|null, owner_id: string|null, quantity: int}>  $balances
      * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, quantity: int, total_value: int}>
      */
-    private function valueChunk(array $balances, string $currency, CarbonImmutable $now): iterable
+    private function valueChunk(array $balances, string $currency, CarbonImmutable $now, bool $includeUnpriced): iterable
     {
         $costs = InventoryOwnerScope::applyToLocationQuery(InventoryStandardCost::query())
             ->effectiveAt($now)
@@ -68,7 +68,7 @@ final readonly class StandardStockValuesQuery
         foreach ($balances as $balance) {
             $key = $this->key($balance['inventoryable_type'], $balance['inventoryable_id'], $balance['owner_type'], $balance['owner_id']);
 
-            if (! array_key_exists($key, $unitCosts)) {
+            if (! $includeUnpriced && ! array_key_exists($key, $unitCosts)) {
                 continue;
             }
 
@@ -77,7 +77,7 @@ final readonly class StandardStockValuesQuery
                 'inventoryable_id' => $balance['inventoryable_id'],
                 'location_id' => $balance['location_id'],
                 'quantity' => $balance['quantity'],
-                'total_value' => $balance['quantity'] * $unitCosts[$key],
+                'total_value' => $balance['quantity'] * ($unitCosts[$key] ?? 0),
             ];
         }
     }

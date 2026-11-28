@@ -23,4 +23,15 @@ final class LocationVisibilityQuery implements LocationVisibility
             ->whereKey($locationId)
             ->exists();
     }
+
+    public function activeLocations(bool $exactOwner = false): iterable
+    {
+        $query = $exactOwner
+            ? InventoryOwnerScope::forMutation(InventoryLocation::query())
+            : InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+
+        foreach ($query->where('is_active', true)->select(['id', 'name'])->lazyById(200) as $location) {
+            yield ['id' => $location->id, 'name' => $location->name];
+        }
+    }
 }

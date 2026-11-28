@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final readonly class StockBalancesQuery implements StockBalances
 {
-    public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false): iterable
+    public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false, ?string $inventoryableType = null, ?string $inventoryableId = null): iterable
     {
         foreach ($items === null ? [null] : array_chunk($items, 200) as $chunk) {
             $query = $exactOwner
@@ -21,6 +21,14 @@ final readonly class StockBalancesQuery implements StockBalances
 
             if ($locationId !== null) {
                 $query->where('location_id', $locationId);
+            }
+
+            if ($inventoryableType !== null) {
+                $query->where('inventoryable_type', $inventoryableType);
+            }
+
+            if ($inventoryableId !== null) {
+                $query->where('inventoryable_id', $inventoryableId);
             }
 
             if ($chunk !== null) {

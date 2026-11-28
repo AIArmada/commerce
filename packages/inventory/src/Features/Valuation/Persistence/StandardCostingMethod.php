@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use RuntimeException;
@@ -16,6 +15,8 @@ final readonly class StandardCostingMethod
 {
     public function __construct(
         private StandardCostService $service,
+        private StandardStockValuesQuery $values,
+        private LocationVisibility $locations,
     ) {}
 
     public function supports(): CostingMethod
@@ -26,32 +27,28 @@ final readonly class StandardCostingMethod
     /** @return array{quantity: int, value: int, average_cost: int} */
     public function calculateValuation(Model $model, ?string $locationId = null): array
     {
-        $unitCost = $this->service->getCurrentCostValue($model);
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-        );
-
-        if ($locationId !== null) {
-            $locationExists = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($locationId)
-                ->exists();
-
-            if (! $locationExists) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
-
-            $query->where('location_id', $locationId);
+        if ($locationId !== null && ! $this->locations->isVisible($locationId)) {
+            throw new InvalidArgumentException('Invalid location for current owner');
         }
 
-        $quantity = (int) $query->sum('quantity_on_hand');
-        $standardCost = $unitCost ?? 0;
+        $quantity = 0;
+        $value = 0;
+
+        foreach ($this->values->rows(
+            (string) config('inventory.defaults.currency', 'MYR'),
+            locationId: $locationId,
+            inventoryableType: $model->getMorphClass(),
+            inventoryableId: (string) $model->getKey(),
+            includeUnpriced: true,
+        ) as $row) {
+            $quantity += $row['quantity'];
+            $value += $row['total_value'];
+        }
 
         return [
             'quantity' => $quantity,
-            'value' => $quantity * $standardCost,
-            'average_cost' => $standardCost,
+            'value' => $value,
+            'average_cost' => $quantity > 0 ? (int) round($value / $quantity) : 0,
         ];
     }
 

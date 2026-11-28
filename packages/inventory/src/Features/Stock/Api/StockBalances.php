@@ -10,5 +10,5 @@ interface StockBalances
      * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string}>|null  $items
      * @return iterable<array{inventoryable_type: string, inventoryable_id: string, location_id: string, owner_type: string|null, owner_id: string|null, quantity: int}>
      */
-    public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false): iterable;
+    public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false, ?string $inventoryableType = null, ?string $inventoryableId = null): iterable;
 }
