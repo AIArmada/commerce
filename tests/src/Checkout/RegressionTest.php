@@ -44,6 +44,8 @@ use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
@@ -1166,6 +1168,10 @@ describe('pricing join by item id', function (): void {
 
         $capturedItems = null;
         $orderService = mock(OrderServiceInterface::class);
+        $fulfillment = mock(OrderFulfillment::class);
+        $payments = mock(OrderPaymentConfirmation::class);
+        app()->instance(OrderFulfillment::class, $fulfillment);
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $orderService->shouldReceive('createOrder')
             ->once()
             ->andReturnUsing(function (array $orderData, array $items) use (&$capturedItems, $order): Order {
@@ -1173,7 +1179,7 @@ describe('pricing join by item id', function (): void {
 
                 return $order;
             });
-        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
+        $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $result = app(CreateOrderStep::class)->handle($session);
@@ -1192,8 +1198,16 @@ describe('incomplete payment reference', function (): void {
         $order->forceFill(['id' => (string) Str::uuid(), 'order_number' => 'ORD-REF-MISSING']);
 
         $orderService = mock(OrderServiceInterface::class);
+
+        $fulfillment = mock(OrderFulfillment::class);
+
+        $payments = mock(OrderPaymentConfirmation::class);
+
+        app()->instance(OrderFulfillment::class, $fulfillment);
+
+        app()->instance(OrderPaymentConfirmation::class, $payments);
         $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->never();
+        $payments->shouldReceive('confirmCheckout')->never();
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([

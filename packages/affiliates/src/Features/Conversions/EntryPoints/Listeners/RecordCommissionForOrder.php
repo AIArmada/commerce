@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Orders\Actions\MergeOrderMetadata;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
@@ -42,7 +42,7 @@ final readonly class RecordCommissionForOrder
     public function __construct(
         private CartConversionRecording $recordAffiliateConversion,
         private CartManagerInterface $cartManager,
-        private MergeOrderMetadata $orderMetadata,
+        private OrderMetadataWriter $orderMetadata,
     ) {}
 
     public function handle(CommissionAttributionRequired $event): void
@@ -166,7 +166,7 @@ final readonly class RecordCommissionForOrder
 
     private function writeDecision(Order $order, ?CarbonImmutable $engineTouch, ?string $winner, string $reason): void
     {
-        $this->orderMetadata->handle((string) $order->getKey(), [
+        $this->orderMetadata->merge((string) $order->getKey(), [
             'engine_touch_at' => $engineTouch?->toIso8601String(),
             'attribution_winner' => $winner,
             'attribution_decision_reason' => $reason,

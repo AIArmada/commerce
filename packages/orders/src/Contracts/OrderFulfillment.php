@@ -15,5 +15,7 @@ interface OrderFulfillment
     /** @param array<string, mixed> $metadata */
     public function complete(string $orderId, array $metadata = []): void;
 
+    public function confirmFree(string $orderId): void;
+
     public function cancel(string $orderId, string $reason, ?string $canceledBy = null): void;
 }

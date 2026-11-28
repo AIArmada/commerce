@@ -68,33 +68,6 @@ interface OrderServiceInterface
     public function addAddress(Order $order, array $addressData, string $type): void;
 
     /**
-     * Confirm payment for an order.
-     *
-     * Partial payments are supported: the payment is recorded with its
-     * actual amount, and the order only moves to processing (and only then
-     * stages fulfillment) once accepted completed payments cover the grand
-     * total. Replays of a recorded payment identity stay idempotent.
-     *
-     * @param  array<string, mixed>  $metadata
-     */
-    public function confirmPayment(
-        Order $order,
-        string $transactionId,
-        string $gateway,
-        int $amount,
-        array $metadata = [],
-    ): Order;
-
-    /**
-     * Confirm a free order (grand_total <= 0 and paid_total === 0) without payment.
-     *
-     * Moves the order to processing and triggers post-processing
-     * integrations such as inventory deduction. No payment record,
-     * paid timestamp, or OrderPaid event is produced.
-     */
-    public function confirmFreeOrder(Order $order): Order;
-
-    /**
      * Recalculate order totals from items.
      */
     public function recalculateTotals(Order $order): Order;

@@ -14,7 +14,8 @@
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\FreeOrderConfirmed",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\AssignOrderInvoiceNumber",
-      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageOrders"
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageOrders",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\MergeOrderMetadata"
     ],
     "table:order_items": [
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",

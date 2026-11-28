@@ -18,6 +18,8 @@ use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -105,6 +107,14 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createFromCart')
         ->once()
         ->withArgs(function (...$arguments) use ($cart, $customer, $session): bool {
@@ -118,7 +128,7 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
         })
         ->andReturn($order);
     $orderService->shouldReceive('createOrder')->never();
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
@@ -174,6 +184,10 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
 
     $capturedOrderData = null;
     $orderService = mock(OrderServiceInterface::class);
+    $fulfillment = mock(OrderFulfillment::class);
+    $payments = mock(OrderPaymentConfirmation::class);
+    app()->instance(OrderFulfillment::class, $fulfillment);
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')
         ->once()
         ->andReturnUsing(function (array $orderData) use (&$capturedOrderData, $order): Order {
@@ -182,7 +196,7 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
             return $order;
         });
     $orderService->shouldReceive('createFromCart')->never();
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
@@ -284,6 +298,14 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
     $capturedOrderData = null;
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')
         ->once()
         ->andReturnUsing(function (array $orderData) use (&$capturedOrderData): Order {
@@ -295,7 +317,7 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
 
             return $order;
         });
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andReturnUsing(fn (Order $order): Order => $order);
+    $fulfillment->shouldReceive('confirmFree')->once()->andReturnNull();
 
     app()->instance(OrderServiceInterface::class, $orderService);
 
@@ -320,11 +342,19 @@ it('confirms payment when the reported amount exactly matches the checkout total
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')
+    $payments->shouldReceive('confirmCheckout')
         ->once()
         ->withArgs(fn (...$arguments): bool => ($arguments[3] ?? null) === 1000)
-        ->andReturn($order);
+        ->andReturnNull();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -346,8 +376,16 @@ it('blocks payment confirmation when the reported amount mismatches the checkout
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 999]);
@@ -377,8 +415,16 @@ it('blocks payment confirmation when the reported currency mismatches the checko
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([
@@ -411,8 +457,16 @@ it('blocks payment confirmation when the payment currency is missing', function 
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([
@@ -442,8 +496,16 @@ it('fails closed when the payment amount is missing', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession([]);
@@ -471,8 +533,16 @@ it('blocks payment confirmation when the order total drifted from the checkout t
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -502,8 +572,16 @@ it('blocks payment confirmation when the order currency drifted from the checkou
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -531,8 +609,16 @@ it('blocks payment confirmation when the order carries no total', function (): v
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
@@ -557,9 +643,17 @@ it('confirms free orders for processing without payment', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
-    $orderService->shouldReceive('confirmPayment')->never();
+    $fulfillment->shouldReceive('confirmFree')->once()->with((string) $order->getKey())->andReturnNull();
+    $payments->shouldReceive('confirmCheckout')->never();
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $cartManager = mock(CartManagerInterface::class);
@@ -589,8 +683,16 @@ it('fails the step when free order confirmation throws', function (): void {
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(new RuntimeException('boom'));
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(new RuntimeException('boom'));
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $cartManager = mock(CartManagerInterface::class);
@@ -622,8 +724,16 @@ it('records a reconciliation mismatch when a session-marked free order owes a ba
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(
         new InvalidArgumentException('Only orders with no total can be confirmed as free orders.')
     );
     app()->instance(OrderServiceInterface::class, $orderService);
@@ -665,8 +775,16 @@ it('classifies state rejections from the exception rather than its copy of the r
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
+
+    $fulfillment = mock(OrderFulfillment::class);
+
+    $payments = mock(OrderPaymentConfirmation::class);
+
+    app()->instance(OrderFulfillment::class, $fulfillment);
+
+    app()->instance(OrderPaymentConfirmation::class, $payments);
     $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+    $fulfillment->shouldReceive('confirmFree')->once()->andThrow(
         OrderNotAwaitingPayment::forState('OnHold')
     );
     app()->instance(OrderServiceInterface::class, $orderService);

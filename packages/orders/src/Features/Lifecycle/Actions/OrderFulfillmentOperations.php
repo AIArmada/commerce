@@ -32,6 +32,11 @@ final readonly class OrderFulfillmentOperations implements OrderFulfillment
         new OrderCompleted($this->resolve($orderId), $metadata)->handle();
     }
 
+    public function confirmFree(string $orderId): void
+    {
+        new FreeOrderConfirmed($this->resolve($orderId))->handle();
+    }
+
     public function cancel(string $orderId, string $reason, ?string $canceledBy = null): void
     {
         if (mb_trim($reason) === '') {

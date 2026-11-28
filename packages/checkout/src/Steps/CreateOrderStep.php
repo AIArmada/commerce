@@ -9,6 +9,8 @@ use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Checkout\Support\CompositeCartRevalidator;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
@@ -154,7 +156,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         if ($isFreeOrder) {
             try {
-                $orderService->confirmFreeOrder($order);
+                app(OrderFulfillment::class)->confirmFree((string) $order->getKey());
             } catch (OrderNotAwaitingPayment $e) {
                 // Classified from the exception, not the step's copy of
                 // the row: the seam judged the locked row, which may have
@@ -185,7 +187,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ]);
             }
         } elseif ($paymentConfirmationEnabled) {
-            $paymentWasConfirmed = $this->confirmPayment($orderService, $order, $session, $paymentData);
+            $paymentWasConfirmed = $this->confirmPayment(app(OrderPaymentConfirmation::class), $order, $session, $paymentData);
 
             if (! $paymentWasConfirmed) {
                 return $this->failed('Payment confirmation failed', [
@@ -430,7 +432,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
      * @param  array<string, mixed>  $paymentData
      */
     private function confirmPayment(
-        OrderServiceInterface $orderService,
+        OrderPaymentConfirmation $payments,
         Order $order,
         CheckoutSession $session,
         array $paymentData,
@@ -508,11 +510,12 @@ final class CreateOrderStep extends AbstractCheckoutStep
         ];
 
         try {
-            $orderService->confirmPayment(
-                order: $order,
+            $payments->confirmCheckout(
+                orderId: (string) $order->getKey(),
                 transactionId: $transactionId,
                 gateway: $gateway,
                 amount: (int) $amount,
+                currency: $expectedCurrency,
                 metadata: $metadata,
             );
 

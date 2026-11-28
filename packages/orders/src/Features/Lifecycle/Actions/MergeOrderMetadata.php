@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Models\Order;
 
-final readonly class MergeOrderMetadata
+final readonly class MergeOrderMetadata implements OrderMetadataWriter
 {
     use AssertsOrderOwnerBoundary;
 
     /** @param array<string, mixed> $patch */
-    public function handle(string $orderId, array $patch): void
+    public function merge(string $orderId, array $patch): void
     {
         (new Order)->getConnection()->transaction(function () use ($orderId, $patch): void {
             $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);

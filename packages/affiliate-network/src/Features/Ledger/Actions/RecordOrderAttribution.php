@@ -6,13 +6,13 @@ namespace AIArmada\AffiliateNetwork\Features\Ledger\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Orders\Actions\MergeOrderMetadata;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 
 final readonly class RecordOrderAttribution
 {
-    public function __construct(private MergeOrderMetadata $orderMetadata) {}
+    public function __construct(private OrderMetadataWriter $orderMetadata) {}
 
     public function writeTouch(Order $order, ?string $clickedAt): void
     {
@@ -54,7 +54,7 @@ final readonly class RecordOrderAttribution
         $owner = OwnerTupleParser::fromTypeAndId($order->owner_type, $order->owner_id)->toOwnerModel();
 
         OwnerContext::withOwner($owner, function () use ($order, $patch): void {
-            $this->orderMetadata->handle((string) $order->getKey(), $patch);
+            $this->orderMetadata->merge((string) $order->getKey(), $patch);
             $order->refresh();
         });
     }
