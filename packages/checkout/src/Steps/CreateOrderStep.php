@@ -83,7 +83,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             // A composite checkout is sold from its frozen snapshot. Re-reading
             // the live cart here could swap the reviewed composition or price
             // after payment has already been taken.
-            $liveCart = CompositeCartRevalidator::supports($session)
+            $liveCart = CompositeCartRevalidator::supports($session) || (int) data_get($session->tax_data, 'included_total', 0) > 0
                 ? null
                 : app(CheckoutCartResolver::class)->resolveLiveCart($session);
 

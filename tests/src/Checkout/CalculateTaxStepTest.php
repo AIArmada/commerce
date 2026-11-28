@@ -170,3 +170,28 @@ it('rejects mismatched pricing identities before tax calculation', function (): 
     expect(fn () => (new TaxAdapter)->calculateTax($session))
         ->toThrow(InvalidArgumentException::class, 'Checkout pricing does not match the cart snapshot.');
 });
+
+it('does not add already included tax to the checkout payable total', function (): void {
+    $calculator = mock(TaxCalculatorInterface::class);
+    $calculator->shouldReceive('calculateTax')->once()
+        ->andReturn(new TaxResultData(100, 'rate', 'Inclusive', 1000, 'zone', 'Malaysia', includedInPrice: true));
+    $calculator->shouldReceive('calculateShippingTax')->once()
+        ->andReturn(new TaxResultData(20, 'shipping-rate', 'Shipping', 1000, 'zone', 'Malaysia'));
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'inclusive-tax-checkout',
+        'subtotal' => 1100,
+        'shipping_total' => 200,
+        'cart_snapshot' => ['items' => [['id' => 'line-1', 'quantity' => 1, 'price' => 1100]]],
+    ]);
+
+    $result = (new CalculateTaxStep(new TaxAdapter))->handle($session);
+    $session->refresh();
+
+    expect($result->isSuccessful())->toBeTrue()
+        ->and($session->tax_total)->toBe(20)
+        ->and($session->tax_data['total'])->toBe(120)
+        ->and($session->tax_data['included_total'])->toBe(100)
+        ->and($session->tax_data['additional_total'])->toBe(20)
+        ->and($session->grand_total)->toBe(1320);
+});

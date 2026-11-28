@@ -344,6 +344,16 @@ class Order extends Model implements Auditable
         return $this->formatMoney($this->tax_total);
     }
 
+    public function getIncludedTaxTotal(): int
+    {
+        return max(0, (int) data_get($this->metadata, 'tax_data.included_total', 0));
+    }
+
+    public function getFormattedIncludedTaxTotal(): string
+    {
+        return $this->formatMoney($this->getIncludedTaxTotal());
+    }
+
     public function getFormattedGrandTotal(): string
     {
         return $this->formatMoney($this->grand_total);

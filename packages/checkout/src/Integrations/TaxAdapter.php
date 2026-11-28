@@ -14,7 +14,7 @@ final class TaxAdapter
     /**
      * Calculate tax for the checkout session.
      *
-     * @return array{total: int, rate: float, breakdown: array<array<string, mixed>>, taxable_amount: int, exempt: bool}
+     * @return array{total: int, included_total: int, additional_total: int, rate: float, breakdown: array<array<string, mixed>>, taxable_amount: int, exempt: bool}
      */
     public function calculateTax(CheckoutSession $session): array
     {
@@ -29,6 +29,7 @@ final class TaxAdapter
         $taxableItems = $this->buildTaxableItems($session);
 
         $totalTax = 0;
+        $includedTax = 0;
         $weightedRateAmount = 0;
         $weightedRateBase = 0;
         $taxableAmount = 0;
@@ -50,6 +51,7 @@ final class TaxAdapter
 
             $taxableAmount += $lineTaxableAmount;
             $totalTax += $result->taxAmount;
+            $includedTax += $result->includedInPrice ? $result->taxAmount : 0;
             $weightedRateAmount += $result->ratePercentage * $lineTaxableAmount;
             $weightedRateBase += $lineTaxableAmount;
             $isExempt = $isExempt && $result->isExempt();
@@ -63,6 +65,7 @@ final class TaxAdapter
             );
 
             $totalTax += $shippingResult->taxAmount;
+            $includedTax += $shippingResult->includedInPrice ? $shippingResult->taxAmount : 0;
             $weightedRateAmount += $shippingResult->ratePercentage * $session->shipping_total;
             $weightedRateBase += $session->shipping_total;
             $isExempt = $isExempt && $shippingResult->isExempt();
@@ -80,6 +83,8 @@ final class TaxAdapter
 
         return [
             'total' => $totalTax,
+            'included_total' => $includedTax,
+            'additional_total' => $totalTax - $includedTax,
             'rate' => $rate,
             'breakdown' => $breakdown,
             'taxable_amount' => $taxableAmount,
@@ -88,13 +93,15 @@ final class TaxAdapter
     }
 
     /**
-     * @return array{total: int, rate: float, breakdown: array<mixed>, taxable_amount: int, exempt: bool}
+     * @return array{total: int, included_total: int, additional_total: int, rate: float, breakdown: array<mixed>, taxable_amount: int, exempt: bool}
      */
     private function getDefaultTaxResult(CheckoutSession $session): array
     {
         // Default: no tax when tax package is not installed
         return [
             'total' => 0,
+            'included_total' => 0,
+            'additional_total' => 0,
             'rate' => 0.0,
             'breakdown' => [],
             'taxable_amount' => $session->subtotal - $session->discount_total,
@@ -237,7 +244,7 @@ final class TaxAdapter
     private function normalizeBreakdown(TaxResultData $result, string $source): array
     {
         return array_map(
-            fn (array $entry): array => array_merge($entry, ['source' => $source]),
+            fn (array $entry): array => array_merge($entry, ['source' => $source, 'included_in_price' => $result->includedInPrice]),
             $result->breakdown,
         );
     }

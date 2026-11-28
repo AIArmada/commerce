@@ -112,6 +112,8 @@ trait BuildsOrderDocs
                 'order_number' => $order->order_number,
                 'payment_gateway' => $gateway,
                 'payment_transaction_id' => $transactionId,
+                'included_tax_minor' => $order->getIncludedTaxTotal(),
+                'tax_data' => data_get($order->metadata, 'tax_data'),
             ], $metadata), static fn (mixed $value): bool => $value !== null && $value !== ''),
             generatePdf: $generatePdf,
         );

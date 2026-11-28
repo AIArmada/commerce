@@ -386,6 +386,13 @@
                         <span>{{ $order->getFormattedShippingTotal() }}</span>
                     </div>
                 @endif
+                @if($order->getIncludedTaxTotal() > 0)
+                    <div
+                        style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <span>Tax included in prices:</span>
+                        <span>{{ $order->getFormattedIncludedTaxTotal() }}</span>
+                    </div>
+                @endif
                 @if($order->tax_total > 0)
                     <div
                         style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
