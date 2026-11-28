@@ -777,7 +777,7 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     );
 
     // Owner B's session invokes the settle table action on owner A's
-    // recovery. The recovery table query is award-scoped (RewardFilamentScope),
+    // recovery. The recovery table query is award-scoped (RewardProgramScopeQuery),
     // so the action cannot even resolve for a foreign row — and the
     // action-side guard in SettleRewardRecoveryAction remains the handler-level
     // boundary for any other caller (see RewardOwnerScopingTest).

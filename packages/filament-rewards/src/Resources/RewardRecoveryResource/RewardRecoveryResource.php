@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardRecoveryResource;
 
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Tables\RewardRecoveriesTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardRecovery;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -37,7 +37,7 @@ class RewardRecoveryResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyViaAward(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyViaAward(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

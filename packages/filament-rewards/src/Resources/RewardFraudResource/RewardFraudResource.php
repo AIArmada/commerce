@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardFraudResource;
 
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables\RewardFraudTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardAward;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -47,7 +47,7 @@ class RewardFraudResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyProgramColumn(parent::getEloquentQuery())
+        return RewardProgramScopeQuery::applyProgramColumn(parent::getEloquentQuery())
             ->whereIn('status', ['held', 'pending_review'])
             ->orderByDesc('decided_at');
     }

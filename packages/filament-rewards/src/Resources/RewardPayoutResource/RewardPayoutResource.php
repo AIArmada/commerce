@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayoutResource;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayouts;
 use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Tables\RewardPayoutsTable;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -48,7 +48,7 @@ class RewardPayoutResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyProgramColumn(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyProgramColumn(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

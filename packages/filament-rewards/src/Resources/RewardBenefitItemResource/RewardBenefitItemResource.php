@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource;
 
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables\RewardBenefitItemsTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -37,7 +37,7 @@ class RewardBenefitItemResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyProgramColumn(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyProgramColumn(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

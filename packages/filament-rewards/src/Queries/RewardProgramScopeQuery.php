@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentRewards\Support;
+namespace AIArmada\FilamentRewards\Queries;
 
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitItem;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * program instead. Programs visible in the current owner scope (plus
  * global programs where included) define the visible ledger rows.
  */
-final class RewardFilamentScope
+final class RewardProgramScopeQuery
 {
     /**
      * @param  Builder<Model>  $query

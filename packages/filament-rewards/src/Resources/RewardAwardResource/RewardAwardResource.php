@@ -8,7 +8,7 @@ use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAward
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Schemas\RewardAwardInfolist;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables\RewardAwardsTable;
-use AIArmada\FilamentRewards\Support\RewardFilamentScope;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Models\RewardAward;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -44,7 +44,7 @@ class RewardAwardResource extends Resource
     #[Override]
     public static function getEloquentQuery(): Builder
     {
-        return RewardFilamentScope::applyProgramColumn(parent::getEloquentQuery());
+        return RewardProgramScopeQuery::applyProgramColumn(parent::getEloquentQuery());
     }
 
     public static function table(Table $table): Table

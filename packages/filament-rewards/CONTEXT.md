@@ -31,6 +31,6 @@ keywords:
 ## Guardrails
 - Adapter only: resources, tables, forms, infolists, and the admin presenter. Domain logic belongs in `rewards`.
 - Navigation reads `filament-rewards.navigation.*` via `getNavigationGroup()`/`getNavigationSort()`; never use static `$navigationGroup`.
-- Table queries scope through the program boundary via `RewardFilamentScope`, except the payee queue (recipient-keyed, staff-gated) and the program list (OwnerScope applies automatically).
+- Table queries scope through the program boundary via `RewardProgramScopeQuery`, except the payee queue (recipient-keyed, staff-gated) and the program list (OwnerScope applies automatically).
 - Action handlers call guarded core actions; never write ledger rows directly.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
