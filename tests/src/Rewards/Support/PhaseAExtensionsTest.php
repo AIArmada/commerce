@@ -18,6 +18,8 @@ use AIArmada\Rewards\Support\CompositeRewardSourceFactReader;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
 use AIArmada\Rewards\Support\RewardSourceFact;
 use AIArmada\Rewards\Support\RewardVersionResolver;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -131,3 +133,41 @@ test('vouchers reward benefit coupon fulfillment fails closed when voucher terms
     expect(fn () => (new VouchersRewardBenefitCouponFulfillment)->issue($grant, $item, CarbonImmutable::now('UTC')))
         ->toThrow(InvalidArgumentException::class);
 });
+
+test('coupon consumption and revocation reject a voucher bound to a different grant or recipient', function (string $mismatch): void {
+    config()->set('vouchers.owner.enabled', false);
+
+    $user = User::factory()->create();
+    $grant = new RewardBenefitGrant([
+        'grant_key' => 'expected-grant',
+        'recipient_type' => $user->getMorphClass(),
+        'recipient_id' => (string) $user->getKey(),
+        'external_ref' => 'RB-IDENTITY',
+    ]);
+
+    $voucher = Voucher::query()->create([
+        'code' => 'RB-IDENTITY',
+        'name' => 'Reward coupon',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'usage_limit' => 1,
+        'usage_limit_per_user' => 1,
+        'metadata' => [
+            'grant_key' => $mismatch === 'grant' ? 'other-grant' : $grant->grant_key,
+            'assignee' => [
+                'type' => $grant->recipient_type,
+                'id' => $mismatch === 'recipient' ? (string) Str::uuid() : $grant->recipient_id,
+            ],
+        ],
+    ]);
+
+    $adapter = new VouchersRewardBenefitCouponFulfillment;
+
+    expect(fn () => $adapter->assertCanonicalUsage($grant, []))
+        ->toThrow(InvalidArgumentException::class, 'Issued coupon does not belong to this benefit grant.')
+        ->and(fn () => $adapter->revoke($grant))
+        ->toThrow(InvalidArgumentException::class, 'Issued coupon does not belong to this benefit grant.')
+        ->and($voucher->fresh()->isExpired())->toBeFalse()
+        ->and(VoucherUsage::query()->where('voucher_id', $voucher->getKey())->count())->toBe(0);
+})->with(['grant', 'recipient']);
