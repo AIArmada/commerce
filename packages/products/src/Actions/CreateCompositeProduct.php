@@ -16,6 +16,13 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class CreateCompositeProduct
 {
+    public function __construct(
+        private CreateProduct $create,
+        private ReplaceProductComponents $replace,
+        private PublishCompositeProduct $publish,
+        private UpdateProductStatus $updateStatus,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  list<array{
@@ -48,7 +55,7 @@ final readonly class CreateCompositeProduct
 
             unset($attributes['status'], $attributes['price_mode']);
 
-            $parent = app(CreateProduct::class)->execute(array_replace($attributes, [
+            $parent = $this->create->execute(array_replace($attributes, [
                 'type' => ProductType::Composite,
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
@@ -58,15 +65,15 @@ final readonly class CreateCompositeProduct
             ]));
 
             if ($components !== []) {
-                app(ReplaceProductComponents::class)->handle($parent, $components);
+                $this->replace->handle($parent, $components);
             }
 
             if ($requestedStatus === ProductStatus::Active) {
-                return app(PublishCompositeProduct::class)->handle($parent);
+                return $this->publish->handle($parent);
             }
 
             if ($requestedStatus !== ProductStatus::Draft) {
-                return app(UpdateProductStatus::class)->execute($parent, $requestedStatus);
+                return $this->updateStatus->execute($parent, $requestedStatus);
             }
 
             return $parent->fresh() ?? $parent;

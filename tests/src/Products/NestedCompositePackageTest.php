@@ -16,6 +16,7 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
+use AIArmada\Products\Services\CompositePackageValidator;
 use Illuminate\Support\Str;
 
 function nestedLeaf(ProductType $type, string $name, int $price): Product
@@ -315,4 +316,36 @@ it('does not report capacity for a composition with an empty nested branch', fun
     expect($root->compositeAvailability()->packages)->toBe(0)
         ->and($root->compositeSnapshot()->entries)->toHaveCount(1)
         ->and($root->fresh()->requires_shipping)->toBeTrue();
+});
+
+it('visits a shared composite descendant only once during cycle validation', function (): void {
+    $leaf = nestedLeaf(ProductType::Service, 'Shared Graph Leaf', 100);
+    $shared = nestedPackage('Shared Graph Node', 'sum', [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], active: false);
+    $left = nestedPackage('Shared Graph Left', 'sum', [
+        ['component_product_id' => $shared->id, 'quantity' => 1],
+    ], active: false);
+    $right = nestedPackage('Shared Graph Right', 'sum', [
+        ['component_product_id' => $shared->id, 'quantity' => 1],
+    ], active: false);
+    $child = nestedPackage('Shared Graph Child', 'sum', [
+        ['component_product_id' => $left->id, 'quantity' => 1],
+        ['component_product_id' => $right->id, 'quantity' => 1],
+    ], active: false);
+    $parent = nestedPackage('Shared Graph Parent', 'sum', [], active: false);
+
+    $validator = app(CompositePackageValidator::class);
+    $connection = $child->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $validator->assertComponent($parent, $child, null, 1);
+
+        expect($connection->getQueryLog())->toHaveCount(5);
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
 });

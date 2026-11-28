@@ -15,10 +15,11 @@ use Illuminate\Support\Facades\DB;
 /**
  * Validates the complete package and moves the parent to Active.
  */
-final class PublishCompositeProduct
+final readonly class PublishCompositeProduct
 {
     public function __construct(
-        private readonly CompositePackageService $service,
+        private CompositePackageService $service,
+        private UpdateProductStatus $updateStatus,
     ) {}
 
     public function handle(Product $product): Product
@@ -48,7 +49,7 @@ final class PublishCompositeProduct
                 $this->service->assertPublishable($parent);
             }
 
-            return app(UpdateProductStatus::class)->execute($parent, ProductStatus::Active);
+            return $this->updateStatus->execute($parent, ProductStatus::Active);
         });
     }
 
