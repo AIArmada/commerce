@@ -6,6 +6,7 @@ namespace AIArmada\Rewards\Features\Enrollment\Queries;
 
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsent;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentPreview;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
@@ -25,12 +26,64 @@ final readonly class RewardEnrollmentConsentQuery implements RewardEnrollmentCon
         return $this->resolve($programId, $recipientType, $recipientId, $materialHash, $decision, false);
     }
 
+    public function requireMilestoneConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): RewardEnrollmentConsent
+    {
+        return $this->resolve($programId, $recipientType, $recipientId, $materialHash, $decision, true, true)
+            ?? throw new InvalidArgumentException('Refused: enrollment consent could not be resolved.');
+    }
+
+    public function previewConsent(string $programId, string $recipientType, string $recipientId, ?string $materialHash, CarbonImmutable $decision): ?RewardEnrollmentConsentPreview
+    {
+        $enrollment = RewardEnrollment::query()
+            ->where('program_id', $programId)
+            ->where('member_type', $recipientType)
+            ->where('member_id', $recipientId)
+            ->first();
+
+        if (! $enrollment instanceof RewardEnrollment) {
+            return null;
+        }
+
+        $id = (string) $enrollment->getKey();
+        $joinedAt = $this->joinedAt($id, $decision, false);
+        $active = $joinedAt !== null;
+
+        if (! $active) {
+            $latest = RewardEnrollmentPeriod::query()
+                ->where('enrollment_id', $id)
+                ->where('joined_at', '<=', $decision)
+                ->orderByDesc('joined_at')
+                ->orderByDesc('seq')
+                ->first();
+
+            $joinedAt = ($latest?->joined_at ?? $enrollment->enrolled_at)->setTimezone('UTC');
+        }
+
+        $acceptances = RewardEnrollmentAcceptance::query()
+            ->where('enrollment_id', $id)
+            ->where('accepted_at', '<=', $decision);
+        $acceptance = $materialHash === null ? null : (clone $acceptances)
+            ->where('material_terms_hash', $materialHash)
+            ->orderByDesc('accepted_at')
+            ->orderByDesc('seq')
+            ->first();
+
+        return new RewardEnrollmentConsentPreview(
+            $active,
+            $joinedAt,
+            $acceptance?->id,
+            $acceptance?->material_terms_hash,
+            $acceptance?->accepted_at->setTimezone('UTC'),
+            $acceptance !== null || $acceptances->exists(),
+        );
+    }
+
     public function coveringJoinedAt(string $enrollmentId, CarbonImmutable $decision): ?CarbonImmutable
     {
         return $this->joinedAt($enrollmentId, $decision, false);
     }
 
-    private function resolve(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision, bool $lock): ?RewardEnrollmentConsent
+    private function resolve(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision, bool $lock, bool $milestone = false): ?RewardEnrollmentConsent
     {
         $query = RewardEnrollment::query()
             ->where('program_id', $programId)
@@ -52,7 +105,9 @@ final readonly class RewardEnrollmentConsentQuery implements RewardEnrollmentCon
 
         if ($joinedAt === null) {
             if ($lock) {
-                throw new InvalidArgumentException('Refused: enrollment_left stops new qualification; accrued obligations keep frozen terms.');
+                throw new InvalidArgumentException($milestone
+                    ? 'Refused: enrollment_left stops new milestone qualification.'
+                    : 'Refused: enrollment_left stops new qualification; accrued obligations keep frozen terms.');
             }
 
             return null;
@@ -69,6 +124,10 @@ final readonly class RewardEnrollmentConsentQuery implements RewardEnrollmentCon
 
         if (! $acceptance instanceof RewardEnrollmentAcceptance) {
             if ($lock) {
+                if ($milestone) {
+                    throw new InvalidArgumentException('Refused: acceptance_missing covers no terms at the earning time.');
+                }
+
                 throw new InvalidArgumentException($acceptances->exists()
                     ? 'Refused: acceptance_stale_material_change requires prospective reacceptance first.'
                     : 'Refused: acceptance_missing covers no terms at the decision time.');

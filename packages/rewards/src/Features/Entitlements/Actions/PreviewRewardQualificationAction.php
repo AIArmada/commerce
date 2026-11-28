@@ -11,9 +11,7 @@ use AIArmada\Rewards\Data\RewardPreviewContext;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Data\RewardPreviewResult;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
@@ -118,65 +116,20 @@ final readonly class PreviewRewardQualificationAction
             ? array_values(array_filter($applicableVersion->compatible_with, is_string(...)))
             : [];
 
-        $enrollment = null;
+        $consent = null;
 
         if ($member !== null) {
             if (! is_string($member['member_type'] ?? null) || ! is_string($member['member_id'] ?? null)) {
                 throw new InvalidArgumentException('Member must carry member_type and member_id strings.');
             }
 
-            $enrollment = RewardEnrollment::query()
-                ->where('program_id', $loaded->getKey())
-                ->where('member_type', $member['member_type'])
-                ->where('member_id', $member['member_id'])
-                ->first();
-        }
-
-        $activeAtDecision = false;
-        $relevantPeriodJoinedAt = null;
-        $coveringAcceptance = null;
-        $hasPriorAcceptance = false;
-
-        if ($enrollment instanceof RewardEnrollment) {
-            $activePeriod = RewardEnrollmentPeriod::query()
-                ->where('enrollment_id', $enrollment->getKey())
-                ->where('joined_at', '<=', $decision)
-                ->where(function ($query) use ($decision): void {
-                    $query->whereNull('left_at')->orWhere('left_at', '>', $decision);
-                })
-                ->orderByDesc('joined_at')
-                ->first();
-
-            $activeAtDecision = $activePeriod instanceof RewardEnrollmentPeriod;
-
-            if ($activePeriod instanceof RewardEnrollmentPeriod) {
-                $relevantPeriodJoinedAt = CarbonImmutable::parse($activePeriod->joined_at)->setTimezone('UTC');
-            } else {
-                $latestBefore = RewardEnrollmentPeriod::query()
-                    ->where('enrollment_id', $enrollment->getKey())
-                    ->where('joined_at', '<=', $decision)
-                    ->orderByDesc('joined_at')
-                    ->first();
-
-                $relevantPeriodJoinedAt = $latestBefore instanceof RewardEnrollmentPeriod
-                    ? CarbonImmutable::parse($latestBefore->joined_at)->setTimezone('UTC')
-                    : CarbonImmutable::parse($enrollment->enrolled_at)->setTimezone('UTC');
-            }
-
-            $hasPriorAcceptance = RewardEnrollmentAcceptance::query()
-                ->where('enrollment_id', $enrollment->getKey())
-                ->where('accepted_at', '<=', $decision)
-                ->exists();
-
-            if ($applicableVersion instanceof RewardProgramVersion) {
-                $coveringAcceptance = RewardEnrollmentAcceptance::query()
-                    ->where('enrollment_id', $enrollment->getKey())
-                    ->where('accepted_at', '<=', $decision)
-                    ->where('material_terms_hash', (string) $applicableVersion->material_terms_hash)
-                    ->orderByDesc('accepted_at')
-                    ->orderByDesc('seq')
-                    ->first();
-            }
+            $consent = app(RewardEnrollmentConsentApi::class)->previewConsent(
+                (string) $loaded->getKey(),
+                $member['member_type'],
+                $member['member_id'],
+                $applicableVersion instanceof RewardProgramVersion ? (string) $applicableVersion->material_terms_hash : null,
+                $decision,
+            );
         }
 
         $context = new RewardPreviewContext(
@@ -190,13 +143,13 @@ final readonly class PreviewRewardQualificationAction
             versionMaterialHash: $applicableVersion instanceof RewardProgramVersion ? (string) $applicableVersion->material_terms_hash : '',
             versionEffectiveFrom: $applicableVersion instanceof RewardProgramVersion ? CarbonImmutable::parse($applicableVersion->effective_from)->setTimezone('UTC') : null,
             compatibleWith: $compatible,
-            enrollmentExists: $enrollment instanceof RewardEnrollment,
-            enrollmentActiveAtDecision: $activeAtDecision,
-            acceptanceId: $coveringAcceptance instanceof RewardEnrollmentAcceptance ? (string) $coveringAcceptance->getKey() : null,
-            acceptanceMaterialHash: $coveringAcceptance instanceof RewardEnrollmentAcceptance ? (string) $coveringAcceptance->material_terms_hash : null,
-            acceptanceAcceptedAt: $coveringAcceptance instanceof RewardEnrollmentAcceptance ? CarbonImmutable::parse($coveringAcceptance->accepted_at)->setTimezone('UTC') : null,
-            hasPriorAcceptance: $hasPriorAcceptance,
-            relevantPeriodJoinedAt: $relevantPeriodJoinedAt,
+            enrollmentExists: $consent !== null,
+            enrollmentActiveAtDecision: $consent?->activeAtDecision ?? false,
+            acceptanceId: $consent?->acceptanceId,
+            acceptanceMaterialHash: $consent?->materialHash,
+            acceptanceAcceptedAt: $consent?->acceptedAt,
+            hasPriorAcceptance: $consent?->hasPriorAcceptance ?? false,
+            relevantPeriodJoinedAt: $consent?->relevantJoinedAt,
             fixture: $facts,
             requestedComponent: $component,
             decisionTime: $decision,

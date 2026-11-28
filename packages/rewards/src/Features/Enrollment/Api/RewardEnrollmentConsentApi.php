@@ -16,5 +16,9 @@ interface RewardEnrollmentConsentApi
 
     public function findConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): ?RewardEnrollmentConsent;
 
+    public function requireMilestoneConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): RewardEnrollmentConsent;
+
+    public function previewConsent(string $programId, string $recipientType, string $recipientId, ?string $materialHash, CarbonImmutable $decision): ?RewardEnrollmentConsentPreview;
+
     public function coveringJoinedAt(string $enrollmentId, CarbonImmutable $decision): ?CarbonImmutable;
 }

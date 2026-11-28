@@ -12,11 +12,9 @@ use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -432,43 +430,13 @@ final readonly class RecordRewardMilestoneContributionAction
 
         $this->assertOutcomeCompatible($version, $published, $outcomeEnum, $firstRead, $role);
 
-        $enrollment = RewardEnrollment::query()
-            ->where('program_id', $program->getKey())
-            ->where('member_type', $recipientType)
-            ->where('member_id', $recipientId)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $enrollment instanceof RewardEnrollment) {
-            throw new InvalidArgumentException('Refused: enrollment_missing for this recipient.');
-        }
-
-        $activePeriod = RewardEnrollmentPeriod::query()
-            ->where('enrollment_id', $enrollment->getKey())
-            ->where('joined_at', '<=', $factOccurred)
-            ->where(function ($query) use ($factOccurred): void {
-                $query->whereNull('left_at')->orWhere('left_at', '>', $factOccurred);
-            })
-            ->orderByDesc('joined_at')
-            ->lockForUpdate()
-            ->first();
-
-        if (! $activePeriod instanceof RewardEnrollmentPeriod) {
-            throw new InvalidArgumentException('Refused: enrollment_left stops new milestone qualification.');
-        }
-
-        $coveringAcceptance = RewardEnrollmentAcceptance::query()
-            ->where('enrollment_id', $enrollment->getKey())
-            ->where('accepted_at', '<=', $factOccurred)
-            ->where('material_terms_hash', (string) $version->material_terms_hash)
-            ->orderByDesc('accepted_at')
-            ->orderByDesc('seq')
-            ->lockForUpdate()
-            ->first();
-
-        if (! $coveringAcceptance instanceof RewardEnrollmentAcceptance) {
-            throw new InvalidArgumentException('Refused: acceptance_missing covers no terms at the earning time.');
-        }
+        $coveringAcceptance = app(RewardEnrollmentConsentApi::class)->requireMilestoneConsent(
+            (string) $program->getKey(),
+            $recipientType,
+            $recipientId,
+            (string) $version->material_terms_hash,
+            $factOccurred,
+        );
 
         $secondRead = $reader->read($sourceBusinessKey);
 
@@ -580,8 +548,8 @@ final readonly class RecordRewardMilestoneContributionAction
         $award = RewardAward::query()->create([
             'program_id' => $programId,
             'policy_version_id' => $version->getKey(),
-            'enrollment_id' => $enrollment->getKey(),
-            'acceptance_id' => $coveringAcceptance->getKey(),
+            'enrollment_id' => $coveringAcceptance->enrollmentId,
+            'acceptance_id' => $coveringAcceptance->acceptanceId,
             'recipient_type' => $recipientType,
             'recipient_id' => $recipientId,
             'beneficiary_role' => $role,
@@ -599,10 +567,10 @@ final readonly class RecordRewardMilestoneContributionAction
                 'window_start' => $windowStart->toIso8601String(),
             ],
             'consent_snapshot' => [
-                'acceptance_id' => (string) $coveringAcceptance->getKey(),
-                'accepted_at' => CarbonImmutable::parse($coveringAcceptance->accepted_at)->setTimezone('UTC')->toIso8601String(),
-                'material_terms_hash' => (string) $coveringAcceptance->material_terms_hash,
-                'terms_label' => (string) $coveringAcceptance->terms_label,
+                'acceptance_id' => $coveringAcceptance->acceptanceId,
+                'accepted_at' => $coveringAcceptance->acceptedAt->toIso8601String(),
+                'material_terms_hash' => $coveringAcceptance->materialHash,
+                'terms_label' => $coveringAcceptance->termsLabel,
             ],
             'source_snapshot' => [
                 'cycle_id' => (string) $cycle->getKey(),
