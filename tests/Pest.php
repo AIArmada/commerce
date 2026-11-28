@@ -353,25 +353,31 @@ beforeEach(function (): void {
 })->in('src/Customers'); // @phpstan-ignore method.notFound
 
 /**
- * Capture DB::afterCommit callbacks so tests can invoke them on demand
- * instead of letting them fire on transaction/savepoint release.
+ * Capture after-commit callbacks at the transaction manager, including
+ * those registered directly on the model's database connection.
  *
  * @return Closure(): void
  */
 function captureAfterCommitHooks(): Closure
 {
     $afterCommitCallbacks = [];
+    $connection = DB::connection();
+    $manager = app('db.transactions');
 
-    $spy = Mockery::mock(DB::getFacadeRoot())->makePartial();
-    $spy->shouldReceive('afterCommit')->andReturnUsing(
+    $spy = Mockery::mock($manager)->makePartial();
+    $spy->shouldReceive('addCallback')->andReturnUsing(
         function (callable $callback) use (&$afterCommitCallbacks): void {
             $afterCommitCallbacks[] = $callback;
         }
     );
-    DB::swap($spy);
+    $connection->setTransactionManager($spy);
 
-    return function () use (&$afterCommitCallbacks): void {
-        foreach ($afterCommitCallbacks as $callback) {
+    return function () use (&$afterCommitCallbacks, $connection, $manager): void {
+        $connection->setTransactionManager($manager);
+        $callbacks = $afterCommitCallbacks;
+        $afterCommitCallbacks = [];
+
+        foreach ($callbacks as $callback) {
             $callback();
         }
     };
