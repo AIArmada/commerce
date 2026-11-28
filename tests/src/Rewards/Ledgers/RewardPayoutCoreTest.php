@@ -288,12 +288,26 @@ it('refuses stale or mismatched payee registrations without replacing the curren
     $current = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $memberId, 'member');
 
     expect(fn () => VerifyRewardPayeeAction::run(
-        'user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $staff, 'staff',
+        'user',
+        $memberId,
+        'manual',
+        'acct-old',
+        'Old registration',
+        'user',
+        $staff,
+        'staff',
         ['verified_from_registration_id' => (string) $old->getKey()],
     ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
 
     expect(fn () => VerifyRewardPayeeAction::run(
-        'user', $memberId, 'manual', 'acct-old', 'Old registration', 'user', $staff, 'staff',
+        'user',
+        $memberId,
+        'manual',
+        'acct-old',
+        'Old registration',
+        'user',
+        $staff,
+        'staff',
         ['verified_from_registration_id' => (string) $current->getKey()],
     ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
 
@@ -303,7 +317,14 @@ it('refuses stale or mismatched payee registrations without replacing the curren
         ->and(RewardPayee::query()->where('recipient_id', $memberId)->count())->toBe(3);
 
     $replacement = VerifyRewardPayeeAction::run(
-        'user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $staff, 'staff',
+        'user',
+        $memberId,
+        'manual',
+        'acct-new',
+        'Current registration',
+        'user',
+        $staff,
+        'staff',
         ['verified_from_registration_id' => (string) $current->getKey()],
     );
 
@@ -312,7 +333,14 @@ it('refuses stale or mismatched payee registrations without replacing the curren
         ->and($current->refresh()->status)->toBe(RewardPayeeStatus::Superseded);
 
     expect(fn () => VerifyRewardPayeeAction::run(
-        'user', $memberId, 'manual', 'acct-new', 'Current registration', 'user', $staff, 'staff',
+        'user',
+        $memberId,
+        'manual',
+        'acct-new',
+        'Current registration',
+        'user',
+        $staff,
+        'staff',
         ['verified_from_registration_id' => (string) $current->getKey()],
     ))->toThrow(InvalidArgumentException::class, 'matching current pending registration');
 
