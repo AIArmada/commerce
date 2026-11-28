@@ -571,6 +571,9 @@ it('freezes recovery economics at opening time', function (): void {
 });
 
 it('reads a currency budget in one statement with a consistent zero balance for an unused program', function (): void {
+    app()->bind(RewardReadinessChecker::class, FundedRewardReadinessChecker::class);
+    app()->bind(RewardFinancialReadinessChecker::class, FundedRewardFinancialReadinessChecker::class);
+
     [$program] = financeLedgerProgram('single-budget-read');
     $id = (string) $program->getKey();
 

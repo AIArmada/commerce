@@ -8,6 +8,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\AddMemberAction;
+use AIArmada\Membership\MembershipServiceProvider;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
 use Carbon\CarbonImmutable;
@@ -83,6 +84,11 @@ abstract class MembershipTestCase extends BaseTestCase
         request()->attributes->remove(OwnerContext::REQUEST_KEY);
         Model::clearBootedModels();
         AddMemberAction::flushPivotIdColumnCache();
+    }
+
+    protected function getPackageProviders($app): array
+    {
+        return [...parent::getPackageProviders($app), MembershipServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void

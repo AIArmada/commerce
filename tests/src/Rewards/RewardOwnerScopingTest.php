@@ -836,12 +836,12 @@ it('expires only the current owner lots in a scoped sweep and all owners in syst
     $recipient = (string) Str::uuid();
     $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
     $expiry = $at->addDay();
-    $family = 'shared-expiry-family';
+    $family = 'expiry-family';
 
     foreach ([$owner, $other] as $index => $tenant) {
         OwnerContext::withOwner($tenant, static function () use ($recipient, $at, $expiry, $family, $index): void {
-            $program = RewardProgram::factory()->create(['family_key' => $family]);
-            CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, $at, $expiry, null, (string) $program->getKey(), 'credit:expiry-owner-' . $index);
+            $program = RewardProgram::factory()->create(['family_key' => $family . '-' . $index]);
+            CreditRewardPointsAction::run('user', $recipient, $program->family_key, 'pts', 50, $at, $expiry, null, (string) $program->getKey(), 'credit:expiry-owner-' . $index);
         });
     }
 
@@ -849,7 +849,7 @@ it('expires only the current owner lots in a scoped sweep and all owners in syst
 
     expect(fn () => OwnerContext::withOwner(
         $owner,
-        static fn (): array => ExpireRewardPointsAction::run('user', $recipient, $family, 'pts', $expiry),
+        static fn (): array => ExpireRewardPointsAction::run('user', $recipient, $family . '-1', 'pts', $expiry),
     ))->toThrow(AuthorizationException::class);
 
     expect(OwnerContext::withOwner($owner, static fn (): array => $sweep->handle($expiry))['movements'])->toBe(1)

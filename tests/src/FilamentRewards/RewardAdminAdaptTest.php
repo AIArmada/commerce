@@ -758,11 +758,11 @@ it('scopes admin queries to programs visible in the current owner context', func
     // override; rebind the resolver so each request resolves its owner.
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
-    Livewire::actingAs($owner)->test(ListRewardAwards::class)->assertCanSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertCanSeeTableRecords([$award]);
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
 
-    Livewire::actingAs($other)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
 
     $history = app(RewardDecisionHistoryApi::class);
 
@@ -813,7 +813,7 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     // boundary for any other caller (see RewardOwnerScopingTest).
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
 
-    expect(fn () => Livewire::actingAs($other)
+    expect(fn () => Livewire::actingAs($this->staff)
         ->test(ListRewardRecoveries::class)
         ->callTableAction('settle', $recovery->getKey(), data: [
             'recovery_proof' => 'BANK-RETURN-1',
