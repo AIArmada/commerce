@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\SerializedInventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
@@ -154,5 +155,28 @@ it('scopes inventory and serial relationships for shared catalog identities', fu
             ->and($sku->inventoryMovements()->count())->toBe(1)
             ->and($sku->findSerial('REL-A'))->toBeNull()
             ->and($sku->isLowInventory(5))->toBeTrue();
+    });
+});
+
+it('requires explicit global context for direct inventory scope queries and cache identity', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?RecordReference
+        {
+            return null;
+        }
+    });
+
+    expect(fn () => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())->count())
+        ->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => InventoryOwnerScope::cacheKeySuffix())->toThrow(NoCurrentOwnerException::class);
+
+    OwnerContext::withOwner(null, function (): void {
+        $location = InventoryLocation::factory()->create();
+
+        expect(InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())->whereKey($location->id)->exists())
+            ->toBeTrue()
+            ->and(InventoryOwnerScope::cacheKeySuffix())->toBe('owner=null|includeGlobal=1');
     });
 });

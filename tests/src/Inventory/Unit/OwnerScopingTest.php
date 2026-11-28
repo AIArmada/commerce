@@ -8,11 +8,13 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +102,19 @@ it('scopes availability to current owner and global locations when enabled', fun
         $locationA->id => 5,
         $globalLocation->id => 11,
     ]);
+
+    $sharedCacheKey = InventoryOwnerScope::cacheKeySuffix();
+
+    OwnerScopeOverride::withoutIncludeGlobal(function () use ($service, $inventoryable, $locationA, $sharedCacheKey): void {
+        expect($service->getTotalAvailable($inventoryable))->toBe(5)
+            ->and($service->getAvailability($inventoryable))->toBe([$locationA->id => 5])
+            ->and($service->getAvailabilityForMany([$inventoryable]))->toBe([
+                $inventoryable->getMorphClass() . ':' . $inventoryable->getKey() => 5,
+            ])
+            ->and(InventoryOwnerScope::cacheKeySuffix())->not->toBe($sharedCacheKey);
+    });
+
+    expect($service->getTotalAvailable($inventoryable))->toBe(16);
 });
 
 it('excludes global inventory when include_global is false', function (): void {
@@ -261,7 +276,7 @@ it('treats a null resolved owner as global-only (never owner_type-only corrupt r
     $service = app(InventoryService::class);
 
     expect(fn () => $service->getTotalAvailable($inventoryable))
-        ->toThrow(NoCurrentOwnerException::class, 'AIArmada\Inventory\Features\Stock\Models\InventoryLocation requires an owner context or explicit global context.');
+        ->toThrow(NoCurrentOwnerException::class);
 
     OwnerContext::withOwner(null, function () use ($service, $inventoryable, $globalLocation): void {
         expect($service->getTotalAvailable($inventoryable))->toBe(11);
