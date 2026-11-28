@@ -8,6 +8,7 @@ use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
+use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
@@ -186,5 +187,42 @@ it('rejects variant identifiers returned by a custom generator for another produ
         });
 
         expect(fn () => app(GenerateVariants::class)->execute($first))->toThrow(UnexpectedValueException::class);
+    });
+});
+
+it('returns no variants when any option has no values', function (): void {
+    $owner = makeOwner('regen-empty-option@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $product = Product::create(['name' => 'Incomplete Matrix', 'price' => 1000]);
+        seedMatrix($product, 'Color', ['Red', 'Blue']);
+        seedMatrix($product, 'Size', []);
+
+        expect(app(GenerateVariantMatrix::class)->generateSynchronously($product))->toBeEmpty()
+            ->and(app(GenerateVariantMatrix::class)->generate($product->id))->toBeEmpty()
+            ->and($product->variants()->count())->toBe(0);
+    });
+});
+
+it('rejects overflowing variant matrices before generating or dispatching variants', function (): void {
+    $owner = makeOwner('regen-overflow@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $product = Product::create(['name' => 'Oversized Matrix', 'price' => 1000]);
+
+        for ($index = 0; $index < 65; $index++) {
+            seedMatrix($product, 'Option ' . $index, ['A', 'B']);
+        }
+
+        expect(fn () => app(GenerateVariantMatrix::class)->generateSynchronously($product))
+            ->toThrow(VariantGenerationLimitExceeded::class)
+            ->and(fn () => app(GenerateVariantMatrix::class)->generate($product->id))
+            ->toThrow(VariantGenerationLimitExceeded::class)
+            ->and($product->variants()->count())->toBe(0);
+
+        seedMatrix($product, 'Empty option', []);
+
+        expect(app(GenerateVariantMatrix::class)->generateSynchronously($product))->toBeEmpty()
+            ->and($product->variants()->count())->toBe(0);
     });
 });

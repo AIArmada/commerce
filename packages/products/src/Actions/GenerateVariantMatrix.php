@@ -82,7 +82,11 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
             }
 
             $maximum = (int) config('products.features.variants.max_generated', 200);
-            $combinationCount = $this->countCombinations($options);
+            $combinationCount = $this->countCombinations($options, $maximum);
+
+            if ($combinationCount === 0) {
+                return [$locked, collect()];
+            }
 
             if ($combinationCount > $maximum) {
                 throw new VariantGenerationLimitExceeded($combinationCount, $maximum);
@@ -623,15 +627,19 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
      *
      * @param  Collection<int, Option>  $options
      */
-    private function countCombinations(Collection $options): int
+    private function countCombinations(Collection $options, int $maximum): int
     {
+        $valueCounts = $options->map(static fn (Option $option): int => $option->values->count());
+
+        if ($valueCounts->containsStrict(0)) {
+            return 0;
+        }
+
         $count = 1;
 
-        foreach ($options as $option) {
-            $valueCount = $option->values->count();
-
-            if ($valueCount === 0) {
-                return 0;
+        foreach ($valueCounts as $valueCount) {
+            if ($count > intdiv(PHP_INT_MAX, $valueCount)) {
+                throw new VariantGenerationLimitExceeded(null, $maximum);
             }
 
             $count *= $valueCount;
