@@ -26,6 +26,11 @@ final readonly class SaveReference
                         throw ValidationException::withMessages([$attribute => 'The reference hierarchy has changed. Reload the reference before saving.']);
                     }
                 }
+
+                if ($reference->getRawOriginal('status') !== $locked->getRawOriginal('status')
+                    || $reference->getOriginal('published_at') != $locked->published_at) {
+                    throw ValidationException::withMessages(['status' => 'The reference publication state has changed. Reload the reference before saving.']);
+                }
             }
 
             return $save();

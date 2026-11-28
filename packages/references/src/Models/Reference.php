@@ -95,14 +95,14 @@ class Reference extends ReferencePersistence implements HasMedia
         'verified_by',
     ];
 
-    protected $attributes = ['record_kind' => 'work'];
+    protected $attributes = ['record_kind' => 'work', 'status' => 'draft'];
 
     protected static function booted(): void
     {
         static::saving(function (Reference $reference): void {
             $reference->validateFields();
             $reference->validateParentHierarchy();
-            $reference->stampPublishedAt();
+            $reference->syncPublishedAt();
         });
     }
 
@@ -521,8 +521,14 @@ class Reference extends ReferencePersistence implements HasMedia
         }
     }
 
-    private function stampPublishedAt(): void
+    private function syncPublishedAt(): void
     {
+        if ($this->status === ReferenceStatus::Draft) {
+            $this->published_at = null;
+
+            return;
+        }
+
         if ($this->status === ReferenceStatus::Published && $this->published_at === null) {
             $this->published_at = CarbonImmutable::now();
         }

@@ -346,3 +346,35 @@ test('rejects saves based on stale hierarchy state', function (): void {
     expect($work->fresh()->title)->toBe('Original work')
         ->and($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Edition);
 });
+
+test('direct draft saves clear the publication timestamp', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Published,
+        'title' => 'Direct draft',
+    ]);
+
+    expect($reference->published_at)->not->toBeNull();
+
+    $reference->update(['status' => ReferenceStatus::Draft]);
+
+    expect($reference->fresh()->status)->toBe(ReferenceStatus::Draft)
+        ->and($reference->fresh()->published_at)->toBeNull();
+});
+
+test('rejects stale saves after a concurrent publication transition', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'title' => 'Concurrent publication',
+    ]);
+    $stale = $reference->fresh();
+
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Published);
+
+    expect(fn () => $stale->update(['title' => 'Stale title']))
+        ->toThrow(ValidationException::class, 'The reference publication state has changed');
+
+    expect($reference->fresh()->title)->toBe('Concurrent publication')
+        ->and($reference->fresh()->status)->toBe(ReferenceStatus::Published)
+        ->and($reference->fresh()->published_at)->not->toBeNull();
+});

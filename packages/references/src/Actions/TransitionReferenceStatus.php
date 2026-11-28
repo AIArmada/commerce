@@ -23,10 +23,6 @@ final readonly class TransitionReferenceStatus
             $locked = $this->lock->handle($reference);
             $locked->status = $status;
 
-            if ($status === ReferenceStatus::Draft) {
-                $locked->published_at = null;
-            }
-
             if (! $locked->saveOrFail()) {
                 throw new RuntimeException('Reference status transition was cancelled.');
             }

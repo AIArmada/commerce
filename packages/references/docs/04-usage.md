@@ -101,7 +101,7 @@ $reference->delete(); // children + covers/gallery removed with it
 
 ## Status lifecycle
 
-Use `TransitionReferenceStatus` to move between statuses. Publishing stamps `published_at` when empty (direct saves of a `Published` row do the same); returning to draft clears it.
+Use `TransitionReferenceStatus` to move between statuses. Publishing stamps `published_at` when empty; returning to draft clears it. Both rules also apply to direct model saves. Saves based on stale publication state are rejected; reload the reference before editing.
 
 ```php
 use AIArmada\References\Actions\TransitionReferenceStatus;
