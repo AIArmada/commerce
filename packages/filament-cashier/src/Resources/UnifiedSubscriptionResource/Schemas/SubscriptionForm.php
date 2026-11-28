@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\PaymentMethodIdentity;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -111,7 +112,7 @@ final class SubscriptionForm
      */
     public static function getCustomerOptions(): array
     {
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
@@ -173,7 +174,7 @@ final class SubscriptionForm
             return [];
         }
 
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
@@ -211,7 +212,7 @@ final class SubscriptionForm
 
                 return collect($paymentMethods)
                     ->mapWithKeys(function (mixed $paymentMethod): array {
-                        $paymentMethodId = self::getChipPaymentMethodId($paymentMethod);
+                        $paymentMethodId = PaymentMethodIdentity::chipId($paymentMethod);
 
                         if ($paymentMethodId === null) {
                             return [];
@@ -228,21 +229,6 @@ final class SubscriptionForm
         }
 
         return [];
-    }
-
-    public static function getChipPaymentMethodId(mixed $paymentMethod): ?string
-    {
-        if (is_object($paymentMethod) && method_exists($paymentMethod, 'id')) {
-            $paymentMethodId = $paymentMethod->id();
-
-            if (is_string($paymentMethodId) && $paymentMethodId !== '') {
-                return $paymentMethodId;
-            }
-        }
-
-        $paymentMethodId = data_get($paymentMethod, 'id') ?? data_get($paymentMethod, 'recurring_token');
-
-        return is_string($paymentMethodId) && $paymentMethodId !== '' ? $paymentMethodId : null;
     }
 
     public static function getChipPaymentMethodLabel(mixed $paymentMethod): string

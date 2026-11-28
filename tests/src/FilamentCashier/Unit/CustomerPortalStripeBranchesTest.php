@@ -113,6 +113,7 @@ it('covers stripe branches in customer portal invoices and payment methods via a
     $authUser->invoice = $stripeInvoice;
     $authUser->paymentMethods = $stripePaymentMethods;
     $authUser->forceFill(['id' => 123]);
+    $authUser->exists = true;
     Auth::guard()->setUser($authUser);
 
     $viewInvoices = app(ViewInvoices::class);
@@ -231,6 +232,7 @@ it('sorts customer portal invoices by actual invoice date descending', function 
     $authUser->older = $olderInvoice;
     $authUser->newer = $newerInvoice;
     $authUser->forceFill(['id' => 124]);
+    $authUser->exists = true;
     Auth::guard()->setUser($authUser);
 
     $invoices = app(ViewInvoices::class)->getInvoices();
