@@ -14,6 +14,7 @@ use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonException;
 
@@ -27,7 +28,7 @@ use JsonException;
  */
 class VoucherCondition implements Arrayable, CartConditionConvertible
 {
-    public const RULE_FACTORY_KEY = 'voucher';
+    public const RULE_FACTORY_KEY = VoucherRulesFactory::FACTORY_KEY;
 
     private string $name;
 

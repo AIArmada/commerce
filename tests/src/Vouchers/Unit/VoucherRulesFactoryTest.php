@@ -107,3 +107,16 @@ test('voucher rule refuses missing or mismatched snapshots', function (): void {
         ->and(fn () => $factory->createRules('voucher', ['voucher_code' => 'TEST', 'voucher_id' => 'selected', 'voucher_data' => $snapshot]))
         ->toThrow(InvalidArgumentException::class);
 });
+
+test('attaching voucher rules repeatedly preserves the existing factory', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'voucher-factory-attachment');
+    $fallback = new VoucherRulesFactory;
+    $cart->withRulesFactory($fallback);
+
+    expect(VoucherRulesFactory::attachTo($cart))->toBe($cart)
+        ->and($cart->getRulesFactory())->toBe($fallback);
+
+    VoucherRulesFactory::attachTo($cart);
+
+    expect($cart->getRulesFactory())->toBe($fallback);
+});

@@ -58,14 +58,14 @@ final class CartManagerWithVouchers implements CartManagerInterface
 
     public function getCurrentCart(): Cart
     {
-        return $this->ensureVoucherRulesFactory($this->manager->getCurrentCart());
+        return VoucherRulesFactory::attachTo($this->manager->getCurrentCart());
     }
 
     public function getCartInstance(string $name, ?string $identifier = null): Cart
     {
         $cart = $this->manager->getCartInstance($name, $identifier);
 
-        return $this->ensureVoucherRulesFactory($cart);
+        return VoucherRulesFactory::attachTo($cart);
     }
 
     public function instance(): string
@@ -117,30 +117,11 @@ final class CartManagerWithVouchers implements CartManagerInterface
             return null;
         }
 
-        return $this->ensureVoucherRulesFactory($cart);
+        return VoucherRulesFactory::attachTo($cart);
     }
 
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
     {
         return $this->manager->swap($oldIdentifier, $newIdentifier, $instance);
-    }
-
-    private function ensureVoucherRulesFactory(Cart $cart): Cart
-    {
-        $factory = $cart->getRulesFactory();
-
-        if ($factory instanceof VoucherRulesFactory) {
-            return $cart;
-        }
-
-        if ($factory === null) {
-            $cart->withRulesFactory(app(VoucherRulesFactory::class));
-
-            return $cart;
-        }
-
-        $cart->withRulesFactory(new VoucherRulesFactory($factory));
-
-        return $cart;
     }
 }

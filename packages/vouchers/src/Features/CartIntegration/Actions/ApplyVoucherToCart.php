@@ -87,7 +87,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             }
         }
 
-        $this->ensureVoucherRulesFactory($cart);
+        VoucherRulesFactory::attachTo($cart);
 
         try {
             $cart->registerDynamicCondition(
@@ -110,22 +110,5 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
         VoucherApplied::dispatch($cart, $voucherData);
 
         return $voucherCondition;
-    }
-
-    private function ensureVoucherRulesFactory(Cart $cart): void
-    {
-        $factory = $cart->getRulesFactory();
-
-        if ($factory instanceof VoucherRulesFactory) {
-            return;
-        }
-
-        if ($factory === null) {
-            $cart->withRulesFactory(app(VoucherRulesFactory::class));
-
-            return;
-        }
-
-        $cart->withRulesFactory(new VoucherRulesFactory($factory));
     }
 }

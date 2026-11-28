@@ -16,7 +16,6 @@ use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Support\CartWithVouchers;
-use AIArmada\Vouchers\Support\VoucherRulesFactory;
 
 /**
  * HasVouchers trait adds voucher management capabilities to the Cart.
@@ -232,23 +231,6 @@ trait InteractsWithVouchers
         }
 
         return $this;
-    }
-
-    private function ensureVoucherRulesFactory(Cart $cart): void
-    {
-        $currentFactory = $cart->getRulesFactory();
-
-        if ($currentFactory instanceof VoucherRulesFactory) {
-            return;
-        }
-
-        if ($currentFactory === null) {
-            $cart->withRulesFactory(app(VoucherRulesFactory::class));
-
-            return;
-        }
-
-        $cart->withRulesFactory(new VoucherRulesFactory($currentFactory));
     }
 
     private function normalizeVoucherCode(string $code): string

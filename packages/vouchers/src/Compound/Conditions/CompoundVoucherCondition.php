@@ -16,6 +16,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Runtime\ProductMatcherInterface;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 
@@ -26,7 +27,7 @@ use Illuminate\Support\Collection;
  */
 abstract class CompoundVoucherCondition implements Arrayable, CartConditionConvertible
 {
-    public const RULE_FACTORY_KEY = 'compound_voucher';
+    public const RULE_FACTORY_KEY = VoucherRulesFactory::FACTORY_KEY;
 
     protected VoucherData $voucher;
 
@@ -159,6 +160,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
             'voucher_code' => $this->voucher->code,
             'voucher_id' => $this->voucher->id,
             'voucher_type' => $this->voucher->type->value,
+            'voucher_data' => $this->voucher->toArray(),
         ];
     }
 

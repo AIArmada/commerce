@@ -16,6 +16,17 @@ final class VoucherRulesFactory implements RulesFactoryInterface
 
     public function __construct(private ?RulesFactoryInterface $fallback = null) {}
 
+    public static function attachTo(Cart $cart): Cart
+    {
+        $factory = $cart->getRulesFactory();
+
+        if (! $factory instanceof self) {
+            $cart->withRulesFactory($factory === null ? app(self::class) : new self($factory));
+        }
+
+        return $cart;
+    }
+
     public function createRules(string $key, array $metadata = []): array
     {
         if ($key === self::FACTORY_KEY) {
