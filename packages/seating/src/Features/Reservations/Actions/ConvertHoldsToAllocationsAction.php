@@ -12,7 +12,6 @@ use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -63,44 +62,36 @@ final readonly class ConvertHoldsToAllocationsAction
                     continue;
                 }
 
-                try {
-                    $allocation = DB::transaction(function () use ($lockedHold, $mode, $allocToType, $allocToId, $reference, $seat): SeatAllocation {
-                        $allocation = new SeatAllocation([
-                            'seat_id' => $lockedHold->seat_id,
-                            'seat_section_id' => $mode === SeatingMode::GeneralAdmission ? null : $seat->seat_section_id,
-                            'allocated_to_type' => $allocToType,
-                            'allocated_to_id' => $allocToId,
-                            'reference' => $reference,
-                            'allocated_at' => CarbonImmutable::now(),
-                            'status' => 'active',
-                        ]);
+                $allocation = DB::transaction(function () use ($lockedHold, $mode, $allocToType, $allocToId, $reference, $seat): SeatAllocation {
+                    $allocation = new SeatAllocation([
+                        'seat_id' => $lockedHold->seat_id,
+                        'seat_section_id' => $mode === SeatingMode::GeneralAdmission ? null : $seat->seat_section_id,
+                        'allocated_to_type' => $allocToType,
+                        'allocated_to_id' => $allocToId,
+                        'reference' => $reference,
+                        'allocated_at' => CarbonImmutable::now(),
+                        'status' => 'active',
+                    ]);
 
-                        // The allocation inherits the hold owner exactly instead
-                        // of the ambient context, so batch conversions cannot
-                        // misattribute ownership across owners. A global hold
-                        // converts inside explicit global scope to stay global.
-                        if ($lockedHold->owner_type !== null && $lockedHold->owner_id !== null) {
-                            $allocation->owner_type = $lockedHold->owner_type;
-                            $allocation->owner_id = $lockedHold->owner_id;
-                            $allocation->save();
-                        } else {
-                            OwnerContext::withOwner(null, fn (): bool => $allocation->save());
-                        }
-
-                        // Mark the hold converted atomically with the
-                        // allocation so a privileged-write refusal rolls the
-                        // allocation back instead of leaving it orphaned.
-                        $lockedHold->markConverted();
-
-                        return $allocation;
-                    });
-                } catch (UniqueConstraintViolationException $exception) {
-                    if (! $this->hasActiveAllocation($seat)) {
-                        throw $exception;
+                    // The allocation inherits the hold owner exactly instead
+                    // of the ambient context, so batch conversions cannot
+                    // misattribute ownership across owners. A global hold
+                    // converts inside explicit global scope to stay global.
+                    if ($lockedHold->owner_type !== null && $lockedHold->owner_id !== null) {
+                        $allocation->owner_type = $lockedHold->owner_type;
+                        $allocation->owner_id = $lockedHold->owner_id;
+                        $allocation->save();
+                    } else {
+                        OwnerContext::withOwner(null, fn (): bool => $allocation->save());
                     }
 
-                    continue;
-                }
+                    // Mark the hold converted atomically with the
+                    // allocation so a privileged-write refusal rolls the
+                    // allocation back instead of leaving it orphaned.
+                    $lockedHold->markConverted();
+
+                    return $allocation;
+                });
 
                 $allocations->push($allocation);
             }

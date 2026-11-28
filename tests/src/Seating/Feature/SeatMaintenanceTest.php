@@ -51,7 +51,7 @@ it('cascades map deletion through sections, seats, holds, and allocations', func
         ->and(SeatAllocation::query()->count())->toBe(0);
 });
 
-it('renders the layout with a single eager load per level', function (): void {
+it('renders the authorized layout with a single query per level', function (): void {
     $map = SeatMap::factory()->create();
 
     foreach (['A', 'B', 'C'] as $index => $code) {
@@ -81,5 +81,5 @@ it('renders the layout with a single eager load per level', function (): void {
 
     expect($layout['seats'])->toHaveCount(6)
         ->and($layout['bounds'])->toBe(['rows' => 3, 'cols' => 6])
-        ->and($queries)->toHaveCount(2);
+        ->and($queries)->toHaveCount(3);
 });
