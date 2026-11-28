@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Data\PdfRenderOptions;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocShareLink;
