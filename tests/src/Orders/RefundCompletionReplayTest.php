@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
@@ -144,4 +145,21 @@ it('does not rewrite a previously refunded payment timestamp when another paymen
         ->and($second->refresh()->status)->toBe(PaymentStatus::Refunded);
 
     $this->travelBack();
+});
+
+it('rejects lifecycle settlement without the corresponding accounting totals', function (): void {
+    $order = ord06Order();
+    $lifecycle = app(OrderPaymentLifecycle::class);
+
+    expect(fn () => $lifecycle->markPaid($order->id))
+        ->toThrow(LogicException::class, 'Only fully paid orders');
+
+    expect(fn () => $lifecycle->markRefunded($order->id))
+        ->toThrow(LogicException::class, 'Only fully refunded orders');
+
+    ord06Payment($order, 'unrefunded-payment');
+
+    expect(fn () => $lifecycle->markRefunded($order->id))
+        ->toThrow(LogicException::class, 'Only fully refunded orders')
+        ->and($order->refresh()->refunded_at)->toBeNull();
 });

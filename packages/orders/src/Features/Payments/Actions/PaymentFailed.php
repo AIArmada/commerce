@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderPaymentFailed;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\States\PaymentFailed as PaymentFailedState;
 use Carbon\CarbonImmutable;
 use Spatie\ModelStates\Transition;
 
@@ -45,9 +45,8 @@ final class PaymentFailed extends Transition
             }
 
             // Update order state and payment_failed timestamp
-            $this->order->payment_failed_at = $now;
-            $this->order->status->transitionTo(PaymentFailedState::class);
-            $this->order->save();
+            app(OrderPaymentLifecycle::class)->markPaymentFailed((string) $this->order->getKey());
+            $this->order->refresh();
 
             // Dispatch event
             event(new OrderPaymentFailed($this->order, $this->reason));

@@ -6,6 +6,7 @@ namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
@@ -13,7 +14,6 @@ use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
-use AIArmada\Orders\States\Processing;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
@@ -119,9 +119,8 @@ final class PaymentConfirmed extends Transition
             $isSettlingPayment = $this->order->isFullyPaid();
 
             if ($isSettlingPayment) {
-                $this->order->status->transitionTo(Processing::class);
-                $this->order->paid_at = CarbonImmutable::now();
-                $this->order->save();
+                app(OrderPaymentLifecycle::class)->markPaid((string) $this->order->getKey());
+                $this->order->refresh();
             }
 
             $this->syncOriginalOrder($originalOrder);

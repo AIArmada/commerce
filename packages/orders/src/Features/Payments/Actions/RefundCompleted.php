@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
-use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderRefund;
-use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use RuntimeException;
@@ -123,19 +122,9 @@ final class RefundCompleted extends Transition
             }
 
             if ($paidTotal > 0 && $refundedTotal >= $paidTotal) {
-                if (! ($lockedOrder->status instanceof Refunded)) {
-                    $lockedOrder->status->transitionTo(Refunded::class);
-                }
-
-                $lockedOrder->refunded_at ??= CarbonImmutable::now();
-
-                // A fully refunded order unwinds: fulfillment staged but
-                // never relayed must not dispatch after the fact. Partial
-                // refunds leave the status (and staged rows) untouched.
-                app(OrderOutboxWriter::class)->suppressForOrder((string) $lockedOrder->getKey(), 'Order fully refunded; fulfillment suppressed.');
+                app(OrderPaymentLifecycle::class)->markRefunded((string) $lockedOrder->getKey());
+                $lockedOrder->refresh();
             }
-
-            $lockedOrder->save();
 
             event(new OrderRefunded(
                 $lockedOrder,

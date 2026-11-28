@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
-use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefundFailed;
@@ -18,7 +18,6 @@ use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
@@ -174,16 +173,9 @@ final readonly class RegisterOrderRefund implements CancellationRefundReservatio
         // The order is terminal only when the whole received amount has
         // been returned; a never-paid order never reaches that ceiling.
         if ($paidTotal > 0 && $refundedTotal >= $paidTotal) {
-            $order->refunded_at = $now;
-            $order->status->transitionTo(Refunded::class);
-
-            // Same terminal marking as cancel and completed refunds:
-            // unrelayed fulfillment must not dispatch after a full
-            // refund. Partial refunds leave staged rows untouched.
-            app(OrderOutboxWriter::class)->suppressForOrder((string) $order->getKey(), 'Order fully refunded; fulfillment suppressed.');
+            app(OrderPaymentLifecycle::class)->markRefunded((string) $order->getKey());
+            $order->refresh();
         }
-
-        $order->save();
 
         // One event per persisted allocation row: the recorded identity
         // and amount are per-payment facts, not the aggregate request.
