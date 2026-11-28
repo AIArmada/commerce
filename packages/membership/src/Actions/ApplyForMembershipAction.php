@@ -11,6 +11,7 @@ use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Persistence\MembershipUniqueViolation;
 use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -29,6 +30,8 @@ final class ApplyForMembershipAction
 
     public function handle(Model $subject, Model $user, string $justification, array $meta = []): MembershipApplication
     {
+        MembershipUserModel::assertPersisted($user);
+
         $this->subjectGuard->validate($subject);
 
         $justification = mb_trim($justification);

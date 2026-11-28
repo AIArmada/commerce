@@ -184,3 +184,13 @@ it('enforces pending application uniqueness directly in the database', function 
         'justification' => 'Direct duplicate.',
     ]))))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
 });
+
+it('refuses applications attributed to a non-user model', function (): void {
+    expect(fn () => ApplyForMembershipAction::make()->handle(
+        subject: $this->subject,
+        user: $this->subject,
+        justification: 'Claiming this entity.',
+    ))->toThrow(InvalidArgumentException::class, 'The actor must be a persisted instance');
+
+    expect($this->subject->applications()->count())->toBe(0);
+});

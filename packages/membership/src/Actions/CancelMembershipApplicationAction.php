@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationCancelled;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,10 @@ final class CancelMembershipApplicationAction
 
     public function handle(MembershipApplication $application, ?Model $actor = null): void
     {
+        if ($actor !== null) {
+            MembershipUserModel::assertPersisted($actor);
+        }
+
         $cancelledApplication = DB::transaction(function () use ($actor, $application): MembershipApplication {
             $guardedApplication = OwnerWriteGuard::findOrFailForOwner(
                 MembershipApplication::class,

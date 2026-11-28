@@ -213,7 +213,8 @@ class MembershipInvitation extends Model
     {
         return $this->status === InvitationStatus::Expired
             || ($this->status === InvitationStatus::Pending
-                && $this->expires_at?->isPast() === true);
+                && $this->expires_at !== null
+                && $this->expires_at->lessThanOrEqualTo(CarbonImmutable::now()));
     }
 
     public function isAccepted(): bool

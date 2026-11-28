@@ -96,3 +96,12 @@ it('does not dispatch lifecycle side effects for a rolled back host transaction'
     Event::assertNotDispatched(MembershipApplicationRejected::class);
     expect($this->application->fresh()->status)->toBe(ApplicationStatus::Pending);
 });
+
+it('refuses review attribution to a non-user model', function (): void {
+    expect(fn () => RejectMembershipApplicationAction::make()->handle(
+        application: $this->application,
+        reviewer: $this->subject,
+    ))->toThrow(InvalidArgumentException::class, 'The actor must be a persisted instance');
+
+    expect($this->application->fresh()->status)->toBe(ApplicationStatus::Pending);
+});

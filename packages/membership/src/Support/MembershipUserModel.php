@@ -20,4 +20,10 @@ final readonly class MembershipUserModel
 
         return $model;
     }
+    public static function assertPersisted(Model $user): void
+    {
+        if (! is_a($user, self::resolve()) || ! $user->exists || $user->getKey() === null) {
+            throw new InvalidArgumentException('The actor must be a persisted instance of the configured membership user model.');
+        }
+    }
 }

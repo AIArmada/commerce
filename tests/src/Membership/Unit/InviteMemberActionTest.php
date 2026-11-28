@@ -159,3 +159,14 @@ it('stores a fixed length digest independently of the delivery token length', fu
     Event::assertDispatched(MembershipInvitationSent::class, fn (MembershipInvitationSent $event): bool => mb_strlen($event->delivery->token) === 128
         && $invitation->matchesToken($event->delivery->token));
 });
+
+it('refuses an invitation attributed to a non-user model', function (): void {
+    expect(fn () => InviteMemberAction::make()->handle(
+        subject: $this->subject,
+        recipient: 'invitee@example.com',
+        role: MemberRole::Viewer,
+        inviter: $this->subject,
+    ))->toThrow(InvalidArgumentException::class, 'The actor must be a persisted instance');
+
+    expect($this->subject->invitations()->count())->toBe(0);
+});

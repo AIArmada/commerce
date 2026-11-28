@@ -11,6 +11,7 @@ use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Support\InvitationChannelManager;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,6 +27,8 @@ final class AcceptInvitationAction
 
     public function handle(MembershipInvitation $invitation, Model $user, ?string $token = null): void
     {
+        MembershipUserModel::assertPersisted($user);
+
         $acceptedInvitation = DB::transaction(function () use ($invitation, $token, $user): MembershipInvitation {
             $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
                 MembershipInvitation::class,

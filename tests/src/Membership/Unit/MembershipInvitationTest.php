@@ -185,3 +185,19 @@ it('is not valid when revoked', function (): void {
 
     expect($invitation->isValid())->toBeFalse();
 });
+
+it('is invalid at the exact expiry deadline', function (): void {
+    $this->freezeTime();
+
+    $invitation = $this->createInvitation([
+        'subject_type' => $this->subject->getMorphClass(),
+        'subject_id' => $this->subject->getKey(),
+        'recipient' => 'deadline@example.com',
+        'role' => 'admin',
+        'invited_by' => $this->inviter->getKey(),
+        'expires_at' => now(),
+    ]);
+
+    expect($invitation->isExpired())->toBeTrue()
+        ->and($invitation->isValid())->toBeFalse();
+});

@@ -11,6 +11,7 @@ use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Queries\MembershipApplicationMapper;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ final class ApproveMembershipApplicationAction
 
     public function handle(MembershipApplication $application, Model $reviewer, MemberRole $role, ?string $note = null): void
     {
+        MembershipUserModel::assertPersisted($reviewer);
+
         $note = $this->normalizeNote($note);
 
         $approvedApplication = DB::transaction(function () use ($application, $note, $reviewer, $role): MembershipApplication {

@@ -11,6 +11,7 @@ use AIArmada\Membership\Events\MembershipInvitationSent;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Support\InvitationChannelManager;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +38,8 @@ final class InviteMemberAction
         ?CarbonInterface $expiresAt = null,
         ?string $channel = null,
     ): MembershipInvitation {
+        MembershipUserModel::assertPersisted($inviter);
+
         $this->subjectGuard->validate($subject);
 
         $channelName = $channel ?? $this->channels->defaultChannelName();
