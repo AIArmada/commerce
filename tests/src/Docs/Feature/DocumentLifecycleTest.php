@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
+use AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission;
 use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Draft;
@@ -11,6 +13,7 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocPdfPath;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 
 it('marks eligible documents as sent once and skips terminal documents', function (): void {
@@ -122,4 +125,24 @@ it('rejects direct deletion of documents with a terminal financial status', func
         expect(fn () => $doc->delete())->toThrow(LogicException::class, 'payment or e-invoice evidence')
             ->and(Doc::query()->find($doc->getKey()))->not->toBeNull();
     }
+});
+
+it('cascades dependent approvals on a bulk database delete', function (): void {
+    $doc = Doc::factory()->create(['status' => Draft::class]);
+    $approval = DocApproval::factory()->create(['doc_id' => $doc->getKey()]);
+
+    Doc::query()->whereKey($doc->getKey())->delete();
+
+    expect(DocApproval::query()->find($approval->getKey()))->toBeNull();
+});
+
+it('protects e-invoice evidence even when deletion bypasses model events', function (): void {
+    $doc = Doc::factory()->create(['status' => Draft::class]);
+    $submission = DocEInvoiceSubmission::factory()->create(['doc_id' => $doc->getKey()]);
+
+    expect(fn () => $doc->getConnection()->transaction(fn () => Doc::query()->whereKey($doc->getKey())->delete()))
+        ->toThrow(QueryException::class);
+
+    expect(Doc::query()->find($doc->getKey()))->not->toBeNull()
+        ->and(DocEInvoiceSubmission::query()->find($submission->getKey()))->not->toBeNull();
 });

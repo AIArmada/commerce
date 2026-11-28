@@ -78,11 +78,11 @@ return new class extends Migration
             $table->index(['status', 'due_date'], $docsTable . '_status_due_date_index');
         });
 
-        Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {
+        Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable, $docsTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->cascadeOnDelete();
             $table->string('token_hash', 64)->unique($shareLinksTable . '_token_hash_unique');
             $table->{$jsonType}('allowed_actions');
             $table->timestampTz('expires_at')->nullable();
@@ -96,10 +96,10 @@ return new class extends Migration
             $table->index('revoked_at', $shareLinksTable . '_revoked_at_index');
         });
 
-        Schema::create($statusTable, function (Blueprint $table) use ($statusTable): void {
+        Schema::create($statusTable, function (Blueprint $table) use ($statusTable, $docsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('doc_id');
+            $table->foreignUuid('doc_id')->constrained($docsTable)->cascadeOnDelete();
             $table->string('status');
             $table->text('notes')->nullable();
             $table->string('changed_by')->nullable();

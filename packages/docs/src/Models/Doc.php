@@ -249,11 +249,6 @@ final class Doc extends Model implements Auditable
                 throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
             }
 
-            $doc->statusHistories()->delete();
-            $doc->versions()->delete();
-            $doc->emails()->delete();
-            $doc->approvals()->delete();
-            $doc->shareLinks()->delete();
             $id = (string) $doc->getKey();
             $type = $doc->doc_type;
             $path = $doc->pdf_path;
