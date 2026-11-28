@@ -45,6 +45,8 @@ jobs:
               - 'packages/cashier-chip/**'
               - 'packages/filament-chip/**'
               - 'packages/filament-cashier-chip/**'
+              - 'packages/cashier/**'
+              - 'packages/filament-cashier/**'
               - 'packages/cart/**'
               - 'packages/filament-cart/**'
               - '.github/workflows/ci.yml'
@@ -224,7 +226,7 @@ jobs:
       - name: Verify package boundaries and write ownership
         run: |
           failed=0
-          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals cart filament-cart chip cashier-chip filament-chip filament-cashier-chip links referrals filament-links filament-referrals growth filament-growth; do
+          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals cart filament-cart chip cashier-chip filament-chip filament-cashier-chip cashier filament-cashier links referrals filament-links filament-referrals growth filament-growth; do
             echo "::group::${package} boundaries"
             composer --working-dir="packages/${package}" arch:boundaries || failed=1
             echo "::endgroup::"

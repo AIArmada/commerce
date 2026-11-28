@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use AIArmada\Cashier\Concerns\Billable;
 use Illuminate\Support\Collection;
 
 /**
  * Contract for billable bridge models used by unified cashier features.
  *
  * The methods below describe the stable, package-owned bridge API exposed by
- * {@see Billable} and its supporting concern. Gateway
+ * the Billable concern and its supporting concern. Gateway
  * adapters may still call gateway-native hooks (for example Stripe- or
  * CHIP-specific customer methods), but those are grouped separately below so
  * the contract reflects the package's real responsibilities instead of an

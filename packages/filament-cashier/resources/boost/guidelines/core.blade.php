@@ -1,0 +1,1 @@
+Filament Cashier is a presentation adapter for Cashier. Use core Cashier actions and queries for billing; never implement payment, subscription or tenant ownership rules in UI components. Authorize every submitted record and verify its owner scope on the server. Customer subscription reads use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery.
