@@ -9,6 +9,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -38,10 +39,13 @@ final class DefaultEventCloneService implements EventCloneService
     public function cloneOccurrence(string $occurrenceId, array $options = []): string
     {
         return DB::transaction(function () use ($occurrenceId, $options): string {
-            $clone = $this->cloneOccurrence->handle(
-                EventOccurrence::query()->whereKey($occurrenceId)->firstOrFail(),
-                $options,
-            );
+            $occurrence = ModelResolver::occurrenceClass()::query()->whereKey($occurrenceId)->firstOrFail();
+
+            if (! $occurrence instanceof EventOccurrence) {
+                throw new InvalidArgumentException('The configured occurrence model must extend EventOccurrence.');
+            }
+
+            $clone = $this->cloneOccurrence->handle($occurrence, $options);
 
             return (string) $clone->getKey();
         });
@@ -50,10 +54,13 @@ final class DefaultEventCloneService implements EventCloneService
     public function cloneSession(string $sessionId, array $options = []): string
     {
         return DB::transaction(function () use ($sessionId, $options): string {
-            $clone = $this->cloneSession->handle(
-                EventSession::query()->whereKey($sessionId)->firstOrFail(),
-                $options,
-            );
+            $session = ModelResolver::sessionClass()::query()->whereKey($sessionId)->firstOrFail();
+
+            if (! $session instanceof EventSession) {
+                throw new InvalidArgumentException('The configured session model must extend EventSession.');
+            }
+
+            $clone = $this->cloneSession->handle($session, $options);
 
             return (string) $clone->getKey();
         });

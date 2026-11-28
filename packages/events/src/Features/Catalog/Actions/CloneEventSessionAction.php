@@ -6,10 +6,10 @@ namespace AIArmada\Events\Features\Catalog\Actions;
 
 use AIArmada\Events\Events\EventSessionCreated;
 use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,7 +31,7 @@ final class CloneEventSessionAction
 
         return DB::transaction(function () use ($session, $options): EventSession {
             $targetEvent = $this->resolveEventForWrite($options['event_id'] ?? $session->event_id);
-            $targetOccurrence = EventOccurrence::query()
+            $targetOccurrence = ModelResolver::occurrenceClass()::query()
                 ->where('event_id', $targetEvent->getKey())
                 ->whereKey($options['event_occurrence_id'] ?? $session->event_occurrence_id)
                 ->firstOrFail();
@@ -47,7 +47,8 @@ final class CloneEventSessionAction
                 ? $session->title . ' (Copy)'
                 : $this->contentNormalizer->normalizeTitle((string) $options['title']);
 
-            $clone = EventSession::query()->create([
+            /** @var EventSession $clone */
+            $clone = ModelResolver::sessionClass()::query()->create([
                 'event_id' => $targetEvent->getKey(),
                 'event_occurrence_id' => $targetOccurrence->getKey(),
                 'title' => $title,

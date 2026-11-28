@@ -14,9 +14,7 @@ use AIArmada\Events\Features\Catalog\Models\EventLanguage;
 use AIArmada\Events\Features\Catalog\Models\EventLink;
 use AIArmada\Events\Features\Catalog\Models\EventMaterial;
 use AIArmada\Events\Features\Catalog\Models\EventMedia;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventReference;
-use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\Models\EventTimeExpression;
 use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ExtensionRegistry;
@@ -178,11 +176,11 @@ final class CloneEventContentsAction
     private function validateScope(string $eventId, ?string $occurrenceId, ?string $sessionId): void
     {
         if ($occurrenceId !== null) {
-            EventOccurrence::query()->where('event_id', $eventId)->findOrFail($occurrenceId);
+            ModelResolver::occurrenceClass()::query()->where('event_id', $eventId)->findOrFail($occurrenceId);
         }
 
         if ($sessionId !== null) {
-            EventSession::query()
+            ModelResolver::sessionClass()::query()
                 ->where('event_id', $eventId)
                 ->where('event_occurrence_id', $occurrenceId)
                 ->findOrFail($sessionId);
@@ -198,17 +196,17 @@ final class CloneEventContentsAction
         ?string $targetSessionId,
     ): void {
         if ($sourceSessionId !== null && $targetSessionId !== null) {
-            $source = EventSession::query()
+            $source = ModelResolver::sessionClass()::query()
                 ->where('event_id', $sourceEventId)
                 ->findOrFail($sourceSessionId);
-            $target = EventSession::query()
+            $target = ModelResolver::sessionClass()::query()
                 ->where('event_id', $targetEventId)
                 ->findOrFail($targetSessionId);
         } elseif ($sourceOccurrenceId !== null && $targetOccurrenceId !== null) {
-            $source = EventOccurrence::query()
+            $source = ModelResolver::occurrenceClass()::query()
                 ->where('event_id', $sourceEventId)
                 ->findOrFail($sourceOccurrenceId);
-            $target = EventOccurrence::query()
+            $target = ModelResolver::occurrenceClass()::query()
                 ->where('event_id', $targetEventId)
                 ->findOrFail($targetOccurrenceId);
         } else {

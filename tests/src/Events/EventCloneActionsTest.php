@@ -29,6 +29,10 @@ use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
 
 final class CloneConfiguredEvent extends Event {}
 
+final class CloneConfiguredOccurrence extends EventOccurrence {}
+
+final class CloneConfiguredSession extends EventSession {}
+
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
 });
@@ -683,4 +687,32 @@ it('clones nested location scopes to the corresponding cloned occurrence and ses
         ->and($locations['Occurrence hall']->event_session_id)->toBeNull()
         ->and($locations['Session hall']->event_occurrence_id)->toBe($clonedOccurrence->id)
         ->and($locations['Session hall']->event_session_id)->toBe($clonedSession->id);
+});
+
+it('creates and clones occurrences and sessions through configured models', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+
+    config([
+        'events.models.occurrence' => CloneConfiguredOccurrence::class,
+        'events.models.session' => CloneConfiguredSession::class,
+    ]);
+
+    $created = [];
+    CloneConfiguredOccurrence::created(function (CloneConfiguredOccurrence $record) use (&$created): void {
+        $created[] = (string) $record->getKey();
+    });
+    CloneConfiguredSession::created(function (CloneConfiguredSession $record) use (&$created): void {
+        $created[] = (string) $record->getKey();
+    });
+
+    $service = app(EventCloneService::class);
+    $occurrenceId = $service->cloneOccurrence((string) $occurrence->getKey(), ['clone_sessions' => false]);
+    $sessionId = $service->cloneSession((string) $session->getKey(), ['clone_children' => false]);
+
+    expect($created)->toBe([$occurrenceId, $sessionId]);
 });

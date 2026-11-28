@@ -9,6 +9,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,7 +46,8 @@ final class CreateEventOccurrenceAction
             ? Str::slug($title)
             : (string) $attributes['slug'];
 
-        $occurrence = EventOccurrence::query()->create([
+        /** @var EventOccurrence $occurrence */
+        $occurrence = ModelResolver::occurrenceClass()::query()->create([
             'event_id' => $event->id,
             'title' => $title,
             'slug' => $slug,
