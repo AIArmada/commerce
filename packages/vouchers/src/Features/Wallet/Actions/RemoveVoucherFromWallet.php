@@ -17,11 +17,17 @@ final readonly class RemoveVoucherFromWallet implements WalletRemoval
     {
         $voucher = $this->voucherQuery()->where('code', $this->normalizeCode($code))->firstOrFail();
 
-        return VoucherWallet::query()
-            ->where('voucher_id', $voucher->getKey())
-            ->where('holder_type', $holder->getMorphClass())
-            ->where('holder_id', $holder->getKey())
-            ->whereNull('redeemed_at')
-            ->delete() > 0;
+        return $voucher->getConnection()->transaction(function () use ($voucher, $holder): bool {
+            $entry = VoucherWallet::query()
+                ->forOwner(includeGlobal: false)
+                ->where('voucher_id', $voucher->getKey())
+                ->where('holder_type', $holder->getMorphClass())
+                ->where('holder_id', $holder->getKey())
+                ->whereNull('redeemed_at')
+                ->lockForUpdate()
+                ->first();
+
+            return $entry instanceof VoucherWallet && $entry->delete() === true;
+        });
     }
 }

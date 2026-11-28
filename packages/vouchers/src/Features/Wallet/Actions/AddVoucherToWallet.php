@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
@@ -53,7 +54,11 @@ final class AddVoucherToWallet implements WalletClaim
                 throw InvalidVoucherException::assignedToAnother($voucher->code);
             }
 
-            $existing = VoucherWallet::where('voucher_id', $voucher->id)
+            $owner = config('vouchers.owner.enabled', false)
+                ? OwnerContext::resolveConfigured(VoucherWallet::ownerScopeConfig())
+                : null;
+
+            $existing = VoucherWallet::query()->forOwner($owner, false)->where('voucher_id', $voucher->id)
                 ->where('holder_type', $holder->getMorphClass())
                 ->where('holder_id', $holder->getKey())
                 ->whereNull('redeemed_at')
@@ -68,8 +73,8 @@ final class AddVoucherToWallet implements WalletClaim
                     'voucher_id' => $voucher->id,
                     'holder_type' => $holder->getMorphClass(),
                     'holder_id' => $holder->getKey(),
-                    'owner_type' => $voucher->owner_type,
-                    'owner_id' => $voucher->owner_id,
+                    'owner_type' => $owner?->getMorphClass(),
+                    'owner_id' => $owner?->getKey(),
                     'claimed_at' => CarbonImmutable::now(),
                     'metadata' => $metadata,
                 ]));
@@ -78,7 +83,7 @@ final class AddVoucherToWallet implements WalletClaim
                     throw $exception;
                 }
 
-                $raced = VoucherWallet::where('voucher_id', $voucher->id)
+                $raced = VoucherWallet::query()->forOwner($owner, false)->where('voucher_id', $voucher->id)
                     ->where('holder_type', $holder->getMorphClass())
                     ->where('holder_id', $holder->getKey())
                     ->whereNull('redeemed_at')

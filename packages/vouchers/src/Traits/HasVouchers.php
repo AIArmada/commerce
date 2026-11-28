@@ -32,7 +32,10 @@ trait HasVouchers
      */
     public function voucherWallets(): MorphMany
     {
-        return $this->morphMany(VoucherWallet::class, 'holder');
+        $relation = $this->morphMany(VoucherWallet::class, 'holder');
+        $relation->getQuery()->forOwner(includeGlobal: false);
+
+        return $relation;
     }
 
     /**
