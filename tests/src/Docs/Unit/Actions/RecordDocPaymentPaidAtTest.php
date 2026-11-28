@@ -90,3 +90,19 @@ it('validates payment details even when the transaction id already exists', func
         ->and($recorder->record((string) $doc->getKey(), $data))->toBe($id)
         ->and($doc->payments()->count())->toBe(1);
 });
+
+it('normalizes payment transaction identity before persistence and replay', function (): void {
+    $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100, 'currency' => 'MYR']);
+    $recorder = app(DocumentPaymentRecorder::class);
+    $data = ['amount_minor' => 25, 'payment_method' => 'cash', 'transaction_id' => ' payment-reference '];
+
+    $id = $recorder->record((string) $doc->getKey(), $data);
+
+    expect($doc->payments()->sole()->transaction_id)->toBe('payment-reference')
+        ->and($recorder->record((string) $doc->getKey(), [...$data, 'transaction_id' => 'payment-reference']))->toBe($id)
+        ->and($doc->payments()->count())->toBe(1);
+
+    expect(fn () => $recorder->record((string) $doc->getKey(), [...$data, 'amount_minor' => 50]))
+        ->toThrow(InvalidArgumentException::class, 'different payment details')
+        ->and($doc->payments()->count())->toBe(1);
+});

@@ -81,6 +81,9 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                         throw new InvalidArgumentException('Payment transaction_id must be a non-empty string of at most 255 characters.');
                     }
 
+                    $transactionId = mb_trim($transactionId);
+                    $details['transaction_id'] = $transactionId;
+
                     $existing = $lockedDoc->payments()->where('transaction_id', $transactionId)->first();
 
                     if ($existing instanceof DocPayment) {
