@@ -26,6 +26,8 @@ final class TransferOrganizationOwnershipAction
 
         if ($actor->is($newOwner)) {
             return DB::transaction(function () use ($actor, $organization): Organization {
+                $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+
                 $owners = $organization->ownerMember()->lockForUpdate()->get();
 
                 if ($owners->count() !== 1) {
@@ -43,6 +45,8 @@ final class TransferOrganizationOwnershipAction
         }
 
         return DB::transaction(function () use ($actor, $newOwner, $organization): Organization {
+            $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+
             $owners = $organization->ownerMember()->lockForUpdate()->get();
             $target = $organization->members()->lockForUpdate()->whereKey($newOwner->getKey())->first();
 

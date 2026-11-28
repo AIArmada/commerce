@@ -32,24 +32,31 @@ final class ApproveMembershipApplicationAction
                 (string) $application->getKey(),
             );
 
+            $subject = $guardedApplication->subject;
+
+            if (! $subject instanceof Model) {
+                throw new RuntimeException('Cannot approve a membership application whose subject no longer exists.');
+            }
+
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
             $lockedApplication = MembershipApplication::query()
                 ->lockForUpdate()
                 ->whereKey($guardedApplication->getKey())
                 ->firstOrFail();
+
+            if ($lockedApplication->subject_type !== $subject->getMorphClass() || (string) $lockedApplication->subject_id !== (string) $subject->getKey()) {
+                throw new RuntimeException('Membership request subject changed during processing.');
+            }
 
             if ($lockedApplication->status !== ApplicationStatus::Pending) {
                 throw new RuntimeException('Only pending membership applications can be approved.');
             }
 
             $applicant = $lockedApplication->applicant;
-            $subject = $lockedApplication->subject;
 
             if (! $applicant instanceof Model) {
                 throw new RuntimeException('Cannot approve a membership application whose applicant no longer exists.');
-            }
-
-            if (! $subject instanceof Model) {
-                throw new RuntimeException('Cannot approve a membership application whose subject no longer exists.');
             }
 
             $lockedApplication->forceFill([

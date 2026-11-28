@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Traits;
 use AIArmada\Membership\Actions\CancelPendingMembershipRequestsAction;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\MembershipUserModel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -44,8 +45,7 @@ trait HasMembers
 
     public function members(): BelongsToMany
     {
-        /** @var class-string<Model> $userModel */
-        $userModel = config('auth.providers.users.model', Model::class);
+        $userModel = MembershipUserModel::resolve();
 
         return $this->belongsToMany(
             $userModel,

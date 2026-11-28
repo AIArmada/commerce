@@ -32,10 +32,22 @@ final class AcceptInvitationAction
                 (string) $invitation->getKey(),
             );
 
+            $subject = $guardedInvitation->subject;
+
+            if (! $subject instanceof Model) {
+                throw new RuntimeException('Cannot accept an invitation whose subject no longer exists.');
+            }
+
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
             $lockedInvitation = MembershipInvitation::query()
                 ->lockForUpdate()
                 ->whereKey($guardedInvitation->getKey())
                 ->firstOrFail();
+
+            if ($lockedInvitation->subject_type !== $subject->getMorphClass() || (string) $lockedInvitation->subject_id !== (string) $subject->getKey()) {
+                throw new RuntimeException('Membership request subject changed during processing.');
+            }
 
             if (! $lockedInvitation->isValid()) {
                 throw new RuntimeException('Invitation is no longer valid.');
@@ -63,7 +75,7 @@ final class AcceptInvitationAction
             $lockedInvitation->transitionTo(InvitationStatus::Accepted, $user)->save();
 
             AddMemberAction::make()->handle(
-                $lockedInvitation->subject,
+                $subject,
                 $user,
                 $role,
             );
