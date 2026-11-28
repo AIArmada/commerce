@@ -107,8 +107,10 @@ final class StockLevelReport
             ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
             ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
             ->where('reorder_point', '>', 0)
-            ->addSelect(DB::raw('(reorder_point - (quantity_on_hand - quantity_reserved)) AS deficit'))
-            ->orderByRaw('reorder_point - (quantity_on_hand - quantity_reserved) DESC');
+            ->select('*')
+            ->selectRaw('(reorder_point - CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END) AS deficit')
+            ->orderByDesc('deficit')
+            ->orderBy('id');
     }
 
     /**

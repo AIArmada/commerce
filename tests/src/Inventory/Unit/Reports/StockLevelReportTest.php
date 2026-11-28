@@ -702,3 +702,30 @@ it('uses effective standard cost and physical on-hand balances across valuation 
         ->and($this->report->getDeadStock(method: CostingMethod::Standard)->first()['value'])->toBe(1200)
         ->and(app(InventoryValues::class)->total(CostingMethod::Standard, 'MYR'))->toBe(1200);
 });
+
+it('hydrates low stock levels and orders their deficit for the dashboard', function (): void {
+    $this->location->update(['is_active' => true]);
+    $inactive = InventoryLocation::factory()->create(['is_active' => false]);
+    $levels = [];
+
+    foreach ([[$this->location, 10, 8], [$this->location, 10, 4], [$this->location, 20, 0], [$inactive, 10, 10]] as [$location, $onHand, $reserved]) {
+        $item = InventoryItem::create(['name' => 'Dashboard stock']);
+        $levels[] = InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => $onHand,
+            'quantity_reserved' => $reserved,
+            'reorder_point' => 10,
+        ]);
+    }
+
+    $rows = $this->report->getLowStockQuery()->get();
+
+    expect($rows->modelKeys())->toBe([$levels[0]->id, $levels[1]->id])
+        ->and($rows->first()->location->id)->toBe($this->location->id)
+        ->and($rows->first()->inventoryable_id)->toBe($levels[0]->inventoryable_id)
+        ->and($rows->first()->available)->toBe(2)
+        ->and((int) $rows->first()->getAttribute('deficit'))->toBe(8)
+        ->and((int) $rows->last()->getAttribute('deficit'))->toBe(4);
+});

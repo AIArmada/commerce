@@ -60,7 +60,7 @@ final class LowInventoryAlertsWidget extends TableWidget
 
                 TextColumn::make('available')
                     ->label('Available')
-                    ->state(fn ($record): int => $record->quantity_on_hand - $record->quantity_reserved)
+                    ->state(fn ($record): int => $record->available)
                     ->numeric()
                     ->alignCenter()
                     ->color('danger')
@@ -73,7 +73,7 @@ final class LowInventoryAlertsWidget extends TableWidget
 
                 TextColumn::make('deficit')
                     ->label('Deficit')
-                    ->state(fn ($record): int => max(0, $record->reorder_point - ($record->quantity_on_hand - $record->quantity_reserved)))
+                    ->state(fn ($record): int => (int) $record->getAttribute('deficit'))
                     ->numeric()
                     ->alignCenter()
                     ->color('danger')
