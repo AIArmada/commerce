@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;

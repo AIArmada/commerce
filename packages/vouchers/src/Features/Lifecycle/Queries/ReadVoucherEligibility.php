@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;

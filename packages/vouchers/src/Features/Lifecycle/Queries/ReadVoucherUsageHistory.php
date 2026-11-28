@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherUsageHistory;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;

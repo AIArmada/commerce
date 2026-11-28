@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Concerns;
+namespace AIArmada\Vouchers\Features\Lifecycle\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
