@@ -14,7 +14,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Akaunting\Money\Money;

@@ -41,7 +41,7 @@ keywords:
 - Owner/security: Owner-scoped (Voucher, Wallet; configurable).
 
 ## Key surfaces
-- Models: `Voucher`, `VoucherUsage`, `VoucherWallet`
+- Models: `Voucher`, `VoucherUsage`; Wallet owns `Features/Wallet/Models/VoucherWallet`
 - Actions/Services: `Actions/AddVoucherToWallet`, `Actions/ApplyVoucherToCart`, `Actions/CreateVoucher`, `Actions/ExpireVoucher`, `Actions/RecordVoucherUsage`, `Actions/RemoveVoucherFromCart`, `Actions/UpdateVoucher`, `Actions/ValidateVoucherCode`
 - Config `vouchers.php`: `database`, `default_currency`, `code`, `stacking`, `validation`, `tracking`, `cache`, `owner`, `redemption`, `reservation`, `checkout`, `affiliates`
 

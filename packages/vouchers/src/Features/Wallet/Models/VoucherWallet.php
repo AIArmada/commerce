@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Models;
+namespace AIArmada\Vouchers\Features\Wallet\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
+use AIArmada\Vouchers\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use LogicException;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
@@ -38,13 +37,6 @@ describe('Voucher Model', function (): void {
                 ->and($relation->getRelated())->toBeInstanceOf(VoucherUsage::class);
         });
 
-        it('defines walletEntries relationship as HasMany', function (): void {
-            $voucher = new Voucher;
-            $relation = $voucher->walletEntries();
-
-            expect($relation)->toBeInstanceOf(HasMany::class)
-                ->and($relation->getRelated())->toBeInstanceOf(VoucherWallet::class);
-        });
 
     });
 

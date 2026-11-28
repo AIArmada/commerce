@@ -145,14 +145,6 @@ class Voucher extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<VoucherWallet, $this>
-     */
-    public function walletEntries(): HasMany
-    {
-        return $this->hasMany(VoucherWallet::class);
-    }
-
-    /**
      * Get the promotion that issued this voucher when the promotions package is installed.
      *
      * @return BelongsTo<Model, $this>

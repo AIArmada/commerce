@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use InvalidArgumentException;
 
 final readonly class RemoveVoucherFromWallet implements WalletRemoval

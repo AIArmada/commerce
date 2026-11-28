@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Carbon\CarbonImmutable;
 
 final readonly class TransitionWalletTimestamp implements WalletTimestampTransition

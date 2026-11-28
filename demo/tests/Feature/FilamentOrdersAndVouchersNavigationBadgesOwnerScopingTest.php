@@ -13,7 +13,7 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

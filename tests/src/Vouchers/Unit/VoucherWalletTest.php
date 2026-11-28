@@ -7,7 +7,7 @@ use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Illuminate\Database\Eloquent\Model;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Wallet\Queries;
 
 use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 
 final class ReadWalletStatistics implements WalletStatistics
 {

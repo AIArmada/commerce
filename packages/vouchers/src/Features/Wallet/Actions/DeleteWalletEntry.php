@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use RuntimeException;
 
 final readonly class DeleteWalletEntry implements WalletEntryDeletion

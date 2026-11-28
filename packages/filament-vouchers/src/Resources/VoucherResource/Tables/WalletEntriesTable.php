@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;

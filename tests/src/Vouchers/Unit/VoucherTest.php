@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,7 +23,6 @@ test('voucher has relations', function (): void {
     ]);
 
     expect($voucher->usages())->toBeInstanceOf(HasMany::class)
-        ->and($voucher->walletEntries())->toBeInstanceOf(HasMany::class)
         ->and($voucher->owner())->toBeInstanceOf(MorphTo::class);
 });
 

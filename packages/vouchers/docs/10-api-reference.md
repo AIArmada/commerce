@@ -225,7 +225,7 @@ Voucher::addToWallet(
     string $code,
     Model $owner,
     ?array $metadata = null
-): VoucherWallet
+): WalletClaimData
 ```
 
 ---
