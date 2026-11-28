@@ -6,7 +6,7 @@ namespace AIArmada\Ticketing\Actions;
 
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Exceptions\BulkTransferSizeExceededException;
-use AIArmada\Ticketing\Jobs\BulkSendTransferNotificationsJob;
+use AIArmada\Ticketing\EntryPoints\Jobs\BulkSendTransferNotificationsJob;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use Illuminate\Auth\Access\AuthorizationException;

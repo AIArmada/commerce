@@ -11,7 +11,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Ticketing\Events\PassIssued;
-use AIArmada\Ticketing\Listeners\IssuePassesOnFulfillment;
+use AIArmada\Ticketing\EntryPoints\Listeners\IssuePassesOnFulfillment;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Services\DefaultPassIssuer;
@@ -55,7 +55,7 @@ it('does not issue duplicate passes on redelivered fulfillment', function (): vo
     $ticketType = createDedupTicketType();
     $order = createDedupOrderWithTicketItem('ORD-DEDUP-1', $ticketType, 2);
 
-    $listener = new IssuePassesOnFulfillment;
+    $listener = app(IssuePassesOnFulfillment::class);
     $event = new OrderFulfillmentRequired($order, 'txn-dedup-1', 'stripe');
 
     $listener->handle($event);
@@ -82,7 +82,7 @@ it('issues only the remainder when passes already exist for the item', function 
 
     expect(Pass::count())->toBe(1);
 
-    (new IssuePassesOnFulfillment)->handle(
+    app(IssuePassesOnFulfillment::class)->handle(
         new OrderFulfillmentRequired($order->fresh(), 'txn-dedup-2', 'stripe')
     );
 
@@ -105,7 +105,7 @@ it('restores the order owner context when ambient context is missing', function 
     OwnerContext::flushState();
     app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
 
-    (new IssuePassesOnFulfillment)->handle(
+    app(IssuePassesOnFulfillment::class)->handle(
         new OrderFulfillmentRequired($order, 'txn-dedup-ctx', 'stripe')
     );
 
