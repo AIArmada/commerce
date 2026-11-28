@@ -8,9 +8,11 @@ use AIArmada\Inventory\Features\Stock\Actions\RestoreOrderStock as RestoreOrderS
 use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
 use AIArmada\Inventory\Features\Stock\Api\DeductionCandidates;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Stock\Api\ReservationStock;
 use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock;
 use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Stock\Queries\AllocationCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\DeductionCandidatesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
@@ -28,6 +30,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(AllocationCandidates::class, AllocationCandidatesQuery::class);
         $app->singleton(DeductionCandidates::class, DeductionCandidatesQuery::class);
         $app->singleton(LocationVisibility::class, LocationVisibilityQuery::class);
+        $app->singleton(ReservationStock::class, ReservationStockStore::class);
         $app->singleton(RestoreOrderStock::class, RestoreOrderStockAction::class);
         $app->singleton(StockBalances::class, StockBalancesQuery::class);
         $app->singleton(StockHealth::class, StockHealthQuery::class);

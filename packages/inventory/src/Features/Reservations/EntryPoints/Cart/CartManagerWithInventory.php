@@ -10,7 +10,7 @@ use AIArmada\Inventory\Features\Reservations\Actions\AllocateCartInventory;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
 use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -183,7 +183,7 @@ final class CartManagerWithInventory implements CartManagerInterface
      * Commit all allocations (convert to shipments after payment).
      *
      * @param  string|null  $orderId  Optional order reference
-     * @return array<InventoryMovement>
+     * @return list<CommittedStockMovement>
      */
     public function commitInventory(?string $orderId = null): array
     {

@@ -14,8 +14,8 @@ use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
+use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
+use AIArmada\Inventory\Features\Stock\Api\ReservationStock;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -54,7 +54,7 @@ final class InventoryAllocationService
 {
     public function __construct(
         private InventoryService $inventoryService,
-        private ReservationStockStore $stock,
+        private ReservationStock $stock,
         private AllocationCandidates $candidates,
     ) {}
 
@@ -205,7 +205,7 @@ final class InventoryAllocationService
             }
 
             // Ensure relationships are loaded
-            $lockedAllocation->loadMissing(['level', 'inventoryable']);
+            $lockedAllocation->loadMissing('inventoryable');
 
             $quantity = $lockedAllocation->quantity;
             $this->releaseBalance($lockedAllocation);
@@ -278,7 +278,6 @@ final class InventoryAllocationService
             $allocationsQuery = InventoryOwnerScope::forMutation(
                 InventoryAllocation::query()
                     ->forCart($cartId)->whereNull('reservation_group_id')
-                    ->with('level')
                     ->with('location')
                     ->lockForUpdate()
             );
@@ -306,7 +305,6 @@ final class InventoryAllocationService
             $allocationsQuery = InventoryOwnerScope::forMutation(
                 InventoryAllocation::query()
                     ->where('reservation_group_id', $reservationGroupId)
-                    ->with(['level', 'location'])
                     ->lockForUpdate()
             );
 
@@ -331,7 +329,7 @@ final class InventoryAllocationService
      *
      * @param  string  $cartId  Cart identifier with allocations to commit
      * @param  string|null  $orderId  Optional order ID for movement reference
-     * @return array<InventoryMovement> Created shipment movements
+     * @return list<CommittedStockMovement> Created shipment movements
      */
     public function commit(string $cartId, ?string $orderId = null): array
     {
@@ -339,7 +337,6 @@ final class InventoryAllocationService
             $allocationsQuery = InventoryOwnerScope::forMutation(
                 InventoryAllocation::query()
                     ->forCart($cartId)->whereNull('reservation_group_id')
-                    ->with(['level', 'inventoryable'])
                     ->with('location')
                     ->lockForUpdate()
             );
@@ -351,7 +348,7 @@ final class InventoryAllocationService
             foreach ($allocations as $allocation) {
                 $this->commitBatchBalance($allocation);
                 $movements[] = $this->stock->commit(
-                    $allocation->level,
+                    $allocation->level_id,
                     $allocation->quantity,
                     $orderId,
                     sprintf('Committed from cart %s', $cartId),
@@ -367,7 +364,7 @@ final class InventoryAllocationService
     /**
      * Commit only the allocations owned by one checkout reservation group.
      *
-     * @return array<InventoryMovement>
+     * @return list<CommittedStockMovement>
      */
     public function commitReservationGroup(string $reservationGroupId, string $reference, ?string $orderId = null): array
     {
@@ -375,7 +372,6 @@ final class InventoryAllocationService
             $allocationsQuery = InventoryOwnerScope::forMutation(
                 InventoryAllocation::query()
                     ->where('reservation_group_id', $reservationGroupId)
-                    ->with(['level', 'inventoryable', 'location'])
                     ->lockForUpdate()
             );
 
@@ -385,7 +381,7 @@ final class InventoryAllocationService
             foreach ($allocations as $allocation) {
                 $this->commitBatchBalance($allocation);
                 $movements[] = $this->stock->commit(
-                    $allocation->level,
+                    $allocation->level_id,
                     $allocation->quantity,
                     $orderId,
                     sprintf('Committed from checkout reference %s', $reference),
@@ -572,7 +568,6 @@ final class InventoryAllocationService
                 InventoryAllocation::query()
                     ->expired()
                     ->whereNull('reservation_group_id')
-                    ->with(['level', 'location'])
                     ->lockForUpdate()
             );
 
@@ -623,7 +618,7 @@ final class InventoryAllocationService
             );
         }
 
-        $this->stock->release($allocation->level, $allocation->quantity);
+        $this->stock->release($allocation->level_id, $allocation->quantity);
     }
 
     private function commitBatchBalance(InventoryAllocation $allocation): void

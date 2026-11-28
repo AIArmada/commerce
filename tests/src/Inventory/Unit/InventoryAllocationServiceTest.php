@@ -12,7 +12,9 @@ use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
@@ -85,7 +87,11 @@ describe('InventoryAllocationService', function (): void {
         $levelB = $this->inventoryService->getLevel($this->item, $this->locationB->id)?->fresh();
 
         expect($movements)->toHaveCount($allocations->count());
-        expect($movements[0]->type)->toBe(MovementType::Shipment->value);
+        expect($movements[0])->toBeInstanceOf(CommittedStockMovement::class)
+            ->and($movements[0]->type)->toBe(MovementType::Shipment->value)
+            ->and($movements[0]->reference)->toBe('ORDER-123')
+            ->and($movements[0]->quantity)->toBe(8)
+            ->and(InventoryMovement::query()->findOrFail($movements[0]->id)->reference)->toBe('ORDER-123');
         expect($levelA?->quantity_reserved)->toBe(0);
         expect($levelB?->quantity_reserved)->toBe(0);
         expect($levelA?->quantity_on_hand + $levelB?->quantity_on_hand)->toBe(8); // 16 received - 8 committed
