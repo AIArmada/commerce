@@ -116,7 +116,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
     {
         $validationResult = Voucher::validate($this->voucher->code, $cart);
 
-        return $validationResult->isValid;
+        return $validationResult->matchesTerms($this->voucher->toArray());
     }
 
     /**

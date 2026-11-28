@@ -91,7 +91,8 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
 
         $validationResult = $this->voucherService->validate($code, $cart);
 
-        return $validationResult->matchesVoucher($voucherId);
+        return $validationResult->matchesVoucher($voucherId)
+            && $validationResult->matchesTerms($condition->getAttribute('voucher_data'));
     }
 
     /** @return list<string> */

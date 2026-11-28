@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Facades\Voucher;
 
 it('converts voucher condition to cart condition and back', function (): void {
     $voucherData = VoucherData::fromArray([
@@ -114,4 +118,18 @@ it('uses the default condition target when target definition only contains eligi
     expect($target->scope->value)->toBe('cart')
         ->and($target->phase->value)->toBe('cart_subtotal')
         ->and($target->application->value)->toBe('aggregate');
+});
+
+it('rejects a dynamic voucher condition after its terms change', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'voucher-term-validation');
+    $voucher = VoucherData::fromArray(['id' => 'selected', 'code' => 'TEST', 'value' => 100]);
+    $condition = new VoucherCondition($voucher);
+
+    Voucher::shouldReceive('validate')->with('TEST', $cart)->twice()->andReturn(
+        VoucherValidationResult::valid(['voucher' => [...$voucher->toArray(), 'value' => 50]]),
+        VoucherValidationResult::valid(['voucher' => $voucher->toArray()]),
+    );
+
+    expect($condition->validateVoucher($cart))->toBeFalse()
+        ->and($condition->validateVoucher($cart))->toBeTrue();
 });

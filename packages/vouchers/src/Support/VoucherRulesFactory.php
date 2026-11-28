@@ -22,6 +22,7 @@ final class VoucherRulesFactory implements RulesFactoryInterface
             $context = $this->resolveContext($metadata);
             $code = $context['voucher_code'] ?? null;
             $voucherId = $context['voucher_id'] ?? null;
+            $snapshot = $context['voucher_data'] ?? null;
 
             if (! is_string($code) || $code === '') {
                 throw new InvalidArgumentException('Voucher rule requires a voucher_code metadata value.');
@@ -31,9 +32,13 @@ final class VoucherRulesFactory implements RulesFactoryInterface
                 throw new InvalidArgumentException('Voucher rule requires a voucher_id metadata value.');
             }
 
+            if (! is_array($snapshot) || ($snapshot['id'] ?? null) !== $voucherId || ($snapshot['code'] ?? null) !== $code) {
+                throw new InvalidArgumentException('Voucher rule requires matching voucher_data metadata.');
+            }
+
             return [
-                static function (Cart $cart, ?CartItem $item = null) use ($code, $voucherId): bool {
-                    return Voucher::validate($code, $cart)->matchesVoucher($voucherId);
+                static function (Cart $cart, ?CartItem $item = null) use ($code, $snapshot): bool {
+                    return Voucher::validate($code, $cart)->matchesTerms($snapshot);
                 },
             ];
         }
