@@ -353,6 +353,8 @@ test('fails closed for malformed targeting payloads', function (array $targetDef
         ->and($result->details)->toBe(['targeting_failed' => true]);
 })->with([
     'non-array targeting' => [['targeting' => 'cart_quantity >= 1']],
+    'empty explicit targeting' => [['targeting' => []]],
+    'null explicit targeting' => [['targeting' => null]],
     'invalid targeting mode' => [[
         'targeting' => [
             'mode' => 'sometimes',

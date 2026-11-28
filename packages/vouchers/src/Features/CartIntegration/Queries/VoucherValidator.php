@@ -287,7 +287,7 @@ final class VoucherValidator implements VoucherValidation
             return $this->invalidTargetingDefinition();
         }
 
-        if ($hasTargeting && $targeting !== null && ! is_array($targeting)) {
+        if ($hasTargeting && (! is_array($targeting) || $targeting === [])) {
             return $this->invalidTargetingDefinition();
         }
 
