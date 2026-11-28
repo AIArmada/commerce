@@ -21,7 +21,6 @@ use AIArmada\Inventory\States\Shipped;
 use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -142,54 +141,6 @@ final class SerialService
 
             return $serial;
         });
-    }
-
-    /**
-     * Find serial by serial number.
-     */
-    public function findBySerialNumber(string $serialNumber): ?InventorySerial
-    {
-        return InventoryOwnerScope::applyToLocationQuery(InventorySerial::query())
-            ->where('serial_number', $serialNumber)
-            ->first();
-    }
-
-    /**
-     * Get serials for a model.
-     *
-     * @return Collection<int, InventorySerial>
-     */
-    public function getSerialsForModel(Model $model): Collection
-    {
-        $query = InventorySerial::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey())
-            ->orderBy('created_at');
-
-        InventoryOwnerScope::applyToLocationQuery($query);
-
-        return $query->get();
-    }
-
-    /**
-     * Get available serials for a model.
-     *
-     * @return Collection<int, InventorySerial>
-     */
-    public function getAvailableSerials(Model $model, ?string $locationId = null): Collection
-    {
-        $query = InventorySerial::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey())
-            ->sellable();
-
-        InventoryOwnerScope::applyToLocationQuery($query);
-
-        if ($locationId !== null) {
-            $query->atLocation($locationId);
-        }
-
-        return $query->get();
     }
 
     /**
@@ -514,24 +465,6 @@ final class SerialService
     }
 
     /**
-     * Get serial history.
-     *
-     * @return Collection<int, InventorySerialHistory>
-     */
-    public function getHistory(InventorySerial $serial, ?int $limit = null): Collection
-    {
-        $this->assertSerialAllowedForCurrentOwner($serial);
-
-        $query = $serial->history();
-
-        if ($limit !== null) {
-            $query->limit($limit);
-        }
-
-        return $query->get();
-    }
-
-    /**
      * Log an event to serial history.
      *
      * @param  array<string, mixed>  $data
@@ -554,20 +487,6 @@ final class SerialService
             'metadata' => $data['metadata'] ?? null,
             'occurred_at' => CarbonImmutable::now(),
         ]);
-    }
-
-    private function assertSerialAllowedForCurrentOwner(InventorySerial $serial): void
-    {
-        if (! $this->isSerialAllowedForCurrentOwner($serial)) {
-            throw new InvalidArgumentException('Serial is not accessible for current owner');
-        }
-    }
-
-    private function isSerialAllowedForCurrentOwner(InventorySerial $serial): bool
-    {
-        return InventoryOwnerScope::applyToLocationQuery(InventorySerial::query())
-            ->whereKey($serial->getKey())
-            ->exists();
     }
 
     private function lockOwnedSerial(InventorySerial $serial): InventorySerial

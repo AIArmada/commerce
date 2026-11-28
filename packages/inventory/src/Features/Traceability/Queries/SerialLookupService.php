@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Features\Traceability\Queries;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class SerialLookupService
 {
@@ -28,6 +30,22 @@ final class SerialLookupService
         InventoryOwnerScope::applyToLocationQuery($query);
 
         return $query->first();
+    }
+
+    /** @return Collection<int, InventorySerialHistory> */
+    public function getHistory(InventorySerial $serial, ?int $limit = null): Collection
+    {
+        if (! InventoryOwnerScope::applyToLocationQuery(InventorySerial::query())->whereKey($serial->getKey())->exists()) {
+            throw new InvalidArgumentException('Serial is not accessible for current owner');
+        }
+
+        $query = $serial->history();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
     }
 
     /**

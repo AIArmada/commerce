@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Disposed;
 use AIArmada\Inventory\States\InRepair;
@@ -50,14 +51,14 @@ describe('SerialService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
         ]);
 
-        $found = $this->service->findBySerialNumber('SN-FIND');
+        $found = app(SerialLookupService::class)->findBySerialNumber('SN-FIND');
 
         expect($found)->not->toBeNull();
         expect($found->serial_number)->toBe('SN-FIND');
     });
 
     it('find by serial number returns null when not found', function (): void {
-        $found = $this->service->findBySerialNumber('NONEXISTENT');
+        $found = app(SerialLookupService::class)->findBySerialNumber('NONEXISTENT');
 
         expect($found)->toBeNull();
     });
@@ -68,7 +69,7 @@ describe('SerialService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
         ]);
 
-        $serials = $this->service->getSerialsForModel($this->item);
+        $serials = app(SerialLookupService::class)->getForModel($this->item);
 
         expect($serials)->toHaveCount(3);
     });
@@ -88,7 +89,7 @@ describe('SerialService', function (): void {
             'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        $available = $this->service->getAvailableSerials($this->item, $this->location->id);
+        $available = app(SerialLookupService::class)->getAvailableForSale($this->item, $this->location->id);
 
         expect($available)->toHaveCount(1);
     });
@@ -247,7 +248,7 @@ describe('SerialService', function (): void {
         $this->service->reserve($serial->fresh(), 'order-123');
         $this->service->release($serial->fresh());
 
-        $history = $this->service->getHistory($serial, 10);
+        $history = app(SerialLookupService::class)->getHistory($serial, 10);
 
         expect($history)->toHaveCount(3);
     });
@@ -258,7 +259,7 @@ describe('SerialService', function (): void {
         $this->service->release($serial->fresh());
         $this->service->reserve($serial->fresh(), 'order-456');
 
-        $history = $this->service->getHistory($serial, 2);
+        $history = app(SerialLookupService::class)->getHistory($serial, 2);
 
         expect($history)->toHaveCount(2);
     });

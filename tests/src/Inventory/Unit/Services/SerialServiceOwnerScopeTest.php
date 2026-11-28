@@ -11,6 +11,7 @@ use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
@@ -92,7 +93,7 @@ function makeOwnerScopedSerialServiceFixture(): array
     ];
 }
 
-it('scopes SerialService::findBySerialNumber to current owner (and global when enabled)', function (): void {
+it('scopes SerialLookupService::findBySerialNumber to current owner (and global when enabled)', function (): void {
     $fixture = makeOwnerScopedSerialServiceFixture();
     $sku = $fixture['sku'];
     $ownerA = $fixture['ownerA'];
@@ -101,7 +102,6 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
     $locationB = $fixture['locationB'];
     $locationGlobal = $fixture['locationGlobal'];
     $setOwnerContext = $fixture['setOwnerContext'];
-    $service = $fixture['service'];
 
     $setOwnerContext($ownerA);
 
@@ -138,13 +138,13 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
         ]);
     });
 
-    expect($service->findBySerialNumber('SN-A'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-A'))
         ->not->toBeNull();
 
-    expect($service->findBySerialNumber('SN-B'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-B'))
         ->toBeNull();
 
-    expect($service->findBySerialNumber('SN-G'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-G'))
         ->not->toBeNull();
 });
 
@@ -152,7 +152,6 @@ it('can exclude global serials when include_global is false', function (): void 
     $fixture = makeOwnerScopedSerialServiceFixture();
     $sku = $fixture['sku'];
     $locationGlobal = $fixture['locationGlobal'];
-    $service = $fixture['service'];
 
     OwnerContext::withOwner(null, function () use ($sku, $locationGlobal): void {
         InventorySerial::factory()->create([
@@ -167,7 +166,7 @@ it('can exclude global serials when include_global is false', function (): void 
 
     config()->set('inventory.owner.include_global', false);
 
-    expect($service->findBySerialNumber('SN-G2'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-G2'))
         ->toBeNull();
 });
 
@@ -222,7 +221,7 @@ it('allows finding shipped serials by serial number using history scope', functi
 
     $service->ship($serial->fresh(), 'TRACK-1');
 
-    $found = $service->findBySerialNumber('SN-SHIPPED');
+    $found = app(SerialLookupService::class)->findBySerialNumber('SN-SHIPPED');
 
     expect($found)->not->toBeNull();
 });
@@ -243,7 +242,7 @@ it('does not let a tenant mutate a visible global serial', function (): void {
         $fixture['locationGlobal']->id,
     ));
 
-    expect($fixture['service']->findBySerialNumber('SN-GLOBAL-RESERVE'))->not->toBeNull();
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-GLOBAL-RESERVE'))->not->toBeNull();
 
     expect(fn () => $fixture['service']->reserve($serial))
         ->toThrow(ModelNotFoundException::class);
@@ -301,13 +300,13 @@ it('reads available serials across visible locations without mutation authorizat
         $fixture['locationGlobal']->id,
     ));
 
-    expect($service->getAvailableSerials($sku)->modelKeys())
+    expect(app(SerialLookupService::class)->getAvailableForSale($sku)->modelKeys())
         ->toContain($own->id, $global->id)
         ->not->toContain($foreign->id)
-        ->and($service->getAvailableSerials($sku, $fixture['locationGlobal']->id)->modelKeys())->toBe([$global->id])
-        ->and($service->getAvailableSerials($sku, $fixture['locationB']->id))->toBeEmpty();
+        ->and(app(SerialLookupService::class)->getAvailableForSale($sku, $fixture['locationGlobal']->id)->modelKeys())->toBe([$global->id])
+        ->and(app(SerialLookupService::class)->getAvailableForSale($sku, $fixture['locationB']->id))->toBeEmpty();
 
     config()->set('inventory.owner.include_global', false);
 
-    expect($service->getAvailableSerials($sku)->modelKeys())->toBe([$own->id]);
+    expect(app(SerialLookupService::class)->getAvailableForSale($sku)->modelKeys())->toBe([$own->id]);
 });

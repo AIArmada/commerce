@@ -33,3 +33,5 @@ Cycle counts are recorded through `AdjustInventory` with canonical reason `cycle
 Use `Features/Valuation/Api/InventoryValues` for reporting across FIFO, weighted-average and standard costing. Standard-cost lookup matches exact stock owner and item identities, with no cross-owner fallback.
 
 Serial-number tracking uses `Features/Traceability/Traits/HasSerialNumbers`. Single and bulk registration use the Traceability persistence boundary and record registration history atomically.
+
+Serial lifecycle mutations belong to `AIArmada\Inventory\Features\Traceability\Persistence\SerialService`. Use `AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService` for `findBySerialNumber`, `getForModel`, `getAvailableForSale`, and `getHistory`; do not query through the mutation service.
