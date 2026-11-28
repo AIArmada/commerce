@@ -45,7 +45,7 @@ final class DeductOrderInventory
     public function __construct(
         private readonly InventoryService $inventoryService,
         private readonly InventoryAllocationService $allocationService,
-        private readonly ?CheckoutReservationService $reservationService = null,
+        private readonly CheckoutReservationService $reservationService,
     ) {}
 
     public function execute(InventoryDeductionRequired $event): void
@@ -239,10 +239,6 @@ final class DeductOrderInventory
      */
     private function commitReservation(string $cartId, Order $order): bool
     {
-        if (! $this->reservationService instanceof CheckoutReservationService) {
-            return false;
-        }
-
         try {
             $outcome = $this->reservationService->commit($cartId, (string) $order->getKey());
         } catch (InvalidReservationTransition) {
