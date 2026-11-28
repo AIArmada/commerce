@@ -7,7 +7,7 @@ namespace AIArmada\Organizations\Resolvers;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\Organizations\Contracts\CurrentOrganizationResolver;
+use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 
 final readonly class OrganizationOwnerResolver implements OwnerResolverInterface
 {

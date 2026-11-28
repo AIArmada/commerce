@@ -6,7 +6,7 @@ namespace AIArmada\Organizations\Http\Middleware;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Organizations\Contracts\CurrentOrganizationResolver;
+use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 use Closure;
 use Illuminate\Http\Request;
 
