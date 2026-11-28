@@ -7,6 +7,7 @@ namespace AIArmada\References\Actions;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Models\Reference;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class TransitionReferenceStatus
 {
@@ -26,7 +27,9 @@ final readonly class TransitionReferenceStatus
                 $locked->published_at = null;
             }
 
-            $locked->saveOrFail();
+            if (! $locked->saveOrFail()) {
+                throw new RuntimeException('Reference status transition was cancelled.');
+            }
         });
 
         return $reference->refresh();

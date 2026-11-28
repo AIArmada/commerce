@@ -11,6 +11,7 @@ use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Policies\ReferencePolicy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -291,3 +292,41 @@ test('rejects invalid ISBN checksums and prefixes', function (string $isbn): voi
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Bad ISBN', 'isbn' => $isbn,
     ]))->toThrow(ValidationException::class);
 })->with(['9783161484101', '0306406153', '1234567890128', '978-3-16-148410-0!']);
+
+test('global references are visible but not writable by a tenant', function (): void {
+    config()->set('references.owner.include_global', true);
+    $owner = makeReferenceOwner('ref-global-policy@example.test');
+    $global = OwnerContext::withOwner(null, fn (): Reference => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Global policy',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global): void {
+        $policy = new ReferencePolicy;
+
+        expect($policy->view($owner, $global))->toBeTrue()
+            ->and($policy->update($owner, $global))->toBeFalse()
+            ->and($policy->delete($owner, $global))->toBeFalse();
+
+        expect(fn () => (new TransitionReferenceStatus)->handle($global, ReferenceStatus::Published))
+            ->toThrow(AuthorizationException::class);
+        expect(fn () => $global->delete())->toThrow(AuthorizationException::class);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): bool => (new ReferencePolicy)->update($owner, $global)))->toBeTrue();
+});
+
+test('rejects malformed or duplicate reference parts', function (array $parts): void {
+    expect(fn () => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Invalid structured parts',
+        'reference_parts' => $parts,
+    ]))->toThrow(ValidationException::class, 'reference_parts');
+})->with([
+    'invalid shape' => [['chapter']],
+    'unknown type' => [[['type' => 'unknown', 'value' => '1']]],
+    'non-string value' => [[['type' => 'page', 'value' => 1]]],
+    'duplicate types' => [[['type' => 'page', 'value' => '1'], ['type' => 'page', 'value' => '2']]],
+]);

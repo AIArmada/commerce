@@ -9,6 +9,7 @@ use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Models\Reference;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SyncReferenceContributors
 {
@@ -62,7 +63,9 @@ final readonly class SyncReferenceContributors
 
             foreach ($existing as $contributor) {
                 if ($contributor->contributor_type !== $contributorType || ! isset($wanted[$contributor->contributor_id])) {
-                    $contributor->delete();
+                    if (! $contributor->delete()) {
+                        throw new RuntimeException('Contributor deletion was cancelled.');
+                    }
 
                     continue;
                 }
@@ -71,11 +74,15 @@ final readonly class SyncReferenceContributors
             }
 
             foreach (array_keys($wanted) as $id) {
-                $locked->contributors()->create([
+                $contributor = $locked->contributors()->create([
                     'contributor_type' => $contributorType,
                     'contributor_id' => $id,
                     'role' => $role,
                 ]);
+
+                if (! $contributor->exists) {
+                    throw new RuntimeException('Contributor creation was cancelled.');
+                }
             }
         });
 

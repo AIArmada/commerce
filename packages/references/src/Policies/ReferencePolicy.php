@@ -12,79 +12,72 @@ final class ReferencePolicy
 {
     use HandlesAuthorization;
 
-    private function canAccessReference(Reference $reference): bool
-    {
-        if (! (bool) config('references.owner.enabled', false)) {
-            return true;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return $reference->isGlobal();
-        }
-
-        if ($reference->belongsToOwner($owner)) {
-            return true;
-        }
-
-        return (bool) config('references.owner.include_global', false)
-            && $reference->isGlobal();
-    }
-
-    /**
-     * Determine whether the user can view any references.
-     */
     public function viewAny(mixed $user): bool
     {
-        return true;
+        $config = Reference::ownerScopeConfig();
+
+        return ! $config->enabled
+            || OwnerContext::resolveConfigured($config) !== null
+            || OwnerContext::isExplicitGlobal();
     }
 
-    /**
-     * Determine whether the user can view the reference.
-     */
     public function view(mixed $user, Reference $reference): bool
     {
-        return $this->canAccessReference($reference);
+        $config = Reference::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return true;
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+
+        if ($owner === null) {
+            return OwnerContext::isExplicitGlobal() && $reference->isGlobal();
+        }
+
+        return $reference->belongsToOwner($owner)
+            || ($config->includeGlobal && $reference->isGlobal());
     }
 
-    /**
-     * Determine whether the user can create references.
-     */
     public function create(mixed $user): bool
     {
-        return true;
+        return $this->viewAny($user);
     }
 
-    /**
-     * Determine whether the user can update the reference.
-     */
     public function update(mixed $user, Reference $reference): bool
     {
-        return $this->canAccessReference($reference);
+        return $this->canWriteReference($reference);
     }
 
-    /**
-     * Determine whether the user can update any references.
-     */
     public function updateAny(mixed $user): bool
     {
         return $this->viewAny($user);
     }
 
-    /**
-     * Determine whether the user can delete the reference.
-     */
     public function delete(mixed $user, Reference $reference): bool
     {
-        return $this->canAccessReference($reference);
+        return $this->canWriteReference($reference);
     }
 
-    /**
-     * Determine whether the user can duplicate the reference.
-     */
     public function duplicate(mixed $user, Reference $reference): bool
     {
         return $this->view($user, $reference);
+    }
+
+    private function canWriteReference(Reference $reference): bool
+    {
+        $config = Reference::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return true;
+        }
+
+        if ($reference->isGlobal()) {
+            return OwnerContext::isExplicitGlobal();
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+
+        return $owner !== null && $reference->belongsToOwner($owner);
     }
 }

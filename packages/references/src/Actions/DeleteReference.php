@@ -6,6 +6,7 @@ namespace AIArmada\References\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Models\Reference;
+use AIArmada\References\Models\ReferenceContributor;
 use Closure;
 use RuntimeException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -62,7 +63,9 @@ final readonly class DeleteReference
             }
 
             foreach (array_reverse($descendants) as $child) {
-                $owner = OwnerContext::fromTypeAndIdOrFail($child->owner_type, $child->owner_id);
+                $owner = Reference::ownerScopeConfig()->enabled
+                    ? OwnerContext::fromTypeAndIdOrFail($child->owner_type, $child->owner_id)
+                    : null;
 
                 OwnerContext::withOwner($owner, function () use ($child, $deleting, $deleted): void {
                     if (! $deleting($child)) {
@@ -93,7 +96,9 @@ final readonly class DeleteReference
                 $items->each(static fn (Media $item): ?bool => $item->delete());
             });
 
-        $reference->contributors()->delete();
+        $contributor = new ReferenceContributor;
+        $contributor->setConnection($reference->getConnectionName());
+        $contributor->newQuery()->where('reference_id', $reference->getKey())->delete();
 
         if ($reference->newQueryWithoutScopes()->whereKey($reference->getKey())->delete() !== 1) {
             throw new RuntimeException('Reference deletion did not remove exactly one row.');

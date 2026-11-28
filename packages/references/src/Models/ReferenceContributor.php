@@ -35,7 +35,7 @@ class ReferenceContributor extends Model
 
     public function getTable(): string
     {
-        return config('references.database.tables.reference_contributors', 'reference_contributors');
+        return (string) config('references.database.tables.reference_contributors', $this->table);
     }
 
     protected function casts(): array

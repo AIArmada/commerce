@@ -116,7 +116,7 @@ class Reference extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return config('references.database.tables.references', 'references');
+        return (string) config('references.database.tables.references', $this->table);
     }
 
     public function getSlugOptions(): SlugOptions
@@ -265,7 +265,9 @@ class Reference extends Model implements HasMedia
      */
     public function effectiveContributors(ReferenceContributorRole | string $role): Collection
     {
-        return $this->effectiveContributorReference()->contributorsForRole($role)->with('contributor')->get();
+        $reference = $this->newQuery()->whereKey($this->getKey())->firstOrFail();
+
+        return $reference->effectiveContributorReference()->contributorsForRole($role)->with('contributor')->get();
     }
 
     public function scopePublished(Builder $query): Builder
