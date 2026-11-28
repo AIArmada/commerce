@@ -15,14 +15,14 @@ final readonly class OrderRefundOperations implements OrderRefunds
 
     public function processRefund(string $orderId, int $amount, string $transactionId, string $reason, array $metadata = [], ?string $paymentId = null): void
     {
-        $order = Order::query()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
 
         $this->refunds->execute($order, $amount, $transactionId, $reason, $metadata, $this->payment($order, $paymentId));
     }
 
     public function createPendingRefund(string $orderId, int $amount, string $transactionId, string $reason, array $metadata = [], ?string $paymentId = null): array
     {
-        $order = Order::query()->findOrFail($orderId);
+        $order = Order::query()->forOwner()->findOrFail($orderId);
 
         return array_map(
             static fn (OrderRefund $refund): string => (string) $refund->getKey(),
@@ -32,22 +32,22 @@ final readonly class OrderRefundOperations implements OrderRefunds
 
     public function claimPendingRefundSubmission(string $refundId): bool
     {
-        return $this->refunds->claimPendingSubmission(OrderRefund::query()->findOrFail($refundId));
+        return $this->refunds->claimPendingSubmission(OrderRefund::query()->forOwner()->findOrFail($refundId));
     }
 
     public function correlateProviderReference(string $refundId, ?string $providerRefundId, ?string $relatedPaymentId = null): bool
     {
-        return $this->refunds->correlateProviderReference(OrderRefund::query()->findOrFail($refundId), $providerRefundId, $relatedPaymentId);
+        return $this->refunds->correlateProviderReference(OrderRefund::query()->forOwner()->findOrFail($refundId), $providerRefundId, $relatedPaymentId);
     }
 
     public function completePendingRefund(string $refundId, ?string $transactionId = null): void
     {
-        $this->refunds->completePending(OrderRefund::query()->findOrFail($refundId), $transactionId);
+        $this->refunds->completePending(OrderRefund::query()->forOwner()->findOrFail($refundId), $transactionId);
     }
 
     public function failPendingRefund(string $refundId, string $reason): void
     {
-        $this->refunds->failPending(OrderRefund::query()->findOrFail($refundId), $reason);
+        $this->refunds->failPending(OrderRefund::query()->forOwner()->findOrFail($refundId), $reason);
     }
 
     private function payment(Order $order, ?string $paymentId): ?OrderPayment

@@ -192,21 +192,14 @@ final class OrderRefund extends Model implements Auditable
 
             $refund->currency = MoneyFormatter::normalizeCurrency($refund->currency);
 
-            // Owner-safe order lookup is already done above; reuse a
-            // scope-bypassing read here because owner context may be absent on
-            // direct model/import paths.
-            $order = Order::query()->withoutOwnerScope()->find($refund->order_id);
+            $orderCurrency = MoneyFormatter::normalizeCurrency($order->currency);
 
-            if ($order instanceof Order) {
-                $orderCurrency = MoneyFormatter::normalizeCurrency($order->currency);
-
-                if ($refund->currency !== $orderCurrency) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Refund currency %s does not match the order currency %s.',
-                        $refund->currency,
-                        $orderCurrency,
-                    ));
-                }
+            if ($refund->currency !== $orderCurrency) {
+                throw new InvalidArgumentException(sprintf(
+                    'Refund currency %s does not match the order currency %s.',
+                    $refund->currency,
+                    $orderCurrency,
+                ));
             }
 
             if ($refund->payment_id !== null) {
