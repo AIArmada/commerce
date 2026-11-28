@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\BatchStatus;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -18,7 +18,8 @@ use InvalidArgumentException;
 final readonly class BatchAllocationService implements BatchReservationBalances
 {
     public function __construct(
-        private BatchLookupService $batches
+        private BatchLookupService $batches,
+        private LocationVisibility $locations,
     ) {}
 
     /**
@@ -64,10 +65,7 @@ final readonly class BatchAllocationService implements BatchReservationBalances
                 $quantity = $allocation['quantity'];
 
                 if (! $batch->canAllocate() || $quantity > $batch->available
-                    || ! InventoryOwnerScope::forMutation(InventoryLocation::query())
-                        ->whereKey($batch->location_id)
-                        ->where('is_active', true)
-                        ->exists()) {
+                    || ! $this->locations->lockWritable($batch->location_id, activeOnly: true)) {
                     throw new InvalidArgumentException('Insufficient allocatable batch inventory');
                 }
 

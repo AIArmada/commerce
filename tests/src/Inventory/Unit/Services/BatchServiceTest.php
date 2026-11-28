@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Event;
 
 describe('BatchService', function (): void {
     beforeEach(function (): void {
-        $this->service = new BatchService;
+        $this->service = app(BatchService::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create();
     });
@@ -268,7 +268,7 @@ describe('BatchService', function (): void {
 
         $newLocation = InventoryLocation::factory()->create();
 
-        $result = $this->service->transferBatch($batch, $newLocation);
+        $result = $this->service->transferBatch($batch, $newLocation->id);
 
         expect($result->location_id)->toBe($newLocation->id);
     });
@@ -284,7 +284,7 @@ describe('BatchService', function (): void {
 
         $newLocation = InventoryLocation::factory()->create();
 
-        $this->service->transferBatch($batch, $newLocation);
+        $this->service->transferBatch($batch, $newLocation->id);
     })->throws(InvalidArgumentException::class);
 
     it('rejects transferring a batch independently of located serials', function (): void {
@@ -297,7 +297,7 @@ describe('BatchService', function (): void {
         ]);
         $destination = InventoryLocation::factory()->create();
 
-        expect(fn () => $this->service->transferBatch($batch, $destination))
+        expect(fn () => $this->service->transferBatch($batch, $destination->id))
             ->toThrow(InvalidArgumentException::class, 'Cannot transfer batch independently of its located serials')
             ->and($batch->fresh()->location_id)->toBe($this->location->id)
             ->and($serial->fresh()->location_id)->toBe($this->location->id);
@@ -382,7 +382,7 @@ describe('BatchService', function (): void {
 
         expect(fn () => $this->service->splitBatch($stale, 30, 'INVALID-SPLIT'))
             ->toThrow(InvalidArgumentException::class);
-        expect(fn () => $this->service->transferBatch($stale, InventoryLocation::factory()->create()))
+        expect(fn () => $this->service->transferBatch($stale, InventoryLocation::factory()->create()->id))
             ->toThrow(InvalidArgumentException::class);
 
         expect($batch->fresh()->quantity_on_hand)->toBe(100)

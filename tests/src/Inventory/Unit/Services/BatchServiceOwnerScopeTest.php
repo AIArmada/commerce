@@ -71,7 +71,7 @@ function makeOwnerScopedBatchServiceFixture(): array
 
     setBatchServiceOwnerResolver($ownerA);
 
-    $service = new BatchService;
+    $service = app(BatchService::class);
 
     return [
         'ownerA' => $ownerA,
@@ -268,4 +268,13 @@ it('uses the same exact owner scope for FEFO strategy and batch lookup', functio
         ->and($strategy->allocate($sku, 6)[0]['quantity'])->toBe(5)
         ->and(fn () => $strategy->allocate($sku, 1, new AllocationContext(locationId: $fixture['locationGlobal']->id)))
         ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects transferring owned batches to tenant-visible global locations', function (): void {
+    $fixture = makeOwnerScopedBatchServiceFixture();
+    $batch = $fixture['service']->createBatch($fixture['sku'], 'TRANSFER-OWNED', $fixture['locationA']->id, 10);
+
+    expect(fn () => $fixture['service']->transferBatch($batch, $fixture['locationGlobal']->id))
+        ->toThrow(InvalidArgumentException::class, 'Invalid location for current owner')
+        ->and($batch->fresh()->location_id)->toBe($fixture['locationA']->id);
 });

@@ -10,6 +10,8 @@ interface LocationVisibility
 
     public function isWritable(string $locationId): bool;
 
+    public function lockWritable(string $locationId, bool $activeOnly = false): bool;
+
     /** @return iterable<array{id: string, name: string}> */
     public function activeLocations(bool $exactOwner = false): iterable;
 }

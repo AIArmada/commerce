@@ -7,8 +7,10 @@ namespace AIArmada\Inventory\Features\Stock\Queries;
 use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 
-final class LocationVisibilityQuery implements LocationVisibility
+final readonly class LocationVisibilityQuery implements LocationVisibility
 {
     public function isVisible(string $locationId): bool
     {
@@ -22,6 +24,21 @@ final class LocationVisibilityQuery implements LocationVisibility
         return InventoryOwnerScope::forMutation(InventoryLocation::query())
             ->whereKey($locationId)
             ->exists();
+    }
+
+    public function lockWritable(string $locationId, bool $activeOnly = false): bool
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new LogicException('Writable location locking requires an active transaction.');
+        }
+
+        $query = InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId);
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        return $query->lockForUpdate()->first(['id']) !== null;
     }
 
     public function activeLocations(bool $exactOwner = false): iterable

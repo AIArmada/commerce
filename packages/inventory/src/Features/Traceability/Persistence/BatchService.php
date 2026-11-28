@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\BatchReservationInvalidator;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Events\BatchRecalled;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -52,8 +51,13 @@ use InvalidArgumentException;
  * // All affected batches are now quarantined
  * ```
  */
-final class BatchService
+final readonly class BatchService
 {
+    public function __construct(
+        private LocationVisibility $locations,
+        private BatchReservationInvalidator $reservations,
+    ) {}
+
     /**
      * Create a new batch.
      *
@@ -224,27 +228,27 @@ final class BatchService
     /**
      * Transfer batch to a new location.
      */
-    public function transferBatch(InventoryBatch $batch, InventoryLocation $newLocation): InventoryBatch
+    public function transferBatch(InventoryBatch $batch, string $newLocationId): InventoryBatch
     {
-        return DB::transaction(function () use ($batch, $newLocation): InventoryBatch {
+        return DB::transaction(function () use ($batch, $newLocationId): InventoryBatch {
             $batch = $this->lockBatch($batch);
-            $this->assertOwnedLocation($newLocation->id);
+            $this->assertOwnedLocation($newLocationId);
 
             if ($batch->quantity_reserved > 0 || $batch->allocations()->withoutGlobalScopes()->exists()) {
                 throw new InvalidArgumentException('Cannot transfer batch with reserved quantity');
             }
 
-            if ($batch->location_id !== $newLocation->id && InventorySerial::query()
+            if ($batch->location_id !== $newLocationId && InventorySerial::query()
                 ->withoutGlobalScopes()
                 ->where('batch_id', $batch->getKey())
                 ->whereNotNull('location_id')
-                ->where('location_id', '!=', $newLocation->id)
+                ->where('location_id', '!=', $newLocationId)
                 ->exists()) {
                 throw new InvalidArgumentException('Cannot transfer batch independently of its located serials');
             }
 
             $batch->update([
-                'location_id' => $newLocation->id,
+                'location_id' => $newLocationId,
             ]);
 
             return $batch->refresh();
@@ -415,21 +419,13 @@ final class BatchService
 
     private function releaseBatchAllocations(InventoryBatch $batch): void
     {
-        app(BatchReservationInvalidator::class)->releaseForBatch($batch->id);
+        $this->reservations->releaseForBatch($batch->id);
     }
 
     /** @return Builder<InventoryBatch> */
     private function ownedQuery(): Builder
     {
-        $query = InventoryBatch::query();
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            $query->forOwner($owner, false);
-        }
-
-        return $query;
+        return InventoryOwnerScope::forMutation(InventoryBatch::query());
     }
 
     private function lockBatch(InventoryBatch $batch): InventoryBatch
@@ -455,15 +451,7 @@ final class BatchService
 
     private function assertOwnedLocation(string $locationId): void
     {
-        $query = InventoryLocation::query();
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            $query->forOwner($owner, false);
-        }
-
-        if ($query->whereKey($locationId)->lockForUpdate()->first() === null) {
+        if (! $this->locations->lockWritable($locationId)) {
             throw new InvalidArgumentException('Invalid location for current owner');
         }
     }

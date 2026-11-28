@@ -8,12 +8,11 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
-use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->service = new BatchAllocationService(app(BatchLookupService::class));
+    $this->service = app(BatchAllocationService::class);
 });
 
 describe('allocateFefo', function (): void {
@@ -412,7 +411,7 @@ it('rejects stale batch allocation plans after a batch changes location', functi
     $plan = $this->service->allocateFefo($this->product, 10);
     $destination = InventoryLocation::factory()->create(['is_active' => true]);
 
-    app(BatchService::class)->transferBatch($batch, $destination);
+    app(BatchService::class)->transferBatch($batch, $destination->id);
 
     expect(fn () => $this->service->reserveBatches($plan))
         ->toThrow(InvalidArgumentException::class, 'Batch allocation identity changed')
