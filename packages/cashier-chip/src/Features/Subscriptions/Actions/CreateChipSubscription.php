@@ -177,7 +177,7 @@ final class CreateChipSubscription implements CreateSubscription
         ];
     }
 
-    private function recordCouponUsage(Subscription $subscription, string $couponId, string $voucherId, int $discountAmount, Model&BillableModel $redeemedBy): void
+    private function recordCouponUsage(Subscription $subscription, string $couponId, string $voucherId, int $discountAmount, Model & BillableModel $redeemedBy): void
     {
         $service = VoucherIntegration::service();
         $currency = $redeemedBy->preferredCurrency();

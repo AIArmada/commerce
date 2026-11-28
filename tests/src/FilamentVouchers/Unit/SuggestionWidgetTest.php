@@ -11,8 +11,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
 
 uses(TestCase::class);
