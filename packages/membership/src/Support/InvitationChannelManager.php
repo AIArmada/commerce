@@ -8,8 +8,6 @@ use AIArmada\Membership\Contracts\InvitationChannel;
 use AIArmada\Membership\Contracts\InvitationRecipientVerifier;
 use AIArmada\Membership\Data\InvitationActorData;
 use AIArmada\Membership\Data\InvitationRecipientData;
-use AIArmada\Membership\Drivers\EmailInvitationChannel;
-use AIArmada\Membership\Drivers\EmailInvitationRecipientVerifier;
 use InvalidArgumentException;
 
 final class InvitationChannelManager
@@ -23,12 +21,6 @@ final class InvitationChannelManager
      * @var array<string, InvitationRecipientVerifier>
      */
     private array $verifiers = [];
-
-    public function __construct()
-    {
-        $this->registerChannel(new EmailInvitationChannel);
-        $this->registerVerifier(new EmailInvitationRecipientVerifier);
-    }
 
     public function registerChannel(InvitationChannel $channel): static
     {
@@ -46,7 +38,7 @@ final class InvitationChannelManager
 
     public function defaultChannelName(): string
     {
-        return (string) config('membership.invitations.default_channel', EmailInvitationChannel::CHANNEL);
+        return (string) config('membership.invitations.default_channel', 'email');
     }
 
     public function channel(string $name): InvitationChannel

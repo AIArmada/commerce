@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Finance\Actions;
 
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -78,10 +78,6 @@ final readonly class ManageRewardBudget implements RewardBudgetApi
 
     private function assertAwardProgram(string $awardId, string $programId): void
     {
-        $award = RewardProgramGuard::findAwardOrFail($awardId);
-
-        if ((string) $award->program_id !== $programId) {
-            throw new InvalidArgumentException('Award does not belong to the supplied reward program.');
-        }
+        app(RewardAwardLockApi::class)->assertAwardProgram($awardId, $programId);
     }
 }

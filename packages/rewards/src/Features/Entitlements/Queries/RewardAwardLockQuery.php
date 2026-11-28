@@ -15,6 +15,15 @@ use InvalidArgumentException;
 
 final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 {
+    public function assertAwardProgram(string $awardId, string $programId): void
+    {
+        $award = RewardAwardGuard::findAwardOrFail($awardId);
+
+        if ((string) $award->program_id !== $programId) {
+            throw new InvalidArgumentException('Award does not belong to the supplied reward program.');
+        }
+    }
+
     public function assertAwardInScopeWhenExists(string $awardId): void
     {
         $this->assertAwardsInScopeWhenExist([$awardId]);

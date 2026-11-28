@@ -8,8 +8,8 @@ use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDisputeApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use AIArmada\Rewards\Support\RewardOperationKeys;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -19,7 +19,7 @@ final readonly class RecordConsumedPointsDispute implements RewardDisputeApi
     /** @param array<string, mixed> $amountSnapshot */
     public function recordConsumedPointsDispute(string $awardId, array $amountSnapshot, string $actorType, ?string $actorId, string $actorRole, string $reason, CarbonImmutable $decided): string
     {
-        RewardProgramGuard::findAwardOrFail($awardId);
+        RewardAwardGuard::findAwardOrFail($awardId);
 
         return DB::transaction(static function () use ($awardId, $amountSnapshot, $actorType, $actorId, $actorRole, $reason, $decided): string {
             RewardAward::query()->whereKey($awardId)->lockForUpdate()->firstOrFail();

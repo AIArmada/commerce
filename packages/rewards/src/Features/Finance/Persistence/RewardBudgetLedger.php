@@ -63,7 +63,7 @@ final class RewardBudgetLedger
             ->groupBy('kind')
             ->toBase();
 
-        $byKind = $funding->unionAll($movements)->get()->pluck('total', 'kind');
+        $byKind = $funding->unionAll($movements)->pluck('total', 'kind');
         $funded = (int) ($byKind['funded'] ?? 0);
 
         $reserve = (int) ($byKind[RewardBudgetMovementKind::Reserve->value] ?? 0);

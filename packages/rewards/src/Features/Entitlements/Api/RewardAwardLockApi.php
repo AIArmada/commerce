@@ -8,6 +8,8 @@ interface RewardAwardLockApi
 {
     public function assertAwardInScopeWhenExists(string $awardId): void;
 
+    public function assertAwardProgram(string $awardId, string $programId): void;
+
     /** @param list<string> $awardIds */
     public function assertAwardsInScopeWhenExist(array $awardIds): void;
 
