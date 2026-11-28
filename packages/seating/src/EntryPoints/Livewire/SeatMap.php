@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\EntryPoints\Livewire;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Seating\Contracts\SeatLayoutInterface;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Features\Maps\Models\Seat;
@@ -140,9 +142,17 @@ class SeatMap extends Component
         }
 
         $sectionKey = $this->sectionId ?? 'all';
+        $scope = SeatMapModel::ownerScopeConfig();
+        $owner = $scope->enabled ? OwnerContext::resolveConfigured($scope) : null;
+        $scopeKey = hash('sha256', serialize([
+            $scope->enabled,
+            $owner?->getMorphClass(),
+            $owner?->getKey(),
+            $scope->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
+        ]));
 
         return Cache::remember(
-            "seating:layout:{$map->getKey()}:v{$map->version}:section:{$sectionKey}",
+            "seating:layout:{$map->getKey()}:v{$map->version}:section:{$sectionKey}:scope:{$scopeKey}",
             60,
             fn (): array => app(SeatLayoutInterface::class)->describe((string) $map->getKey(), $this->sectionId),
         );

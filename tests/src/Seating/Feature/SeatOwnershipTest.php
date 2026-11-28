@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap as SeatMapComponent;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
@@ -314,4 +315,37 @@ it('counts assigned allocations across owners against shared section capacity', 
     )))->toThrow(SectionCapacityExceededException::class);
 
     expect(SeatAllocation::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('isolates cached layouts for different owners viewing a shared seat map', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $map = OwnerContext::withOwner(null, fn (): SeatMap => SeatMap::factory()->create());
+
+    $createSeat = function (User $owner, string $code) use ($map): Seat {
+        return OwnerContext::withOwner($owner, function () use ($map, $code): Seat {
+            $section = SeatSection::factory()->create(['seat_map_id' => $map->id, 'code' => $code]);
+
+            return Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+        });
+    };
+
+    $seatA = $createSeat($ownerA, 'PRIVATE-A');
+    $seatB = $createSeat($ownerB, 'PRIVATE-B');
+
+    $layoutFor = function (User $owner) use ($map): array {
+        return OwnerContext::withOwner($owner, function () use ($map): array {
+            $component = new SeatMapComponent;
+            $component->mount(seatMapId: $map->id);
+
+            return $component->getLayoutProperty();
+        });
+    };
+
+    expect(array_column($layoutFor($ownerA)['seats'], 'id'))->toBe([$seatA->id])
+        ->and(array_column($layoutFor($ownerB)['seats'], 'id'))->toBe([$seatB->id])
+        ->and(array_column($layoutFor($ownerA)['seats'], 'id'))->toBe([$seatA->id]);
 });
