@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardAwardEntry;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -91,7 +92,7 @@ final readonly class DismissRewardFraudAction
                 $locked->forceFill(['status' => RewardAwardStatus::Held])->save();
             }
 
-            RewardLedgerEntries::appendAwardEntry(
+            RewardLedgerWriter::appendAwardEntry(
                 $locked,
                 $from,
                 RewardAwardStatus::Held->value,

@@ -9,6 +9,7 @@ use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

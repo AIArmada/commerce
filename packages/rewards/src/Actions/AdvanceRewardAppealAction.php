@@ -12,6 +12,7 @@ use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -154,7 +155,7 @@ final readonly class AdvanceRewardAppealAction
                 $column => $decided,
             ])->save();
 
-            RewardLedgerEntries::appendAppealDecision(
+            RewardLedgerWriter::appendAppealDecision(
                 $locked,
                 $fromStatus,
                 $toEnum->value,

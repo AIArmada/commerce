@@ -20,6 +20,7 @@ use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -613,7 +614,7 @@ final readonly class RecordRewardMilestoneContributionAction
             'approved_at' => $at,
         ]);
 
-        RewardLedgerEntries::appendAwardEntry(
+        RewardLedgerWriter::appendAwardEntry(
             $award,
             'none',
             RewardAwardStatus::Approved->value,

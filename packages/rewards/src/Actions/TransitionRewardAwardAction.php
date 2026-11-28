@@ -35,6 +35,7 @@ use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardPreviewContext;
@@ -326,7 +327,7 @@ final readonly class TransitionRewardAwardAction
             $column => $decided,
         ])->save();
 
-        RewardLedgerEntries::appendAwardEntry(
+        RewardLedgerWriter::appendAwardEntry(
             $locked,
             $fromValue,
             $toEnum->value,

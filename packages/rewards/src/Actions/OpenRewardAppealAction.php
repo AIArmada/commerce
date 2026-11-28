@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -124,7 +125,7 @@ final readonly class OpenRewardAppealAction
                 'closed_at' => null,
             ]);
 
-            RewardLedgerEntries::appendAppealDecision(
+            RewardLedgerWriter::appendAppealDecision(
                 $appeal,
                 'none',
                 RewardAppealStatus::Open->value,

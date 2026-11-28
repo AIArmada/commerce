@@ -26,6 +26,7 @@ use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardEvaluationResult;
+use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardPreviewContext;
@@ -1022,7 +1023,7 @@ final readonly class EvaluateRewardEntitlementAction
             $status->transitionColumn() => $decision,
         ]);
 
-        RewardLedgerEntries::appendAwardEntry(
+        RewardLedgerWriter::appendAwardEntry(
             $award,
             'none',
             $status->value,
