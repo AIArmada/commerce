@@ -102,7 +102,9 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
                 return ReferralFulfillmentResult::failed('The vouchers create action does not expose its public handle method.');
             }
 
-            $voucher = $action->handle($data);
+            $voucher = config('vouchers.owner.enabled', false)
+                ? OwnerContext::withOwner($this->owner($reward), fn () => $action->handle($data))
+                : $action->handle($data);
 
             if (! $voucher instanceof VoucherData) {
                 return ReferralFulfillmentResult::failed('The voucher creator did not return voucher data.');
