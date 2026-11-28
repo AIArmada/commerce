@@ -28,9 +28,7 @@ final readonly class ManageEventTaxonomyAction
 
             $subject = $taxonomyId === null ? EventTaxonomy::class : $taxonomy;
 
-            if (Gate::getPolicyFor($subject) !== null) {
-                Gate::forUser($actor)->authorize($taxonomyId === null ? 'create' : 'update', $subject);
-            }
+            Gate::forUser($actor)->authorize($taxonomyId === null ? 'create' : 'update', $subject);
 
             $taxonomy->fill(Arr::only($data, ['code', 'name', 'description', 'is_hierarchical', 'is_active', 'metadata']));
 

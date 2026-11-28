@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Models\Event;
@@ -60,6 +60,12 @@ final class DefaultEventTemplateService implements EventTemplateService
 
     public function publishedEventOptions(string $search): array
     {
+        return OwnerScopeOverride::withoutIncludeGlobal(fn (): array => $this->searchPublishedEventTemplates($search));
+    }
+
+    /** @return array<string, string> */
+    private function searchPublishedEventTemplates(string $search): array
+    {
         $query = $this->publishedEventQuery();
         LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
@@ -75,7 +81,7 @@ final class DefaultEventTemplateService implements EventTemplateService
             return null;
         }
 
-        $template = $this->publishedEventQuery()->whereKey($templateId)->first(['id', 'name', 'code']);
+        $template = OwnerScopeOverride::withoutIncludeGlobal(fn () => $this->publishedEventQuery()->whereKey($templateId)->first(['id', 'name', 'code']));
 
         return $template instanceof EventTemplate ? $this->templateLabel($template) : null;
     }
@@ -88,7 +94,7 @@ final class DefaultEventTemplateService implements EventTemplateService
 
         Gate::forUser($actor)->authorize('create', ModelResolver::eventClass());
 
-        return DB::transaction(function () use ($templateId): string {
+        return OwnerScopeOverride::withoutIncludeGlobal(fn (): string => DB::transaction(function () use ($templateId): string {
             $template = Str::isUuid($templateId)
                 ? $this->publishedEventQuery()->whereKey($templateId)->lockForUpdate()->first()
                 : null;
@@ -100,13 +106,13 @@ final class DefaultEventTemplateService implements EventTemplateService
             }
 
             return (string) $this->createEventFromTemplate($template, [])->getKey();
-        });
+        }));
     }
 
     /** @return Builder<EventTemplate> */
     private function publishedEventQuery(): Builder
     {
-        return OwnerUiScope::apply(EventTemplate::query(), includeGlobal: false)
+        return EventTemplate::query()
             ->where('template_type', 'event')
             ->where('status', 'published');
     }

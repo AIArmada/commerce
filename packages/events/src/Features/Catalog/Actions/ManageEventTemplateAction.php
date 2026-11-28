@@ -31,9 +31,7 @@ final readonly class ManageEventTemplateAction
             $template = $templateId === null ? new EventTemplate : EventTemplate::query()->whereKey($templateId)->lockForUpdate()->firstOrFail();
             $subject = $templateId === null ? EventTemplate::class : $template;
 
-            if (Gate::getPolicyFor($subject) !== null) {
-                Gate::forUser($actor)->authorize($templateId === null ? 'create' : 'update', $subject);
-            }
+            Gate::forUser($actor)->authorize($templateId === null ? 'create' : 'update', $subject);
 
             $attributes = Validator::make(Arr::only($data, ['name', 'code', 'description', 'template_type', 'status', 'visibility']), [
                 'name' => ['sometimes', 'required', 'string', 'max:255'],

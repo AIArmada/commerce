@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 it('prevents cross-taxonomy parents, cycles, and flattening a populated hierarchy', function (): void {
     $actor = User::factory()->create();
+    \Illuminate\Support\Facades\Gate::define('manageSharedEventCatalog', fn (User $user): bool => $user->is($actor));
     $taxonomy = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $other = EventTaxonomy::factory()->create(['is_hierarchical' => true]);
     $action = app(ManageEventTermAction::class);

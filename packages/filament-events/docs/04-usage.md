@@ -195,3 +195,7 @@ Individual resources can be disabled via config:
     ],
 ],
 ```
+
+### Shared catalog authorization
+
+Taxonomies, terms, venues and venue spaces are shared across owners. Their default policy requires the `manageSharedEventCatalog` Gate ability for mutations. Define that ability in the host application for trusted catalog administrators, or register a model-specific policy. Authentication alone is not sufficient. Event templates instead use owner-specific authorization.

@@ -68,8 +68,6 @@ final readonly class ManageVenueSpaceAction
             throw new AuthorizationException;
         }
 
-        if (Gate::getPolicyFor($subject) !== null) {
-            Gate::forUser($actor)->authorize($ability, $subject);
-        }
+        Gate::forUser($actor)->authorize($ability, $subject);
     }
 }

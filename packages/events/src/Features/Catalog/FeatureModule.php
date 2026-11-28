@@ -19,9 +19,11 @@ use AIArmada\Events\Features\Catalog\Models\EventAttribute;
 use AIArmada\Events\Features\Catalog\Models\EventAudience;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\Events\Features\Catalog\Policies\EventOccurrencePolicy;
 use AIArmada\Events\Features\Catalog\Policies\EventPolicy;
 use AIArmada\Events\Features\Catalog\Policies\EventSessionPolicy;
+use AIArmada\Events\Features\Catalog\Policies\EventTemplatePolicy;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventReferenceResolver;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventTranslationProvider;
 use AIArmada\Events\Features\Catalog\Queries\EloquentCatalogApi;
@@ -62,6 +64,10 @@ final class FeatureModule implements FeatureModuleContract
         Gate::policy(ModelResolver::eventClass(), EventPolicy::class);
         Gate::policy(ModelResolver::occurrenceClass(), EventOccurrencePolicy::class);
         Gate::policy(ModelResolver::sessionClass(), EventSessionPolicy::class);
+
+        if (Gate::getPolicyFor(EventTemplate::class) === null) {
+            Gate::policy(EventTemplate::class, EventTemplatePolicy::class);
+        }
     }
 
     /**

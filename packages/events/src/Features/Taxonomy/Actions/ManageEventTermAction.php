@@ -83,9 +83,7 @@ final readonly class ManageEventTermAction
             throw new AuthorizationException;
         }
 
-        if (Gate::getPolicyFor($subject) !== null) {
-            Gate::forUser($actor)->authorize($ability, $subject);
-        }
+        Gate::forUser($actor)->authorize($ability, $subject);
     }
 
     private function invalidParent(): never

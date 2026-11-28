@@ -40,7 +40,7 @@ use AIArmada\Events\Platform\ExtensionRegistry;
 use AIArmada\Events\Platform\FeatureCatalog;
 use AIArmada\Events\Platform\FeatureModule;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Events\Queries\OwnerScopedEventAdministrationStats;
+use AIArmada\Events\Platform\Queries\OwnerScopedEventAdministrationStats;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;

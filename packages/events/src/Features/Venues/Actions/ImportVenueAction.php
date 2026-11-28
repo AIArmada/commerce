@@ -42,9 +42,7 @@ final readonly class ImportVenueAction
 
             $subject = $venueId === null ? $class : $venue;
 
-            if (Gate::getPolicyFor($subject) !== null) {
-                Gate::forUser($actor)->authorize($venueId === null ? 'create' : 'update', $subject);
-            }
+            Gate::forUser($actor)->authorize($venueId === null ? 'create' : 'update', $subject);
 
             $venue->fill(Arr::only($data, ['name', 'slug', 'venue_type', 'status']));
             $venue->save();
