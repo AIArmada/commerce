@@ -9,6 +9,7 @@ description: Develop Docs integrations using Laravel Dune boundaries. Document c
 - Use `Contracts\DocumentPaymentRecorder`, `CreateDocVersion`, and the document service for changes. Do not mutate document versions or payment totals directly.
 - Use `Contracts\DocumentApprovalRequests` to request or remove pending approvals; never delete settled approvals.
 - Use `Contracts\DocumentApprovals` for approval decisions; resolve actor permissions at the authenticated entry point.
+- Use `Contracts\DocumentTemplates` for document template mutations and default selection.
 - Use `Contracts\DocumentEmailTemplates` for email template creation, editing, duplication, and removal.
 - Keep rendering and delivery tenant-scoped; public share and tracking endpoints must validate their tokens and prevent sensitive caching.
 - Use the canonical `EntryPoints` namespaces for jobs and HTTP controllers.

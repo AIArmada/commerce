@@ -121,7 +121,7 @@ Manages reusable document templates, block layouts, and PDF defaults.
     - `footer`
 - configure `settings.pdf.*` defaults such as format, orientation, margins, and background printing
 - inspect block counts and linked document counts from the list table
-- use **Set as Default** from the table action group to call `DocTemplate::setAsDefault()`
+- use **Set as Default** from the table action group to call `Contracts\DocumentTemplates::setDefault()`
 
 ---
 

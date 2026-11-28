@@ -13,6 +13,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\DocStatusHistory;
+use AIArmada\Docs\Contracts\DocumentTemplates;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
@@ -61,7 +62,7 @@ final class DocsShowcaseSeeder extends Seeder
                 ],
             ],
         );
-        $invoiceTemplate->setAsDefault();
+        app(DocumentTemplates::class)->setDefault((string) $invoiceTemplate->getKey());
 
         $quotationTemplate = DocTemplate::query()->updateOrCreate(
             ['slug' => 'quotation-default'],
