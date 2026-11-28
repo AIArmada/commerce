@@ -6,7 +6,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

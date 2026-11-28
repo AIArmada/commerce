@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
@@ -17,15 +17,13 @@ use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
-use AIArmada\Orders\Transitions\RefundCompleted;
-use AIArmada\Orders\Transitions\RefundProcessed;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
-final class RegisterOrderRefund
+final readonly class RegisterOrderRefund
 {
     use AssertsOrderOwnerBoundary;
 
@@ -41,6 +39,10 @@ final class RegisterOrderRefund
         ?OrderPayment $payment = null,
     ): Order {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('Refund amount must be greater than zero.');
+        }
 
         if (mb_trim($transactionId) === '') {
             throw new InvalidArgumentException('A refund transaction ID is required.');
@@ -63,9 +65,14 @@ final class RegisterOrderRefund
 
             if ($existingRefund instanceof OrderRefund) {
                 $this->assertSamePackageReturn($existingRefund, $metadata);
-                if (isset($metadata['package_unit'])
-                    && $amount !== (int) $order->refunds()->where('transaction_id', $transactionId)->sum('amount')) {
-                    throw new DomainException('The amount does not match the existing package refund.');
+                $existingRows = $order->refunds()->where('transaction_id', $transactionId)->get();
+
+                if ($amount !== (int) $existingRows->sum('amount')) {
+                    throw new DomainException(isset($metadata['package_unit']) ? 'The amount does not match the existing package refund.' : 'The amount does not match the existing refund.');
+                }
+
+                if ($payment !== null && ($existingRows->count() !== 1 || (string) $existingRefund->payment_id !== (string) $payment->getKey())) {
+                    throw new InvalidArgumentException('The specified payment does not match the existing refund allocations.');
                 }
 
                 if ($existingRefund->isPending()) {
@@ -140,11 +147,11 @@ final class RegisterOrderRefund
                 /** @var OrderRefund $existingRefund */
                 $existingRefund = $existing->first();
                 $this->assertSamePackageReturn($existingRefund, $metadata);
-                if (isset($metadata['package_unit']) && $amount !== $existing->sum('amount')) {
-                    throw new DomainException('The amount does not match the existing package refund.');
+                if ($amount !== (int) $existing->sum('amount')) {
+                    throw new DomainException(isset($metadata['package_unit']) ? 'The amount does not match the existing package refund.' : 'The amount does not match the existing refund.');
                 }
 
-                if ($existingRefund->isFailed()) {
+                if ($existing->contains(fn (OrderRefund $refund): bool => $refund->isFailed())) {
                     throw new RuntimeException("Refund transaction {$transactionId} has already failed.");
                 }
 
@@ -351,14 +358,14 @@ final class RegisterOrderRefund
                 // The status-change event already moved the totals; refresh so
                 // any later reads in this request see fresh values.
                 $lockedOrder->refresh();
+
+                event(new OrderRefundFailed($lockedOrder, $lockedRefund, $reason, $lockedRefund->metadata ?? []));
             }
 
             // Report the persisted row: the caller's instance predates the
             // lock and would still read as pending to listeners.
             return $lockedRefund;
         });
-
-        event(new OrderRefundFailed($order, $failed, $reason, $failed->metadata ?? []));
 
         return $failed;
     }

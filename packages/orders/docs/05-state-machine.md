@@ -121,7 +121,7 @@ payment timestamps.
 - A payment above the outstanding balance is rejected with `InvalidArgumentException`.
 
 ```php
-use AIArmada\Orders\Transitions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 
 $order->status->transitionTo(Processing::class, new PaymentConfirmed(
     $order,
@@ -243,7 +243,7 @@ $order->status->transitionTo(Returned::class, new OrderReturned(
 the transition itself is allowed from every one of those source states.
 
 ```php
-use AIArmada\Orders\Transitions\RefundProcessed;
+use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
 
 $order->status->transitionTo(Refunded::class, new RefundProcessed(
     $order,
@@ -304,7 +304,7 @@ completed refunds is marked `PaymentStatus::Refunded`; the order transitions to
 `Refunded` only when settled refunds reach `paid_total`:
 
 ```php
-use AIArmada\Orders\Transitions\RefundCompleted;
+use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
 
 // handle() takes no arguments — the refund is passed to the constructor
 $order = (new RefundCompleted($refund, 'ref_789'))->handle();

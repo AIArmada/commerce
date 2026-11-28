@@ -41,6 +41,7 @@ keywords:
 - Owner/security: Owner-scoped (all 6 models).
 
 ## Key surfaces
+- Payments feature: `Features/Payments` owns payment and refund workflows, including settlement transitions.
 - Outbox feature: `Features/Outbox` owns `order_outbox_messages`; lifecycle callers use `Contracts/OrderOutboxWriter`.
 - Models: `Order`, `OrderItem`, `OrderNote`, `OrderPayment`, `OrderRefund`
 - Actions/Services: `Actions/CancelOrder`, `Actions/CompleteOrder`, `Actions/Concerns/AssertsOrderOwnerBoundary`, `Actions/Concerns/BuildsOrderDocs`, `Actions/Concerns/BuildsOrderPdf`, `Actions/CreateOrder`, `Actions/CreateOrderFromCart`, `Actions/CreateOrderInvoiceDoc`

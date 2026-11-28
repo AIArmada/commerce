@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;

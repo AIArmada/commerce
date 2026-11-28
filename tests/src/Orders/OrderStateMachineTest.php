@@ -19,8 +19,8 @@ use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Transitions\DeliveryConfirmed;
 use AIArmada\Orders\Transitions\OrderCanceled;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
-use AIArmada\Orders\Transitions\RefundProcessed;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
 use AIArmada\Orders\Transitions\ShipmentCreated;
 
 describe('Order State Machine - Full Coverage', function (): void {

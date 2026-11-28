@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\RefundStatus;

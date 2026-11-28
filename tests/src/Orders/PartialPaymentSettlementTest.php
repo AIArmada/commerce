@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;

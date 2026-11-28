@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\PaymentStatus;
@@ -14,7 +14,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Processing;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
@@ -42,6 +42,10 @@ final class PaymentConfirmed extends Transition
     {
         if ($this->amount <= 0) {
             throw new InvalidArgumentException('Payment amount must be greater than zero.');
+        }
+
+        if (mb_trim($this->transactionId) === '' || mb_trim($this->gateway) === '') {
+            throw new InvalidArgumentException('Payment gateway and transaction ID are required.');
         }
 
         $originalOrder = $this->order;
@@ -77,7 +81,7 @@ final class PaymentConfirmed extends Transition
 
             try {
                 // Record payment
-                $this->order->payments()->create([
+                DB::transaction(fn (): OrderPayment => $this->order->payments()->create([
                     'transaction_id' => $this->transactionId,
                     'gateway' => $this->gateway,
                     'amount' => $this->amount,
@@ -85,11 +89,8 @@ final class PaymentConfirmed extends Transition
                     'status' => PaymentStatus::Completed,
                     'paid_at' => CarbonImmutable::now(),
                     'metadata' => $this->metadata,
-                ]);
-            } catch (QueryException $e) {
-                if (! $this->isDuplicateKeyError($e)) {
-                    throw $e;
-                }
+                ]));
+            } catch (UniqueConstraintViolationException $e) {
 
                 // Race condition: another caller inserted the same identity.
                 // Reload and validate rather than re-inserting.
@@ -174,17 +175,13 @@ final class PaymentConfirmed extends Transition
             ));
         }
 
+        if (! in_array($existingPayment->status, [PaymentStatus::Completed, PaymentStatus::Refunded], true)) {
+            throw new InvalidArgumentException('Payment identity exists but has not been completed.');
+        }
+
         $this->syncOriginalOrder($originalOrder);
 
         return $originalOrder;
-    }
-
-    private function isDuplicateKeyError(QueryException $e): bool
-    {
-        $sqlState = (string) $e->getPrevious()?->getCode();
-
-        // 23000 is a generic integrity violation; 23505 is PostgreSQL unique violation.
-        return $sqlState === '23000' || $sqlState === '23505';
     }
 
     private function syncOriginalOrder(Order $originalOrder): void

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;

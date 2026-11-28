@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Actions\CancelOrder;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;

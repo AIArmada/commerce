@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Transitions\PaymentConfirmed;
 
-final class RegisterOrderPayment
+final readonly class RegisterOrderPayment
 {
     use AssertsOrderOwnerBoundary;
 

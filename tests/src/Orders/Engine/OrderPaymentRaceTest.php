@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Orders\OrdersEngineTestCase;
 use AIArmada\Orders\Actions\CancelOrder;
-use AIArmada\Orders\Actions\RegisterOrderPayment;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;

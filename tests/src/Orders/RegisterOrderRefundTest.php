@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
@@ -110,6 +110,9 @@ describe('RegisterOrderRefund', function (): void {
         $action = new RegisterOrderRefund;
         $first = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
         $second = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
+
+        expect(fn () => $action->createPending($order, 4000, 'same-key', 'Conflicting replay'))
+            ->toThrow(DomainException::class, 'amount does not match');
 
         expect($second[0]->getKey())->toBe($first[0]->getKey())
             ->and($order->refresh()->refunds()->count())->toBe(1);

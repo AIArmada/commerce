@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
 use AIArmada\Orders\Events\OrderCancelInitiated;

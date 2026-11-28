@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
@@ -63,4 +63,15 @@ it('still replays a settled transaction idempotently', function (): void {
 
     expect($order->payments()->count())->toBe(1)
         ->and($replayed->id)->toBe($order->id);
+});
+
+it('rejects blank payment identities', function (): void {
+    $order = makePayableOrder();
+
+    expect(fn () => app(RegisterOrderPayment::class)->execute($order, '', 'stripe', 100))
+        ->toThrow(InvalidArgumentException::class, 'transaction ID')
+        ->and(fn () => app(RegisterOrderPayment::class)->execute($order, 'txn_blank_gateway', ' ', 100))
+        ->toThrow(InvalidArgumentException::class, 'gateway');
+
+    expect($order->payments()->count())->toBe(0);
 });

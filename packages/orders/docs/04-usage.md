@@ -87,8 +87,8 @@ The Checkout `CreateOrderStep` uses `intakeSource: 'checkout'` with the session 
 ### Payment & Refunds
 
 ```php
-use AIArmada\Orders\Actions\RegisterOrderPayment;
-use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 
 // Confirm payment
 app(RegisterOrderPayment::class)->execute(
