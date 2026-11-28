@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Drivers;
 
 use AIArmada\Rewards\Contracts\RewardRecipientResolver;
 use Illuminate\Database\Eloquent\Model;

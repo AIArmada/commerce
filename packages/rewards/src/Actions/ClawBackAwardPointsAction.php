@@ -12,7 +12,6 @@ use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
-use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointLedger;
@@ -87,7 +86,7 @@ final readonly class ClawBackAwardPointsAction
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
         $awardId = $award instanceof RewardAward ? (string) $award->getKey() : $award;
-        $resolver = $this->reservationResolver ?? new NullRewardReservationResolver;
+        $resolver = $this->reservationResolver ?? app(RewardReservationResolver::class);
 
         return DB::transaction(function () use ($awardId, $actorType, $actorId, $actorRole, $reason, $decided, $resolver): array {
             $locked = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();

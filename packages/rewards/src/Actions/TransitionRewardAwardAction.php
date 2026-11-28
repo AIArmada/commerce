@@ -34,8 +34,6 @@ use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
-use AIArmada\Rewards\Support\NullRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
@@ -141,8 +139,8 @@ final readonly class TransitionRewardAwardAction
 
         $expiresAt = $pointsExpiresAt === null ? null : CarbonImmutable::parse($pointsExpiresAt)->setTimezone('UTC');
         $awardId = $award instanceof RewardAward ? (string) $award->getKey() : $award;
-        $checker = $this->financialChecker ?? new NullRewardFinancialReadinessChecker;
-        $reader = $this->sourceReader ?? new NullRewardSourceFactReader;
+        $checker = $this->financialChecker ?? app(RewardFinancialReadinessChecker::class);
+        $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
 
         try {
             return DB::transaction(fn (): RewardAward => $this->attempt(

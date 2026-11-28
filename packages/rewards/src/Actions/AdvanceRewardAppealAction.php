@@ -10,7 +10,6 @@ use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
@@ -79,7 +78,7 @@ final readonly class AdvanceRewardAppealAction
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
         $appealId = $appeal instanceof RewardAppeal ? (string) $appeal->getKey() : $appeal;
-        $reader = $this->sourceReader ?? new NullRewardSourceFactReader;
+        $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
 
         return DB::transaction(function () use (
             $appealId,

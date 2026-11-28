@@ -9,7 +9,6 @@ use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\NullRewardReadinessChecker;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +41,7 @@ final readonly class TransitionRewardProgramStatusAction
         }
 
         $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
-        $checker = $this->checker ?? new NullRewardReadinessChecker;
+        $checker = $this->checker ?? app(RewardReadinessChecker::class);
 
         return DB::transaction(function () use ($programId, $toEnum, $checker): RewardProgram {
             $locked = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();

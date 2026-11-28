@@ -44,7 +44,7 @@ use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Support\NullRewardPayoutExecutor;
+use AIArmada\Rewards\Drivers\NullRewardPayoutExecutor;
 use AIArmada\Rewards\Support\PointLedgerRewardReservationResolver;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardPointLedger;

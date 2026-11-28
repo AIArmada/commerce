@@ -20,7 +20,6 @@ use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
@@ -148,7 +147,7 @@ final readonly class RecordRewardMilestoneContributionAction
             throw new InvalidArgumentException('Contribution occurrence cannot be after its recording time.');
         }
 
-        $reader = $this->sourceReader ?? new NullRewardSourceFactReader;
+        $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
         $firstRead = $reader->read($sourceBusinessKey);
 
         if (! $firstRead instanceof RewardSourceFact) {

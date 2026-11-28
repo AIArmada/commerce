@@ -25,7 +25,6 @@ use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Models\RewardSourceCoordinator;
-use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardEvaluationResult;
@@ -146,7 +145,7 @@ final readonly class EvaluateRewardEntitlementAction
         }
 
         $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
-        $reader = $this->sourceReader ?? new NullRewardSourceFactReader;
+        $reader = $this->sourceReader ?? app(RewardSourceFactReader::class);
         $firstRead = $reader->read($sourceBusinessKey);
 
         if (! $firstRead instanceof RewardSourceFact) {
