@@ -45,7 +45,7 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        $session = CheckoutSession::find($this->sessionId);
+        $session = CheckoutSession::query()->forOwner(includeGlobal: false)->find($this->sessionId);
 
         if ($session === null) {
             return;
@@ -61,14 +61,15 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
         $gateway = $this->resolveGateway($session);
 
         foreach ($this->documentTypes as $type) {
-            $this->generateDocument($order, $type, $transactionId, $gateway);
+            if (in_array($type, ['invoice', 'receipt'], true)) {
+                app(OrderDocuments::class)->issue((string) $order->getKey(), $type, $transactionId, $gateway);
+            }
         }
     }
 
     private function resolveOrder(CheckoutSession $session): ?Order
     {
         $order = $session->order()
-            ->with(['items', 'addresses'])
             ->whereKey($this->orderId)
             ->first();
 
@@ -77,15 +78,6 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
         }
 
         return $order;
-    }
-
-    private function generateDocument(Order $order, string $type, string $transactionId, string $gateway): void
-    {
-        match ($type) {
-            'invoice' => app(OrderDocuments::class)->issue((string) $order->getKey(), 'invoice', $transactionId, $gateway),
-            'receipt' => app(OrderDocuments::class)->issue((string) $order->getKey(), 'receipt', $transactionId, $gateway),
-            default => null,
-        };
     }
 
     private function resolveTransactionId(CheckoutSession $session): string

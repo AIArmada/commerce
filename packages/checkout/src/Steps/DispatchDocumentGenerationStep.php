@@ -9,6 +9,7 @@ use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Orders\Contracts\OrderDocuments;
 
 final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
 {
@@ -33,7 +34,7 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
     public function canSkip(CheckoutSession $session): bool
     {
         // Skip if docs package is not available
-        if (! app()->bound(DocServiceInterface::class)) {
+        if (! app()->bound(DocServiceInterface::class) || ! app()->bound(OrderDocuments::class)) {
             return true;
         }
 
@@ -74,7 +75,7 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
             ownerType: $session->owner_type,
             ownerId: $session->owner_id,
             ownerIsGlobal: $session->owner_type === null && $session->owner_id === null,
-        )->onQueue($queue);
+        )->onQueue($queue)->afterCommit();
 
         event(new DocumentsDispatched(
             session: $session,

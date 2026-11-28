@@ -7,10 +7,13 @@ use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
@@ -101,7 +104,8 @@ describe('DocumentsDispatched event', function (): void {
                 && $job->documentTypes === ['invoice']
                 && $job->ownerType === null
                 && $job->ownerId === null
-                && $job->ownerIsGlobal === true;
+                && $job->ownerIsGlobal === true
+                && $job->afterCommit === true;
         });
 
         Event::assertDispatched(DocumentsDispatched::class, function (DocumentsDispatched $event) use ($session): bool {
@@ -110,6 +114,34 @@ describe('DocumentsDispatched event', function (): void {
                 && $event->documents === ['invoice']
                 && $event->queue === 'documents';
         });
+    });
+
+    it('does not use a globally visible checkout session from a tenant job', function (): void {
+        config()->set('checkout.owner.enabled', true);
+        config()->set('checkout.owner.include_global', true);
+        config()->set('checkout.owner.auto_assign_on_create', false);
+        config()->set('orders.owner.enabled', false);
+
+        $owner = User::factory()->create();
+        $order = OwnerContext::withOwner(null, fn (): Order => checkoutDocumentGenerationOrder('global-session'));
+        $session = OwnerContext::withOwner(null, fn (): CheckoutSession => CheckoutSession::forceCreate([
+            'cart_id' => 'cart-docs-global-session',
+            'order_id' => $order->id,
+            'payment_id' => 'pay_global_session',
+            'selected_payment_gateway' => 'chip',
+        ]));
+
+        $documents = mock(OrderDocuments::class);
+        $documents->shouldNotReceive('issue');
+        app()->instance(OrderDocuments::class, $documents);
+
+        (new GenerateCheckoutDocumentsJob(
+            sessionId: $session->id,
+            orderId: $order->id,
+            documentTypes: ['invoice', 'receipt'],
+            ownerType: $owner->getMorphClass(),
+            ownerId: $owner->getKey(),
+        ))->handle();
     });
 
     it('generates configured documents when the dispatched job runs', function (): void {
