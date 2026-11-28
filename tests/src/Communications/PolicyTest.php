@@ -52,3 +52,16 @@ test('policy denies view for different owner', function (): void {
 
     expect($policy->view($owner, $communication))->toBeFalse();
 });
+
+test('global communications are read only in tenant context', function (): void {
+    config()->set('communications.features.owner.include_global', true);
+
+    $owner = OwnerContext::resolve();
+    $policy = app(CommunicationPolicy::class);
+    $communication = new Communication;
+
+    expect($policy->view($owner, $communication))->toBeTrue()
+        ->and($policy->retry($owner, $communication))->toBeFalse()
+        ->and($policy->cancel($owner, $communication))->toBeFalse()
+        ->and(OwnerContext::withOwner(null, fn (): bool => $policy->retry($owner, $communication)))->toBeTrue();
+});

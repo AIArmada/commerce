@@ -7,7 +7,7 @@ namespace AIArmada\Filament\Communications\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Filament\Communications\Resources\CommunicationTemplateResource\Pages;
 use BackedEnum;
 use Filament\Actions\ViewAction;

@@ -6,7 +6,7 @@ namespace AIArmada\Filament\Communications\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\CommunicationCategory;
-use AIArmada\Communications\Models\CommunicationPreference;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
 use AIArmada\Filament\Communications\Resources\CommunicationPreferenceResource\Pages;
 use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;

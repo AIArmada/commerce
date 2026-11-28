@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Factories;
 
 use AIArmada\Persons\Enums\PersonNameType;
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

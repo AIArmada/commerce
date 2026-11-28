@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Persons\Enums\PersonNameType;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Models\PersonName;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,15 +16,13 @@ it('keeps primary application guards and rejects direct duplicate writes', funct
         'slug' => 'indexed-identity',
     ]);
 
-    $first = PersonName::create([
-        'person_id' => $person->getKey(),
+    $first = app(SavePersonName::class)->create($person, [
         'name_type' => PersonNameType::Display,
         'full_name' => 'First Display Name',
         'language_code' => 'en',
         'is_primary' => true,
     ]);
-    $second = PersonName::create([
-        'person_id' => $person->getKey(),
+    $second = app(SavePersonName::class)->create($person, [
         'name_type' => PersonNameType::Display,
         'full_name' => 'Second Display Name',
         'language_code' => 'en',

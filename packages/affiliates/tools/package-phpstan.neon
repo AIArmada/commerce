@@ -1,11 +1,14 @@
 parameters:
     customRulesetUsed: true
     configDirectories:
-        - %currentWorkingDirectory%/config
+        - ../config
     paths:
         - ../src
         - ../config
     tmpDir: ../../../build/phpstan-arch-affiliates
+
+expandRelativePaths:
+    - '[parameters][configDirectories][]'
 
 services:
     -

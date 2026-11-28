@@ -27,6 +27,13 @@ rejected with a validation error. Affiliation institutions resolve from
 `persons.models.institution` when configured (owner-aware when the institution
 model is owner-scoped).
 
+The affiliation institution picker reads its display value from
+`filament-persons.resources.institution.label_column` (default `name`) and
+searches only `filament-persons.resources.institution.search_columns` (default:
+the label column). Configure both when your institution model uses different
+attributes; search input is escaped literally, so `%` and `_` match those
+characters rather than acting as wildcards.
+
 ## Authorization
 
 Every resource gates access through `FilamentPermission` abilities:

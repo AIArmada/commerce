@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "Identity",
+  "owns": {
+    "table:customers": [
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\CreateCustomer",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\UpdateCustomerProfile",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\LinkCustomerToPerson",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\SaveCustomerDetails",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\LinkCustomerToUser",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\DeleteCustomer"
+    ],
+    "table:customer_notes": [
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\ManageCustomerNote",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\CleanupCustomerDependents"
+    ]
+  },
+  "extensions": {}
+}

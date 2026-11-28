@@ -7,8 +7,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Illuminate\Database\Eloquent\Model;
@@ -81,7 +81,6 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
         'name' => 'VIP',
         'slug' => 'vip-a',
         'type' => 'custom',
-        'is_active' => true,
         'is_automatic' => false,
         'priority' => 0,
         'owner_type' => $ownerA->getMorphClass(),
@@ -92,7 +91,6 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
         'name' => 'Newsletter',
         'slug' => 'newsletter-b',
         'type' => 'custom',
-        'is_active' => true,
         'is_automatic' => false,
         'priority' => 0,
         'owner_type' => $ownerB->getMorphClass(),

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\TitleResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\TitleResource;
-use AIArmada\Persons\Actions\ReorderTitleAction;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +29,8 @@ final class EditTitle extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (Title $record): bool => app(DeleteTitle::class)->execute($record)),
         ];
     }
 }

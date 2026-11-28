@@ -202,7 +202,7 @@ test('fake tracks context data', function (): void {
     });
 });
 
-test('fake returns communication with uuid', function (): void {
+test('fake returns communication id as uuid', function (): void {
     $notifiable = new class
     {
         use Notifiable;
@@ -223,8 +223,9 @@ test('fake returns communication with uuid', function (): void {
 
     $communication = Communications::notify($notifiable, $notification);
 
-    expect($communication->id)->toBeString();
-    expect(mb_strlen($communication->id))->toBe(36);
+    expect($communication)->toBeString();
+    expect(mb_strlen($communication))->toBe(36);
+    expect($this->fake->sentNotifications()[0]['communicationId'])->toBe($communication);
 });
 
 test('reset clears all recorded state', function (): void {

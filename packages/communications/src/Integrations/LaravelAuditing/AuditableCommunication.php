@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Integrations\LaravelAuditing;
 
-use AIArmada\Communications\Models\CommunicationPreference;
-use AIArmada\Communications\Models\CommunicationSuppression;
-use AIArmada\Communications\Models\CommunicationTemplate;
-use AIArmada\Communications\Models\CommunicationTemplateVersion;
+use AIArmada\Communications\Runtime\PreferenceAuditModel;
+use AIArmada\Communications\Runtime\SuppressionAuditModel;
+use AIArmada\Communications\Runtime\TemplateRelationModels;
 use OwenIt\Auditing\Auditable;
 
 trait AuditableCommunication
@@ -39,10 +38,10 @@ trait AuditableCommunication
     private function isAuditableModel(): bool
     {
         $auditableModels = [
-            CommunicationTemplate::class,
-            CommunicationTemplateVersion::class,
-            CommunicationPreference::class,
-            CommunicationSuppression::class,
+            app(TemplateRelationModels::class)->template(),
+            app(TemplateRelationModels::class)->version(),
+            app(PreferenceAuditModel::class)->preference(),
+            app(SuppressionAuditModel::class)->suppression(),
         ];
 
         return in_array(static::class, $auditableModels, true);
