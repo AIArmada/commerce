@@ -217,14 +217,18 @@ Configure the customer-facing billing portal:
 | `#ef4444` | Red |
 | `#8b5cf6` | Violet |
 
+## Subscription Plans
+
+The subscription creation form lists only explicitly configured plans from `cashier.gateways.<gateway>.plans`. For example, configure the CHIP plan IDs and display labels in your published `config/cashier.php`. No sample plan IDs are supplied automatically.
+
 ## Authorization & Policies
 
-The package includes built-in policies for customer portal authorization:
+The core Cashier package owns the policies used for customer portal authorization. Payment-method mutations also verify ownership through the selected gateway contract.
 
 ### SubscriptionPolicy
 
 ```php
-namespace AIArmada\FilamentCashier\Policies;
+namespace AIArmada\Cashier\Policies;
 
 class SubscriptionPolicy
 {
@@ -239,7 +243,7 @@ class SubscriptionPolicy
 ### PaymentMethodPolicy
 
 ```php
-namespace AIArmada\FilamentCashier\Policies;
+namespace AIArmada\Cashier\Policies;
 
 class PaymentMethodPolicy
 {
