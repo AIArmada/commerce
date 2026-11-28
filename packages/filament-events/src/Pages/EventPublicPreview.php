@@ -7,11 +7,14 @@ namespace AIArmada\FilamentEvents\Pages;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Platform\ModelResolver;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Infolists;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use UnitEnum;
@@ -45,17 +48,16 @@ final class EventPublicPreview extends Page
             abort(404);
         }
 
-        $event = OwnerUiScope::apply(Event::query()->with([
+        $event = OwnerUiScope::apply(ModelResolver::eventClass()::query()->with([
             'occurrences', 'locations', 'involvements', 'ticketTypes',
             'materials', 'links', 'mediaRecords', 'updates' => fn ($q) => $q->where('is_pinned', true),
         ]), includeGlobal: false)->find($eventId);
 
-        if (! $event instanceof Event) {
+        if (! $event instanceof Event || ! Gate::forUser(Filament::auth()->user())->allows('view', $event)) {
             abort(404);
         }
 
         $this->eventId = $eventId;
-        /* @phpstan-ignore assign.propertyType */
         $this->event = $event;
     }
 

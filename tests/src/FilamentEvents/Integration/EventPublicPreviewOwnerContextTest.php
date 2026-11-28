@@ -45,6 +45,7 @@ it('stamps a visible event at mount', function (): void {
     $owner = previewOwner('Preview Mount Owner');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
+    $this->actingAs($owner);
     $page = app(EventPublicPreview::class);
     $page->mount(previewEvent($owner, 'mount')->id);
     $page->mountVerifiesRecordOwnerContext();
@@ -58,6 +59,7 @@ it('clears the event after an owner switch', function (): void {
     $ownerB = previewOwner('Preview Switch B');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
+    $this->actingAs($ownerA);
     $page = app(EventPublicPreview::class);
     $page->mount(previewEvent($ownerA, 'switch')->id);
     $page->mountVerifiesRecordOwnerContext();
@@ -149,6 +151,7 @@ it('clears the event on refresh after an owner switch through a real request cyc
     $ownerB = previewOwner('Preview Live Cycle B');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
+    $this->actingAs($ownerA);
     $test = Livewire::test(EventPublicPreview::class, ['eventId' => previewEvent($ownerA, 'live')->getKey()]);
 
     expect($test->get('event'))->not->toBeNull()
@@ -170,4 +173,14 @@ it('exposes the owner guard hooks and locked event props', function (): void {
         ->and((new ReflectionProperty($page, 'event'))->getAttributes(Locked::class))->not->toBeEmpty()
         ->and((new ReflectionProperty($page, 'eventId'))->getAttributes(Locked::class))->not->toBeEmpty()
         ->and((new ReflectionProperty($page, 'recordOwnerStamp'))->getAttributes(Locked::class))->not->toBeEmpty();
+});
+
+it('rejects a same-scope event preview when its actor is denied', function (): void {
+    $owner = previewOwner('Preview Permission Owner');
+    $outsider = previewOwner('Preview Permission Outsider');
+    $event = previewEvent($owner, 'forbidden');
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+    $this->actingAs($outsider);
+
+    expect(fn () => app(EventPublicPreview::class)->mount($event->id))->toThrow(NotFoundHttpException::class);
 });

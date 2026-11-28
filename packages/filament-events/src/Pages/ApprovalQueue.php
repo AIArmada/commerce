@@ -9,6 +9,7 @@ use AIArmada\Events\Contracts\EventApprovalWorkflow;
 use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
 use AIArmada\Events\Features\Governance\Models\EventSubmission;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -41,7 +42,7 @@ final class ApprovalQueue extends Page implements HasTable
     {
         return $table
             ->query(
-                EventApprovalRequest::query()
+                ModelResolver::approvalRequestClass()::query()
                     ->whereHasMorph(
                         'approvable',
                         ['event_submission'],
