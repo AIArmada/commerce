@@ -9,8 +9,8 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
@@ -279,7 +279,7 @@ final class VouchersTable
                     ->icon(Heroicon::OutlinedPencil),
 
                 DeleteAction::make()
-                    ->using(fn (Voucher $record): bool => app(VoucherDeletion::class)->handle($record))
+                    ->using(fn (Voucher $record): bool => app(VoucherDeletion::class)->handle((string) $record->getKey()))
                     ->icon(Heroicon::OutlinedTrash)
                     ->requiresConfirmation(),
             ])
@@ -291,7 +291,7 @@ final class VouchersTable
                                 abort_unless(VoucherResource::canDelete($record), 403);
                             }
 
-                            app(VoucherDeletion::class)->handleMany($records);
+                            app(VoucherDeletion::class)->handleMany($records->map(static fn (Voucher $record): string => (string) $record->getKey())->values()->all());
                         })
                         ->label('Delete selected')
                         ->icon(Heroicon::OutlinedTrash)

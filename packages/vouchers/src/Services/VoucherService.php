@@ -12,11 +12,11 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
@@ -87,7 +87,9 @@ class VoucherService implements VoucherServiceInterface
 
     public function delete(string $code): bool
     {
-        return app(VoucherDeletion::class)->handle($code);
+        $voucherId = $this->catalog->resolveId($code);
+
+        return $voucherId !== null && app(VoucherDeletion::class)->handle($voucherId);
     }
 
     public function validate(string $code, mixed $cart): VoucherValidationResult

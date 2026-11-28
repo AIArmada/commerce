@@ -5,45 +5,36 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherDeletion;
-use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
 
 final class DeleteVoucher implements VoucherDeletion
 {
-    use QueriesVouchers;
-
-    public function handle(string | Voucher $voucher): bool
+    public function handle(string $voucherId): bool
     {
-        $record = $voucher instanceof Voucher
-            ? $voucher
-            : $this->voucherQuery()->where('code', $this->normalizeCode($voucher))->first();
-
-        if (! $record instanceof Voucher) {
-            return false;
-        }
-
-        return $record->getConnection()->transaction(function () use ($record): bool {
+        return (new Voucher)->getConnection()->transaction(function () use ($voucherId): bool {
             $locked = config('vouchers.owner.enabled', false)
-                ? OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey(), lockForUpdate: true)
-                : Voucher::query()->whereKey($record->getKey())->lockForUpdate()->first();
+                ? OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucherId, lockForUpdate: true)
+                : Voucher::query()->whereKey($voucherId)->lockForUpdate()->first();
 
             return $locked instanceof Voucher && $locked->delete() === true;
         });
     }
 
-    /** @param Collection<int, Voucher> $records */
-    public function handleMany(Collection $records): void
+    /** @param list<string> $voucherIds */
+    public function handleMany(array $voucherIds): void
     {
-        if ($records->isEmpty()) {
+        if ($voucherIds === []) {
             return;
         }
 
-        (new Voucher)->getConnection()->transaction(function () use ($records): void {
-            foreach ($records->sortBy(static fn (Voucher $record): string => (string) $record->getKey()) as $record) {
-                if (! $this->handle($record)) {
+        $voucherIds = array_values(array_unique($voucherIds));
+        sort($voucherIds, SORT_STRING);
+
+        (new Voucher)->getConnection()->transaction(function () use ($voucherIds): void {
+            foreach ($voucherIds as $voucherId) {
+                if (! $this->handle($voucherId)) {
                     throw new RuntimeException('Unable to delete voucher in the selected batch.');
                 }
             }

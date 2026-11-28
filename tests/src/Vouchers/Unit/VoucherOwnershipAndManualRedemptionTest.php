@@ -11,6 +11,7 @@ use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -284,4 +285,35 @@ it('changes availability only for the exact owned voucher identity', function ()
     });
 
     OwnerContext::withOwner($other, fn () => expect($foreign->refresh()->status)->toBeInstanceOf(Active::class));
+});
+
+it('rolls back an entire deletion batch when one identity belongs to another owner', function (): void {
+    config(['vouchers.owner.enabled' => true]);
+
+    $owner = TestOwner::create(['name' => 'Deletion Owner']);
+    $other = TestOwner::create(['name' => 'Other Deletion Owner']);
+
+    $data = [
+        'code' => 'DELETE-SCOPED',
+        'name' => 'Deletion Voucher',
+        'type' => VoucherType::Fixed,
+        'value' => 100,
+        'currency' => 'USD',
+        'status' => 'active',
+    ];
+
+    $voucher = OwnerContext::withOwner($owner, fn (): Voucher => Voucher::create($data));
+    $foreign = OwnerContext::withOwner($other, fn (): Voucher => Voucher::create($data));
+
+    OwnerContext::withOwner($owner, function () use ($voucher, $foreign): void {
+        $deletion = app(VoucherDeletion::class);
+
+        expect(fn () => $deletion->handleMany([$voucher->id, $foreign->id]))->toThrow(AuthorizationException::class)
+            ->and(Voucher::query()->whereKey($voucher->id)->exists())->toBeTrue();
+
+        $deletion->handleMany([$voucher->id, $voucher->id]);
+        expect(Voucher::query()->whereKey($voucher->id)->exists())->toBeFalse();
+    });
+
+    OwnerContext::withOwner($other, fn () => expect(Voucher::query()->whereKey($foreign->id)->exists())->toBeTrue());
 });
