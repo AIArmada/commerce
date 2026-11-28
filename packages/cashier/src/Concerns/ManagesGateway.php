@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Concerns;
 
+use AIArmada\Cashier\Actions\SetPreferredGateway;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
@@ -13,11 +14,7 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\Cashier\Support\ActionGuard;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
-use LogicException;
 
 /**
  * Unified Billable trait for multi-gateway support.
@@ -25,7 +22,7 @@ use LogicException;
  * This trait provides a unified interface for interacting with multiple
  * payment gateways (Stripe, CHIP, etc.) through a single API.
  */
-trait ManagesGateway // @phpstan-ignore trait.unused
+trait ManagesGateway
 {
     /**
      * Get a gateway instance.
@@ -48,14 +45,7 @@ trait ManagesGateway // @phpstan-ignore trait.unused
      */
     public function setPreferredGateway(string $gateway): static
     {
-        $gateway = ActionGuard::gatewayName($gateway);
-
-        if ($this instanceof Model && ! Schema::connection($this->getConnectionName())->hasColumn($this->getTable(), 'preferred_gateway')) {
-            throw new LogicException('Billable model [' . $this::class . '] must have a preferred_gateway column to persist the preferred gateway.');
-        }
-
-        $this->preferred_gateway = $gateway;
-        $this->save();
+        app(SetPreferredGateway::class)->handle($this, $gateway);
 
         return $this;
     }

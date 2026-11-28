@@ -10,12 +10,12 @@ use AIArmada\Cashier\Concerns\Billable;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\Exceptions\Gateway\InvalidGatewayException;
 use AIArmada\Cashier\Exceptions\Payment\PaymentFailedException;
 use AIArmada\Cashier\Exceptions\PaymentOperationRateLimitedException;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\Cashier\Gateways\ChipGateway;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
@@ -129,6 +129,29 @@ describe('Action owner authorization', function (): void {
         expect(fn () => OwnerContext::withOwner(
             $this->ownerB,
             fn () => CreatePayment::run($user, 5000, 'pm_test'),
+        ))->toThrow(AuthorizationException::class);
+    });
+
+    it('enforces the billable owner configuration independently of the global flag', function (): void {
+        config()->set('commerce-support.owner.enabled', false);
+
+        $user = OwnerContext::withOwner($this->ownerA, fn () => OwnerScopedBillableUser::query()->create([
+            'name' => 'Scoped User',
+            'email' => 'scoped@example.com',
+        ]));
+
+        $subscription = Mockery::mock(SubscriptionContract::class);
+        $subscription->shouldReceive('owner')->andReturn($user);
+        $subscription->shouldNotReceive('cancel');
+
+        expect(fn () => OwnerContext::withOwner(
+            $this->ownerB,
+            fn () => CreatePayment::run($user, 5000, 'pm_test'),
+        ))->toThrow(AuthorizationException::class);
+
+        expect(fn () => OwnerContext::withOwner(
+            $this->ownerB,
+            fn () => CancelSubscription::run($subscription),
         ))->toThrow(AuthorizationException::class);
     });
 

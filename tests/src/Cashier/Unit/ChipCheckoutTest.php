@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\Chip\ChipCheckout;
+use AIArmada\Cashier\Drivers\Chip\ChipCheckout;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 

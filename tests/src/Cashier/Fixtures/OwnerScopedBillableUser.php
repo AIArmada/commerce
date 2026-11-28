@@ -346,7 +346,7 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function invoices(bool | array $parameters = false): Collection
+    public function invoices(bool | array | int | null $parameters = false): Collection
     {
         return collect();
     }

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Facades\Route;
 

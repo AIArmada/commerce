@@ -1,0 +1,331 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Cashier\Drivers\Chip;
+
+use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\CheckoutContract;
+use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
+use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Support\ActionGuard;
+use InvalidArgumentException;
+
+/**
+ * Builder for CHIP checkout sessions (purchases).
+ *
+ * This class provides compatibility with the unified cashier interface while
+ * delegating to the native cashier-chip CheckoutBuilder when available.
+ */
+class ChipCheckoutBuilder implements DynamicCheckoutBuilderContract
+{
+    /**
+     * The billable model.
+     */
+    protected ?BillableContract $billable = null;
+
+    /**
+     * The products for the checkout.
+     *
+     * @var array<array<string, mixed>>
+     */
+    protected array $products = [];
+
+    /**
+     * The success URL.
+     */
+    protected ?string $success = null;
+
+    /**
+     * The cancel URL.
+     */
+    protected ?string $cancel = null;
+
+    /**
+     * The checkout mode.
+     */
+    protected string $checkoutMode = 'payment';
+
+    /**
+     * The metadata.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $meta = [];
+
+    /**
+     * The trial days.
+     */
+    protected ?int $trial = null;
+
+    /**
+     * The coupon code.
+     */
+    protected ?string $couponCode = null;
+
+    /**
+     * Whether to allow promotion codes.
+     */
+    protected bool $allowPromos = false;
+
+    /**
+     * Create a new checkout builder.
+     */
+    public function __construct(
+        protected ChipGateway $gateway,
+        ?BillableContract $customer = null
+    ) {
+        $this->billable = $customer;
+    }
+
+    /**
+     * Set the customer for the checkout.
+     */
+    public function customer(BillableContract $customer): static
+    {
+        $this->billable = $customer;
+
+        return $this;
+    }
+
+    /**
+     * Add a price/product to the checkout.
+     *
+     * Accepts "name:amountInMinorUnits"; anything else must go through
+     * product() so a checkout can never silently post a zero amount.
+     */
+    public function price(string $price, int $quantity = 1): static
+    {
+        if (str_contains($price, ':')) {
+            [$name, $amount] = array_map(mb_trim(...), explode(':', $price, 2));
+
+            if ($name !== '' && is_numeric($amount) && (int) $amount > 0) {
+                return $this->product($name, (int) $amount, $quantity);
+            }
+        }
+
+        throw new InvalidArgumentException(
+            'CHIP checkout requires explicit product amounts: use product($name, $priceInCents, $quantity) or price("name:amountInCents", $quantity).'
+        );
+    }
+
+    /**
+     * Add a product with name and price.
+     */
+    public function product(string $name, int $priceInCents, int $quantity = 1): static
+    {
+        $this->products[] = [
+            'name' => $name,
+            'quantity' => $quantity,
+            'price' => $priceInCents,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Add multiple prices/products to the checkout.
+     *
+     * @param  array<string, int>  $prices
+     */
+    public function prices(array $prices): static
+    {
+        foreach ($prices as $price => $quantity) {
+            $this->price($price, $quantity);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set the success URL.
+     */
+    public function successUrl(string $url): static
+    {
+        $this->success = $url;
+
+        return $this;
+    }
+
+    /**
+     * Set the cancel URL.
+     */
+    public function cancelUrl(string $url): static
+    {
+        $this->cancel = $url;
+
+        return $this;
+    }
+
+    /**
+     * Set the mode (payment, subscription, setup).
+     */
+    public function mode(string $mode): static
+    {
+        $this->checkoutMode = $mode;
+
+        return $this;
+    }
+
+    /**
+     * Apply a coupon or promotion code.
+     *
+     * Uses the vouchers package integration in cashier-chip.
+     */
+    public function coupon(string $coupon): static
+    {
+        $this->couponCode = $coupon;
+        $this->meta['coupon_id'] = $coupon;
+
+        return $this;
+    }
+
+    /**
+     * Allow promotion codes.
+     *
+     * Uses the vouchers package integration in cashier-chip.
+     */
+    public function allowPromotionCodes(bool $allow = true): static
+    {
+        $this->allowPromos = $allow;
+        $this->meta['allow_promotion_codes'] = $allow;
+
+        return $this;
+    }
+
+    /**
+     * Collect tax ID from the customer.
+     * Note: CHIP handles tax differently.
+     */
+    public function collectTaxIds(bool $collect = true): static
+    {
+        // CHIP handles tax collection differently
+        return $this;
+    }
+
+    /**
+     * Set metadata for the checkout.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function metadata(array $metadata): static
+    {
+        $this->meta = $metadata;
+
+        return $this;
+    }
+
+    /**
+     * Set the trial period in days.
+     */
+    public function trialDays(int $days): static
+    {
+        $this->trial = $days;
+
+        return $this;
+    }
+
+    /**
+     * Force recurring token collection.
+     */
+    public function forRecurring(bool $force = true): static
+    {
+        $this->meta['force_recurring'] = $force;
+
+        return $this;
+    }
+
+    /**
+     * Skip capture (for trials or payment method collection).
+     */
+    public function skipCapture(bool $skip = true): static
+    {
+        $this->meta['skip_capture'] = $skip;
+
+        return $this;
+    }
+
+    /**
+     * Create the checkout session (purchase).
+     */
+    public function create(): CheckoutContract
+    {
+        if ($this->billable !== null) {
+            ActionGuard::assertBillableInScope($this->billable);
+        }
+
+        $options = [
+            'purchase' => [
+                'products' => $this->products,
+                'metadata' => $this->meta,
+            ],
+            'success_redirect' => $this->success ?? url('/'),
+            'cancel_redirect' => $this->cancel ?? url('/'),
+            'brand_id' => $this->gateway->brandId(),
+        ];
+
+        $chipCustomerId = $this->resolveBillableChipId();
+
+        if ($chipCustomerId !== null) {
+            $options['client_id'] = $chipCustomerId;
+        } elseif ($this->billable) {
+            $options['client'] = [
+                'email' => $this->billable->customerEmail(),
+                'full_name' => $this->billable->customerName() ?? $this->billable->customerEmail(),
+            ];
+        }
+
+        if (isset($this->meta['force_recurring']) && $this->meta['force_recurring']) {
+            $options['force_recurring'] = true;
+        }
+
+        if (isset($this->meta['skip_capture']) && $this->meta['skip_capture']) {
+            $options['skip_capture'] = true;
+        }
+
+        // For trial/setup mode, use zero amount with skip_capture
+        if ($this->checkoutMode === 'setup' || ($this->trial && $this->checkoutMode === 'subscription')) {
+            $options['purchase']['products'] = [
+                [
+                    'name' => 'Payment Method Setup',
+                    'price' => 0,
+                    'quantity' => 1,
+                ],
+            ];
+            $options['skip_capture'] = true;
+            $options['force_recurring'] = true;
+        }
+
+        // Keyless-path invariant: this path stays keyless — there is no stable
+        // operation identity, and fingerprinting here would collapse
+        // buy-twice-identical. The fingerprinted checkout route is the
+        // separate PurchasesApi::createCheckoutPurchase, which emits the
+        // header for its resolved key.
+        //
+        // AGENTS: keyless means ZERO duplicate protection — a double-click
+        // or retried request here creates a second CHIP purchase (CHIP
+        // ignores Idempotency-Key on creates; see PurchasesApi). UI callers
+        // MUST add their own double-submit guard (disable the button,
+        // redirect-after-POST). Do NOT "fix" this by adding a key here.
+        $purchase = $this->gateway->client()->createPurchase($options);
+
+        return new ChipCheckout($purchase);
+    }
+
+    private function resolveBillableChipId(): ?string
+    {
+        if (! $this->billable) {
+            return null;
+        }
+
+        if (method_exists($this->billable, 'chipId')) {
+            $chipId = $this->billable->chipId();
+
+            if (is_string($chipId) && $chipId !== '') {
+                return $chipId;
+            }
+        }
+
+        return $this->billable->gatewayId('chip');
+    }
+}

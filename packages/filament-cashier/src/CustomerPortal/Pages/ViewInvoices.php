@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
-use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Cashier\Queries\CustomerInvoicesQuery;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 final class ViewInvoices extends Page
 {
@@ -60,83 +58,16 @@ final class ViewInvoices extends Page
     {
         $user = auth()->user();
 
-        if ($user === null) {
+        if (! $user instanceof Model) {
+            $this->hasMoreInvoices = false;
+
             return collect();
         }
 
-        $invoices = collect();
-        $detector = app(GatewayDetector::class);
-
-        // Get Stripe invoices
-        if ($detector->isAvailable('stripe') && method_exists($user, 'invoices')) {
-            try {
-                $stripeInvoices = $user->invoices();
-
-                foreach ($stripeInvoices as $invoice) {
-                    $invoiceDate = $invoice->date();
-
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'stripe',
-                        'number' => $invoice->number ?? $invoice->id,
-                        'amount' => $invoice->total(),
-                        'date' => $invoiceDate->format('M d, Y'),
-                        'status' => $invoice->paid ? 'paid' : 'open',
-                        'download_url' => $invoice->invoicePdf(),
-                        'sort_timestamp' => $invoiceDate->timestamp,
-                    ]);
-                }
-            } catch (Throwable $e) {
-                Log::debug('Failed to retrieve Stripe invoices', ['error' => $e->getMessage()]);
-            }
-        }
-
-        // Get CHIP invoices
-        if ($detector->isAvailable('chip') && method_exists($user, 'chipInvoices')) {
-            try {
-                $chipInvoices = $user->chipInvoices();
-
-                foreach ($chipInvoices as $invoice) {
-                    $createdAt = $invoice->created_at;
-                    $currency = (string) ($invoice->currency ?? config('cashier.currency', 'MYR'));
-
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'chip',
-                        'number' => $invoice->number ?? $invoice->id,
-                        'amount' => MoneyFormatter::formatMinor((int) ($invoice->amount ?? 0), $currency),
-                        'date' => $createdAt?->format('M d, Y') ?? 'N/A',
-                        'status' => $invoice->status ?? 'unknown',
-                        'download_url' => $invoice->pdf_url ?? null,
-                        'sort_timestamp' => $createdAt?->timestamp ?? 0,
-                    ]);
-                }
-            } catch (Throwable $e) {
-                Log::debug('Failed to retrieve CHIP invoices', ['error' => $e->getMessage()]);
-            }
-        }
-
         $limit = min(max(1, $this->limit), self::MAX_LIMIT);
-        $sorted = $invoices->sortByDesc('sort_timestamp')->values();
-        $this->hasMoreInvoices = $sorted->count() > $limit;
+        $invoices = app(CustomerInvoicesQuery::class)->getForUser($user, $limit + 1);
+        $this->hasMoreInvoices = $limit < self::MAX_LIMIT && $invoices->count() > $limit;
 
-        /** @var Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
-        $result = $sorted
-            ->take($limit)
-            ->map(function (array $invoice): array {
-                return [
-                    'id' => (string) $invoice['id'],
-                    'gateway' => (string) $invoice['gateway'],
-                    'number' => (string) $invoice['number'],
-                    'amount' => (string) $invoice['amount'],
-                    'date' => (string) $invoice['date'],
-                    'status' => (string) $invoice['status'],
-                    'download_url' => is_string($invoice['download_url'] ?? null) ? $invoice['download_url'] : null,
-                ];
-            })
-            ->values();
-
-        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
-        return $result;
+        return $invoices->take($limit)->values();
     }
 }

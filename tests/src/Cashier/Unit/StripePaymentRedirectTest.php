@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Gateways\Stripe\StripePayment;
+use AIArmada\Cashier\Drivers\Stripe\StripePayment;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Cashier\Payment;

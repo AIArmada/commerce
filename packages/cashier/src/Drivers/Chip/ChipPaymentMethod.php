@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Cashier\Drivers\Chip;
+
+use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
+use AIArmada\CashierChip\Payment\PaymentMethod as ChipNativePaymentMethod;
+use Exception;
+use InvalidArgumentException;
+
+/**
+ * Wrapper for CHIP payment method (recurring token).
+ */
+class ChipPaymentMethod implements PaymentMethodContract
+{
+    /** @var array<string, mixed> */
+    protected array $token;
+
+    /**
+     * Create a new CHIP payment method wrapper.
+     */
+    public function __construct(mixed $token, protected ?BillableContract $billable = null)
+    {
+        if ($token instanceof ChipNativePaymentMethod) {
+            $token = [
+                'id' => $token->id(),
+                'type' => $token->type(),
+                'brand' => $token->brand(),
+                'last_four' => $token->lastFour(),
+                'is_default' => $token->isDefault(),
+            ];
+        }
+
+        if (! is_array($token)) {
+            throw new InvalidArgumentException('ChipPaymentMethod expects an array token or ' . ChipNativePaymentMethod::class);
+        }
+
+        /** @var array<string, mixed> $token */
+        $this->token = $token;
+    }
+
+    /**
+     * Get the payment method ID (recurring token).
+     */
+    public function id(): string
+    {
+        return is_string($this->token['id'] ?? null) ? $this->token['id'] : '';
+    }
+
+    /**
+     * Get the gateway name.
+     */
+    public function gateway(): string
+    {
+        return 'chip';
+    }
+
+    /**
+     * Get the card brand.
+     */
+    public function brand(): ?string
+    {
+        return is_string($this->token['brand'] ?? null) ? $this->token['brand'] : null;
+    }
+
+    /**
+     * Get the last four digits.
+     */
+    public function lastFour(): ?string
+    {
+        return is_string($this->token['last_four'] ?? null) ? $this->token['last_four'] : null;
+    }
+
+    /**
+     * Get the expiration month.
+     */
+    public function expirationMonth(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * Get the expiration year.
+     */
+    public function expirationYear(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * Get the payment method type.
+     */
+    public function type(): string
+    {
+        $type = $this->token['payment_method'] ?? $this->token['type'] ?? null;
+
+        return is_string($type) ? $type : '';
+    }
+
+    /**
+     * Determine if this is the default payment method.
+     */
+    public function isDefault(): bool
+    {
+        if (is_bool($this->token['is_default'] ?? null)) {
+            return $this->token['is_default'];
+        }
+
+        if (! $this->billable) {
+            return false;
+        }
+
+        if (! method_exists($this->billable, 'defaultPaymentMethod')) {
+            return false;
+        }
+
+        $default = $this->billable->defaultPaymentMethod();
+
+        if (is_string($default)) {
+            return $default === $this->id();
+        }
+
+        if (is_array($default)) {
+            return ($default['id'] ?? null) === $this->id();
+        }
+
+        if ($default instanceof ChipNativePaymentMethod || $default instanceof PaymentMethodContract) {
+            return $default->id() === $this->id();
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the owner.
+     */
+    public function owner(): ?BillableContract
+    {
+        return $this->billable;
+    }
+
+    /**
+     * Delete the payment method.
+     *
+     * @throws Exception
+     */
+    public function delete(): void
+    {
+        if (! $this->billable) {
+            throw new Exception('Cannot delete payment method without billable owner');
+        }
+
+        if (! method_exists($this->billable, 'deletePaymentMethod')) {
+            throw new Exception('Billable owner cannot delete CHIP payment methods');
+        }
+
+        $this->billable->deletePaymentMethod($this->id());
+    }
+
+    public function makeDefault(): void
+    {
+        if ($this->billable === null || ! method_exists($this->billable, 'updateDefaultPaymentMethod')) {
+            throw new InvalidArgumentException('Payment method owner cannot update the default payment method.');
+        }
+
+        $this->billable->updateDefaultPaymentMethod($this->id());
+    }
+
+    /**
+     * Get the underlying payment method data.
+     *
+     * @return array<string, mixed>
+     */
+    public function asGatewayPaymentMethod(): array
+    {
+        return $this->token;
+    }
+
+    /**
+     * Convert to array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id(),
+            'gateway' => $this->gateway(),
+            'type' => $this->type(),
+            'brand' => $this->brand(),
+            'last_four' => $this->lastFour(),
+            'expiration_month' => $this->expirationMonth(),
+            'expiration_year' => $this->expirationYear(),
+            'is_default' => $this->isDefault(),
+        ];
+    }
+
+    /**
+     * Convert to JSON.
+     */
+    public function toJson($options = 0): string
+    {
+        return json_encode($this->toArray(), $options) ?: '{}';
+    }
+}

@@ -16,6 +16,10 @@ use Stripe\HttpClient\CurlClient;
 
 uses(CashierTestCase::class);
 
+beforeEach(function (): void {
+    config()->set('cashier.tests.owner.enabled', false);
+});
+
 /*
 |--------------------------------------------------------------------------
 | CHK-10: provider customer identity is frozen through the real SDK

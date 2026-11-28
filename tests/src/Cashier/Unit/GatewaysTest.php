@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Contracts\GatewayContract;
-use AIArmada\Cashier\Gateways\AbstractGateway;
-use AIArmada\Cashier\Gateways\ChipGateway;
-use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Cashier\Drivers\AbstractGateway;
+use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\WebhookResult;

@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Checkout;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
+use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
-use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
-use AIArmada\Inventory\InventoryServiceProvider;
-use Illuminate\Http\RedirectResponse;
+use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
@@ -51,9 +52,6 @@ final class CartCheckoutBuilder
 
     /** @var array<string, mixed> */
     private array $metadata = [];
-
-    /** @var array<string, mixed> */
-    private array $gatewayOptions = [];
 
     public function __construct(Cart $cart, GatewayContract $gateway)
     {
@@ -149,18 +147,6 @@ final class CartCheckoutBuilder
     }
 
     /**
-     * Add gateway-specific options.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function gatewayOptions(array $options): self
-    {
-        $this->gatewayOptions = array_merge($this->gatewayOptions, $options);
-
-        return $this;
-    }
-
-    /**
      * Process the checkout: validate, allocate inventory, create payment.
      *
      * Stock validation and inventory allocation run inside a transaction.
@@ -171,6 +157,12 @@ final class CartCheckoutBuilder
      */
     public function process(): CheckoutContract
     {
+        if ($this->customer === null) {
+            throw new InvalidArgumentException('Customer is required for checkout. Call customer() first.');
+        }
+
+        ActionGuard::assertBillableInScope($this->customer);
+
         DB::transaction(function (): void {
             // Validate stock if configured
             if ($this->validateStock) {
@@ -192,81 +184,46 @@ final class CartCheckoutBuilder
         }
     }
 
-    /**
-     * Process and redirect to the payment page.
-     */
-    public function redirect(): RedirectResponse
-    {
-        $checkout = $this->process();
-
-        return redirect($checkout->url());
-    }
-
-    /**
-     * Validate stock availability for all cart items.
-     *
-     * @throws InsufficientStockException
-     */
     private function performStockValidation(): void
     {
-        if (! class_exists(InventoryServiceProvider::class)) {
+        $manager = $this->inventoryManager();
+
+        if ($manager === null) {
             return;
         }
 
-        // Use cart's inventory validation if available. Decorators stack
-        // (e.g. vouchers wrapping inventory), so unwrap one level to find it.
-        $manager = app('cart');
+        $validation = $manager->validateInventory($this->cart);
 
-        if (! $manager instanceof CartManagerWithInventory && method_exists($manager, 'getBaseManager')) {
-            $manager = $manager->getBaseManager();
-        }
-
-        if ($manager instanceof CartManagerWithInventory) {
-            $validation = $manager->validateInventory();
-
-            if (! $validation['available']) {
-                throw new InsufficientStockException(
-                    'Insufficient stock for some items',
-                    $validation['issues'] ?? []
-                );
-            }
+        if (! $validation['available']) {
+            throw new InsufficientStockException('Insufficient stock for some items', $validation['issues']);
         }
     }
 
-    /**
-     * Allocate inventory for cart items.
-     */
     private function performInventoryAllocation(): void
     {
-        if (! class_exists(InventoryServiceProvider::class)) {
-            return;
-        }
-
-        $cartManager = app('cart');
-
-        if (method_exists($cartManager, 'allocateAllInventory')) {
-            $cartManager->allocateAllInventory($this->inventoryTtl);
-        }
+        $this->inventoryManager()?->allocateAllInventory($this->inventoryTtl, $this->cart);
     }
 
-    /**
-     * Release the cart allocation after a gateway failure.
-     */
     private function releaseInventoryAllocation(): void
     {
-        if (! $this->allocateInventory || ! class_exists(InventoryServiceProvider::class)) {
+        if (! $this->allocateInventory || ! app()->bound(InventoryAllocationService::class)) {
             return;
         }
 
+        $id = $this->cart->getId() ?? sprintf('%s_%s', $this->cart->getIdentifier(), $this->cart->instance());
+        app(InventoryAllocationService::class)->releaseAllForCart($id);
+    }
+
+    private function inventoryManager(): ?CartManagerWithInventory
+    {
+        if (! app()->bound(InventoryAllocationService::class) || ! app()->bound('cart')) {
+            return null;
+        }
+
+        /** @var CartManagerInterface $manager */
         $manager = app('cart');
 
-        if (! $manager instanceof CartManagerWithInventory && method_exists($manager, 'getBaseManager')) {
-            $manager = $manager->getBaseManager();
-        }
-
-        if ($manager instanceof CartManagerWithInventory) {
-            $manager->releaseAllInventory();
-        }
+        return CartManagerWithInventory::fromCartManager($manager);
     }
 
     /**
@@ -329,7 +286,7 @@ final class CartCheckoutBuilder
 
         // For gateways with dynamic pricing (like CHIP) the real unit
         // amount travels with the item name so the purchase never posts 0.
-        if ($builder instanceof ChipCheckoutBuilder) {
+        if ($builder instanceof DynamicCheckoutBuilderContract) {
             $builder->product(
                 $item->getLineItemName(),
                 (int) $item->getLineItemPrice()->getAmount(),

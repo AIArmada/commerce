@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
+use AIArmada\Cashier\Support\BillingCurrency;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus as ChipSubscriptionStatus;
@@ -11,7 +12,6 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem as ChipS
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
-use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -19,6 +19,7 @@ beforeEach(function (): void {
     app()->register(CashierServiceProvider::class);
     app()->register(CashierChipServiceProvider::class);
 
+    config()->set('filament-cashier.currency.base', 'MYR');
     config()->set('cashier.gateways', [
         'chip' => [
             'driver' => 'chip',
@@ -77,16 +78,13 @@ function createChipSubscriptionWithAmount(array $overrides, int $unitAmount): Ch
 }
 
 it('converts foreign currency amounts through the base rate', function (): void {
-    $method = new ReflectionMethod(TotalMrrWidget::class, 'convertAmountToBase');
-    $widget = app(TotalMrrWidget::class);
-
     $rates = ['MYR' => 4.70, 'USD' => 1.00];
 
-    expect($method->invoke($widget, 10000, 'USD', 'MYR', $rates))->toBe(47000)
-        ->and($method->invoke($widget, 47000, 'MYR', 'USD', $rates))->toBe(10000)
-        ->and($method->invoke($widget, 10000, 'MYR', 'MYR', $rates))->toBe(0)
-        ->and($method->invoke($widget, 10000, 'EUR', 'MYR', $rates))->toBe(0)
-        ->and($method->invoke($widget, 10000, 'USD', 'MYR', ['MYR' => 4.70, 'USD' => 0]))->toBe(0);
+    expect(BillingCurrency::convert(10000, 'USD', 'MYR', $rates))->toBe(47000)
+        ->and(BillingCurrency::convert(47000, 'MYR', 'USD', $rates))->toBe(10000)
+        ->and(BillingCurrency::convert(10000, 'MYR', 'MYR', $rates))->toBe(10000)
+        ->and(BillingCurrency::convert(10000, 'EUR', 'MYR', $rates))->toBe(0)
+        ->and(BillingCurrency::convert(10000, 'USD', 'MYR', ['MYR' => 4.70, 'USD' => 0]))->toBe(0);
 });
 
 it('buckets six months of revenue in a single scan per gateway', function (): void {
@@ -125,4 +123,9 @@ it('buckets six months of revenue in a single scan per gateway', function (): vo
         ->and($series[3])->toBe(10.0)
         ->and($series[5])->toBe(25.0)
         ->and(array_sum($series))->toBe(35.0);
+});
+
+it('converts zero-decimal currencies without assuming cents', function (): void {
+    expect(BillingCurrency::convert(1500, 'JPY', 'USD', ['JPY' => 150, 'USD' => 1]))->toBe(1000)
+        ->and(BillingCurrency::major(1500, 'JPY'))->toBe(1500.0);
 });

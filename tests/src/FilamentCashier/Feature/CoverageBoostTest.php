@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
+use AIArmada\Cashier\Policies\PaymentMethodPolicy;
+use AIArmada\Cashier\Policies\SubscriptionPolicy;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
@@ -25,8 +29,6 @@ use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentCashier\Pages\BillingDashboard;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use AIArmada\FilamentCashier\Pages\GatewaySetup;
-use AIArmada\FilamentCashier\Policies\PaymentMethodPolicy;
-use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
@@ -148,6 +150,8 @@ function filamentCashier_callMethod(object $object, string $method, array $argum
 }
 
 it('covers the filament-cashier public surface', function (): void {
+    app()->register(CashierServiceProvider::class);
+
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
     config()->set('cashier-chip.features.owner.include_global', false);
@@ -227,10 +231,9 @@ it('covers the filament-cashier public surface', function (): void {
         });
     }
 
-    /** @var class-string<Model> $userModel */
-    $userModel = config('auth.providers.users.model');
+    $userModel = ChipBillableUser::class;
+    config()->set('cashier.models.billable', $userModel);
 
-    /** @var Model $dbUser */
     $dbUser = $userModel::query()->create([
         'name' => 'Test User',
         'email' => 'cashier-test@example.com',
@@ -486,7 +489,6 @@ it('covers the filament-cashier public surface', function (): void {
     expect($gatewayManagement->getTitle())->toBeString();
     expect($gatewayManagement->getGatewayHealth())->toBeInstanceOf(Collection::class);
     expect($gatewayManagement->testConnectionAction())->toBeInstanceOf(Action::class);
-    expect($gatewayManagement->setDefaultAction())->toBeInstanceOf(Action::class);
 
     $checkGatewayHealth = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
     expect($checkGatewayHealth->invoke($gatewayManagement, 'unknown'))->toBeArray();

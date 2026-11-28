@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use AIArmada\Cashier\Concerns\Billable as UnifiedBillable;
+use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\CashierChip\Billing\Billable as ChipBillable;
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\Orders\Models\Order;
@@ -30,7 +31,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-final class User extends Authenticatable implements BillableModel, FilamentUser
+final class User extends Authenticatable implements BillableContract, BillableModel, FilamentUser
 {
     use ChipBillable;
     use HasFactory;
@@ -39,7 +40,6 @@ final class User extends Authenticatable implements BillableModel, FilamentUser
     use Notifiable;
     use UnifiedBillable {
         UnifiedBillable::onGenericTrial insteadof ChipBillable;
-        ChipBillable::onGenericTrial as onChipGenericTrial;
     }
 
     /**
@@ -64,6 +64,32 @@ final class User extends Authenticatable implements BillableModel, FilamentUser
         'password',
         'remember_token',
     ];
+
+    public function customerName(): ?string
+    {
+        return $this->chipName();
+    }
+
+    public function customerEmail(): ?string
+    {
+        return $this->chipEmail();
+    }
+
+    public function customerPhone(): ?string
+    {
+        return $this->chipPhone();
+    }
+
+    /** @return array<string, mixed> */
+    public function customerAddress(): array
+    {
+        return $this->chipAddress();
+    }
+
+    public function preferredLocale(): ?string
+    {
+        return app()->getLocale();
+    }
 
     /**
      * @return HasMany<Order, $this>

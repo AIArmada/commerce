@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Contracts\InvoiceContract;
+use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
@@ -12,7 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
-it('covers stripe branches in customer portal invoices and payment methods via a fake gateway detector', function (): void {
+it('rejects non-billable models for invoice and payment method queries', function (): void {
     app()->bind(GatewayDetector::class, function (): object {
         return new class
         {
@@ -113,125 +117,48 @@ it('covers stripe branches in customer portal invoices and payment methods via a
     $authUser->invoice = $stripeInvoice;
     $authUser->paymentMethods = $stripePaymentMethods;
     $authUser->forceFill(['id' => 123]);
+    $authUser->exists = true;
     Auth::guard()->setUser($authUser);
 
     $viewInvoices = app(ViewInvoices::class);
-    expect($viewInvoices->getInvoices())->toHaveCount(1);
+    expect($viewInvoices->getInvoices())->toBeEmpty();
 
     $recentInvoices = app(RecentInvoicesWidget::class);
-    expect($recentInvoices->getRecentInvoices())->toHaveCount(1);
+    expect($recentInvoices->getRecentInvoices())->toBeEmpty();
 
     $preview = app(PaymentMethodsPreviewWidget::class);
-    expect($preview->getPaymentMethods())->toHaveKey('stripe');
+    expect($preview->getPaymentMethods())->toBeEmpty();
 
     $paymentMethodsPage = app(ManagePaymentMethods::class);
-    expect($paymentMethodsPage->getPaymentMethods())->toHaveKey('stripe');
+    expect($paymentMethodsPage->getPaymentMethods())->toBeEmpty();
     $paymentMethodsPage->setDefaultPaymentMethod('stripe', 'pm_1');
     $paymentMethodsPage->deletePaymentMethod('stripe', 'pm_1');
 });
 
-it('sorts customer portal invoices by actual invoice date descending', function (): void {
-    app()->bind(GatewayDetector::class, function (): object {
-        return new class
-        {
-            public function isAvailable(string $gateway): bool
-            {
-                return $gateway === 'stripe';
-            }
+it('sorts customer portal invoices from the gateway contract by actual date descending', function (): void {
+    $user = new ChipBillableUser;
+    $user->forceFill(['id' => 124]);
+    $user->exists = true;
+    Auth::guard()->setUser($user);
 
-            public function availableGateways(): Collection
-            {
-                return collect(['stripe']);
-            }
+    $old = Mockery::mock(InvoiceContract::class);
+    $new = Mockery::mock(InvoiceContract::class);
 
-            public function getGatewayOptions(): array
-            {
-                return ['stripe' => 'Stripe'];
-            }
+    foreach ([[$old, 'in_old', '2025-01-31'], [$new, 'in_new', '2025-02-01']] as [$invoice, $id, $date]) {
+        $invoice->shouldReceive('id')->andReturn($id);
+        $invoice->shouldReceive('gateway')->andReturn('stripe');
+        $invoice->shouldReceive('number')->andReturn($id);
+        $invoice->shouldReceive('total')->andReturn('$10.00');
+        $invoice->shouldReceive('date')->andReturn(Carbon::parse($date));
+        $invoice->shouldReceive('status')->andReturn('paid');
+        $invoice->shouldReceive('pdfUrl')->andReturn(null);
+        $invoice->shouldReceive('hostedUrl')->andReturn(null);
+    }
 
-            public function getLabel(string $gateway): string
-            {
-                return 'Stripe';
-            }
-
-            public function getColor(string $gateway): string
-            {
-                return 'info';
-            }
-
-            public function getIcon(string $gateway): string
-            {
-                return 'heroicon-o-credit-card';
-            }
-        };
-    });
-
-    $olderInvoice = new class
-    {
-        public string $id = 'in_old';
-
-        public ?string $number = 'INV-OLD';
-
-        public bool $paid = true;
-
-        public function total(): string
-        {
-            return '$10.00';
-        }
-
-        public function date(): Carbon
-        {
-            return Carbon::parse('2025-01-31 00:00:00');
-        }
-
-        public function invoicePdf(): string
-        {
-            return 'https://example.test/invoices/in_old.pdf';
-        }
-    };
-
-    $newerInvoice = new class
-    {
-        public string $id = 'in_new';
-
-        public ?string $number = 'INV-NEW';
-
-        public bool $paid = true;
-
-        public function total(): string
-        {
-            return '$20.00';
-        }
-
-        public function date(): Carbon
-        {
-            return Carbon::parse('2025-02-01 00:00:00');
-        }
-
-        public function invoicePdf(): string
-        {
-            return 'https://example.test/invoices/in_new.pdf';
-        }
-    };
-
-    $authUser = new class extends AuthenticatableUser
-    {
-        protected $guarded = [];
-
-        public object $older;
-
-        public object $newer;
-
-        public function invoices(array $options = []): array
-        {
-            return [$this->older, $this->newer];
-        }
-    };
-
-    $authUser->older = $olderInvoice;
-    $authUser->newer = $newerInvoice;
-    $authUser->forceFill(['id' => 124]);
-    Auth::guard()->setUser($authUser);
+    $gateway = Mockery::mock(GatewayContract::class);
+    $gateway->shouldReceive('invoices')->once()->with($user, ['limit' => 51])->andReturn(collect([$old, $new]));
+    Cashier::shouldReceive('supportedGateways')->andReturn(['stripe']);
+    Cashier::shouldReceive('gateway')->once()->with('stripe')->andReturn($gateway);
 
     $invoices = app(ViewInvoices::class)->getInvoices();
 

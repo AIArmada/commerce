@@ -157,12 +157,13 @@ final class CartManagerWithInventory implements CartManagerInterface
      * @param  int  $ttlMinutes  Allocation expiry time
      * @return array<string, Collection<int, InventoryAllocation>> Results per source item ID
      */
-    public function allocateAllInventory(int $ttlMinutes = 30): array
+    public function allocateAllInventory(int $ttlMinutes = 30, ?Cart $cart = null): array
     {
-        return DB::transaction(function () use ($ttlMinutes): array {
-            $cart = $this->getCurrentCart();
+        $cart ??= $this->getCurrentCart();
+
+        return DB::transaction(function () use ($ttlMinutes, $cart): array {
             $results = [];
-            $cartIdentifier = $this->getCartIdentifier();
+            $cartIdentifier = $this->getCartIdentifier($cart);
 
             foreach (InventoryDemandResolver::forCart($cart->getItems()) as $entry) {
                 $allocations = $this->getAllocationService()->allocate(
@@ -239,12 +240,12 @@ final class CartManagerWithInventory implements CartManagerInterface
      *
      * @return array{available: bool, issues: array<string, array{name: string, requested: int, available: int, allocations: array<array{location_id: string, location_name: string, quantity: int}>}>}
      */
-    public function validateInventory(): array
+    public function validateInventory(?Cart $cart = null): array
     {
-        $cart = $this->getCurrentCart();
+        $cart ??= $this->getCurrentCart();
         $issues = [];
         $allAvailable = true;
-        $cartIdentifier = $this->getCartIdentifier();
+        $cartIdentifier = $this->getCartIdentifier($cart);
 
         foreach (InventoryDemandResolver::forCart($cart->getItems()) as $entry) {
             $model = $entry['model'];
@@ -290,9 +291,9 @@ final class CartManagerWithInventory implements CartManagerInterface
     /**
      * Get the cart identifier for allocations.
      */
-    private function getCartIdentifier(): string
+    private function getCartIdentifier(?Cart $cart = null): string
     {
-        $cart = $this->getCurrentCart();
+        $cart ??= $this->getCurrentCart();
         $cartId = $cart->getId();
 
         if ($cartId !== null) {

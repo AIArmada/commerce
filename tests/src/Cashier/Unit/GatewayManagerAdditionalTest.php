@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Exceptions\Gateway\GatewayNotFoundException;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
@@ -75,16 +74,4 @@ describe('GatewayManager - Additional Coverage', function (): void {
 
     /* extend method_exists removed; GatewayManagerTest extends + resolves a custom gateway. */
 
-    describe('buildGateway exception', function (): void {
-        it('throws GatewayNotFoundException when gateway class does not exist', function (): void {
-            $manager = app(GatewayManager::class);
-
-            // Use reflection to test the protected buildGateway method
-            $reflection = new ReflectionClass($manager);
-            $method = $reflection->getMethod('buildGateway');
-
-            expect(fn () => $method->invoke($manager, 'test', 'NonExistent\\Gateway\\Class', []))
-                ->toThrow(GatewayNotFoundException::class, 'Gateway class [NonExistent\\Gateway\\Class] not found');
-        });
-    });
 });

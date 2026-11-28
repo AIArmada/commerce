@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Drivers\Stripe\StripeSubscriptionBuilder;
+use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Cashier\Exceptions\PaymentOperationRateLimitedException;
-use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
-use AIArmada\Cashier\Gateways\StripeGateway;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\OwnerScopedBillableUser;
@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 uses(CashierTestCase::class);
 
 beforeEach(function (): void {
+    config()->set('cashier.tests.owner.enabled', false);
     config()->set('cashier.payment_operations.rate_limiting', [
         'enabled' => true,
         'max_attempts' => 1,

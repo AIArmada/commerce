@@ -71,6 +71,7 @@ it('handles customer portal payment method failures gracefully', function (): vo
     };
 
     $failingUser->forceFill(['id' => 999, 'name' => 'Failing', 'email' => 'failing@example.com', 'password' => bcrypt('secret')]);
+    $failingUser->exists = true;
 
     Auth::guard()->setUser($failingUser);
 
@@ -106,6 +107,7 @@ it('fails closed for non-owned payment method ids in customer portal mutations',
     };
 
     $user->forceFill(['id' => 1001, 'name' => 'Owned PM User', 'email' => 'owned-pm@example.com', 'password' => bcrypt('secret')]);
+    $user->exists = true;
 
     Auth::guard()->setUser($user);
 

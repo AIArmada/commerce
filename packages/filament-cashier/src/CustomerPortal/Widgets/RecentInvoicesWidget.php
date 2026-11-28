@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
-use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Cashier\Queries\CustomerInvoicesQuery;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use ReflectionMethod;
-use ReflectionNamedType;
-use Throwable;
 
 final class RecentInvoicesWidget extends Widget
 {
@@ -28,96 +25,19 @@ final class RecentInvoicesWidget extends Widget
     {
         $user = auth()->user();
 
-        if ($user === null) {
+        if (! $user instanceof Model) {
             return collect();
         }
 
-        $invoices = collect();
-        $detector = app(GatewayDetector::class);
-
-        // Get recent Stripe invoices
-        if ($detector->isAvailable('stripe') && method_exists($user, 'invoices')) {
-            try {
-                $stripeInvoices = $this->resolveStripeInvoices($user);
-
-                foreach ($stripeInvoices as $invoice) {
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'stripe',
-                        'amount' => $invoice->total(),
-                        'date' => $invoice->date()->format('M d, Y'),
-                        'status' => $invoice->paid ? 'paid' : 'open',
-                    ]);
-                }
-            } catch (Throwable) {
-                // Silently fail
-            }
-        }
-
-        // Get recent CHIP invoices
-        if ($detector->isAvailable('chip') && method_exists($user, 'chipInvoices')) {
-            try {
-                $chipInvoices = $user->chipInvoices(3);
-
-                foreach ($chipInvoices as $invoice) {
-                    $currency = (string) ($invoice->currency ?? config('cashier.currency', 'MYR'));
-
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'chip',
-                        'amount' => MoneyFormatter::formatMinor((int) ($invoice->amount ?? 0), $currency),
-                        'date' => $invoice->created_at?->format('M d, Y') ?? 'N/A',
-                        'status' => $invoice->status ?? 'unknown',
-                    ]);
-                }
-            } catch (Throwable) {
-                // Silently fail
-            }
-        }
-
-        return $invoices->take(5);
-    }
-
-    /**
-     * Support both invoice method signatures:
-     * - Cashier-style: invoices(bool $includePending, ?string $gateway)
-     * - Array-options style: invoices(array $options = [])
-     */
-    private function resolveStripeInvoices(object $user): Collection
-    {
-        try {
-            $method = new ReflectionMethod($user, 'invoices');
-            $params = $method->getParameters();
-
-            if (count($params) > 0) {
-                $first = $params[0];
-                $type = $first->getType();
-
-                if (
-                    $first->getName() === 'options'
-                    || ($type instanceof ReflectionNamedType && $type->getName() === 'array')
-                ) {
-                    $invoices = $user->invoices(['limit' => 3]);
-
-                    if (! is_iterable($invoices)) {
-                        return collect();
-                    }
-
-                    /** @var iterable<int, mixed> $invoices */
-                    return collect($invoices)->take(3);
-                }
-            }
-
-            $invoices = $user->invoices(false, 'stripe');
-
-            if (! is_iterable($invoices)) {
-                return collect();
-            }
-
-            /** @var iterable<int, mixed> $invoices */
-            return collect($invoices)->take(3);
-        } catch (Throwable) {
-            return collect();
-        }
+        return app(CustomerInvoicesQuery::class)->getForUser($user, 5)
+            ->take(5)
+            ->map(static fn (array $invoice): array => [
+                'id' => $invoice['id'],
+                'gateway' => $invoice['gateway'],
+                'amount' => $invoice['amount'],
+                'date' => $invoice['date'],
+                'status' => $invoice['status'],
+            ])
+            ->values();
     }
 }

@@ -1,0 +1,452 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Cashier\Drivers\Chip;
+
+use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
+use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Contracts\PurchaseStatus;
+use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Illuminate\Http\RedirectResponse;
+use InvalidArgumentException;
+
+/**
+ * Wrapper for CHIP payment (purchase).
+ */
+class ChipPayment implements PaymentContract
+{
+    /**
+     * The payment instance.
+     */
+    protected Payment | PaymentData | PurchaseData $payment;
+
+    /**
+     * Create a new CHIP payment wrapper.
+     */
+    public function __construct(mixed $payment)
+    {
+        if (! $payment instanceof Payment && ! $payment instanceof PaymentData && ! $payment instanceof PurchaseData) {
+            throw new InvalidArgumentException('ChipPayment expects an instance of ' . Payment::class . ', ' . PaymentData::class . ', or ' . PurchaseData::class);
+        }
+
+        $this->payment = $payment;
+    }
+
+    /**
+     * Get the payment ID.
+     */
+    public function id(): string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->id();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getPaymentId() ?? '';
+        }
+
+        return $this->payment->id;
+    }
+
+    /**
+     * Get the gateway name.
+     */
+    public function gateway(): string
+    {
+        return 'chip';
+    }
+
+    /**
+     * Determine if the payment is pending.
+     */
+    public function isPending(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isPending();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return ! $this->payment->isPaid();
+        }
+
+        // CHIP pending statuses
+        return in_array(PurchaseStatus::from($this->payment->status), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+            PurchaseStatus::PENDING_EXECUTE,
+            PurchaseStatus::PENDING_CAPTURE,
+            PurchaseStatus::PENDING_CHARGE,
+            PurchaseStatus::PENDING_REFUND,
+            PurchaseStatus::PENDING_RELEASE,
+        ], true);
+    }
+
+    /**
+     * Determine if the payment succeeded.
+     */
+    public function isSucceeded(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isSucceeded();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->isPaid();
+        }
+
+        // CHIP paid statuses
+        return PurchaseStatus::from($this->payment->status)->isSuccessful();
+    }
+
+    /**
+     * Determine if the payment failed.
+     */
+    public function isFailed(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isFailed();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        // CHIP failure statuses
+        return in_array(PurchaseStatus::from($this->payment->status), [PurchaseStatus::ERROR, PurchaseStatus::BLOCKED], true);
+    }
+
+    /**
+     * Determine if the payment is expired.
+     */
+    public function isExpired(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isExpired();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::EXPIRED;
+    }
+
+    /**
+     * Determine if the payment was cancelled.
+     */
+    public function isCancelled(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isCancelled();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        return in_array(PurchaseStatus::from($this->payment->status), [PurchaseStatus::CANCELLED, PurchaseStatus::RELEASED], true);
+    }
+
+    /**
+     * Determine if the payment is canceled (alias for isCancelled).
+     */
+    public function isCanceled(): bool
+    {
+        return $this->isCancelled();
+    }
+
+    /**
+     * Determine if the payment was refunded.
+     */
+    public function isRefunded(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->isRefunded();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->payment_type === 'refund';
+        }
+
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::REFUNDED;
+    }
+
+    /**
+     * Determine if the payment is on hold.
+     */
+    public function isOnHold(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->status() === 'hold';
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::HOLD;
+    }
+
+    /**
+     * Determine if the payment is preauthorized.
+     */
+    public function isPreauthorized(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->status() === 'preauthorized';
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        return PurchaseStatus::from($this->payment->status) === PurchaseStatus::PREAUTHORIZED;
+    }
+
+    /**
+     * Determine if the payment requires action (e.g., 3DS).
+     */
+    public function requiresAction(): bool
+    {
+        // CHIP handles 3DS internally via the checkout URL redirect
+        return $this->requiresRedirect();
+    }
+
+    /**
+     * Determine if the payment requires redirect.
+     */
+    public function requiresRedirect(): bool
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->requiresRedirect();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return false;
+        }
+
+        // CHIP provides a checkout URL while the purchase can still be paid.
+        return in_array(PurchaseStatus::from($this->payment->status), [
+            PurchaseStatus::CREATED,
+            PurchaseStatus::SENT,
+            PurchaseStatus::VIEWED,
+            PurchaseStatus::OVERDUE,
+        ], true)
+            && ! empty($this->payment->checkout_url);
+    }
+
+    /**
+     * Get the redirect URL if required.
+     */
+    public function redirectUrl(): ?string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->checkoutUrl();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return null;
+        }
+
+        return $this->payment->checkout_url;
+    }
+
+    /**
+     * Get the receipt/invoice URL.
+     */
+    public function receiptUrl(): ?string
+    {
+        if ($this->payment instanceof Payment) {
+            $purchase = $this->payment->asChipPurchase();
+
+            return $purchase->invoice_url ?? null;
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return null;
+        }
+
+        return $this->payment->invoice_url;
+    }
+
+    /**
+     * Redirect to complete the payment.
+     */
+    public function redirect(): RedirectResponse
+    {
+        $url = $this->redirectUrl();
+
+        if (! is_string($url) || $url === '') {
+            throw new InvalidArgumentException('CHIP payment requires action but no redirect URL is available.');
+        }
+
+        return redirect()->to($url);
+    }
+
+    /**
+     * Get the currency.
+     */
+    public function currency(): string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->currency();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getCurrency();
+        }
+
+        return $this->payment->purchase->currency;
+    }
+
+    /**
+     * Get the formatted amount.
+     */
+    public function amount(): string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->amount();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return MoneyFormatter::formatMinorWithCode($this->rawAmount(), $this->currency());
+        }
+
+        return MoneyFormatter::formatMinorWithCode($this->rawAmount(), $this->currency());
+    }
+
+    /**
+     * Get the raw amount in cents.
+     */
+    public function rawAmount(): int
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->rawAmount();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->getAmountInCents();
+        }
+
+        // CHIP returns amount in decimal, convert to cents
+        $amount = $this->payment->purchase->getTotalInCents();
+
+        return (int) $amount;
+    }
+
+    /**
+     * Get the payment status.
+     */
+    public function status(): string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->status();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return $this->payment->payment_type === 'refund'
+                ? 'refunded'
+                : ($this->payment->isPaid() ? 'paid' : 'processing');
+        }
+
+        return $this->payment->status;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        $payload = $this->payment instanceof Payment
+            ? $this->payment->asChipPurchase()->toArray()
+            : $this->payment->toArray();
+
+        $metadata = $payload['metadata'] ?? [];
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    /**
+     * Get an optional gateway error code.
+     */
+    public function errorCode(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Validate the payment and throw exception if failed.
+     *
+     * @throws IncompletePayment
+     */
+    public function validate(): static
+    {
+        if ($this->payment instanceof Payment) {
+            $this->payment->validate();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the recurring token from this purchase.
+     */
+    public function recurringToken(): ?string
+    {
+        if ($this->payment instanceof Payment) {
+            return $this->payment->recurringToken();
+        }
+
+        if ($this->payment instanceof PaymentData) {
+            return null;
+        }
+
+        return $this->payment->recurring_token;
+    }
+
+    /**
+     * Get the underlying payment.
+     */
+    public function asGatewayPayment(): Payment | PaymentData | PurchaseData
+    {
+        return $this->payment;
+    }
+
+    /**
+     * Convert to array.
+     *
+     * The recurring token is a reusable payment credential: it is exposed
+     * only via recurringToken(), never via serialization.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id(),
+            'gateway' => $this->gateway(),
+            'status' => $this->status(),
+            'currency' => $this->currency(),
+            'amount' => $this->amount(),
+            'raw_amount' => $this->rawAmount(),
+            'is_succeeded' => $this->isSucceeded(),
+            'is_pending' => $this->isPending(),
+            'is_failed' => $this->isFailed(),
+            'requires_redirect' => $this->requiresRedirect(),
+        ];
+    }
+
+    /**
+     * Convert to JSON.
+     */
+    public function toJson($options = 0): string
+    {
+        return json_encode($this->toArray(), $options);
+    }
+}

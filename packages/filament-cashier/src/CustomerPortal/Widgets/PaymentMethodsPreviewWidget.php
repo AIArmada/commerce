@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
-use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Facades\Log;
-use Throwable;
+use Illuminate\Database\Eloquent\Model;
 
 final class PaymentMethodsPreviewWidget extends Widget
 {
@@ -29,41 +28,6 @@ final class PaymentMethodsPreviewWidget extends Widget
             return [];
         }
 
-        $methods = [];
-        $detector = app(GatewayDetector::class);
-
-        // Get default Stripe payment method
-        if ($detector->isAvailable('stripe') && method_exists($user, 'defaultPaymentMethod')) {
-            try {
-                $default = $user->defaultPaymentMethod();
-                if ($default) {
-                    $methods['stripe'] = [
-                        'type' => $default->card->brand ?? 'Card',
-                        'last4' => $default->card->last4 ?? '****',
-                        'is_default' => true,
-                    ];
-                }
-            } catch (Throwable $e) {
-                Log::debug('Failed to retrieve Stripe payment method', ['error' => $e->getMessage()]);
-            }
-        }
-
-        // Get default CHIP payment method
-        if ($detector->isAvailable('chip') && method_exists($user, 'defaultChipPaymentMethod')) {
-            try {
-                $default = $user->defaultChipPaymentMethod();
-                if ($default) {
-                    $methods['chip'] = [
-                        'type' => $default->type ?? 'Payment Method',
-                        'last4' => $default->last4 ?? '****',
-                        'is_default' => true,
-                    ];
-                }
-            } catch (Throwable $e) {
-                Log::debug('Failed to retrieve CHIP payment method', ['error' => $e->getMessage()]);
-            }
-        }
-
-        return $methods;
+        return $user instanceof Model ? app(CustomerPaymentMethodsQuery::class)->defaults($user) : [];
     }
 }

@@ -10,7 +10,8 @@
             </x-slot>
 
             <div class="grid gap-4 md:grid-cols-2">
-                @foreach($this->getGatewayHealth() as $gateway)
+                @php($gatewayHealth = $this->getGatewayHealth())
+                @foreach($gatewayHealth as $gateway)
                     <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
@@ -49,7 +50,7 @@
                     </div>
                 @endforeach
 
-                @if($this->getGatewayHealth()->isEmpty())
+                @if($gatewayHealth->isEmpty())
                     <div class="col-span-2 text-center py-8">
                         <x-filament::icon
                             icon="heroicon-o-exclamation-triangle"

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Events;
 
 use AIArmada\Cashier\Contracts\SubscriptionContract;
-use AIArmada\Cashier\Support\SnapshotSubscription;
+use AIArmada\Cashier\Data\SnapshotSubscription;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

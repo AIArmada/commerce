@@ -21,7 +21,7 @@ class Cashier
     /**
      * The customer model class.
      */
-    public static string $customerModel = 'App\\Models\\User';
+    public static string $customerModel = '';
 
     /**
      * Indicates if past due subscriptions should be considered inactive.
@@ -51,7 +51,7 @@ class Cashier
      */
     private static array $octaneDefaults = [
         'remembered' => false,
-        'customerModel' => 'App\\Models\\User',
+        'customerModel' => '',
         'deactivatePastDue' => true,
         'deactivateIncomplete' => true,
         'formatCurrencyUsing' => null,
@@ -79,6 +79,7 @@ class Cashier
     public static function useCustomerModel(string $model): void
     {
         static::$customerModel = $model;
+        config(['cashier.models.billable' => $model]);
     }
 
     /**

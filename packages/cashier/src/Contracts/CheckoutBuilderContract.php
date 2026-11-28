@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use Illuminate\Http\RedirectResponse;
-
 /**
  * Contract for checkout builders.
  */
@@ -74,9 +72,4 @@ interface CheckoutBuilderContract
      * Create the checkout session.
      */
     public function create(): CheckoutContract;
-
-    /**
-     * Create and redirect to the checkout session.
-     */
-    public function redirect(): RedirectResponse;
 }

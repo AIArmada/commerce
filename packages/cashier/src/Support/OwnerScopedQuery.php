@@ -72,7 +72,7 @@ final class OwnerScopedQuery
 
     private static function requiresOwnerContext(): bool
     {
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel)) {
             return false;
@@ -104,7 +104,7 @@ final class OwnerScopedQuery
 
     private static function applyViaBillableIdSubquery(Builder $query, string $foreignKey, Model $owner, bool $includeGlobal): Builder
     {
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel)) {
             return self::empty($query);
@@ -127,7 +127,7 @@ final class OwnerScopedQuery
 
     private static function applyViaBillableMorphSubquery(Builder $query, Model $owner, bool $includeGlobal): Builder
     {
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel)) {
             return self::empty($query);

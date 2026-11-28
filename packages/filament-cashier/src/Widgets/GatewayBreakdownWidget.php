@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Queries\BillingAnalyticsQuery;
+use AIArmada\Cashier\Support\BillingCurrency;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Collection;
-use Laravel\Cashier\Subscription;
 
 final class GatewayBreakdownWidget extends ChartWidget
 {
@@ -40,14 +36,14 @@ final class GatewayBreakdownWidget extends ChartWidget
         foreach ($revenueByGateway as $gateway => $amount) {
             $config = $detector->getGatewayConfig($gateway);
             $labels[] = $config['label'];
-            $data[] = round($amount / 100, 2); // Convert cents to dollars
+            $data[] = BillingCurrency::major($amount, (string) config('filament-cashier.currency.base', 'MYR'));
             $backgroundColor[] = $this->getColorValue($config['color']);
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Revenue',
+                    'label' => 'MRR (' . config('filament-cashier.currency.base', 'MYR') . ')',
                     'data' => $data,
                     'backgroundColor' => $backgroundColor,
                     'borderWidth' => 0,
@@ -74,91 +70,20 @@ final class GatewayBreakdownWidget extends ChartWidget
         ];
     }
 
-    /**
-     * @var array<string, int>|null
-     */
-    protected ?array $revenueByGateway = null;
-
-    /**
-     * Get revenue by gateway.
-     *
-     * Memoized on the widget instance (request-bound) instead of once() so
-     * owner switches within a long-lived process never leak cached totals.
-     *
-     * @return array<string, int>
-     */
+    /** @return array<string, int> */
     protected function getRevenueByGateway(): array
     {
-        if ($this->revenueByGateway === null) {
-            $detector = app(GatewayDetector::class);
-            $revenue = [];
+        $summary = app(BillingAnalyticsQuery::class)->activeSummary();
+        $base = (string) config('filament-cashier.currency.base', 'MYR');
+        $convert = (bool) config('filament-cashier.currency.display_converted', false);
+        $rates = (array) config('filament-cashier.currency.conversion_rates', []);
+        $totals = [];
 
-            if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-                $stripeRevenue = 0;
-
-                $stripeQuery = OwnerScopedQuery::apply(Subscription::query())
-                    ->with('items')
-                    ->where(function ($query): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', CarbonImmutable::now());
-                    });
-
-                $stripeQuery->chunk(200, function (Collection $chunk) use (&$stripeRevenue): void {
-                    foreach ($chunk as $model) {
-                        $unified = UnifiedSubscription::fromStripe($model);
-
-                        if (! $unified->status->isActive()) {
-                            continue;
-                        }
-
-                        $stripeRevenue += $unified->amount;
-                    }
-                });
-
-                if ($stripeRevenue > 0) {
-                    $revenue['stripe'] = $stripeRevenue;
-                }
-            }
-
-            if ($detector->isAvailable('chip')) {
-                $subscriptionModel = CashierChip::$subscriptionModel;
-                $chipRevenue = 0;
-
-                $chipQuery = OwnerScopedQuery::apply($subscriptionModel::query())
-                    ->with('items')
-                    ->where(function ($query): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', CarbonImmutable::now());
-                    });
-
-                $chipQuery->chunk(200, function (Collection $chunk) use (&$chipRevenue): void {
-                    foreach ($chunk as $model) {
-                        $unified = UnifiedSubscription::fromChip($model);
-
-                        if (! $unified->status->isActive()) {
-                            continue;
-                        }
-
-                        $chipRevenue += $unified->amount;
-                    }
-                });
-
-                if ($chipRevenue > 0) {
-                    $revenue['chip'] = $chipRevenue;
-                }
-            }
-
-            // Ensure we have at least empty data
-            if (empty($revenue)) {
-                foreach ($detector->availableGateways() as $gateway) {
-                    $revenue[$gateway] = 0;
-                }
-            }
-
-            $this->revenueByGateway = $revenue;
+        foreach ($summary['mrrByGateway'] as $gateway => $amounts) {
+            $totals[$gateway] = BillingCurrency::total($amounts, $base, $convert, $rates);
         }
 
-        return $this->revenueByGateway;
+        return $totals;
     }
 
     protected function getColorValue(string $color): string

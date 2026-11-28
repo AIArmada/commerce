@@ -160,17 +160,19 @@ final readonly class UnifiedSubscription
         if ($subscription->relationLoaded('items')) {
             $items = $subscription->getRelation('items');
 
-            if (is_iterable($items)) {
-                foreach ($items as $item) {
-                    if (is_object($item) && isset($item->stripe_price)) {
-                        return (int) (($item->quantity ?? 0) * ($item->unit_amount ?? 0));
-                    }
+            if (! is_iterable($items)) {
+                return 0;
+            }
 
-                    break;
+            $total = 0;
+
+            foreach ($items as $item) {
+                if (is_object($item) && isset($item->stripe_price)) {
+                    $total += (int) (($item->quantity ?? 0) * ($item->unit_amount ?? 0));
                 }
             }
 
-            return 0;
+            return $total;
         }
 
         if (! method_exists($subscription, 'items')) {
@@ -180,25 +182,7 @@ final readonly class UnifiedSubscription
         $items = $subscription->items();
 
         if ($items instanceof Relation) {
-            $item = $items->select(['quantity', 'unit_amount', 'stripe_price'])->first();
-
-            if (is_object($item) && isset($item->stripe_price)) {
-                return (int) (($item->quantity ?? 0) * ($item->unit_amount ?? 0));
-            }
-
-            return 0;
-        }
-
-        if (is_object($items) && method_exists($items, 'exists') && ! $items->exists()) {
-            return 0;
-        }
-
-        if (is_object($items) && method_exists($items, 'first')) {
-            $item = $items->first();
-
-            if (is_object($item) && isset($item->stripe_price)) {
-                return (int) (($item->quantity ?? 0) * ($item->unit_amount ?? 0));
-            }
+            return (int) $items->get()->sum(static fn (Model $item): int => (int) (($item->quantity ?? 0) * ($item->unit_amount ?? 0)));
         }
 
         return 0;

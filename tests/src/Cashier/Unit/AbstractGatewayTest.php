@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Contracts\GatewayContract;
-use AIArmada\Cashier\Gateways\AbstractGateway;
+use AIArmada\Cashier\Drivers\AbstractGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);

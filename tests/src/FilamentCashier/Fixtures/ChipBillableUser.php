@@ -329,9 +329,9 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function invoices(bool | array $parameters = false): Collection
+    public function invoices(?int $limit = 25): Collection
     {
-        return collect($this->nativeChipInvoices());
+        return collect($this->nativeChipInvoices($limit ?? 201));
     }
 
     public function findInvoice(string $invoiceId): ?InvoiceContract
@@ -429,8 +429,8 @@ class ChipBillableUser extends User implements BillableContract
                 'id' => 'chip_pm_1',
                 'recurring_token' => 'chip_pm_1',
                 'payment_method' => 'Card',
-                'card_brand' => 'Visa',
-                'card_last4' => '1111',
+                'brand' => 'Visa',
+                'last_four' => '1111',
                 'card_expiry' => '12/30',
                 'is_default' => true,
             ],
@@ -438,8 +438,8 @@ class ChipBillableUser extends User implements BillableContract
                 'id' => 'chip_pm_2',
                 'recurring_token' => 'chip_pm_2',
                 'payment_method' => 'Card',
-                'card_brand' => 'Mastercard',
-                'card_last4' => '2222',
+                'brand' => 'Mastercard',
+                'last_four' => '2222',
                 'card_expiry' => '01/31',
                 'is_default' => false,
             ],

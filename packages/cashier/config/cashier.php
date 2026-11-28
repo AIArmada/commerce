@@ -17,7 +17,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'models' => [
-        'billable' => env('CASHIER_MODEL', 'App\\Models\\User'),
+        'billable' => env('CASHIER_MODEL', config('auth.providers.users.model')),
     ],
 
     'default' => env('CASHIER_GATEWAY', 'stripe'),

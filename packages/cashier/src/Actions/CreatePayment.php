@@ -57,7 +57,6 @@ final class CreatePayment
             Log::error('Cashier payment failed.', [
                 'gateway' => $gatewayName,
                 'exception' => $e::class,
-                'error' => $e->getMessage(),
             ]);
 
             throw PaymentFailedException::create(

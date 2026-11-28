@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas;
 
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
+use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -111,7 +112,7 @@ final class SubscriptionForm
      */
     public static function getCustomerOptions(): array
     {
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
@@ -135,27 +136,9 @@ final class SubscriptionForm
             return [];
         }
 
-        $configPlans = config("cashier.gateways.{$gateway}.plans", []);
-
-        if (! empty($configPlans)) {
-            return $configPlans;
-        }
-
-        return match ($gateway) {
-            'stripe' => [
-                'price_basic_monthly' => 'Basic Monthly - ' . MoneyFormatter::formatMajor(9, 'USD') . '/mo',
-                'price_pro_monthly' => 'Pro Monthly - ' . MoneyFormatter::formatMajor(29, 'USD') . '/mo',
-                'price_premium_monthly' => 'Premium Monthly - ' . MoneyFormatter::formatMajor(99, 'USD') . '/mo',
-                'price_basic_yearly' => 'Basic Yearly - ' . MoneyFormatter::formatMajor(90, 'USD') . '/yr',
-                'price_pro_yearly' => 'Pro Yearly - ' . MoneyFormatter::formatMajor(290, 'USD') . '/yr',
-            ],
-            'chip' => [
-                'plan_basic_monthly' => 'Basic Monthly - ' . MoneyFormatter::formatMajor(39, 'MYR') . '/mo',
-                'plan_pro_monthly' => 'Pro Monthly - ' . MoneyFormatter::formatMajor(99, 'MYR') . '/mo',
-                'plan_premium_monthly' => 'Premium Monthly - ' . MoneyFormatter::formatMajor(299, 'MYR') . '/mo',
-            ],
-            default => [],
-        };
+        return app(GatewayDetector::class)->isAvailable($gateway)
+            ? (array) config("cashier.gateways.{$gateway}.plans", [])
+            : [];
     }
 
     /**
@@ -173,7 +156,7 @@ final class SubscriptionForm
             return [];
         }
 
-        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable');
 
         if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
@@ -188,90 +171,13 @@ final class SubscriptionForm
         }
 
         try {
-            if ($gateway === 'stripe' && method_exists($billable, 'paymentMethods')) {
-                $paymentMethods = $billable->paymentMethods();
-
-                if (! is_iterable($paymentMethods)) {
-                    return [];
-                }
-
-                return collect($paymentMethods)
-                    ->mapWithKeys(fn ($pm) => [
-                        data_get($pm, 'id') => (data_get($pm, 'card.brand') ?? 'Card') . ' **** ' . (data_get($pm, 'card.last4') ?? '****'),
-                    ])
-                    ->toArray();
-            }
-
-            if ($gateway === 'chip' && method_exists($billable, 'paymentMethods')) {
-                $paymentMethods = $billable->paymentMethods();
-
-                if (! is_iterable($paymentMethods)) {
-                    return [];
-                }
-
-                return collect($paymentMethods)
-                    ->mapWithKeys(function (mixed $paymentMethod): array {
-                        $paymentMethodId = self::getChipPaymentMethodId($paymentMethod);
-
-                        if ($paymentMethodId === null) {
-                            return [];
-                        }
-
-                        return [
-                            $paymentMethodId => self::getChipPaymentMethodLabel($paymentMethod),
-                        ];
-                    })
-                    ->toArray();
-            }
+            return app(CustomerPaymentMethodsQuery::class)->records($billable, $gateway)
+                ->mapWithKeys(static fn (PaymentMethodContract $method): array => [
+                    $method->id() => ($method->brand() ?? ($method->type() ?: 'Card')) . ' **** ' . ($method->lastFour() ?? '****'),
+                ])
+                ->all();
         } catch (Throwable) {
-            // Silently fail if gateway API is not configured
+            return [];
         }
-
-        return [];
-    }
-
-    public static function getChipPaymentMethodId(mixed $paymentMethod): ?string
-    {
-        if (is_object($paymentMethod) && method_exists($paymentMethod, 'id')) {
-            $paymentMethodId = $paymentMethod->id();
-
-            if (is_string($paymentMethodId) && $paymentMethodId !== '') {
-                return $paymentMethodId;
-            }
-        }
-
-        $paymentMethodId = data_get($paymentMethod, 'id') ?? data_get($paymentMethod, 'recurring_token');
-
-        return is_string($paymentMethodId) && $paymentMethodId !== '' ? $paymentMethodId : null;
-    }
-
-    public static function getChipPaymentMethodLabel(mixed $paymentMethod): string
-    {
-        $brand = 'Card';
-
-        if (is_object($paymentMethod) && method_exists($paymentMethod, 'brand')) {
-            $brand = $paymentMethod->brand() ?? $paymentMethod->type() ?? $brand;
-        } else {
-            $brand = data_get($paymentMethod, 'brand')
-                ?? data_get($paymentMethod, 'card_brand')
-                ?? data_get($paymentMethod, 'type')
-                ?? data_get($paymentMethod, 'payment_method')
-                ?? $brand;
-        }
-
-        $lastFour = '****';
-
-        if (is_object($paymentMethod) && method_exists($paymentMethod, 'lastFour')) {
-            $lastFour = $paymentMethod->lastFour() ?? $lastFour;
-        } else {
-            $lastFour = data_get($paymentMethod, 'last_four')
-                ?? data_get($paymentMethod, 'last_4')
-                ?? data_get($paymentMethod, 'card_last_4')
-                ?? data_get($paymentMethod, 'card_last4')
-                ?? data_get($paymentMethod, 'last4')
-                ?? $lastFour;
-        }
-
-        return $brand . ' **** ' . $lastFour;
     }
 }

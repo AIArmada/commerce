@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
-use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
+use AIArmada\Cashier\Policies\SubscriptionPolicy;
+use AIArmada\Cashier\Queries\FindCustomerSubscription;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use Filament\Actions;
 use Filament\Infolists\Components\TextEntry;
@@ -18,7 +17,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Auth\Access\AuthorizationException;
-use Laravel\Cashier\Subscription;
+use Illuminate\Database\Eloquent\Model;
 
 final class ViewSubscription extends ViewRecord
 {
@@ -28,10 +27,15 @@ final class ViewSubscription extends ViewRecord
 
     public function mount(int | string $record): void
     {
-        // Parse the composite key (gateway-id)
-        [$gateway, $id] = explode('-', (string) $record, 2);
+        $parts = explode('-', (string) $record, 2);
+        $user = auth()->user();
 
-        $this->subscription = $this->resolveSubscription($gateway, $id);
+        if (count($parts) !== 2 || ! $user instanceof Model) {
+            abort(404);
+        }
+
+        [$gateway, $id] = $parts;
+        $this->subscription = app(FindCustomerSubscription::class)->handle($user, $gateway, $id);
 
         if ($this->subscription === null) {
             abort(404);
@@ -39,7 +43,7 @@ final class ViewSubscription extends ViewRecord
 
         $user = auth()->user();
 
-        if ($user === null || ! app(SubscriptionPolicy::class)->view($user, $this->subscription->original)) {
+        if (! $user instanceof Model || ! app(SubscriptionPolicy::class)->view($user, $this->subscription->original)) {
             throw new AuthorizationException('Not authorized to view this subscription.');
         }
     }
@@ -151,34 +155,6 @@ final class ViewSubscription extends ViewRecord
         return $this->subscription?->planId;
     }
 
-    protected function resolveSubscription(string $gateway, string $id): ?UnifiedSubscription
-    {
-        $detector = app(GatewayDetector::class);
-
-        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $sub = OwnerScopedQuery::apply(Subscription::query())
-                ->with('items')
-                ->whereKey($id)
-                ->first();
-            if ($sub) {
-                return UnifiedSubscription::fromStripe($sub);
-            }
-        }
-
-        if ($gateway === 'chip' && $detector->isAvailable('chip')) {
-            $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = OwnerScopedQuery::apply($subscriptionModel::query())
-                ->with(['billable', 'items'])
-                ->whereKey($id)
-                ->first();
-            if ($sub) {
-                return UnifiedSubscription::fromChip($sub);
-            }
-        }
-
-        return null;
-    }
-
     protected function getHeaderActions(): array
     {
         if ($this->subscription === null) {
@@ -199,13 +175,11 @@ final class ViewSubscription extends ViewRecord
                 ->action(function (): void {
                     $user = auth()->user();
 
-                    if ($this->subscription === null || $user === null || ! app(SubscriptionPolicy::class)->cancel($user, $this->subscription->original)) {
+                    if ($this->subscription === null || ! $user instanceof Model || ! app(SubscriptionPolicy::class)->cancel($user, $this->subscription->original)) {
                         throw new AuthorizationException('Not authorized to cancel this subscription.');
                     }
 
-                    if (method_exists($this->subscription->original, 'cancel')) {
-                        $this->subscription->original->cancel();
-                    }
+                    app(ChangeCustomerSubscription::class)->cancel($user, $this->subscription->gateway, $this->subscription->id);
                 }),
 
             Actions\Action::make('resume')
@@ -216,13 +190,11 @@ final class ViewSubscription extends ViewRecord
                 ->action(function (): void {
                     $user = auth()->user();
 
-                    if ($this->subscription === null || $user === null || ! app(SubscriptionPolicy::class)->resume($user, $this->subscription->original)) {
+                    if ($this->subscription === null || ! $user instanceof Model || ! app(SubscriptionPolicy::class)->resume($user, $this->subscription->original)) {
                         throw new AuthorizationException('Not authorized to resume this subscription.');
                     }
 
-                    if (method_exists($this->subscription->original, 'resume')) {
-                        $this->subscription->original->resume();
-                    }
+                    app(ChangeCustomerSubscription::class)->resume($user, $this->subscription->gateway, $this->subscription->id);
                 }),
 
             Actions\Action::make('view_external')

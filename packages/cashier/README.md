@@ -216,7 +216,7 @@ $stripeInvoices = $user->gatewayInvoices('stripe');
 ## Extending with Custom Gateways
 
 ```php
-use AIArmada\Cashier\Gateways\AbstractGateway;
+use AIArmada\Cashier\Drivers\AbstractGateway;
 
 class PayPalGateway extends AbstractGateway
 {

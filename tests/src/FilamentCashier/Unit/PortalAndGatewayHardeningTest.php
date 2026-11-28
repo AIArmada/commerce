@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
 use AIArmada\Cashier\CashierServiceProvider;
+use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\GatewayManager;
+use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
+use AIArmada\Cashier\Queries\FindCustomerSubscription;
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Chip\Services\ChipCollectService;
@@ -12,6 +18,7 @@ use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables\InvoicesTable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Facades\Auth;
 
 beforeEach(function (): void {
@@ -144,4 +151,58 @@ it('restricts invoice access checks to the owning user', function (): void {
     Auth::guard()->forgetUser();
 
     expect(InvoicesTable::isInvoiceAccessible(invoiceForUserId((string) $user->getKey())))->toBeFalse();
+});
+
+it('passes the bounded lookahead to the gateway for portal subscription queries', function (): void {
+    $user = createPortalUser('subscription-lookahead@example.com');
+    $gateway = Mockery::mock(GatewayContract::class);
+    $gateway->shouldReceive('subscriptions')->once()->with($user, 201)->andReturn(collect());
+
+    $manager = app(GatewayManager::class);
+    $manager->forgetDrivers();
+    $manager->extend('chip', fn () => $gateway);
+
+    $result = app(CustomerSubscriptionsQuery::class)->getForUser($user, 500, fetchExtra: true);
+
+    expect($result['items'])->toBeEmpty()
+        ->and($result['hasMore'])->toBeFalse();
+});
+
+it('does not query gateways for an unsaved billable', function (): void {
+    $result = app(CustomerSubscriptionsQuery::class)->getForUser(new ChipBillableUser);
+
+    expect($result['items'])->toBeEmpty()
+        ->and($result['hasMore'])->toBeFalse();
+});
+
+it('forces a fresh connection probe and evicts previously cached health', function (): void {
+    config()->set('chip.collect.brand_id', 'brand-force');
+    config()->set('chip.collect.api_key', 'key-force');
+
+    $service = Mockery::mock(ChipCollectService::class);
+    $service->shouldReceive('getAccountBalance')->once()->andReturn(['balance' => 100]);
+    $service->shouldReceive('getAccountBalance')->twice()->andThrow(new RuntimeException('connection failed'));
+    app()->instance(ChipCollectService::class, $service);
+
+    $method = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
+    $page = app(GatewayManagement::class);
+
+    expect($method->invoke($page, 'chip')['status'])->toBe('healthy')
+        ->and($method->invoke($page, 'chip')['status'])->toBe('healthy')
+        ->and($method->invoke($page, 'chip', true)['status'])->toBe('error')
+        ->and($method->invoke($page, 'chip')['status'])->toBe('error');
+});
+
+it('rejects subscription mutations for non-billable authenticated models before gateway lookup', function (): void {
+    $user = new AuthenticatableUser;
+    $user->forceFill(['id' => 123]);
+    $user->exists = true;
+
+    app()->bind(GatewayDetector::class, static function (): never {
+        throw new RuntimeException('Gateway must not be resolved for a non-billable user.');
+    });
+
+    expect(app(FindCustomerSubscription::class)->handle($user, 'stripe', '456'))->toBeNull()
+        ->and(fn () => app(ChangeCustomerSubscription::class)->cancel($user, 'stripe', '456'))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(ChangeCustomerSubscription::class)->resume($user, 'stripe', '456'))->toThrow(AuthorizationException::class);
 });

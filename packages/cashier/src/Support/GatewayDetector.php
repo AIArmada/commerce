@@ -49,7 +49,7 @@ final class GatewayDetector
         /** @var array{label: string, icon: string, color: string, dashboard_url: string} $config */
         $config = config("cashier.gateways.{$gateway}", $defaults);
 
-        return array_merge($defaults, $config);
+        return array_merge($defaults, array_intersect_key($config, $defaults));
     }
 
     public function getLabel(string $gateway): string

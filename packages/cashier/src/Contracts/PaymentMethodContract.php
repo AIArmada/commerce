@@ -60,6 +60,11 @@ interface PaymentMethodContract extends Arrayable, Jsonable
     public function delete(): void;
 
     /**
+     * Set this payment method as the customer's default.
+     */
+    public function makeDefault(): void;
+
+    /**
      * Get the owner of this payment method.
      */
     public function owner(): mixed;

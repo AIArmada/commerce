@@ -49,7 +49,7 @@ use Throwable;
  * $user->allSubscriptions();
  * ```
  */
-trait Billable // @phpstan-ignore trait.unused
+trait Billable
 {
     use ManagesGateway;
 

@@ -60,8 +60,7 @@ describe('Contracts', function (): void {
                 ->and($methods)->toContain('allGatewayInvoices')
                 ->and($methods)->toContain('allSubscriptions')
                 ->and($methods)->toContain('onGenericTrial')
-                ->and($methods)->toContain('asStripeCustomer')
-                ->and($methods)->toContain('createOrGetChipCustomer');
+                ->and($methods)->not->toContain('asStripeCustomer', 'createOrGetChipCustomer', 'stripeId');
         });
     });
 
@@ -171,6 +170,13 @@ describe('Contracts', function (): void {
     });
 
     describe('InvoiceContract', function (): void {
+        it('exposes URLs rather than transport-specific responses', function (): void {
+            expect(method_exists(InvoiceContract::class, 'pdfUrl'))->toBeTrue()
+                ->and(method_exists(InvoiceContract::class, 'hostedUrl'))->toBeTrue()
+                ->and(method_exists(InvoiceContract::class, 'download'))->toBeFalse()
+                ->and(method_exists(InvoiceContract::class, 'view'))->toBeFalse();
+        });
+
         it('exists and is an interface', function (): void {
             expect(interface_exists(InvoiceContract::class))->toBeTrue();
         });

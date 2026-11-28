@@ -19,7 +19,7 @@ keywords:
 - Composer: `aiarmada/cashier`
 - Role: Unified multi-gateway billing abstraction over Stripe (laravel/cashier) and CHIP-style providers.
 - Triggers: billing, subscription, invoice, stripe, multi-gateway, billable
-- Search first: `src/Actions, src/Gateways, src/Contracts, src/Checkout, config, docs`
+- Search first: `src/Actions, src/Drivers, src/Contracts, src/Checkout, config, docs`
 - Related: `filament-cashier`, `cashier-chip`, `chip`
 - Paired: `filament-cashier` (Filament admin adapter)
 
@@ -42,6 +42,7 @@ keywords:
 - Owner/security: No HasOwner models; OwnerScopedQuery helper only.
 
 ## Key surfaces
+- Queries: `Queries/CustomerSubscriptionsQuery` supplies the customer portal.
 - Support DTOs: `UnifiedInvoice`, `UnifiedSubscription`
 - Actions/Services: `Actions/CancelSubscription`, `Actions/CreatePayment`, `Actions/CreateSubscription`, `Actions/RefundPayment`, `Actions/SyncWebhook`, `Support/CartIntegrationRegistrar`, `Support/CartManagerWithPayment`, `Support/GatewayDetector`
 - Config `cashier.php`: `models`, `billable`, `default`, `currency`, `locale`, `gateways`, and cart metadata/integration switches

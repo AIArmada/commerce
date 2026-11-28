@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Events;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
-use AIArmada\Cashier\Support\SnapshotPayment;
+use AIArmada\Cashier\Data\SnapshotPayment;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
+use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\FilamentCashier\Support\CustomerSubscriptionsQuery;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;

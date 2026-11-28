@@ -11,7 +11,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
-use AIArmada\Cashier\Gateways\AbstractGateway;
+use AIArmada\Cashier\Drivers\AbstractGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\OwnerScopedBillableUser;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\Tenant;
@@ -76,7 +76,7 @@ class TestableGateway extends AbstractGateway
         return null;
     }
 
-    public function subscriptions(BillableContract $billable): Collection
+    public function subscriptions(BillableContract $billable, ?int $limit = null): Collection
     {
         return collect();
     }

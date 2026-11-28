@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Queries\BillingAnalyticsQuery;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Laravel\Cashier\Subscription;
 
 final class TotalSubscribersWidget extends StatsOverviewWidget
 {
@@ -32,28 +29,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
     {
         if ($this->stats === null) {
             $detector = app(GatewayDetector::class);
-            $totals = [];
-
-            // Count Stripe subscribers
-            if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-                $totals['stripe'] = OwnerScopedQuery::apply(Subscription::query())
-                    ->where(function ($query): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', CarbonImmutable::now());
-                    })
-                    ->count();
-            }
-
-            // Count CHIP subscribers
-            if ($detector->isAvailable('chip')) {
-                $subscriptionModel = CashierChip::$subscriptionModel;
-                $totals['chip'] = OwnerScopedQuery::apply($subscriptionModel::query())
-                    ->where(function ($query): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', CarbonImmutable::now());
-                    })
-                    ->count();
-            }
+            $totals = app(BillingAnalyticsQuery::class)->activeSummary()['countByGateway'];
 
             $total = array_sum($totals);
 
@@ -67,7 +43,6 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
                 Stat::make(__('filament-cashier::dashboard.widgets.total_subscribers.label'), number_format($total))
                     ->description($breakdown ?: __('filament-cashier::dashboard.widgets.total_subscribers.description'))
                     ->descriptionIcon('heroicon-m-users')
-                    ->chart([3, 4, 3, 5, 4, 5, 6, 7])
                     ->color('primary'),
             ];
         }

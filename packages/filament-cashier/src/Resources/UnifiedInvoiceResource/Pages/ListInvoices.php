@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
 use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Contracts\InvoiceContract;
-use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Cashier\Queries\CustomerInvoicesQuery;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
@@ -17,7 +16,6 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Throwable;
 
 final class ListInvoices extends ListRecords
 {
@@ -121,24 +119,7 @@ final class ListInvoices extends ListRecords
             return $this->allInvoices;
         }
 
-        $invoices = collect();
-        $detector = app(GatewayDetector::class);
-
-        foreach ($detector->availableGateways() as $gateway) {
-            try {
-                $gatewayInvoices = Cashier::gateway($gateway)->invoices($user, ['limit' => 100]);
-            } catch (Throwable) {
-                continue;
-            }
-
-            foreach ($gatewayInvoices->take(100) as $invoice) {
-                if ($invoice instanceof InvoiceContract) {
-                    $invoices->push(UnifiedInvoice::fromGateway($invoice, (string) $user->getKey()));
-                }
-            }
-        }
-
-        $this->allInvoices = $invoices->sortByDesc('date')->values();
+        $this->allInvoices = app(CustomerInvoicesQuery::class)->unified($user, 100);
 
         return $this->allInvoices;
     }
