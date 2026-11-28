@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherOwnership;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -101,5 +102,5 @@ it('exposes voucher usage relations independently of wallet support', function (
     $relation = $owner->voucherUsages();
 
     expect($relation->getMorphType())->toBe('redeemed_by_type')
-        ->and($relation->getRelated())->toBeInstanceOf(\AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage::class);
+        ->and($relation->getRelated())->toBeInstanceOf(VoucherUsage::class);
 });

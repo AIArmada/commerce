@@ -8,8 +8,8 @@ declare(strict_types=1);
 // before. Usage recording also refuses expired/revoked vouchers, so an
 // unused revocation cannot be followed by a late use.
 
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
@@ -18,9 +18,9 @@ use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;

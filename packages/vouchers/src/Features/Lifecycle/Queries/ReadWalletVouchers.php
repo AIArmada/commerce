@@ -13,7 +13,7 @@ final class ReadWalletVouchers implements VoucherWalletReader
     use QueriesVouchers;
 
     /** @param list<string> $voucherIds
-     *  @return array<string, WalletVoucherState>
+     * @return array<string, WalletVoucherState>
      */
     public function readMany(array $voucherIds): array
     {

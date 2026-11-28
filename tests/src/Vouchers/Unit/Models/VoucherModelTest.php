@@ -37,7 +37,6 @@ describe('Voucher Model', function (): void {
                 ->and($relation->getRelated())->toBeInstanceOf(VoucherUsage::class);
         });
 
-
     });
 
     describe('belongsToAffiliate', function (): void {

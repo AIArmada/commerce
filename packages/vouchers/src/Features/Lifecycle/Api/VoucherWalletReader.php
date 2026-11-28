@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Api;
 interface VoucherWalletReader
 {
     /** @param list<string> $voucherIds
-     *  @return array<string, WalletVoucherState>
+     * @return array<string, WalletVoucherState>
      */
     public function readMany(array $voucherIds): array;
 }

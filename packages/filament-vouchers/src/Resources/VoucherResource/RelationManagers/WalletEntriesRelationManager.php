@@ -6,8 +6,8 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\WalletEntriesTable;
-use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Components\Attributes\Unexposed;
 use Filament\Tables\Table;
