@@ -23,7 +23,7 @@ use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Models\RewardSourceCoordinator;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardEvaluationResult;
 use AIArmada\Rewards\Support\RewardLedgerEntries;

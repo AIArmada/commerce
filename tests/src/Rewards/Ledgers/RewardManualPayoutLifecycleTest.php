@@ -37,7 +37,7 @@ use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Support\ManualRewardPayoutExecutor;
 use AIArmada\Rewards\Support\ManualRewardPayoutMethodCatalog;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

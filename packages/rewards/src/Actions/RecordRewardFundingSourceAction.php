@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Models\RewardFundingSource;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables;
 
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 

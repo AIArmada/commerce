@@ -33,7 +33,7 @@ use AIArmada\Rewards\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Support\NullRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
 use AIArmada\Rewards\Persistence\RewardApprovalLocks;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;

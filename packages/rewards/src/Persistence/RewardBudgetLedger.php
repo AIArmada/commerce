@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Persistence;
 
 use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardFundingEntry;
+use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

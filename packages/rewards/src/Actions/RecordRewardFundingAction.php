@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardFundingSource;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

@@ -26,7 +26,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
-use AIArmada\Rewards\Support\RewardBudgetLedger;
+use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Rewards\Tests\Ledgers\Support\ScriptedPayoutExecutor;
