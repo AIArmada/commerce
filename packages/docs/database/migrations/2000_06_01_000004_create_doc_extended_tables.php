@@ -146,7 +146,7 @@ return new class extends Migration
             $table->timestampTz('failed_at')->nullable();
             $table->timestampsTz();
 
-            $table->index('doc_id', $einvoiceTable . '_doc_id_index');
+            $table->unique(['doc_id', 'submission_uid'], $einvoiceTable . '_doc_submission_unique');
             $table->index('submission_uid', $einvoiceTable . '_submission_uid_index');
             $table->index('status', $einvoiceTable . '_status_index');
         });

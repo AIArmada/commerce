@@ -7,6 +7,7 @@
 - Inject `Contracts\PdfRenderer` for HTML-to-PDF rendering; use `Data\PdfRenderOptions` and bind custom drivers in the host container.
 - Use `Contracts\DocumentApprovalRequests` to request or remove pending approvals; never delete settled approvals.
 - Use `Contracts\DocumentApprovals` for approval decisions; resolve actor permissions at the authenticated entry point.
+- Use `Contracts\DocumentEInvoiceSubmissions` to record and update MyInvois submission evidence; the document and submission identities are immutable and retries return the existing record.
 - Use `Contracts\DocumentWorkflows` to create workflows, add steps, and remove workflows within the current owner boundary.
 - Use `Contracts\DocumentSequenceSettings` for numbering configuration; issued or reserved sequences retain their numbering settings and cannot be deleted.
 - Use `Contracts\DocumentTemplates` for document template mutations and default selection.

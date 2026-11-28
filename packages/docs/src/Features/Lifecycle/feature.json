@@ -13,6 +13,9 @@
     "store:docs.pdf": [
       "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\StoreDocumentPdf",
       "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\DeleteStoredDocumentPdf"
+    ],
+    "table:docs_einvoice_submissions": [
+      "AIArmada\\Docs\\Features\\Lifecycle\\Actions\\ManageDocEInvoiceSubmissions"
     ]
   },
   "extensions": {}

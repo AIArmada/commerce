@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Features\Lifecycle;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\DocumentEInvoiceSubmissions;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPdfCleanup;
 use AIArmada\Docs\Contracts\DocumentPdfPublisher;
@@ -12,6 +13,7 @@ use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Features\Lifecycle\Actions\DocumentOperations;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocuments;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocEInvoiceSubmissions;
 use AIArmada\Docs\Features\Lifecycle\Actions\RenderDocument;
 use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
 use AIArmada\Docs\Features\Lifecycle\Queries\LifecycleRelationModelsResolver;
@@ -28,6 +30,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->scoped(DocumentRecords::class, ManageDocumentRecords::class);
         $app->singleton(DocumentRendering::class, RenderDocument::class);
         $app->bind(DocumentLifecycle::class, ManageDocuments::class);
+        $app->bind(DocumentEInvoiceSubmissions::class, ManageDocEInvoiceSubmissions::class);
         $app->bind(DocumentPdfPublisher::class, StoreDocumentPdf::class);
         $app->bind(DocumentPdfCleanup::class, DeleteStoredDocumentPdf::class);
         $app->bind(DocServiceInterface::class, DocumentOperations::class);
