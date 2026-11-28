@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\Lifecycle\Extensions;
 
 use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
 use AIArmada\Vouchers\Models\Voucher;

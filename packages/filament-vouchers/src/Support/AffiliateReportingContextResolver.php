@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\FilamentVouchers\Support;
 
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
 use AIArmada\CommerceSupport\Support\OwnerContext;

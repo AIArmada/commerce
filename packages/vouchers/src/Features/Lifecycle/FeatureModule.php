@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle;
 
+use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ChangeVoucherAvailability;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
@@ -29,6 +30,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Features\Lifecycle\Extensions\VoucherAffiliateRemovalGuard;
 use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherEligibility;
@@ -56,6 +58,10 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(VoucherDeletion::class, DeleteVoucher::class);
         $app->bind(VoucherDepletion::class, DepleteVoucher::class);
         $app->bind(VoucherUpdater::class, UpdateVoucher::class);
+
+        if (interface_exists(AffiliateRemovalGuard::class)) {
+            $app->tag([VoucherAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
+        }
     }
 
     public function boot(Application $app): void

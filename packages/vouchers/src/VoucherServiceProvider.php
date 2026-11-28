@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers;
 
-use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
@@ -20,7 +19,6 @@ use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
-use AIArmada\Vouchers\Support\VoucherAffiliateRemovalGuard;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -47,10 +45,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherService::class);
         $this->app->singleton(Services\VoucherDiscountCalculator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
-
-        if (interface_exists(AffiliateRemovalGuard::class)) {
-            $this->app->tag([VoucherAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
-        }
 
         // Bind interface for checkout package integration
         $this->app->bind(VoucherServiceInterface::class, VoucherService::class);
