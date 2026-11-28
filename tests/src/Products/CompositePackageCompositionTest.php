@@ -18,7 +18,9 @@ use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 function makeCompositeParent(array $attributes = []): Product
@@ -327,8 +329,13 @@ it('isolates composite package reads and writes by owner', function (): void {
     });
 
     OwnerContext::withOwner($ownerB, function () use ($parentA): void {
+        $service = app(CompositePackageService::class);
+
         expect(fn () => app(ReplaceProductComponents::class)->handle($parentA, []))
             ->toThrow(InvalidCompositePackageException::class, 'not accessible');
+        expect(fn () => $service->priceModeFor($parentA))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->requiresShippingFor($parentA))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->assertPublishable($parentA, new Collection))->toThrow(AuthorizationException::class);
     });
 });
 

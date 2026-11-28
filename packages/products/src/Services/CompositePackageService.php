@@ -83,7 +83,7 @@ final class CompositePackageService
             name: (string) ($parentVariant?->name ?? $product->name),
             price: $this->recursivePrice($product, $components, [], $parentVariant),
             currency: mb_strtoupper((string) $product->currency),
-            priceMode: $this->priceModeFor($product, $parentVariant)->value,
+            priceMode: $this->resolvePriceMode($product, $parentVariant)->value,
             entries: $entries,
             discountBasisPoints: (int) ($parentVariant?->discount_basis_points ?? $product->discount_basis_points ?? 0),
         );
@@ -217,6 +217,7 @@ final class CompositePackageService
     /** @param Collection<int, ProductComponent>|null $components */
     public function assertPublishable(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): void
     {
+        $this->assertParentAccessible($product);
         $this->assertParentVariant($product, $parentVariant);
         $this->assertComponentScope($product, $components, $parentVariant);
 
@@ -243,8 +244,14 @@ final class CompositePackageService
 
     public function priceModeFor(Product $product, ?Variant $parentVariant = null): CompositePriceMode
     {
+        $this->assertParentAccessible($product);
         $this->assertParentVariant($product, $parentVariant);
 
+        return $this->resolvePriceMode($product, $parentVariant);
+    }
+
+    private function resolvePriceMode(Product $product, ?Variant $parentVariant): CompositePriceMode
+    {
         $value = $parentVariant?->price_mode ?? $product->getAttribute('price_mode');
 
         if ($value instanceof CompositePriceMode) {
@@ -263,6 +270,9 @@ final class CompositePackageService
     /** Shipping is the union of physical leaf components, never a parent allocation. */
     public function requiresShippingFor(Product $product, ?Variant $parentVariant = null): bool
     {
+        $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+
         if ($product->supportsVariants() && $parentVariant === null) {
             foreach ($product->variants()->where('is_enabled', true)->get() as $variant) {
                 if ($this->requiresShippingFor($product, $variant)) {
@@ -290,7 +300,7 @@ final class CompositePackageService
     {
         $this->assertNotCyclic($product, $ancestors);
 
-        $mode = $this->priceModeFor($product, $parentVariant);
+        $mode = $this->resolvePriceMode($product, $parentVariant);
         if ($mode === CompositePriceMode::Fixed) {
             return (int) ($parentVariant?->price ?? $product->price);
         }
