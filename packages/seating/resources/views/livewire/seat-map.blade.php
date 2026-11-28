@@ -25,7 +25,7 @@
                 @foreach($layout['seats'] as $seat)
                     @php
                         $s = $status[$seat['id']] ?? \AIArmada\Seating\Enums\SeatStatus::Available->value;
-                        $isSelectable = $selectable && $s === \AIArmada\Seating\Enums\SeatStatus::Available->value;
+                        $isSelectable = $selectable && in_array($s, [\AIArmada\Seating\Enums\SeatStatus::Available->value, \AIArmada\Seating\Enums\SeatStatus::Picked->value], true);
                         $classes = match(true) {
                             $s === \AIArmada\Seating\Enums\SeatStatus::Sold->value     => 'bg-red-300 border-red-500 cursor-not-allowed',
                             $s === \AIArmada\Seating\Enums\SeatStatus::Held->value     => 'bg-yellow-200 border-yellow-400 cursor-not-allowed',
@@ -38,7 +38,7 @@
                         type="button"
                         wire:key="seat-{{ $seat['id'] }}"
                         @if($isSelectable) wire:click="toggleSeat('{{ $seat['id'] }}')" @endif
-                        @disabled(!$isSelectable && !in_array($seat['id'], $picked, true))
+                        @disabled(!$isSelectable)
                         aria-label="Row {{ $seat['row'] }} seat {{ $seat['label'] }}, {{ $s }}"
                         class="seating-seat aspect-square border rounded text-xs flex items-center justify-center transition {{ $classes }}"
                     >

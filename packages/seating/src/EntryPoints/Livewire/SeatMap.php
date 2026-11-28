@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\Livewire;
+namespace AIArmada\Seating\EntryPoints\Livewire;
 
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Models\Seat;
@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class SeatMap extends Component
@@ -22,14 +23,19 @@ class SeatMap extends Component
 
     public const int TOGGLE_RATE_LIMIT = 60;
 
+    #[Locked]
     public ?string $seatMapId = null;
 
+    #[Locked]
     public ?string $seatableType = null;
 
+    #[Locked]
     public ?string $seatableId = null;
 
+    #[Locked]
     public ?string $sectionId = null;
 
+    #[Locked]
     public bool $selectable = true;
 
     public bool $showLegend = true;
@@ -37,6 +43,7 @@ class SeatMap extends Component
     public ?string $category = null;
 
     /** @var array<int, string> */
+    #[Locked]
     public array $picked = [];
 
     public function mount(
@@ -76,6 +83,7 @@ class SeatMap extends Component
         $seat = Seat::query()
             ->whereKey($seatId)
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $mapId))
+            ->when($this->sectionId !== null, fn (Builder $query): Builder => $query->where('seat_section_id', $this->sectionId))
             ->first();
 
         if ($seat === null || $seat->status !== SeatStatus::Available) {
@@ -86,6 +94,7 @@ class SeatMap extends Component
 
         $hasActiveHold = $seat->holds()
             ->where('expires_at', '>', $now)
+            ->whereNull('converted_at')
             ->exists();
 
         $hasActiveAllocation = $seat->allocations()
@@ -150,7 +159,8 @@ class SeatMap extends Component
                 'seats' => fn ($query): mixed => $query->select('id', 'seat_section_id', 'status'),
                 'seats.holds' => fn ($query): mixed => $query
                     ->select('id', 'seat_id', 'expires_at')
-                    ->where('expires_at', '>', $now),
+                    ->where('expires_at', '>', $now)
+                    ->whereNull('converted_at'),
                 'seats.allocations' => fn ($query): mixed => $query
                     ->select('id', 'seat_id', 'status')
                     ->where('status', 'active'),

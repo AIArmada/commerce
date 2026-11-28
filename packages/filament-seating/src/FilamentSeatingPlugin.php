@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSeating;
 
-use AIArmada\FilamentSeating\Pages\SeatMapEditor;
-use AIArmada\FilamentSeating\Pages\SeatMapOccupancy;
+use AIArmada\FilamentSeating\EntryPoints\Filament\Pages\SeatMapEditor;
+use AIArmada\FilamentSeating\EntryPoints\Filament\Pages\SeatMapOccupancy;
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
 use AIArmada\FilamentSeating\Widgets\SeatMapOverview;
 use Filament\Contracts\Plugin;

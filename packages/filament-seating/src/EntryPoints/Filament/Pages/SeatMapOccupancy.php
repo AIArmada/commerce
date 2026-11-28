@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSeating\Pages;
+namespace AIArmada\FilamentSeating\EntryPoints\Filament\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use BackedEnum;
 use Filament\Pages\Page;
+use Livewire\Attributes\Locked;
 use UnitEnum;
 
 class SeatMapOccupancy extends Page
@@ -16,6 +17,7 @@ class SeatMapOccupancy extends Page
 
     protected string $view = 'filament-seating::pages.seat-map-occupancy';
 
+    #[Locked]
     public ?string $seatMapId = null;
 
     public function mount(?string $seatMapId = null): void

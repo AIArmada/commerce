@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Livewire\SeatMap;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Models\SeatSection;

@@ -6,7 +6,7 @@ namespace AIArmada\Seating;
 
 use AIArmada\Seating\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Livewire\SeatMap;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 use Illuminate\Console\Scheduling\Schedule;
 use Livewire\Livewire;

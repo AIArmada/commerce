@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Livewire\SeatMap;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Models\SeatSection;
@@ -151,5 +151,13 @@ it('stops toggling once the per-minute budget is spent', function (): void {
 
     // 60 effective toggles is even, so the seat ends deselected; without a
     // limit the 65 attempts would end with the seat selected.
+    expect($component->picked)->toBe([]);
+});
+
+it('rejects selection outside the requested section', function (): void {
+    $component = makeSeatMapComponent((string) $this->map->id, (string) $this->sectionA->id);
+
+    $component->toggleSeat((string) $this->seatB->id);
+
     expect($component->picked)->toBe([]);
 });
