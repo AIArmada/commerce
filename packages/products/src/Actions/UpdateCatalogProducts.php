@@ -10,6 +10,7 @@ use AIArmada\Products\Models\Product;
 use Closure;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Illuminate\Validation\ValidationException;
 
 final readonly class UpdateCatalogProducts
@@ -46,7 +47,9 @@ final readonly class UpdateCatalogProducts
                 throw ValidationException::withMessages(['value' => 'Price exceeds the supported integer range.']);
             }
 
-            $product->update(['price' => max(0, (int) $price)]);
+            if (! $product->update(['price' => max(0, (int) $price)])) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
         });
     }
 
@@ -54,7 +57,9 @@ final readonly class UpdateCatalogProducts
     public function setVisibility(iterable $records, ProductVisibility $visibility): void
     {
         $this->mutate($records, static function (Product $product) use ($visibility): void {
-            $product->update(['visibility' => $visibility]);
+            if (! $product->update(['visibility' => $visibility])) {
+                throw new RuntimeException('Catalog record update was cancelled.');
+            }
         });
     }
 

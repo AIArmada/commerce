@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use InvalidArgumentException;
 
 final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
@@ -262,7 +263,9 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
         $adopted = $this->findByMembership($product, $owner, $combination['ids']);
 
         if ($adopted instanceof Variant) {
-            $adopted->update(['combination_key' => $combination['key']]);
+            if (! $adopted->update(['combination_key' => $combination['key']])) {
+                throw new RuntimeException('Variant identity update was cancelled.');
+            }
 
             return $adopted;
         }
@@ -296,6 +299,10 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
                     'owner_type' => $product->owner_type,
                     'owner_id' => $product->owner_id,
                 ]);
+
+                if (! $variant->exists) {
+                    throw new RuntimeException('Variant creation was cancelled.');
+                }
 
                 $variant->optionValues()->sync($combination['ids']);
 
@@ -389,7 +396,9 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
             ->whereKeyNot($variant->getKey())
             ->exists();
 
-        $variant->update(['combination_key' => $alreadyKeyed ? null : $actualKey]);
+        if (! $variant->update(['combination_key' => $alreadyKeyed ? null : $actualKey])) {
+            throw new RuntimeException('Variant identity update was cancelled.');
+        }
     }
 
     /**

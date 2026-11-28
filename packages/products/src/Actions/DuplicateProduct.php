@@ -43,7 +43,9 @@ final readonly class DuplicateProduct
             $newProduct->published_at = null;
             $newProduct->deactivated_at = null;
             $newProduct->archived_at = null;
-            $newProduct->save();
+            if (! $newProduct->save()) {
+                throw new RuntimeException('Catalog duplication was cancelled.');
+            }
 
             $newProduct->categories()->sync($record->categories()->pluck($record->categories()->getRelated()->qualifyColumn('id'))->all());
             $newProduct->collections()->sync($record->collections()->pluck($record->collections()->getRelated()->qualifyColumn('id'))->all());
@@ -54,12 +56,16 @@ final readonly class DuplicateProduct
             foreach ($record->options()->with('values')->get() as $option) {
                 $newOption = $option->replicate();
                 $newOption->product_id = $newProduct->getKey();
-                $newOption->save();
+                if (! $newOption->save()) {
+                    throw new RuntimeException('Catalog duplication was cancelled.');
+                }
 
                 foreach ($option->values as $value) {
                     $newValue = $value->replicate();
                     $newValue->option_id = $newOption->getKey();
-                    $newValue->save();
+                    if (! $newValue->save()) {
+                        throw new RuntimeException('Catalog duplication was cancelled.');
+                    }
                     $valueMap[(string) $value->getKey()] = (string) $newValue->getKey();
                 }
             }
@@ -79,7 +85,9 @@ final readonly class DuplicateProduct
                 $newVariant->combination_key = $variant->combination_key === null
                     ? null
                     : Variant::combinationKeyFor((string) $newProduct->getKey(), $remapped);
-                $newVariant->save();
+                if (! $newVariant->save()) {
+                    throw new RuntimeException('Catalog duplication was cancelled.');
+                }
                 $variantMap[(string) $variant->getKey()] = (string) $newVariant->getKey();
                 $newVariant->optionValues()->sync($remapped);
 
@@ -95,7 +103,9 @@ final readonly class DuplicateProduct
                     $copy->parent_variant_id = $component->parent_variant_id === null
                         ? null
                         : ($variantMap[(string) $component->parent_variant_id] ?? throw new RuntimeException('Unable to remap composite parent variant.'));
-                    $copy->save();
+                    if (! $copy->save()) {
+                        throw new RuntimeException('Catalog duplication was cancelled.');
+                    }
                 }
             }
 

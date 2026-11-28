@@ -9,6 +9,7 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Illuminate\Validation\ValidationException;
 
 final readonly class ReplaceOptionValues
@@ -42,6 +43,10 @@ final readonly class ReplaceOptionValues
 
                 if ($id === null || $id === '') {
                     $created = $locked->values()->create($attributes);
+                    if (! $created->exists) {
+                        throw new RuntimeException('Option value creation was cancelled.');
+                    }
+
                     $retained[$created->id] = true;
 
                     continue;
@@ -53,13 +58,17 @@ final readonly class ReplaceOptionValues
                     throw ValidationException::withMessages(['option_values' => 'An option value is invalid or duplicated.']);
                 }
 
-                $record->update($attributes);
+                if (! $record->update($attributes)) {
+                    throw new RuntimeException('Option value update was cancelled.');
+                }
                 $retained[$id] = true;
             }
 
             foreach ($existing as $record) {
                 if (! isset($retained[$record->id])) {
-                    $record->delete();
+                    if (! $record->delete()) {
+                        throw new RuntimeException('Option value deletion was cancelled.');
+                    }
                 }
             }
         });

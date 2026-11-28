@@ -9,6 +9,7 @@ use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use InvalidArgumentException;
 
 final readonly class EnsureProductBySlug
@@ -41,6 +42,10 @@ final readonly class EnsureProductBySlug
                 }
             }
 
+            if (! $product->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
             $created = $product->wasRecentlyCreated;
             $product = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
             $product->fill(Arr::except($attributes, ['id', 'slug', 'owner_type', 'owner_id']));
@@ -49,8 +54,8 @@ final readonly class EnsureProductBySlug
                 $product->published_at = CarbonImmutable::now();
             }
 
-            if ($product->isDirty()) {
-                $product->save();
+            if ($product->isDirty() && ! $product->save()) {
+                throw new RuntimeException('Catalog record update was cancelled.');
             }
 
             return $product;

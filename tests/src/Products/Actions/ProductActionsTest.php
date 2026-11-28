@@ -403,3 +403,45 @@ it('derives product and composite ownership from the active context', function (
     expect($global->owner_type)->toBeNull()
         ->and($global->owner_id)->toBeNull();
 });
+
+it('rejects cancelled catalog writes and rolls back the whole bulk operation', function (): void {
+    $first = Product::create(['name' => 'First cancellable product', 'price' => 1000, 'status' => ProductStatus::Draft]);
+    $second = Product::create(['name' => 'Second cancellable product', 'price' => 2000, 'status' => ProductStatus::Draft]);
+    $records = collect([$first, $second])->sortBy('id')->values();
+    $blocked = $records->last();
+
+    Product::updating(static fn (Product $product): bool => $product->getKey() !== $blocked->getKey());
+
+    expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices($records, 'increase_amount', 1))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(UpdateProduct::class)->execute($blocked, ['price' => 100]))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(UpdateProductStatus::class)->execute($blocked, ProductStatus::Active))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and($first->fresh()->price)->toBe(1000)
+        ->and($second->fresh()->price)->toBe(2000)
+        ->and($blocked->fresh()->status)->toBe(ProductStatus::Draft);
+});
+
+it('rejects cancelled product creation instead of returning an unpersisted model', function (): void {
+    Product::creating(static fn (Product $product): bool => $product->name !== 'Cancelled catalog product');
+
+    expect(fn () => app(CreateProduct::class)->execute(['name' => 'Cancelled catalog product', 'price' => 1000]))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(Product::query()->where('name', 'Cancelled catalog product')->exists())->toBeFalse();
+});
+
+it('rolls back option value replacement when a retained value cannot be saved', function (): void {
+    $product = Product::create(['name' => 'Option rollback product', 'price' => 1000]);
+    $option = Option::create(['product_id' => $product->id, 'name' => 'Color']);
+    $value = OptionValue::create(['option_id' => $option->id, 'name' => 'Red']);
+
+    OptionValue::updating(static fn (OptionValue $record): bool => $record->getKey() !== $value->getKey());
+
+    expect(fn () => app(ReplaceOptionValues::class)->execute($option, [
+        ['name' => 'Green'],
+        ['id' => $value->id, 'name' => 'Blue'],
+    ]))->toThrow(RuntimeException::class, 'cancelled')
+        ->and($option->values()->count())->toBe(1)
+        ->and($value->fresh()->name)->toBe('Red');
+});
