@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Concerns;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 

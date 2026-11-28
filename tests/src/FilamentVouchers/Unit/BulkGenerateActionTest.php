@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Actions\BulkGenerateVouchersAction;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);

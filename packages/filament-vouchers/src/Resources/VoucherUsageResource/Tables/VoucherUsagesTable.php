@@ -8,7 +8,7 @@ use AIArmada\FilamentVouchers\Exports\VoucherUsageExporter;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Filament\Actions\ExportAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;

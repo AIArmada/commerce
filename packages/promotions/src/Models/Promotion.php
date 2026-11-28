@@ -226,7 +226,7 @@ class Promotion extends Model implements Auditable
     private static function issuedVoucherModelClass(): ?string
     {
         foreach ([
-            '\\AIArmada\\Vouchers\\Models\\Voucher',
+            '\\AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher',
         ] as $voucherModelClass) {
             if (class_exists($voucherModelClass)) {
                 /** @var class-string<Model> $voucherModelClass */

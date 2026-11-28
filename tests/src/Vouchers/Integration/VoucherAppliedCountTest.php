@@ -6,7 +6,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use Illuminate\Support\Facades\Event;
 

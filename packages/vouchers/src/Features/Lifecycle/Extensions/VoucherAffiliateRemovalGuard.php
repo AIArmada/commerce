@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Extensions;
 
 use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

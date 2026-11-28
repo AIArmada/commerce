@@ -19,7 +19,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 

@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 
 final class ReadVoucherUsageHistory implements VoucherUsageHistory
 {

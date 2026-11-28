@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\States;
+namespace AIArmada\Vouchers\Features\Lifecycle\States;
 
 final class Active extends VoucherStatus
 {

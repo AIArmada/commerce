@@ -193,7 +193,7 @@ $validation = Voucher::validate('MERCHANT10', $cart);
 Use the scope directly on the model:
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 // Get all vouchers for a specific owner
 $merchantVouchers = Voucher::query()
@@ -308,7 +308,7 @@ public function applyVoucher(Request $request, Vendor $vendor)
 If you need to query vouchers for a different owner:
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 // Bypass the resolver and query directly
 $otherMerchantVouchers = Voucher::query()

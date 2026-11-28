@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\States;
+namespace AIArmada\Vouchers\Features\Lifecycle\States;
 
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;

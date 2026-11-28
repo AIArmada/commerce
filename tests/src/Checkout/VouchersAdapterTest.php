@@ -17,7 +17,7 @@ use AIArmada\Vouchers\Data\VoucherStatus;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;

@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 uses(TestCase::class);
 

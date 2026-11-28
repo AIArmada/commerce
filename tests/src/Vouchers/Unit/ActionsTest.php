@@ -21,7 +21,7 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;

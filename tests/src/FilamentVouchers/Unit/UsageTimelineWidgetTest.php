@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 
 uses(TestCase::class);
 

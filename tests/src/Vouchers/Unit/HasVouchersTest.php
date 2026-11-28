@@ -10,7 +10,7 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartWithVouchers;

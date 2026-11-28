@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

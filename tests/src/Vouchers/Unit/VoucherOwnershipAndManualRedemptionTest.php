@@ -13,12 +13,12 @@ use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherV
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 use Akaunting\Money\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;

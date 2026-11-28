@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits;
 
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasVoucherOwnership

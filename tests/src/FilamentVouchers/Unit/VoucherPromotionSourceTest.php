@@ -7,7 +7,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Infolists\Components\TextEntry;

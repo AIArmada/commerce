@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

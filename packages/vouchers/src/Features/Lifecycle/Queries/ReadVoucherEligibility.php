@@ -9,10 +9,10 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 
 final class ReadVoucherEligibility implements VoucherEligibility
 {

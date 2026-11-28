@@ -17,7 +17,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers\WalletE
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherForm;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

@@ -6,8 +6,8 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;

@@ -6,8 +6,8 @@ namespace AIArmada\Promotions\Support;
 
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;

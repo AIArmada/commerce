@@ -11,8 +11,8 @@ use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Illuminate\Support\Facades\Log;
 
 final class HandleChipPaymentSuccess

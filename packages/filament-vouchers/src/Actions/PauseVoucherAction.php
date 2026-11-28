@@ -6,8 +6,8 @@ namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;

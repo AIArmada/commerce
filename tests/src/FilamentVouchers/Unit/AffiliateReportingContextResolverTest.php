@@ -18,9 +18,9 @@ use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active as ActiveVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active as ActiveVoucher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 

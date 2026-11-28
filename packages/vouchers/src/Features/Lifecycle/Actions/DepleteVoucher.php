@@ -6,10 +6,10 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDepletion;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 
 final readonly class DepleteVoucher implements VoucherDepletion
 {

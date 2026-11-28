@@ -9,7 +9,7 @@ use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as FilamentVoucher;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 

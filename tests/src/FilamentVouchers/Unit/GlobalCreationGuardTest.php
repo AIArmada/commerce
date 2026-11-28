@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Actions\BulkGenerateVouchersAction;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 uses(TestCase::class);
 

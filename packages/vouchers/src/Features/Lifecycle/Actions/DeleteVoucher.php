@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use RuntimeException;
 
 final class DeleteVoucher implements VoucherDeletion

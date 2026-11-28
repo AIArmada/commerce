@@ -196,7 +196,7 @@ navigation group and sort come from config, which the
 ### Custom Table Actions
 
 For extra columns or actions, register your own resource against
-`AIArmada\Vouchers\Models\Voucher` in your panel provider:
+`AIArmada\Vouchers\Features\Lifecycle\Models\Voucher` in your panel provider:
 
 ```php
 public static function table(Table $table): Table

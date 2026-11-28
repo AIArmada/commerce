@@ -6,9 +6,9 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 use Illuminate\Validation\ValidationException;
 
 final readonly class ChangeVoucherAvailability implements VoucherAvailability

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits;
 
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

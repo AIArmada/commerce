@@ -23,7 +23,6 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
-use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
@@ -66,7 +65,7 @@ class VoucherService implements VoucherServiceInterface
             $data['code'] = $this->normalizeCode($data['code']);
         }
 
-        $data['status'] ??= Active::class;
+        $data['status'] ??= 'active';
 
         return app(VoucherCreator::class)->handle($data);
     }

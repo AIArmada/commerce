@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherIssuer;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 final class IssueAffiliateVoucher implements AffiliateVoucherIssuer
 {

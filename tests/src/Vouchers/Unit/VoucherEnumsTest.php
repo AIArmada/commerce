@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 
 it('can get voucher status labels', function (): void {
     expect(VoucherStatus::fromString(Active::class)->label())->toBe('Active')

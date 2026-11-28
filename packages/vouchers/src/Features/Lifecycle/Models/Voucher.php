@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Models;
+namespace AIArmada\Vouchers\Features\Lifecycle\Models;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -14,11 +14,11 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDepletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

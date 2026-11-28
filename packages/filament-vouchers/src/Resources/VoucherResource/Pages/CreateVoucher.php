@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 

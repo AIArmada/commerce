@@ -23,7 +23,7 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;

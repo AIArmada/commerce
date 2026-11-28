@@ -70,8 +70,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
     public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
     {
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
-        $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
+        $usageClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\VoucherUsage';
 
         if (! class_exists($voucherClass) || ! class_exists($usageClass)) {
             throw new InvalidArgumentException('The vouchers package models are unavailable.');
@@ -130,8 +130,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
     public function revoke(RewardBenefitGrant $grant): void
     {
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
-        $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
+        $usageClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\VoucherUsage';
         $expireActionClass = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
 
         if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! interface_exists($expireActionClass)) {

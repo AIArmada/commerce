@@ -21,7 +21,7 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Support\CartWithVouchers;

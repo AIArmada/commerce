@@ -10,7 +10,7 @@ use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

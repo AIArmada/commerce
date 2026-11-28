@@ -10,9 +10,9 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherExpiry;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 

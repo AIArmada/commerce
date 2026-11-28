@@ -70,7 +70,7 @@ Voucher::create(array $data): VoucherData
 - `starts_at` - Start datetime
 - `expires_at` - Expiry datetime
 - `allows_manual_redemption` - Allow manual redemption
-- `status` - Spatie state class, e.g. `AIArmada\Vouchers\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Data\VoucherStatus` enum is **not** accepted here.
+- `status` - Spatie state class, e.g. `AIArmada\Vouchers\Features\Lifecycle\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Data\VoucherStatus` enum is **not** accepted here.
 - `metadata` - Additional data array
 - `target_definition` - Targeting rules array
 
@@ -80,7 +80,7 @@ Voucher::create(array $data): VoucherData
 > derived accessor instead:
 >
 > ```php
-> $voucher->effective_status; // AIArmada\Vouchers\States\VoucherStatus
+> $voucher->effective_status; // AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus
 > ```
 >
 > `effective_status` returns `Expired` when `isExpired()` is true and the stored state is not
@@ -390,7 +390,7 @@ enum VoucherType: string
 Two distinct types share this name:
 
 - `AIArmada\Vouchers\Data\VoucherStatus` — the backed enum used for immutable voucher snapshots, labels, filters and option lists.
-- `AIArmada\Vouchers\States\VoucherStatus` — the abstract Spatie model-state that the `status`
+- `AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus` — the abstract Spatie model-state that the `status`
   cast on the Eloquent `Voucher` resolves to. Model writes use this state; snapshot reads return the backed enum.
 
 ```php

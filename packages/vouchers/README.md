@@ -209,7 +209,7 @@ class CurrentMerchantResolver implements OwnerResolverInterface
 Track voucher performance:
 
 ```php
-$voucher = \AIArmada\Vouchers\Models\Voucher::find($id);
+$voucher = \AIArmada\Vouchers\Features\Lifecycle\Models\Voucher::find($id);
 
 // Get conversion rate (redeemed vs applied)
 $conversionRate = $voucher->getConversionRate(); // e.g., 45.5%

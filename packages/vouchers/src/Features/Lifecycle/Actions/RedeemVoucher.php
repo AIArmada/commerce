@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;

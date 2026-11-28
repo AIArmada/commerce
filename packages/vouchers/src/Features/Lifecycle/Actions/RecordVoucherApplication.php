@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 final readonly class RecordVoucherApplication
 {

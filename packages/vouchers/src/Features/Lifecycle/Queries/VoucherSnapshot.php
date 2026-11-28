@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherStatus;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use BackedEnum;
 
 final class VoucherSnapshot

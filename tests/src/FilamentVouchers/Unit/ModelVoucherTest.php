@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as FilamentVoucher;
 
 uses(TestCase::class);
 

@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Akaunting\Money\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;

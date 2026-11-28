@@ -22,7 +22,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
     public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
         $createAction = 'AIArmada\\Vouchers\\Runtime\\VoucherCreator';
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
 
         if (! interface_exists($createAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('The vouchers package public API is unavailable.');
@@ -118,7 +118,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
     {
         $expireAction = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
         $code = $reward->externalReference;
 
         if (! is_string($code) || $code === '' || ! interface_exists($expireAction) || ! class_exists($voucherClass)) {

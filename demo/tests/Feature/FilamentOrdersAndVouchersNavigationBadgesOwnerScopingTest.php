@@ -10,9 +10,9 @@ use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

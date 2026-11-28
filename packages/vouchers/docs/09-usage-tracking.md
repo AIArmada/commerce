@@ -24,7 +24,7 @@ This allows tracking how many times a voucher was *applied to a cart* vs actuall
 ## Voucher Statistics
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 $voucher = Voucher::query()->withCount('usages')->where('code', 'SUMMER2024')->first();
 
@@ -103,7 +103,7 @@ This extra metadata is what powers downstream Filament exports, affiliate-aware 
 ## VoucherUsage Model
 
 ```php
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 
 // Query usage records
 $usages = VoucherUsage::query()

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Concerns;
 
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 /**
  * Resolves the generic recipient assignee marker.

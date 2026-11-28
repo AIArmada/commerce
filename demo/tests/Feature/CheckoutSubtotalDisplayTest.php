@@ -6,9 +6,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

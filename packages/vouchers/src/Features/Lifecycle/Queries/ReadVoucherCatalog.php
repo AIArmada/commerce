@@ -11,7 +11,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 final class ReadVoucherCatalog implements VoucherCatalog
 {

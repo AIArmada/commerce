@@ -7,7 +7,7 @@ namespace AIArmada\FilamentVouchers\Support;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;

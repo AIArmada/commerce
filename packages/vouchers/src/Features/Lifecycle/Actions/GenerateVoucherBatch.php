@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherBatchIssuer;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;

@@ -11,8 +11,8 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as FilamentVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 
 uses(TestCase::class);
