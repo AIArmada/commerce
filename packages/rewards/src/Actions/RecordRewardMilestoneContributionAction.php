@@ -25,7 +25,7 @@ use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

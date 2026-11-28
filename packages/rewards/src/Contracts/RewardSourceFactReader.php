@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Contracts;
 
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 
 /**
  * Truthful source-reader boundary for entitlement evaluation.

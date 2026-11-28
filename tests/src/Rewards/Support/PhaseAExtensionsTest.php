@@ -17,7 +17,7 @@ use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\CompositeRewardSourceFactReader;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Support\RewardVersionResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

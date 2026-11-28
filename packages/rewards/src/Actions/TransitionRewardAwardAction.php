@@ -43,7 +43,7 @@ use AIArmada\Rewards\Data\RewardPreviewContext;
 use AIArmada\Rewards\Support\RewardPreviewEngine;
 use AIArmada\Rewards\Data\RewardPreviewFixture;
 use AIArmada\Rewards\Support\RewardProgramGuard;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;

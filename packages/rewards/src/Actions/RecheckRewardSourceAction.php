@@ -11,7 +11,7 @@ use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Support\RewardProgramGuard;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use InvalidArgumentException;
 
 final readonly class RecheckRewardSourceAction

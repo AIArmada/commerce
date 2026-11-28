@@ -12,7 +12,7 @@ use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;
 use AIArmada\Rewards\Support\RewardProgramGuard;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

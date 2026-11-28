@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 
 /**
  * Explicit fake source-reader boundary for ledger tests.

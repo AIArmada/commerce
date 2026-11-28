@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Support;
+namespace AIArmada\Rewards\Data;
 
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;

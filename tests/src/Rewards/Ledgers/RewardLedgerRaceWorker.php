@@ -24,7 +24,7 @@ use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerWorkerDb;

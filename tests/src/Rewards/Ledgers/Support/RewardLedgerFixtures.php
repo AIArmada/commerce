@@ -22,7 +22,7 @@ use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
-use AIArmada\Rewards\Support\RewardSourceFact;
+use AIArmada\Rewards\Data\RewardSourceFact;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

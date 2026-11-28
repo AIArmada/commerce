@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardSourceFact;
+
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use Closure;
 use InvalidArgumentException;

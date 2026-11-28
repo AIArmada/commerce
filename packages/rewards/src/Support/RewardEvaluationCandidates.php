@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Data\RewardSourceFact;
+
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
