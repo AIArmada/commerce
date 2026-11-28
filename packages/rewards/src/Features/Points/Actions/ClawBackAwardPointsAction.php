@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Points\Actions;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
-use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
-use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardDisputeApi;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
-use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
@@ -211,48 +209,25 @@ final readonly class ClawBackAwardPointsAction
             $disputeId = null;
 
             if ($consumed > 0) {
-                $operationKey = RewardOperationKeys::adjustment('dispute', 'award', (string) $locked->getKey(), 'consumed');
-
-                // Locking read: a concurrent settlement of the same award
-                // serializes on the award row, and the lock makes this check
-                // observe its committed dispute on every isolation instead of
-                // opening a second liability. Adjustments are leaf writes, so
-                // no later family can invert against this lock.
-                $existing = RewardAdjustment::query()
-                    ->where('operation_key', $operationKey)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (! $existing instanceof RewardAdjustment) {
-                    $adjustment = AppendRewardAdjustmentAction::run(
-                        RewardAdjustmentKind::Dispute,
-                        (string) $locked->getKey(),
-                        null,
-                        null,
-                        $operationKey,
-                        [
-                            'type' => 'points',
-                            'unit' => $unit,
-                            'consumed_points' => $consumed,
-                            'gross_spent_points' => $grossSpent,
-                            'refunded_points' => $linkedRefunded,
-                            'clawed_points' => $clawed,
-                            'expired_points' => $expired,
-                            'voided_reservations' => $voidedKeys,
-                            'voided_points' => $voidedPoints,
-                        ],
-                        $actorType,
-                        $actorId,
-                        $actorRole,
-                        'reversal-consumed-value:' . $reason,
-                        ['note' => 'Net consumed value is not restored; human settlement required. Gross spend and linked refunds stay in history.'],
-                        $decided,
-                    );
-
-                    $disputeId = (string) $adjustment->getKey();
-                } else {
-                    $disputeId = (string) $existing->getKey();
-                }
+                $disputeId = app(RewardDisputeApi::class)->recordConsumedPointsDispute(
+                    (string) $locked->getKey(),
+                    [
+                        'type' => 'points',
+                        'unit' => $unit,
+                        'consumed_points' => $consumed,
+                        'gross_spent_points' => $grossSpent,
+                        'refunded_points' => $linkedRefunded,
+                        'clawed_points' => $clawed,
+                        'expired_points' => $expired,
+                        'voided_reservations' => $voidedKeys,
+                        'voided_points' => $voidedPoints,
+                    ],
+                    $actorType,
+                    $actorId,
+                    $actorRole,
+                    $reason,
+                    $decided,
+                );
             }
 
             return [
