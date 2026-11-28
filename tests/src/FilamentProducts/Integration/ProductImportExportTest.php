@@ -258,3 +258,25 @@ it('does not expose database error details in catalog import results', function 
             ->toThrow(RuntimeException::class, 'Row 0: The product could not be saved.');
     });
 });
+
+it('converts catalog decimal amounts without losing integer precision', function (): void {
+    expect(validateImportRow(['price' => '90071992547409.93'], true)['price'])->toBe(9007199254740993)
+        ->and(validateImportRow(['price' => '92233720368547758.07'], true)['price'])->toBe(PHP_INT_MAX)
+        ->and(validateImportRow(['price' => '.005'], true)['price'])->toBe(1)
+        ->and(validateImportRow(['price' => '12.344'], true)['price'])->toBe(1234)
+        ->and(validateImportRow(['price' => '12.345'], true)['price'])->toBe(1235)
+        ->and(fn () => validateImportRow(['price' => '92233720368547758.08'], true))->toThrow(Exception::class)
+        ->and(fn () => validateImportRow(['price' => '92233720368547758.075'], true))->toThrow(Exception::class)
+        ->and(fn () => validateImportRow(['price' => '1e2'], true))->toThrow(Exception::class);
+});
+
+it('round trips large catalog prices through CSV decimal representations exactly', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create(['name' => 'Exact price', 'price' => 9007199254740993]);
+
+        $row = app(CatalogExport::class)->rows(['price'])->first();
+
+        expect($row)->toBe(['90071992547409.93'])
+            ->and(validateImportRow(['price' => $row[0]], true)['price'])->toBe(9007199254740993);
+    });
+});

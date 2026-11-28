@@ -248,10 +248,31 @@ final readonly class ImportCatalogProducts
             return 0;
         }
 
-        if (! is_numeric($raw) || ! is_finite((float) $raw) || (float) $raw < 0 || (float) $raw >= PHP_INT_MAX / 100) {
+        if (preg_match('/^\+?(?:(\d+)(?:\.(\d*))?|\.(\d+))$/D', $raw, $matches) !== 1) {
             throw new Exception("The {$key} must be a positive number.");
         }
 
-        return (int) round(((float) $raw) * 100);
+        $whole = $matches[1] ?? '';
+        $fraction = $matches[3] ?? ($matches[2] ?? '');
+        $digits = ltrim($whole . str_pad(substr($fraction, 0, 2), 2, '0'), '0');
+        $digits = $digits === '' ? '0' : $digits;
+        $limit = (string) PHP_INT_MAX;
+
+        if (strlen($digits) > strlen($limit)
+            || (strlen($digits) === strlen($limit) && strcmp($digits, $limit) > 0)) {
+            throw new Exception("The {$key} must be a positive number.");
+        }
+
+        $minor = (int) $digits;
+
+        if (isset($fraction[2]) && $fraction[2] >= '5') {
+            if ($minor === PHP_INT_MAX) {
+                throw new Exception("The {$key} must be a positive number.");
+            }
+
+            $minor++;
+        }
+
+        return $minor;
     }
 }

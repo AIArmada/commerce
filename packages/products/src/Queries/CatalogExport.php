@@ -53,7 +53,10 @@ final readonly class CatalogExport
                 $value = $product->getAttribute($field);
 
                 if (in_array($field, ['price', 'compare_price', 'cost'], true) && is_numeric($value)) {
-                    $value = $value / 100;
+                    $minor = (int) $value;
+                    $row[] = ($minor < 0 ? '-' : '') . abs(intdiv($minor, 100)) . '.' . str_pad((string) abs($minor % 100), 2, '0', STR_PAD_LEFT);
+
+                    continue;
                 }
 
                 if ($value instanceof BackedEnum) {
