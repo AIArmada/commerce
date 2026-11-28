@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
+use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Support\Facades\Storage;
 
 it('marks eligible documents as sent once and skips terminal documents', function (): void {
@@ -50,8 +52,9 @@ it('does not remove the stored PDF when document deletion rolls back', function 
     $disk = app(DocServiceInterface::class)->resolveStorageDiskForDocType('invoice');
     Storage::fake($disk);
     $doc = Doc::factory()->invoice()->create(['status' => Draft::class]);
-    $doc->forceFill(['pdf_path' => 'rollback-document.pdf'])->save();
-    Storage::disk($disk)->put('rollback-document.pdf', 'document');
+    $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
+    $doc->forceFill(['pdf_path' => $path])->save();
+    Storage::disk($disk)->put($path, 'document');
 
     expect(fn () => $doc->getConnection()->transaction(function () use ($doc): void {
         app(DocumentLifecycle::class)->delete([(string) $doc->getKey()]);
@@ -60,5 +63,25 @@ it('does not remove the stored PDF when document deletion rolls back', function 
     }))->toThrow(RuntimeException::class, 'Rollback');
 
     expect(Doc::query()->find($doc->getKey()))->not->toBeNull();
-    Storage::disk($disk)->assertExists('rollback-document.pdf');
+    Storage::disk($disk)->assertExists($path);
+});
+
+it('removes only the canonical PDF belonging to the deleted document', function (): void {
+    $disk = DocPdfPath::diskForType('invoice');
+    Storage::fake($disk);
+    $doc = Doc::factory()->invoice()->create();
+    $other = Doc::factory()->invoice()->create();
+    $id = (string) $doc->getKey();
+    $path = DocPdfPath::forDocument('invoice', $id);
+    $otherPath = DocPdfPath::forDocument('invoice', (string) $other->getKey());
+    Storage::disk($disk)->put($path, 'document');
+    Storage::disk($disk)->put($otherPath, 'another document');
+
+    $action = app(DeleteStoredDocumentPdf::class);
+    $action->execute($id, 'invoice', $otherPath);
+    Storage::disk($disk)->assertExists($otherPath);
+
+    $action->execute($id, 'invoice', $path);
+    Storage::disk($disk)->assertMissing($path);
+    Storage::disk($disk)->assertExists($otherPath);
 });

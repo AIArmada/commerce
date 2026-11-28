@@ -9,14 +9,13 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
 use AIArmada\Docs\Runtime\LifecycleRelationModels;
 use AIArmada\Docs\Runtime\PaymentRelationModel;
 use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
-use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -34,11 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
-use Throwable;
 
 /**
  * @property string $id
@@ -318,31 +314,11 @@ final class Doc extends Model implements Auditable
             $doc->approvals()->delete();
             $doc->shareLinks()->delete();
             $doc->eInvoiceSubmission?->delete();
-            $doc->getConnection()->afterCommit(fn () => $doc->deleteStoredPdf());
+            $id = (string) $doc->getKey();
+            $type = $doc->doc_type;
+            $path = $doc->pdf_path;
+            $doc->getConnection()->afterCommit(static fn () => app(DeleteStoredDocumentPdf::class)->execute($id, $type, $path));
         });
-    }
-
-    /**
-     * Best-effort removal of the stored PDF. Disk failures are logged and
-     * never veto the database delete.
-     */
-    public function deleteStoredPdf(): void
-    {
-        if ($this->pdf_path !== DocPdfPath::forDocument($this->doc_type, (string) $this->getKey())) {
-            return;
-        }
-
-        try {
-            $disk = app(DocService::class)->resolveStorageDiskForDocType($this->doc_type ?? 'invoice');
-
-            Storage::disk($disk)->delete($this->pdf_path);
-        } catch (Throwable $exception) {
-            Log::warning('Failed to delete stored document PDF.', [
-                'doc_id' => $this->getKey(),
-                'pdf_path' => $this->pdf_path,
-                'error' => $exception->getMessage(),
-            ]);
-        }
     }
 
     /**

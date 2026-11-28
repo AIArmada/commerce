@@ -9,7 +9,6 @@ use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\DocPdfPath;
-use AIArmada\Docs\Support\DocTypeKey;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -32,7 +31,7 @@ final readonly class StoreDocumentPdf
             $snapshot = Doc::query()->forOwner()->findOrFail($id);
             [$html, $options, $fingerprint] = $this->renderer->pdfInput($snapshot);
             $path = DocPdfPath::forDocument($snapshot->doc_type, $id);
-            $disk = $this->resolveStorageDisk($snapshot->doc_type);
+            $disk = DocPdfPath::diskForType($snapshot->doc_type);
             $storage = Storage::disk($disk);
 
             if ($snapshot->pdf_path === $path && $snapshot->pdf_fingerprint === $fingerprint && $storage->exists($path)) {
@@ -48,7 +47,7 @@ final readonly class StoreDocumentPdf
 
                 if ($currentFingerprint !== $fingerprint
                     || DocPdfPath::forDocument($locked->doc_type, $id) !== $path
-                    || $this->resolveStorageDisk($locked->doc_type) !== $disk) {
+                    || DocPdfPath::diskForType($locked->doc_type) !== $disk) {
                     return false;
                 }
 
@@ -73,20 +72,5 @@ final readonly class StoreDocumentPdf
         }
 
         throw new RuntimeException('Document changed during PDF generation. Retry the request.');
-    }
-
-    private function resolveStorageDisk(string $docType): string
-    {
-        $key = DocTypeKey::sanitize($docType);
-
-        if ($key !== null) {
-            $disk = config("docs.types.{$key}.storage.disk");
-
-            if (is_string($disk) && $disk !== '') {
-                return $disk;
-            }
-        }
-
-        return config('docs.storage.disk', 'local');
     }
 }

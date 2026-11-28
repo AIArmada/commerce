@@ -22,6 +22,7 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -60,7 +61,7 @@ final class DocService
      */
     public function resolveStorageDiskForDocType(string $docType): string
     {
-        return $this->resolveStorageDisk($docType);
+        return DocPdfPath::diskForType($docType);
     }
 
     /**
@@ -779,21 +780,6 @@ final class DocService
         }
 
         return $statusClass;
-    }
-
-    protected function resolveStorageDisk(string $docType): string
-    {
-        $key = DocTypeKey::sanitize($docType);
-
-        if ($key !== null) {
-            $disk = config("docs.types.{$key}.storage.disk");
-
-            if (is_string($disk) && $disk !== '') {
-                return $disk;
-            }
-        }
-
-        return config('docs.storage.disk', 'local');
     }
 
     protected function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed

@@ -22,4 +22,19 @@ final class DocPdfPath
 
         return $base === '' ? $filename : "{$base}/{$filename}";
     }
+
+    public static function diskForType(string $docType): string
+    {
+        $key = DocTypeKey::sanitize($docType);
+
+        if ($key !== null) {
+            $disk = config("docs.types.{$key}.storage.disk");
+
+            if (is_string($disk) && $disk !== '') {
+                return $disk;
+            }
+        }
+
+        return config('docs.storage.disk', 'local');
+    }
 }
