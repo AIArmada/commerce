@@ -20,6 +20,15 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
         RewardAwardGuard::assertAwardInScopeWhenExists($awardId);
     }
 
+    public function withAwardOwnerWhenExists(string $awardId, callable $callback): mixed
+    {
+        $programId = RewardAward::query()->whereKey($awardId)->value('program_id');
+
+        return is_string($programId)
+            ? app(RewardProgramLockApi::class)->withProgramOwner($programId, $callback)
+            : $callback();
+    }
+
     public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision
     {
         $query = RewardAward::query()->whereKey($awardId);

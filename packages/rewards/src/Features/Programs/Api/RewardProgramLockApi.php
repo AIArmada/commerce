@@ -13,6 +13,9 @@ interface RewardProgramLockApi
     /** Run system work under the program's owner, restoring the previous context. */
     public function withProgramOwner(string $programId, callable $callback): mixed;
 
+    /** Resolve an existing program for system enumeration; missing references retain the current context. */
+    public function withProgramOwnerWhenExists(string $programId, callable $callback): mixed;
+
     /** Acquire the scoped program row lock within the caller's transaction. */
     public function lockScopedProgram(string $programId): void;
 

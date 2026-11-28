@@ -8,6 +8,9 @@ interface RewardAwardLockApi
 {
     public function assertAwardInScopeWhenExists(string $awardId): void;
 
+    /** Run system work under an existing award's program owner. */
+    public function withAwardOwnerWhenExists(string $awardId, callable $callback): mixed;
+
     /** Read a scoped award decision; a locking read requires the caller's transaction. */
     public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision;
 

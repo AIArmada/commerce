@@ -38,6 +38,8 @@ use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireDueRewardPointLotsAction;
+use AIArmada\Rewards\Features\Points\Actions\ExpireRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
@@ -817,4 +819,34 @@ it('refuses foreign balance reads and reservation submission transitions', funct
     });
 
     expect(RewardPointReservationSubmission::query()->where('reservation_key', $reservation)->value('status'))->toBe('failed');
+});
+
+it('expires only the current owner lots in a scoped sweep and all owners in system context', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $expiry = $at->addDay();
+    $family = 'shared-expiry-family';
+
+    foreach ([$owner, $other] as $index => $tenant) {
+        OwnerContext::withOwner($tenant, static function () use ($recipient, $at, $expiry, $family, $index): void {
+            $program = RewardProgram::factory()->create(['family_key' => $family]);
+            CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, $at, $expiry, null, (string) $program->getKey(), 'credit:expiry-owner-' . $index);
+        });
+    }
+
+    $sweep = app(ExpireDueRewardPointLotsAction::class);
+
+    expect(fn () => OwnerContext::withOwner(
+        $owner,
+        static fn (): array => ExpireRewardPointsAction::run('user', $recipient, $family, 'pts', $expiry),
+    ))->toThrow(AuthorizationException::class);
+
+    expect(OwnerContext::withOwner($owner, static fn (): array => $sweep->handle($expiry))['movements'])->toBe(1)
+        ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(1);
+
+    expect($sweep->handle($expiry)['movements'])->toBe(1)
+        ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(2)
+        ->and($sweep->handle($expiry)['movements'])->toBe(0);
 });

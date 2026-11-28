@@ -8,6 +8,7 @@ use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
@@ -44,6 +45,7 @@ final readonly class ExpireRewardPointsAction
         string $reason = 'lot-expiry',
         string $actorType = 'system',
         ?string $actorId = null,
+        ?string $lotId = null,
     ): array {
         RewardPointInput::assertRecipient($recipientType, $recipientId);
         RewardPointInput::assertFamily($familyKey);
@@ -68,6 +70,7 @@ final readonly class ExpireRewardPointsAction
                     $reason,
                     $actorType,
                     $actorId,
+                    $lotId,
                 ));
             } catch (QueryException $exception) {
                 // Deadlock victims and lost expiry-key racers retry; the
@@ -103,13 +106,16 @@ final readonly class ExpireRewardPointsAction
         string $reason,
         string $actorType,
         ?string $actorId,
+        ?string $lotId,
     ): array {
         $lots = RewardPointLot::query()
             ->where('recipient_type', $recipientType)
             ->where('recipient_id', $recipientId)
             ->where('family_key', $familyKey)
             ->where('unit', $unit)
+            ->when($lotId !== null, static fn ($query) => $query->whereKey($lotId))
             ->where('status', RewardPointLotStatus::Open)
+            ->whereNull('expired_at')
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', $at)
             ->orderBy('id')
@@ -119,6 +125,8 @@ final readonly class ExpireRewardPointsAction
         if ($lots->isEmpty()) {
             return [];
         }
+
+        RewardPointLotScope::assertAccessible($lots);
 
         $movements = RewardPointMovement::query()
             ->whereIn('lot_id', $lots->map(fn (RewardPointLot $lot): string => (string) $lot->getKey())->all())

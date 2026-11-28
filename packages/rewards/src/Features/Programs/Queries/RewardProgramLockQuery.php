@@ -32,6 +32,15 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
         return RewardProgramGuard::withProgramOwner($programId, $callback);
     }
 
+    public function withProgramOwnerWhenExists(string $programId, callable $callback): mixed
+    {
+        if (! RewardProgram::query()->withoutGlobalScopes()->whereKey($programId)->exists()) {
+            return $callback();
+        }
+
+        return $this->withProgramOwner($programId, $callback);
+    }
+
     public function lockScopedProgram(string $programId): void
     {
         RewardProgramGuard::findProgramOrFail($programId);
