@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardSourceCoordinatorFactory;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

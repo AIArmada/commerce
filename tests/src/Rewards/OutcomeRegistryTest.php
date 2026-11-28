@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardPresetBuilders;

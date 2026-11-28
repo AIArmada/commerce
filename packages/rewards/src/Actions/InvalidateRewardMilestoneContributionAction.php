@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;

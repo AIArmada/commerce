@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardProgramGuard;

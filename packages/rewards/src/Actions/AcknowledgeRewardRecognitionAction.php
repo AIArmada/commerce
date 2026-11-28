@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;

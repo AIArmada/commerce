@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;

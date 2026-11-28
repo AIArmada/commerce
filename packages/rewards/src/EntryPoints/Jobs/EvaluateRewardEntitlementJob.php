@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\EntryPoints\Jobs;
 use AIArmada\Rewards\Actions\EvaluateRewardSourceAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;

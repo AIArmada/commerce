@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Drivers;
 use AIArmada\Rewards\Data\RewardReadinessAssessment;
 
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardVersionSnapshot;
 
 /**

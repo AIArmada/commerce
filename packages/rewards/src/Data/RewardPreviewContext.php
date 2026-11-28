@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Data;
 
-use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
 use Carbon\CarbonImmutable;
 
 /**

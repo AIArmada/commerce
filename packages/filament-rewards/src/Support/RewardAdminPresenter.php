@@ -6,9 +6,9 @@ namespace AIArmada\FilamentRewards\Support;
 
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use BackedEnum;

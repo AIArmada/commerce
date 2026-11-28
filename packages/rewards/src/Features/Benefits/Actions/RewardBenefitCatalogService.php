@@ -11,7 +11,7 @@ use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardAwardSnapshot;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;

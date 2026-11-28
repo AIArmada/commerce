@@ -10,7 +10,7 @@ use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Actions\ReverseRewardFulfillmentAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;

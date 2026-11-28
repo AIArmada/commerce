@@ -13,7 +13,7 @@ use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use Carbon\CarbonImmutable;
 
@@ -40,8 +40,8 @@ TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 ```php
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 
 EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
 
@@ -70,7 +70,7 @@ The beneficiary role names *which identity on the fact earns* and decides whethe
 | `Staff` | fact's actor id **and** actor role `staff` | eligible — the actor's own act |
 
 ```php
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 
 // Sharer-bound (default): the fact must be attributed, or the
 // evaluation freezes a permanent `late_attribution_refused` rejection.

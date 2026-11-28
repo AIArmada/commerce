@@ -11,7 +11,7 @@ use AIArmada\Rewards\Data\RewardPreviewResult;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 
 /**

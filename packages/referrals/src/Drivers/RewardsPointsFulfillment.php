@@ -20,7 +20,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         $jobClass = 'AIArmada\\Rewards\\EntryPoints\\Jobs\\EvaluateRewardEntitlementJob';
         $awardClass = 'AIArmada\\Rewards\\Models\\RewardAward';
         /** @var class-string $roleClass */
-        $roleClass = 'AIArmada\\Rewards\\Enums\\RewardBeneficiaryRole';
+        $roleClass = 'AIArmada\\Rewards\\Data\\RewardBeneficiaryRole';
 
         if (! $this->symbolsExist([$readerClass, $factClass, $jobClass, $awardClass, $roleClass])) {
             return ReferralFulfillmentResult::failed('The rewards entitlement job API is unavailable.');

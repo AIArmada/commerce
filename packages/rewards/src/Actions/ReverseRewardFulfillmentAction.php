@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Models\RewardAward;

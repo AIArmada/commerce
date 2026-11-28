@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;

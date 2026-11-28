@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 
 /**
  * Canonical material-terms hashing. The version fingerprint covers the full

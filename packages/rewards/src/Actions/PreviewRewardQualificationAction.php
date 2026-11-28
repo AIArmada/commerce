@@ -6,8 +6,8 @@ namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
-use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardBeneficiaryRole;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;

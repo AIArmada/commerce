@@ -6,7 +6,7 @@ use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardVersionResolver;

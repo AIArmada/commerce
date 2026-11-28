@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
-use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;

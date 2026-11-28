@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
