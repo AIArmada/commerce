@@ -34,6 +34,10 @@ final class CreateOrganizationAction
      */
     public function handle(Model $creator, array $attributes = []): Organization
     {
+        if (! $creator->exists || $creator->getKey() === null) {
+            throw new InvalidArgumentException('The creator must use the organization member model and be persisted.');
+        }
+
         $member = (new Organization)->members()->getRelated()->newQuery()->whereKey($creator->getKey())->first();
 
         if ($member === null || ! $member->is($creator)) {

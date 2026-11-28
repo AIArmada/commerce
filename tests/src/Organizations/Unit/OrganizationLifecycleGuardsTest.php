@@ -231,6 +231,17 @@ it('rejects organization creation by an unrelated model with a matching member k
     expect(Organization::query()->where('name', 'Forged Creator')->exists())->toBeFalse();
 });
 
+it('rejects an unsaved creator carrying an existing user key', function (): void {
+    $creator = User::factory()->create();
+    $unsaved = new User;
+    $unsaved->setAttribute($creator->getKeyName(), $creator->getKey());
+
+    expect(fn () => CreateOrganizationAction::make()->handle($unsaved, ['name' => 'Unsaved Creator']))
+        ->toThrow(InvalidArgumentException::class, 'creator must use the organization member model and be persisted');
+
+    expect(Organization::query()->where('name', 'Unsaved Creator')->exists())->toBeFalse();
+});
+
 it('does not create membership or invoke a lifecycle hook when organization creation is cancelled', function (): void {
     $creator = User::factory()->create();
     $hook = Mockery::mock(OrganizationLifecycleHook::class);
