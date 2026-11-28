@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentLabel;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 
 describe('ShipmentLabel Model', function (): void {
     it('can create a shipment label with required fields', function (): void {

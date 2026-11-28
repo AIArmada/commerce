@@ -1,0 +1,578 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Jnt\Features\Tracking\Actions;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Enums\ScanTypeCode;
+use AIArmada\Jnt\Events\TrackingUpdatedEvent;
+use AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder;
+use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
+use AIArmada\Jnt\Features\Orders\Api\WebhookOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
+use AIArmada\Jnt\Features\Tracking\Persistence\WebhookLogWriter;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Support\TrackingEventHash;
+use AIArmada\Jnt\Support\TrackingScanTime;
+use Carbon\CarbonImmutable;
+use DomainException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use Spatie\WebhookClient\Models\WebhookCall;
+use Throwable;
+
+final class ProcessTrackingWebhook
+{
+    public function __construct(private readonly WebhookCall $webhookCall) {}
+
+    /**
+     * Process the webhook event.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $biz
+     * @param  array<string, mixed>  $sanitizedPayload
+     */
+    public function execute(string $eventType, array $payload, ?array $biz, array $sanitizedPayload): void
+    {
+        if ($biz === null) {
+            $this->markWebhookLogAsFailed('Missing or invalid bizContent.');
+
+            Log::channel(config('jnt.logging.channel', 'stack'))
+                ->warning('J&T webhook missing or invalid bizContent', [
+                    'webhook_call_id' => $this->webhookCall->id,
+                ]);
+
+            return;
+        }
+
+        $billcode = $biz['billCode'] ?? null;
+
+        if (! is_string($billcode) || mb_trim($billcode) === '') {
+            $this->markWebhookLogAsFailed('Missing billcode.');
+
+            $context = ['webhook_call_id' => $this->webhookCall->id];
+
+            $context += (bool) config('jnt.webhooks.log_payloads', false)
+                ? $sanitizedPayload
+                : ['payload_keys' => array_keys($payload)];
+
+            Log::channel(config('jnt.logging.channel', 'stack'))
+                ->warning('J&T webhook missing billcode', $context);
+
+            return;
+        }
+
+        try {
+            $shipment = app(ReadWebhookOrder::class)->findByTrackingNumber($billcode);
+        } catch (DomainException $exception) {
+            $this->markWebhookLogAsFailed($exception->getMessage());
+
+            return;
+        }
+
+        if (! $shipment) {
+            Log::channel(config('jnt.logging.channel', 'stack'))
+                ->info('J&T webhook for unknown shipment', [
+                    'billcode' => $billcode,
+                    'webhook_call_id' => $this->webhookCall->id,
+                ]);
+
+            $trackingData = $this->trackingDataForEvent($billcode, $biz);
+
+            if ($trackingData === null) {
+                $this->markWebhookLogAsFailed('Tracking details could not be normalized for dispatch.');
+
+                return;
+            }
+
+            $this->dispatchTrackingEvent($trackingData);
+            $this->syncWebhookLogMetadata(null, $billcode, $biz);
+
+            return;
+        }
+
+        $reference = $this->extractOrderReference($biz);
+
+        if ($reference !== null && $reference !== $shipment->orderReference) {
+            $this->markWebhookLogAsFailed('Tracking number and order reference do not match.');
+
+            return;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail(
+                $shipment->ownerType,
+                $shipment->ownerId,
+            );
+        } catch (InvalidArgumentException | ModelNotFoundException) {
+            $this->markWebhookLogAsFailed('The shipment owner cannot be resolved.');
+
+            return;
+        }
+
+        OwnerContext::withOwner($owner, function () use ($shipment, $billcode, $eventType, $biz): void {
+            $latestDetail = $this->latestTrackingDetail($biz);
+            $newStatus = $this->resolveStatus($eventType, $latestDetail);
+            $trackingData = $this->trackingDataForEvent($billcode, $biz);
+
+            if ($trackingData === null) {
+                $this->markWebhookLogAsFailed('Tracking details could not be normalized for dispatch.');
+
+                return;
+            }
+
+            try {
+                $this->syncShipmentTrackingFromWebhook($shipment, $billcode, $biz, $newStatus);
+            } catch (DomainException $exception) {
+                $this->markWebhookLogAsFailed($exception->getMessage());
+
+                return;
+            }
+
+            $this->dispatchTrackingEvent($trackingData);
+            $this->syncWebhookLogMetadata($shipment, $billcode, $biz);
+        });
+    }
+
+    /**
+     * Map J&T scan type to TrackingStatus.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function mapToStatus(string $scanType, array $payload): ?TrackingStatus
+    {
+        // J&T scan types mapping
+        return match (mb_strtoupper($scanType)) {
+            'PICKUP', 'COLLECTED' => TrackingStatus::PickedUp,
+            'IN_TRANSIT', 'TRANSIT', 'ARRIVED', 'DEPARTED' => TrackingStatus::InTransit,
+            'OUT_FOR_DELIVERY', 'DELIVERING' => TrackingStatus::OutForDelivery,
+            'DELIVERED', 'POD' => TrackingStatus::Delivered,
+            'FAILED', 'UNDELIVERED' => TrackingStatus::Exception,
+            'RETURNED', 'RTS' => TrackingStatus::Returned,
+            default => null,
+        };
+    }
+
+    /**
+     * Dispatch the canonical typed tracking event for both known and unknown orders.
+     */
+    private function dispatchTrackingEvent(TrackingData $trackingData): void
+    {
+        TrackingUpdatedEvent::dispatch($trackingData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     */
+    private function trackingDataForEvent(string $billcode, array $biz): ?TrackingData
+    {
+        try {
+            return TrackingData::fromApiArray([
+                'billCode' => $billcode,
+                'txlogisticId' => is_string($biz['txlogisticId'] ?? null) ? $biz['txlogisticId'] : null,
+                'details' => $this->normalizedDetails($biz),
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            Log::channel(config('jnt.logging.channel', 'stack'))
+                ->warning('J&T webhook tracking details could not be dispatched', [
+                    'webhook_call_id' => $this->webhookCall->id,
+                    'reason' => $exception->getMessage(),
+                ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     * @return list<array<string, mixed>>
+     */
+    private function normalizedDetails(array $biz): array
+    {
+        return array_map(function (array $detail): array {
+            $description = $this->scalarString($detail['desc'] ?? null)
+                ?? $this->scalarString($detail['scanTypeName'] ?? null)
+                ?? $this->scalarString($detail['scanType'] ?? null)
+                ?? '';
+
+            return [
+                ...$detail,
+                'scanTime' => $this->scalarString($detail['scanTime'] ?? null) ?? '',
+                'desc' => $description,
+                'scanTypeCode' => $this->scalarString($detail['scanTypeCode'] ?? null) ?? '',
+                'scanTypeName' => $this->scalarString($detail['scanTypeName'] ?? null) ?? $description,
+                'scanType' => $this->scalarString($detail['scanType'] ?? null) ?? $description,
+            ];
+        }, $this->cappedDetails($biz));
+    }
+
+    private function scalarString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $string = mb_trim((string) $value);
+
+        return $string === '' ? null : $string;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $latestDetail
+     */
+    private function resolveStatus(string $eventType, ?array $latestDetail): ?TrackingStatus
+    {
+        if ($latestDetail !== null) {
+            $scanTypeCode = $latestDetail['scanTypeCode'] ?? null;
+            $statusDescription = $latestDetail['desc'] ?? $latestDetail['scanTypeName'] ?? $latestDetail['scanType'] ?? null;
+
+            if (is_string($scanTypeCode) && $scanTypeCode !== '') {
+                $scanType = ScanTypeCode::tryFrom($scanTypeCode);
+
+                if ($scanType !== null) {
+                    return app(JntStatusMapper::class)->fromScanType($scanType);
+                }
+            }
+
+            if (is_string($statusDescription) && $statusDescription !== '') {
+                return app(JntStatusMapper::class)->fromString($statusDescription);
+            }
+        }
+
+        return $this->mapToStatus($eventType, $latestDetail ?? []);
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     */
+    private function syncWebhookLogMetadata(?WebhookOrder $shipment, string $billcode, array $biz): void
+    {
+        $attributes = [
+            'tracking_number' => $billcode,
+            'order_reference' => $shipment?->orderReference ?? $this->extractOrderReference($biz),
+            'order_id' => $shipment?->id,
+            'digest' => $this->extractDigest(),
+            'processing_status' => JntWebhookLog::STATUS_PROCESSED,
+            'processing_error' => null,
+            'processed_at' => CarbonImmutable::now(),
+        ];
+
+        if ($shipment !== null) {
+            $attributes['owner_type'] = $shipment->ownerType;
+            $attributes['owner_id'] = $shipment->ownerId;
+        }
+
+        app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), $attributes);
+    }
+
+    private function markWebhookLogAsFailed(string $error): void
+    {
+        app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), [
+            'digest' => $this->extractDigest(),
+            'processing_status' => JntWebhookLog::STATUS_FAILED,
+            'processing_error' => $error,
+            'processed_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     */
+    private function extractOrderReference(array $biz): ?string
+    {
+        $reference = $biz['orderId'] ?? $biz['order_id'] ?? $biz['txlogisticId'] ?? null;
+
+        if (! is_scalar($reference)) {
+            return null;
+        }
+
+        $reference = mb_trim((string) $reference);
+
+        return $reference === '' ? null : mb_substr($reference, 0, 50);
+    }
+
+    private function extractDigest(): ?string
+    {
+        $headers = $this->webhookCall->headers;
+
+        if (! is_array($headers)) {
+            return null;
+        }
+
+        $digest = $headers['digest'][0]
+            ?? $headers['Digest'][0]
+            ?? $headers['DIGEST'][0]
+            ?? null;
+
+        if (! is_scalar($digest)) {
+            return null;
+        }
+
+        $digest = mb_trim((string) $digest);
+
+        return $digest === '' ? null : mb_substr($digest, 0, 255);
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     */
+    private function syncShipmentTrackingFromWebhook(WebhookOrder $shipment, string $billcode, array $biz, ?TrackingStatus $status): void
+    {
+        DB::transaction(function () use ($shipment, $billcode, $biz, $status): void {
+            $locked = $this->lockShipmentForUpdate($shipment);
+
+            $this->insertMissingTrackingEvents($locked, $billcode, $this->normalizedDetails($biz));
+
+            $this->applyShipmentStatusUpdates($locked, $biz, $status);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     * @return list<array<string, mixed>>
+     */
+    private function cappedDetails(array $biz): array
+    {
+        $details = $biz['details'] ?? null;
+
+        if (! is_array($details)) {
+            return [];
+        }
+
+        $items = array_values(array_filter($details, is_array(...)));
+        $max = max(1, (int) config('jnt.webhooks.max_details', 500));
+
+        if (count($items) <= $max) {
+            return $items;
+        }
+
+        Log::channel(config('jnt.logging.channel', 'stack'))
+            ->warning('J&T webhook details truncated to configured maximum', [
+                'webhook_call_id' => $this->webhookCall->id ?? null,
+                'received' => count($items),
+                'kept' => $max,
+            ]);
+
+        return array_slice($items, -$max);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $details
+     */
+    private function insertMissingTrackingEvents(WebhookOrder $shipment, string $billcode, array $details): void
+    {
+        if ($details === []) {
+            return;
+        }
+
+        $rows = [];
+
+        foreach ($details as $detail) {
+            $scanTime = $this->parseScanTime($detail['scanTime'] ?? null);
+            $scanTypeCode = $this->nullableString($detail['scanTypeCode'] ?? null);
+            $description = $this->nullableString($detail['desc'] ?? null);
+
+            $rows[] = [
+                'id' => (string) Str::orderedUuid(),
+                'event_hash' => TrackingEventHash::forIdentity(
+                    orderId: (string) $shipment->id,
+                    trackingNumber: $billcode,
+                    scanTypeCode: $scanTypeCode,
+                    scanTime: $scanTime,
+                    description: $description,
+                    ownerType: $shipment->ownerType,
+                    ownerId: $shipment->ownerId,
+                ),
+                'order_id' => $shipment->id,
+                'tracking_number' => $billcode,
+                'scan_type_code' => $scanTypeCode,
+                'scan_time' => TrackingScanTime::forStorage($scanTime),
+                'order_reference' => $shipment->orderReference,
+                'scan_type_name' => $this->nullableString($detail['scanTypeName'] ?? null),
+                'scan_type' => $this->nullableString($detail['scanType'] ?? null),
+                'description' => $description,
+                'scan_network_type_name' => $this->nullableString($detail['scanNetworkTypeName'] ?? null),
+                'scan_network_name' => $this->nullableString($detail['scanNetworkName'] ?? null),
+                'scan_network_contact' => $this->nullableString($detail['scanNetworkContact'] ?? null),
+                'scan_network_province' => $this->nullableString($detail['scanNetworkProvince'] ?? null),
+                'scan_network_city' => $this->nullableString($detail['scanNetworkCity'] ?? null),
+                'scan_network_area' => $this->nullableString($detail['scanNetworkArea'] ?? null),
+                'scan_network_country' => $this->nullableString($detail['scanNetworkCountray'] ?? $detail['scanNetworkCountry'] ?? null),
+                'post_code' => $this->nullableString($detail['postCode'] ?? null),
+                'next_stop_name' => $this->nullableString($detail['nextStopName'] ?? null),
+                'next_network_province_name' => $this->nullableString($detail['nextNetworkProvinceName'] ?? null),
+                'next_network_city_name' => $this->nullableString($detail['nextNetworkCityName'] ?? null),
+                'next_network_area_name' => $this->nullableString($detail['nextNetworkAreaName'] ?? null),
+                'remark' => $this->nullableString($detail['remark'] ?? null),
+                'problem_type' => $this->nullableString($detail['problemType'] ?? null),
+                'payment_status' => $this->nullableString($detail['paymentStatus'] ?? null),
+                'payment_method' => $this->nullableString($detail['paymentMethod'] ?? null),
+                'actual_weight' => $this->nullableString($detail['realWeight'] ?? null),
+                'longitude' => $this->nullableString($detail['longitude'] ?? null),
+                'latitude' => $this->nullableString($detail['latitude'] ?? null),
+                'time_zone' => $this->nullableString($detail['timeZone'] ?? null),
+                'scan_network_id' => isset($detail['scanNetworkId']) ? (int) $detail['scanNetworkId'] : null,
+                'staff_name' => $this->nullableString($detail['staffName'] ?? null),
+                'staff_contact' => $this->nullableString($detail['staffContact'] ?? null),
+                'otp' => $this->nullableString($detail['otp'] ?? null),
+                'second_level_type_code' => $this->nullableString($detail['secondLevelTypeCode'] ?? null),
+                'wc_trace_flag' => $this->nullableString($detail['wcTraceFlag'] ?? null),
+                'signature_picture_url' => $this->nullableString($detail['sigPicUrl'] ?? null),
+                'sign_url' => $this->nullableString($detail['signUrl'] ?? null),
+                'electronic_signature_pic_url' => $this->nullableString($detail['electronicSignaturePicUrl'] ?? null),
+                'payload' => json_encode($detail, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'owner_type' => $shipment->ownerType,
+                'owner_id' => $shipment->ownerId,
+                'created_at' => CarbonImmutable::now()->format('Y-m-d H:i:s'),
+                'updated_at' => CarbonImmutable::now()->format('Y-m-d H:i:s'),
+            ];
+        }
+
+        app(TrackingEventWriter::class)->insertMissing($rows);
+    }
+
+    private function lockShipmentForUpdate(WebhookOrder $shipment): WebhookOrder
+    {
+        return app(ReadWebhookOrder::class)->lockForUpdate($shipment);
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     */
+    private function applyShipmentStatusUpdates(WebhookOrder $shipment, array $biz, ?TrackingStatus $status): void
+    {
+        $latestDetail = $this->latestTrackingDetail($biz);
+        $updates = [
+            'last_tracked_at' => CarbonImmutable::now(),
+        ];
+
+        if ($status !== null) {
+            $updates['status'] = $status->value;
+        }
+
+        if ($latestDetail !== null) {
+            $lastStatusCode = $this->nullableString($latestDetail['scanTypeCode'] ?? null);
+            $lastStatus = $this->nullableString($latestDetail['desc'] ?? $latestDetail['scanTypeName'] ?? $latestDetail['scanType'] ?? null);
+
+            if ($lastStatusCode !== null) {
+                $updates['last_status_code'] = $lastStatusCode;
+            }
+
+            if ($lastStatus !== null) {
+                $updates['last_status'] = mb_substr($lastStatus, 0, 128);
+            }
+
+            $problemType = $this->scalarString($latestDetail['problemType'] ?? null);
+
+            if ($problemType !== null) {
+                if ($shipment->problemAt === null) {
+                    $updates['problem_at'] = CarbonImmutable::now();
+                }
+            }
+
+            if ($status === TrackingStatus::Exception) {
+                if ($shipment->problemAt === null) {
+                    $updates['problem_at'] = CarbonImmutable::now();
+                }
+                if ($shipment->exceptionAt === null) {
+                    $updates['exception_at'] = CarbonImmutable::now();
+                }
+            }
+
+            if ($status === TrackingStatus::Returned && $shipment->returnedAt === null) {
+                $updates['returned_at'] = CarbonImmutable::now();
+            }
+
+            if ($problemType === null && $status !== TrackingStatus::Exception && $shipment->problemAt !== null) {
+                $updates['resolved_at'] = CarbonImmutable::now();
+                $updates['problem_at'] = null;
+            }
+
+            if ($status === TrackingStatus::Delivered && $shipment->deliveredAt === null) {
+                $deliveredAt = $this->parseScanTime($latestDetail['scanTime'] ?? null);
+
+                if ($deliveredAt !== null) {
+                    $updates['delivered_at'] = TrackingScanTime::normalize($deliveredAt);
+                }
+            }
+        }
+
+        app(UpdateTrackingSnapshot::class)->handle(
+            (string) $shipment->id,
+            $updates,
+            $this->parseScanTime($latestDetail['scanTime'] ?? null),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $biz
+     * @return array<string, mixed>|null
+     */
+    private function latestTrackingDetail(array $biz): ?array
+    {
+        $details = $biz['details'] ?? null;
+
+        if (! is_array($details) || $details === []) {
+            return null;
+        }
+
+        $latest = null;
+        $latestTimestamp = null;
+
+        foreach ($details as $detail) {
+            if (! is_array($detail)) {
+                continue;
+            }
+
+            $timestamp = $this->parseScanTime($detail['scanTime'] ?? null)?->getTimestamp();
+
+            if ($timestamp === null) {
+                continue;
+            }
+
+            if ($latestTimestamp === null || $timestamp > $latestTimestamp) {
+                $latest = $detail;
+                $latestTimestamp = $timestamp;
+            }
+        }
+
+        return $latest;
+    }
+
+    private function parseScanTime(mixed $value): ?CarbonImmutable
+    {
+        if (! is_string($value) || mb_trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            Log::channel(config('jnt.logging.channel', 'stack'))
+                ->warning('J&T webhook ignoring unparseable scanTime', [
+                    'webhook_call_id' => $this->webhookCall->id ?? null,
+                    'scan_time_length' => mb_strlen($value),
+                ]);
+
+            return null;
+        }
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $string = mb_trim((string) $value);
+
+        return $string === '' ? null : $string;
+    }
+}

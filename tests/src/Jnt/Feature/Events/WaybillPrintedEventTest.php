@@ -87,27 +87,6 @@ test('WaybillPrintedEvent → it provides file size', function (): void {
         ->and($event->getFileSize())->toContain('B'); // Contains byte unit
 });
 
-test('WaybillPrintedEvent → it can save PDF', function (): void {
-    $waybillData = new PrintWaybillData(
-        orderId: 'ORDER123',
-        trackingNumber: null,
-        base64Content: base64_encode('%PDF-1.4 fake content'),
-        urlContent: null,
-        isMultiParcel: false,
-    );
-
-    $event = new WaybillPrintedEvent($waybillData);
-
-    $path = sys_get_temp_dir() . '/test_waybill.pdf';
-
-    expect($event->savePdf($path))->toBeTrue();
-
-    // Cleanup
-    if (file_exists($path)) {
-        unlink($path);
-    }
-});
-
 test('WaybillPrintedEvent → it can be dispatched', function (): void {
     Event::fake();
 

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
-use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Cart\Support\CartMoney;
+use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use Illuminate\Support\Facades\DB;
 
 function createJntTestCart(string $identifier = 'test-user'): Cart
@@ -376,5 +379,163 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
 
         expect($quote)->not->toBeNull()
             ->and($quote['amount'])->toBe(1);
+    });
+});
+
+it('uses canonical gram weights and ignores nonphysical items', function (): void {
+    $cart = createJntTestCart('canonical-grams');
+    $cart->add(['id' => 'physical', 'name' => 'Physical', 'price' => 100, 'quantity' => 2, 'attributes' => ['weight_grams' => 750, 'weight' => 10]]);
+    $cart->add(['id' => 'service', 'name' => 'Service', 'price' => 100, 'quantity' => 1, 'attributes' => ['requires_shipping' => false, 'weight' => 5000]]);
+    $cart->add(['id' => 'negative', 'name' => 'Negative', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => -100]]);
+
+    expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
+});
+
+it('uses only physical composite components and expands their quantities', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'composite-grams');
+    $component = [
+        'product_id' => 'physical-product',
+        'variant_id' => null,
+        'inventoryable_type' => 'product',
+        'inventoryable_id' => 'physical-product',
+        'quantity' => 3,
+        'sku' => 'PHYSICAL',
+        'name' => 'Physical component',
+        'weight' => 200,
+        'dimensions' => null,
+        'requires_shipping' => true,
+        'tracks_inventory' => true,
+    ];
+    $service = array_replace($component, [
+        'product_id' => 'service-product',
+        'inventoryable_id' => 'service-product',
+        'sku' => 'SERVICE',
+        'name' => 'Service component',
+        'requires_shipping' => false,
+        'weight' => 5000,
+    ]);
+
+    $buyable = Mockery::mock(Buyable::class);
+    $buyable->shouldReceive('getBuyableIdentifier')->andReturn('composite');
+    $buyable->shouldReceive('getBuyableCatalogIdentifier')->andReturnNull();
+    $buyable->shouldReceive('getBuyableName')->andReturn('Composite');
+    $buyable->shouldReceive('getBuyablePrice')->andReturn(100);
+    $buyable->shouldReceive('getBuyableCurrency')->andReturn(CartMoney::currency());
+    $buyable->shouldReceive('getBuyableAttributes')->andReturn([
+        'weight' => 9999,
+        'components' => [$component, $service],
+    ]);
+    $buyable->shouldReceive('canBePurchased')->with(2)->andReturnTrue();
+    $buyable->shouldReceive('getBuyableMinimumQuantity')->andReturn(1);
+    $buyable->shouldReceive('getBuyableMaximumQuantity')->andReturnNull();
+    $buyable->shouldReceive('getBuyableQuantityIncrement')->andReturn(1);
+    $buyable->shouldReceive('getBuyableStock')->andReturnNull();
+
+    $line = $cart->addBuyable($buyable, 2);
+
+    expect($line->getAttribute('components'))->toHaveCount(2);
+
+    expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1200);
+});
+
+it('does not trust composite components injected through raw cart additions', function (): void {
+    $cart = createJntTestCart('raw-composite-grams');
+    $line = $cart->add([
+        'id' => 'raw-composite',
+        'name' => 'Raw composite',
+        'price' => 100,
+        'quantity' => 2,
+        'attributes' => [
+            'weight' => 750,
+            'components' => [['requires_shipping' => false]],
+        ],
+    ]);
+
+    expect($line->getAttribute('components'))->toBeNull()
+        ->and((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
+});
+
+describe('JntShippingCalculator canonical region pricing', function (): void {
+    beforeEach(function (): void {
+        config([
+            'jnt.shipping.base_rate' => 800,
+            'jnt.shipping.per_kg_rate' => 200,
+            'jnt.shipping.min_charge' => 800,
+            'jnt.shipping.default_estimated_days' => 3,
+            'jnt.shipping.east_malaysia_extra_days' => 2,
+            'jnt.shipping.region_multipliers_bp' => [
+                'labuan' => 15000,
+                'sabah' => 15000,
+                'sarawak' => 15000,
+            ],
+            'jnt.shipping.origin' => [
+                'name' => 'Test Sender',
+                'phone' => '0123456789',
+                'address' => '123 Test Street',
+                'post_code' => '50000',
+                'country_code' => 'MYS',
+            ],
+        ]);
+    });
+
+    it('prices Labuan by its canonical postcode range', function (): void {
+        $cart = createJntTestCart('labuan-postcode');
+        $cart->add(['id' => 'labuan-item', 'name' => 'Labuan Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => 1000]]);
+
+        $quote = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Labuan',
+            postCode: '87000',
+            state: 'Wilayah Persekutuan Labuan',
+        ));
+
+        expect($quote['amount'])->toBe(1200)
+            ->and($quote['estimated_days'])->toBe(5);
+    });
+
+    it('treats the postcode as authoritative when state indicators conflict', function (): void {
+        $cart = createJntTestCart('conflicting-indicators');
+        $cart->add(['id' => 'conflict-item', 'name' => 'Conflict Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => 1000]]);
+
+        $westPostcodeWithSabahState = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Kuala Lumpur',
+            postCode: '50000',
+            state: 'Sabah',
+        ));
+
+        $sabahPostcodeWithSelangorState = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Kota Kinabalu',
+            postCode: '88000',
+            state: 'Selangor',
+        ));
+
+        expect($westPostcodeWithSabahState['amount'])->toBe(800)
+            ->and($westPostcodeWithSabahState['estimated_days'])->toBe(3)
+            ->and($sabahPostcodeWithSelangorState['amount'])->toBe(1200)
+            ->and($sabahPostcodeWithSelangorState['estimated_days'])->toBe(5);
+    });
+
+    it('falls back to scalar weight when a composite component list is empty', function (): void {
+        $storage = new InMemoryStorage;
+        $cart = new Cart($storage, 'empty-components');
+        $cart->add([
+            'id' => 'empty-composite',
+            'name' => 'Empty composite',
+            'price' => 100,
+            'quantity' => 2,
+            'attributes' => ['weight' => 750],
+        ]);
+
+        $snapshot = $storage->getSnapshot('empty-components', 'default');
+        $items = $storage->getItems('empty-components', 'default');
+        $items[0]['attributes']['components'] = [];
+        $storage->putItems('empty-components', 'default', $items, $snapshot->revision());
+
+        expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
     });
 });

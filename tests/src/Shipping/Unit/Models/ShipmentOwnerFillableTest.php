@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Shipping\Unit\Models;
 
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 
 describe('Shipment owner mass assignment', function (): void {
     it('ignores owner attributes passed to mass assignment', function (): void {

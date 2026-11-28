@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Schemas;
 
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\CommerceSupport\Support\AbsoluteHttpUrl;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -141,17 +142,17 @@ final class JntTrackingEventInfolist
                 ->schema([
                     TextEntry::make('signature_picture_url')
                         ->label('Signature Picture')
-                        ->url(fn (?string $state): ?string => $state)
+                        ->url(fn (?string $state): ?string => AbsoluteHttpUrl::normalize($state))
                         ->openUrlInNewTab()
                         ->placeholder('—'),
                     TextEntry::make('sign_url')
                         ->label('Sign URL')
-                        ->url(fn (?string $state): ?string => $state)
+                        ->url(fn (?string $state): ?string => AbsoluteHttpUrl::normalize($state))
                         ->openUrlInNewTab()
                         ->placeholder('—'),
                     TextEntry::make('electronic_signature_pic_url')
                         ->label('Electronic Signature')
-                        ->url(fn (?string $state): ?string => $state)
+                        ->url(fn (?string $state): ?string => AbsoluteHttpUrl::normalize($state))
                         ->openUrlInNewTab()
                         ->placeholder('—'),
                 ])

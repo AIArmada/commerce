@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Events;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
+use AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Events\Dispatchable;
+use InvalidArgumentException;
 
 final class JntOrderStatusChanged
 {
@@ -26,34 +29,18 @@ final class JntOrderStatusChanged
         public readonly ?string $previousStatusCode = null,
     ) {}
 
-    public static function fromOrder(JntOrder $order, TrackingStatus $currentStatus, ?string $previousStatusCode = null): self
-    {
-        return new self(
-            orderKey: (string) $order->getKey(),
-            orderReference: $order->order_id,
-            trackingNumber: $order->tracking_number,
-            ownerType: $order->owner_type,
-            ownerId: $order->owner_id,
-            currentStatus: $currentStatus,
-            previousStatusCode: $previousStatusCode,
-        );
-    }
-
     public function owner(): ?Model
     {
-        return OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
-    }
-
-    public function resolveOrder(): ?JntOrder
-    {
-        if ($this->orderKey === '') {
+        try {
+            return OwnerContext::fromTypeAndIdOrFail($this->ownerType, $this->ownerId);
+        } catch (InvalidArgumentException | ModelNotFoundException) {
             return null;
         }
+    }
 
-        return JntOrder::query()
-            ->forOwner($this->owner(), false)
-            ->whereKey($this->orderKey)
-            ->first();
+    public function resolveOrder(): ?NotificationOrder
+    {
+        return app(ReadNotificationOrder::class)->find($this->orderKey, $this->ownerType, $this->ownerId);
     }
 
     public function getOrderId(): string

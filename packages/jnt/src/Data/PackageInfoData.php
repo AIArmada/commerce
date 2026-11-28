@@ -4,21 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Enums\GoodsType;
-use AIArmada\Jnt\Support\TypeTransformer;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
-
 /**
  * Package info data for JNT Express shipments.
  *
  * Represents package information for a shipment.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class PackageInfoData extends Data
+final readonly class PackageInfoData
 {
     /**
      * @param  int|string  $quantity  Number of packages (1-999, required, integer)
@@ -30,13 +21,13 @@ class PackageInfoData extends Data
      * @param  float|int|string|null  $height  Height in CENTIMETERS (0.01-999.99, optional, 2 decimals)
      */
     public function __construct(
-        public readonly int | string $quantity,
-        public readonly float | int | string $weight,
-        public readonly int $valueMinor,
-        public readonly GoodsType | string $goodsType,
-        public readonly float | int | string | null $length = null,
-        public readonly float | int | string | null $width = null,
-        public readonly float | int | string | null $height = null,
+        public int | string $quantity,
+        public float | int | string $weight,
+        public int $valueMinor,
+        public GoodsType | string $goodsType,
+        public float | int | string | null $length = null,
+        public float | int | string | null $width = null,
+        public float | int | string | null $height = null,
     ) {}
 
     /**

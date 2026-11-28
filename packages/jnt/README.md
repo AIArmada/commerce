@@ -50,7 +50,8 @@ JNT_WEBHOOKS_ENABLED=true
 ```php
 use AIArmada\Jnt\Facades\JntExpress;
 use AIArmada\Jnt\Data\{AddressData, ItemData, PackageInfoData};
-use AIArmada\Jnt\Enums\{ExpressType, ServiceType, PaymentType, GoodsType};
+use AIArmada\Jnt\Data\GoodsType;
+use AIArmada\Jnt\Enums\{ExpressType, ServiceType, PaymentType};
 
 $sender = new AddressData(
     name: 'John Sender',

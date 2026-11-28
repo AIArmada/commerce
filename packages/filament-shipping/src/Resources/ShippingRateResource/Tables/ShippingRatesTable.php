@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShippingRateResource\Tables;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -68,23 +66,7 @@ final class ShippingRatesTable
             ->filters([
                 SelectFilter::make('zone_id')
                     ->label('Zone')
-                    ->relationship('zone', 'name', function (Builder $query): Builder {
-                        if (! (bool) config('shipping.features.owner.enabled', false)) {
-                            return $query;
-                        }
-
-                        $owner = OwnerContext::resolve();
-
-                        if ($owner === null) {
-                            return $query->whereRaw('0 = 1');
-                        }
-
-                        return OwnerQuery::applyToEloquentBuilder(
-                            $query->withoutGlobalScope(OwnerScope::class),
-                            $owner,
-                            (bool) config('shipping.features.owner.include_global', false),
-                        );
-                    }),
+                    ->relationship('zone', 'name', fn (Builder $query): Builder => OwnerScopedQuery::apply($query)),
 
                 SelectFilter::make('calculation_type')
                     ->options([
@@ -109,7 +91,7 @@ final class ShippingRatesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteRateConfigurationBulkAction::make(),
                 ]),
             ])
             ->defaultSort('zone.name');

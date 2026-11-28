@@ -11,10 +11,11 @@ use AIArmada\FilamentShipping\Widgets\CarrierPerformanceWidget;
 use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
 use AIArmada\FilamentShipping\Widgets\PendingShipmentsWidget;
 use AIArmada\FilamentShipping\Widgets\ShippingDashboardWidget;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\ExceptionStatus;
-use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\ExceptionStatus;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -231,11 +232,7 @@ describe('PendingActionsWidget', function (): void {
             }
         });
 
-        $widget = new PendingActionsWidget;
-
-        $method = new ReflectionMethod($widget, 'getPendingShipmentsCount');
-
-        expect($method->invoke($widget))->toBe(2);
+        expect(app(DashboardStats::class)->pendingActions()['pending'])->toBe(2);
     });
 
     it('builds stats without requiring Filament panel routes', function (): void {

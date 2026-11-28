@@ -43,7 +43,7 @@ final class OrderDeliveredNotification extends Notification implements ShouldQue
         }
 
         // Get delivery details
-        if ($this->tracking->details->count() > 0) {
+        if (count($this->tracking->details) > 0) {
             $latest = $this->tracking->getLatestDetail();
             if ($latest instanceof TrackingDetailData) {
                 $message->line('Delivered At: ' . $latest->scanTime);
@@ -82,7 +82,7 @@ final class OrderDeliveredNotification extends Notification implements ShouldQue
         $deliveredBy = null;
         $hasSignature = false;
 
-        if ($this->tracking->details->count() > 0) {
+        if (count($this->tracking->details) > 0) {
             $latest = $this->tracking->getLatestDetail();
             if ($latest instanceof TrackingDetailData) {
                 $deliveryTime = $latest->scanTime;

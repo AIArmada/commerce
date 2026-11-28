@@ -8,7 +8,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
+use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use Illuminate\Support\Str;
 use ReflectionMethod;
 
@@ -83,4 +83,23 @@ describe('Forced fulfillment location scoping', function (): void {
         expect($resolved)->not->toBeNull()
             ->and((string) $resolved->getKey())->toBe((string) $ownLocation->getKey());
     });
+});
+
+it('fails closed when the order owner no longer exists', function (): void {
+    $owner = fulfillmentLocationOwner('Existing Location Owner');
+    $location = fulfillmentLocation($owner, 'WH-' . Str::upper(Str::random(6)));
+
+    $missingOwner = new User;
+    $missingOwner->forceFill([
+        'id' => (string) Str::uuid(),
+        'name' => 'Missing Owner',
+        'email' => Str::lower(Str::random(10)) . '@example.com',
+    ]);
+
+    $resolved = OwnerContext::withOwner(
+        $owner,
+        fn (): ?object => resolveFulfillmentLocation((string) $location->getKey(), fulfillmentOrderFor($missingOwner))
+    );
+
+    expect($resolved)->toBeNull();
 });

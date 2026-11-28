@@ -185,13 +185,7 @@ error log entry.
 
 ### Cart
 
-`JntShippingCalculator` caches its computed quote per cart for this many minutes:
-
-```php
-'cart' => [
-    'quote_ttl_minutes' => env('JNT_QUOTE_TTL', 30),
-],
-```
+`JntShippingCalculator` calculates the rate from the current cart weight, destination and shipping configuration without persisting quote metadata.
 
 ## Logging
 

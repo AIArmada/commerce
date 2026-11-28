@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Policies;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 final class JntWebhookLogPolicy

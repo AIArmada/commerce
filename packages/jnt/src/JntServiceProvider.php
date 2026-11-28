@@ -7,25 +7,36 @@ namespace AIArmada\Jnt;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
-use AIArmada\Jnt\Cart\JntShippingCalculator;
-use AIArmada\Jnt\Console\Commands\Health\HealthCheckCommand;
-use AIArmada\Jnt\Console\Commands\Orders\OrderCancelCommand;
-use AIArmada\Jnt\Console\Commands\Orders\OrderCreateCommand;
-use AIArmada\Jnt\Console\Commands\Orders\OrderPrintCommand;
-use AIArmada\Jnt\Console\Commands\Tracking\OrderTrackCommand;
-use AIArmada\Jnt\Console\Commands\Webhooks\WebhookTestCommand;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
+use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
+use AIArmada\Jnt\Contracts\TrackingReader;
+use AIArmada\Jnt\Contracts\WaybillWriter;
+use AIArmada\Jnt\Drivers\HttpCarrierTransportFactory;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
+use AIArmada\Jnt\Drivers\LocalWaybillWriter;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
+use AIArmada\Jnt\EntryPoints\Commands\Health\HealthCheckCommand;
+use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderCancelCommand;
+use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderCreateCommand;
+use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderPrintCommand;
+use AIArmada\Jnt\EntryPoints\Commands\Tracking\OrderTrackCommand;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
-use AIArmada\Jnt\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
+use AIArmada\Jnt\Features\Tracking\Api\TrackingPollCache;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntSpatieSignatureValidator;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookResponse;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
+use AIArmada\Jnt\Platform\ExtensionRegistry;
+use AIArmada\Jnt\Platform\FeatureCatalog;
+use AIArmada\Jnt\Platform\FeatureModule;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\JntStatusMapper;
-use AIArmada\Jnt\Services\JntTrackingService;
-use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Jnt\Support\StatusMappingStrategyRegistry;
-use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
-use AIArmada\Jnt\Webhooks\JntWebhookResponse;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
@@ -54,7 +65,6 @@ class JntServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['webhooks', 'web'])
             ->hasCommands([
                 HealthCheckCommand::class,
                 OrderCreateCommand::class,
@@ -70,6 +80,17 @@ class JntServiceProvider extends PackageServiceProvider
      */
     public function registeringPackage(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->configureSpatieWebhookClient();
         $this->registerSpatieWebhookClient();
         $this->registerServices();
@@ -94,6 +115,16 @@ class JntServiceProvider extends PackageServiceProvider
      */
     public function bootingPackage(): void
     {
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
+        $this->loadRoutesFrom(__DIR__ . '/Features/Tracking/EntryPoints/Routes/webhooks.php');
+        $this->loadRoutesFrom(__DIR__ . '/Features/Waybills/EntryPoints/Routes/web.php');
         $this->assertOwnerResolverConfigured();
         $this->registerCartConditionProvider();
         $this->registerShippingDriver();
@@ -183,13 +214,16 @@ class JntServiceProvider extends PackageServiceProvider
     {
         // Credential-bearing services resolve fresh on every make() so Octane
         // workers and per-owner credential switching never reuse stale config.
+        $this->app->bind(CarrierTransportFactory::class, HttpCarrierTransportFactory::class);
         $this->app->bind(JntExpressService::class, function (Application $app): JntExpressService {
             $config = $app['config']['jnt'];
 
             return new JntExpressService(
+                transportFactory: $app->make(CarrierTransportFactory::class),
                 customerCode: $config['customer_code'] ?? null,
                 password: $config['password'] ?? null,
                 config: $config,
+                pollCache: $app->make(TrackingPollCache::class),
             );
         });
 
@@ -204,6 +238,7 @@ class JntServiceProvider extends PackageServiceProvider
         // Register status mapper service
         $this->app->singleton(JntStatusMapper::class, fn (): JntStatusMapper => new JntStatusMapper);
         $this->app->alias(JntStatusMapper::class, 'jnt.status-mapper');
+        $this->app->bind(StatusMappingStrategyInterface::class, fn (Application $app): StatusMappingStrategyInterface => $app->make(JntStatusMapper::class));
 
         // Register status mapping strategy registry and register JNT's strategy
         $this->app->singleton(StatusMappingStrategyRegistry::class, function (): StatusMappingStrategyRegistry {
@@ -220,6 +255,9 @@ class JntServiceProvider extends PackageServiceProvider
             statusMapper: $app->make(JntStatusMapper::class),
         ));
         $this->app->alias(JntTrackingService::class, 'jnt.tracking');
+        $this->app->bind(ReadTrackingStatus::class, fn (Application $app): ReadTrackingStatus => $app->make(JntTrackingService::class));
+        $this->app->bind(TrackingReader::class, fn (Application $app): TrackingReader => $app->make(JntTrackingService::class));
+        $this->app->bind(WaybillWriter::class, LocalWaybillWriter::class);
     }
 
     /**
@@ -240,8 +278,7 @@ class JntServiceProvider extends PackageServiceProvider
                 JntShippingDriver::class,
                 fn (Application $app): JntShippingDriver => new JntShippingDriver(
                     $app->make(JntExpressService::class),
-                    $app->make(JntTrackingService::class),
-                    $app->make(JntStatusMapper::class),
+                    $app->make(TrackingReader::class),
                 )
             );
         }

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource;
-use Filament\Actions;
+use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditShippingZone extends EditRecord
 {
@@ -15,7 +18,15 @@ class EditShippingZone extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make()
+                ->using(fn (ShippingZone $record): bool => app(ManageRateConfiguration::class)->deleteZone((string) $record->getKey())),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        app(ManageRateConfiguration::class)->updateZone((string) $record->getKey(), $data);
+
+        return $record->refresh();
     }
 }

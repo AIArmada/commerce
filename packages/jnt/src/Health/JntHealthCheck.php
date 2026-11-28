@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
-use AIArmada\Jnt\Http\JntClient;
 use Spatie\Health\Checks\Result;
 use Throwable;
 
@@ -75,7 +75,7 @@ class JntHealthCheck extends CommerceHealthCheck
 
         try {
             // Verify the client can be instantiated
-            $client = new JntClient($baseUrl, $apiAccount, $privateKey, config('jnt', []));
+            $client = app(CarrierTransportFactory::class)->create(config('jnt', []));
             unset($client);
 
             // If we get here, the client is configured

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Support;
 
+use AIArmada\Jnt\Data\TypeTransformer;
 use InvalidArgumentException;
 
 /**

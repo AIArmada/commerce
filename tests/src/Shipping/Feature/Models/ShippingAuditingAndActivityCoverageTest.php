@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentEvent;
-use AIArmada\Shipping\Models\ShipmentItem;
-use AIArmada\Shipping\Models\ShipmentLabel;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('shipping core models are auditable and activity loggable', function (): void {
