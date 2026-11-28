@@ -16,6 +16,7 @@ use AIArmada\Tax\Actions\Exemption\MarkExemptionUnderReviewAction;
 use AIArmada\Tax\Actions\Exemption\RejectExemptionAction;
 use AIArmada\Tax\Actions\Exemption\RevokeExemptionAction;
 use AIArmada\Tax\Database\Factories\TaxExemptionFactory;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Validation\ValidationException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\ModelStates\HasStates;
@@ -105,6 +107,23 @@ class TaxExemption extends Model implements Auditable
     protected static function booted(): void
     {
         static::saving(function (self $exemption): void {
+            if ($exemption->starts_at !== null && $exemption->expires_at !== null && $exemption->expires_at->lessThanOrEqualTo($exemption->starts_at)) {
+                throw ValidationException::withMessages([
+                    'expires_at' => 'The exemption expiry must be after its start date.',
+                ]);
+            }
+
+            if ($exemption->tax_zone_id !== null && ($exemption->isDirty('tax_zone_id') || ! $exemption->exists)) {
+                $zoneExists = TaxOwnerScope::apply(TaxZone::query(), [])
+                    ->whereKey($exemption->tax_zone_id)
+                    ->lockForUpdate()
+                    ->first() !== null;
+
+                if (! $zoneExists) {
+                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
+                }
+            }
+
             if (! config('tax.features.owner.enabled', false)) {
                 return;
             }
@@ -158,19 +177,6 @@ class TaxExemption extends Model implements Auditable
                 );
             }
 
-            if ($exemption->tax_zone_id !== null && ($exemption->isDirty('tax_zone_id') || ! $exemption->exists)) {
-                $zoneExists = TaxZone::query()
-                    ->forOwner(
-                        $owner,
-                        includeGlobal: (bool) config('tax.features.owner.include_global', false),
-                    )
-                    ->whereKey($exemption->tax_zone_id)
-                    ->exists();
-
-                if (! $zoneExists) {
-                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
-                }
-            }
         });
     }
 

@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 final readonly class CascadeTaxZoneDeletionAction
 {
     public function execute(TaxZone $zone): void
     {
+        if (TaxExemption::query()->withoutOwnerScope()->where('tax_zone_id', $zone->getKey())->exists()) {
+            throw ValidationException::withMessages([
+                'zone' => 'A tax zone with linked exemptions cannot be deleted. Deactivate the zone instead.',
+            ]);
+        }
+
         if (config('tax.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
 

@@ -10,6 +10,8 @@ use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 describe('Exemption requests', function (): void {
     it('forces new requests into pending and drops privileged fields', function (): void {
@@ -173,4 +175,34 @@ it('prevents ordinary edits from changing an approved exemption', function (): v
 
     expect($exemption->fresh()->reason)->toBe('Original request')
         ->and($exemption->fresh()->isApproved())->toBeTrue();
+});
+
+it('rejects nonexistent tax zones even without owner scoping', function (): void {
+    config(['tax.features.owner.enabled' => false]);
+
+    expect(fn () => app(RequestTaxExemption::class)->execute([
+        'exemptable_type' => 'App\\Models\\Customer',
+        'exemptable_id' => (string) Str::uuid(),
+        'tax_zone_id' => (string) Str::uuid(),
+        'reason' => 'Invalid zone',
+    ]))->toThrow(AuthorizationException::class);
+});
+
+it('rejects invalid exemption validity periods on requests and updates', function (): void {
+    $attributes = [
+        'exemptable_type' => 'App\\Models\\Customer',
+        'exemptable_id' => (string) Str::uuid(),
+        'reason' => 'Validity test',
+        'starts_at' => now()->addDays(2),
+    ];
+
+    expect(fn () => app(RequestTaxExemption::class)->execute($attributes + ['expires_at' => now()->addDay()]))
+        ->toThrow(ValidationException::class);
+
+    $exemption = app(RequestTaxExemption::class)->execute($attributes);
+
+    expect(fn () => app(UpdateTaxExemptionAction::class)->execute($exemption->id, ['expires_at' => now()->addDay()]))
+        ->toThrow(ValidationException::class);
+
+    expect($exemption->fresh()->expires_at)->toBeNull();
 });

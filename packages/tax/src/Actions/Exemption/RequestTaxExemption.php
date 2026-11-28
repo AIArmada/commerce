@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Actions\Exemption;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
+use Illuminate\Support\Facades\DB;
 
 final readonly class RequestTaxExemption
 {
@@ -15,21 +16,23 @@ final readonly class RequestTaxExemption
      */
     public function execute(array $attributes): TaxExemption
     {
-        TaxOwnerScope::resolve([]);
+        return DB::transaction(function () use ($attributes): TaxExemption {
+            TaxOwnerScope::resolve([]);
 
-        $exemption = new TaxExemption([
-            'exemptable_id' => $attributes['exemptable_id'] ?? null,
-            'exemptable_type' => $attributes['exemptable_type'] ?? null,
-            'tax_zone_id' => $attributes['tax_zone_id'] ?? null,
-            'reason' => $attributes['reason'] ?? null,
-            'certificate_number' => $attributes['certificate_number'] ?? null,
-            'document_path' => $attributes['document_path'] ?? null,
-            'starts_at' => $attributes['starts_at'] ?? null,
-            'expires_at' => $attributes['expires_at'] ?? null,
-            'status' => PendingState::class,
-        ]);
-        $exemption->save();
+            $exemption = new TaxExemption([
+                'exemptable_id' => $attributes['exemptable_id'] ?? null,
+                'exemptable_type' => $attributes['exemptable_type'] ?? null,
+                'tax_zone_id' => $attributes['tax_zone_id'] ?? null,
+                'reason' => $attributes['reason'] ?? null,
+                'certificate_number' => $attributes['certificate_number'] ?? null,
+                'document_path' => $attributes['document_path'] ?? null,
+                'starts_at' => $attributes['starts_at'] ?? null,
+                'expires_at' => $attributes['expires_at'] ?? null,
+                'status' => PendingState::class,
+            ]);
+            $exemption->save();
 
-        return $exemption;
+            return $exemption;
+        });
     }
 }

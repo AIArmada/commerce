@@ -515,17 +515,10 @@ $this->app->singleton(
 );
 ```
 
-### Cascade Deletes
+### Zone Deletion
 
-`TaxZone` implements application-level cascade deletes:
+Use `DeleteTaxZonesAction` to delete zones in a transaction. `CascadeTaxZoneDeletionAction` removes eligible rates and refuses to delete a zone referenced by any exemption, including historical records. Deactivate such zones instead to preserve their audit history and exemption boundaries.
 
-```php
-protected static function booted(): void
-{
-    static::deleting(function (TaxZone $zone): void {
-        $zone->rates()->delete();
-    });
-}
-```
+Exemption requests and updates reject nonexistent or inaccessible zones and expiry dates at or before the start date.
 
 No database-level foreign key constraints are used.
