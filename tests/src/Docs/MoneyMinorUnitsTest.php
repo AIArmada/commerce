@@ -94,10 +94,11 @@ it('applies discounts without overflowing an intermediate gross total', function
 });
 
 it('captures immutable document dates rather than retaining mutable caller objects', function (): void {
-    $date = new DateTimeImmutable('2026-11-28T00:00:00+00:00');
+    $date = new DateTime('2026-11-28T00:00:00+00:00');
     $data = new DocData(issueDate: $date, dueDate: $date);
 
-    $date->modify('+1 day');
+    $date = $date->modify('+1 day');
+    expect($date->format('Y-m-d'))->toBe('2026-11-29');
 
     expect($data->issueDate?->format('Y-m-d'))->toBe('2026-11-28')
         ->and($data->dueDate?->format('Y-m-d'))->toBe('2026-11-28');

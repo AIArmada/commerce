@@ -138,10 +138,11 @@ it('rejects expired share links', function (): void {
 });
 
 it('captures immutable share expiration dates', function (): void {
-    $date = new DateTimeImmutable('2026-11-28T00:00:00+00:00');
+    $date = new DateTime('2026-11-28T00:00:00+00:00');
     $data = new ShareLinkData(expiresAt: $date);
 
-    $date->modify('+1 day');
+    $date = $date->modify('+1 day');
+    expect($date->format('Y-m-d'))->toBe('2026-11-29');
 
     expect($data->expiresAt?->format('Y-m-d'))->toBe('2026-11-28');
 });

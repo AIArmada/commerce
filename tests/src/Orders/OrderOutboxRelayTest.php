@@ -13,6 +13,7 @@ use AIArmada\Orders\Features\Lifecycle\Actions\FreeOrderConfirmed;
 use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
 use AIArmada\Orders\Features\Outbox\Actions\RelayOrderOutbox;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
 use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use AIArmada\Orders\Features\Payments\Actions\RefundCompleted;
 use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
@@ -563,6 +564,8 @@ it('does not suppress staged rows on partial refund', function (): void {
 it('rejects invalid relay batch limits', function (): void {
     expect(fn () => app(RelayOrderOutbox::class)->execute(0))
         ->toThrow(InvalidArgumentException::class);
+
+    $this->app->make(\Illuminate\Contracts\Console\Kernel::class)->registerCommand(new RelayOrderOutboxCommand);
 
     $this->artisan('orders:outbox-relay', ['--limit' => 'invalid'])
         ->assertExitCode(2);

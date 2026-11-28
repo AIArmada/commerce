@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServicePro
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Contacting\ContactingServiceProvider;
 use AIArmada\Links\LinksServiceProvider;
+use AIArmada\Orders\Features\Lifecycle\FeatureModule as OrdersLifecycleModule;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -74,6 +75,8 @@ abstract class AffiliateNetworkTestCase extends Orchestra
         ]);
 
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+        (new OrdersLifecycleModule)->register($this->app);
     }
 
     protected function defineEnvironment($app): void
