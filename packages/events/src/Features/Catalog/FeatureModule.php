@@ -40,6 +40,10 @@ final class FeatureModule implements FeatureModuleContract
         $this->defaultModelConfig('event', Event::class);
         $this->defaultModelConfig('occurrence', EventOccurrence::class);
         $this->defaultModelConfig('session', EventSession::class);
+
+        $app->instance('events.model-type.event', Event::class);
+        $app->instance('events.model-type.occurrence', EventOccurrence::class);
+        $app->instance('events.model-type.session', EventSession::class);
         $this->defaultModelConfig('attribute', EventAttribute::class);
         $this->defaultModelConfig('audience', EventAudience::class);
 

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Platform;
 
-use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
-use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -245,12 +242,12 @@ final class ModelResolver
             ));
         }
 
-        $required = match ($key) {
-            'event' => Event::class,
-            'occurrence' => EventOccurrence::class,
-            'session' => EventSession::class,
-            default => Model::class,
-        };
+        $binding = 'events.model-type.' . $key;
+        $required = app()->bound($binding) ? app()->make($binding) : Model::class;
+
+        if (! is_string($required) || ! is_a($required, Model::class, true)) {
+            throw new RuntimeException(sprintf('Invalid model type constraint for events model [%s].', $key));
+        }
 
         if (! is_a($model, $required, true)) {
             throw new RuntimeException(sprintf(
