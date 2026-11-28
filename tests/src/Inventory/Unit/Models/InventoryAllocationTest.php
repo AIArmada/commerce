@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
@@ -276,7 +277,7 @@ describe('InventoryAllocation', function (): void {
             'expires_at' => CarbonImmutable::now()->addMinutes(5),
         ]);
 
-        $allocation->extend(120);
+        expect(app(InventoryAllocationService::class)->extendAllocations('cart-1', 120))->toBe(1);
 
         $allocation->refresh();
         expect($allocation->expires_at->isAfter(now()->addMinutes(110)))->toBeTrue();

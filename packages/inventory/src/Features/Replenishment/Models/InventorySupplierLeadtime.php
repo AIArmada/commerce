@@ -221,41 +221,6 @@ final class InventorySupplierLeadtime extends Model implements Auditable
         return $this->roundToOrderMultiple($quantity) * $this->unit_cost_minor;
     }
 
-    /**
-     * Mark as primary supplier.
-     */
-    public function markAsPrimary(): bool
-    {
-        self::query()
-            ->where('inventoryable_type', $this->inventoryable_type)
-            ->where('inventoryable_id', $this->inventoryable_id)
-            ->where('id', '!=', $this->id)
-            ->when(
-                $this->owner_type === null || $this->owner_id === null,
-                fn (Builder $query): Builder => $query->whereNull('owner_type')->whereNull('owner_id'),
-                fn (Builder $query): Builder => $query->where('owner_type', $this->owner_type)->where('owner_id', $this->owner_id),
-            )
-            ->update(['is_primary' => false]);
-
-        return $this->update(['is_primary' => true]);
-    }
-
-    /**
-     * Record an order placement.
-     */
-    public function recordOrder(): bool
-    {
-        return $this->update(['last_order_at' => CarbonImmutable::now()]);
-    }
-
-    /**
-     * Record order receipt.
-     */
-    public function recordReceipt(): bool
-    {
-        return $this->update(['last_received_at' => CarbonImmutable::now()]);
-    }
-
     protected function casts(): array
     {
         return [

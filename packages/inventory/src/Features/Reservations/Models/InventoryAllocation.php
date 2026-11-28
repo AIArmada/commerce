@@ -146,18 +146,6 @@ final class InventoryAllocation extends Model implements Auditable
     }
 
     /**
-     * Extend the allocation expiry.
-     */
-    public function extend(int $minutes): self
-    {
-        $this->update([
-            'expires_at' => CarbonImmutable::now()->addMinutes($minutes),
-        ]);
-
-        return $this;
-    }
-
-    /**
      * Scope to filter by cart ID.
      *
      * @param  Builder<self>  $query
