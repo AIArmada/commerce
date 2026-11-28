@@ -151,6 +151,37 @@ final class BatchAllocationService implements BatchReservationBalances
         $this->commitBatches([['batch' => $this->resolveBatch($batchId, $itemType, $itemId, $locationId), 'quantity' => $quantity]]);
     }
 
+    public function restore(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        DB::transaction(function () use ($batchId, $itemType, $itemId, $locationId, $quantity): void {
+            $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
+                ->whereKey($batchId)
+                ->where('inventoryable_type', $itemType)
+                ->where('inventoryable_id', $itemId)
+                ->where('location_id', $locationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($batch->is_expired || ! in_array($batch->status, [BatchStatus::Active->value, BatchStatus::Depleted->value], true)) {
+                throw new InvalidArgumentException('Cannot automatically restore non-sellable batch inventory');
+            }
+
+            if ($quantity > PHP_INT_MAX - $batch->quantity_on_hand) {
+                throw new InvalidArgumentException('Restored batch quantity exceeds the supported quantity');
+            }
+
+            $batch->incrementOnHand($quantity);
+
+            if ($batch->status === BatchStatus::Depleted->value) {
+                $batch->update(['status' => BatchStatus::Active->value]);
+            }
+        }, 3);
+    }
+
     private function resolveBatch(string $batchId, string $itemType, string $itemId, string $locationId): InventoryBatch
     {
         return InventoryOwnerScope::forMutation(InventoryBatch::query())

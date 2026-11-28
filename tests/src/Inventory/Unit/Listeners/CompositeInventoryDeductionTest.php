@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
@@ -268,4 +272,68 @@ it('restores only order shipments with the immutable order identity', function (
     $listener->handle($event);
 
     expect($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8);
+});
+
+it('restores a committed batch to its original identity and reactivates depleted stock', function (): void {
+    $order = createCompositeInventoryOrder('ORD-BATCH-' . uniqid());
+    $batch = InventoryBatch::factory()->create([
+        'inventoryable_type' => $this->mouse->getMorphClass(),
+        'inventoryable_id' => $this->mouse->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_received' => 2,
+        'quantity_on_hand' => 2,
+        'quantity_reserved' => 0,
+        'status' => BatchStatus::Active->value,
+        'expires_at' => null,
+    ]);
+
+    $allocations = app(InventoryAllocationService::class);
+    $allocation = $allocations->allocate($this->mouse, 2, 'batch-cart')->firstOrFail();
+    app(BatchAllocationService::class)->reserveBatches([['batch' => $batch, 'quantity' => 2]]);
+    $allocation->forceFill(['batch_id' => $batch->id])->saveOrFail();
+    $allocations->commit('batch-cart', $order->id);
+
+    expect($batch->fresh()->quantity_on_hand)->toBe(0)
+        ->and($batch->fresh()->status)->toBe(BatchStatus::Depleted->value)
+        ->and($this->inventoryService->getTotalOnHand($this->mouse))->toBe(8);
+
+    $listener = app(ReleaseInventoryFromOrder::class);
+    $event = new InventoryReleaseRequired($order);
+    $listener->handle($event);
+    $listener->handle($event);
+
+    expect($batch->fresh()->quantity_on_hand)->toBe(2)
+        ->and($batch->fresh()->quantity_reserved)->toBe(0)
+        ->and($batch->fresh()->status)->toBe(BatchStatus::Active->value)
+        ->and($this->inventoryService->getTotalOnHand($this->mouse))->toBe(10)
+        ->and(InventoryMovement::query()->where('type', MovementType::Receipt->value)->where('reference', $order->id)->where('batch_id', $batch->id)->count())->toBe(1);
+});
+
+it('does not return a recalled batch to sellable warehouse stock', function (): void {
+    $order = createCompositeInventoryOrder('ORD-RECALLED-' . uniqid());
+    $batch = InventoryBatch::factory()->create([
+        'inventoryable_type' => $this->mouse->getMorphClass(),
+        'inventoryable_id' => $this->mouse->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_received' => 2,
+        'quantity_on_hand' => 2,
+        'quantity_reserved' => 0,
+        'status' => BatchStatus::Active->value,
+        'expires_at' => null,
+    ]);
+
+    $allocations = app(InventoryAllocationService::class);
+    $allocation = $allocations->allocate($this->mouse, 2, 'recalled-batch-cart')->firstOrFail();
+    app(BatchAllocationService::class)->reserveBatches([['batch' => $batch, 'quantity' => 2]]);
+    $allocation->forceFill(['batch_id' => $batch->id])->saveOrFail();
+    $allocations->commit('recalled-batch-cart', $order->id);
+    $batch->fresh()->update(['status' => BatchStatus::Recalled->value]);
+
+    expect(fn () => app(ReleaseInventoryFromOrder::class)->handle(new InventoryReleaseRequired($order)))
+        ->toThrow(InvalidArgumentException::class, 'Cannot automatically restore non-sellable batch inventory');
+
+    expect($batch->fresh()->quantity_on_hand)->toBe(0)
+        ->and($batch->fresh()->status)->toBe(BatchStatus::Recalled->value)
+        ->and($this->inventoryService->getTotalOnHand($this->mouse))->toBe(8)
+        ->and(InventoryOperation::query()->where('order_id', $order->id)->where('kind', InventoryOperation::KIND_RELEASE)->firstOrFail()->status)->toBe(InventoryOperation::STATUS_PENDING);
 });

@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Actions;
 
+use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Events\InventoryReceived;
 use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock as RestoreOrderStockContract;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use RuntimeException;
 
 final readonly class RestoreOrderStock implements RestoreOrderStockContract
 {
-    public function __construct(private ReceiveInventory $receive) {}
+    public function __construct(
+        private InventoryLevelStore $levels,
+        private BatchReservationBalances $batches,
+    ) {}
 
     public function restore(string $orderId, string $orderNumber): int
     {
@@ -35,13 +43,33 @@ final readonly class RestoreOrderStock implements RestoreOrderStockContract
                     throw new RuntimeException('Cannot restore an order movement without its original stock identity.');
                 }
 
-                $this->receive->handle(
-                    model: $movement->inventoryable,
-                    locationId: $movement->from_location_id,
-                    quantity: $movement->quantity,
-                    reason: sprintf('order_cancelled:%s', $orderNumber),
-                    note: sprintf('Restored from cancelled order #%s', $orderNumber),
-                );
+                if ($movement->batch_id !== null) {
+                    $this->batches->restore(
+                        $movement->batch_id,
+                        $movement->inventoryable_type,
+                        $movement->inventoryable_id,
+                        $movement->from_location_id,
+                        $movement->quantity,
+                    );
+                }
+
+                $level = $this->levels->getOrCreate($movement->inventoryable, $movement->from_location_id);
+                $level->incrementOnHand($movement->quantity);
+
+                $receipt = InventoryMovement::create([
+                    'inventoryable_type' => $movement->inventoryable_type,
+                    'inventoryable_id' => $movement->inventoryable_id,
+                    'to_location_id' => $movement->from_location_id,
+                    'batch_id' => $movement->batch_id,
+                    'quantity' => $movement->quantity,
+                    'type' => MovementType::Receipt->value,
+                    'reason' => sprintf('order_cancelled:%s', $orderNumber),
+                    'reference' => $orderId,
+                    'note' => sprintf('Restored from cancelled order #%s', $orderNumber),
+                    'occurred_at' => CarbonImmutable::now(),
+                ]);
+
+                Event::dispatch(new InventoryReceived($movement->inventoryable, $level, $receipt));
             }
 
             return $movements->count();
