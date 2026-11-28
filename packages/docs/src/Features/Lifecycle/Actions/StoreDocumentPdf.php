@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
@@ -12,17 +13,15 @@ use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
-final readonly class StoreDocumentPdf
+final readonly class StoreDocumentPdf implements DocumentPdfPublisher
 {
     public function __construct(
         private DocRenderService $renderer,
         private PdfRenderer $pdfRenderer,
     ) {}
 
-    public function execute(Doc $doc): string
+    public function execute(string $id): string
     {
-        $id = (string) $doc->getKey();
-
         if (config('docs.owner.enabled', false)) {
             OwnerWriteGuard::findOrFailForOwner(Doc::class, $id);
         }

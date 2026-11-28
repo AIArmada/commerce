@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocDownloadController;
-use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +33,7 @@ it('generates a missing pdf before download', function (): void {
 
     Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
-    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(StoreDocumentPdf::class));
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(DocumentPdfPublisher::class));
 
     expect($response->getStatusCode())->toBe(200)
         ->and($doc->fresh()->pdf_path)->toBe('docs/' . $doc->id . '.pdf');
@@ -58,7 +58,7 @@ it('regenerates when pdf file does not exist on disk', function (): void {
 
     Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
-    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(StoreDocumentPdf::class));
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(DocumentPdfPublisher::class));
 
     expect($response->getStatusCode())->toBe(200);
 });
@@ -75,9 +75,9 @@ it('downloads a document pdf with a safe filename', function (): void {
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocRenderService::class);
-    app(StoreDocumentPdf::class)->execute($doc);
+    app(DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
-    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(StoreDocumentPdf::class));
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class), app(DocumentPdfPublisher::class));
 
     expect($response->getStatusCode())->toBe(200);
     expect($response->headers->get('content-type'))->toContain('application/pdf');

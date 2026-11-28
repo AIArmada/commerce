@@ -212,16 +212,16 @@ it('reuses identical PDF inputs and regenerates changed document and template co
     app()->forgetInstance(DocRenderService::class);
     $storePdf = app(StoreDocumentPdf::class);
 
-    $path = $storePdf->execute($doc);
-    expect($storePdf->execute($doc))->toBe($path);
+    $path = $storePdf->execute((string) $doc->getKey());
+    expect($storePdf->execute((string) $doc->getKey()))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('original');
 
     $doc->update(['notes' => 'Edited notes']);
-    expect($storePdf->execute($doc))->toBe($path);
+    expect($storePdf->execute((string) $doc->getKey()))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('edited');
 
     $template->update(['layout' => [['type' => DocTemplateBlockType::DocumentHeader->value, 'data' => []]]]);
-    expect($storePdf->execute($doc))->toBe($path);
+    expect($storePdf->execute((string) $doc->getKey()))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('template changed');
 });
 
@@ -254,10 +254,10 @@ it('retries PDF publication if document content changes while the driver is rend
     app()->forgetInstance(DocRenderService::class);
     $storePdf = app(StoreDocumentPdf::class);
 
-    $path = $storePdf->execute($doc);
+    $path = $storePdf->execute((string) $doc->getKey());
 
     expect(Storage::disk('local')->get($path))->toBe('fresh PDF')
-        ->and($storePdf->execute($doc))->toBe($path);
+        ->and($storePdf->execute((string) $doc->getKey()))->toBe($path);
 });
 
 it('rejects ambiguous relative rich-content URLs before rendering links and images', function (string $url): void {

@@ -11,7 +11,7 @@ use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
@@ -467,7 +467,7 @@ final class DocService
     public function generatePdf(Doc $doc, bool $save = true): string
     {
         return $save
-            ? app(StoreDocumentPdf::class)->execute($doc)
+            ? app(DocumentPdfPublisher::class)->execute((string) $doc->getKey())
             : app(DocRenderService::class)->renderPdf($doc);
     }
 

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
+use AIArmada\Docs\Contracts\DocumentPdfCleanup;
 use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-final readonly class DeleteStoredDocumentPdf
+final readonly class DeleteStoredDocumentPdf implements DocumentPdfCleanup
 {
     public function execute(string $docId, string $docType, ?string $path): void
     {

@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
+use AIArmada\Docs\Contracts\DocumentPdfCleanup;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
 use AIArmada\Docs\Runtime\LifecycleRelationModels;
@@ -317,7 +317,7 @@ final class Doc extends Model implements Auditable
             $id = (string) $doc->getKey();
             $type = $doc->doc_type;
             $path = $doc->pdf_path;
-            $doc->getConnection()->afterCommit(static fn () => app(DeleteStoredDocumentPdf::class)->execute($id, $type, $path));
+            $doc->getConnection()->afterCommit(static fn () => app(DocumentPdfCleanup::class)->execute($id, $type, $path));
         });
     }
 
