@@ -7,6 +7,7 @@ namespace AIArmada\References\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Models\Reference;
 use Illuminate\Auth\Access\AuthorizationException;
+use InvalidArgumentException;
 use LogicException;
 
 final readonly class LockReferenceForWrite
@@ -15,6 +16,10 @@ final readonly class LockReferenceForWrite
     {
         if ($reference->getConnection()->transactionLevel() === 0) {
             throw new LogicException('Reference writes require a transaction.');
+        }
+
+        if ($reference->exists && $reference->isDirty($reference->getKeyName())) {
+            throw new InvalidArgumentException('Reference primary key is immutable.');
         }
 
         $locked = $reference->newQuery()->withoutOwnerScope()->whereKey($reference->getKey())->lockForUpdate()->firstOrFail();

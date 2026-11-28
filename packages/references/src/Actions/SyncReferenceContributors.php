@@ -7,13 +7,15 @@ namespace AIArmada\References\Actions;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Models\Reference;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 
 final readonly class SyncReferenceContributors
 {
-    public function __construct(private LockReferenceForWrite $lock = new LockReferenceForWrite) {}
+    public function __construct(
+        private LockReferenceForWrite $lock = new LockReferenceForWrite,
+        private ValidateContributorIdentity $identity = new ValidateContributorIdentity,
+    ) {}
 
     /**
      * @param  list<string>  $contributorIds
@@ -26,11 +28,7 @@ final readonly class SyncReferenceContributors
             throw new InvalidArgumentException('Unknown reference contributor role.');
         }
 
-        $contributorType = mb_trim($contributorType);
-
-        if ($contributorType === '') {
-            throw new InvalidArgumentException('Reference contributor type must be a non-empty string.');
-        }
+        $contributorType = $this->identity->type($contributorType);
 
         if (! $reference->exists) {
             throw new InvalidArgumentException('Contributors can only be synced on a persisted reference.');
@@ -45,11 +43,7 @@ final readonly class SyncReferenceContributors
                 continue;
             }
 
-            if (! Str::isUuid($id)) {
-                throw new InvalidArgumentException('Reference contributor IDs must be UUIDs.');
-            }
-
-            $wanted[$id] = true;
+            $wanted[$this->identity->id($id)] = true;
         }
 
         $reference->getConnection()->transaction(function () use ($reference, $role, $contributorType, $wanted): void {

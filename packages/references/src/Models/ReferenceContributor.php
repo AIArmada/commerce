@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\References\Models;
 
+use AIArmada\References\Actions\GuardReferenceContributorWrite;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -35,6 +36,14 @@ class ReferenceContributor extends Model
 
     protected static function booted(): void
     {
+        static::saving(static function (ReferenceContributor $contributor): void {
+            (new GuardReferenceContributorWrite)->saving($contributor);
+        });
+
+        static::deleting(static function (ReferenceContributor $contributor): void {
+            (new GuardReferenceContributorWrite)->deleting($contributor);
+        });
+
         static::addGlobalScope('referenceOwner', static function (Builder $query): void {
             if (Reference::ownerScopeConfig()->enabled) {
                 $query->whereHas('reference');

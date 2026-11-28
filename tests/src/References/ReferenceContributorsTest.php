@@ -259,3 +259,45 @@ test('a work cannot change kind while it owns authors', function (): void {
     expect($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Work)
         ->and($work->contributors()->count())->toBe(1);
 });
+
+test('canonicalizes UUID case and rejects non-model contributor types', function (): void {
+    $author = makeContributorUser('contributor-canonical@example.test');
+    $work = makeWork();
+    $id = (string) $author->getKey();
+    $action = new SyncReferenceContributors;
+
+    $action->handle($work, ReferenceContributorRole::Author, $author->getMorphClass(), [$id, mb_strtoupper($id)]);
+
+    expect($work->contributors()->count())->toBe(1);
+
+    expect(fn () => $action->handle($work, ReferenceContributorRole::Author, stdClass::class, [$id]))
+        ->toThrow(InvalidArgumentException::class, 'type');
+
+    expect($work->contributors()->count())->toBe(1);
+});
+
+test('direct contributor writes cannot bypass reference owner authorization', function (): void {
+    $owner = makeContributorUser('contributor-write-owner@example.test');
+    $other = makeContributorUser('contributor-write-other@example.test');
+    $work = OwnerContext::withOwner($owner, fn (): Reference => makeWork('Protected contributor work'));
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => $work->getConnection()->transaction(
+        fn () => $work->contributors()->create([
+            'role' => ReferenceContributorRole::Author,
+            'contributor_type' => $other->getMorphClass(),
+            'contributor_id' => $other->getKey(),
+        ]),
+    )))->toThrow(AuthorizationException::class);
+
+    $contributor = OwnerContext::withOwner($owner, function () use ($owner, $work): ReferenceContributor {
+        (new SyncReferenceContributors)->handle($work, ReferenceContributorRole::Author, $owner->getMorphClass(), [(string) $owner->getKey()]);
+
+        return $work->contributors()->firstOrFail();
+    });
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => $work->getConnection()->transaction(
+        fn () => $contributor->delete(),
+    )))->toThrow(AuthorizationException::class);
+
+    expect(OwnerContext::withOwner($owner, fn (): int => $work->contributors()->count()))->toBe(1);
+});
