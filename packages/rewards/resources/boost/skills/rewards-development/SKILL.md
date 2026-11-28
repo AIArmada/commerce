@@ -9,4 +9,4 @@ Rewards owns program terms, enrollment, entitlements, awards, points and financi
 
 ## Verification
 
-Run the affected Rewards, Referrals and FilamentRewards Pest suites, PHPStan and Pint from the Commerce monorepo root.
+Run `composer --working-dir=packages/rewards arch:check`, the affected Rewards, Referrals and FilamentRewards Pest suites, PHPStan and Pint from the Commerce monorepo root.
