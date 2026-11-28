@@ -7,3 +7,5 @@ For cross-package points entitlement evaluation and reversal, inject `AIArmada\R
 Read budget and benefit stock balances through `AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi` and `AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi`; both validate the current program owner scope before reading the ledger.
 
 Payout snapshot and benefit recovery APIs enforce program ownership independently of their callers. Benefit recovery also validates catalog-item scope; locking recovery reads require the caller's transaction.
+
+Source correction sweeps and referral points settlement respect an existing owner context. Only ownerless system enumeration fans out across programs; scoped correction reports never expose foreign awards.

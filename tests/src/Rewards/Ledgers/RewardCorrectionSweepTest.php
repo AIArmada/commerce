@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -19,6 +20,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContribu
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\RecheckRewardAwardsJob;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardPointsEntitlementApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -458,4 +460,47 @@ it('records a per-award error for a deleted program owner while the sweep contin
     expect($report['errors'])->toHaveKey($orphanedAwardId)
         ->and($report['reversed'])->toContain((string) $globalAward->getKey())
         ->and($orphaned->refresh()->status)->toBe(RewardAwardStatus::Held);
+});
+
+it('does not widen a tenant-scoped referral reversal or correction sweep to another owner', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    [$program, $held, $approved, $memberId, $staff] = OwnerContext::withOwner($owner, static fn (): array => sweepHarness('tenant-sweep'));
+    $key = 'src-tenant-sweep-2';
+
+    OwnerContext::withOwner($other, static function () use ($approved, $key, $memberId, $staff): void {
+        app(RewardPointsEntitlementApi::class)->reversePoints($key, 'user', $memberId, 'recipient', 'referral-reversal', []);
+
+        $report = ApplyRewardSourceCorrectionsAction::run(
+            'user',
+            $staff,
+            'staff',
+            null,
+            200,
+            [['business_key' => $key, 'reason' => 'source-correction', 'evidence' => []]],
+        );
+
+        expect($report['reversed'])->toBe([])
+            ->and($report['rejected'])->toBe([])
+            ->and($report['skipped'])->toBe([])
+            ->and($report['errors'])->toBe([])
+            ->and($report['contributions'])->toBe(0);
+    });
+
+    expect($approved->refresh()->status)->toBe(RewardAwardStatus::Approved)
+        ->and(RewardMilestoneContribution::query()->where('source_business_key', $key)->whereNotNull('revoked_at')->count())->toBe(0);
+
+    OwnerContext::withOwner($owner, static function () use ($approved, $key, $staff): void {
+        $report = ApplyRewardSourceCorrectionsAction::run(
+            'user',
+            $staff,
+            'staff',
+            null,
+            200,
+            [['business_key' => $key, 'reason' => 'source-correction', 'evidence' => []]],
+        );
+
+        expect($report['reversed'])->toContain((string) $approved->getKey())
+            ->and($report['contributions'])->toBe(1);
+    });
 });

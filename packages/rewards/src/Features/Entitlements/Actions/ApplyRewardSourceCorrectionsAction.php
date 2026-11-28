@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
@@ -42,8 +43,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Sweeps run without an ambient owner (cron, console, explicit-key
  * callers), so each award transition/reversal and each contribution
  * invalidation runs under the owning program's own owner context.
- * Orphaned owner tuples record a per-award error and never abort the
- * sweep.
+ * Scoped callers retain their existing owner boundary; foreign programs
+ * are excluded from both mutation and reporting. Orphaned owner tuples
+ * in system sweeps record per-award errors.
  *
  * @return array{reversed: list<string>, rejected: list<string>, recoveries: list<string>, contributions: int, skipped: list<string>, errors: array<string, string>}
  */
@@ -86,6 +88,10 @@ final readonly class ApplyRewardSourceCorrectionsAction
                 ->get();
 
             foreach ($awards as $award) {
+                if (! $this->programIsAccessible((string) $award->program_id)) {
+                    continue;
+                }
+
                 $awardId = (string) $award->getKey();
 
                 if (in_array($award->status, [
@@ -171,6 +177,7 @@ final readonly class ApplyRewardSourceCorrectionsAction
         $contributions = RewardMilestoneContribution::query()
             ->where('source_business_key', $businessKey)
             ->whereNull('revoked_at')
+            ->with('cycle')
             ->orderBy('id')
             ->get();
 
@@ -185,6 +192,10 @@ final readonly class ApplyRewardSourceCorrectionsAction
 
                 if ($programId === null) {
                     throw new InvalidArgumentException('Unknown reward program.');
+                }
+
+                if (! $this->programIsAccessible((string) $programId)) {
+                    continue;
                 }
 
                 app(RewardProgramLockApi::class)->withProgramOwner(
@@ -210,6 +221,21 @@ final readonly class ApplyRewardSourceCorrectionsAction
         }
 
         return ['count' => $count, 'errors' => $errors];
+    }
+
+    private function programIsAccessible(string $programId): bool
+    {
+        if (! OwnerContext::hasOverride() && OwnerContext::resolve() === null) {
+            return true;
+        }
+
+        try {
+            app(RewardProgramLockApi::class)->assertProgramInScope($programId);
+
+            return true;
+        } catch (AuthorizationException | InvalidArgumentException) {
+            return false;
+        }
     }
 
     /**

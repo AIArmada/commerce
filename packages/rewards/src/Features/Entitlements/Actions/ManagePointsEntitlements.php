@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardPointsEntitlementApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use InvalidArgumentException;
 use RuntimeException;
 
 final readonly class ManagePointsEntitlements implements RewardPointsEntitlementApi
@@ -81,12 +85,29 @@ final readonly class ManagePointsEntitlements implements RewardPointsEntitlement
     /** @return Builder<RewardAward> */
     private function livePoints(string $businessKey, string $recipientType, string $recipientId, RewardBeneficiaryRole $role): Builder
     {
-        return RewardAward::query()
+        $query = RewardAward::query()
             ->where('source_business_key', $businessKey)
             ->where('recipient_type', $recipientType)
             ->where('recipient_id', $recipientId)
             ->where('component', RewardComponent::Points)
             ->where('beneficiary_role', $role)
             ->whereIn('status', [RewardAwardStatus::Held, RewardAwardStatus::PendingReview, RewardAwardStatus::Approved, RewardAwardStatus::Fulfilled]);
+
+        if (OwnerContext::hasOverride() || OwnerContext::resolve() !== null) {
+            $programs = [];
+
+            foreach ((clone $query)->distinct()->pluck('program_id') as $programId) {
+                try {
+                    app(RewardProgramLockApi::class)->assertProgramInScope((string) $programId);
+                    $programs[] = (string) $programId;
+                } catch (AuthorizationException | InvalidArgumentException) {
+                    continue;
+                }
+            }
+
+            $query->whereIn('program_id', $programs);
+        }
+
+        return $query;
     }
 }
