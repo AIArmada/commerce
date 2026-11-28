@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Support\TypeTransformer;
+use AIArmada\Jnt\Data\TypeTransformer;
 
 describe('TypeTransformer - Generic Methods', function (): void {
     it('converts integers to integer strings', function (): void {
@@ -140,6 +140,17 @@ describe('TypeTransformer - Context-Aware Methods', function (): void {
         it('rejects API money with more than two decimal places', function (): void {
             TypeTransformer::moneyToMinor('150.456');
         })->throws(InvalidArgumentException::class);
+
+        it('round trips both integer boundaries without overflowing', function (): void {
+            expect(TypeTransformer::moneyToMinor(TypeTransformer::forMoney(PHP_INT_MAX)))->toBe(PHP_INT_MAX)
+                ->and(TypeTransformer::moneyToMinor(TypeTransformer::forMoney(PHP_INT_MIN)))->toBe(PHP_INT_MIN)
+                ->and(TypeTransformer::moneyToMinor('000.01'))->toBe(1)
+                ->and(TypeTransformer::moneyToMinor(-0.001))->toBe(0);
+        });
+
+        it('rejects out-of-range carrier money rather than overflowing', function (int | float | string $major): void {
+            expect(fn () => TypeTransformer::moneyToMinor($major))->toThrow(InvalidArgumentException::class);
+        })->with([PHP_INT_MAX, PHP_INT_MIN, (string) PHP_INT_MAX, (string) PHP_INT_MIN, 1e100, INF, NAN]);
 
         it('formats negative minor units without floating point math', function (): void {
             expect(TypeTransformer::forMoney(-1990))->toBe('-19.90');

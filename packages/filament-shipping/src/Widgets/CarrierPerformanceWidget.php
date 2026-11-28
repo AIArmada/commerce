@@ -4,17 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\DeliveryFailed;
-use AIArmada\Shipping\States\ExceptionStatus;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\OutForDelivery;
-use AIArmada\Shipping\States\ShipmentStatus;
-use AIArmada\Shipping\States\Shipped;
-use Carbon\CarbonImmutable;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Str;
 
@@ -38,61 +28,11 @@ class CarrierPerformanceWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $startDate = CarbonImmutable::now()->subDays(30);
-
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return [
-                    'datasets' => [],
-                    'labels' => [],
-                ];
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        $delivered = ShipmentStatus::normalize(Delivered::class);
-        $inTransitStatuses = [
-            ShipmentStatus::normalize(Shipped::class),
-            ShipmentStatus::normalize(InTransit::class),
-            ShipmentStatus::normalize(OutForDelivery::class),
-        ];
-        $exceptionStatuses = [
-            ShipmentStatus::normalize(ExceptionStatus::class),
-            ShipmentStatus::normalize(DeliveryFailed::class),
-        ];
-
-        $inTransitPlaceholders = implode(', ', array_fill(0, count($inTransitStatuses), '?'));
-        $exceptionPlaceholders = implode(', ', array_fill(0, count($exceptionStatuses), '?'));
-
-        $rows = $query
-            ->where('created_at', '>=', $startDate)
-            ->whereNotNull('carrier_code')
-            ->select('carrier_code')
-            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS delivered_count', [$delivered])
-            ->selectRaw(
-                'SUM(CASE WHEN status IN (' . $inTransitPlaceholders . ') THEN 1 ELSE 0 END) AS in_transit_count',
-                $inTransitStatuses
-            )
-            ->selectRaw(
-                'SUM(CASE WHEN status IN (' . $exceptionPlaceholders . ') THEN 1 ELSE 0 END) AS exceptions_count',
-                $exceptionStatuses
-            )
-            ->groupBy('carrier_code')
-            ->orderBy('carrier_code')
-            ->get();
-
-        $labels = $rows
-            ->pluck('carrier_code')
-            ->map(fn (?string $code) => $code === null ? 'Unknown' : Str::ucfirst($code))
-            ->all();
-
-        $deliveredData = $rows->pluck('delivered_count')->map(fn ($v) => (int) $v)->all();
-        $inTransitData = $rows->pluck('in_transit_count')->map(fn ($v) => (int) $v)->all();
-        $exceptionsData = $rows->pluck('exceptions_count')->map(fn ($v) => (int) $v)->all();
+        $rows = app(DashboardStats::class)->carrierPerformance();
+        $labels = array_map(static fn (array $row): string => Str::ucfirst($row['carrier']), $rows);
+        $deliveredData = array_column($rows, 'delivered');
+        $inTransitData = array_column($rows, 'inTransit');
+        $exceptionsData = array_column($rows, 'exceptions');
 
         return [
             'datasets' => [

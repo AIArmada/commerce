@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Builders\OrderBuilder;
 use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Data\GoodsType;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Exceptions\JntException;
 
 describe('OrderBuilder - Required Fields Validation', function (): void {

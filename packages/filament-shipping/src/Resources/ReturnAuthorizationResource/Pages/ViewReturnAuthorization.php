@@ -6,8 +6,8 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
-use AIArmada\Shipping\Integrations\PackageReturns;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -65,7 +65,7 @@ class ViewReturnAuthorization extends ViewRecord
 
                         return $result;
                     }, $data['inspection']);
-                    $this->record = app(PackageReturns::class)->receive($record, $inspection, $data['location_id'] ?? null);
+                    $this->record = ReturnAuthorization::query()->findOrFail(app(PackageReturnWorkflow::class)->receive((string) $record->getKey(), $inspection, $data['location_id'] ?? null));
                 }),
             Action::make('complete_package_return')
                 ->label('Complete Package Return')
@@ -78,7 +78,7 @@ class ViewReturnAuthorization extends ViewRecord
                         ->maxLength(255),
                 ])
                 ->action(function (ReturnAuthorization $record, array $data): void {
-                    $this->record = app(PackageReturns::class)->complete($record, ($data['transaction_id'] ?? '') ?: null);
+                    $this->record = ReturnAuthorization::query()->findOrFail(app(PackageReturnWorkflow::class)->complete((string) $record->getKey(), ($data['transaction_id'] ?? '') ?: null));
                 }),
         ];
     }

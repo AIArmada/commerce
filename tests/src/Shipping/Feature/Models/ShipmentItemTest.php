@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentItem;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 
 describe('ShipmentItem Model', function (): void {
     it('can create a shipment item with required fields', function (): void {

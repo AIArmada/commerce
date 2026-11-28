@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -202,11 +202,12 @@ final class ShippingRateForm
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                $query->whereRaw('0 = 1');
-            } else {
-                $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
+
+            if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+                return [];
             }
+
+            $query->forOwner($owner, includeGlobal: false);
         }
 
         return $query->orderBy('name')->pluck('name', 'id')->all();

@@ -65,32 +65,21 @@ packages/jnt/
 │   └── jnt.php                 # Configuration file
 ├── database/migrations/        # Database migrations
 ├── src/
-│   ├── Actions/               # Action classes (CreateOrder, CancelOrder, etc.)
+│   ├── Features/              # Orders, Tracking, Waybills, Notifications
 │   ├── Builders/              # OrderBuilder for fluent order creation
-│   ├── Cart/                  # Cart shipping calculator integration
-│   ├── Console/
-│   │   ├── JntCommand.php     # Base class for all commands (provides $this->client())
-│   │   └── Commands/
-│   │       ├── Health/        # Health check commands
-│   │       ├── Orders/        # Order management commands
-│   │       ├── Tracking/      # Tracking commands
-│   │       └── Webhooks/      # Webhook testing commands
+│   ├── EntryPoints/Cart/      # Cart shipping calculator integration
+│   ├── Drivers/               # API transport and shipping driver
 │   ├── Contracts/             # Contracts and interfaces
-│   ├── Data/                  # Data Transfer Objects (Spatie Laravel Data)
-│   ├── Enums/                 # PHP 8.1+ enums for API values
+│   ├── Data/                  # Data Transfer Objects
+│   ├── Enums/                 # PHP enums for API values
 │   ├── Events/                # Laravel events
 │   ├── Exceptions/            # Custom exception classes
 │   ├── Facades/               # JntExpress facade
 │   ├── Health/                # Health check support
-│   ├── Http/                  # HTTP client for API communication
-│   ├── Listeners/             # Event listeners
-│   ├── Models/                # Eloquent models
 │   ├── Notifications/         # Notification classes
 │   ├── Rules/                 # Laravel validation rules
-│   ├── Services/              # Core service classes
-│   ├── Shipping/              # Shipping driver implementation
-│   ├── Support/               # Type transformers and utilities
-│   └── Webhooks/              # Webhook processing
+│   ├── Services/              # JntExpressService gateway service
+│   └── Support/               # Type transformers, pricing and utilities
 └── docs/                      # Documentation
 ```
 
@@ -132,7 +121,7 @@ Type-safe PHP 8.1+ enums for J&T API values:
 | `ExpressType` | Shipping service type (DOMESTIC, NEXT_DAY, FRESH, etc.) |
 | `ServiceType` | Pickup type (DOOR_TO_DOOR, WALK_IN) |
 | `PaymentType` | Payment method (PREPAID_POSTPAID, COLLECT_CASH, etc.) |
-| `GoodsType` | Package content type (DOCUMENT, PACKAGE) |
+| `GoodsType` (`Data\GoodsType`) | Package content type (DOCUMENT, PACKAGE) |
 | `TrackingStatus` | Normalized tracking states |
 | `ScanTypeCode` | J&T API scan type codes |
 | `CancellationReason` | Order cancellation reasons |
@@ -150,8 +139,7 @@ The package dispatches events at key lifecycle points:
 
 ## Artisan Commands
 
-All commands extend the abstract `JntCommand` base class (`Console/JntCommand.php`) which provides:
-- `$this->client()` — lazily resolved `JntClient` instance
+All commands extend the abstract `JntCommand` base class (`EntryPoints/Commands/JntCommand.php`) which provides:
 - `$this->withErrorHandling()` — wraps callbacks with exception handling
 - `$this->infoWithLabel()`, `$this->section()`, `$this->resultTable()` — output helpers
 

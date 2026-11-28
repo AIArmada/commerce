@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Contracts;
 
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Shipping\Enums\TrackingStatus as NormalizedTrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;
 
 /**
  * Strategy interface for mapping carrier-specific tracking codes

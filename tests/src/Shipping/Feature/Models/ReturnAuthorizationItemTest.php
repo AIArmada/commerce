@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorizationItem;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 
 describe('ReturnAuthorizationItem Model', function (): void {
     it('can create a return authorization item with required fields', function (): void {
