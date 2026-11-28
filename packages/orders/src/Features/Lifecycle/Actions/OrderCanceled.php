@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
-use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
 use AIArmada\Orders\Events\OrderCancelInitiated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
+use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +39,7 @@ final class OrderCanceled extends Transition
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
             $this->order->refresh();
-            if (class_exists(OrderShipmentUnits::class) && OrderShipmentUnits::hasActivePackageShipment($this->order)) {
+            if (app()->bound(PackageShipmentVerifier::class) && app(PackageShipmentVerifier::class)->hasActivePackageShipment((string) $this->order->getKey())) {
                 throw new DomainException('Cancel any unshipped package shipments before canceling the order. Shipped units must be returned.');
             }
 
@@ -59,7 +59,7 @@ final class OrderCanceled extends Transition
             // flag: a partially paid order still needs its receipts returned,
             // and a never-paid order must not fall back to the order total.
             if ($this->issueRefund && $this->order->getTotalPaid() > 0) {
-                app(RegisterOrderRefund::class)->createCancellationReservations($this->order, $this->reason);
+                app(CancellationRefundReservations::class)->reserveForCancellation((string) $this->order->getKey(), $this->reason);
 
                 // The reservation accounting moved cached totals; refresh so
                 // subscribers and later reads in this request see them.

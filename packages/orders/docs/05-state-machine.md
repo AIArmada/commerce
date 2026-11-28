@@ -136,7 +136,7 @@ $order->status->transitionTo(Processing::class, new PaymentConfirmed(
 `Processing` → `Shipped`
 
 ```php
-use AIArmada\Orders\Transitions\ShipmentCreated;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 
 $order->status->transitionTo(Shipped::class, new ShipmentCreated(
     $order,
@@ -152,7 +152,7 @@ $order->status->transitionTo(Shipped::class, new ShipmentCreated(
 `Shipped` → `Delivered`
 
 ```php
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
 
 $order->status->transitionTo(Delivered::class, new DeliveryConfirmed($order));
 ```
@@ -162,7 +162,7 @@ $order->status->transitionTo(Delivered::class, new DeliveryConfirmed($order));
 `PendingPayment|Processing|OnHold` → `Canceled`
 
 ```php
-use AIArmada\Orders\Transitions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 
 $order->status->transitionTo(Canceled::class, new OrderCanceled(
     $order,
@@ -180,7 +180,7 @@ When the order has received money (`paid_total > 0`) and `issueRefund` is enable
 Records `held_at` as a toggle timestamp (set on hold, cleared by `OrderHoldReleased`).
 
 ```php
-use AIArmada\Orders\Transitions\OrderHeld;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHeld;
 
 $order->status->transitionTo(OnHold::class, new OrderHeld(
     $order,
@@ -196,7 +196,7 @@ $order->status->transitionTo(OnHold::class, new OrderHeld(
 Clears `held_at` to signal the order is no longer on hold.
 
 ```php
-use AIArmada\Orders\Transitions\OrderHoldReleased;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHoldReleased;
 
 $order->status->transitionTo(Processing::class, new OrderHoldReleased(
     $order,
@@ -211,7 +211,7 @@ $order->status->transitionTo(Processing::class, new OrderHoldReleased(
 Records `flagged_at` once. Fraud is terminal — the timestamp is never cleared.
 
 ```php
-use AIArmada\Orders\Transitions\OrderFlaggedAsFraud;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
 
 $order->status->transitionTo(Fraud::class, new OrderFlaggedAsFraud(
     $order,
@@ -227,7 +227,7 @@ $order->status->transitionTo(Fraud::class, new OrderFlaggedAsFraud(
 Records `returned_at` as a historical fact (mirrors `order_items.returned_at` at the order level). A subsequent refund transitions `Returned` → `Refunded`.
 
 ```php
-use AIArmada\Orders\Transitions\OrderReturned;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderReturned;
 
 $order->status->transitionTo(Returned::class, new OrderReturned(
     $order,
@@ -291,7 +291,7 @@ $order->status->transitionTo(PaymentFailed::class, new PaymentFailedTransition(
 The no-shipping path for digital goods and admissions. Records `completed_at`.
 
 ```php
-use AIArmada\Orders\Transitions\OrderCompleted;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCompleted;
 
 $order->status->transitionTo(Completed::class, new OrderCompleted($order));
 ```

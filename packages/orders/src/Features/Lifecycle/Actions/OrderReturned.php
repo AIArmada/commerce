@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Events\OrderReturned as OrderReturnedEvent;
 use AIArmada\Orders\Models\Order;
@@ -30,6 +30,9 @@ final class OrderReturned extends Transition
     public function handle(): Order
     {
         return DB::transaction(function (): Order {
+            $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
+            $this->order->refresh();
+
             if ($this->order->items()->get()->contains(fn ($item): bool => PackageUnit::hasShippableComponents($item))) {
                 throw new DomainException('Use a package return authorization for each returned package unit.');
             }

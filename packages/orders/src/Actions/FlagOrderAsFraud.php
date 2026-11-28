@@ -7,7 +7,7 @@ namespace AIArmada\Orders\Actions;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Fraud;
-use AIArmada\Orders\Transitions\OrderFlaggedAsFraud;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderFlaggedAsFraud;
 use RuntimeException;
 
 final class FlagOrderAsFraud

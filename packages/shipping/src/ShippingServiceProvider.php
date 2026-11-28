@@ -7,9 +7,11 @@ namespace AIArmada\Shipping;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Shipping\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Integrations\PackageReturns;
+use AIArmada\Shipping\Integrations\PackageShipmentVerification;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -108,6 +110,7 @@ final class ShippingServiceProvider extends PackageServiceProvider
         }
 
         $this->app->bind(PackageReturnVerifier::class, PackageReturns::class);
+        $this->app->bind(PackageShipmentVerifier::class, PackageShipmentVerification::class);
 
         $this->app->bind(
             FulfillmentHandler::class,

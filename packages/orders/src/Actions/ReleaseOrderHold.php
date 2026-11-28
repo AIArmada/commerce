@@ -7,7 +7,7 @@ namespace AIArmada\Orders\Actions;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\OnHold;
-use AIArmada\Orders\Transitions\OrderHoldReleased;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderHoldReleased;
 use RuntimeException;
 
 final class ReleaseOrderHold

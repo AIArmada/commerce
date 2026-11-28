@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Events\OrderShipped;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Support\PackageUnit;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
+use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Arr;
@@ -40,11 +40,11 @@ final class ShipmentCreated extends Transition
             $this->order->refresh();
 
             if ($this->order->items()->get()->contains(fn ($item): bool => PackageUnit::hasShippableComponents($item))) {
-                if (! class_exists(OrderShipmentUnits::class)) {
+                if (! app()->bound(PackageShipmentVerifier::class)) {
                     throw new DomainException('Package fulfillment requires the shipping integration.');
                 }
 
-                if (! app(OrderShipmentUnits::class)->allItemsShipped($this->order, $this->shipmentId)
+                if (! app(PackageShipmentVerifier::class)->allItemsShipped((string) $this->order->getKey(), $this->shipmentId)
                     || $this->order->isShipped()) {
                     return $this->order;
                 }

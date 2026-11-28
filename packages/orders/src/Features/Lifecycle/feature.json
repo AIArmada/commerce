@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "Lifecycle",
+  "owns": {
+    "table:orders": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\DeliveryConfirmed",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCompleted",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHeld",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHoldReleased",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderReturned",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\FreeOrderConfirmed"
+    ],
+    "table:order_items": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\DeliveryConfirmed"
+    ],
+    "table:order_notes": [
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHeld",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHoldReleased",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderReturned",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled"
+    ]
+  },
+  "extensions": {}
+}

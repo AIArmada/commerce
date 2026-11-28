@@ -134,6 +134,12 @@ final readonly class RelayOrderOutbox
                     return 'dead';
                 }
 
+                if ($row->owner_type !== $locked->owner_type || (string) $row->owner_id !== (string) $locked->owner_id || ($locked->hasOwner() && $locked->owner === null)) {
+                    $this->markDead($row, 'Order owner does not match the outbox message owner.');
+
+                    return 'dead';
+                }
+
                 if ($locked->status instanceof Canceled || $locked->status instanceof Refunded || $locked->status instanceof Fraud) {
                     $this->markSuppressed($row, 'Order was cancelled, refunded, or flagged as fraud; fulfillment suppressed.');
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Events\OrderHoldReleased as OrderHoldReleasedEvent;
 use AIArmada\Orders\Models\Order;
@@ -27,6 +27,9 @@ final class OrderHoldReleased extends Transition
     public function handle(): Order
     {
         return DB::transaction(function (): Order {
+            $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
+            $this->order->refresh();
+
             $this->order->status->transitionTo(Processing::class);
             $this->order->held_at = null;
             $this->order->save();

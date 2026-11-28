@@ -6,6 +6,7 @@ namespace AIArmada\Orders\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Contracts\CancellationRefundReservations;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefundFailed;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
-final readonly class RegisterOrderRefund
+final readonly class RegisterOrderRefund implements CancellationRefundReservations
 {
     use AssertsOrderOwnerBoundary;
 
@@ -203,6 +204,11 @@ final readonly class RegisterOrderRefund
      *
      * @return list<OrderRefund>
      */
+    public function reserveForCancellation(string $orderId, string $reason): void
+    {
+        $this->createCancellationReservations(Order::query()->findOrFail($orderId), $reason);
+    }
+
     public function createCancellationReservations(Order $order, string $reason): array
     {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);

@@ -9,7 +9,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\PendingPayment;
-use AIArmada\Orders\Transitions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 
 function makeCancelableOrder(int $grandTotal = 10000): Order
 {

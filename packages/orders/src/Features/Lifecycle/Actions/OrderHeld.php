@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Transitions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Events\OrderHeld as OrderHeldEvent;
 use AIArmada\Orders\Models\Order;
@@ -28,6 +28,9 @@ final class OrderHeld extends Transition
     public function handle(): Order
     {
         return DB::transaction(function (): Order {
+            $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->getKey());
+            $this->order->refresh();
+
             $this->order->status->transitionTo(OnHold::class);
             $this->order->held_at = CarbonImmutable::now();
             $this->order->save();

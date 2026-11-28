@@ -104,7 +104,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
             }
 
             OwnerContext::withOwner($locked->owner, $dispatch);
-            $this->markRelayed($ids);
+            $this->markRelayed($orderId, $ids);
         });
     }
 
@@ -114,7 +114,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
      *
      * @param  list<string|null>  $ids
      */
-    private function markRelayed(array $ids): void
+    private function markRelayed(string $orderId, array $ids): void
     {
         $ids = array_values(array_filter($ids));
 
@@ -124,6 +124,7 @@ final readonly class OrderOutbox implements OrderOutboxWriter
 
         OrderOutboxMessage::query()
             ->withoutGlobalScope(OwnerScope::class)
+            ->where('order_id', $orderId)
             ->whereIn('id', $ids)
             ->where('status', OutboxStatus::Pending->value)
             ->update([

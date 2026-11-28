@@ -6,7 +6,7 @@ namespace AIArmada\Orders\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Transitions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use RuntimeException;
 
 final class CancelOrder

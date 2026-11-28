@@ -16,11 +16,11 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
-use AIArmada\Orders\Transitions\FreeOrderConfirmed;
-use AIArmada\Orders\Transitions\OrderCanceled;
-use AIArmada\Orders\Transitions\OrderCompleted;
-use AIArmada\Orders\Transitions\ShipmentCreated;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\FreeOrderConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCompleted;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 use Illuminate\Database\Eloquent\Model;
 
 /**

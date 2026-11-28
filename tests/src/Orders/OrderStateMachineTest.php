@@ -17,11 +17,11 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Orders\Transitions\DeliveryConfirmed;
-use AIArmada\Orders\Transitions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
-use AIArmada\Orders\Transitions\ShipmentCreated;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 
 describe('Order State Machine - Full Coverage', function (): void {
     describe('Complete Order Flow', function (): void {
