@@ -102,7 +102,7 @@ it('submits manual payouts as submitted and confirms them with spend', function 
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-1');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -139,11 +139,27 @@ it('submits manual payouts as submitted and confirms them with spend', function 
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe(0);
 });
 
+it('refuses a payout request replay with changed frozen fee responsibility', function (): void {
+    [$program, $award, $memberId, $staff] = payoutHarness('pay-replay-terms');
+    $awardId = (string) $award->getKey();
+    $payee = RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail();
+
+    $first = RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'program', 'user', $staff, 'staff');
+    $replay = RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'program', 'user', $staff, 'staff');
+
+    expect($replay->getKey())->toBe($first->getKey());
+
+    expect(fn () => RequestRewardPayoutAction::run($awardId, $payee, 'manual', 'recipient', 'user', $staff, 'staff'))
+        ->toThrow(InvalidArgumentException::class, 'different frozen terms');
+
+    expect(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe((int) $first->amount_minor);
+});
+
 it('cancels requested payouts directly with release', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-2');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -162,7 +178,7 @@ it('reconciles submitted manual payouts as evidence-only', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-3');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -188,7 +204,7 @@ it('maps executor outcomes honestly without duplicating money', function (): voi
     ]));
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',
@@ -244,7 +260,7 @@ it('refuses recipient-owned payout submission and cancellation', function (): vo
     [$program, $award, $memberId, $staff] = payoutHarness('pay-own-1');
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
         'manual',
         'program',

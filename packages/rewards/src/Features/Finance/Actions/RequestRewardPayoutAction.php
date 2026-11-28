@@ -14,10 +14,10 @@ use AIArmada\Rewards\Features\Finance\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardPayoutAwardSnapshot;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardPayoutTerms;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +52,7 @@ final readonly class RequestRewardPayoutAction
      * @param  array<string, mixed>|null  $evidence
      */
     public function handle(
-        RewardAward | string $award,
+        string $awardId,
         RewardPayee | string $payee,
         string $processor,
         string $feePayer,
@@ -62,8 +62,6 @@ final readonly class RequestRewardPayoutAction
         ?array $evidence = null,
         ?CarbonInterface $decidedAt = null,
     ): RewardPayoutRequest {
-        RewardProgramGuard::findAwardOrFail($award);
-
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
 
         if ($actorType !== 'user' || ! in_array($actorRole, ['staff', 'admin'], true)) {
@@ -87,7 +85,6 @@ final readonly class RequestRewardPayoutAction
             );
         }
 
-        $awardId = $award instanceof RewardAward ? (string) $award->getKey() : $award;
         $payeeId = $payee instanceof RewardPayee ? (string) $payee->getKey() : $payee;
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')
@@ -105,25 +102,21 @@ final readonly class RequestRewardPayoutAction
             $evidence,
             $decided,
         ): RewardPayoutRequest {
-            $locked = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();
+            $locked = app(RewardAwardLockApi::class)->lockPayoutAward($awardId);
 
-            if (! $locked instanceof RewardAward) {
-                throw new InvalidArgumentException('Unknown reward award.');
-            }
-
-            if ($locked->component !== RewardComponent::Cash) {
+            if ($locked->component !== RewardComponent::Cash->value) {
                 throw new InvalidArgumentException('Payout requests apply to cash awards only.');
             }
 
-            if ($locked->status !== RewardAwardStatus::Approved) {
+            if ($locked->status !== RewardAwardStatus::Approved->value) {
                 throw new InvalidArgumentException('Payout requests require an approved award.');
             }
 
-            if ($actorId === (string) $locked->recipient_id) {
+            if ($actorId === $locked->recipientId) {
                 throw new InvalidArgumentException('Recipient-owned payout requests are prohibited.');
             }
 
-            $amount = $locked->amount_snapshot;
+            $amount = $locked->amountSnapshot;
             $minor = $amount['minor_units'] ?? null;
             $currency = $amount['currency'] ?? null;
 
@@ -143,8 +136,8 @@ final readonly class RequestRewardPayoutAction
                 throw new InvalidArgumentException('Payout requests require a verified payee.');
             }
 
-            if ((string) $payeeRow->recipient_type !== (string) $locked->recipient_type
-                || (string) $payeeRow->recipient_id !== (string) $locked->recipient_id
+            if ((string) $payeeRow->recipient_type !== $locked->recipientType
+                || (string) $payeeRow->recipient_id !== $locked->recipientId
             ) {
                 throw new InvalidArgumentException('Payee recipient must match the award recipient.');
             }
@@ -177,9 +170,19 @@ final readonly class RequestRewardPayoutAction
                 $reserveTotal = $minor;
             }
 
-            $existing = RewardPayoutRequest::query()->where('award_id', $locked->getKey())->lockForUpdate()->first();
+            $existing = RewardPayoutRequest::query()->where('award_id', $locked->id)->lockForUpdate()->first();
 
             if ($existing instanceof RewardPayoutRequest) {
+                if ((string) $existing->payee_id !== $payeeId
+                    || $existing->processor !== $processor
+                    || $existing->fee_payer !== $feePayer
+                    || $existing->program_id !== $locked->programId
+                    || $existing->currency !== $currency
+                    || $existing->amount_minor !== $minor
+                ) {
+                    throw new InvalidArgumentException('Payout request is already bound to different frozen terms.');
+                }
+
                 if ($existing->status !== RewardPayoutRequestStatus::Failed) {
                     return $existing;
                 }
@@ -187,7 +190,7 @@ final readonly class RequestRewardPayoutAction
                 return $this->requeue($existing, $fee, $feePayer, $reserveTotal, $decided, $actorType, $actorId, $actorRole);
             }
 
-            $programId = (string) $locked->program_id;
+            $programId = $locked->programId;
             $funded = RewardBudgetLedger::lockFunding($programId, $currency);
             $balances = RewardBudgetLedger::lockedBalances($programId, $currency, $funded);
 
@@ -232,9 +235,9 @@ final readonly class RequestRewardPayoutAction
             );
 
             return RewardPayoutRequest::query()->create([
-                'award_id' => $locked->getKey(),
+                'award_id' => $locked->id,
                 'payee_id' => $payeeRow->getKey(),
-                'program_id' => $locked->program_id,
+                'program_id' => $locked->programId,
                 'currency' => $currency,
                 'amount_minor' => $minor,
                 'fee_minor' => $fee,
@@ -275,7 +278,7 @@ final readonly class RequestRewardPayoutAction
      * the existence check and the append cannot interleave.
      */
     private function retireHeldObligation(
-        RewardAward $locked,
+        RewardPayoutAwardSnapshot $locked,
         string $programId,
         string $currency,
         string $actorType,
@@ -283,14 +286,14 @@ final readonly class RequestRewardPayoutAction
         string $actorRole,
         CarbonImmutable $decided,
     ): int {
-        $epoch = $locked->obligation_epoch;
-        $minor = $locked->obligated_minor;
+        $epoch = $locked->obligationEpoch;
+        $minor = $locked->obligatedMinor;
 
-        if (! is_int($epoch) || ! is_int($minor) || $minor <= 0) {
+        if ($minor <= 0) {
             return 0;
         }
 
-        $releaseKey = RewardBudgetLedger::releaseObligateKey((string) $locked->getKey(), $epoch);
+        $releaseKey = RewardBudgetLedger::releaseObligateKey($locked->id, $epoch);
 
         $already = RewardBudgetMovement::query()->where('movement_key', $releaseKey)->lockForUpdate()->first();
 
@@ -299,7 +302,7 @@ final readonly class RequestRewardPayoutAction
                 || (string) $already->program_id !== $programId
                 || mb_strtoupper((string) $already->currency) !== $currency
                 || (int) $already->amount_minor !== $minor
-                || (string) ($already->award_id ?? '') !== (string) $locked->getKey()
+                || (string) ($already->award_id ?? '') !== $locked->id
             ) {
                 throw new InvalidArgumentException('Budget movement key is already bound to different terms; refusing the payout.');
             }
@@ -313,7 +316,7 @@ final readonly class RequestRewardPayoutAction
             $programId,
             $currency,
             $minor,
-            (string) $locked->getKey(),
+            $locked->id,
             $actorType,
             $actorId,
             $actorRole,

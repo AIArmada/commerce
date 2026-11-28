@@ -9,6 +9,9 @@ interface RewardAwardLockApi
     /** Read a scoped award decision; a locking read requires the caller's transaction. */
     public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision;
 
+    /** Read frozen payout economics under the award lock in the caller's transaction. */
+    public function lockPayoutAward(string $awardId): RewardPayoutAwardSnapshot;
+
     /** Lock a scoped award inside the caller's transaction. */
     public function lockScopedAward(string $awardId): void;
 

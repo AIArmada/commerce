@@ -126,7 +126,7 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     );
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         $payee,
         'manual',
         'program',
@@ -281,7 +281,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     );
 
     $request = RequestRewardPayoutAction::run(
-        $award,
+        (string) $award->getKey(),
         $payee,
         'manual',
         'program',

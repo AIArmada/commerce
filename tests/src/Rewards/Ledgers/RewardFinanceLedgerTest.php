@@ -197,7 +197,7 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     );
 
     $request = RequestRewardPayoutAction::run(
-        $approved,
+        (string) $approved->getKey(),
         $payee,
         'manual',
         'program',

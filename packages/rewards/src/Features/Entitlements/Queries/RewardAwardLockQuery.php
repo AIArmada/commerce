@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Queries;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardDecision;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardPayoutAwardSnapshot;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use InvalidArgumentException;
@@ -33,6 +34,32 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
             id: (string) $award->getKey(),
             recipientId: (string) $award->recipient_id,
             status: $award->status->value,
+        );
+    }
+
+    public function lockPayoutAward(string $awardId): RewardPayoutAwardSnapshot
+    {
+        $award = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first([
+            'id', 'program_id', 'recipient_type', 'recipient_id', 'component', 'status',
+            'amount_snapshot', 'obligation_epoch', 'obligated_minor',
+        ]);
+
+        if ($award === null) {
+            throw new InvalidArgumentException('Unknown reward award.');
+        }
+
+        RewardProgramGuard::findProgramOrFail((string) $award->program_id);
+
+        return new RewardPayoutAwardSnapshot(
+            id: (string) $award->getKey(),
+            programId: (string) $award->program_id,
+            recipientType: (string) $award->recipient_type,
+            recipientId: (string) $award->recipient_id,
+            component: $award->component->value,
+            status: $award->status->value,
+            amountSnapshot: $award->amount_snapshot,
+            obligationEpoch: $award->obligation_epoch,
+            obligatedMinor: $award->obligated_minor,
         );
     }
 

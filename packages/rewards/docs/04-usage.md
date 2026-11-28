@@ -160,7 +160,7 @@ RecordRewardFundingAction::run($program, 'MYR', 100000, 'sponsor-2026', 'user', 
 
 $payee = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $staffId, 'staff');
 
-$request = RequestRewardPayoutAction::run($award, $payee, 'manual', 'program', 'user', $staffId, 'staff');
+$request = RequestRewardPayoutAction::run((string) $award->getKey(), $payee, 'manual', 'program', 'user', $staffId, 'staff');
 
 $request = ApproveRewardPayoutAction::run($request, 'user', $approverId, 'staff', 'looks-good');
 

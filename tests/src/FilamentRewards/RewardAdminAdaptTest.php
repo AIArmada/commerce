@@ -192,7 +192,7 @@ function adminAdaptCashSetup(string $staffId): array
     );
 
     $request = RequestRewardPayoutAction::run(
-        $approved,
+        (string) $approved->getKey(),
         $payee,
         'manual',
         'program',

@@ -157,7 +157,7 @@ class RewardAwardsTable
 
                         try {
                             $request->handle(
-                                $record,
+                                (string) $record->getKey(),
                                 $payee,
                                 (string) $payee->method,
                                 (string) ($data['fee_payer'] ?? 'program'),
