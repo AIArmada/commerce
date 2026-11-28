@@ -744,8 +744,10 @@ it('returns no stock analysis rows for a zero limit even when stock exists', fun
         'inventoryable_id' => $this->item->getKey(),
         'location_id' => $this->location->id,
         'costing_method' => CostingMethod::Fifo,
+        'quantity' => 10,
         'remaining_quantity' => 10,
         'unit_cost_minor' => 100,
+        'total_cost_minor' => 1000,
         'currency' => config('inventory.defaults.currency', 'MYR'),
     ]);
 

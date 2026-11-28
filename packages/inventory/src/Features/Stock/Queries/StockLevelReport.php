@@ -137,7 +137,8 @@ final readonly class StockLevelReport
                     DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved > 0 AND reorder_point > 0 AND quantity_on_hand - quantity_reserved <= reorder_point THEN 1 END) as low_stock_count'),
                     DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved <= 0 THEN 1 END) as out_of_stock_count'),
                 ])
-                ->with(['location' => fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->select('id', 'name')])
+                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query))
+                ->with('location:id,name')
                 ->groupBy('location_id')
         );
 
