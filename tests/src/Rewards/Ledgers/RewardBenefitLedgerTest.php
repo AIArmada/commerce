@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\CancelRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\ConsumeRewardBenefitAction;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\CancelRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ConsumeRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
 use AIArmada\Rewards\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\ExpireRewardBenefitGrantAction;
-use AIArmada\Rewards\Actions\FulfillRewardBenefitAction;
-use AIArmada\Rewards\Actions\RecordRewardBenefitRecallAction;
-use AIArmada\Rewards\Actions\RedeemRewardBenefitAction;
-use AIArmada\Rewards\Actions\RetireRewardBenefitItemAction;
-use AIArmada\Rewards\Actions\RevokeRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\ExpireRewardBenefitGrantAction;
+use AIArmada\Rewards\Features\Benefits\Actions\FulfillRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RecordRewardBenefitRecallAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RedeemRewardBenefitAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RevokeRewardBenefitGrantAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
@@ -27,7 +27,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
-use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

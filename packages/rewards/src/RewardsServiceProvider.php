@@ -6,7 +6,6 @@ namespace AIArmada\Rewards;
 
 use AIArmada\Rewards\Commands\ApplyRewardSourceCorrectionsCommand;
 use AIArmada\Rewards\Commands\ExpireRewardPointLotsCommand;
-use AIArmada\Rewards\Contracts\RewardBenefitCatalog;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
@@ -27,7 +26,6 @@ use AIArmada\Rewards\Support\NullRewardGratitudePlanner;
 use AIArmada\Rewards\Support\NullRewardReadinessChecker;
 use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Actions\RewardBenefitCatalogService;
 use AIArmada\Rewards\Platform\FeatureCatalog;
 use AIArmada\Rewards\Platform\FeatureModule;
 use AIArmada\Rewards\Platform\ExtensionRegistry;
@@ -61,7 +59,6 @@ final class RewardsServiceProvider extends PackageServiceProvider
         $this->app->bind(RewardReservationResolver::class, NullRewardReservationResolver::class);
         $this->app->bind(RewardReadinessChecker::class, NullRewardReadinessChecker::class);
         $this->app->bind(RewardFinancialReadinessChecker::class, NullRewardFinancialReadinessChecker::class);
-        $this->app->bind(RewardBenefitCatalog::class, RewardBenefitCatalogService::class);
         $this->app->bind(RewardPayoutExecutor::class, ManualRewardPayoutExecutor::class);
         $this->app->bind(RewardPayoutMethodCatalog::class, ManualRewardPayoutMethodCatalog::class);
         $this->app->bind(RewardBenefitCouponFulfillment::class, NullRewardBenefitCouponFulfillment::class);

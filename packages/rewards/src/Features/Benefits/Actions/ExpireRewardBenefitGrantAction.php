@@ -2,13 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Benefits\Actions;
+
+use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+
+use AIArmada\Rewards\Actions\ReleaseRewardPointsAction;
 
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -18,15 +23,15 @@ use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Cancel a reserved (unfulfilled) grant: restore once.
+ * Expire a reserved grant whose catalog item expired: restore once.
  *
- * Held points release, held stock releases, and the handoff resolves as
- * confirmed failed (remote proved non-delivery: nothing was ever handed
- * over). The member may cancel their own pending redemption; staff may
- * cancel any reserved grant. Fulfilled grants never cancel here — revoke
- * unused ones, or open recovery for consumed value.
+ * Only grants reserved against an item whose expiry has passed expire
+ * here — the points release, the stock releases, the handoff resolves as
+ * confirmed failed (expired undelivered), and the grant closes as
+ * expired. Issued grants never expire through this path; their use or
+ * revocation follows the live grant lifecycle.
  */
-final readonly class CancelRewardBenefitGrantAction
+final readonly class ExpireRewardBenefitGrantAction
 {
     use AsAction;
 
@@ -35,16 +40,14 @@ final readonly class CancelRewardBenefitGrantAction
         string $actorType,
         ?string $actorId,
         string $actorRole,
-        string $reason,
         ?CarbonInterface $decidedAt = null,
     ): RewardBenefitGrant {
         RewardProgramGuard::findGrantOrFail($grant);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
-        RewardLedgerEntries::assertReason($reason);
 
-        if ($actorType !== 'user' || ! in_array($actorRole, ['member', 'staff', 'admin'], true)) {
-            throw new InvalidArgumentException('Grant cancellation requires a user identity.');
+        if (! in_array($actorRole, ['staff', 'admin', 'system'], true)) {
+            throw new InvalidArgumentException('Grant expiry requires a staff/admin/system identity.');
         }
 
         $grantId = $grant instanceof RewardBenefitGrant ? (string) $grant->getKey() : $grant;
@@ -52,7 +55,7 @@ final readonly class CancelRewardBenefitGrantAction
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
-        return DB::transaction(function () use ($grantId, $actorId, $actorRole, $reason, $decided, $actorType): RewardBenefitGrant {
+        return DB::transaction(function () use ($grantId, $decided, $actorType, $actorId, $actorRole): RewardBenefitGrant {
             $locked = RewardBenefitGrant::query()->whereKey($grantId)->lockForUpdate()->first();
 
             if (! $locked instanceof RewardBenefitGrant) {
@@ -60,17 +63,19 @@ final readonly class CancelRewardBenefitGrantAction
             }
 
             if ($locked->status !== RewardBenefitGrantStatus::Reserved) {
-                throw new InvalidArgumentException('Only reserved grants can be cancelled.');
+                throw new InvalidArgumentException('Only reserved grants can expire.');
             }
 
-            if ($actorRole === 'member' && $actorId !== (string) $locked->recipient_id) {
-                throw new InvalidArgumentException('Members cancel only their own pending redemptions.');
+            $item = RewardBenefitItem::query()->whereKey((string) $locked->item_id)->lockForUpdate()->firstOrFail();
+
+            if ($item->expires_at === null || $item->expires_at->greaterThan($decided)) {
+                throw new InvalidArgumentException('Grant expiry requires a passed catalog expiry.');
             }
 
             if ($locked->reservation_key !== null) {
                 ReleaseRewardPointsAction::run(
                     (string) $locked->reservation_key,
-                    "benefit-cancel:{$reason}",
+                    'benefit-expired',
                     $decided,
                     $actorType,
                     $actorId,
@@ -96,13 +101,9 @@ final readonly class CancelRewardBenefitGrantAction
                 $decided,
             );
 
-            $evidence = $locked->evidence ?? [];
-            $evidence['cancellation'] = ['reason' => $reason, 'cancelled_at' => $decided->toIso8601String()];
-
             $locked->forceFill([
-                'status' => RewardBenefitGrantStatus::Revoked,
-                'evidence' => $evidence,
-                'revoked_at' => $decided,
+                'status' => RewardBenefitGrantStatus::Expired,
+                'expired_at' => $decided,
             ])->save();
 
             return $locked->refresh();

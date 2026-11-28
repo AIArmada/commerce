@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\RetireRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;

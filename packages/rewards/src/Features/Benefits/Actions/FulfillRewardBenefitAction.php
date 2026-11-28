@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Benefits\Actions;
+
+use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+
+use AIArmada\Rewards\Actions\DebitRewardPointsAction;
 
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Queries\RewardCouponMapper;
@@ -15,7 +19,7 @@ use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Support\RewardProgramGuard;

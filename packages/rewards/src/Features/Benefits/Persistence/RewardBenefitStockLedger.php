@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Persistence;
+namespace AIArmada\Rewards\Features\Benefits\Persistence;
 
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 
@@ -140,6 +140,8 @@ final class RewardBenefitStockLedger
             if ($existing instanceof RewardBenefitStockMovement
                 && $existing->kind === $kind
                 && (int) $existing->quantity === $quantity
+                && (string) $existing->item_id === $itemId
+                && $existing->grant_id === $grantId
             ) {
                 return $existing;
             }

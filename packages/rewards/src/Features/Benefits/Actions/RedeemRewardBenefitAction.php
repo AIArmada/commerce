@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Benefits\Actions;
+
+use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
+
+use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
+
+use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
@@ -11,7 +17,7 @@ use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardPointOperation;
 use AIArmada\Rewards\Models\RewardPointReservationSubmission;
-use AIArmada\Rewards\Persistence\RewardBenefitStockLedger;
+use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Persistence\RewardPointOperationAuthority;

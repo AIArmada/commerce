@@ -19,7 +19,7 @@ use AIArmada\FilamentRewards\Resources\RewardPayoutResource\Pages\ListRewardPayo
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ListRewardPrograms;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardProgram;
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
-use AIArmada\Rewards\Actions\CreateRewardBenefitItemAction;
+use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\OpenRewardAppealAction;
