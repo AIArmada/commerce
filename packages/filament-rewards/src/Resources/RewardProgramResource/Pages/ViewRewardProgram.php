@@ -12,7 +12,7 @@ use AIArmada\Rewards\Data\RewardVerificationLevel;
 use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use AIArmada\Rewards\Support\RewardPublishAssembler;
 use AIArmada\Rewards\Support\RewardRuleValidator;

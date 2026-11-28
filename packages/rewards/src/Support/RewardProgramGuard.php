@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 

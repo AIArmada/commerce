@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Finance\Actions;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingSource;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Tables;
 
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;

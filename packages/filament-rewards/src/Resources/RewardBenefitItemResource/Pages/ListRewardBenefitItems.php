@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\RewardBenefitItemResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;

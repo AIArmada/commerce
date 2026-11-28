@@ -9,7 +9,7 @@ use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

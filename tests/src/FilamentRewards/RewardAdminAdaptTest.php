@@ -50,8 +50,8 @@ use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChec
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;

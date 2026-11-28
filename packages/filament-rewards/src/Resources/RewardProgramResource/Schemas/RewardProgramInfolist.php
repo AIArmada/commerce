@@ -6,8 +6,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

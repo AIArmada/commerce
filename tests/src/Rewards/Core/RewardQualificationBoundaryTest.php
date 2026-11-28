@@ -12,7 +12,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;

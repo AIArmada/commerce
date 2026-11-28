@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Queries;
 use AIArmada\Rewards\Data\RewardAwardSnapshot;
 use AIArmada\Rewards\Data\RewardVersionSnapshot;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 
 final readonly class RewardReadinessMapper
 {

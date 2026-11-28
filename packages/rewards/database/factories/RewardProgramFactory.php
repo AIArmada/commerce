@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

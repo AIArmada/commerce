@@ -11,7 +11,7 @@ use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChec
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use AIArmada\Rewards\Support\RewardRuleValidator;

@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Programs\Actions;
 
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;

@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Programs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Database\Factories\RewardProgramFactory;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramPublication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

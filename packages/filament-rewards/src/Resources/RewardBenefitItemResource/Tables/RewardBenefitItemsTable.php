@@ -9,7 +9,7 @@ use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Benefits\Persistence\RewardBenefitStockLedger;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;

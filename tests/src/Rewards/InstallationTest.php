@@ -28,7 +28,7 @@ use AIArmada\Rewards\Features\Entitlements\EntryPoints\Commands\ApplyRewardSourc
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Points\EntryPoints\Commands\ExpireRewardPointLotsCommand;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Platform\FeatureCatalog;
 use AIArmada\Rewards\RewardsServiceProvider;
 use Illuminate\Support\Facades\Artisan;

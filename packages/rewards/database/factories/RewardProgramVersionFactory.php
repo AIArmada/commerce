@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
 use Illuminate\Database\Eloquent\Factories\Factory;

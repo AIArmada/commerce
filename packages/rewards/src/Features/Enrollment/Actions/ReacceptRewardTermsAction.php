@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Enrollment\Actions;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Persistence\RewardEnrollmentGuard;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;

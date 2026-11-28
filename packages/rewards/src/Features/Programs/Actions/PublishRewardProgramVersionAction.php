@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Programs\Actions;
 
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramPublication;
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
 use AIArmada\Rewards\Support\RewardProgramGuard;

@@ -11,7 +11,7 @@ use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgr
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgramInfolist;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Tables\RewardProgramsTable;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

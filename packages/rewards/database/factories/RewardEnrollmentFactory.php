@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

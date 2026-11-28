@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Database\Factories;
 
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

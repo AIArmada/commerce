@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
-use AIArmada\Rewards\Models\RewardProgram;
-use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 
 /**

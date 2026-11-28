@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Enrollment\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardEnrollmentFactory;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
-use AIArmada\Rewards\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
