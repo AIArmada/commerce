@@ -6,6 +6,10 @@ title: Troubleshooting
 
 This guide covers common issues, error codes, and debugging techniques for the JNT package.
 
+## Unconfirmed stored-order cancellation
+
+If the carrier call times out or the order reaches a terminal tracking status during cancellation, the stored cancellation stays reserved. Confirm the outcome with J&T before making any further carrier changes. The application records the start time in `cancellation_started_at` and blocks submitting another cancellation for the same order.
+
 ---
 
 ## Configuration Check

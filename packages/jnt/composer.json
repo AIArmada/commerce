@@ -37,6 +37,7 @@
   },
   "scripts": {
     "arch:boundaries": "@php tools/package-check.php",
+    "arch:boundaries:diff": "@php tools/package-check.php --diff-base=main",
     "arch:writes": "@php ../../vendor/bin/phpstan analyse -c tools/package-phpstan.neon --autoload-file=tools/Architecture/PackageOwnedWriteRule.php --no-progress",
     "arch:check": [
       "@arch:boundaries",

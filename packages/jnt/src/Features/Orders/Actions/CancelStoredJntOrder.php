@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Orders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Jnt\Exceptions\JntApiException;
+use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use Carbon\CarbonImmutable;
 use DomainException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -25,59 +26,76 @@ final class CancelStoredJntOrder implements CancelStoredOrder
             throw new DomainException('A valid cancellation reason is required.');
         }
 
-        Cache::lock("jnt:order:{$orderId}:cancel", 30)->block(30, function () use ($orderId, $reason): void {
-            $order = $this->find($orderId);
+        $order = DB::transaction(function () use ($orderId): JntOrder {
+            $order = $this->lock($orderId);
+
+            if ($order->cancellation_started_at !== null) {
+                throw new DomainException('A cancellation has already started. Verify its outcome with the carrier.');
+            }
 
             if (! $order->isCancellable()) {
                 throw new DomainException('This shipping order cannot be cancelled.');
             }
 
-            try {
-                $response = app(JntExpressService::class)->cancelOrder(
-                    orderId: $order->order_id,
-                    reason: $reason,
-                    trackingNumber: $order->tracking_number,
-                );
-            } catch (Throwable $exception) {
+            $order->update(['cancellation_started_at' => CarbonImmutable::now()]);
+
+            return $order;
+        });
+
+        try {
+            $response = app(JntExpressService::class)->cancelOrder(
+                orderId: $order->order_id,
+                reason: $reason,
+                trackingNumber: $order->tracking_number,
+            );
+        } catch (Throwable $exception) {
+            if ($this->wasRejected($exception)) {
+                $this->release($orderId);
+            } else {
                 Log::warning('J&T cancellation outcome is unknown', [
                     'order_id' => $order->order_id,
                     'exception_type' => $exception::class,
                 ]);
-
-                throw $exception;
             }
 
-            $success = array_key_exists('success', $response)
-                ? (bool) $response['success']
-                : (string) ($response['code'] ?? '1') === '1';
+            throw $exception;
+        }
 
-            if (! $success) {
-                throw new DomainException('The carrier rejected the cancellation.');
+        if (($response['success'] ?? null) === false) {
+            $this->release($orderId);
+
+            throw new DomainException('The carrier rejected the cancellation.');
+        }
+
+        DB::transaction(function () use ($orderId, $reason): void {
+            $order = $this->lock($orderId);
+
+            if ($order->hasTerminalStatus()) {
+                throw new DomainException('The order changed during cancellation. Verify its outcome with the carrier.');
             }
 
-            DB::transaction(function () use ($orderId, $reason): void {
-                $order = $this->lock($orderId);
-
-                if (! $order->isCancellable()) {
-                    throw new DomainException('The order changed during cancellation. Reconcile tracking before retrying.');
-                }
-
-                $order->update([
-                    'status' => 'cancelled',
-                    'cancelled_at' => CarbonImmutable::now(),
-                    'cancellation_reason' => $reason,
-                ]);
-            });
+            $order->update([
+                'status' => 'cancelled',
+                'cancellation_started_at' => null,
+                'cancelled_at' => CarbonImmutable::now(),
+                'cancellation_reason' => $reason,
+            ]);
         });
     }
 
-    private function find(string $orderId): JntOrder
+    private function wasRejected(Throwable $exception): bool
     {
-        if ((bool) config('jnt.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(JntOrder::class, $orderId);
-        }
+        return $exception instanceof JntConfigurationException
+            || ($exception instanceof JntApiException
+                && is_array($exception->apiResponse)
+                && (is_int($exception->apiResponse['code'] ?? null) || is_string($exception->apiResponse['code'] ?? null))
+                && (string) $exception->apiResponse['code'] === $exception->errorCode
+                && $exception->errorCode !== '1');
+    }
 
-        return JntOrder::query()->findOrFail($orderId);
+    private function release(string $orderId): void
+    {
+        DB::transaction(fn () => $this->lock($orderId)->update(['cancellation_started_at' => null]));
     }
 
     private function lock(string $orderId): JntOrder

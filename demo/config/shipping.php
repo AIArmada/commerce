@@ -34,7 +34,6 @@ return [
     'defaults' => [
         'currency' => 'MYR',
         'weight_unit' => 'g',
-        'reference_prefix' => env('SHIPPING_REFERENCE_PREFIX', 'SHP-'),
         'origin' => [
             'name' => env('SHIPPING_ORIGIN_NAME', env('APP_NAME', 'Store')),
             'phone' => env('SHIPPING_ORIGIN_PHONE', ''),
@@ -132,12 +131,4 @@ return [
         'max_tracking_age' => 30,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | HTTP
-    |--------------------------------------------------------------------------
-    */
-    'http' => [
-        'timeout' => env('SHIPPING_API_TIMEOUT', 30),
-    ],
 ];

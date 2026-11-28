@@ -54,6 +54,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property CarbonInterface|null $resolved_at
  * @property string|null $last_status_code
  * @property string|null $last_status
+ * @property CarbonInterface|null $cancellation_started_at
  * @property CarbonInterface|null $cancelled_at
  * @property string|null $cancellation_reason
  * @property string|null $remark
@@ -121,6 +122,7 @@ final class JntOrder extends Model implements Auditable
         'resolved_at',
         'last_status_code',
         'last_status',
+        'cancellation_started_at',
         'cancelled_at',
         'cancellation_reason',
         'remark',
@@ -192,15 +194,20 @@ final class JntOrder extends Model implements Auditable
 
     public function isCancellable(): bool
     {
+        return $this->cancellation_started_at === null && ! $this->hasTerminalStatus();
+    }
+
+    public function hasTerminalStatus(): bool
+    {
         if ($this->isCancelled() || $this->isDelivered() || $this->isReturned()) {
-            return false;
+            return true;
         }
 
         if (in_array(mb_strtolower((string) $this->status), ['delivered', 'cancelled', 'returned'], true)) {
-            return false;
+            return true;
         }
 
-        return ! in_array($this->getNormalizedStatus(), [
+        return in_array($this->getNormalizedStatus(), [
             TrackingStatus::Delivered,
             TrackingStatus::Returned,
         ], true);
@@ -268,6 +275,7 @@ final class JntOrder extends Model implements Auditable
             'exception_at' => 'immutable_datetime',
             'returned_at' => 'immutable_datetime',
             'resolved_at' => 'immutable_datetime',
+            'cancellation_started_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
             'sender' => 'array',
             'receiver' => 'array',

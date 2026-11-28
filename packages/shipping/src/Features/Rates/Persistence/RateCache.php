@@ -41,9 +41,7 @@ final class RateCache
         $key .= ':' . $configuration;
 
         if ($repository->getStore() instanceof TaggableStore) {
-            $rates = $repository->tags($tags)->remember($key, $ttl, $load);
-
-            return is_array($rates) ? $rates : $load();
+            return $repository->tags($tags)->remember($key, $ttl, $load);
         }
 
         $generationKey = $this->generationKey($tags);
@@ -58,9 +56,7 @@ final class RateCache
             return $load();
         }
 
-        $rates = $repository->remember($key . ':' . $generation, $ttl, $load);
-
-        return is_array($rates) ? $rates : $load();
+        return $repository->remember($key . ':' . $generation, $ttl, $load);
     }
 
     /** @param list<string> $tags */
@@ -91,6 +87,7 @@ final class RateCache
         }
 
         $this->clear(['shipping-rates-owner-' . OwnerScopeKey::forTypeAndId($ownerType, $ownerId)]);
+        $this->clear(['shipping', 'shipping:rates']);
     }
 
     /** @param list<string> $tags */

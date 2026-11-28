@@ -140,7 +140,6 @@ The package dispatches events at key lifecycle points:
 ## Artisan Commands
 
 All commands extend the abstract `JntCommand` base class (`EntryPoints/Commands/JntCommand.php`) which provides:
-- `$this->client()` — lazily resolved `JntClient` instance
 - `$this->withErrorHandling()` — wraps callbacks with exception handling
 - `$this->infoWithLabel()`, `$this->section()`, `$this->resultTable()` — output helpers
 

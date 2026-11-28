@@ -83,14 +83,17 @@ final class PackageOwnedWriteRule implements Rule
             'delete', 'deletequietly', 'destroy', 'forcedestroy', 'forcedelete', 'restore',
             'increment', 'decrement', 'touch', 'insert', 'insertgetid', 'insertorignore', 'upsert', 'truncate',
             'attach', 'detach', 'sync', 'syncwithoutdetaching', 'toggle', 'statement', 'unprepared', 'affectingstatement',
+            'transitionto',
         ];
         $storeMethods = [
             'put', 'putfile', 'putfileas', 'set', 'setex', 'setnx', 'mset', 'hset', 'hdel', 'del',
             'write', 'writestream', 'delete', 'deletedirectory', 'makedirectory',
             'copy', 'move', 'append', 'prepend', 'forget', 'flush', 'forever', 'remember', 'rememberforever', 'pull',
+            'hit', 'clear', 'resetattempts', 'attempt',
         ];
 
         $isDatabase = $this->isA($type, [
+            'Spatie\ModelStates\State',
             'Illuminate\Database\Eloquent\Model',
             'Illuminate\Database\Eloquent\Builder',
             'Illuminate\Database\Eloquent\Relations\Relation',
@@ -104,6 +107,8 @@ final class PackageOwnedWriteRule implements Rule
             'Illuminate\Contracts\Filesystem\Filesystem',
             'Illuminate\Redis\Connections\Connection',
             'Illuminate\Support\Facades\Cache',
+            'Illuminate\Support\Facades\RateLimiter',
+            'Illuminate\Cache\RateLimiter',
             'Illuminate\Support\Facades\Storage',
             'Illuminate\Support\Facades\Redis',
             'AIArmada\CommerceSupport\Persistence\OwnerCache',
@@ -140,6 +145,17 @@ final class PackageOwnedWriteRule implements Rule
         $declaredResources = $class === null ? [] : ($this->catalog['writes'][$class] ?? []);
         $resource = $isDatabase ? $this->tableResource($node) : $this->storeResource($node);
         $owner = $resource === null ? null : ($this->catalog['owners'][$resource] ?? null);
+
+        if ($isDatabase) {
+            foreach ($this->modelFeatures($type) as $modelFeature) {
+                if ($modelFeature !== $feature) {
+                    return [$this->error(
+                        "Eloquent mutation in '{$relative}' targets package feature '{$modelFeature}'. Call {$this->pkgNs}\\Features\\{$modelFeature}\\Api\\ instead.",
+                        'packageArchitecture.foreignWrite'
+                    )];
+                }
+            }
+        }
 
         if ($feature === null && $owner === null) {
             if (str_starts_with($srcRel, 'Drivers/') || str_starts_with($srcRel, 'Persistence/')) {
@@ -192,6 +208,31 @@ final class PackageOwnedWriteRule implements Rule
         }
 
         return false;
+    }
+
+    /** @return list<string> */
+    private function modelFeatures(Type $type): array
+    {
+        $prefix = $this->pkgNs . '\\Features\\';
+        $classes = [
+            ...$type->getObjectClassNames(),
+            ...$type->getTemplateType('Illuminate\Database\Eloquent\Builder', 'TModel')->getObjectClassNames(),
+            ...$type->getTemplateType('Illuminate\Database\Eloquent\Relations\Relation', 'TRelatedModel')->getObjectClassNames(),
+        ];
+
+        $features = [];
+        foreach ($classes as $class) {
+            if (! str_starts_with($class, $prefix)) {
+                continue;
+            }
+
+            [$feature, $layer] = array_pad(explode('\\', mb_substr($class, mb_strlen($prefix)), 3), 2, '');
+            if (in_array($layer, ['Models', 'States'], true)) {
+                $features[$feature] = $feature;
+            }
+        }
+
+        return array_values($features);
     }
 
     private function tableResource(Node\Expr $node): ?string

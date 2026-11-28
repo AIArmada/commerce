@@ -588,7 +588,7 @@ ReturnAuthorization::approved()->get();
 
 ## Shipment State Machine
 
-Shipments follow a state machine workflow (12 states, `src/States`):
+Shipments follow a state machine workflow (12 states, `src/Features/Shipments/States`):
 
 ```
 Draft → Pending → AwaitingPickup → Shipped → InTransit → OutForDelivery → Delivered

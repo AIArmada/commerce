@@ -77,14 +77,17 @@ final class PackageOwnedWriteRule implements Rule
             'delete', 'deletequietly', 'destroy', 'forcedestroy', 'forcedelete', 'restore',
             'increment', 'decrement', 'touch', 'insert', 'insertgetid', 'insertorignore', 'upsert', 'truncate',
             'attach', 'detach', 'sync', 'syncwithoutdetaching', 'toggle', 'statement', 'unprepared', 'affectingstatement',
+            'transitionto',
         ];
         $storeMethods = [
             'put', 'putfile', 'putfileas', 'set', 'setex', 'setnx', 'mset', 'hset', 'hdel', 'del',
             'write', 'writestream', 'delete', 'deletedirectory', 'makedirectory',
             'copy', 'move', 'append', 'prepend', 'forget', 'flush', 'forever', 'remember', 'rememberforever', 'pull',
+            'hit', 'clear', 'resetattempts', 'attempt',
         ];
 
         $isDatabase = $this->isA($type, [
+            'Spatie\ModelStates\State',
             'Illuminate\Database\Eloquent\Model',
             'Illuminate\Database\Eloquent\Builder',
             'Illuminate\Database\Eloquent\Relations\Relation',
@@ -98,6 +101,8 @@ final class PackageOwnedWriteRule implements Rule
             'Illuminate\Contracts\Filesystem\Filesystem',
             'Illuminate\Redis\Connections\Connection',
             'Illuminate\Support\Facades\Cache',
+            'Illuminate\Support\Facades\RateLimiter',
+            'Illuminate\Cache\RateLimiter',
             'Illuminate\Support\Facades\Storage',
             'Illuminate\Support\Facades\Redis',
             'AIArmada\CommerceSupport\Persistence\OwnerCache',
@@ -119,12 +124,8 @@ final class PackageOwnedWriteRule implements Rule
         $srcRel = mb_substr($relative, mb_strlen($this->sourceDir) + 1);
 
         if ($this->layout === 'single') {
-            if (str_starts_with($srcRel, 'Actions/') || str_starts_with($srcRel, 'Persistence/') || str_starts_with($srcRel, 'Drivers/')) {
-                return [];
-            }
-
             return [$this->error(
-                "Storage mutation in '{$relative}' is outside a write owner. Move DB/Cache/Storage writes into {$this->sourceDir}/Actions/ (or {$this->sourceDir}/Persistence/) and call it from thin Commands/EntryPoints (Single-Writer Law).",
+                "Storage mutation in '{$relative}' belongs in the owning domain package. Call its API from the Filament adapter.",
                 'packageArchitecture.writeLocation'
             )];
         }

@@ -380,7 +380,7 @@ class RateShoppingEngine implements ShopRates
             return null;
         }
 
-        return 'shipping:rates:' . md5(serialize([
+        return 'shipping:rates:list:' . md5(serialize([
             'owner' => $this->ownerScopeKey(),
             'owner_enabled' => (bool) config('shipping.features.owner.enabled', false),
             'include_global' => ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false),

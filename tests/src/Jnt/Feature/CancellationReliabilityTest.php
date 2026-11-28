@@ -61,7 +61,7 @@ it('does not override tracking that reaches a terminal state during the carrier 
         ->and($order->cancelled_at)->toBeNull();
 });
 
-it('leaves the order untouched when the carrier outcome is unknown', function (): void {
+it('keeps the lifecycle status unchanged and blocks retries when the carrier outcome is unknown', function (): void {
     $order = JntOrder::query()->create([
         'order_id' => 'ORD-CANCEL-UNKNOWN',
         'tracking_number' => 'TRK-CANCEL-UNKNOWN',
@@ -77,7 +77,11 @@ it('leaves the order untouched when the carrier outcome is unknown', function ()
         ->toThrow(JntNetworkException::class);
 
     expect($order->refresh()->status)->toBe('in_transit')
-        ->and($order->cancelled_at)->toBeNull();
+        ->and($order->cancelled_at)->toBeNull()
+        ->and($order->cancellation_started_at)->not->toBeNull();
+
+    expect(fn (): mixed => app(CancelStoredOrder::class)->execute((string) $order->id, 'Customer request'))
+        ->toThrow(DomainException::class, 'A cancellation has already started.');
 });
 
 it('serializes duplicate cancellation attempts and calls the carrier once', function (): void {
@@ -89,13 +93,36 @@ it('serializes duplicate cancellation attempts and calls the carrier once', func
     ]);
 
     $service = Mockery::mock(JntExpressService::class);
-    $service->shouldReceive('cancelOrder')->once()->andReturn(['code' => '1']);
+    $service->shouldReceive('cancelOrder')->once()->andReturn(['status' => 'cancelled']);
     app()->instance(JntExpressService::class, $service);
 
     app(CancelStoredOrder::class)->execute((string) $order->id, 'Customer request');
 
     expect(fn (): mixed => app(CancelStoredOrder::class)->execute((string) $order->id, 'Customer request'))
         ->toThrow(DomainException::class);
+
+    expect($order->refresh()->status)->toBe('cancelled')
+        ->and($order->cancellation_started_at)->toBeNull();
+});
+
+it('allows another attempt after the carrier explicitly refuses cancellation', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-CANCEL-REFUSED',
+        'tracking_number' => 'TRK-CANCEL-REFUSED',
+        'customer_code' => 'CUST',
+        'status' => 'in_transit',
+    ]);
+
+    $service = Mockery::mock(JntExpressService::class);
+    $service->shouldReceive('cancelOrder')->twice()->andReturn(['success' => false], ['status' => 'cancelled']);
+    app()->instance(JntExpressService::class, $service);
+
+    expect(fn (): mixed => app(CancelStoredOrder::class)->execute((string) $order->id, 'Customer request'))
+        ->toThrow(DomainException::class, 'The carrier rejected the cancellation.');
+
+    expect($order->refresh()->cancellation_started_at)->toBeNull();
+
+    app(CancelStoredOrder::class)->execute((string) $order->id, 'Customer request');
 
     expect($order->refresh()->status)->toBe('cancelled');
 });

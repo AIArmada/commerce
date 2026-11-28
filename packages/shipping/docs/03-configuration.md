@@ -47,7 +47,6 @@ return [
 'defaults' => [
     'currency' => 'MYR',
     'weight_unit' => 'g',
-    'reference_prefix' => env('SHIPPING_REFERENCE_PREFIX', 'SHP-'),
     'origin' => [
         'name' => env('SHIPPING_ORIGIN_NAME', env('APP_NAME', 'Store')),
         'phone' => env('SHIPPING_ORIGIN_PHONE', ''),
@@ -273,13 +272,5 @@ $policy = $registry->get('threshold');
 'tracking' => [
     'sync_interval' => 3600, // 1 hour in seconds
     'max_tracking_age' => 30, // days to keep syncing
-],
-```
-
-## HTTP
-
-```php
-'http' => [
-    'timeout' => env('SHIPPING_API_TIMEOUT', 30), // seconds
 ],
 ```

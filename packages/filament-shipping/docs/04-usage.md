@@ -134,13 +134,11 @@ Orders older than the configured threshold are highlighted as urgent.
 
 ### Manifest Page
 
-Generate daily shipping manifests for carrier pickup:
+Review shipments for carrier pickup.
 
 1. Navigate to **Shipping → Manifest**
 2. Select date and carrier
-3. Click **Generate Manifest**
-4. Print or download the manifest
-5. Mark as picked up when carrier collects packages
+3. Mark the shipments as picked up when the carrier collects them
 
 ## Actions
 
@@ -162,8 +160,10 @@ Available on the shipment list:
 | Action | Description |
 |--------|-------------|
 | Bulk Delete | Delete selected shipments |
-
-There are no bulk ship / cancel / print / sync actions in this package.
+| Bulk Ship | Submit eligible shipments to their carriers |
+| Bulk Cancel | Cancel eligible shipments |
+| Bulk Print Label | Open printable label links for eligible shipments |
+| Bulk Sync Tracking | Refresh carrier tracking for eligible shipments |
 
 ### Using Actions Programmatically
 

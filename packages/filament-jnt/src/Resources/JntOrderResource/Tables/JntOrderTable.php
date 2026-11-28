@@ -167,9 +167,4 @@ final class JntOrderTable
             TrackingStatus::DeliveryAttempted => $query->where('last_status_code', '110'),
         };
     }
-
-    private static function getNormalizedStatus(JntOrder $order): TrackingStatus
-    {
-        return $order->getNormalizedStatus();
-    }
 }

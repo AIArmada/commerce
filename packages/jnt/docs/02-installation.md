@@ -102,14 +102,14 @@ The package automatically uses the correct URL based on `JNT_ENVIRONMENT`.
 
 ## Command Organization
 
-All Artisan commands extend the abstract `JntCommand` base class (`src/EntryPoints/Commands/JntCommand.php`), which provides a `$this->client()` helper for API access and `$this->withErrorHandling()` for consistent exception handling. Commands are organized by concern into subdirectories:
+Commands use `JntCommand` for consistent exception handling and console output. Commands are organized by concern within the package and its features.
 
 | Subdirectory | Command(s) |
 |-------------|------------|
 | `Health/` | `jnt:health` |
-| `Orders/` | `jnt:order:create`, `jnt:order:cancel`, `jnt:order:print`, `jnt:config:check` |
+| `Orders/` | `jnt:order:create`, `jnt:order:cancel`, `jnt:order:print` |
 | `Tracking/` | `jnt:order:track` |
-| `Webhooks/` | `jnt:webhook:test` |
+| `Features/Tracking/EntryPoints/Commands/` | `jnt:webhook:test` |
 
 ## Verify Installation
 
