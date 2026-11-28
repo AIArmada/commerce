@@ -11,6 +11,10 @@ use Stripe\HttpClient\CurlClient;
 
 uses(CashierTestCase::class);
 
+beforeEach(function (): void {
+    config()->set('cashier.tests.owner.enabled', false);
+});
+
 /*
 |--------------------------------------------------------------------------
 | CHK-06: the frozen key reaches Stripe's transport, not just metadata

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 uses(CashierTestCase::class);
 
 beforeEach(function (): void {
+    config()->set('cashier.tests.owner.enabled', false);
     config()->set('cashier.payment_operations.rate_limiting', [
         'enabled' => true,
         'max_attempts' => 1,

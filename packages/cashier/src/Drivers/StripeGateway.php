@@ -72,6 +72,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function customer(BillableContract $billable): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $stripeCustomer = $this->callBillableMethod($billable, 'asStripeCustomer');
 
         return new StripeCustomer($stripeCustomer, $billable);
@@ -84,6 +86,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function createCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $stripeCustomer = $this->callBillableMethod($billable, 'createOrGetStripeCustomer', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
@@ -96,6 +100,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function updateCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $stripeCustomer = $this->callBillableMethod($billable, 'updateStripeCustomer', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
@@ -108,6 +114,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function syncCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $stripeCustomer = $this->callBillableMethod($billable, 'syncStripeCustomerDetails', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
@@ -120,6 +128,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $idempotencyKey = $options['idempotency_key'] ?? null;
         $idempotencyKey = is_string($idempotencyKey) && mb_trim($idempotencyKey) !== ''
             ? mb_trim($idempotencyKey)
@@ -263,6 +273,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return new StripeSubscriptionBuilder($billable, $type, $prices);
     }
 
@@ -271,6 +283,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function checkout(BillableContract $billable): CheckoutBuilderContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return new StripeCheckoutBuilder($this, $billable);
     }
 
@@ -411,6 +425,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function subscriptions(BillableContract $billable, ?int $limit = null): Collection
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $limit = min(201, max(1, $limit ?? self::DEFAULT_LIST_LIMIT));
         $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
 
@@ -504,6 +520,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $arguments = $type === null ? [] : [$type];
 
         $rawPaymentMethods = $this->callBillableMethod($billable, 'paymentMethods', $arguments);
@@ -526,6 +544,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function findPaymentMethod(BillableContract $billable, string $paymentMethodId): ?PaymentMethodContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $paymentMethod = $this->callBillableMethod($billable, 'findPaymentMethod', [$paymentMethodId]);
 
         if (! $paymentMethod) {
@@ -540,6 +560,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function defaultPaymentMethod(BillableContract $billable): ?PaymentMethodContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $paymentMethod = $this->callBillableMethod($billable, 'defaultPaymentMethod');
 
         if (! $paymentMethod) {
@@ -556,6 +578,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function createSetupIntent(BillableContract $billable, array $options = []): mixed
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return $this->callBillableMethod($billable, 'createSetupIntent', [$options]);
     }
 
@@ -639,6 +663,8 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function customerPortalUrl(BillableContract $billable, string $returnUrl, array $options = []): string
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return $this->callBillableMethod($billable, 'billingPortalUrl', [$returnUrl, $options]);
     }
 
@@ -649,10 +675,12 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function createBillingPortalSession(BillableContract $billable, string $returnUrl, array $options = []): mixed
     {
-        return $this->client()->billingPortal->sessions->create(array_merge([
+        ActionGuard::assertBillableInScope($billable);
+
+        return $this->client()->billingPortal->sessions->create(array_merge($options, [
             'customer' => $billable->gatewayId('stripe'),
             'return_url' => $returnUrl,
-        ], $options));
+        ]));
     }
 
     /**

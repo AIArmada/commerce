@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Drivers\ChipGateway;
+use AIArmada\Cashier\Support\ActionGuard;
 use InvalidArgumentException;
 
 /**
@@ -249,6 +250,10 @@ class ChipCheckoutBuilder implements DynamicCheckoutBuilderContract
      */
     public function create(): CheckoutContract
     {
+        if ($this->billable !== null) {
+            ActionGuard::assertBillableInScope($this->billable);
+        }
+
         $options = [
             'purchase' => [
                 'products' => $this->products,

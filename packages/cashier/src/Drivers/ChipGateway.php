@@ -75,6 +75,8 @@ class ChipGateway extends AbstractGateway
      */
     public function customer(BillableContract $billable): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return new ChipCustomer($billable);
     }
 
@@ -111,6 +113,8 @@ class ChipGateway extends AbstractGateway
      */
     public function createCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $chipCustomer = $this->callBillableMethod($billable, 'createOrGetChipCustomer', [$options]);
 
         return new ChipCustomer($billable, $chipCustomer);
@@ -123,6 +127,8 @@ class ChipGateway extends AbstractGateway
      */
     public function updateCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $chipCustomer = $this->callBillableMethod($billable, 'updateChipCustomer', [$options]);
 
         return new ChipCustomer($billable, $chipCustomer);
@@ -135,6 +141,8 @@ class ChipGateway extends AbstractGateway
      */
     public function syncCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $chipCustomer = $this->callBillableMethod($billable, 'syncChipCustomerDetails');
 
         return new ChipCustomer($billable, $chipCustomer);
@@ -147,6 +155,8 @@ class ChipGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $payment = PaymentOperationLimiter::run(
             $this->name(),
             'charge',
@@ -208,6 +218,8 @@ class ChipGateway extends AbstractGateway
      */
     public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return new ChipSubscriptionBuilder($billable, $type, $prices);
     }
 
@@ -216,6 +228,8 @@ class ChipGateway extends AbstractGateway
      */
     public function checkout(BillableContract $billable): CheckoutBuilderContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         return new ChipCheckoutBuilder($this, $billable);
     }
 
@@ -383,6 +397,8 @@ class ChipGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable, ?int $limit = null): Collection
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $limit = min(201, max(1, $limit ?? self::DEFAULT_LIST_LIMIT));
         $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
 
@@ -436,6 +452,8 @@ class ChipGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $rawPaymentMethods = $this->callBillableMethod($billable, 'paymentMethods');
 
         if (! is_iterable($rawPaymentMethods)) {
@@ -456,6 +474,8 @@ class ChipGateway extends AbstractGateway
      */
     public function findPaymentMethod(BillableContract $billable, string $paymentMethodId): ?PaymentMethodContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $paymentMethod = $this->callBillableMethod($billable, 'findPaymentMethod', [$paymentMethodId]);
 
         if (! $paymentMethod) {
@@ -470,6 +490,8 @@ class ChipGateway extends AbstractGateway
      */
     public function defaultPaymentMethod(BillableContract $billable): ?PaymentMethodContract
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $paymentMethod = $this->callBillableMethod($billable, 'defaultPaymentMethod');
 
         if (! $paymentMethod) {
@@ -488,6 +510,8 @@ class ChipGateway extends AbstractGateway
      */
     public function createSetupIntent(BillableContract $billable, array $options = []): mixed
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $idempotencyKey = $options['idempotency_key'] ?? null;
 
         if (! is_string($idempotencyKey) || mb_trim($idempotencyKey) === '') {
@@ -611,6 +635,8 @@ class ChipGateway extends AbstractGateway
      */
     public function customerPortalUrl(BillableContract $billable, string $returnUrl, array $options = []): string
     {
+        ActionGuard::assertBillableInScope($billable);
+
         $panelId = $options['panel'] ?? 'billing';
         $allowedPanels = (array) config('cashier.portal.allowed_panels', ['billing']);
         $routeName = "filament.{$panelId}.pages.dashboard";

@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Drivers\StripeGateway;
+use AIArmada\Cashier\Support\ActionGuard;
 
 /**
  * Builder for Stripe checkout sessions.
@@ -199,6 +200,10 @@ class StripeCheckoutBuilder implements CheckoutBuilderContract
      */
     public function create(): CheckoutContract
     {
+        if ($this->billable !== null) {
+            ActionGuard::assertBillableInScope($this->billable);
+        }
+
         $lineItems = collect($this->lineItems)->map(function ($quantity, $price) {
             return [
                 'price' => $price,

@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -261,6 +262,8 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function create(?string $paymentMethod = null, array $options = []): SubscriptionContract
     {
+        ActionGuard::assertBillableInScope($this->billable);
+
         $subscription = PaymentOperationLimiter::run(
             $this->gateway(),
             'create_subscription',
@@ -278,6 +281,8 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function checkout(array $sessionOptions = []): CheckoutContract
     {
+        ActionGuard::assertBillableInScope($this->billable);
+
         $checkout = $this->builder->checkout($sessionOptions);
 
         return new StripeCheckout($checkout->asStripeCheckoutSession());
