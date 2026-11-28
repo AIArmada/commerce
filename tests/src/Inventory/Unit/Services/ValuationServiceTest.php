@@ -4,18 +4,52 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Features\Stock\Api\StockBalances;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     $this->product = InventoryItem::create(['name' => 'Test Product']);
     $this->service = app(ValuationService::class);
+});
+
+it('returns each stock identity once even when requested across multiple batches', function (): void {
+    $identity = [
+        'inventoryable_type' => $this->product->getMorphClass(),
+        'inventoryable_id' => (string) $this->product->getKey(),
+        'location_id' => $this->location->id,
+    ];
+
+    InventoryLevel::factory()->create([
+        ...$identity,
+        'quantity_on_hand' => 10,
+        'quantity_reserved' => 0,
+    ]);
+    InventoryStandardCost::factory()->create([
+        'inventoryable_type' => $identity['inventoryable_type'],
+        'inventoryable_id' => $identity['inventoryable_id'],
+        'standard_cost_minor' => 250,
+        'currency' => 'MYR',
+        'effective_from' => now()->subDay(),
+        'effective_to' => null,
+    ]);
+
+    $requests = array_fill(0, 201, $identity);
+    $balances = iterator_to_array(app(StockBalances::class)->rows($requests), false);
+    $values = iterator_to_array(app(StandardStockValuesQuery::class)->rows('MYR', $requests), false);
+
+    expect($balances)->toHaveCount(1)
+        ->and($balances[0]['quantity'])->toBe(10)
+        ->and($values)->toHaveCount(1)
+        ->and($values[0]['total_value'])->toBe(2500)
+        ->and(iterator_to_array(app(StockBalances::class)->rows([]), false))->toBe([]);
 });
 
 describe('calculateValuation', function (): void {

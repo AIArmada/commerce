@@ -13,6 +13,17 @@ final readonly class StockBalancesQuery implements StockBalances
 {
     public function rows(?array $items = null, ?string $locationId = null, bool $exactOwner = false, ?string $inventoryableType = null, ?string $inventoryableId = null): iterable
     {
+        if ($items !== null) {
+            $unique = [];
+
+            foreach ($items as $item) {
+                $key = json_encode([$item['inventoryable_type'], $item['inventoryable_id'], $item['location_id']], JSON_THROW_ON_ERROR);
+                $unique[$key] = $item;
+            }
+
+            $items = array_values($unique);
+        }
+
         foreach ($items === null ? [null] : array_chunk($items, 200) as $chunk) {
             $query = $exactOwner
                 ? InventoryOwnerScope::forMutation(InventoryLevel::query())
