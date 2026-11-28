@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Actions;
 
-use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Authorization\OrganizationVisibilityTransitionAuthorizer;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
