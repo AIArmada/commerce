@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Traits;
 
-use AIArmada\Engagement\Contracts\EngagementCounterService;
+use AIArmada\Engagement\Features\Counters\Api\ReadsEngagementCounters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -43,14 +43,11 @@ trait ReceivesEngagement
             throw new InvalidArgumentException('Engagement subjects must be Eloquent models.');
         }
 
-        $counter = app(EngagementCounterService::class);
-
-        return match ($counterType) {
-            'followers' => $counter->countFollowers($this),
-            'bookmarks' => $counter->countBookmarks($this),
-            'responses' => $counter->countResponses($this, $counterKey),
-            'reactions' => $counter->countReactions($this, $counterKey),
-            default => $counter->value($this, $counterType, $counterKey ?? ''),
-        };
+        return app(ReadsEngagementCounters::class)->count(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $counterType,
+            $counterKey,
+        );
     }
 }

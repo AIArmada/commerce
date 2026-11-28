@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Database\Factories;
 
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
-use AIArmada\Engagement\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

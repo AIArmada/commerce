@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentContacting\Schemas\ContactMethodRepeaterSchema;
-use AIArmada\FilamentContacting\Schemas\SocialProfileRepeaterSchema;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodRepeaterSchema;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Schemas\SocialProfileRepeaterSchema;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 

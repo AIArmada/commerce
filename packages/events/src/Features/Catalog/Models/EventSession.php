@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog\Models;
 
 use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Database\Factories\EventSessionFactory;

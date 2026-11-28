@@ -10,6 +10,7 @@ use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\Block;
 use AIArmada\Moderation\Models\ModerationAction;
+use Carbon\CarbonImmutable;
 
 it('isolates blocks and moderation actions by owner', function (): void {
     config()->set('moderation.owner.enabled', true);
@@ -76,4 +77,23 @@ it('does not allow moderation owner mass assignment', function (): void {
         ->and($block->owner_id)->toBeNull()
         ->and($action->owner_type)->toBeNull()
         ->and($action->owner_id)->toBeNull();
+});
+
+it('does not extend a global block when a tenant blocks the same target', function (): void {
+    config()->set('moderation.owner.enabled', true);
+    config()->set('moderation.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $target = User::factory()->create();
+    $action = app(BlockEntityAction::class);
+    $globalExpiry = CarbonImmutable::now()->addDays(2)->startOfSecond();
+    $tenantExpiry = $globalExpiry->addDays(5);
+
+    $global = OwnerContext::withOwner(null, fn (): Block => $action->execute($target, expiresAt: $globalExpiry));
+    $local = OwnerContext::withOwner($owner, fn (): Block => $action->execute($target, expiresAt: $tenantExpiry));
+
+    expect($local->id)->not->toBe($global->id)
+        ->and($local->owner_id)->toBe($owner->id)
+        ->and($local->expires_at->equalTo($tenantExpiry))->toBeTrue()
+        ->and(Block::withoutOwnerScope()->findOrFail($global->id)->expires_at->equalTo($globalExpiry))->toBeTrue();
 });

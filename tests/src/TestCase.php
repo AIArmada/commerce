@@ -36,6 +36,7 @@ use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentContacting\FilamentContactingServiceProvider;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
+use AIArmada\FilamentEngagement\FilamentEngagementServiceProvider;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentGrowth\FilamentGrowthServiceProvider;
 use AIArmada\FilamentLinks\FilamentLinksServiceProvider;
@@ -182,6 +183,7 @@ abstract class TestCase extends Orchestra
             DocsServiceProvider::class,
             EventsServiceProvider::class,
             EngagementServiceProvider::class,
+            FilamentEngagementServiceProvider::class,
             FilamentEventsServiceProvider::class,
             SignalsServiceProvider::class,
             GrowthServiceProvider::class,

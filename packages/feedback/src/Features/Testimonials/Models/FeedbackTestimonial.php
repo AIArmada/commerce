@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Feedback\Features\Testimonials\Models;
+
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
+use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
+use Carbon\CarbonImmutable;
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string|null $feedback_response_id
+ * @property string|null $feedback_answer_id
+ * @property string|null $subject_type
+ * @property string|null $subject_id
+ * @property string|null $respondent_type
+ * @property string|null $respondent_id
+ * @property string $quote
+ * @property string|null $display_name
+ * @property string|null $display_title
+ * @property string|null $display_organization
+ * @property float|null $rating
+ * @property FeedbackTestimonialStatus $status
+ * @property CarbonImmutable|null $permission_given_at
+ * @property CarbonImmutable|null $approved_at
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $hidden_at
+ * @property array|null $metadata
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
+ * @property-read Model|Eloquent $subject
+ * @property-read Model|Eloquent $respondent
+ */
+final class FeedbackTestimonial extends Model
+{
+    use HasContactMethods;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasSocialProfiles;
+    use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'feedback.owner';
+
+    protected $fillable = [
+        'feedback_response_id', 'feedback_answer_id',
+        'subject_type', 'subject_id',
+        'respondent_type', 'respondent_id',
+        'quote', 'display_name', 'display_title', 'display_organization',
+        'rating', 'status',
+        'permission_given_at', 'approved_at', 'rejected_at',
+        'published_at', 'hidden_at',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        $prefix = (string) config('feedback.database.table_prefix', '');
+
+        return $prefix . (string) config('feedback.database.tables.testimonials', 'feedback_testimonials');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'status' => FeedbackTestimonialStatus::class,
+            'rating' => 'decimal:2',
+            'metadata' => 'array',
+            'permission_given_at' => 'immutable_datetime',
+            'approved_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'published_at' => 'immutable_datetime',
+            'hidden_at' => 'immutable_datetime',
+        ];
+    }
+
+    /**
+     * Scope public testimonials to approved, published, and visible records.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->where('status', FeedbackTestimonialStatus::Published->value)
+            ->whereNotNull('published_at')
+            ->whereNotNull('permission_given_at')
+            ->whereNull('hidden_at');
+    }
+
+    public function subject(): MorphTo
+    {
+        return $this->morphTo('subject');
+    }
+
+    public function respondent(): MorphTo
+    {
+        return $this->morphTo('respondent');
+    }
+}

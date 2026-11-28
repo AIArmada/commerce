@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;

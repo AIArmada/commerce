@@ -43,7 +43,7 @@ keywords:
 
 ## Key surfaces
 - Models: `FeedbackAnswer`, `FeedbackForm`, `FeedbackFormAnalytics`, `FeedbackInvitation`, `FeedbackQuestion`, `FeedbackQuestionOption`, `FeedbackResponse`, `FeedbackSection`, `FeedbackTemplate`, `FeedbackTestimonial`
-- Actions/Services: `Actions/ApproveFeedbackTestimonialAction`, `Actions/ArchiveFeedbackFormAction`, `Actions/CalculateFeedbackAnswerScoreAction`, `Actions/CalculateFeedbackFormAnalyticsAction`, `Actions/CalculateFeedbackResponseScoreAction`, `Actions/CloseFeedbackFormAction`, `Actions/CreateFeedbackFormAction`, `Actions/CreateFeedbackFormFromTemplateAction`
+- Actions/Services: `Features/Testimonials/Actions/ApproveFeedbackTestimonialAction`, `Features/Forms/Actions/ArchiveFeedbackFormAction`, `Features/Responses/Actions/CalculateFeedbackAnswerScoreAction`, `Features/Analytics/Actions/CalculateFeedbackFormAnalyticsAction`, `Features/Responses/Actions/CalculateFeedbackResponseScoreAction`, `Features/Forms/Actions/CloseFeedbackFormAction`, `Features/Forms/Actions/CreateFeedbackFormAction`, `Features/Forms/Actions/CreateFeedbackFormFromTemplateAction`
 - Config `feedback.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `forms`, `sections`, `questions`, `question_options`, `responses`, `answers`
 
 ## Docs map

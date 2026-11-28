@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackQuestionOption;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackSection;
-use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 it('isolates all feedback models by owner', function (): void {
     $ownerA = User::query()->create([
@@ -106,5 +108,37 @@ it('isolates all feedback models by owner', function (): void {
             expect($modelClass::query()->find($ownerAIds[$key]))->not->toBeNull()
                 ->and($modelClass::query()->find($ownerBIds[$key]))->toBeNull();
         }
+    });
+});
+
+it('honors the dedicated global-template setting independently of general global visibility', function (): void {
+    config([
+        'feedback.owner.enabled' => true,
+        'feedback.owner.include_global' => false,
+        'feedback.owner.include_global_templates' => true,
+    ]);
+
+    $owner = User::factory()->create();
+    $subject = User::factory()->create();
+    $template = OwnerContext::withOwner(null, fn (): FeedbackTemplate => FeedbackTemplate::query()->create([
+        'name' => 'Shared template',
+        'slug' => 'shared-template',
+        'purpose' => 'general',
+        'status' => 'published',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $subject, $template): void {
+        $action = app(CreateFeedbackFormFromTemplateAction::class);
+        $formId = $action->createForSubject($template->slug, $subject->getMorphClass(), (string) $subject->getKey());
+
+        expect(FeedbackForm::query()->findOrFail($formId)->owner_id)->toBe($owner->getKey());
+
+        config([
+            'feedback.owner.include_global' => true,
+            'feedback.owner.include_global_templates' => false,
+        ]);
+
+        expect(fn () => $action->createForSubject($template->slug, $subject->getMorphClass(), (string) $subject->getKey()))
+            ->toThrow(ModelNotFoundException::class);
     });
 });

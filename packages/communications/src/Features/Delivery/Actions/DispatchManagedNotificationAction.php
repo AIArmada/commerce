@@ -15,8 +15,10 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class DispatchManagedNotificationAction
 {
@@ -32,6 +34,38 @@ final class DispatchManagedNotificationAction
         Notification $notification,
         CommunicationContextData $context,
     ): Communication {
+        return $this->execute(
+            $notifiable,
+            $notification,
+            $context,
+            $context->normalizedIdempotencyKey(),
+        )['communication'];
+    }
+
+    public function handleUnique(
+        mixed $notifiable,
+        Notification $notification,
+        CommunicationContextData $context,
+    ): Communication {
+        $idempotencyKey = $context->normalizedIdempotencyKey();
+        $result = $this->execute($notifiable, $notification, $context, $idempotencyKey);
+
+        if (! $result['created']) {
+            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . (string) $idempotencyKey);
+        }
+
+        return $result['communication'];
+    }
+
+    /**
+     * @return array{communication: Communication, created: bool}
+     */
+    private function execute(
+        mixed $notifiable,
+        Notification $notification,
+        CommunicationContextData $context,
+        ?string $idempotencyKey,
+    ): array {
         if (! is_object($notifiable) || ! method_exists($notifiable, 'getKey')) {
             throw new InvalidArgumentException('Notifiable must be an object exposing getKey().');
         }
@@ -41,8 +75,39 @@ final class DispatchManagedNotificationAction
             : $notifiable::class;
 
         $model = new Communication;
-        [$communication, $deliveryIdsByChannel] = $model->getConnection()->transaction(function () use ($model, $notifiable, $notifiableType, $notification, $context): array {
-            $communicationId = $this->creator->handle($context, queued: true);
+        [$communication, $deliveryIdsByChannel, $created] = $model->getConnection()->transaction(function () use ($model, $notifiable, $notifiableType, $notification, $context, $idempotencyKey): array {
+            if ($idempotencyKey !== null) {
+                $existing = Communication::query()
+                    ->forOwner()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing instanceof Communication) {
+                    return [$existing, [], false];
+                }
+            }
+
+            try {
+                $communicationId = $this->creator->handle($context, queued: true);
+            } catch (QueryException $exception) {
+                if ($idempotencyKey === null || ! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+
+                $existing = Communication::query()
+                    ->forOwner()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing instanceof Communication) {
+                    return [$existing, [], false];
+                }
+
+                throw $exception;
+            }
+
             $communication = $model->newQuery()->findOrFail($communicationId);
             $this->contentCapture->recipient($communicationId, $notifiable);
 
@@ -114,10 +179,10 @@ final class DispatchManagedNotificationAction
                 );
             }
 
-            return [$communication, $deliveryIdsByChannel];
+            return [$communication, $deliveryIdsByChannel, true];
         });
 
-        if ($deliveryIdsByChannel !== []) {
+        if ($created && $deliveryIdsByChannel !== []) {
             DispatchManagedNotificationJob::dispatch(
                 notifiable: $notifiable,
                 notification: $notification,
@@ -128,6 +193,11 @@ final class DispatchManagedNotificationAction
             )->afterCommit();
         }
 
-        return $communication;
+        return ['communication' => $communication, 'created' => $created];
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

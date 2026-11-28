@@ -55,6 +55,8 @@ Schedule::command('engagement:reconcile-counters')->hourly();
 | `ENGAGEMENT_DEFAULT_FOLLOW_NOTIFICATION_LEVEL` | `all` | Default notification level for follows |
 | `ENGAGEMENT_DEFAULT_RESPONSE_VISIBILITY` | `public` | Default visibility for responses |
 | `ENGAGEMENT_REMINDER_BATCH_SIZE` | `100` | Reminders processed per batch |
+| `ENGAGEMENT_REMINDER_CLAIM_TTL` | `300` | Seconds before a delivery claim can be recovered |
+| `ENGAGEMENT_REMINDER_MAX_ATTEMPTS` | `3` | Maximum delivery attempts per reminder |
 | `ENGAGEMENT_STATE_RESULT_LIMIT` | `100` | Row cap for `subscriptionsFor()` / `remindersFor()` |
 | `ENGAGEMENT_OWNER_ENABLED` | `true` | Enable owner scoping |
 | `ENGAGEMENT_OWNER_INCLUDE_GLOBAL` | `false` | Include global rows in owner-scoped reads |
@@ -64,10 +66,10 @@ Schedule::command('engagement:reconcile-counters')->hourly();
 ## Adding traits to models
 
 ```php
-use AIArmada\Engagement\Traits\CanFollow;
-use AIArmada\Engagement\Traits\HasBookmarks;
-use AIArmada\Engagement\Traits\HasFollowers;
-use AIArmada\Engagement\Traits\HasReactions;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasBookmarks;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasReactions;
 
 class User extends Model
 {

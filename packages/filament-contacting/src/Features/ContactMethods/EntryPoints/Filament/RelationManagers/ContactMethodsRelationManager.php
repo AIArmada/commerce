@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\RelationManagers;
+
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Tables\ContactMethodTable;
+use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
+use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use Filament\Actions\CreateAction;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+final class ContactMethodsRelationManager extends RelationManager
+{
+    use VerifiesRelationManagerOwnerContext;
+
+    protected static string $relationship = 'contactMethods';
+
+    protected static ?string $title = 'Contact Methods';
+
+    protected static ?string $recordTitleAttribute = 'value';
+
+    public function table(Table $table): Table
+    {
+        $guard = app(GuardsContactingUi::class);
+
+        $tableConfig = ContactMethodTable::table($table);
+
+        $tableConfig
+            ->modifyQueryUsing(fn (Builder $query): Builder => ContactingRelationOwnerScope::scopeForParent($query, $this->getOwnerRecord()))
+            ->headerActions([
+                CreateAction::make()
+                    ->form(ContactMethodFormSchema::make())
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['country_code'] = isset($data['country_code'])
+                            ? mb_strtoupper((string) $data['country_code'])
+                            : null;
+
+                        return $data;
+                    })
+                    ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
+                    ->disabled(fn (): bool => $guard->contactMethodsReadOnly())
+                    ->using(function (array $data) use ($guard): ContactMethod {
+                        abort_if($guard->contactMethodsReadOnly(), 403);
+                        abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
+
+                        return app(CreateContactMethodAction::class)->execute($this->getOwnerRecord(), $data);
+                    })
+                    ->before(function (): void {
+                        abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
+                    }),
+            ]);
+
+        return $tableConfig;
+    }
+}

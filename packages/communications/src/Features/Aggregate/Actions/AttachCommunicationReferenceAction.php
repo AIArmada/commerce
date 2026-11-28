@@ -10,6 +10,7 @@ use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
+use Illuminate\Database\QueryException;
 
 final class AttachCommunicationReferenceAction implements CommunicationReferenceWriter
 {
@@ -34,19 +35,10 @@ final class AttachCommunicationReferenceAction implements CommunicationReference
                 OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
             }
 
-            $reference = $communication->references()
-                ->where('reference_type', $referenceValues['type'])
-                ->where('reference_id', $referenceValues['id'])
-                ->where('role', $role)
-                ->first();
+            $reference = $this->findReference($communication, $referenceValues['type'], $referenceValues['id'], $role);
 
             if ($reference instanceof CommunicationReference) {
-                if ($metadata !== null) {
-                    $reference->metadata = $this->redactor->redact(array_merge($reference->metadata ?? [], $metadata));
-                    $reference->save();
-                }
-
-                return (string) $reference->getKey();
+                return (string) $this->applyMetadata($reference, $metadata)->getKey();
             }
 
             $reference = new CommunicationReference;
@@ -55,9 +47,55 @@ final class AttachCommunicationReferenceAction implements CommunicationReference
             $reference->reference_id = $referenceValues['id'];
             $reference->role = $role;
             $reference->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
-            $reference->save();
+
+            try {
+                $reference->getConnection()->transaction(static fn (): bool => $reference->save());
+            } catch (QueryException $exception) {
+                if (! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+
+                $existing = $this->findReference($communication, $referenceValues['type'], $referenceValues['id'], $role);
+
+                if (! $existing instanceof CommunicationReference) {
+                    throw $exception;
+                }
+
+                return (string) $this->applyMetadata($existing, $metadata)->getKey();
+            }
 
             return (string) $reference->getKey();
         });
+    }
+
+    private function findReference(
+        Communication $communication,
+        string $referenceType,
+        string $referenceId,
+        ?string $role,
+    ): ?CommunicationReference {
+        return $communication->references()
+            ->where('reference_type', $referenceType)
+            ->where('reference_id', $referenceId)
+            ->where('role', $role)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function applyMetadata(CommunicationReference $reference, ?array $metadata): CommunicationReference
+    {
+        if ($metadata === null) {
+            return $reference;
+        }
+
+        $reference->metadata = $this->redactor->redact(array_merge($reference->metadata ?? [], $metadata));
+        $reference->save();
+
+        return $reference;
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 }

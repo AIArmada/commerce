@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
@@ -931,7 +931,7 @@ it('rolls back a merge when a contact transfer is vetoed', function (): void {
     ContactMethod::saving(static fn (ContactMethod $record): bool => $record->getKey() !== $contact->getKey());
 
     expect(fn () => app(MergeCustomers::class)->execute($target, $source))
-        ->toThrow(RuntimeException::class, 'Customer merge contact transfer was cancelled.');
+        ->toThrow(RuntimeException::class, 'Contact move was cancelled.');
 
     expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
         ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()

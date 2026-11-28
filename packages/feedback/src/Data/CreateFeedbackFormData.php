@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Data;
 
-final class CreateFeedbackFormData
+final readonly class CreateFeedbackFormData
 {
     public function __construct(
-        public readonly string $name,
-        public readonly ?string $slug = null,
-        public readonly string $purpose = 'general',
-        public readonly string $status = 'draft',
-        public readonly string $visibility = 'private',
-        public readonly ?string $subjectType = null,
-        public readonly ?string $subjectId = null,
-        public readonly bool $isAnonymousAllowed = true,
-        public readonly bool $isAnonymityOptional = false,
-        public readonly bool $isLoginRequired = false,
-        public readonly bool $isOneResponsePerRespondent = false,
-        public readonly bool $isEditAfterSubmitAllowed = false,
-        public readonly ?string $opensAt = null,
-        public readonly ?string $closesAt = null,
-        public readonly array $settings = [],
-        public readonly array $metadata = [],
+        public string $name,
+        public ?string $slug = null,
+        public string $purpose = 'general',
+        public string $status = 'draft',
+        public string $visibility = 'private',
+        public ?string $subjectType = null,
+        public ?string $subjectId = null,
+        public bool $isAnonymousAllowed = true,
+        public bool $isAnonymityOptional = false,
+        public bool $isLoginRequired = false,
+        public bool $isOneResponsePerRespondent = false,
+        public bool $isEditAfterSubmitAllowed = false,
+        public ?string $opensAt = null,
+        public ?string $closesAt = null,
+        public array $settings = [],
+        public array $metadata = [],
     ) {}
 }

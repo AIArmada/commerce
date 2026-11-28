@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
-use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Moderation\Contracts\BlocksEntity;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
 
-final class BlockEntityAction implements BlocksEntity
+final readonly class BlockEntityAction
 {
+    public function __construct(private ModerationModelGuard $guard) {}
+
     public function execute(
         Model $blockable,
         ?Model $blockedBy = null,
@@ -30,16 +33,28 @@ final class BlockEntityAction implements BlocksEntity
             (int) config('moderation.defaults.block_duration_days', 30),
         );
 
-        $this->validateOwnerScopedModel($blockable);
+        $this->guard->validateTarget($blockable);
 
         if ($blockedBy !== null) {
-            $this->validateOwnerScopedModel($blockedBy);
+            $this->guard->validateActor($blockedBy);
         }
 
-        return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
-            $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->first();
+        $connection = (new Block)->getConnection();
 
-            $existing = Block::query()
+        if ($blockable->getConnection() !== $connection) {
+            throw new LogicException('Blocking requires a shared database connection with the target.');
+        }
+
+        $this->guard->validatePayload($notes, $metadata);
+
+        return $connection->transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
+            $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($expiresAt->lessThanOrEqualTo(CarbonImmutable::now())) {
+                throw new InvalidArgumentException('Block expiry must be in the future.');
+            }
+
+            $existing = OwnerScopeOverride::withoutIncludeGlobal(fn (): ?Block => Block::query()
                 ->where('blockable_type', $blockable->getMorphClass())
                 ->where('blockable_id', $blockable->getKey())
                 ->where('status', BlockStatus::Active)
@@ -48,11 +63,13 @@ final class BlockEntityAction implements BlocksEntity
                         ->orWhere('expires_at', '>', CarbonImmutable::now());
                 })
                 ->lockForUpdate()
-                ->first();
+                ->first());
 
             if ($existing instanceof Block) {
                 if ($existing->expires_at !== null && $expiresAt->greaterThan($existing->expires_at)) {
-                    $existing->forceFill(['expires_at' => $expiresAt])->save();
+                    if (! $existing->forceFill(['expires_at' => $expiresAt])->save()) {
+                        throw new RuntimeException('The moderation block extension was cancelled.');
+                    }
                 }
 
                 return $existing;
@@ -70,28 +87,11 @@ final class BlockEntityAction implements BlocksEntity
             $block->forceFill(['expires_at' => $expiresAt]);
 
             $block->transitionTo(BlockStatus::Active);
-            $block->save();
+            if (! $block->save()) {
+                throw new RuntimeException('The moderation block creation was cancelled.');
+            }
 
             return $block;
         });
-    }
-
-    private function validateOwnerScopedModel(Model $model): void
-    {
-        if (! config('moderation.owner.enabled', true)) {
-            return;
-        }
-
-        if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
-            return;
-        }
-
-        // Non-owner-scoped models are intentionally blockable from any owner
-        // scope: a tenant blocks a shared identity without owning it.
-        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
-            return;
-        }
-
-        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
     }
 }

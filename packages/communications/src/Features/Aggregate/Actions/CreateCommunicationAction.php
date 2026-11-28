@@ -63,7 +63,7 @@ final readonly class CreateCommunicationAction implements CommunicationCreator
             $communication->purpose = $context->purpose;
             $communication->status = $queued ? CommunicationStatus::Queued : CommunicationStatus::Draft;
             $communication->queued_at = $queued ? CarbonImmutable::now() : null;
-            $communication->idempotency_key = $context->idempotencyKey;
+            $communication->idempotency_key = $context->normalizedIdempotencyKey();
             $communication->locale = $context->locale;
             $communication->timezone = $context->timezone;
             $communication->scheduled_at = $context->scheduledAt !== null ? CarbonImmutable::parse($context->scheduledAt) : null;

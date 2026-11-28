@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 
 it('rolls back template form creation when a nested definition is invalid', function (): void {
     $template = FeedbackTemplate::query()->create([

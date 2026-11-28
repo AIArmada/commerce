@@ -31,8 +31,8 @@ second primary scheme.
 ## Add Traits to Your Model
 
 ```php
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 
 class Institution extends Model
 {
@@ -48,7 +48,7 @@ and social profiles use `contacting.defaults.public_by_default`; set
 `is_public` explicitly for directory or publication flows.
 
 ```php
-use AIArmada\Contacting\Actions\CreateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 
 app(CreateContactMethodAction::class)->execute($institution, [
     'type' => 'email',
@@ -88,7 +88,7 @@ app(CreateContactMethodAction::class)->execute($institution, [
 ## Create Social Profile (Facebook)
 
 ```php
-use AIArmada\Contacting\Actions\CreateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
 
 app(CreateSocialProfileAction::class)->execute($institution, [
     'platform' => 'facebook',
@@ -122,7 +122,7 @@ app(CreateSocialProfileAction::class)->execute($institution, [
 ## Set Primary Contact
 
 ```php
-use AIArmada\Contacting\Actions\SetPrimaryContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\SetPrimaryContactMethodAction;
 
 $email = $institution->contactMethods()->where('type', 'email')->first();
 app(SetPrimaryContactMethodAction::class)->execute($email);
@@ -131,7 +131,7 @@ app(SetPrimaryContactMethodAction::class)->execute($email);
 ## Build Contact Links
 
 ```php
-use AIArmada\Contacting\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
 
 $links = app(BuildContactLinksAction::class)->forContactable($institution);
 
@@ -201,13 +201,13 @@ $institution->primarySocialProfile('facebook');
 ## Create Event Contact Snapshot
 
 ```php
-use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 
 // When event is published, snapshot the organizer's public contacts
 app(CreateContactSnapshotAction::class)->fromBundle(
     snapshotable: $event,
-    contactMethods: $event->organizer->publicContactMethods()->get(),
-    socialProfiles: $event->organizer->publicSocialProfiles()->get(),
+    contactMethodIds: $event->organizer->publicContactMethods()->pluck('id'),
+    socialProfileIds: $event->organizer->publicSocialProfiles()->pluck('id'),
     reason: 'event_public_contact',
 );
 ```
