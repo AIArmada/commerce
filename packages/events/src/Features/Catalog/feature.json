@@ -8,7 +8,8 @@
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\SynchronizeEventContent",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\ManageEventAction"
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\ManageEventAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventLifecycleWorkflow"
     ],
     "table:event_occurrences": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\BatchCreateOccurrencesAction",
@@ -20,8 +21,7 @@
       "AIArmada\\Events\\Features\\Catalog\\Actions\\EnsureOccurrenceAction",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncPrimaryEventOccurrenceAction",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\UpdateEventOccurrenceAction",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteScheduleRecordAction"
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction"
     ],
     "table:event_sessions": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventSessionAction",
@@ -30,8 +30,7 @@
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventTemplateService",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteEventSessionAction",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\UpdateEventSessionAction",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteScheduleRecordAction"
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\UpdateEventSessionAction"
     ],
     "table:event_roles": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncEventInvolvementsAction"

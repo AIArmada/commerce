@@ -9,6 +9,7 @@ use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Archived;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class DeleteEventSessionAction
 {
@@ -16,12 +17,22 @@ final class DeleteEventSessionAction
     {
         EventWriteGuard::findOrFail($session->event_id);
 
-        $session->status->transitionTo(Archived::class);
-        $session->update(['archived_at' => CarbonImmutable::now()]);
+        DB::transaction(function () use ($session): void {
+            /** @var EventSession $session */
+            $session = $session->newQuery()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+            EventWriteGuard::findOrFail($session->event_id);
 
-        event(new EventSessionDeleted(
-            (string) $session->getKey(),
-            (string) $session->event_id,
-        ));
+            if ($session->status instanceof Archived) {
+                return;
+            }
+
+            $session->archived_at = CarbonImmutable::now();
+            $session->status->transitionTo(Archived::class);
+
+            DB::afterCommit(static fn () => event(new EventSessionDeleted(
+                (string) $session->getKey(),
+                (string) $session->event_id,
+            )));
+        });
     }
 }

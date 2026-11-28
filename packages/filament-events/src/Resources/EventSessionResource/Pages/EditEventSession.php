@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSessionResource\Pages;
 
-use AIArmada\Events\Features\Catalog\Actions\DeleteScheduleRecordAction;
+use AIArmada\Events\Features\Catalog\Actions\ArchiveScheduleRecordAction;
 use AIArmada\Events\Features\Catalog\Actions\UpdateEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\FilamentEvents\Resources\EventSessionResource;
-use Filament\Actions\DeleteAction;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Archived;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +37,16 @@ final class EditEventSession extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make()->using(fn (Model $record): bool => app(DeleteScheduleRecordAction::class)->handle('session', (string) $record->getKey(), Filament::auth()->user())),
+            Action::make('archive')
+                ->label('Archive')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->authorize(fn (EventSession $record): bool => Gate::forUser(Filament::auth()->user())->allows('delete', $record))
+                ->visible(fn (EventSession $record): bool => $record->status->canTransitionTo(Archived::class))
+                ->action(function (EventSession $record): void {
+                    app(ArchiveScheduleRecordAction::class)->handle('session', (string) $record->getKey(), Filament::auth()->user());
+                    $this->refreshFormData(['status', 'archived_at']);
+                }),
         ];
     }
 }
