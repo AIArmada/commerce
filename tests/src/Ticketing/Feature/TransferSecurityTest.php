@@ -248,3 +248,16 @@ it('reauthorizes a transfer against the current holder rather than a stale relat
         authorizedBy: $original,
     ))->toThrow(AuthorizationException::class);
 });
+
+it('does not allow a stale or foreign holder id to be used through the transfer contract', function (): void {
+    $first = Pass::factory()->create();
+    $second = Pass::factory()->create();
+    $holder = PassHolder::factory()->create(['pass_id' => $first->getKey()]);
+
+    expect(fn () => app(\AIArmada\Ticketing\Contracts\PassTransferServiceInterface::class)->transfer(
+        new \AIArmada\Ticketing\Data\TransferInputData(
+            pass_id: (string) $second->getKey(),
+            existing_holder_id: (string) $holder->getKey(),
+        ),
+    ))->toThrow(InvalidArgumentException::class, 'different pass');
+});

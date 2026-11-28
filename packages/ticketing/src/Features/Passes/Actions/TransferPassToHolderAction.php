@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Data\TransferInputData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
@@ -37,7 +39,22 @@ final readonly class TransferPassToHolderAction
 
             $resolvedHolder = $this->resolveHolder($lockedPass, $newHolder, $holderAttributes);
 
-            return $this->transfers->transfer($lockedPass, $resolvedHolder, $reason);
+            $holderId = $this->transfers->transfer(new TransferInputData(
+                pass_id: (string) $lockedPass->getKey(),
+                holder_type: $resolvedHolder->holder_type,
+                holder_id: $resolvedHolder->holder_id === null ? null : (string) $resolvedHolder->holder_id,
+                name: $resolvedHolder->name,
+                email: $resolvedHolder->email,
+                reason: $reason,
+                existing_holder_id: $resolvedHolder->exists ? (string) $resolvedHolder->getKey() : null,
+                metadata: $resolvedHolder->metadata,
+            ));
+
+            $resolve = fn (): PassHolder => PassHolder::query()->where('pass_id', $lockedPass->getKey())->where('is_current', true)->findOrFail($holderId);
+
+            return $lockedPass->owner_type === null && $lockedPass->owner_id === null
+                ? OwnerContext::withOwner(null, $resolve)
+                : $resolve();
         });
     }
 

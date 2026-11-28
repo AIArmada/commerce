@@ -199,7 +199,7 @@ use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 
 $transferService = app(PassTransferServiceInterface::class);
 
-if ($transferService->canTransfer($pass)) {
+if ($transferService->canTransfer((string) $pass->getKey())) {
     // Pass is valid and not past its transfer_expires_at date
 }
 ```

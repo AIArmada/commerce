@@ -6,6 +6,7 @@ namespace AIArmada\Ticketing\Features\Passes\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Data\TransferInputData;
 use AIArmada\Ticketing\Events\PassTransferred;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
@@ -18,39 +19,49 @@ use RuntimeException;
 
 final readonly class PassTransferWriter implements PassTransferServiceInterface
 {
-    public function transfer(Pass $pass, PassHolder $newHolder, ?string $reason = null): PassHolder
+    public function transfer(TransferInputData $input): string
     {
-        if (! $this->canTransfer($pass)) {
-            throw new RuntimeException('Pass cannot be transferred in its current state.');
-        }
+        return (new Pass)->getConnection()->transaction(function () use ($input): string {
+            $pass = Pass::query()->whereKey($input->pass_id)->lockForUpdate()->first();
 
-        $this->assertHolderBelongsToPass($pass, $newHolder);
-        HolderAttributesValidator::validateAttributes($newHolder->getAttributes());
-
-        return $pass->getConnection()->transaction(function () use ($pass, $newHolder, $reason) {
-            $freshPass = Pass::query()->whereKey($pass->getKey())->lockForUpdate()->first();
-
-            if (! $freshPass instanceof Pass) {
+            if (! $pass instanceof Pass) {
                 throw new AuthorizationException('The pass is not accessible in the current owner scope.');
             }
 
-            $this->assertHolderBelongsToPass($freshPass, $newHolder);
-
-            if (! $this->canTransfer($freshPass)) {
+            if (! $this->isTransferable($pass)) {
                 throw new RuntimeException('Pass cannot be transferred in its current state.');
             }
 
-            // Global passes transfer in explicit global context so the new
-            // holder and transfer rows stay global instead of inheriting
-            // whatever ambient owner context the transfer runs in. Owned
-            // passes bind their own owner explicitly below, and the owner
-            // guards fail closed when the ambient context does not match.
-            if ($freshPass->owner_type === null && $freshPass->owner_id === null) {
-                return OwnerContext::withOwner(null, fn (): PassHolder => $this->transferLocked($freshPass, $newHolder, $reason));
+            if ($pass->owner_type === null && $pass->owner_id === null) {
+                return OwnerContext::withOwner(null, fn (): string => $this->transferInput($pass, $input));
             }
 
-            return $this->transferLocked($freshPass, $newHolder, $reason);
+            return $this->transferInput($pass, $input);
         });
+    }
+
+    private function transferInput(Pass $pass, TransferInputData $input): string
+    {
+        if ($input->existing_holder_id !== null) {
+            $holder = PassHolder::query()->whereKey($input->existing_holder_id)->lockForUpdate()->first();
+
+            if (! $holder instanceof PassHolder) {
+                throw new AuthorizationException('The holder is not accessible in the current owner scope.');
+            }
+        } else {
+            $holder = new PassHolder([
+                'holder_type' => $input->holder_type,
+                'holder_id' => $input->holder_id,
+                'name' => $input->name,
+                'email' => $input->email,
+                'metadata' => $input->metadata,
+            ]);
+        }
+
+        $this->assertHolderBelongsToPass($pass, $holder);
+        HolderAttributesValidator::validateAttributes($holder->getAttributes());
+
+        return (string) $this->transferLocked($pass, $holder, $input->reason)->getKey();
     }
 
     /**
@@ -111,7 +122,14 @@ final readonly class PassTransferWriter implements PassTransferServiceInterface
         return $newHolder;
     }
 
-    public function canTransfer(Pass $pass): bool
+    public function canTransfer(string $passId): bool
+    {
+        $pass = Pass::query()->find($passId);
+
+        return $pass instanceof Pass && $this->isTransferable($pass);
+    }
+
+    private function isTransferable(Pass $pass): bool
     {
         if (! $pass->isValid()) {
             return false;

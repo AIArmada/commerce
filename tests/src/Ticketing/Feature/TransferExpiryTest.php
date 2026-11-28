@@ -15,7 +15,7 @@ it('blocks transfer at and after the deadline without scheduled cleanup', functi
     $this->travelTo($deadline);
 
     try {
-        expect(app(PassTransferServiceInterface::class)->canTransfer($pass->fresh()))->toBeFalse();
+        expect(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
 
         expect(fn () => app(TransferPassToHolderAction::class)->handle(
             $pass,
@@ -31,5 +31,5 @@ it('blocks transfer at and after the deadline without scheduled cleanup', functi
 it('allows a valid pass with no configured transfer deadline', function (): void {
     $pass = Pass::factory()->create(['transfer_expires_at' => null]);
 
-    expect(app(PassTransferServiceInterface::class)->canTransfer($pass))->toBeTrue();
+    expect(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeTrue();
 });

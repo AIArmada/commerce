@@ -14,7 +14,7 @@ final readonly class TransferInputData
         public ?string $name = null,
         public ?string $email = null,
         public ?string $reason = null,
-        public ?string $transferred_by_type = null,
-        public ?string $transferred_by_id = null,
+        public ?string $existing_holder_id = null,
+        public ?array $metadata = null,
     ) {}
 }
