@@ -20,7 +20,7 @@ interface VoucherServiceInterface
     /**
      * Find a voucher by code.
      */
-    public function find(string $code): ?VoucherData;
+    public function find(string $code, ?string $voucherId = null): ?VoucherData;
 
     /**
      * Find a voucher by code or throw exception.
@@ -102,14 +102,14 @@ interface VoucherServiceInterface
     /**
      * Reserve a voucher for a checkout session.
      */
-    public function reserve(string $code, string $sessionId): void;
+    public function reserve(string $code, string $sessionId, ?string $voucherId = null): void;
 
     /**
      * Release a voucher reservation.
      *
      * @param  string|null  $sessionId  When provided, only releases that session's reservation
      */
-    public function release(string $code, ?string $sessionId = null): void;
+    public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void;
 
     /**
      * Redeem a voucher after successful order.
@@ -119,5 +119,6 @@ interface VoucherServiceInterface
         string $orderId,
         ?int $discountAmount = null,
         ?string $currency = null,
+        ?string $voucherId = null,
     ): void;
 }

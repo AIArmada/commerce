@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\CartIntegration\Api;
 
 interface VoucherReservations
 {
-    public function reserve(string $code, string $sessionId): void;
+    public function reserve(string $code, string $sessionId, ?string $voucherId = null): void;
 
-    public function release(string $code, ?string $sessionId = null): void;
+    public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void;
 }

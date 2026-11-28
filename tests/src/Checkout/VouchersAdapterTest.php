@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\Checkout\Data\DiscountProposal;
+use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
+use AIArmada\Checkout\Listeners\RedeemVouchersOnCheckoutCompleted;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherStatus;
 use AIArmada\Vouchers\Data\VoucherType;
@@ -13,6 +19,7 @@ use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Mockery\Expectation;
 
@@ -257,4 +264,60 @@ it('does not dispatch voucher application events during discount evaluation', fu
 
     expect($result)->toHaveCount(1);
     Event::assertNotDispatched(VoucherApplied::class);
+});
+
+it('reserves and redeems the committed voucher identity when a tenant shadows a global code', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Checkout Voucher Identity Owner',
+        'email' => 'checkout-voucher-identity@example.com',
+        'password' => 'secret',
+    ]);
+
+    $attributes = [
+        'code' => 'CHECKOUT-IDENTITY',
+        'name' => 'Checkout Identity',
+        'type' => VoucherType::Fixed,
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ];
+
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => Voucher::query()->create($attributes));
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => Voucher::query()->create($attributes));
+
+    OwnerContext::withOwner($owner, function () use ($global, $owned): void {
+        $order = Order::factory()->create(['currency' => 'MYR']);
+        $session = new CheckoutSession;
+        $session->id = 'voucher-identity-session';
+        $session->order_id = $order->getKey();
+        $session->currency = 'MYR';
+        $session->subtotal = 1000;
+
+        $adapter = new VouchersAdapter;
+        $commitments = $adapter->commit($session, [
+            new DiscountProposal('vouchers', 'voucher:CHECKOUT-IDENTITY', 100, code: 'CHECKOUT-IDENTITY', meta: ['voucher_id' => $global->id]),
+        ]);
+
+        expect(Cache::get("voucher_reservation:{$global->id}:voucher-identity-session"))->toBeArray()
+            ->and(Cache::get("voucher_reservation:{$owned->id}:voucher-identity-session"))->toBeNull();
+
+        $session->discount_data = ['commitments' => array_map(static fn ($commitment): array => $commitment->toArray(), $commitments)];
+        app(RedeemVouchersOnCheckoutCompleted::class)->handle(new CheckoutCompleted($session));
+
+        expect($global->usages()->count())->toBe(1)
+            ->and($owned->usages()->count())->toBe(0)
+            ->and(Cache::get("voucher_reservation:{$global->id}:voucher-identity-session"))->toBeNull();
+    });
+});
+
+it('rejects a checkout voucher commitment without an exact identity', function (): void {
+    $session = new CheckoutSession;
+    $session->id = 'missing-voucher-id';
+
+    expect(fn () => (new VouchersAdapter)->commit($session, [
+        new DiscountProposal('vouchers', 'voucher:CODE', 100, code: 'CODE'),
+    ]))->toThrow(InvalidArgumentException::class);
 });

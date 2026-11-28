@@ -15,11 +15,9 @@ final class ManageVoucherReservations implements VoucherReservations
 {
     use QueriesVouchers;
 
-    public function reserve(string $code, string $sessionId): void
+    public function reserve(string $code, string $sessionId, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
+        $voucher = $this->voucherIdentityQuery($code, $voucherId)->firstOrFail();
 
         /** @var VoucherModel $voucher */
         $cacheKey = $this->reservationCacheKey((string) $voucher->id, $sessionId);
@@ -56,11 +54,9 @@ final class ManageVoucherReservations implements VoucherReservations
      *
      * @param  string|null  $sessionId  When provided, only releases that session's reservation
      */
-    public function release(string $code, ?string $sessionId = null): void
+    public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
+        $voucher = $this->voucherIdentityQuery($code, $voucherId)->first();
 
         if (! $voucher) {
             return;

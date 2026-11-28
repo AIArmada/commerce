@@ -41,8 +41,14 @@ class VoucherService implements VoucherServiceInterface
         private readonly VoucherLookup $lookupCache,
     ) {}
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
+        if ($voucherId !== null) {
+            $voucher = $this->voucherIdentityQuery($code, $voucherId)->first();
+
+            return $voucher === null ? null : VoucherSnapshot::fromModel($voucher);
+        }
+
         $normalizedCode = $this->normalizeCode($code);
 
         return $this->lookupCache->remember(
@@ -231,14 +237,14 @@ class VoucherService implements VoucherServiceInterface
      * Reservations prevent the voucher from being used elsewhere
      * during the checkout process.
      */
-    public function reserve(string $code, string $sessionId): void
+    public function reserve(string $code, string $sessionId, ?string $voucherId = null): void
     {
-        app(VoucherReservations::class)->reserve($code, $sessionId);
+        app(VoucherReservations::class)->reserve($code, $sessionId, $voucherId);
     }
 
-    public function release(string $code, ?string $sessionId = null): void
+    public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void
     {
-        app(VoucherReservations::class)->release($code, $sessionId);
+        app(VoucherReservations::class)->release($code, $sessionId, $voucherId);
     }
 
     /**
@@ -249,10 +255,9 @@ class VoucherService implements VoucherServiceInterface
         string $orderId,
         ?int $discountAmount = null,
         ?string $currency = null,
+        ?string $voucherId = null,
     ): void {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
+        $voucher = $this->voucherIdentityQuery($code, $voucherId)->firstOrFail();
 
         /** @var VoucherModel $voucher */
         $currency = $this->resolveMoneyCurrency($currency, $voucher);
@@ -296,7 +301,7 @@ class VoucherService implements VoucherServiceInterface
         }
 
         $this->recordUsage(
-            code: $code,
+            code: $voucher->code,
             discountAmount: $money,
             channel: 'checkout',
             metadata: $metadata,

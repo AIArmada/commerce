@@ -40,6 +40,16 @@ trait QueriesVouchers
         return $query;
     }
 
+    /** @return Builder<Voucher> */
+    protected function voucherIdentityQuery(string $code, ?string $voucherId): Builder
+    {
+        $query = $this->voucherQuery();
+
+        return $voucherId === null
+            ? $query->where('code', $this->normalizeCode($code))
+            : $query->whereKey($voucherId);
+    }
+
     protected function resolveOwner(): ?Model
     {
         if (! config('vouchers.owner.enabled', false)) {

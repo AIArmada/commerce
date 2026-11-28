@@ -62,9 +62,11 @@ final class DiscountCodeResolver
             return null;
         }
 
-        $voucherData = $voucherService->find($code);
+        $snapshot = $validation->getDetail('voucher');
 
-        return $voucherData?->toArray();
+        return is_array($snapshot) && is_string($snapshot['id'] ?? null) && $snapshot['id'] !== ''
+            ? $snapshot
+            : null;
     }
 
     private function resolvePromoCode(CheckoutSession $session): ?string
