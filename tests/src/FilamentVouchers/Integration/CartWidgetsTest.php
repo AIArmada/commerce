@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
@@ -206,15 +207,16 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
-    $cartOwnedByB = Cart::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
+    $cartOwnedByB = Cart::make([
         'instance' => 'default',
         'identifier' => 'cart-owned-by-b',
         'currency' => 'USD',
         'subtotal' => 10000,
         'total' => 10000,
     ]);
+    OwnerContext::withOwner($ownerB, fn () => $cartOwnedByB->assignOwner($ownerB)->save());
+
+    expect($cartOwnedByB->owner_id)->toBe((string) $ownerB->getKey());
 
     $voucher = Voucher::query()->create([
         'code' => 'OWNER-A-ONLY',
@@ -261,15 +263,16 @@ it('honors the exact owner scope when global voucher suggestions are suppressed'
     ]));
 
     OwnerContext::withOwner($owner, function () use ($owner, $global): void {
-        $cart = Cart::query()->create([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => (string) $owner->getKey(),
+        $cart = Cart::make([
             'instance' => 'default',
             'identifier' => 'exact-owner-suggestion',
             'currency' => 'USD',
             'subtotal' => 10000,
             'total' => 10000,
         ]);
+        $cart->assignOwner($owner)->save();
+
+        expect(CartSnapshotAccess::allows($cart))->toBeTrue();
 
         $manager = Mockery::mock(CartInstanceManager::class);
         $manager->shouldReceive('resolveForSnapshot')->once()
