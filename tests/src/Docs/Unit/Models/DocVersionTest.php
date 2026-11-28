@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Contracts\DocumentVersions;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

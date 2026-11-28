@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Features\Payments\Actions\RecordDocPayment;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
+use AIArmada\Docs\Features\Payments\Actions\RecordDocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Services\DocService;
