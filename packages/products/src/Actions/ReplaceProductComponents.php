@@ -17,6 +17,7 @@ use AIArmada\Products\Services\CompositePackageValidator;
 use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Transactionally replaces the complete component list of one composite package.
@@ -97,14 +98,20 @@ final readonly class ReplaceProductComponents
                 ->delete();
 
             foreach ($prepared as $row) {
-                ProductComponent::query()->create($row);
+                $created = ProductComponent::query()->create($row);
+
+                if (! $created->exists) {
+                    throw new RuntimeException('Composite component creation was cancelled.');
+                }
             }
 
             $current = $this->service->componentsFor($parent, $parentVariant);
 
             // Recalculate the persisted parent shipping flag from the exact
             // composition, including when a draft package becomes empty.
-            $parent->save();
+            if (! $parent->save()) {
+                throw new RuntimeException('Composite shipping synchronization was cancelled.');
+            }
 
             if ($parent->status === ProductStatus::Active
                 && (! $parentVariant instanceof Variant || $parentVariant->is_enabled)) {
@@ -125,7 +132,11 @@ final readonly class ReplaceProductComponents
         $seen = [];
 
         foreach (array_values($components) as $index => $component) {
-            $componentProductId = (string) ($component['component_product_id'] ?? '');
+            $rawProductId = $component['component_product_id'] ?? null;
+            if ($rawProductId !== null && ! is_string($rawProductId)) {
+                throw new InvalidCompositePackageException('Component product ID must be a string.');
+            }
+            $componentProductId = $rawProductId ?? '';
 
             $buyableType = $component['buyable_type'] ?? null;
             $rawBuyableId = $component['buyable_id'] ?? null;
@@ -145,8 +156,11 @@ final readonly class ReplaceProductComponents
             $isExternal = $hasExternal;
 
             $variantId = $component['variant_id'] ?? null;
-            $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;
-            $quantity = $this->integerField($component['quantity'] ?? null, 'quantity', 1);
+            if ($variantId !== null && ! is_string($variantId)) {
+                throw new InvalidCompositePackageException('Component variant ID must be a string.');
+            }
+            $variantId = $variantId === '' ? null : $variantId;
+            $quantity = $this->integerField($component['quantity'] ?? 1, 'quantity', 1);
             $position = $this->integerField($component['position'] ?? $index, 'position', 0);
 
             $componentProduct = $isExternal ? null : $this->resolveComponentProduct($componentProductId);

@@ -187,7 +187,7 @@ class ProductComponent extends Model implements Auditable
             $validator = app(CompositePackageValidator::class);
 
             if ($componentProduct instanceof Product) {
-                if ($parent->status === ProductStatus::Active) {
+                if (self::requiresPublishableComponent($component, $parent)) {
                     $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
                 } else {
                     $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
@@ -200,7 +200,7 @@ class ProductComponent extends Model implements Auditable
                     $parent,
                     $buyable,
                     (int) $component->quantity,
-                    $parent->status === ProductStatus::Active,
+                    self::requiresPublishableComponent($component, $parent),
                 );
             }
 
@@ -226,7 +226,7 @@ class ProductComponent extends Model implements Auditable
             $validator = app(CompositePackageValidator::class);
 
             if ($componentProduct instanceof Product) {
-                if ($parent->status === ProductStatus::Active) {
+                if (self::requiresPublishableComponent($component, $parent)) {
                     $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
                 } else {
                     $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
@@ -239,7 +239,7 @@ class ProductComponent extends Model implements Auditable
                     $parent,
                     $buyable,
                     (int) $component->quantity,
-                    $parent->status === ProductStatus::Active,
+                    self::requiresPublishableComponent($component, $parent),
                 );
             }
 
@@ -365,6 +365,23 @@ class ProductComponent extends Model implements Auditable
             || (string) ($variant->owner_id ?? '') !== (string) ($parent->owner_id ?? '')) {
             throw new InvalidCompositePackageException('Composite parent variant must belong to the same product and owner.');
         }
+    }
+
+    private static function requiresPublishableComponent(ProductComponent $component, Product $parent): bool
+    {
+        if ($parent->status !== ProductStatus::Active) {
+            return false;
+        }
+
+        if ($component->parent_variant_id === null) {
+            return true;
+        }
+
+        return Variant::query()
+            ->whereKey($component->parent_variant_id)
+            ->where('product_id', $parent->getKey())
+            ->where('is_enabled', true)
+            ->exists();
     }
 
     private static function assertComponentPricing(ProductComponent $component): void

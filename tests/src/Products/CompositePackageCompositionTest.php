@@ -664,3 +664,32 @@ it('rejects malformed component quantities and positions without replacing the p
     expect($parent->components()->firstOrFail()->getKey())->toBe($original->getKey())
         ->and($original->fresh()->quantity)->toBe(2);
 });
+
+it('defaults omitted component quantities to one', function (): void {
+    $parent = makeCompositeParent();
+    $child = makeComponentProduct();
+
+    $components = app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $child->id],
+    ]);
+
+    expect($components->sole()->quantity)->toBe(1);
+});
+
+it('rejects changes to published package currency or tax treatment that invalidate components', function (): void {
+    $parent = makeCompositeParent(['currency' => 'MYR', 'is_taxable' => true]);
+    $child = makeComponentProduct(['currency' => 'MYR', 'is_taxable' => true]);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+    ]);
+    $parent = app(PublishCompositeProduct::class)->handle($parent);
+
+    expect(fn () => $parent->update(['currency' => 'USD']))
+        ->toThrow(InvalidCompositePackageException::class, 'currency')
+        ->and($parent->refresh()->currency)->toBe('MYR');
+
+    expect(fn () => $parent->update(['is_taxable' => false]))
+        ->toThrow(InvalidCompositePackageException::class, 'tax treatment')
+        ->and($parent->refresh()->is_taxable)->toBeTrue();
+});

@@ -276,3 +276,25 @@ it('rejects supplied component graphs from another product or another variant', 
             ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner');
     }
 });
+
+it('allows a disabled tier to contain draft components but prevents premature activation', function (): void {
+    $liveLeaf = variantCompositeLeaf('Live Service', 100);
+    $draftLeaf = variantCompositeLeaf('Draft Service', 150);
+    $draftLeaf->update(['status' => ProductStatus::Draft]);
+
+    $parent = variantCompositeParent('Draft Tier Configuration');
+    $live = variantCompositeOption($parent, 'Live');
+    $draft = variantCompositeOption($parent, 'Draft', ['is_enabled' => false]);
+
+    $replace = app(ReplaceProductComponents::class);
+    $replace->handle($parent, [['component_product_id' => $liveLeaf->id, 'quantity' => 1]], $live);
+    $parent = app(PublishCompositeProduct::class)->handle($parent);
+
+    expect($replace->handle($parent, [
+        ['component_product_id' => $draftLeaf->id, 'quantity' => 1],
+    ], $draft))->toHaveCount(1);
+
+    expect(fn () => $draft->update(['is_enabled' => true]))
+        ->toThrow(InvalidCompositePackageException::class, 'must be active')
+        ->and($draft->refresh()->is_enabled)->toBeFalse();
+});

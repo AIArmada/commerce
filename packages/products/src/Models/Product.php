@@ -893,7 +893,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
                 throw new InvalidCompositePackageException('An active composite package must contain at least one component.');
             }
 
-            if ($product->isDirty(['status', 'type'])) {
+            if ($product->isDirty(['status', 'type', 'currency', 'is_taxable', 'tax_class', 'sku', 'price_mode', 'discount_basis_points'])) {
                 app(CompositePackageService::class)->assertPublishable($product);
             }
         });
