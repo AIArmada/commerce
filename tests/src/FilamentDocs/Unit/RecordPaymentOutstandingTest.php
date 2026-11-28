@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocPaymentStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use Carbon\CarbonImmutable;

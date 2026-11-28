@@ -12,10 +12,11 @@ use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
-use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
@@ -261,7 +262,7 @@ it('retries PDF publication if document content changes while the driver is rend
 });
 
 it('rejects ambiguous relative rich-content URLs before rendering links and images', function (string $url): void {
-    $renderer = new \AIArmada\Docs\Rendering\TiptapJsonRenderer;
+    $renderer = new TiptapJsonRenderer;
 
     $html = $renderer->render([
         'type' => 'doc',
@@ -281,7 +282,7 @@ it('rejects ambiguous relative rich-content URLs before rendering links and imag
 ]);
 
 it('preserves unambiguous root-relative rich-content links and images', function (): void {
-    $renderer = new \AIArmada\Docs\Rendering\TiptapJsonRenderer;
+    $renderer = new TiptapJsonRenderer;
 
     $html = $renderer->render([
         'type' => 'doc',

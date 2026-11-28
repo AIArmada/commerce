@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Data\ShareLinkData;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
+use AIArmada\Docs\Models\Doc;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

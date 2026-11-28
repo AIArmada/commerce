@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentEmailSender;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
@@ -13,8 +14,8 @@ use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\States\Sent;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -185,7 +186,7 @@ test('raw PDF rendering rejects a document from another owner even with a loaded
     OwnerContext::withOwner($other, function () use ($doc): void {
         expect(fn () => app(DocumentRecords::class)->generatePdf($doc, save: false))
             ->toThrow(AuthorizationException::class)
-            ->and(fn () => app(\AIArmada\Docs\Contracts\DocServiceInterface::class)->generatePdf((string) $doc->getKey(), save: false))
+            ->and(fn () => app(DocServiceInterface::class)->generatePdf((string) $doc->getKey(), save: false))
             ->toThrow(AuthorizationException::class);
     });
 });

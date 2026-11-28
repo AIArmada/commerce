@@ -145,7 +145,6 @@ describe('RegisterOrderRefund', function (): void {
             ->and($refund[0]->fresh()->hasProviderSubmissionStarted())->toBeTrue();
     });
 
-
     it('does not correlate the payment reference as a refund reference after trimming', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-REF-CORRELATE-' . uniqid(),

@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Runtime\OrderInvoiceDownload;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
 final readonly class DownloadOrderInvoiceController

@@ -6,9 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentWorkflows;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
+use AIArmada\Docs\Models\Doc;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {

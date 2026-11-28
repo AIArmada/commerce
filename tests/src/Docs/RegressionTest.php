@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Data\DocData;
@@ -17,16 +18,16 @@ use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
-use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -460,7 +461,7 @@ test('mail attachments reuse an existing stored pdf', function (): void {
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocumentRendering::class);
-    app(\AIArmada\Docs\Contracts\DocumentPdfPublisher::class)->execute((string) $doc->getKey());
+    app(DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $docEmail = DocEmail::query()->create([
         'doc_id' => $doc->id,

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;

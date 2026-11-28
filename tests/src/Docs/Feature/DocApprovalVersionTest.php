@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\DocApprovalStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Versioning\Models\DocVersion;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Draft;
 
 beforeEach(function (): void {

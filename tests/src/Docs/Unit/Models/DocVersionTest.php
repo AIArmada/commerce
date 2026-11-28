@@ -5,8 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentVersions;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Versioning\Models\DocVersion;
+use AIArmada\Docs\Models\Doc;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -51,7 +52,7 @@ test('version restoration cannot cross owner boundaries', function (): void {
     $version = OwnerContext::withOwner($owner, fn (): string => app(DocumentVersions::class)->capture((string) $doc->getKey()));
 
     expect(fn () => OwnerContext::withOwner($other, fn () => app(DocumentVersions::class)->restore($version)))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 
     expect(OwnerContext::withOwner($owner, fn () => $doc->fresh()->notes))->toBe('Original');
 });

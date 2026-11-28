@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
-use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;

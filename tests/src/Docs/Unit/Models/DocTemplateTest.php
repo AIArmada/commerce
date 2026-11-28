@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentTemplates;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Models\Doc;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

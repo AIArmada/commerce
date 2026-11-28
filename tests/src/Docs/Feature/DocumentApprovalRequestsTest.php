@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentApprovalRequests;
 use AIArmada\Docs\Enums\DocApprovalStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
+use AIArmada\Docs\Models\Doc;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 

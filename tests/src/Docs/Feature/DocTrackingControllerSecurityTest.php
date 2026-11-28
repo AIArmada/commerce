@@ -7,8 +7,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers\DocTrackingController;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
+use AIArmada\Docs\Models\Doc;
 
 test('click tracking rejects non-http redirect schemes', function (): void {
     config()->set('app.url', 'https://app.example.test');

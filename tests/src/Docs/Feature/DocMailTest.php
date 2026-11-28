@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Mail\Attachment;
 use Illuminate\Support\Facades\Storage;

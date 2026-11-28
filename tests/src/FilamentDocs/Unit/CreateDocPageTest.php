@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 
 uses(TestCase::class);

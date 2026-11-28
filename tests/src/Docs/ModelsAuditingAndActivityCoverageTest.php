@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Docs\Features\Numbering\Models\DocSequence;
-use AIArmada\Docs\Features\Numbering\Models\SequenceNumber;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
-use AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission;
-use AIArmada\Docs\Features\Delivery\Models\DocEmail;
-use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
-use AIArmada\Docs\Features\Payments\Models\DocPayment;
-use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
-use AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory;
-use AIArmada\Docs\Features\Templates\Models\DocTemplate;
-use AIArmada\Docs\Features\Versioning\Models\DocVersion;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
+use AIArmada\Docs\Features\Delivery\Models\DocEmail;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
+use AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission;
+use AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory;
+use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Models\SequenceNumber;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\Features\Templates\Models\DocTemplate;
+use AIArmada\Docs\Features\Versioning\Models\DocVersion;
+use AIArmada\Docs\Models\Doc;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('docs models are auditable and activity loggable', function (): void {

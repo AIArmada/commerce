@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocDownloadController;
-use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Runtime\DocumentRendering;
 use Illuminate\Support\Facades\Storage;
