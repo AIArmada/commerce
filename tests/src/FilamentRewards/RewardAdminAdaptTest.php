@@ -127,7 +127,7 @@ function adminAdaptCashSetup(string $staffId): array
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'TREASURY-admin-fin',
@@ -223,7 +223,7 @@ function recordAdminAdaptFunding(RewardProgram $program, string $currency, int $
         $at,
     );
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         $currency,
         $amountMinor,
         $sourceRef,
@@ -620,7 +620,7 @@ it('requires catalog items for every benefit variant key before activation', fun
     $staffId = RewardLedgerFixtures::staffId();
     $createBenefit = static function (string $key, string $label) use ($program, $staffId): void {
         CreateRewardBenefitItemAction::run(
-            $program,
+            (string) $program->getKey(),
             $key,
             $label,
             ['One verified use'],
@@ -657,7 +657,7 @@ it('renders catalog, recovery, fraud, and program tables', function (): void {
     $staffId = RewardLedgerFixtures::staffId();
 
     CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'welcome-credit',
         'Welcome credit',
         ['Good standing'],
@@ -854,7 +854,7 @@ it('requests and fulfills a cash award through the awards table', function (): v
         CarbonImmutable::parse('2026-06-02T00:00:00Z'),
     );
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'TREASURY-admin-reqful',

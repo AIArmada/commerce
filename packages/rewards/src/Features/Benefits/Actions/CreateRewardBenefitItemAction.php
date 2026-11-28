@@ -6,9 +6,8 @@ namespace AIArmada\Rewards\Features\Benefits\Actions;
 
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -33,7 +32,7 @@ final readonly class CreateRewardBenefitItemAction
      * @param  array<string, mixed>|null  $fulfillmentConfig
      */
     public function handle(
-        RewardProgram | string $program,
+        string $programId,
         string $benefitKey,
         string $title,
         array $conditions,
@@ -47,8 +46,6 @@ final readonly class CreateRewardBenefitItemAction
         ?CarbonInterface $expiresAt = null,
         ?array $fulfillmentConfig = null,
     ): RewardBenefitItem {
-        RewardProgramGuard::findProgramOrFail($program);
-
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
 
         if ($actorType !== 'user' || ! in_array($actorRole, ['staff', 'admin'], true)) {
@@ -96,7 +93,6 @@ final readonly class CreateRewardBenefitItemAction
         $fulfillmentConfig = $this->validateFulfillmentConfig($fulfillmentConfig);
 
         $expiry = $expiresAt === null ? null : CarbonImmutable::parse($expiresAt)->setTimezone('UTC');
-        $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
 
         return DB::transaction(function () use (
             $programId,
@@ -110,11 +106,7 @@ final readonly class CreateRewardBenefitItemAction
             $expiry,
             $fulfillmentConfig,
         ): RewardBenefitItem {
-            $exists = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();
-
-            if (! $exists instanceof RewardProgram) {
-                throw new InvalidArgumentException('Unknown reward program.');
-            }
+            app(RewardProgramLockApi::class)->lockScopedProgram($programId);
 
             return RewardBenefitItem::query()->create([
                 'program_id' => $programId,

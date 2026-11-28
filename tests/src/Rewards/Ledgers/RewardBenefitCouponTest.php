@@ -25,7 +25,7 @@ function couponHarness(string $prefix): array
     $recipient = User::factory()->create();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'coupon-' . $prefix,
         'Coupon benefit',
         ['Member account in good standing'],

@@ -63,7 +63,7 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     $staff = (string) Str::uuid();
 
     RecordRewardFundingSourceAction::run($prefix . '-source', 'MYR', 10000, 'user', $staff, 'staff');
-    RecordRewardFundingAction::run($program, 'MYR', 10000, $prefix . '-source', 'user', $staff, 'staff');
+    RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 10000, $prefix . '-source', 'user', $staff, 'staff');
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
@@ -207,7 +207,7 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         10000,
         'native-manual-source',

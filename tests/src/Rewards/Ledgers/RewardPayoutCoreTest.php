@@ -44,7 +44,7 @@ function payoutHarness(string $prefix): array
 
     EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
     RecordRewardFundingSourceAction::run('src-' . $prefix, 'MYR', 100000, 'user', $staff, 'staff');
-    RecordRewardFundingAction::run($program, 'MYR', 100000, 'src-' . $prefix, 'user', $staff, 'staff');
+    RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 100000, 'src-' . $prefix, 'user', $staff, 'staff');
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-' . $prefix . '-1', $memberId));

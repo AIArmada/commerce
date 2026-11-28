@@ -156,7 +156,7 @@ use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 
 RecordRewardFundingSourceAction::run('sponsor-2026', 'MYR', 100000, 'user', $staffId, 'staff');
-RecordRewardFundingAction::run($program, 'MYR', 100000, 'sponsor-2026', 'user', $staffId, 'staff');
+RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 100000, 'sponsor-2026', 'user', $staffId, 'staff');
 
 $payee = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $staffId, 'staff');
 

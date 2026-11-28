@@ -7,10 +7,9 @@ namespace AIArmada\Rewards\Features\Finance\Actions;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingSource;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -37,7 +36,7 @@ final readonly class RecordRewardFundingAction
      * @param  array<string, mixed>|null  $evidence
      */
     public function handle(
-        RewardProgram | string $program,
+        string $programId,
         string $currency,
         int $amountMinor,
         string $sourceRef,
@@ -47,8 +46,6 @@ final readonly class RecordRewardFundingAction
         ?array $evidence = null,
         ?CarbonInterface $decidedAt = null,
     ): RewardFundingEntry {
-        RewardProgramGuard::findProgramOrFail($program);
-
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
 
         if (! in_array($actorRole, ['staff', 'admin'], true) || $actorType !== 'user') {
@@ -65,7 +62,6 @@ final readonly class RecordRewardFundingAction
             throw new InvalidArgumentException('Funding source ref must be 1..191 characters.');
         }
 
-        $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
@@ -81,11 +77,7 @@ final readonly class RecordRewardFundingAction
             $evidence,
             $decided,
         ): RewardFundingEntry {
-            $exists = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();
-
-            if (! $exists instanceof RewardProgram) {
-                throw new InvalidArgumentException('Unknown reward program.');
-            }
+            app(RewardProgramLockApi::class)->lockScopedProgram($programId);
 
             $source = RewardFundingSource::query()
                 ->where('source_ref', $sourceRef)

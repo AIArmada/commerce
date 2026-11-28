@@ -89,7 +89,7 @@ it('creates and retires catalog items with frozen terms', function (): void {
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'ebook-credit',
         'E-book credit',
         ['Good standing'],
@@ -106,7 +106,7 @@ it('creates and retires catalog items with frozen terms', function (): void {
         ->and(RewardBenefitStockLedger::balances($item)['available'])->toBe(10);
 
     expect(fn () => CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'bad-both',
         'Bad',
         ['x'],
@@ -131,7 +131,7 @@ it('redeems, fulfills, and consumes a point-funded benefit exactly', function ()
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'workshop-seat',
         'Workshop seat',
         ['Good standing'],
@@ -194,7 +194,7 @@ it('cancels a pending redemption and restores exactly once', function (): void {
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'merch-pack',
         'Merch pack',
         ['Good standing'],
@@ -243,7 +243,7 @@ it('revokes an unused issued grant and refuses revocation after use', function (
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'course-seat',
         'Course seat',
         ['Good standing'],
@@ -358,7 +358,7 @@ it('expires reserved grants past the catalog expiry and restores points and stoc
     $staff = RewardLedgerFixtures::staffId();
 
     $item = CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'season-pass',
         'Season pass',
         ['Good standing'],
@@ -422,7 +422,7 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     ))->toThrow(InvalidArgumentException::class, 'benefit-catalog-unavailable');
 
     CreateRewardBenefitItemAction::run(
-        $program,
+        (string) $program->getKey(),
         'welcome-credit',
         'Welcome credit',
         ['Member account in good standing', 'One redemption per award'],
@@ -493,8 +493,8 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
 it('rejects a stock movement replay against a different catalog item', function (): void {
     [$program] = benefitLedgerProgram('ben-stock-key');
     $staff = RewardLedgerFixtures::staffId();
-    $first = CreateRewardBenefitItemAction::run($program, 'first-item', 'First', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
-    $second = CreateRewardBenefitItemAction::run($program, 'second-item', 'Second', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $first = CreateRewardBenefitItemAction::run((string) $program->getKey(), 'first-item', 'First', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $second = CreateRewardBenefitItemAction::run((string) $program->getKey(), 'second-item', 'Second', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
     $at = CarbonImmutable::now();
 
     $movement = RewardBenefitStockLedger::append(

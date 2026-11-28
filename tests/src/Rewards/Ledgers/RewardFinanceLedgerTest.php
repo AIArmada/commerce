@@ -73,7 +73,7 @@ function financeLedgerProgram(string $prefix, int $fundedMinor = 10000): array
     );
 
     RecordRewardFundingAction::run(
-        $program,
+        (string) $program->getKey(),
         'MYR',
         $fundedMinor,
         'TREASURY-' . $prefix,
