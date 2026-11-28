@@ -6,7 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
+use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Tests\Fixtures\OwnedTicketable;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use Illuminate\Database\Schema\Blueprint;
@@ -49,7 +50,7 @@ it('accepts registered ticketables inside the current owner scope', function ():
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
-    $data = app(TicketableReferenceGuard::class)->sanitize([
+    $data = app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => $ticketable->getMorphClass(),
         'ticketable_id' => (string) $ticketable->getKey(),
     ]);
@@ -63,7 +64,7 @@ it('rejects cross-owner ticketable references', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => $foreign->getMorphClass(),
         'ticketable_id' => (string) $foreign->getKey(),
     ]))->toThrow(ValidationException::class);
@@ -73,18 +74,18 @@ it('rejects unregistered types and missing ids', function (): void {
     $owner = ticketableOwner('ticketable-guard-missing@example.com');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => User::class,
         'ticketable_id' => (string) $owner->getKey(),
     ]))->toThrow(ValidationException::class);
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => (new OwnedTicketable)->getMorphClass(),
         'ticketable_id' => '00000000-0000-0000-0000-000000000000',
     ]))->toThrow(ValidationException::class);
 });
 
 it('derives search columns only from existing table columns', function (): void {
-    expect(TicketableReferenceGuard::searchColumnsFor(OwnedTicketable::class))->toBe(['name'])
-        ->and(TicketableReferenceGuard::titleAttributeFor(OwnedTicketable::class))->toBe('name');
+    expect(TicketablePickerColumns::searchColumnsFor(OwnedTicketable::class))->toBe(['name'])
+        ->and(TicketablePickerColumns::titleAttributeFor(OwnedTicketable::class))->toBe('name');
 });

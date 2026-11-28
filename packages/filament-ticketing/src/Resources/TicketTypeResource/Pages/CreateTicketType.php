@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\Pages;
 
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateTicketType extends CreateRecord
@@ -18,6 +18,6 @@ final class CreateTicketType extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        return app(TicketableReferenceGuard::class)->sanitize($data);
+        return app(ValidateTicketableReference::class)->handle($data);
     }
 }

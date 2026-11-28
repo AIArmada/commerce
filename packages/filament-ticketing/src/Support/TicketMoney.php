@@ -18,9 +18,7 @@ final class TicketMoney
         }
 
         $sign = $minor < 0 ? '-' : '';
-        $absolute = abs($minor);
-
-        return $sign . intdiv($absolute, 100) . '.' . mb_str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
+        return $sign . abs(intdiv($minor, 100)) . '.' . mb_str_pad((string) abs($minor % 100), 2, '0', STR_PAD_LEFT);
     }
 
     public static function toMinor(?string $display): ?int
@@ -36,7 +34,14 @@ final class TicketMoney
         }
 
         $sign = $matches[1] === '-' ? -1 : 1;
-        $whole = (int) $matches[2];
+        $digits = ltrim($matches[2], '0');
+        $maxWhole = (string) intdiv(PHP_INT_MAX, 100);
+
+        if (strlen($digits) > strlen($maxWhole) || (strlen($digits) === strlen($maxWhole) && strcmp($digits, $maxWhole) > 0)) {
+            return null;
+        }
+
+        $whole = (int) $digits;
         $fraction = $matches[3] ?? '';
         $minor = (int) mb_str_pad(mb_substr($fraction, 0, 2), 2, '0');
 
@@ -47,6 +52,10 @@ final class TicketMoney
         if ($minor >= 100) {
             $whole++;
             $minor -= 100;
+        }
+
+        if ($whole > intdiv(PHP_INT_MAX - $minor, 100)) {
+            return null;
         }
 
         return $sign * (($whole * 100) + $minor);

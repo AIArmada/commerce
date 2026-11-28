@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTicketing\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Support\TicketMoney;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
@@ -69,6 +69,11 @@ final class TicketTypeFormSchema
                     TextInput::make('price')
                         ->numeric()
                         ->minValue(0)
+                        ->rules([static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                            if ($value !== null && $value !== '' && TicketMoney::toMinor((string) $value) === null) {
+                                $fail('Enter a valid ticket price in decimal notation within the supported range.');
+                            }
+                        }])
                         ->suffix(fn (Get $get): string => (string) ($get('currency') ?? 'MYR'))
                         ->helperText('Ticket price in major units; stored as integer minor units.')
                         ->formatStateUsing(
@@ -132,8 +137,8 @@ final class TicketTypeFormSchema
             ->types(
                 fn (TicketableTypeRegistry $registry) => collect($registry->all())->map(
                     fn (string $class): MorphToSelect\Type => MorphToSelect\Type::make($class)
-                        ->titleAttribute(TicketableReferenceGuard::titleAttributeFor($class))
-                        ->searchColumns(TicketableReferenceGuard::searchColumnsFor($class))
+                        ->titleAttribute(TicketablePickerColumns::titleAttributeFor($class))
+                        ->searchColumns(TicketablePickerColumns::searchColumnsFor($class))
                         ->modifyOptionsQueryUsing(
                             static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
                         )

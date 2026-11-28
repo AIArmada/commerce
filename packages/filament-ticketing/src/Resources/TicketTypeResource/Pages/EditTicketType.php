@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTicketing\Resources\TicketTypeResource\Pages;
 
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -26,6 +26,6 @@ final class EditTicketType extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return app(TicketableReferenceGuard::class)->sanitize($data);
+        return app(ValidateTicketableReference::class)->handle($data);
     }
 }
