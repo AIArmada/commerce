@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 use AIArmada\FilamentDocs\Rendering\DocsRichContentFileAttachmentProvider;

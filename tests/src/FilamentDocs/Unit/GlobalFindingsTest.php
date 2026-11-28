@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\ApprovalsRelationManager;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocForm;

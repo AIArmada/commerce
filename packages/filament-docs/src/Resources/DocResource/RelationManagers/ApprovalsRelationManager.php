@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocumentApprovalRequests;
 use AIArmada\Docs\Contracts\DocumentApprovals;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;

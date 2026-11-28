@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Features\Numbering\Models\SequenceNumber;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Models\DocEInvoiceSubmission;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
@@ -16,8 +16,8 @@ use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Features\Versioning\Models\DocVersion;
-use AIArmada\Docs\Models\DocWorkflow;
-use AIArmada\Docs\Models\DocWorkflowStep;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('docs models are auditable and activity loggable', function (): void {

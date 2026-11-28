@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Docs\Contracts\DocumentApprovals;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Support\DocPermissions;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;

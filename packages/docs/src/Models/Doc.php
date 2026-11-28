@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
 use AIArmada\Docs\Runtime\PaymentRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
@@ -78,7 +79,8 @@ use Throwable;
  * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
  * @property-read Collection<int, RelatedDocEmail> $emails
  * @phpstan-type RelatedDocEmail \AIArmada\Docs\Features\Delivery\Models\DocEmail
- * @property-read Collection<int, DocApproval> $approvals
+ * @property-read Collection<int, RelatedDocApproval> $approvals
+ * @phpstan-type RelatedDocApproval \AIArmada\Docs\Features\Approvals\Models\DocApproval
  * @property-read Collection<int, RelatedDocShareLink> $shareLinks
  * @phpstan-type RelatedDocShareLink \AIArmada\Docs\Features\Delivery\Models\DocShareLink
  * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
@@ -178,11 +180,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocApproval, $this>
+     * @return HasMany<RelatedDocApproval, $this>
      */
     public function approvals(): HasMany
     {
-        return $this->hasMany(DocApproval::class);
+        return $this->hasMany(app(ApprovalRelationModel::class)->approval(), 'doc_id');
     }
 
     /**

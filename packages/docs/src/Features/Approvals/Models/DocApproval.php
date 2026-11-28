@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Approvals\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Database\Factories\DocApprovalFactory;
 use AIArmada\Docs\Enums\DocApprovalStatus;
+use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +41,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 final class DocApproval extends Model implements Auditable
 {
     use HasCommerceAudit;
+    /** @use HasFactory<DocApprovalFactory> */
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -58,6 +61,11 @@ final class DocApproval extends Model implements Auditable
         'expired_at',
         'expires_at',
     ];
+
+    protected static function newFactory(): DocApprovalFactory
+    {
+        return DocApprovalFactory::new();
+    }
 
     public function getTable(): string
     {

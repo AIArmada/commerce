@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentApprovals;
 use AIArmada\Docs\Enums\DocApprovalStatus;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 

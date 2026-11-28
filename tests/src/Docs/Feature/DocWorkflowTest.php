@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocWorkflow;
-use AIArmada\Docs\Models\DocWorkflowStep;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
+use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
 
 beforeEach(function (): void {
     DocWorkflowStep::query()->delete();

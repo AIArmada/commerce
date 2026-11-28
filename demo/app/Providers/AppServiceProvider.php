@@ -26,7 +26,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Models\DocTemplate;

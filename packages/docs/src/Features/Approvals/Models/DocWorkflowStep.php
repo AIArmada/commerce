@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Approvals\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Features\Approvals\Support\WorkflowConditions;
+use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
