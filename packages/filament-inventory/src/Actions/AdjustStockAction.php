@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -38,7 +38,7 @@ final class AdjustStockAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query());
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
                                 return $query
@@ -47,13 +47,13 @@ final class AdjustStockAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name')),
 
                         TextInput::make('new_quantity')
                             ->label('New Quantity')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(0)
                             ->helperText('The quantity to set the stock level to'),
@@ -82,7 +82,7 @@ final class AdjustStockAction
             ->action(function (Model $record, array $data): void {
                 $locationId = (string) $data['location_id'];
 
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($locationId)
                     ->exists();
 
@@ -96,7 +96,7 @@ final class AdjustStockAction
                     return;
                 }
 
-                $movement = AdjustInventory::run(
+                $movement = app(InventoryService::class)->adjust(
                     model: $record,
                     locationId: $locationId,
                     newQuantity: (int) $data['new_quantity'],
