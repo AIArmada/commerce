@@ -87,6 +87,21 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 
         $awardIds = array_values(array_unique($awardIds));
 
+        $references = RewardAward::query()
+            ->whereIn('id', $awardIds)
+            ->get(['id', 'program_id']);
+
+        if ($references->count() !== count($awardIds)) {
+            throw new InvalidArgumentException('Linked debit award is missing.');
+        }
+
+        $programs = app(RewardProgramLockApi::class);
+
+        foreach ($references->pluck('program_id')->unique() as $programId) {
+            $programs->assertProgramInScope((string) $programId);
+        }
+
+        // Program provenance is immutable; validate it before taking any award lock.
         $awards = RewardAward::query()
             ->whereIn('id', $awardIds)
             ->orderBy('id')

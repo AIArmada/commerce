@@ -18,7 +18,7 @@ interface RewardAwardLockApi
     public function lockScopedAward(string $awardId): void;
 
     /**
-     * Lock the awards referenced by immutable debit lots before locking the lots.
+     * Validate the program scope, then lock awards referenced by immutable debit lots before locking the lots.
      *
      * @param  list<string>  $awardIds
      * @return list<string>

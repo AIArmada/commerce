@@ -28,6 +28,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContribu
 use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
@@ -675,4 +676,22 @@ it('refuses foreign payout snapshots and benefit recovery queries', function ():
             ->and(fn () => DB::transaction(fn () => $benefitQuery->consumedGrantsForReversal($awardId)))->toThrow(AuthorizationException::class)
             ->and(fn () => DB::transaction(fn () => $benefitQuery->assertGrantBelongsToAward($grantId, $awardId)))->toThrow(AuthorizationException::class);
     });
+});
+
+it('refuses to lock awards from another owner when resolving refund reversal status', function (): void {
+    [$ownerA, $ownerB, , , , $award] = guardCrossTenantFixture('guard-refund-award-lock');
+    $awardId = (string) $award->getKey();
+    $awards = app(RewardAwardLockApi::class);
+
+    expect(OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => DB::transaction(static fn (): array => $awards->lockAndFindReversedAwards([$awardId, $awardId])),
+    ))->toBe([]);
+
+    expect(fn () => OwnerContext::withOwner(
+        $ownerB,
+        static fn (): array => DB::transaction(static fn (): array => $awards->lockAndFindReversedAwards([$awardId])),
+    ))->toThrow(AuthorizationException::class);
+
+    expect($award->fresh()->status)->toBe(RewardAwardStatus::Fulfilled);
 });
