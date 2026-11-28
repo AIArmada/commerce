@@ -11,7 +11,6 @@ use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
 use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderFromCart;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderPayment;
@@ -29,7 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * Creation is owned by the CreateOrder actions; this service remains as the
  * stable interface used by existing integrations and Filament surfaces.
  */
-final class OrderService implements OrderServiceInterface
+final class OrderService
 {
     use AssertsOrderOwnerBoundary;
 

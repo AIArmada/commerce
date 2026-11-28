@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Orders;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
 use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\SweepOrderOutboxCommand;
 use AIArmada\Orders\Notifications\PaymentConfirmationNotification;
 use AIArmada\Orders\Platform\ExtensionRegistry;
 use AIArmada\Orders\Platform\FeatureCatalog;
 use AIArmada\Orders\Platform\FeatureModule;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\Support\OrderHandlerRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
@@ -58,7 +56,6 @@ final class OrdersServiceProvider extends PackageServiceProvider
         }
 
         $this->app->singleton(OrderHandlerRegistrar::class);
-        $this->app->bind(OrderServiceInterface::class, OrderService::class);
         $this->registerEventListeners();
         $this->registerTransitionListeners();
     }
