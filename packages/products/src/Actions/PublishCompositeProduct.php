@@ -44,7 +44,9 @@ final class PublishCompositeProduct
                 throw new InvalidCompositePackageException('Only composite products can be published as packages.');
             }
 
-            $this->service->assertPublishable($parent);
+            if ($parent->status === ProductStatus::Active) {
+                $this->service->assertPublishable($parent);
+            }
 
             return app(UpdateProductStatus::class)->execute($parent, ProductStatus::Active);
         });

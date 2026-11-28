@@ -8,6 +8,7 @@ use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\CompositePriceMode;
@@ -549,4 +550,43 @@ it('does not let tenant-visible global packages be modified or published by a te
             ->and($parent->components()->count())->toBe(1);
         expect(app(PublishCompositeProduct::class)->handle($parent)->status)->toBe(ProductStatus::Active);
     });
+});
+
+it('enforces publishability through the generic status action and preserves the draft on failure', function (): void {
+    $parent = makeCompositeParent();
+    $action = app(UpdateProductStatus::class);
+
+    expect(fn () => $action->execute($parent, ProductStatus::Active))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one component');
+
+    expect($parent->fresh()->status)->toBe(ProductStatus::Draft)
+        ->and($parent->fresh()->published_at)->toBeNull();
+
+    $component = makeComponentProduct();
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $component->id, 'quantity' => 1],
+    ]);
+
+    $published = $action->execute($parent, ProductStatus::Active);
+
+    expect($published->status)->toBe(ProductStatus::Active)
+        ->and($published->published_at)->not->toBeNull();
+});
+
+it('blocks generic activation of a composite with an unpublished nested component', function (): void {
+    $leaf = makeComponentProduct();
+    $child = makeCompositeParent();
+    $parent = makeCompositeParent();
+    $replace = app(ReplaceProductComponents::class);
+    $replace->handle($child, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ]);
+    $replace->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+    ]);
+
+    expect(fn () => app(UpdateProductStatus::class)->execute($parent, ProductStatus::Active))
+        ->toThrow(InvalidCompositePackageException::class, 'must be active');
+
+    expect($parent->fresh()->status)->toBe(ProductStatus::Draft);
 });

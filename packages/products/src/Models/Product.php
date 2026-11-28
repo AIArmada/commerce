@@ -885,12 +885,16 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Product $product): void {
-            if ($product->exists || ! $product->isCompositeProduct()) {
+            if (! $product->isCompositeProduct() || $product->status !== ProductStatus::Active) {
                 return;
             }
 
-            if ($product->status === ProductStatus::Active) {
+            if (! $product->exists) {
                 throw new InvalidCompositePackageException('An active composite package must contain at least one component.');
+            }
+
+            if ($product->isDirty(['status', 'type'])) {
+                app(CompositePackageService::class)->assertPublishable($product);
             }
         });
 
