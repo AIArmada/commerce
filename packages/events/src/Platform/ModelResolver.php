@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Platform;
 
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -239,6 +242,22 @@ final class ModelResolver
                 'The events model [%s] is not configured. Set events.models.%s to an Eloquent model class.',
                 $key,
                 $key,
+            ));
+        }
+
+        $required = match ($key) {
+            'event' => Event::class,
+            'occurrence' => EventOccurrence::class,
+            'session' => EventSession::class,
+            default => Model::class,
+        };
+
+        if (! is_a($model, $required, true)) {
+            throw new RuntimeException(sprintf(
+                'The events model [%s] must be %s or a supported subclass; got %s.',
+                $key,
+                $required,
+                $model,
             ));
         }
 

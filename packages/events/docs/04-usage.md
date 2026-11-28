@@ -27,7 +27,10 @@ the legacy-name mapping.
 ## Resolving models
 
 Application code that may run with model overrides resolves classes through
-`ModelResolver`:
+`ModelResolver`. The event binding must extend the Catalog Event model.
+Occurrence and session models are final domain models, not substitution points;
+invalid bindings are rejected during resolution rather than allowing different
+models to be used for reads and writes.
 
 ```php
 use AIArmada\Events\Platform\ModelResolver;

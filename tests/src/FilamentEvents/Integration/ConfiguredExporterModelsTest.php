@@ -7,6 +7,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventAttendanceExporter;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
@@ -44,3 +45,13 @@ it('resolves the configured schedule models for exports', function (): void {
     expect(EventOccurrenceExporter::getModel())->toBe(EventOccurrence::class)
         ->and(EventSessionExporter::getModel())->toBe(EventSession::class);
 });
+
+it('rejects incompatible catalog model bindings before reads or writes', function (string $key, string $wrongModel): void {
+    config()->set('events.models.' . $key, $wrongModel);
+
+    expect(fn () => ModelResolver::resolve($key))->toThrow(RuntimeException::class);
+})->with([
+    'event' => ['event', EventRegistration::class],
+    'occurrence' => ['occurrence', EventSession::class],
+    'session' => ['session', EventOccurrence::class],
+]);
