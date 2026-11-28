@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\RewardBenefitItemResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -38,7 +38,7 @@ class ListRewardBenefitItems extends ListRecords
                 ->modalHeading('Create benefit catalog item')
                 ->modalDescription('Terms freeze at creation. Take either a point cost or direct entitlement.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => RewardProgram::query()->orderBy('title')->pluck('title', 'id')->all())->required()->searchable(),
+                    Select::make('program_id')->label('Program')->options(fn (): array => app(RewardProgramDirectoryApi::class)->options())->required()->searchable(),
                     TextInput::make('benefit_key')->label('Key (slug)')->required()->maxLength(64),
                     TextInput::make('title')->required()->maxLength(191),
                     Textarea::make('conditions')->label('Conditions (one per line)')->required()->rows(3),

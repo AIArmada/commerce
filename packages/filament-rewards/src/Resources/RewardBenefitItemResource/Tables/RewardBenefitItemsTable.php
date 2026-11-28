@@ -9,7 +9,7 @@ use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -31,7 +31,7 @@ class RewardBenefitItemsTable
                 TextColumn::make('benefit_key')->label('Key')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardBenefitItem $record): string => (string) (RewardProgram::query()->whereKey((string) $record->program_id)->value('title') ?? $record->program_id)),
+                    ->state(fn (RewardBenefitItem $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->program_id)),
                 TextColumn::make('cost')->state(fn (RewardBenefitItem $record): string => $record->direct_entitlement ? 'direct' : ((string) $record->cost_points . ' ' . (string) $record->cost_unit)),
                 TextColumn::make('stock')
                     ->state(function (RewardBenefitItem $record): string {

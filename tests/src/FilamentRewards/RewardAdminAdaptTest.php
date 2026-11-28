@@ -51,6 +51,7 @@ use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
@@ -732,6 +733,22 @@ it('scopes admin queries to programs visible in the current owner context', func
         );
 
         $award = $result->award;
+    });
+
+    $directory = app(RewardProgramDirectoryApi::class);
+    $programId = (string) $program->getKey();
+
+    OwnerContext::withOwner($owner, function () use ($directory, $program, $programId): void {
+        expect($directory->title($programId))->toBe($program->title)
+            ->and($directory->options()[$programId])->toBe($program->title)
+            ->and($directory->versionCount($programId))->toBe(1);
+    });
+
+    OwnerContext::withOwner($other, function () use ($directory, $programId): void {
+        expect($directory->title($programId))->toBeNull()
+            ->and(array_key_exists($programId, $directory->options()))->toBeFalse()
+            ->and($directory->versionCount($programId))->toBe(0)
+            ->and($directory->currentVersion($programId))->toBeNull();
     });
 
     // Livewire test calls swap the request, which drops the withOwner()

@@ -15,7 +15,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -38,7 +38,7 @@ class RewardAwardsTable
             ->columns([
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardAward $record): string => (string) (RewardProgram::query()->whereKey((string) $record->program_id)->value('title') ?? $record->family_key)),
+                    ->state(fn (RewardAward $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->family_key)),
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(fn (RewardAward $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id))

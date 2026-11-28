@@ -7,7 +7,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Schemas;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDecisionHistoryApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -24,7 +24,7 @@ class RewardAwardInfolist
                     Grid::make(3)->schema([
                         TextEntry::make('program_title')
                             ->label('Program')
-                            ->state(fn (RewardAward $record): string => (string) (RewardProgram::query()->whereKey((string) $record->program_id)->value('title') ?? $record->family_key)),
+                            ->state(fn (RewardAward $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->family_key)),
                         TextEntry::make('recipient')
                             ->label('Recipient')
                             ->state(fn (RewardAward $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id)),

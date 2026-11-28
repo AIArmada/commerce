@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables;
 
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -19,7 +19,7 @@ class RewardFundingTable
             ->columns([
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardFundingEntry $record): string => (string) (RewardProgram::query()->whereKey((string) $record->program_id)->value('title') ?? $record->program_id)),
+                    ->state(fn (RewardFundingEntry $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->program_id)),
                 TextColumn::make('currency')->badge(),
                 TextColumn::make('amount_minor')->label('Amount (minor)')->numeric(),
                 TextColumn::make('source_ref')->label('Source ref')->toggleable(isToggledHiddenByDefault: true),

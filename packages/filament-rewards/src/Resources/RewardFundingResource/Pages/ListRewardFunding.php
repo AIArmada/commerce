@@ -8,7 +8,7 @@ use AIArmada\FilamentRewards\Resources\RewardFundingResource\RewardFundingResour
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -68,7 +68,7 @@ class ListRewardFunding extends ListRecords
                 ->modalHeading('Record confirmed funding')
                 ->modalDescription('Allocate confirmed value from a recorded source to one program. Record the source first; this never moves live money.')
                 ->schema([
-                    Select::make('program_id')->label('Program')->options(fn (): array => RewardProgram::query()->orderBy('title')->pluck('title', 'id')->all())->required()->searchable(),
+                    Select::make('program_id')->label('Program')->options(fn (): array => app(RewardProgramDirectoryApi::class)->options())->required()->searchable(),
                     TextInput::make('currency')->required()->maxLength(3)->default('MYR'),
                     TextInput::make('amount_minor')->label('Amount (minor units)')->required()->numeric()->minValue(1),
                     TextInput::make('source_ref')->label('Source reference')->required()->maxLength(191),

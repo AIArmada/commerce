@@ -7,8 +7,8 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use Carbon\CarbonImmutable;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
+use AIArmada\Rewards\Features\Programs\Api\RewardVersionSummary;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -54,7 +54,7 @@ class RewardProgramInfolist
                             ->placeholder('-'),
                         TextEntry::make('version_count')
                             ->label('Published versions')
-                            ->state(fn (RewardProgram $record): int => RewardProgramVersion::query()->where('program_id', $record->getKey())->count()),
+                            ->state(fn (RewardProgram $record): int => app(RewardProgramDirectoryApi::class)->versionCount((string) $record->getKey())),
                         TextEntry::make('enrollment_count')
                             ->label('Enrollments')
                             ->state(fn (RewardProgram $record): int => app(RewardEnrollmentConsentApi::class)->countForProgram((string) $record->getKey())),
@@ -67,33 +67,21 @@ class RewardProgramInfolist
     {
         $version = self::currentVersion($record);
 
-        return $version instanceof RewardProgramVersion ? 'v' . $version->version : 'None published';
+        return $version !== null ? 'v' . $version->version : 'None published';
     }
 
     private static function currentVersionEffectiveFrom(RewardProgram $record): ?string
     {
-        $version = self::currentVersion($record);
-
-        if (! $version instanceof RewardProgramVersion) {
-            return null;
-        }
-
-        return CarbonImmutable::parse($version->effective_from)->setTimezone('UTC')->toIso8601String();
+        return self::currentVersion($record)?->effectiveFrom;
     }
 
     private static function currentVersionHash(RewardProgram $record): ?string
     {
-        $version = self::currentVersion($record);
-
-        return $version instanceof RewardProgramVersion ? (string) $version->material_terms_hash : null;
+        return self::currentVersion($record)?->materialTermsHash;
     }
 
-    private static function currentVersion(RewardProgram $record): ?RewardProgramVersion
+    private static function currentVersion(RewardProgram $record): ?RewardVersionSummary
     {
-        if ($record->current_version_id === null) {
-            return null;
-        }
-
-        return RewardProgramVersion::query()->whereKey((string) $record->current_version_id)->first();
+        return app(RewardProgramDirectoryApi::class)->currentVersion((string) $record->getKey());
     }
 }
