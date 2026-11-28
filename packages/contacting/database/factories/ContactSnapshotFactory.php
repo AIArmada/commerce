@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Database\Factories;
 
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

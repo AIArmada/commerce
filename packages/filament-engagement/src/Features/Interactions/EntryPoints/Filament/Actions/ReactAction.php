@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions;
+
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
+use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
+use Filament\Actions\Action;
+use Filament\Forms;
+
+final class ReactAction
+{
+    public static function make(): Action
+    {
+        return Action::make('react')
+            ->label('React')
+            ->icon('heroicon-o-star')
+            ->form([
+                Forms\Components\Select::make('reaction_type')
+                    ->options(['like' => 'Like', 'love' => 'Love', 'useful' => 'Useful', 'support' => 'Support', 'insightful' => 'Insightful'])
+                    ->required(),
+            ])
+            ->action(function (array $data, $record): void {
+                $record = ActionRecordResolver::resolveOrFail($record);
+                app(ManageInteractionsAction::class)->react(AuthenticatedUser::resolve(), $record, $data['reaction_type']);
+            });
+    }
+}

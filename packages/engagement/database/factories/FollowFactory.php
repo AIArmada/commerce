@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Database\Factories;
 
 use AIArmada\Engagement\Enums\FollowStatus;
-use AIArmada\Engagement\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

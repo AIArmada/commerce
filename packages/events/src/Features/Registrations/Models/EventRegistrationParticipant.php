@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Registrations\Models;
 
-use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Events\Database\Factories\EventRegistrationParticipantFactory;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\ScopesByEventOwner;

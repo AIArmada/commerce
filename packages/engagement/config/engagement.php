@@ -1,13 +1,6 @@
 <?php
 
 declare(strict_types=1);
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Models\Share;
-use AIArmada\Engagement\Models\Subscription;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 
 $tablePrefix = env('ENGAGEMENT_TABLE_PREFIX', 'engagement_');
@@ -48,6 +41,8 @@ return [
     /* Reminder */
     'reminder' => [
         'batch_size' => (int) env('ENGAGEMENT_REMINDER_BATCH_SIZE', 100),
+        'claim_ttl' => (int) env('ENGAGEMENT_REMINDER_CLAIM_TTL', 300),
+        'max_attempts' => (int) env('ENGAGEMENT_REMINDER_MAX_ATTEMPTS', 3),
         'default_channels' => ['mail', 'database'],
     ],
 
@@ -62,16 +57,5 @@ return [
     /* State */
     'state' => [
         'result_limit' => (int) env('ENGAGEMENT_STATE_RESULT_LIMIT', 100),
-    ],
-
-    /* Model class overrides */
-    'models' => [
-        'follow' => Follow::class,
-        'bookmark' => Bookmark::class,
-        'response' => Response::class,
-        'reaction' => Reaction::class,
-        'subscription' => Subscription::class,
-        'reminder' => Reminder::class,
-        'share' => Share::class,
     ],
 ];

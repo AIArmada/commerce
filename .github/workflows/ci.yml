@@ -47,6 +47,13 @@ jobs:
               - 'packages/filament-cashier-chip/**'
               - 'packages/cart/**'
               - 'packages/filament-cart/**'
+              - 'packages/moderation/**'
+              - 'packages/contacting/**'
+              - 'packages/engagement/**'
+              - 'packages/feedback/**'
+              - 'packages/filament-engagement/**'
+              - 'packages/filament-contacting/**'
+              - 'packages/filament-feedback/**'
               - '.github/workflows/ci.yml'
             tests:
               - '**/*.php'
@@ -224,7 +231,7 @@ jobs:
       - name: Verify package boundaries and write ownership
         run: |
           failed=0
-          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals cart filament-cart chip cashier-chip filament-chip filament-cashier-chip links referrals filament-links filament-referrals growth filament-growth communications customers persons filament-communications filament-customers filament-persons shipping jnt filament-shipping filament-jnt filament-events; do
+          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals cart filament-cart chip cashier-chip filament-chip filament-cashier-chip links referrals filament-links filament-referrals growth filament-growth moderation contacting engagement feedback communications customers persons filament-engagement filament-contacting filament-feedback filament-communications filament-customers filament-persons shipping jnt filament-shipping filament-jnt filament-events; do
             echo "::group::${package} boundaries"
             composer --working-dir="packages/${package}" arch:boundaries || failed=1
             echo "::endgroup::"
@@ -362,6 +369,7 @@ jobs:
         # Disable TIA explicitly because Pest's parallel test-discovery child
         # process does not inherit the `--ci` flag.
         env:
+          ENGAGEMENT_POSTGRES_CONCURRENCY: 'true'
           EVENTS_POSTGRES_CONCURRENCY: 'true'
         run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
 

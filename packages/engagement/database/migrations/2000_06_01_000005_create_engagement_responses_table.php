@@ -55,5 +55,14 @@ return new class extends Migration
                 'engagement_responses_subject_type_status_idx',
             );
         });
+
+        $connection = Schema::getConnection();
+        $grammar = $connection->getQueryGrammar();
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (responder_type, responder_id, respondable_type, respondable_id) WHERE owner_type IS NULL AND owner_id IS NULL',
+            $grammar->wrap('engagement_responses_global_unique'),
+            $grammar->wrapTable($tableName),
+        ));
     }
 };

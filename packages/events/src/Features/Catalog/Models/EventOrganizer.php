@@ -6,8 +6,8 @@ namespace AIArmada\Events\Features\Catalog\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\CanBeInvolvedInEvents;
 use AIArmada\Events\Contracts\OwnsEvents;
 use AIArmada\Events\Features\Catalog\Models\Concerns\HasEventInvolvements;

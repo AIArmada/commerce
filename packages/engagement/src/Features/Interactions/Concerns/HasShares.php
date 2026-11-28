@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Engagement\Features\Interactions\Concerns;
+
+use AIArmada\Engagement\Features\Interactions\Models\Share;
+use AIArmada\Engagement\Traits\ReceivesEngagement;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+
+trait HasShares
+{
+    use ReceivesEngagement;
+
+    /** @return MorphMany<Share, $this> */
+    public function shares(): MorphMany
+    {
+        return $this->engagementRelation(Share::class, 'shareable');
+    }
+
+    /** @return MorphMany<Share, $this> */
+    public function successfulShares(): MorphMany
+    {
+        return $this->engagementRelation(Share::class, 'shareable')->where('status', 'shared');
+    }
+}

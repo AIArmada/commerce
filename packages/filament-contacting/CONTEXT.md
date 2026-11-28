@@ -16,7 +16,7 @@ keywords:
 - Composer: `aiarmada/filament-contacting`
 - Role: Filament adapter for contact methods/social/snapshots; relation-managers-first, resources off by default.
 - Triggers: filament, contacts-ui, relation-manager
-- Search first: `src/Resources, src/Schemas, config, docs`
+- Search first: `src/Features/*/EntryPoints/Filament, src/Support, config, docs`
 - Related: `contacting`, `commerce-support`
 - Paired: `contacting` (core domain owner)
 

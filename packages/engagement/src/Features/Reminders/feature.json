@@ -1,0 +1,11 @@
+{
+    "schema": 1,
+    "name": "Reminders",
+    "owns": {
+        "table:reminders": [
+            "AIArmada\\Engagement\\Features\\Reminders\\Actions\\ManageRemindersAction",
+            "AIArmada\\Engagement\\Features\\Reminders\\Actions\\SendDueRemindersAction"
+        ]
+    },
+    "extensions": {}
+}

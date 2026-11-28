@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "SocialProfiles",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentContacting\\Features\\SocialProfiles\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

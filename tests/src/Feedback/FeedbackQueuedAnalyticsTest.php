@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Jobs\RecalculateFeedbackFormAnalyticsJob;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackFormAnalytics;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Analytics\Actions\RecalculateFeedbackFormAnalyticsAction;
+use AIArmada\Feedback\Features\Analytics\EntryPoints\Jobs\RecalculateFeedbackFormAnalyticsJob;
+use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
@@ -40,7 +41,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
         'max_score' => 5,
     ]));
 
-    RecalculateFeedbackFormAnalyticsJob::forForm($form)->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id, $form->owner_type === null && $form->owner_id === null))->handle();
 
     $aggregate = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($aggregate->owner_type)->toBe($ownerA->getMorphClass())
@@ -55,7 +56,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
     $stale = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($stale->average_score)->toBe('5.00');
 
-    RecalculateFeedbackFormAnalyticsJob::forForm($form)->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id, $form->owner_type === null && $form->owner_id === null))->handle();
 
     $fresh = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($fresh->average_score)->toBe('3.00');
@@ -64,7 +65,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
         ->where('feedback_form_id', $form->id)
         ->exists()))->toBeFalse();
 
-    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form)))
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form->id)))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -83,7 +84,7 @@ it('keeps persisted analytics owner tuples immutable', function (): void {
     $form = OwnerContext::withOwner($ownerA, fn (): FeedbackForm => app(CreateFeedbackFormAction::class)->execute(
         new CreateFeedbackFormData(name: 'Immutable analytics'),
     ));
-    OwnerContext::withOwner($ownerA, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form));
+    OwnerContext::withOwner($ownerA, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form->id));
 
     $aggregate = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     $aggregate->assignOwner($ownerB);
@@ -109,7 +110,7 @@ it('queues recalculation with the response owner tuple', function (): void {
         'is_anonymous' => true,
     ]));
 
-    event(new FeedbackResponseSubmitted($response));
+    event(new FeedbackResponseSubmitted($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id));
 
     Queue::assertPushed(RecalculateFeedbackFormAnalyticsJob::class, function (RecalculateFeedbackFormAnalyticsJob $job) use ($form, $owner): bool {
         return $job->formId === $form->id
@@ -117,4 +118,38 @@ it('queues recalculation with the response owner tuple', function (): void {
             && (string) $job->ownerId === (string) $owner->getKey()
             && $job->ownerIsGlobal === false;
     });
+});
+
+it('releases analytics job uniqueness before processing so subsequent changes can enqueue another refresh', function (): void {
+    $job = new RecalculateFeedbackFormAnalyticsJob('form-id', null, null, true);
+
+    expect($job)->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class);
+});
+
+it('does not enqueue analytics for rolled back response changes', function (): void {
+    Queue::fake();
+
+    DB::beginTransaction();
+
+    try {
+        event(new FeedbackResponseSubmitted('response-id', 'form-id', null, null));
+
+        Queue::assertNothingPushed();
+    } finally {
+        DB::rollBack();
+    }
+
+    Queue::assertNothingPushed();
+});
+
+it('enqueues analytics only after response changes commit', function (): void {
+    Queue::fake();
+
+    DB::transaction(function (): void {
+        event(new FeedbackResponseSubmitted('response-id', 'form-id', null, null));
+
+        Queue::assertNothingPushed();
+    });
+
+    Queue::assertPushed(RecalculateFeedbackFormAnalyticsJob::class, 1);
 });

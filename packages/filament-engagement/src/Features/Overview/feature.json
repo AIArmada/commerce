@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "Overview",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentEngagement\\Features\\Overview\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

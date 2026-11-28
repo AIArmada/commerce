@@ -1,0 +1,109 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers;
+
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Feedback\Enums\FeedbackQuestionType;
+use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables;
+use Filament\Tables\Table;
+use LogicException;
+
+final class QuestionsRelationManager extends RelationManager
+{
+    use VerifiesRelationManagerOwnerContext;
+
+    protected static string $relationship = 'questions';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('key'),
+                Tables\Columns\TextColumn::make('type')->badge(),
+                Tables\Columns\TextColumn::make('label')->limit(40),
+                Tables\Columns\IconColumn::make('is_required')->boolean(),
+                Tables\Columns\TextColumn::make('order_column')->sortable(),
+            ])
+            ->headerActions([
+                CreateAction::make()
+                    ->form([
+                        TextInput::make('key')->required(),
+                        Select::make('type')->options(FeedbackQuestionType::options())->required(),
+                        TextInput::make('label')->required(),
+                        TextInput::make('description'),
+                        TextInput::make('help_text'),
+                        TextInput::make('placeholder'),
+                        Toggle::make('is_required'),
+                        Toggle::make('is_scored'),
+                        TextInput::make('order_column')->numeric()->default(0),
+                        Select::make('feedback_section_id')
+                            ->label('Section')
+                            ->options(fn (): array => $this->sectionOptions()),
+                    ])
+                    ->action(function (array $data): void {
+                        app(SaveFeedbackFormStructureAction::class)->saveQuestion(
+                            formId: $this->getOwnerRecord()->getKey(),
+                            data: $data,
+                        );
+                    }),
+            ])
+            ->actions([
+                EditAction::make()
+                    ->form([
+                        TextInput::make('key')->required(),
+                        Select::make('type')->options(FeedbackQuestionType::options())->required(),
+                        TextInput::make('label')->required(),
+                        TextInput::make('description'),
+                        TextInput::make('help_text'),
+                        TextInput::make('placeholder'),
+                        Toggle::make('is_required'),
+                        Toggle::make('is_scored'),
+                        TextInput::make('order_column')->numeric(),
+                        Select::make('feedback_section_id')
+                            ->label('Section')
+                            ->options(fn (): array => $this->sectionOptions()),
+                    ])
+                    ->action(function (FeedbackQuestion $record, array $data): void {
+                        app(SaveFeedbackFormStructureAction::class)->saveQuestion(
+                            formId: $this->getOwnerRecord()->getKey(),
+                            data: $data,
+                            question: $record,
+                        );
+                    }),
+                DeleteAction::make()
+                    ->action(function (FeedbackQuestion $record): void {
+                        app(DeleteFeedbackQuestionAction::class)->execute($record);
+                    }),
+            ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function sectionOptions(): array
+    {
+        $form = $this->getOwnerRecord();
+
+        if (! $form instanceof FeedbackForm) {
+            throw new LogicException('The question relation manager requires a feedback form owner record.');
+        }
+
+        return $form->sections()
+            ->orderBy('order_column')
+            ->pluck('title', 'id')
+            ->all();
+    }
+}
