@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "name": "Delivery",
+  "owns": {
+    "table:communication_deliveries": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CancelCommunicationDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RetryCommunicationDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\TransitionDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PlanCommunicationDeliveriesAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\DispatchManagedNotificationAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSendingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSentAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationFailureAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordDeliveryOutcome",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CaptureNativeNotification",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ManageScheduledDeliveries",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RedactDeliveryPayloadAction"
+    ],
+    "table:communication_attempts": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CompleteDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RedactDeliveryPayloadAction"
+    ],
+    "table:communication_events": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ReplayWebhookEvent",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RedactDeliveryPayloadAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordDeliveryTrackingEvent"
+    ]
+  },
+  "extensions": {}
+}

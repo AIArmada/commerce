@@ -7,19 +7,25 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\MergeCustomers;
-use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Concerns\HasCustomerProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToUser;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
+use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Traits\HasCustomerProfile;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveSegment;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
-use AIArmada\Customers\Models\CustomerNote;
-use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Services\CustomerResolver;
-use AIArmada\Customers\Services\SegmentationService;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -285,7 +291,6 @@ describe('unified segment semantics', function (): void {
             'name' => 'Empty Conditions ' . uniqid(),
             'slug' => 'empty-conditions-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [],
         ]);
 
@@ -321,7 +326,6 @@ describe('unified segment semantics', function (): void {
                 'name' => 'Unknown ' . $index . ' ' . uniqid(),
                 'slug' => 'unknown-' . $index . '-' . uniqid(),
                 'is_automatic' => true,
-                'is_active' => true,
                 'conditions' => $conditions,
             ]);
 
@@ -335,7 +339,6 @@ describe('unified segment semantics', function (): void {
             'name' => 'Suspended Excluded ' . uniqid(),
             'slug' => 'suspended-excluded-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [
                 ['field' => 'accepts_marketing', 'value' => true],
             ],
@@ -361,7 +364,6 @@ describe('bounded segment operations', function (): void {
             'name' => 'Stats Aggregate ' . uniqid(),
             'slug' => 'stats-aggregate-' . uniqid(),
             'is_automatic' => false,
-            'is_active' => true,
         ]);
 
         foreach ([
@@ -375,7 +377,7 @@ describe('bounded segment operations', function (): void {
                 'status' => $status,
                 'accepts_marketing' => $marketing,
             ]);
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
         }
 
         $stats = app(SegmentationService::class)->getSegmentStats($segment);
@@ -391,7 +393,6 @@ describe('bounded segment operations', function (): void {
             'name' => 'Count Only ' . uniqid(),
             'slug' => 'count-only-' . uniqid(),
             'is_automatic' => true,
-            'is_active' => true,
             'conditions' => [
                 ['field' => 'accepts_marketing', 'value' => true],
             ],
@@ -494,12 +495,12 @@ describe('narrowed customer fillable', function (): void {
             'status' => CustomerStatus::Active,
         ]);
 
-        $customer->optInMarketing();
+        $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
         expect($customer->accepts_marketing)->toBeTrue()
             ->and($customer->marketing_consented_at)->not->toBeNull();
 
-        $customer->optOutMarketing();
+        $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
         expect($customer->accepts_marketing)->toBeFalse()
             ->and($customer->fresh()?->marketing_revoked_at)->not->toBeNull();
@@ -601,8 +602,12 @@ describe('owner-safe address attach and merge', function (): void {
             'content' => 'Foreign note',
         ]));
 
-        expect(fn (): Customer => app(MergeCustomers::class)->execute($target, $source))
-            ->toThrow(InvalidArgumentException::class, 'outside the target owner context');
+        OwnerContext::withOwner($ownerA, function () use ($target, $source): void {
+            expect(fn (): Customer => app(MergeCustomers::class)->execute($target, $source))
+                ->toThrow(InvalidArgumentException::class, 'outside the target owner context');
+
+            expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue();
+        });
     });
 });
 
@@ -673,14 +678,13 @@ describe('slug conflict handling', function (): void {
                 'type' => 'custom',
                 'is_automatic' => true,
                 'priority' => 0,
-                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         });
 
         try {
-            expect(fn (): Segment => OwnerContext::withOwner($owner, fn (): Segment => Segment::query()->create([
+            expect(fn (): Segment => OwnerContext::withOwner($owner, fn (): Segment => app(SaveSegment::class)->create([
                 'name' => 'Race Loser',
                 'slug' => $slug,
             ])))->toThrow(ValidationException::class);
@@ -705,20 +709,21 @@ describe('marketing default and customer indexes', function (): void {
 });
 
 describe('reactivation clears deactivated_at', function (): void {
-    it('clears deactivated_at when a segment is reactivated', function (): void {
+    it('deactivates and reactivates a segment through deactivated_at', function (): void {
         $segment = Segment::query()->create([
             'name' => 'Reactivate ' . uniqid(),
             'slug' => 'reactivate-' . uniqid(),
-            'is_active' => true,
         ]);
 
-        $segment->update(['is_active' => false]);
+        $segment->update(['deactivated_at' => now()]);
 
-        expect($segment->fresh()?->deactivated_at)->not->toBeNull();
+        expect($segment->fresh()?->deactivated_at)->not->toBeNull()
+            ->and($segment->fresh()?->isActive())->toBeFalse();
 
-        $segment->update(['is_active' => true]);
+        $segment->update(['deactivated_at' => null]);
 
-        expect($segment->fresh()?->deactivated_at)->toBeNull();
+        expect($segment->fresh()?->deactivated_at)->toBeNull()
+            ->and($segment->fresh()?->isActive())->toBeTrue();
     });
 
     it('clears deactivated_at when a group is reactivated', function (): void {
@@ -771,6 +776,52 @@ describe('customer delete cascades', function (): void {
     });
 });
 
+it('rejects cancelled customer creation before writing contacts', function (): void {
+    Customer::saving(static fn (Customer $record): bool => $record->first_name !== 'VetoCreation');
+
+    expect(fn () => app(CreateCustomer::class)->execute(
+        'veto-creation@example.com',
+        ['first_name' => 'VetoCreation', 'last_name' => 'Customer'],
+        [],
+        null,
+        true,
+    ))->toThrow(RuntimeException::class, 'Customer creation was cancelled.');
+
+    expect(Customer::query()->where('first_name', 'VetoCreation')->exists())->toBeFalse();
+});
+
+it('rejects cancelled customer detail and profile updates', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Original', 'last_name' => 'Customer']);
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(SaveCustomerDetails::class)->update($customer, ['first_name' => 'Changed']))
+        ->toThrow(RuntimeException::class, 'Customer details save was cancelled.');
+
+    expect(fn () => app(UpdateCustomerProfile::class)->execute(
+        $customer,
+        ['first_name' => 'Changed', 'last_name' => 'Customer', 'email' => 'veto-update@example.com'],
+        [],
+        null,
+    ))->toThrow(RuntimeException::class, 'Customer profile update was cancelled.');
+
+    expect($customer->fresh()->first_name)->toBe('Original')
+        ->and($customer->contactMethods()->exists())->toBeFalse();
+});
+
+it('rejects cancelled customer user linkage', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Guest', 'last_name' => 'Customer', 'is_guest' => true]);
+    $user = User::factory()->create();
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(LinkCustomerToUser::class)->execute($customer, $user))
+        ->toThrow(RuntimeException::class, 'Customer user link was cancelled.');
+
+    expect($customer->fresh()->user_id)->toBeNull()
+        ->and($customer->fresh()->is_guest)->toBeTrue();
+});
+
 describe('atomic person linkage', function (): void {
     beforeEach(function (): void {
         config()->set('persons.models.person', Person::class);
@@ -781,6 +832,19 @@ describe('atomic person linkage', function (): void {
             $table->uuid('id')->primary();
             $table->timestamps();
         });
+    });
+
+    it('rejects cancelled person linkage', function (): void {
+        $personId = (string) Str::uuid();
+        DB::table('persons')->insert(['id' => $personId]);
+        $customer = createRegressionTestCustomer(['first_name' => 'Person', 'last_name' => 'Veto']);
+
+        Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+        expect(fn () => app(LinkCustomerToPerson::class)->executeByKey($customer, $personId))
+            ->toThrow(RuntimeException::class, 'Customer person link was cancelled.');
+
+        expect($customer->fresh()->person_id)->toBeNull();
     });
 
     it('rolls back customer creation when the person link fails', function (): void {
@@ -816,4 +880,91 @@ describe('atomic person linkage', function (): void {
 
         expect($customer->fresh()?->first_name)->toBe('Link');
     });
+});
+
+it('rejects a customer self-merge without deleting the customer', function (): void {
+    $owner = CustomersTestOwner::query()->create(['name' => 'Merge Owner']);
+
+    OwnerContext::withOwner($owner, function (): void {
+        $customer = createRegressionTestCustomer(['first_name' => 'Keep', 'last_name' => 'Me']);
+
+        expect(fn () => app(MergeCustomers::class)->execute($customer, $customer->fresh()))
+            ->toThrow(InvalidArgumentException::class, 'Customers must be distinct persisted records.');
+
+        expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue();
+    });
+});
+
+it('rolls back customer dependent deletion when the customer deletion is vetoed', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Veto', 'last_name' => 'Delete']);
+    $contact = $customer->addContactMethod(ContactMethodData::email('delete-veto@example.com'));
+
+    Customer::deleting(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(DeleteCustomer::class)->execute($customer))
+        ->toThrow(RuntimeException::class, 'Customer deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue()
+        ->and(ContactMethod::query()->whereKey($contact->getKey())->exists())->toBeTrue();
+});
+
+it('rolls back customer merges when source deletion is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Veto']);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-veto@example.com'));
+
+    Customer::deleting(static fn (Customer $record): bool => $record->getKey() !== $source->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Customer deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse();
+});
+
+it('rolls back a merge when a contact transfer is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Contact Veto']);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Contact Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-contact-veto@example.com'));
+
+    ContactMethod::saving(static fn (ContactMethod $record): bool => $record->getKey() !== $contact->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Contact move was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse();
+});
+
+it('rolls back contact transfers when merge metadata persistence is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Metadata Veto']);
+    $source->forceFill(['metadata' => ['test' => 'preserve']])->saveOrFail();
+    expect($source->fresh()->metadata)->toBe(['test' => 'preserve']);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Metadata Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-metadata-veto@example.com'));
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $target->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Customer merge metadata persistence was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse()
+        ->and(empty($target->fresh()->metadata))->toBeTrue();
+});
+
+it('rolls back customer deletion when a dependent deletion is vetoed', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Dependent', 'last_name' => 'Veto']);
+    $contact = $customer->addContactMethod(ContactMethodData::email('dependent-veto@example.com'));
+
+    ContactMethod::deleting(static fn (ContactMethod $record): bool => $record->getKey() !== $contact->getKey());
+
+    expect(fn () => app(DeleteCustomer::class)->execute($customer))
+        ->toThrow(RuntimeException::class, 'Customer dependent deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue()
+        ->and(ContactMethod::query()->whereKey($contact->getKey())->exists())->toBeTrue();
 });

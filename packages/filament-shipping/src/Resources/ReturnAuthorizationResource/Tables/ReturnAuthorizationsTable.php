@@ -7,9 +7,8 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\States\ReturnAuthorizationStatus;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -62,15 +61,12 @@ final class ReturnAuthorizationsTable
             ])
             ->actions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (ReturnAuthorization $record): bool => ! $record->isPackageReturn()),
                 ApproveReturnAction::make(),
                 RejectReturnAction::make(),
             ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ])
+            ->bulkActions([])
             ->defaultSort('created_at', 'desc');
     }
 }

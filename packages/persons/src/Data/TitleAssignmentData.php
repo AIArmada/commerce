@@ -4,32 +4,35 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\TitleAssignment;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
+use JsonSerializable;
 
-final class TitleAssignmentData extends Data
+final readonly class TitleAssignmentData implements JsonSerializable
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $title_id,
-        public readonly string $status,
-        public readonly string | null | Optional $titleable_type,
-        public readonly string | null | Optional $titleable_id,
-        public readonly TitleData | null | Optional $title,
+        public string $id,
+        public string $title_id,
+        public string $status,
+        public ?string $titleable_type,
+        public ?string $titleable_id,
+        public ?TitleData $title,
     ) {}
 
-    public static function fromTitleAssignment(TitleAssignment $assignment): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        return new self(
-            id: $assignment->id,
-            title_id: $assignment->title_id,
-            status: $assignment->status->value,
-            titleable_type: $assignment->titleable_type,
-            titleable_id: $assignment->titleable_id,
-            title: $assignment->relationLoaded('title') && $assignment->title
-                ? TitleData::fromTitle($assignment->title)
-                : null,
-        );
+        return [
+            'id' => $this->id,
+            'title_id' => $this->title_id,
+            'status' => $this->status,
+            'titleable_type' => $this->titleable_type,
+            'titleable_id' => $this->titleable_id,
+            'title' => $this->title?->toArray(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

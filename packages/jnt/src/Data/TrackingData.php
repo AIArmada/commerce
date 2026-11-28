@@ -4,26 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Exceptions\JntValidationException;
-use Carbon\CarbonImmutable;
-use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\DataCollection;
-use Throwable;
+use InvalidArgumentException;
 
 /**
  * Tracking data from JNT Express API.
  */
-class TrackingData extends Data
+final readonly class TrackingData
 {
     /**
-     * @param  DataCollection<int, TrackingDetailData>  $details
+     * @param  list<TrackingDetailData>  $details
      */
     public function __construct(
-        public readonly string $trackingNumber,
-        #[DataCollectionOf(TrackingDetailData::class)]
-        public readonly DataCollection $details,
-        public readonly ?string $orderId = null,
+        public string $trackingNumber,
+        public array $details,
+        public ?string $orderId = null,
     ) {}
 
     /**
@@ -35,7 +29,7 @@ class TrackingData extends Data
     {
         return new self(
             trackingNumber: $trackingNumber,
-            details: new DataCollection(TrackingDetailData::class, $details),
+            details: array_values($details),
             orderId: $orderId,
         );
     }
@@ -48,19 +42,23 @@ class TrackingData extends Data
     public static function fromApiArray(array $data): self
     {
         if (! isset($data['billCode']) || ! is_string($data['billCode']) || $data['billCode'] === '') {
-            throw JntValidationException::requiredFieldMissing('billCode');
+            throw new InvalidArgumentException('Missing or invalid billCode.');
+        }
+
+        if (isset($data['txlogisticId']) && ! is_string($data['txlogisticId'])) {
+            throw new InvalidArgumentException('Invalid txlogisticId: expected a string.');
         }
 
         $rawDetails = $data['details'] ?? [];
 
         if (! is_array($rawDetails)) {
-            throw JntValidationException::invalidFieldValue('details', $rawDetails, 'array');
+            throw new InvalidArgumentException('Invalid details: expected an array.');
         }
 
         $details = array_map(
             static function (mixed $detail): TrackingDetailData {
                 if (! is_array($detail)) {
-                    throw JntValidationException::invalidFieldValue('details.*', $detail, 'array');
+                    throw new InvalidArgumentException('Invalid tracking detail: expected an array.');
                 }
 
                 return TrackingDetailData::fromApiArray($detail);
@@ -85,29 +83,13 @@ class TrackingData extends Data
         return [
             'billCode' => $this->trackingNumber,
             'txlogisticId' => $this->orderId,
-            'details' => $this->details->toArray(),
+            'details' => array_map(static fn (TrackingDetailData $detail): array => $detail->toApiArray(), $this->details),
         ];
     }
 
     public function getLatestDetail(): ?TrackingDetailData
     {
-        if ($this->details->count() === 0) {
-            return null;
-        }
-
-        /** @var TrackingDetailData|null $latestDetail */
-        $latestDetail = $this->details
-            ->toCollection()
-            ->sortByDesc(static function (TrackingDetailData $detail): int {
-                try {
-                    return CarbonImmutable::parse($detail->scanTime)->getTimestamp();
-                } catch (Throwable) {
-                    return 0;
-                }
-            })
-            ->first();
-
-        return $latestDetail;
+        return TrackingDetailData::latest($this->details);
     }
 
     public function getLatestStatus(): ?string

@@ -7,6 +7,7 @@
  * @see https://github.com/aiarmada/engagement/docs
  */
 declare(strict_types=1);
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,7 +17,14 @@ return new class extends Migration
     public function up(): void
     {
         $jsonType = commerce_json_column_type('engagement', 'jsonb');
-        Schema::create(config('engagement.database.tables.bookmark_collection_items', 'bookmark_collection_items'), function (Blueprint $table) use ($jsonType): void {
+        $tableName = (string) config('engagement.database.tables.bookmark_collection_items', 'bookmark_collection_items');
+        $driver = ConnectionDriver::name(Schema::getConnection());
+
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
+            throw new RuntimeException(sprintf('Engagement bookmark_collection_items identity migration cannot run on unsupported database driver [%s].', $driver));
+        }
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('bookmark_collection_id')->index();
             $table->uuid('bookmark_id')->index();
@@ -29,5 +37,14 @@ return new class extends Migration
             $table->timestampsTz();
             $table->unique(['bookmark_collection_id', 'bookmark_id', 'owner_type', 'owner_id'], 'engagement_collection_items_unique');
         });
+
+        $connection = Schema::getConnection();
+        $grammar = $connection->getQueryGrammar();
+
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (bookmark_collection_id, bookmark_id) WHERE owner_type IS NULL AND owner_id IS NULL',
+            $grammar->wrap('engagement_collection_items_global_unique'),
+            $grammar->wrapTable($tableName),
+        ));
     }
 };

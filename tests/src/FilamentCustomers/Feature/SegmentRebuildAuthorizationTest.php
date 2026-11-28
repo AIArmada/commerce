@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -48,10 +48,10 @@ it('rebuild action honors Gate interceptors', function (): void {
         'slug' => 'manual-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
     ]);
 
-    Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true && $ability === 'rebuild'
+    Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true
+        && in_array($ability, ['viewAny', 'rebuild'], true)
         ? true
         : null);
 

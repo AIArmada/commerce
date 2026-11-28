@@ -10,9 +10,9 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 
 it('exposes the carrier discovery seam on the fulfillment contract', function (): void {
@@ -112,7 +112,7 @@ it('maps the canonical shipping attachment into carrier rate requests', function
         ->andReturnTrue();
     $driver->shouldReceive('getRates')
         ->once()
-        ->andReturn(collect([
+        ->andReturn([
             new RateQuoteData(
                 carrier: 'manual',
                 service: 'standard',
@@ -120,7 +120,7 @@ it('maps the canonical shipping attachment into carrier rate requests', function
                 currency: 'MYR',
                 estimatedDays: 3,
             ),
-        ]));
+        ]);
     $shippingManager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
     $shippingManager->shouldReceive('driver')->with('manual')->once()->andReturn($driver);
 

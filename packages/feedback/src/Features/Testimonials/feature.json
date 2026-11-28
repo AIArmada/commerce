@@ -1,0 +1,15 @@
+{
+    "schema": 1,
+    "name": "Testimonials",
+    "owns": {
+        "table:feedback_testimonials": [
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\ApproveFeedbackTestimonialAction",
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\PublishFeedbackTestimonialAction",
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\RejectFeedbackTestimonialAction",
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\HideFeedbackTestimonialAction",
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\ExtractFeedbackTestimonialAction",
+            "AIArmada\\Feedback\\Features\\Testimonials\\Actions\\ManageTestimonialDependenciesAction"
+        ]
+    },
+    "extensions": {}
+}

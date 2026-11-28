@@ -21,6 +21,10 @@ final class ContactingModelReferenceGuard
             throw new InvalidArgumentException('Model reference type and id must both be present or both be null.');
         }
 
+        if (mb_trim($type) === '' || mb_trim($id) === '') {
+            throw new InvalidArgumentException('Model reference type and id must not be blank.');
+        }
+
         $modelClass = Relation::getMorphedModel($type) ?? $type;
 
         if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
@@ -39,6 +43,27 @@ final class ContactingModelReferenceGuard
         }
 
         return $model;
+    }
+
+    public function resolveModel(Model $model, string $argument = 'model'): Model
+    {
+        if (! $model->exists) {
+            throw new InvalidArgumentException(sprintf('The %s must be persisted.', $argument));
+        }
+
+        $key = $model->getKey();
+
+        if ((! is_string($key) && ! is_int($key)) || (string) $key === '') {
+            throw new InvalidArgumentException(sprintf('The %s must have a non-empty key.', $argument));
+        }
+
+        $resolved = $this->resolve($model->getMorphClass(), (string) $key);
+
+        if (! $resolved instanceof Model) {
+            throw new InvalidArgumentException(sprintf('The %s does not exist.', $argument));
+        }
+
+        return $resolved;
     }
 
     /**

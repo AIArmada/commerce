@@ -4,25 +4,28 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
-use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Persistence\DeletesAtomically;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Actions\CreateContactMethodAction;
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Data\MissingValue;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ValidateContactMethodData;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
+use AIArmada\Customers\Runtime\CustomerNoteRelationModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,11 +39,9 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
-use Spatie\LaravelData\Optional;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\File;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Tags\HasTags;
 
 /**
@@ -70,15 +71,22 @@ use Spatie\Tags\HasTags;
  * @property-read Model|null $person
  * @property-read Model|null $owner
  * @property-read Collection<int, Address> $addresses
- * @property-read Collection<int, Segment> $segments
- * @property-read Collection<int, CustomerNote> $notes
- * @property-read Collection<int, CustomerGroup> $groups
+ * @property-read Collection<int, RelatedSegment> $segments
+ * @property-read Collection<int, RelatedCustomerNote> $notes
+ * @property-read Collection<int, RelatedCustomerGroup> $groups
+ *
+ * @phpstan-type RelatedCustomerNote \AIArmada\Customers\Features\Identity\Models\CustomerNote
+ * @phpstan-type RelatedCustomerGroup \AIArmada\Customers\Features\Segmentation\Models\CustomerGroup
+ * @phpstan-type RelatedSegment \AIArmada\Customers\Features\Segmentation\Models\Segment
  */
 class Customer extends Model implements Auditable, HasMedia
 {
+    use DeletesAtomically;
     use HasAddresses;
     use HasCommerceAudit;
-    use HasContactMethods;
+    use HasContactMethods {
+        addContactMethod as private createCanonicalContactMethod;
+    }
     use HasCustomerLifecycle;
     use HasCustomerSegmentation;
     use HasFactory;
@@ -151,9 +159,11 @@ class Customer extends Model implements Auditable, HasMedia
 
     public function addContactMethod(ContactMethodData | array $data): ContactMethod
     {
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
+        if (static::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(static::class, $this->getKey());
         }
+
+        $data = app(ValidateContactMethodData::class)->execute($data);
 
         if ($data->type === 'email') {
             $existingContact = $this->findExistingContactEmail($data->value);
@@ -165,7 +175,7 @@ class Customer extends Model implements Auditable, HasMedia
             $this->assertContactEmailIsUnique($data->value);
 
             try {
-                return app(CreateContactMethodAction::class)->execute($this, $data);
+                return $this->createCanonicalContactMethod($data);
             } catch (UniqueConstraintViolationException) {
                 throw ValidationException::withMessages([
                     'email' => 'The email has already been taken within the current owner scope.',
@@ -181,7 +191,7 @@ class Customer extends Model implements Auditable, HasMedia
             }
         }
 
-        return app(CreateContactMethodAction::class)->execute($this, $data);
+        return $this->createCanonicalContactMethod($data);
     }
 
     private function findExistingContactEmail(string $email): ?ContactMethod
@@ -214,9 +224,9 @@ class Customer extends Model implements Auditable, HasMedia
             return null;
         }
 
-        $countryCode = $data->countryCode instanceof Optional ? null : $data->countryCode;
+        $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
-        $normalized = app(NormalizeContactMethodAction::class)->execute(
+        $normalized = app(ContactMethodNormalizer::class)->normalize(
             $data->type,
             $data->value,
             $countryCode ?? config('contacting.defaults.country_code'),
@@ -268,23 +278,10 @@ class Customer extends Model implements Auditable, HasMedia
         }
     }
 
-    /**
-     * Match a normalized email sargably: exact match on the stored normalized
-     * value, with a legacy fallback for rows whose normalized value is missing.
-     *
-     * @param  Builder<ContactMethod>  $query
-     */
+    /** @param Builder<ContactMethod> $query */
     private function constrainContactEmailMatch(Builder $query, string $normalizedEmail): void
     {
-        $query->where(function (Builder $query) use ($normalizedEmail): void {
-            $query->where('normalized_value', $normalizedEmail)
-                ->orWhere(function (Builder $query) use ($normalizedEmail): void {
-                    $query->where(function (Builder $query): void {
-                        $query->whereNull('normalized_value')
-                            ->orWhere('normalized_value', '');
-                    })->whereRaw('LOWER(TRIM(COALESCE(value, \'\'))) = ?', [$normalizedEmail]);
-                });
-        });
+        $query->where('normalized_value', $normalizedEmail);
     }
 
     /**
@@ -345,11 +342,11 @@ class Customer extends Model implements Auditable, HasMedia
     /**
      * Get the customer's notes.
      *
-     * @return HasMany<CustomerNote, $this>
+     * @return HasMany<RelatedCustomerNote, $this>
      */
     public function notes(): HasMany
     {
-        return $this->hasMany(CustomerNote::class, 'customer_id')->latest();
+        return $this->hasMany(app(CustomerNoteRelationModel::class)->note(), 'customer_id')->latest();
     }
 
     // =========================================================================
@@ -398,13 +395,7 @@ class Customer extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::deleting(function (Customer $customer): void {
-            app(AddressAttachmentWriter::class)->detachAll($customer->getMorphClass(), (string) $customer->getKey());
-            $customer->notes()->delete();
-            $customer->segments()->detach();
-            $customer->groups()->detach();
-            $customer->contactMethods()->get()->each(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
-            $customer->socialProfiles()->get()->each(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());
-            $customer->media()->get()->each(fn (Media $medium): bool => (bool) $medium->delete());
+            app(CustomerDependentsCleaner::class)->cleanup((string) $customer->getKey());
         });
     }
 

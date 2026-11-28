@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationBatch;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
@@ -53,32 +53,8 @@ test('manager notify creates communication record', function (): void {
 
     $result = Communications::notify($notifiable, $notification, $context);
 
-    expect($result)->toBeInstanceOf(Communication::class);
-    expect($result->purpose)->toBe('manager-test');
-});
-
-test('manager recordNative returns null by default', function (): void {
-    $notifiable = new class
-    {
-        use Notifiable;
-
-        public function routeNotificationForMail(): string
-        {
-            return 'test@example.com';
-        }
-    };
-
-    $notification = new class extends Notification
-    {
-        public function via(object $notifiable): array
-        {
-            return ['mail'];
-        }
-    };
-
-    $result = Communications::recordNative($notifiable, $notification, 'mail');
-
-    expect($result)->toBeNull();
+    expect($result)->toBeString();
+    expect(Communication::query()->findOrFail($result)->purpose)->toBe('manager-test');
 });
 
 test('config driven table names support prefix', function (): void {

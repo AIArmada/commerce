@@ -132,7 +132,7 @@ if ($existing) {
 
 **Problem**: Slow owner-scoped customer or segment queries
 
-**Solution**: The migrations ship composite `(owner_type, owner_id, status)` indexes on `customers` and `(owner_type, owner_id, is_active)` on segments. If you run a custom table prefix, re-run migrations so the indexes are created under your prefix; every owner-scoped read filters on the owner tuple first.
+**Solution**: The migrations ship composite `(owner_type, owner_id, status)` indexes on `customers` and `(owner_type, owner_id, deactivated_at)` on segments. If you run a custom table prefix, re-run migrations so the indexes are created under your prefix; every owner-scoped read filters on the owner tuple first.
 
 **Problem**: Slow customer queries with segments
 
@@ -171,6 +171,10 @@ if (!$policy->view($user, $customer)) {
     dump($customer->owner);
 }
 ```
+
+Customer, note, segment, group, and address policies deny requests without a
+resolved owner context. Global reads respect `include_global`, but global
+mutations require `OwnerContext::withOwner(null, ...)` explicitly.
 
 **Problem**: Cannot delete customer with relationships
 

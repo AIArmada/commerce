@@ -81,7 +81,7 @@ final class TaxExemptionForm
                                                 ->toArray();
                                         }
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup') {
+                                        if ($type === 'AIArmada\\Customers\\Features\\Segmentation\\Models\\CustomerGroup') {
                                             return $query
                                                 ->where('name', $operator, "%{$search}%")
                                                 ->limit(50)
@@ -263,8 +263,8 @@ final class TaxExemptionForm
             $types['AIArmada\\Customers\\Models\\Customer'] = 'Customer';
         }
 
-        if (class_exists('AIArmada\\Customers\\Models\\CustomerGroup')) {
-            $types['AIArmada\\Customers\\Models\\CustomerGroup'] = 'Customer Group';
+        if (class_exists('AIArmada\\Customers\\Features\\Segmentation\\Models\\CustomerGroup')) {
+            $types['AIArmada\\Customers\\Features\\Segmentation\\Models\\CustomerGroup'] = 'Customer Group';
         }
 
         return $types;

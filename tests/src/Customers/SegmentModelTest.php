@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveSegment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
@@ -50,7 +54,8 @@ describe('Segment Model', function (): void {
                 'slug' => 'active-' . uniqid(),
             ]);
 
-            expect($segment->is_active)->toBeTrue();
+            expect($segment->deactivated_at)->toBeNull()
+                ->and($segment->isActive())->toBeTrue();
         });
 
         it('defaults to automatic', function (): void {
@@ -109,7 +114,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             expect($segment->customers)->toHaveCount(1)
                 ->and($segment->customers->first()->id)->toBe($customer->id);
@@ -128,8 +133,8 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
-            $segment->removeCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
+            app(RemoveCustomerFromSegment::class)->execute($customer, $segment);
 
             expect($segment->fresh()->customers)->toHaveCount(0);
         });
@@ -211,7 +216,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             $matching = $segment->getMatchingCustomers();
 
@@ -239,7 +244,7 @@ describe('Segment Model', function (): void {
                 'accepts_marketing' => true,
             ]);
 
-            $count = $segment->rebuildCustomerList();
+            $count = app(RebuildAllSegments::class)->rebuildSegment($segment);
 
             expect($count)->toBeGreaterThanOrEqual(1);
         });
@@ -250,18 +255,17 @@ describe('Segment Model', function (): void {
             Segment::create([
                 'name' => 'Active Scope ' . uniqid(),
                 'slug' => 'active-scope-' . uniqid(),
-                'is_active' => true,
             ]);
 
             Segment::create([
                 'name' => 'Inactive Scope ' . uniqid(),
                 'slug' => 'inactive-scope-' . uniqid(),
-                'is_active' => false,
+                'deactivated_at' => now(),
             ]);
 
             $active = Segment::active()->get();
 
-            expect($active->every(fn ($s) => $s->is_active))->toBeTrue();
+            expect($active->every(fn ($s) => $s->deactivated_at === null))->toBeTrue();
         });
 
         it('can filter automatic segments', function (): void {
@@ -333,7 +337,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             $segmentId = $segment->id;
             $segment->delete();
@@ -358,9 +362,9 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
-            $count = $segment->rebuildCustomerList();
+            $count = app(RebuildAllSegments::class)->rebuildSegment($segment);
 
             expect($count)->toBe(1);
         });
@@ -384,4 +388,18 @@ describe('Segment Model', function (): void {
             expect($matching->every(fn ($c) => $c->status->value === 'active'))->toBeTrue();
         });
     });
+});
+
+it('preserves segment memberships if deletion is cancelled', function (): void {
+    $segment = Segment::create(['name' => 'Deletion veto', 'slug' => 'deletion-veto']);
+    $customer = Customer::create(['first_name' => 'Segment', 'last_name' => 'Veto']);
+    app(AssignCustomerToSegment::class)->execute($customer, $segment);
+
+    Segment::deleting(static fn (Segment $record): bool => $record->getKey() !== $segment->getKey());
+
+    expect(fn () => app(SaveSegment::class)->delete($segment))
+        ->toThrow(RuntimeException::class, 'Segment deletion was cancelled.');
+
+    expect(Segment::query()->whereKey($segment->getKey())->exists())->toBeTrue()
+        ->and($segment->customers()->whereKey($customer->getKey())->exists())->toBeTrue();
 });

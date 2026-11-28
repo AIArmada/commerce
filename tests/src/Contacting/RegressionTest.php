@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Actions\BuildContactLinksAction;
-use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
-use AIArmada\Contacting\Actions\UpdateContactMethodAction;
-use AIArmada\Contacting\Actions\UpdateSocialProfileAction;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\MoveContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ReplaceGeneralContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\MoveSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use AIArmada\Customers\Models\Customer;
@@ -338,10 +341,10 @@ it('snapshots bundles in bulk with per-source owners', function (): void {
         handle: 'bundle-' . uniqid(),
     ));
 
-    $snapshots = (new CreateContactSnapshotAction)->fromBundle(
+    $snapshots = app(CreateContactSnapshotAction::class)->fromBundle(
         $customer,
-        [$method, $phone],
-        [$profile],
+        [$method->id, $phone->id],
+        [$profile->id],
         'bundle-test',
     );
 
@@ -357,7 +360,7 @@ it('snapshots bundles in bulk with per-source owners', function (): void {
 
     expect($snapshots->where('snapshot_type', 'contact_method')->first()?->source_id)->toBe($method->id)
         ->and($snapshots->where('snapshot_type', 'social_profile')->first()?->source_id)->toBe($profile->id)
-        ->and((new CreateContactSnapshotAction)->fromBundle($customer, [], [], 'bundle-empty'))->toHaveCount(0);
+        ->and(app(CreateContactSnapshotAction::class)->fromBundle($customer, [], [], 'bundle-empty'))->toHaveCount(0);
 });
 
 it('limits contact link building when asked', function (): void {
@@ -374,7 +377,7 @@ it('treats snapshots as append-only with action-owned lineage', function (): voi
     $customer = regressionCustomer('immutable');
 
     $method = $customer->addContactMethod(ContactMethodData::email('locked-' . uniqid() . '@example.com'));
-    $snapshot = (new CreateContactSnapshotAction)->fromContactMethod($customer, $method, 'locked');
+    $snapshot = app(CreateContactSnapshotAction::class)->fromContactMethod($customer, $method->id, 'locked');
 
     expect($snapshot->source_id)->toBe($method->id)
         ->and(fn () => $snapshot->update(['label' => 'changed']))->toThrow(LogicException::class)
@@ -403,4 +406,145 @@ it('leaves parentless primaries undemoted by design', function (): void {
 
     expect($first->fresh()?->is_primary)->toBeTrue()
         ->and($second->fresh()?->is_primary)->toBeTrue();
+});
+
+it('rolls back primary demotion when a saving listener cancels the replacement', function (): void {
+    $customer = regressionCustomer('cancel-primary');
+    $first = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        value: 'first-' . uniqid() . '@example.com',
+        isPrimary: true,
+    ));
+
+    ContactMethod::saving(static function (ContactMethod $record): ?bool {
+        return str_starts_with($record->value, 'cancel-primary-') ? false : null;
+    });
+
+    try {
+        expect(fn () => $customer->addContactMethod(new ContactMethodData(
+            type: 'email',
+            value: 'cancel-primary-' . uniqid() . '@example.com',
+            isPrimary: true,
+        )))->toThrow(RuntimeException::class);
+
+        expect($first->fresh()->is_primary)->toBeTrue();
+    } finally {
+        ContactMethod::flushEventListeners();
+        ContactMethod::clearBootedModels();
+    }
+});
+
+it('rejects unsafe website links and credential-bearing URLs', function (): void {
+    $normalizer = new NormalizesUrl;
+
+    expect($normalizer->normalize('javascript:alert(1).example.com'))->toBeNull()
+        ->and($normalizer->normalize('https://example.com@evil.example'))->toBeNull()
+        ->and($normalizer->normalize('https://EXAMPLE.COM/path?A=1'))->toBe('https://example.com/path?A=1');
+});
+
+it('preserves global contact methods during an owner-specific replacement', function (): void {
+    config(['contacting.features.owner.include_global' => true]);
+
+    $parent = RepairCascadeParent::query()->create([]);
+    $owner = User::factory()->create();
+    $global = OwnerContext::withOwner(null, fn () => $parent->addContactMethod(
+        ContactMethodData::email('global@example.com'),
+    ));
+    $local = OwnerContext::withOwner($owner, fn () => $parent->addContactMethod(
+        ContactMethodData::email('local@example.com'),
+    ));
+
+    OwnerContext::withOwner($owner, fn () => app(ReplaceGeneralContactMethods::class)->execute($parent, ['email' => null]));
+
+    expect(ContactMethod::withoutOwnerScope()->whereKey($global->id)->exists())->toBeTrue()
+        ->and(ContactMethod::withoutOwnerScope()->whereKey($local->id)->exists())->toBeFalse();
+});
+
+it('keeps owner-specific primaries when moving contacts to a parent with global primaries', function (): void {
+    config(['contacting.features.owner.include_global' => true]);
+
+    $source = RepairCascadeParent::query()->create([]);
+    $target = RepairCascadeParent::query()->create([]);
+    $owner = User::factory()->create();
+
+    [$globalMethod, $globalProfile] = OwnerContext::withOwner(null, fn () => [
+        $target->addContactMethod(new ContactMethodData(type: 'email', value: 'global@example.com', isPrimary: true)),
+        $target->addSocialProfile(new SocialProfileData(platform: 'facebook', handle: 'global-primary', isPrimary: true)),
+    ]);
+
+    [$movedMethod, $movedProfile] = OwnerContext::withOwner($owner, function () use ($source, $target): array {
+        $method = $source->addContactMethod(new ContactMethodData(type: 'email', value: 'local@example.com', isPrimary: true));
+        $profile = $source->addSocialProfile(new SocialProfileData(platform: 'facebook', handle: 'local-primary', isPrimary: true));
+
+        return [
+            app(MoveContactMethodAction::class)->execute($method, $target),
+            app(MoveSocialProfileAction::class)->execute($profile, $target),
+        ];
+    });
+
+    expect($movedMethod->is_primary)->toBeTrue()
+        ->and($movedProfile->is_primary)->toBeTrue()
+        ->and($movedMethod->contactable_id)->toBe($target->id)
+        ->and($movedProfile->socialable_id)->toBe($target->id)
+        ->and(ContactMethod::withoutOwnerScope()->findOrFail($globalMethod->id)->is_primary)->toBeTrue()
+        ->and(SocialProfile::withoutOwnerScope()->findOrFail($globalProfile->id)->is_primary)->toBeTrue();
+});
+
+it('recomputes the contact display when its type changes without changing its raw value', function (): void {
+    $customer = regressionCustomer('contact-type');
+    $method = $customer->addContactMethod(new ContactMethodData(
+        type: 'other',
+        value: 'example.com',
+        displayValue: 'Old custom display',
+    ));
+
+    $updated = app(UpdateContactMethodAction::class)->execute($method, new ContactMethodData(
+        type: 'website',
+        value: 'example.com',
+    ));
+
+    expect($updated->normalized_value)->toBe('https://example.com')
+        ->and($updated->display_value)->toBe('https://example.com');
+});
+
+it('uses the configured phone country consistently when the explicit country is cleared', function (): void {
+    config()->set('contacting.defaults.country_code', 'MY');
+    $customer = regressionCustomer('phone-country');
+    $method = $customer->addContactMethod(ContactMethodData::phone('0123456789', 'GB'));
+
+    $updated = app(UpdateContactMethodAction::class)->execute($method, ContactMethodData::phone('0123456789'));
+
+    expect($updated->country_code)->toBeNull()
+        ->and($updated->normalized_value)->toBe('+60123456789');
+});
+
+it('regenerates the social URL when the handle changes and extracts the handle when the URL changes', function (): void {
+    $customer = regressionCustomer('social-identity');
+    $profile = $customer->addSocialProfile(new SocialProfileData(platform: 'instagram', handle: 'initial'));
+
+    $action = app(UpdateSocialProfileAction::class);
+    $updated = $action->execute($profile, new SocialProfileData(platform: 'instagram', handle: 'replacement'));
+
+    expect($updated->handle)->toBe('replacement')
+        ->and($updated->url)->toBe((new SocialProfileConfig)->buildUrl('instagram', 'replacement'));
+
+    $updated = $action->execute($updated, new SocialProfileData(platform: 'instagram', url: 'https://instagram.com/another'));
+
+    expect($updated->handle)->toBe('another')
+        ->and($updated->url)->toBe('https://instagram.com/another');
+});
+
+it('does not retain a stale social URL when both identity fields are explicitly cleared', function (): void {
+    $customer = regressionCustomer('clear-social');
+    $profile = $customer->addSocialProfile(new SocialProfileData(platform: 'instagram', handle: 'initial'));
+
+    $updated = app(UpdateSocialProfileAction::class)->execute($profile, new SocialProfileData(
+        platform: 'instagram',
+        handle: null,
+        url: null,
+    ));
+
+    expect($updated->handle)->toBeNull()
+        ->and($updated->url)->toBeNull()
+        ->and($updated->normalized_url)->toBeNull();
 });

@@ -81,10 +81,7 @@ cutover.
 - `RebuildAllSegments` — Rebuild automatic segment memberships per owner
 
 ### Concerns
-- `HasCustomerProfile` — Trait implementing the `HasCustomerProfile` contract
-
-### Contracts
-- `HasCustomerProfile` — Interface for models (e.g. User) that expose a customer profile
+- `HasCustomerProfile` — Eloquent integration trait for user profiles
 
 ### Services & Drivers
 - `CustomerResolver` — Resolves the best customer record from authenticated user, session customer, and payloads
@@ -161,7 +158,6 @@ The package follows SOLID principles:
 - **Events**: Dispatchable events for all major actions
 - **Policies**: Authorization via Laravel policies
 - **Concerns**: Reusable customer-profile trait (`HasCustomerProfile`)
-- **Contracts**: Interfaces for extensibility (HasCustomerProfile)
 - **Support**: Shared profile normalization (`CustomerProfileNormalizer`)
 - **Services**: Checkout resolution and segmentation (`CustomerResolver`, `SegmentationService`)
 - **Merge**: Canonical transactional merge (`MergeCustomers`)

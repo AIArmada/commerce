@@ -1,0 +1,48 @@
+{
+    "schema": 1,
+    "name": "Forms",
+    "owns": {
+        "table:feedback_forms": [
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\ArchiveFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\CloseFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\CreateFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\CreateFeedbackFormFromTemplateAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackFormDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackQuestionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackSectionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DuplicateFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\PublishFeedbackFormAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\SaveFeedbackFormStructureAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\UpdateFeedbackFormAction"
+        ],
+        "table:feedback_sections": [
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackFormDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackQuestionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackSectionAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackSectionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\ReorderFeedbackSectionsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\SaveFeedbackFormStructureAction"
+        ],
+        "table:feedback_questions": [
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackFormDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackQuestionAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackQuestionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackSectionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\ReorderFeedbackQuestionOptionsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\ReorderFeedbackQuestionsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\SaveFeedbackFormStructureAction"
+        ],
+        "table:feedback_question_options": [
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackFormDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackQuestionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\DeleteFeedbackSectionDependentsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\ReorderFeedbackQuestionOptionsAction",
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\SaveFeedbackFormStructureAction"
+        ],
+        "table:feedback_templates": [
+            "AIArmada\\Feedback\\Features\\Forms\\Actions\\SaveFeedbackTemplateAction"
+        ]
+    },
+    "extensions": {}
+}

@@ -9,8 +9,7 @@ namespace AIArmada\Orders\Contracts;
  *
  * Implement this interface to connect orders with shipping management.
  *
- * The shipping package provides a ready-to-use implementation:
- * *
+ * The shipping package provides a ready-to-use implementation.
  * This implementation is automatically registered when both the orders
  * and shipping packages are installed together.
  */

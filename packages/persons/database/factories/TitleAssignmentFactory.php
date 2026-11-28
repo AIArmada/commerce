@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Database\Factories;
 
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

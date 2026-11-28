@@ -20,7 +20,7 @@ keywords:
 - Composer: `aiarmada/communications`
 - Role: Comms records: outbound/inbound/inbox, deliveries, templates, preferences, suppressions, batches.
 - Triggers: email, sms, notification, inbox, template, suppression, delivery
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Search first: `src/Features, src/Models, src/Contracts, src/Drivers, config, docs`
 - Related: `filament-communications`, `commerce-support`, `contacting`
 - Paired: `filament-communications` (Filament admin adapter)
 
@@ -44,7 +44,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Communication`, `CommunicationAttachment`, `CommunicationAttempt`, `CommunicationBatch`, `CommunicationContent`, `CommunicationDelivery`, `CommunicationDestination`, `CommunicationEvent`, `CommunicationPreference`, `CommunicationRecipient`, `CommunicationReference`, `CommunicationSuppression`, `CommunicationTemplate`, `CommunicationTemplateVersion`, `CommunicationThread`, `CommunicationTrackingToken`, `NotificationInbox`
-- Actions/Services: `Actions/AddCommunicationRecipientAction`, `Actions/ApplyProviderEventAction`, `Actions/AttachCommunicationReferenceAction`, `Actions/CancelCommunicationAction`, `Actions/CancelCommunicationDeliveryAction`, `Actions/CompleteDeliveryAttemptAction`, `Actions/CreateCommunicationAction`, `Actions/CreateCommunicationBatchAction`
+- Actions/Services: `Features/Aggregate/Actions/{AddCommunicationRecipientAction,AttachCommunicationReferenceAction,CancelCommunicationAction,CreateCommunicationAction,CreateCommunicationBatchAction}`, `Features/Delivery/Actions/{ApplyProviderEventAction,CancelCommunicationDeliveryAction,CompleteDeliveryAttemptAction}`, `Features/{Inbox,Suppressions,Templates,Tracking}`
 - Config `communications.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `batches`, `threads`, `communications`, `recipients`, `contents`, `deliveries`
 
 ## Docs map

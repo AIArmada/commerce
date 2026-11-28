@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Database\Factories;
 
 use AIArmada\Engagement\Enums\ResponseStatus;
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

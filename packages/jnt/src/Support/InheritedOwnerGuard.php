@@ -24,14 +24,22 @@ final class InheritedOwnerGuard
             return;
         }
 
+        if (($ownerType === null) !== ($ownerId === null)) {
+            throw new InvalidArgumentException("{$model} inherited owner tuple is incomplete.");
+        }
+
         if ($ownerType === null && $ownerId === null) {
+            if (! OwnerContext::isExplicitGlobal()) {
+                throw new InvalidArgumentException("{$model} global writes require an explicit global owner context.");
+            }
+
             return;
         }
 
         $context = OwnerContext::resolve();
 
         if ($context === null) {
-            return;
+            throw new InvalidArgumentException("{$model} inherited owner requires the current owner context.");
         }
 
         if ($ownerType === $context->getMorphClass() && (string) $ownerId === (string) $context->getKey()) {

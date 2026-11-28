@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\FilamentCustomersServiceProvider;
 use AIArmada\FilamentCustomers\Pages\SegmentRebuildPage;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -45,7 +45,6 @@ if (! function_exists('filamentCustomers_makeSegment')) {
             'slug' => str($name)->slug() . '-' . uniqid(),
             'type' => 'custom',
             'is_automatic' => $automatic,
-            'is_active' => true,
             'conditions' => [],
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => $owner->getKey(),
@@ -63,7 +62,7 @@ it('queues the real rebuild command with segment and owner options', function ()
     test()->actingAs($user);
 
     Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true
-        && in_array($ability, ['customers.segments.rebuild', 'customers.segments.update'], true)
+        && in_array($ability, ['customers.segments.view', 'customers.segments.rebuild', 'customers.segments.update'], true)
         ? true
         : null);
 
@@ -86,6 +85,8 @@ it('denies single-segment rebuilds without the rebuild ability', function (): vo
     Queue::fake();
 
     $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
+    $user = filamentCustomers_makeUser('rebuild-denied');
+    test()->actingAs($user);
 
     $segment = filamentCustomers_makeSegment($owner, 'Guarded');
 
@@ -105,7 +106,7 @@ it('rebuild-all authorizes every scoped segment then queues one scoped command',
     test()->actingAs($user);
 
     Gate::before(fn (mixed $authenticatedUser, string $ability): ?bool => $authenticatedUser?->is($user) === true
-        && in_array($ability, ['customers.segments.rebuild', 'customers.segments.update'], true)
+        && in_array($ability, ['customers.segments.view', 'customers.segments.rebuild', 'customers.segments.update'], true)
         ? true
         : null);
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Cart\ShippingCondition;
+use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingCondition;
 
 // ============================================
 // ShippingCondition Tests

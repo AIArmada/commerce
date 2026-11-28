@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Models\Follow;
-
-final class FollowCreated
+final readonly class FollowCreated
 {
-    public function __construct(public Follow $follow) {}
+    public function __construct(
+        public string $followId,
+        public string $actorType,
+        public string $actorId,
+        public string $subjectType,
+        public string $subjectId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+    ) {}
 }

@@ -8,7 +8,7 @@ use AIArmada\FilamentJnt\Resources\JntOrderResource\Pages\ListJntOrders;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Pages\ViewJntOrder;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Schemas\JntOrderInfolist;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Tables\JntOrderTable;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;

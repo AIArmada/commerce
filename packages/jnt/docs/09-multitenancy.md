@@ -155,7 +155,7 @@ $orders = JntOrder::query()->forOwner(OwnerContext::resolve())->get();
 Use `forOwner()` to explicitly scope queries:
 
 ```php
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 // Query specific owner's orders
 $orders = JntOrder::query()
@@ -239,7 +239,8 @@ Child records automatically inherit owner from their parent:
 $order = JntOrder::query()->first();
 
 // Events inherit owner from order
-foreach ($order->trackingEvents as $event) {
+foreach (JntTrackingEvent::query()->where('order_id', $order->id)
+    ->where('owner_type', $order->owner_type)->where('owner_id', $order->owner_id)->cursor() as $event) {
     // $event->owner_type === $order->owner_type
     // $event->owner_id === $order->owner_id
 }
@@ -267,9 +268,9 @@ OwnerContext::withOwner($tenant, function () use ($data) {
 ### JntTrackingService
 
 ```php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 
-$service = app(JntTrackingService::class);
+$service = app(SyncOrderTracking::class);
 
 // Get orders needing tracking update for specific owner
 $orders = $service->getOrdersNeedingTrackingUpdateForOwner(
@@ -328,7 +329,7 @@ Jobs must explicitly handle owner context. The `OwnerContextJob` trait from
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 
 class SyncJntTracking implements OwnerScopedJob, ShouldQueue
 {
@@ -347,7 +348,7 @@ class SyncJntTracking implements OwnerScopedJob, ShouldQueue
     public function performJob(): void
     {
         // The owner is already resolved by the trait
-        $service = app(JntTrackingService::class);
+        $service = app(SyncOrderTracking::class);
         $service->batchSyncTracking($service->getOrdersNeedingTrackingUpdate(limit: 100));
     }
 }
@@ -368,7 +369,7 @@ class SyncJntTracking implements ShouldQueue
         $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
 
         OwnerContext::withOwner($owner, function (): void {
-            $service = app(JntTrackingService::class);
+            $service = app(SyncOrderTracking::class);
             $service->batchSyncTracking($service->getOrdersNeedingTrackingUpdate(limit: 100));
         });
     }
@@ -388,7 +389,7 @@ class SyncAllJntTracking extends Command
         Team::query()->chunk(100, function ($teams) {
             foreach ($teams as $team) {
                 OwnerContext::withOwner($team, function () use ($team) {
-                    $service = app(JntTrackingService::class);
+                    $service = app(SyncOrderTracking::class);
                     $results = $service->batchSyncTracking(
                         $service->getOrdersNeedingTrackingUpdate(limit: 50)
                     );
@@ -421,7 +422,7 @@ class HandleStatusChanged
         // Resolve owner model
         $owner = $event->owner();
         
-        // Resolve order with proper scoping
+        // Resolve immutable order snapshot with proper scoping
         $order = $event->resolveOrder();
 
         if ($owner !== null) {

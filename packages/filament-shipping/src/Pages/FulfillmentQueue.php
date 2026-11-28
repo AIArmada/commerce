@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Resources\OrderResource;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\OrderFulfillment;
 use AIArmada\Orders\Models\Order;
@@ -24,7 +24,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
 use UnitEnum;
@@ -80,23 +79,9 @@ class FulfillmentQueue extends Page implements HasTable
             return null;
         }
 
-        $includeGlobal = (bool) config('orders.owner.include_global', false);
-
-        if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        $owner = OwnerContext::resolve();
-        $ownerKey = $owner ? ($owner->getMorphClass() . ':' . $owner->getKey()) : 'global';
-
-        $cacheKey = sprintf('filament-shipping.fulfillment-queue.badge.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
-
-        $count = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
-            return Order::query()
-                ->forOwner($owner, includeGlobal: $includeGlobal)
-                ->whereState('status', Processing::class)
-                ->count();
-        });
+        $count = OwnerScopedQuery::apply(Order::query())
+            ->whereState('status', Processing::class)
+            ->count();
 
         return $count > 0 ? (string) $count : null;
     }
@@ -107,39 +92,21 @@ class FulfillmentQueue extends Page implements HasTable
             return null;
         }
 
-        $includeGlobal = (bool) config('orders.owner.include_global', false);
+        $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
-        if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        $owner = OwnerContext::resolve();
-        $ownerKey = $owner ? ($owner->getMorphClass() . ':' . $owner->getKey()) : 'global';
-
-        $cacheKey = sprintf('filament-shipping.fulfillment-queue.badge-color.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
-
-        $urgentCount = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
-            $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
-
-            return Order::query()
-                ->forOwner($owner, includeGlobal: $includeGlobal)
-                ->whereState('status', Processing::class)
-                ->where('created_at', '<=', CarbonImmutable::now()->subHours($urgentThreshold))
-                ->count();
-        });
+        $urgentCount = OwnerScopedQuery::apply(Order::query())
+            ->whereState('status', Processing::class)
+            ->where('created_at', '<=', CarbonImmutable::now()->subHours($urgentThreshold))
+            ->count();
 
         return $urgentCount > 0 ? 'danger' : 'success';
     }
 
     public function table(Table $table): Table
     {
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('orders.owner.include_global', false);
-
         return $table
             ->query(
-                Order::query()
-                    ->forOwner($owner, includeGlobal: $includeGlobal)
+                OwnerScopedQuery::apply(Order::query())
                     ->whereState('status', Processing::class)
                     ->with(['customer', 'items'])
             )

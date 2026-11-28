@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationTrigger;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Notifications\BaseCommunicationNotification;
 use AIArmada\Communications\Traits\HasCommunicationContext;
 use Illuminate\Notifications\Events\NotificationSending;

@@ -46,8 +46,8 @@ Standalone resources are off by default to prevent accidental cross-owner access
 If the relation manager shows "Relationship [contactMethods] not found", ensure the parent model uses:
 
 ```php
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 ```
 
 ## No Create Button on Standalone Resources

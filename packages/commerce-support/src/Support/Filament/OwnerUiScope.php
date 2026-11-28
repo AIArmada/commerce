@@ -168,6 +168,7 @@ final class OwnerUiScope
         }
 
         $owner = OwnerContext::resolveConfigured($config);
+        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal() && ($includeGlobal ?? $config->includeGlobal);
 
         if ($owner !== null) {
             if ($recordOwner instanceof Model && self::sameOwner($owner, $recordOwner)) {
@@ -175,7 +176,7 @@ final class OwnerUiScope
             }
 
             return ! $forMutation
-                && ($includeGlobal ?? $config->includeGlobal)
+                && $includeGlobal
                 && $recordOwner === null;
         }
 

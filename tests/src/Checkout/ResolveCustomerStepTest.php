@@ -14,12 +14,12 @@ use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Services\CustomersPaymentSubjectDriver;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Payment\CustomersPaymentSubjectDriver;
-use AIArmada\Customers\Services\CustomerResolver;
 
 use function Pest\Laravel\actingAs;
 

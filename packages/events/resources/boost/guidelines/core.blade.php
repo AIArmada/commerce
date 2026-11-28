@@ -44,3 +44,5 @@ $registrationIds = app(RegisterForFreeAction::class)->execute(
 );
 </code-snippet>
 @endverbatim
+
+The Events engagement adapter returns detached record arrays for successful writes (including `id` and persisted attributes), or `null` from the null driver. It does not expose Eloquent models across the package boundary.

@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Actions;
 
-use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Jnt\Data\PrintWaybillData;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
@@ -57,62 +53,13 @@ final class PrintAwbTableAction extends Action
                 }
 
                 try {
-                    $jntService = app(JntExpressService::class);
+                    $url = app(PrintableWaybill::class)->url((string) $record->getKey(), Filament::auth()?->id());
 
-                    $result = $record->tracking_number !== null
-                        ? $jntService->printOrder($record->order_id, $record->tracking_number)
-                        : $jntService->printOrder($record->order_id);
-
-                    $waybill = PrintWaybillData::fromApiArray($result);
-
-                    if ($waybill->hasUrlContent()) {
-                        $url = $waybill->urlContent;
-
-                        if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
-                            $livewire->js('window.open(' . json_encode($url) . ', "_blank")');
-
-                            Notification::make()
-                                ->title('AWB Ready')
-                                ->body('Opening waybill in new tab.')
-                                ->success()
-                                ->send();
-
-                            return;
-                        }
-                    }
-
-                    if ($waybill->hasBase64Content()) {
-                        $pdfContent = $waybill->getPdfContent();
-
-                        if ($pdfContent === null) {
-                            Notification::make()
-                                ->title('AWB Not Available')
-                                ->body('Unable to decode waybill content from J&T Express.')
-                                ->warning()
-                                ->send();
-
-                            return;
-                        }
-
-                        $url = app(SignedDownloadApi::class)->issueUrl(
-                            cachePrefix: 'jnt_awb',
-                            routeName: 'jnt.awb.show',
-                            routeParameters: ['orderId' => $record->order_id],
-                            payload: [
-                                'content' => $pdfContent,
-                                'format' => 'pdf',
-                                'order_id' => $record->order_id,
-                                'tracking_number' => $record->tracking_number,
-                            ],
-                            ttl: 1800,
-                            owner: EloquentRecordReference::fromModel(OwnerUiScope::resolveOwner($record)),
-                            userId: Filament::auth()?->id(),
-                        );
-
-                        $livewire->js('window.open(' . json_encode((string) $url) . ', "_blank")');
+                    if ($url !== null) {
+                        $livewire->js('window.open(' . json_encode($url) . ', "_blank", "noopener,noreferrer")');
 
                         Notification::make()
-                            ->title('AWB Generated')
+                            ->title('AWB Ready')
                             ->body('Opening waybill in new tab.')
                             ->success()
                             ->send();
