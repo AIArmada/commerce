@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;
 use Carbon\CarbonImmutable;
@@ -17,7 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-class EnsureSeatHoldAction
+final readonly class EnsureSeatHoldAction
 {
     /**
      * @param  array<int, string>  $categoryPreferences
@@ -58,14 +59,6 @@ class EnsureSeatHoldAction
     }
 
     /**
-     * Select available seats with a locking re-check.
-     *
-     * The availability subquery reads from the transaction snapshot, so holds
-     * committed after our snapshot (or by a transaction we waited on for a
-     * seat lock) are invisible to it. The follow-up locking read sees the
-     * latest committed hold rows and serializes concurrent selectors, and a
-     * single retry fills from seats that were never contested.
-     *
      * @param  array<int, string>  $preferences
      * @return Collection<int, Seat>
      */
@@ -77,7 +70,7 @@ class EnsureSeatHoldAction
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $candidates = $this->availableSeatsQuery($map, $preferences)
                 ->when($excludedSeatIds !== [], fn (Builder $query): Builder => $query->whereNotIn('id', $excludedSeatIds))
-                ->limit($quantity)
+                ->limit($quantity - $verified->count())
                 ->get();
 
             if ($candidates->isEmpty()) {
@@ -87,11 +80,20 @@ class EnsureSeatHoldAction
             $heldSeatIds = SeatHold::query()
                 ->whereIn('seat_id', $candidates->pluck('id')->all())
                 ->where('expires_at', '>', CarbonImmutable::now())
+                ->whereNull('converted_at')
                 ->lockForUpdate()
                 ->pluck('seat_id')
                 ->all();
 
-            $fresh = $candidates->reject(fn (Seat $seat): bool => in_array($seat->id, $heldSeatIds, true))->values();
+            $allocatedSeatIds = SeatAllocation::query()
+                ->whereIn('seat_id', $candidates->pluck('id')->all())
+                ->where('status', 'active')
+                ->lockForUpdate()
+                ->pluck('seat_id')
+                ->all();
+
+            $unavailable = array_fill_keys([...$heldSeatIds, ...$allocatedSeatIds], true);
+            $fresh = $candidates->reject(fn (Seat $seat): bool => isset($unavailable[$seat->id]))->values();
             $verified = $verified->concat($fresh)->unique('id')->values();
 
             if ($verified->count() >= $quantity) {
@@ -150,6 +152,7 @@ class EnsureSeatHoldAction
                 $hold->assignOwner($owner);
             }
 
+            $hold->setRelation('seat', $seat);
             $holds->push($hold);
         }
 
@@ -180,7 +183,8 @@ class EnsureSeatHoldAction
             ->with('section')
             ->whereHas('section', fn (Builder $query): Builder => $query->where('seat_map_id', $map->id))
             ->available()
-            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now()));
+            ->whereDoesntHave('holds', fn (Builder $query): Builder => $query->where('expires_at', '>', CarbonImmutable::now())->whereNull('converted_at'))
+            ->whereDoesntHave('activeAllocation');
 
         if ($preferences !== []) {
             $placeholders = implode(',', array_fill(0, count($preferences), '?'));

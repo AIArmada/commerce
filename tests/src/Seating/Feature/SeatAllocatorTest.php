@@ -8,6 +8,7 @@ use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
@@ -150,4 +151,24 @@ it('returns empty collection for zero quantity', function (): void {
     );
 
     expect($results)->toHaveCount(0);
+});
+
+it('never holds a seat with an active allocation even when the seat status is available', function (): void {
+    $seat = Seat::query()->orderBy('row_number')->firstOrFail();
+    SeatAllocation::factory()->create(['seat_id' => $seat->id, 'status' => 'active']);
+
+    $results = app(SeatAllocatorInterface::class)->allocate(map: $this->map, quantity: 14);
+
+    expect($results)->toHaveCount(14)
+        ->and($results->pluck('seatId')->all())->not->toContain($seat->id);
+});
+
+it('can hold a seat again after its converted allocation has been released', function (): void {
+    $seat = Seat::query()->orderBy('row_number')->firstOrFail();
+    SeatHold::factory()->converted()->create(['seat_id' => $seat->id]);
+
+    $results = app(SeatAllocatorInterface::class)->allocate(map: $this->map, quantity: 15);
+
+    expect($results)->toHaveCount(15)
+        ->and($results->pluck('seatId')->all())->toContain($seat->id);
 });

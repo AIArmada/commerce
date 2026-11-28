@@ -28,7 +28,7 @@ final class SeatingServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->bind(SeatAllocatorInterface::class, fn (): DefaultSeatAllocator => new DefaultSeatAllocator);
+        $this->app->bind(SeatAllocatorInterface::class, DefaultSeatAllocator::class);
     }
 
     public function bootingPackage(): void

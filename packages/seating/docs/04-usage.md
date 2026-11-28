@@ -54,7 +54,7 @@ $results = app(SeatAllocatorInterface::class)->allocate(
 
 Each result is an `AllocationResult` DTO with `seatId`, `sectionCode`, `rowLabel`, `seatLabel`, and `category`.
 
-`DefaultSeatAllocator`/`EnsureSeatHoldAction` select with set-based `limit($quantity)` preferred + `limit($remaining)` fallback batches inside a `DB::transaction()`, constrained to the map's sections (`whereHas('section')`), `available()` status, unheld TTL (`whereDoesntHave('holds', expires_at > now)`), and the ambient owner scope, with `lockForUpdate()`. Shortfalls throw `InsufficientSeatsException` before any `SeatHold` insert; holds are batch-inserted via a single `SeatHold::insert()`. `SeatingMode::requiresSeatAllocation()` returns `true` only for `Assigned`/`Hybrid`, so `None`/`GeneralAdmission` intentionally return an empty collection. The Livewire picker (`toggleSeat()`) applies the same map/available/TTL/active-allocation checks and silently ignores ineligible seats.
+`DefaultSeatAllocator` delegates all hold creation to `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty collection. The Livewire picker checks availability and the requested section.
 
 ## Livewire Component
 
