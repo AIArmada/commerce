@@ -19,20 +19,21 @@ trait QueriesVouchers
     use NormalizesVoucherCodes;
 
     /**
-     * Build an owner-scoped voucher query with the redemption counter
-     * preloaded. `times_used` is derived from voucher_usage rows; the count
-     * avoids an N+1 query on list and statistics surfaces.
+     * Build an owner-scoped voucher query. Only eligibility and remaining-use
+     * reads need the aggregate redemption count.
      *
      * @return Builder<Voucher>
      */
-    protected function voucherQuery(): Builder
+    protected function voucherQuery(bool $withUsageCount = false): Builder
     {
         $owner = $this->resolveOwner();
         $includeGlobal = $this->shouldIncludeGlobal();
 
-        $query = Voucher::query()
-            ->withCount('usages')
-            ->forOwner($owner, $includeGlobal);
+        $query = Voucher::query()->forOwner($owner, $includeGlobal);
+
+        if ($withUsageCount) {
+            $query->withCount('usages');
+        }
 
         if ($owner !== null && $includeGlobal) {
             $query->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END');

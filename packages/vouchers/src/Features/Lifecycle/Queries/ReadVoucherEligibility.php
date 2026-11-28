@@ -25,7 +25,7 @@ final class ReadVoucherEligibility implements VoucherEligibility
         $code = $this->normalizeCode($code);
 
         // Find voucher
-        $voucher = $this->voucherQuery()
+        $voucher = $this->voucherQuery(withUsageCount: (bool) config('vouchers.validation.check_global_limit', true))
             ->where('code', $code)
             ->first();
 

@@ -73,7 +73,7 @@ final class ReadVoucherCatalog implements VoucherCatalog
 
     public function getRemainingUses(string $code): int
     {
-        $voucher = $this->voucherQuery()
+        $voucher = $this->voucherQuery(withUsageCount: true)
             ->where('code', $this->normalizeCode($code))
             ->first();
 

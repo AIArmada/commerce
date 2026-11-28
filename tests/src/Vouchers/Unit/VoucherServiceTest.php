@@ -662,3 +662,32 @@ test('voucher reservations resolve the current identity without using the lookup
     expect(Cache::get("voucher_reservation:{$voucher->id}:session-old"))->toBeNull()
         ->and(Cache::get("voucher_reservation:{$voucher->id}:session-current"))->toBeArray();
 });
+
+test('voucher catalog lookup does not aggregate unrelated usage rows', function (): void {
+    config(['vouchers.cache.lookup_ttl' => 0]);
+
+    $voucher = Voucher::create([
+        'code' => 'CATALOG-QUERY',
+        'name' => 'Catalog query',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit' => 5,
+    ]);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $found = app(VoucherService::class)->find($voucher->code);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($found?->id)->toBe($voucher->id)
+        ->and($queries)->toHaveCount(1)
+        ->and(mb_strtolower($queries[0]['query']))->not->toContain('usages_count');
+});
