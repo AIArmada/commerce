@@ -10,6 +10,8 @@ interface VoucherCatalog
 {
     public function find(string $code, ?string $voucherId = null): ?VoucherData;
 
+    public function resolveId(string $code, ?string $voucherId = null): ?string;
+
     public function invalidate(string $code): void;
 
     public function getRemainingUses(string $code): int;

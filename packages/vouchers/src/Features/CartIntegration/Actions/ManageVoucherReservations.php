@@ -4,29 +4,32 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 
 final class ManageVoucherReservations implements VoucherReservations
 {
-    use QueriesVouchers;
+    public function __construct(private readonly VoucherCatalog $catalog) {}
 
     public function reserve(string $code, string $sessionId, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherIdentityQuery($code, $voucherId)->firstOrFail();
+        $id = $this->catalog->resolveId($code, $voucherId);
 
-        /** @var VoucherModel $voucher */
-        $cacheKey = $this->reservationCacheKey((string) $voucher->id, $sessionId);
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
+        if ($id === null) {
+            throw VoucherNotFoundException::withCode($code);
+        }
+
+        $cacheKey = $this->reservationCacheKey($id, $sessionId);
+        $sessionsKey = $this->reservationSessionsCacheKey($id);
         $ttl = config('vouchers.reservation.ttl', 900); // 15 minutes default
 
-        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $sessionId, $ttl, $cacheKey, $voucher): void {
+        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $sessionId, $ttl, $cacheKey, $id): void {
             Cache::put($cacheKey, [
-                'voucher_id' => $voucher->id,
+                'voucher_id' => $id,
                 'session_id' => $sessionId,
                 'reserved_at' => CarbonImmutable::now()->toIso8601String(),
             ], $ttl);
@@ -38,7 +41,7 @@ final class ManageVoucherReservations implements VoucherReservations
 
             $sessionIds = array_values(array_filter(
                 $sessionIds,
-                fn (mixed $sid): bool => is_string($sid) && Cache::has($this->reservationCacheKey((string) $voucher->id, $sid)),
+                fn (mixed $sid): bool => is_string($sid) && Cache::has($this->reservationCacheKey($id, $sid)),
             ));
 
             if (! in_array($sessionId, $sessionIds, true)) {
@@ -56,19 +59,19 @@ final class ManageVoucherReservations implements VoucherReservations
      */
     public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherIdentityQuery($code, $voucherId)->first();
+        $id = $this->catalog->resolveId($code, $voucherId);
 
-        if (! $voucher) {
+        if ($id === null) {
             return;
         }
 
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
+        $sessionsKey = $this->reservationSessionsCacheKey($id);
 
         if ($sessionId !== null) {
             $ttl = config('vouchers.reservation.ttl', 900);
 
-            $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $sessionId, $ttl, $voucher): void {
-                Cache::forget($this->reservationCacheKey((string) $voucher->id, $sessionId));
+            $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $sessionId, $ttl, $id): void {
+                Cache::forget($this->reservationCacheKey($id, $sessionId));
                 $sessionIds = Cache::get($sessionsKey, []);
 
                 if (! is_array($sessionIds)) {
@@ -90,13 +93,13 @@ final class ManageVoucherReservations implements VoucherReservations
             return;
         }
 
-        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $voucher): void {
+        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $id): void {
             $sessionIds = Cache::get($sessionsKey, []);
 
             if (is_array($sessionIds)) {
                 foreach ($sessionIds as $sid) {
                     if (is_string($sid) && $sid !== '') {
-                        Cache::forget($this->reservationCacheKey((string) $voucher->id, $sid));
+                        Cache::forget($this->reservationCacheKey($id, $sid));
                     }
                 }
             }

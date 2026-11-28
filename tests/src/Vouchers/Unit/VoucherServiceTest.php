@@ -638,3 +638,27 @@ test('checkout rejects negative discounts and unknown currencies instead of sile
         ->toThrow(ValidationException::class);
     expect($voucher->usages()->count())->toBe(0);
 });
+
+test('voucher reservations resolve the current identity without using the lookup cache', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'RESERVE-FRESH',
+        'name' => 'Reservation identity',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+    expect($service->find($voucher->code)?->id)->toBe($voucher->id);
+
+    DB::table($voucher->getTable())->where('id', $voucher->id)->update(['code' => 'RESERVE-RENAMED']);
+
+    expect(fn () => $service->reserve('RESERVE-FRESH', 'session-old'))
+        ->toThrow(VoucherNotFoundException::class);
+
+    $service->reserve('RESERVE-RENAMED', 'session-current');
+
+    expect(Cache::get("voucher_reservation:{$voucher->id}:session-old"))->toBeNull()
+        ->and(Cache::get("voucher_reservation:{$voucher->id}:session-current"))->toBeArray();
+});

@@ -40,6 +40,11 @@ final class ReadVoucherCatalog implements VoucherCatalog
         );
     }
 
+    public function resolveId(string $code, ?string $voucherId = null): ?string
+    {
+        return $this->voucherIdentityQuery($code, $voucherId)->select('id')->first()?->id;
+    }
+
     public function invalidate(string $code): void
     {
         $this->lookupCache->forget($this->normalizeCode($code), $this->resolveOwner());
