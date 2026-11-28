@@ -1329,10 +1329,10 @@ final readonly class TransitionRewardAwardAction
             throw new InvalidArgumentException('Refused: cash fulfillment requires a confirmed payout request.');
         }
 
-        if ($request->status !== RewardPayoutRequestStatus::Confirmed) {
+        if ($request->status !== RewardPayoutRequestStatus::Confirmed->value) {
             throw new InvalidArgumentException(
                 'Refused: cash fulfillment requires a confirmed (paid) payout; current state is ['
-                . $request->status->value . ']. Confirm or reconcile the payout first.'
+                . $request->status . ']. Confirm or reconcile the payout first.'
             );
         }
 

@@ -189,7 +189,7 @@ class RewardAwardsTable
 
                         $confirmed = app(RewardPayoutQueryApi::class)->forAward((string) $record->getKey());
 
-                        if ($confirmed === null || $confirmed->status !== RewardPayoutRequestStatus::Confirmed) {
+                        if ($confirmed === null || $confirmed->status !== RewardPayoutRequestStatus::Confirmed->value) {
                             throw ValidationException::withMessages(['reason' => 'No confirmed payout exists for this award.']);
                         }
 

@@ -18,7 +18,6 @@ final readonly class ManagePointsEntitlements implements RewardPointsEntitlement
     public function __construct(
         private RewardSourceFactReader $reader,
         private EvaluateRewardEntitlementAction $evaluate,
-        private ApplyRewardSourceCorrectionsAction $corrections,
     ) {}
 
     public function connectionName(): string
@@ -63,7 +62,7 @@ final readonly class ManagePointsEntitlements implements RewardPointsEntitlement
                 return;
             }
 
-            $report = $this->corrections->handle('system', null, 'system', null, 200, [
+            $report = ApplyRewardSourceCorrectionsAction::run('system', null, 'system', null, 200, [
                 ['business_key' => $businessKey, 'reason' => $reason, 'evidence' => $evidence],
             ]);
 

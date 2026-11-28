@@ -124,7 +124,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         } catch (Throwable $exception) {
             report($exception);
 
-            return ReferralFulfillmentResult::failed('The rewards corrections sweep could not settle this referral side.');
+            return ReferralFulfillmentResult::failed('The rewards corrections sweep could not be driven.');
         }
 
         return $this->stampVerifiedReversal($reward, $businessKey);

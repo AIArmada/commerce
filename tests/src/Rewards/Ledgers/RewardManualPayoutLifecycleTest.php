@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardPayoutMethodCatalog;
@@ -20,6 +18,8 @@ use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Finance\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\ReconcileRewardPayoutAction;

@@ -135,19 +135,19 @@ final readonly class ReverseRewardFulfillmentAction
         }
 
         if (in_array($request->status, [
-            RewardPayoutRequestStatus::Requested,
-            RewardPayoutRequestStatus::Approved,
-            RewardPayoutRequestStatus::Submitted,
-            RewardPayoutRequestStatus::Unknown,
+            RewardPayoutRequestStatus::Requested->value,
+            RewardPayoutRequestStatus::Approved->value,
+            RewardPayoutRequestStatus::Submitted->value,
+            RewardPayoutRequestStatus::Unknown->value,
         ], true)) {
             throw new InvalidArgumentException(
-                'Cash reversal refuses while the payout is [' . $request->status->value . ']; cancel or reconcile it first.'
+                'Cash reversal refuses while the payout is [' . $request->status . ']; cancel or reconcile it first.'
             );
         }
 
         if (in_array($request->status, [
-            RewardPayoutRequestStatus::Cancelled,
-            RewardPayoutRequestStatus::Failed,
+            RewardPayoutRequestStatus::Cancelled->value,
+            RewardPayoutRequestStatus::Failed->value,
         ], true)) {
             return [];
         }

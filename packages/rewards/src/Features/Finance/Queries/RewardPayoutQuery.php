@@ -21,7 +21,7 @@ final readonly class RewardPayoutQuery implements RewardPayoutQueryApi
 
         return new RewardPayoutSnapshot(
             (string) $request->getKey(),
-            $request->status,
+            $request->status->value,
             $request->amount_minor,
             $request->currency,
             $request->confirmed_at !== null && $request->external_payout_id !== null,
