@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Communications\Features\Aggregate\Actions;
+
+use AIArmada\Communications\Contracts\PayloadRedactor;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
+use Carbon\CarbonImmutable;
+
+final class CreateCommunicationBatchAction
+{
+    public function __construct(
+        private readonly PayloadRedactor $redactor,
+    ) {}
+
+    public function handle(
+        string $category,
+        ?string $name = null,
+        ?string $purpose = null,
+        ?string $scheduledAt = null,
+        ?string $expiresAt = null,
+        ?string $idempotencyKey = null,
+        ?array $metadata = null,
+    ): CommunicationBatch {
+        $batch = new CommunicationBatch;
+        $batch->name = $name ?? $category;
+        $batch->purpose = $purpose ?? $name ?? $category;
+        $batch->category = $category;
+        $batch->status = 'draft';
+        $batch->idempotency_key = $idempotencyKey;
+        $batch->scheduled_at = $scheduledAt !== null ? CarbonImmutable::parse($scheduledAt) : null;
+        $batch->expires_at = $expiresAt !== null ? CarbonImmutable::parse($expiresAt) : null;
+        $batch->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
+        $batch->save();
+
+        return $batch;
+    }
+}

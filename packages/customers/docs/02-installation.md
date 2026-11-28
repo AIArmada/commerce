@@ -81,7 +81,7 @@ The package uses Spatie Media Library for customer avatars and documents. Ensure
 To link customers to your User model, add the `HasCustomerProfile` trait:
 
 ```php
-use AIArmada\Customers\Concerns\HasCustomerProfile;
+use AIArmada\Customers\Features\Identity\Traits\HasCustomerProfile;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable

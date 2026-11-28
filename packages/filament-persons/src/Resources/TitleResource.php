@@ -9,7 +9,8 @@ use AIArmada\FilamentPersons\Resources\TitleResource\Pages\CreateTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\EditTitle;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ListTitles;
 use AIArmada\FilamentPersons\Resources\TitleResource\Pages\ViewTitle;
-use AIArmada\Persons\Models\Title;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Support\ModelResolver;
 use BackedEnum;
 use Filament\Actions;
@@ -24,6 +25,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use UnitEnum;
 
 class TitleResource extends Resource
@@ -199,7 +203,18 @@ class TitleResource extends Resource
             ])
             ->toolbarActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    Actions\DeleteBulkAction::make()->using(static function (Actions\DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof Title || ! self::canDelete($record) || ! app(DeleteTitle::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

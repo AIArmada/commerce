@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Policies;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Policies\EnforcesOwnerScope;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
-use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final class AddressPolicy
 {
+    use EnforcesOwnerScope;
     use HandlesAuthorization;
 
     private function hasPermission(mixed $user, string $permission): bool
@@ -22,8 +22,6 @@ final class AddressPolicy
         }
 
         try {
-            // Gate-mediated check first: Spatie permissions resolve through
-            // Gate::before, which also preserves Super Admin overrides.
             if ($user instanceof Authorizable) {
                 return $user->can($permission);
             }
@@ -42,77 +40,33 @@ final class AddressPolicy
         return false;
     }
 
-    private function resolveOwner(): ?Model
-    {
-        $config = Address::ownerScopeConfig();
-
-        if (! $config->enabled) {
-            return null;
-        }
-
-        return OwnerContext::resolveConfigured($config);
-    }
-
-    private function isViewable(Address $address): bool
-    {
-        $config = Address::ownerScopeConfig();
-
-        if (! $config->enabled) {
-            return true;
-        }
-
-        $owner = $this->resolveOwner();
-
-        if ($owner === null) {
-            return OwnerContext::isExplicitGlobal() && $address->isGlobal();
-        }
-
-        if ($address->belongsToOwner($owner)) {
-            return true;
-        }
-
-        return $config->includeGlobal && $address->isGlobal();
-    }
-
-    private function isMutable(Address $address): bool
-    {
-        $config = Address::ownerScopeConfig();
-
-        if (! $config->enabled) {
-            return true;
-        }
-
-        $owner = $this->resolveOwner();
-
-        if ($owner === null) {
-            return OwnerContext::isExplicitGlobal() && $address->isGlobal();
-        }
-
-        return $address->belongsToOwner($owner);
-    }
-
     public function viewAny(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.view');
+        return $this->hasPermission($user, 'customers.addresses.view')
+            && $this->ownerContextAllowsAccess(Address::class);
     }
 
     public function view(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.view') && $this->isViewable($address);
+        return $this->hasPermission($user, 'customers.addresses.view')
+            && $this->isViewableInOwnerScope($address);
     }
 
     public function create(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.create');
+        return $this->hasPermission($user, 'customers.addresses.create')
+            && $this->ownerContextAllowsAccess(Address::class);
     }
 
     public function update(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.update') && $this->isMutable($address);
+        return $this->hasPermission($user, 'customers.addresses.update')
+            && $this->isMutableInOwnerScope($address);
     }
 
     public function delete(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.delete') && $this->isMutable($address);
+        return $this->hasPermission($user, 'customers.addresses.delete')
+            && $this->isMutableInOwnerScope($address);
     }
 }

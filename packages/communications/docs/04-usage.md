@@ -84,7 +84,7 @@ serialization-safe for queued dispatch.
 ## Inbox notifications
 
 ```php
-use AIArmada\Communications\Actions\DispatchInboxNotificationAction;
+use AIArmada\Communications\Features\Inbox\Actions\DispatchInboxNotificationAction;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
@@ -104,7 +104,7 @@ app(DispatchInboxNotificationAction::class)->handle(
 ### Reading inbox entries on a model
 
 ```php
-use AIArmada\Communications\Traits\HasInbox;
+use AIArmada\Communications\Features\Inbox\Traits\HasInbox;
 use Illuminate\Database\Eloquent\Model;
 
 final class User extends Model
@@ -129,21 +129,17 @@ The package registers the `communications.inbox-index` Livewire component for th
 Store channel addresses on notifiables when you need explicit routing (multiple emails, verified phones, or provider external ids):
 
 ```php
-use AIArmada\Communications\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Actions\SaveRecipientDestination;
 
-$destination = CommunicationDestination::query()->make([
+$destination = app(SaveRecipientDestination::class)->create($user, [
     'channel' => 'mail',
     'address' => 'billing@example.com',
     'is_primary' => true,
     'verified_at' => now(),
 ]);
-// `recipient_type` is not mass-assignable, so set the morph explicitly.
-$destination->recipient()->associate($user);
-$destination->save();
 ```
 
-New destinations default to `active` status. `status` is not mass-assignable either, so set it
-directly on the model if you need a non-active row.
+New destinations default to `active` status. Pass the explicit `status` argument to the action when changing the status; recipient identity is associated from the persisted model.
 
 Resolution order for the default `CommunicationDestinationResolver`:
 
@@ -161,18 +157,14 @@ breaking storage change is applied.
 Preferences may optionally narrow to a scope:
 
 ```php
-use AIArmada\Communications\Models\CommunicationPreference;
+use AIArmada\Communications\Features\RecipientRouting\Actions\SaveRecipientPreference;
 
-$preference = CommunicationPreference::query()->make([
+$preference = app(SaveRecipientPreference::class)->create($user, [
     'channel' => 'mail',
     'category' => 'marketing',
     'scope_type' => 'event',
     'scope_key' => (string) $event->getKey(),
 ]);
-
-// `recipient_type` is not mass-assignable, so set the morph explicitly.
-$preference->recipient()->associate($user);
-$preference->save();
 ```
 
 Leave `scope_type` and `scope_key` null for recipient-wide channel/category preferences.
@@ -185,9 +177,9 @@ discriminators are excluded from `$fillable`, and `communication_templates.statu
 has no database default, so set `status` directly on the model:
 
 ```php
-use AIArmada\Communications\Actions\PublishTemplateAction;
+use AIArmada\Communications\Features\Templates\Actions\PublishTemplateAction;
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 $template = CommunicationTemplate::query()->make([
     'key' => 'invoice-paid',
@@ -217,10 +209,10 @@ app(PublishTemplateAction::class)->handle((string) $version->id);
 Rendering a template into a content snapshot (`RenderedContentData`):
 
 ```php
-use AIArmada\Communications\Actions\RenderCommunicationContentAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RenderCommunicationContentAction;
 
 $rendered = app(RenderCommunicationContentAction::class)->handle(
-    $template,
+    $template->id,
     'mail',
     'en',
     ['invoice_number' => 'INV-1042'],
@@ -230,10 +222,10 @@ $rendered = app(RenderCommunicationContentAction::class)->handle(
 ## Creating a communication
 
 ```php
-use AIArmada\Communications\Actions\CreateCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 
-$communication = app(CreateCommunicationAction::class)->handle(
+$communicationId = app(CreateCommunicationAction::class)->handle(
     CommunicationContextData::from([
         'purpose' => 'invoice-paid',
         'category' => 'transactional',
@@ -258,20 +250,51 @@ php artisan communications:expire
 # Reconcile aggregate statuses
 php artisan communications:reconcile
 
-# Prune archived inbox rows
+# Prune archived inbox rows for the explicit global scope
 php artisan communications:prune-inboxes
+
+# Prune archived inbox rows for one owner
+php artisan communications:prune-inboxes --owner="App\Models\Team:1"
+
+# Prune archived inbox rows for every owner scope and global rows
+php artisan communications:prune-inboxes --all-owners
 
 # Replay stored provider webhook events
 php artisan communications:replay-webhooks
 ```
 
 Pruning hard-deletes eligible records; communications models use no soft deletes.
+Use `--owner` only when owner scoping is enabled, and choose either `--owner` or `--all-owners` for each invocation.
 
 ## Owner scoping
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
 
-Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
+Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to return a trusted `AIArmada\CommerceSupport\Data\RecordReference` (owner morph type and ID) from provider-authenticated payload data. Explicit owner references are resolved again in the worker and missing owners fail closed. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
+
+## Thread resolution
+
+`ResolveCommunicationThreadAction` resolves and writes only the partition the
+thread will actually persist to:
+
+- With owner scoping enabled and `auto_assign_on_create` enabled, an owned
+  context resolves that owner's threads. An explicit global context resolves
+  global threads.
+- With `auto_assign_on_create` disabled, owned and global contexts both write
+  the global partition; an owned context cannot update an existing global
+  thread without an explicit global context.
+- With owner scoping disabled, thread resolution writes the global partition.
+
+External thread ids are unique per exact owner tuple and separately per global
+partition, so the same provider thread may exist once for each owner and once
+globally. Null external ids are not unique and may repeat. `include_global`
+does not merge partitions during writes: an owned caller never adopts or
+mutates a global thread.
+
+PostgreSQL `REPEATABLE READ` callers that lose a concurrent insert race cannot
+see the committed winner inside their snapshot. The action rethrows
+`UniqueConstraintViolationException` in that case; retry the caller transaction
+to resolve against the winner.
 
 ## Restricted attributes
 
@@ -281,15 +304,15 @@ Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts
 
 ## Eligibility contracts
 
-Eligibility resolves through the `AIArmada\Communications\Services\PermissiveEligibilityResolver` binding. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
+Consent, preferences, quiet hours and rate limits resolve through `Drivers\Eligibility\PermissiveEligibilityResolver`; active persisted suppressions resolve through `ActiveSuppressionResolver`. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
 
-Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (configurable header and algorithm, default `X-Webhook-Signature` with SHA-256 over the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md`.
+Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (configurable header and algorithm, default `X-Webhook-Signature` with SHA-256 over the exact timestamp header, a literal `.` and the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md`.
 
 ## Tracking tokens
 
 ```php
-use AIArmada\Communications\Actions\CreateTrackingTokenAction;
-use AIArmada\Communications\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
 use AIArmada\Communications\Enums\TrackingInteractionType;
 
 $created = app(CreateTrackingTokenAction::class)->handle(
@@ -302,8 +325,8 @@ $created = app(CreateTrackingTokenAction::class)->handle(
 // building the tracking URL; it cannot be recovered afterwards.
 $url = 'https://example.com/t/' . $created->plaintextToken;
 
-app(RecordTrackingInteractionAction::class)->handle(
-    tokenId: $created->trackingToken->id,
+$eventId = app(RecordTrackingInteractionAction::class)->handle(
+    tokenId: $created->trackingTokenId,
     interactionType: TrackingInteractionType::Click,
 );
 ```
@@ -326,9 +349,12 @@ Expiring a communication dispatches `CommunicationExpired` and expires its
 pending deliveries; the original `expires_at` deadline is preserved.
 
 Legal transitions come from a single `ALLOWED_TRANSITIONS` table on the
-action; anything else throws unless the `force` flag is passed. Each
-transition stamps its `*_at` column only when it is still null, so lifecycle
-timestamps are never cleared or overwritten.
+action; anything else throws unless the `force` flag is passed. Provider
+statuses follow an explicit progress precedence (`pending` through `replied`)
+plus terminal failure handling, so a late `accepted` event after `sent` keeps
+`sent` while still stamping `accepted_at`. Each transition stamps its `*_at`
+column only when it is still null, so lifecycle timestamps are never cleared
+or overwritten.
 
 Aggregate status is derived by `RecalculateCommunicationStatusAction`: all
 deliveries terminal with no failures or cancellations means `Completed`;
@@ -339,3 +365,5 @@ failures means `Cancelled`; anything else stays `Processing`. Only the
 `CommunicationFailed`, and first entry stamps `completed_at` / `failed_at`.
 After mass delivery changes, run `php artisan communications:reconcile` to
 resynchronize aggregates.
+
+- Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.

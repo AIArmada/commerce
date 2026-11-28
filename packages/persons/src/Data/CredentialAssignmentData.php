@@ -4,32 +4,35 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\CredentialAssignment;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
+use JsonSerializable;
 
-final class CredentialAssignmentData extends Data
+final readonly class CredentialAssignmentData implements JsonSerializable
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $credential_id,
-        public readonly string $status,
-        public readonly string | null | Optional $registration_number,
-        public readonly string | null | Optional $date_obtained,
-        public readonly CredentialDefinitionData | null | Optional $credential,
+        public string $id,
+        public string $credential_id,
+        public string $status,
+        public ?string $registration_number,
+        public ?string $date_obtained,
+        public ?CredentialDefinitionData $credential,
     ) {}
 
-    public static function fromCredentialAssignment(CredentialAssignment $assignment): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        return new self(
-            id: $assignment->id,
-            credential_id: $assignment->credential_id,
-            status: $assignment->status->value,
-            registration_number: $assignment->registration_number,
-            date_obtained: $assignment->date_obtained?->format('Y-m-d'),
-            credential: $assignment->relationLoaded('credential') && $assignment->credential
-                ? CredentialDefinitionData::fromCredentialDefinition($assignment->credential)
-                : null,
-        );
+        return [
+            'id' => $this->id,
+            'credential_id' => $this->credential_id,
+            'status' => $this->status,
+            'registration_number' => $this->registration_number,
+            'date_obtained' => $this->date_obtained,
+            'credential' => $this->credential?->toArray(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

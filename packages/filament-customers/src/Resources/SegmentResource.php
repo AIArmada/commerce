@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas\SegmentForm;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Tables\SegmentsTable;

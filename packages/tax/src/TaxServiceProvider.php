@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax;
 
+use AIArmada\CommerceSupport\Support\SettingsMigrationPath;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Contracts\TaxRateApplierInterface;
 use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
@@ -46,18 +47,6 @@ final class TaxServiceProvider extends PackageServiceProvider
 
     private function registerSettingsMigrationPath(): void
     {
-        $packagePath = __DIR__ . '/../database/settings';
-
-        if (! is_dir($packagePath)) {
-            return;
-        }
-
-        $paths = config('settings.migrations_paths', []);
-
-        if (! in_array($packagePath, $paths, true)) {
-            $paths[] = $packagePath;
-
-            config(['settings.migrations_paths' => $paths]);
-        }
+        SettingsMigrationPath::register($this->app, __DIR__ . '/../database/settings');
     }
 }

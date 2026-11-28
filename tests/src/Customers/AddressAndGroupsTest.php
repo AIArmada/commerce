@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
-use AIArmada\Customers\Models\Segment;
 
 describe('Customer addresses', function (): void {
     describe('Address Creation', function (): void {
@@ -147,7 +147,6 @@ describe('Segment Model', function (): void {
             'name' => 'High Spenders',
             'slug' => 'high-spenders-' . uniqid(),
             'description' => 'Customers who spent over RM10,000',
-            'is_active' => true,
         ]);
 
         expect($segment)->toBeInstanceOf(Segment::class)
@@ -164,11 +163,9 @@ describe('Segment Model', function (): void {
             'name' => 'Rule-based Segment',
             'slug' => 'rule-based-' . uniqid(),
             'conditions' => $conditions,
-            'is_active' => true,
         ]);
 
         expect($segment->conditions)->toBe($conditions);
     });
 
-    /* Weak active-scope count removed; stronger every(is_active) check in SegmentModelTest. */
 });

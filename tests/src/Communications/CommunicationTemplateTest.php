@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
-use AIArmada\Communications\Models\CommunicationTemplateVersion;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 
 test('creates a template', function (): void {
     $template = (new CommunicationTemplate)->forceFill([

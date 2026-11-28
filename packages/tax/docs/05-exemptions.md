@@ -276,7 +276,7 @@ TaxExemption::create([
 ```php
 TaxExemption::create([
     'exemptable_id' => $group->id,
-    'exemptable_type' => 'AIArmada\Customers\Models\CustomerGroup',
+    'exemptable_type' => 'AIArmada\Customers\Features\Segmentation\Models\CustomerGroup',
     // ...
 ]);
 ```

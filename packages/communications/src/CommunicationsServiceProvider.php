@@ -4,56 +4,74 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications;
 
-use AIArmada\Communications\Console\Commands\DispatchDueCommunicationsCommand;
-use AIArmada\Communications\Console\Commands\ExpireCommunicationsCommand;
-use AIArmada\Communications\Console\Commands\PruneCommunicationDataCommand;
-use AIArmada\Communications\Console\Commands\PruneNotificationInboxesCommand;
-use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
-use AIArmada\Communications\Console\Commands\ReplayWebhookEventsCommand;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
+use AIArmada\Communications\Contracts\CommunicationCreator;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DeliveryFencing;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Contracts\IdempotencyLock;
+use AIArmada\Communications\Contracts\NativeNotificationCapture;
+use AIArmada\Communications\Contracts\NotificationContentCapture;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\PreferenceResolver;
+use AIArmada\Communications\Contracts\ProviderEventNormalizer;
+use AIArmada\Communications\Contracts\ProviderWebhookRegistrar;
 use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RateLimiter as RateLimiterContract;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
-use AIArmada\Communications\Http\Livewire\InboxIndex;
+use AIArmada\Communications\Drivers\Audit\NullCommunicationAuditRecorder;
+use AIArmada\Communications\Drivers\Cache\IdempotencyLockService;
+use AIArmada\Communications\Drivers\Eligibility\PermissiveEligibilityResolver;
+use AIArmada\Communications\Drivers\Notifications\NullContentRenderer;
+use AIArmada\Communications\Drivers\Notifications\NullRecipientSnapshotResolver;
+use AIArmada\Communications\Drivers\Security\DestinationProtectorService;
+use AIArmada\Communications\Drivers\Webhooks\ConfigWebhookOwnerResolver;
+use AIArmada\Communications\Drivers\Webhooks\NullProviderEventNormalizer;
+use AIArmada\Communications\Drivers\Webhooks\ProviderWebhookRegistrarService;
+use AIArmada\Communications\EntryPoints\Commands\DispatchDueCommunicationsCommand;
+use AIArmada\Communications\EntryPoints\Commands\ExpireCommunicationsCommand;
+use AIArmada\Communications\EntryPoints\Commands\PruneCommunicationDataCommand;
+use AIArmada\Communications\EntryPoints\Commands\ReconcileCommunicationStatusCommand;
+use AIArmada\Communications\EntryPoints\Commands\ReplayWebhookEventsCommand;
+use AIArmada\Communications\EntryPoints\Listeners\AutoCaptureNotificationListener;
+use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSending;
+use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSent;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CaptureRecipientContent;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Features\Delivery\Actions\CaptureNativeNotification;
+use AIArmada\Communications\Features\Delivery\Actions\CommunicationManagerService;
+use AIArmada\Communications\Features\Delivery\Actions\RecordDeliveryOutcome;
+use AIArmada\Communications\Features\Delivery\Services\DeliveryFencingService;
+use AIArmada\Communications\Features\Inbox\EntryPoints\Commands\PruneNotificationInboxesCommand;
+use AIArmada\Communications\Features\Inbox\EntryPoints\Http\Livewire\InboxIndex;
+use AIArmada\Communications\Features\RecipientRouting\Queries\CommunicationDestinationResolver;
+use AIArmada\Communications\Features\Suppressions\Queries\ActiveSuppressionResolver;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
-use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
-use AIArmada\Communications\Listeners\RecordNativeNotificationSending;
-use AIArmada\Communications\Listeners\RecordNativeNotificationSent;
-use AIArmada\Communications\Services\CommunicationDestinationResolver;
-use AIArmada\Communications\Services\CommunicationManagerService;
-use AIArmada\Communications\Services\CommunicationRecorderService;
-use AIArmada\Communications\Services\DeliveryFencingService;
-use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
-use AIArmada\Communications\Services\NullContentRenderer;
-use AIArmada\Communications\Services\NullRecipientSnapshotResolver;
-use AIArmada\Communications\Services\PermissiveEligibilityResolver;
+use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Platform\ExtensionRegistry;
+use AIArmada\Communications\Platform\FeatureCatalog;
+use AIArmada\Communications\Platform\FeatureModule;
+use AIArmada\Communications\Policies\CommunicationPolicy;
 use AIArmada\Communications\Support\AutoCaptureState;
-use AIArmada\Communications\Support\DestinationProtectorService;
-use AIArmada\Communications\Support\IdempotencyLockService;
 use AIArmada\Communications\Support\PayloadRedactorService;
-use AIArmada\Communications\Webhooks\ConfigWebhookOwnerResolver;
-use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
-use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
-use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
-use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter as RateLimiterFacade;
+use InvalidArgumentException;
 use Livewire\Livewire;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\LaravelPackageTools\Package;
@@ -61,6 +79,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class CommunicationsServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -92,15 +113,20 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000013_create_communication_attachments_table',
                 '2000_01_01_000014_create_communication_references_table',
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
-                '2000_01_01_000016_create_notification_inboxes_table',
-                '2000_01_01_000019_create_communication_destinations_table',
+                '2000_01_01_000016_create_communication_notification_inboxes_table',
+                '2000_01_01_000017_create_communication_destinations_table',
             ]);
     }
 
     public function registeringPackage(): void
     {
         $this->app->singleton(CommunicationManager::class, CommunicationManagerService::class);
-        $this->app->singleton(CommunicationRecorder::class, CommunicationRecorderService::class);
+        $this->app->bind(CommunicationReferenceWriter::class, AttachCommunicationReferenceAction::class);
+        $this->app->singleton(CommunicationRecorder::class, RecordDeliveryOutcome::class);
+        $this->app->bind(CommunicationCreator::class, CreateCommunicationAction::class);
+        $this->app->bind(NotificationContentCapture::class, CaptureRecipientContent::class);
+        $this->app->bind(NativeNotificationCapture::class, CaptureNativeNotification::class);
+        $this->app->bind(CommunicationStatusRecalculator::class, RecalculateCommunicationStatusAction::class);
         $this->app->singleton(DeliveryFencing::class, DeliveryFencingService::class);
         $this->app->singleton(DestinationProtector::class, DestinationProtectorService::class);
         $this->app->singleton(PayloadRedactor::class, PayloadRedactorService::class);
@@ -112,7 +138,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         $this->app->bind(DestinationResolver::class, CommunicationDestinationResolver::class);
         $this->app->bind(ContentRenderer::class, NullContentRenderer::class);
         $this->app->bind(ConsentResolver::class, PermissiveEligibilityResolver::class);
-        $this->app->bind(SuppressionResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(SuppressionResolver::class, ActiveSuppressionResolver::class);
         $this->app->bind(PreferenceResolver::class, PermissiveEligibilityResolver::class);
         $this->app->bind(QuietHoursResolver::class, PermissiveEligibilityResolver::class);
         $this->app->bind(RateLimiterContract::class, PermissiveEligibilityResolver::class);
@@ -129,6 +155,32 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 ActivitylogCommunicationAuditRecorder::class,
             );
         }
+    }
+
+    public function packageRegistered(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid communications feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
+
+        Gate::policy(Communication::class, CommunicationPolicy::class);
     }
 
     public function bootingPackage(): void

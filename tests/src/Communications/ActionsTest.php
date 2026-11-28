@@ -2,18 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Actions\AddCommunicationRecipientAction;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Actions\CompleteDeliveryAttemptAction;
-use AIArmada\Communications\Actions\CreateCommunicationAction;
-use AIArmada\Communications\Actions\CreateSuppressionAction;
-use AIArmada\Communications\Actions\LiftSuppressionAction;
-use AIArmada\Communications\Actions\PlanCommunicationDeliveriesAction;
-use AIArmada\Communications\Actions\RecordNotificationSendingAction;
-use AIArmada\Communications\Actions\RecordProviderEventAction;
-use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
-use AIArmada\Communications\Actions\RenderCommunicationContentAction;
-use AIArmada\Communications\Actions\StartDeliveryAttemptAction;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Data\PlannedDeliveryData;
@@ -28,20 +16,32 @@ use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Enums\SuppressionReason;
 use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Events\CommunicationCreated;
+use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RenderCommunicationContentAction;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Suppressions\Actions\CreateSuppressionAction;
+use AIArmada\Communications\Features\Suppressions\Actions\LiftSuppressionAction;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationTemplate;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 
 test('CreateCommunicationAction creates communication and dispatches event', function (): void {
-    Event::fake();
+    Event::fake([CommunicationCreated::class]);
 
-    $recorder = app(CommunicationRecorder::class);
-    $action = new CreateCommunicationAction($recorder);
+    $action = app(CreateCommunicationAction::class);
 
     $context = CommunicationContextData::from([
         'direction' => CommunicationDirection::Outbound,
@@ -50,7 +50,7 @@ test('CreateCommunicationAction creates communication and dispatches event', fun
         'purpose' => 'test-action',
     ]);
 
-    $communication = $action->handle($context);
+    $communication = Communication::query()->findOrFail($action->handle($context));
 
     expect($communication)->toBeInstanceOf(Communication::class);
     expect($communication->purpose)->toBe('test-action');
@@ -186,7 +186,7 @@ test('delivery attempt payloads are redacted before persistence', function (): v
     ]);
 });
 
-test('CommunicationRecorderService marks sending and sent', function (): void {
+test('RecordDeliveryOutcome marks sending and sent', function (): void {
     $recorder = app(CommunicationRecorder::class);
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
@@ -222,7 +222,7 @@ test('CommunicationRecorderService marks sending and sent', function (): void {
     expect($freshDelivery->provider_message_id)->toBe('msg_123');
 });
 
-test('CommunicationRecorderService records failure', function (): void {
+test('RecordDeliveryOutcome records failure', function (): void {
     $recorder = app(CommunicationRecorder::class);
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
@@ -370,8 +370,7 @@ test('provider events derive and validate their communication links', function (
         ->and($event->delivery_id)->toBe($delivery->id);
 });
 
-test('CommunicationRecorderService cancels communication', function (): void {
-    $recorder = app(CommunicationRecorder::class);
+test('CancelCommunicationAction cancels communication', function (): void {
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
@@ -381,7 +380,7 @@ test('CommunicationRecorderService cancels communication', function (): void {
     ]);
     $communication->save();
 
-    $recorder->cancelCommunication($communication->id);
+    app(CancelCommunicationAction::class)->handle($communication->id);
     $fresh = $communication->fresh();
 
     expect($fresh->status->value)->toBe('cancelled');
@@ -398,7 +397,7 @@ test('RenderCommunicationContentAction works with null renderer', function (): v
     ]);
     $template->save();
 
-    $content = $action->handle($template, 'mail', 'en', []);
+    $content = $action->handle($template->id, 'mail', 'en', []);
 
     expect($content)->toBeInstanceOf(RenderedContentData::class);
     expect($content->channel)->toBe('mail');
