@@ -56,11 +56,11 @@ final class RefundAllocationValidator
             return false;
         }
 
-        $normalized = ltrim($value, '0');
+        $normalized = mb_ltrim($value, '0');
         $maximum = (string) PHP_INT_MAX;
 
         return $normalized !== ''
-            && (strlen($normalized) < strlen($maximum)
-                || (strlen($normalized) === strlen($maximum) && strcmp($normalized, $maximum) <= 0));
+            && (mb_strlen($normalized) < mb_strlen($maximum)
+                || (mb_strlen($normalized) === mb_strlen($maximum) && strcmp($normalized, $maximum) <= 0));
     }
 }

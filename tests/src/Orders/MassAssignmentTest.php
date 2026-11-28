@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Enums\PaymentStatus;
-use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

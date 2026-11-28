@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Contracts\OrderRefunds;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
