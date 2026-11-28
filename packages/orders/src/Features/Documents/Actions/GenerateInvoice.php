@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Documents\Actions;
 
-use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Contracts\OrderInvoiceNumber;
+use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelPdf\PdfBuilder;

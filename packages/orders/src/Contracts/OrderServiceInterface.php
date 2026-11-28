@@ -9,10 +9,10 @@ use AIArmada\Orders\Data\OrderIntakeData;
 interface OrderServiceInterface
 {
     /**
-     * @param array<string, mixed> $orderData
-     * @param array<array<string, mixed>> $items
-     * @param array<string, mixed>|null $billingAddress
-     * @param array<string, mixed>|null $shippingAddress
+     * @param  array<string, mixed>  $orderData
+     * @param  array<array<string, mixed>>  $items
+     * @param  array<string, mixed>|null  $billingAddress
+     * @param  array<string, mixed>|null  $shippingAddress
      */
     public function createOrder(
         array $orderData,
@@ -24,8 +24,8 @@ interface OrderServiceInterface
     ): OrderIntakeData;
 
     /**
-     * @param array<string, mixed>|null $billingAddress
-     * @param array<string, mixed>|null $shippingAddress
+     * @param  array<string, mixed>|null  $billingAddress
+     * @param  array<string, mixed>|null  $shippingAddress
      */
     public function createFromCart(
         string $cartId,

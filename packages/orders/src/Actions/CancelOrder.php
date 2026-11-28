@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
-use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Models\Order;
 use RuntimeException;
 
 final class CancelOrder

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\View;
+use InvalidArgumentException;
 use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
@@ -153,7 +154,7 @@ trait BuildsOrderDocs
         $remainder = $order->tax_total - $lineTax;
 
         if ($remainder < 0) {
-            throw new \InvalidArgumentException('Order item taxes exceed the order tax total.');
+            throw new InvalidArgumentException('Order item taxes exceed the order tax total.');
         }
 
         if ($remainder > 0 && $items !== []) {

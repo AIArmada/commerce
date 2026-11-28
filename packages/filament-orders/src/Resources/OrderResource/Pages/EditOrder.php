@@ -8,8 +8,8 @@ use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Models\Order;
 use Filament\Actions;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditOrder extends EditRecord
 {

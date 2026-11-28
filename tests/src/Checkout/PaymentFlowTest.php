@@ -39,9 +39,9 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationOutcome;
 use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
-use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Data\OrderIntakeData;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -637,7 +637,6 @@ describe('CreateOrderStep', function (): void {
                 throw new RuntimeException('gateway unavailable');
             }
 
-            return;
         });
 
         app()->instance(OrderServiceInterface::class, $orderService);

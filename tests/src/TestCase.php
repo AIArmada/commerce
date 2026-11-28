@@ -92,6 +92,7 @@ use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\ValidationServiceProvider;
 use Illuminate\View\ViewServiceProvider;
 use Livewire\LivewireServiceProvider;
+use LogicException;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\Casts\EnumCast;
@@ -141,7 +142,7 @@ abstract class TestCase extends Orchestra
         foreach (array_keys($catalog['features']) as $feature) {
             $module = $this->app->make('AIArmada\\Orders\\Features\\' . $feature . '\\FeatureModule');
             if (! $module instanceof OrdersFeatureModule) {
-                throw new \LogicException('Invalid Orders feature module: ' . $feature);
+                throw new LogicException('Invalid Orders feature module: ' . $feature);
             }
             $module->register($this->app);
         }

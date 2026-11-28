@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
+use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
+use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
@@ -12,11 +17,6 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Orders\Features\Lifecycle\Actions\DeliveryConfirmed;
-use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
-use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
-use AIArmada\Orders\Features\Payments\Actions\RefundProcessed;
-use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 
 describe('Order Transitions', function (): void {
     describe('PaymentConfirmed Transition', function (): void {

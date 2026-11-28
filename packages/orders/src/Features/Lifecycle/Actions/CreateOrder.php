@@ -170,6 +170,7 @@ final readonly class CreateOrder
         foreach (['subtotal', 'tax_total', 'shipping_total'] as $key) {
             if ($totals[$key] > $remainingDiscount) {
                 $uncovered = true;
+
                 break;
             }
 
@@ -244,10 +245,10 @@ final readonly class CreateOrder
         }
 
         if (is_string($value) && preg_match('/^-?\d+$/', mb_trim($value)) === 1) {
-            $digits = ltrim(mb_trim($value), '-0');
-            $limit = str_starts_with(mb_trim($value), '-') ? substr((string) PHP_INT_MIN, 1) : (string) PHP_INT_MAX;
+            $digits = mb_ltrim(mb_trim($value), '-0');
+            $limit = str_starts_with(mb_trim($value), '-') ? mb_substr((string) PHP_INT_MIN, 1) : (string) PHP_INT_MAX;
 
-            if (strlen($digits) > strlen($limit) || (strlen($digits) === strlen($limit) && strcmp($digits, $limit) > 0)) {
+            if (mb_strlen($digits) > mb_strlen($limit) || (mb_strlen($digits) === mb_strlen($limit) && strcmp($digits, $limit) > 0)) {
                 throw new InvalidArgumentException("{$field} exceeds the supported integer range.");
             }
 

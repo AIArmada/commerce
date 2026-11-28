@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Orders\EntryPoints\Listeners\AttributeCommissionOnFulfillment;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Orders\Features\Payments\Actions\PaymentConfirmed;
 use Illuminate\Support\Facades\Event;
 
 it('schedules fulfillment dispatch when payment confirms', function (): void {

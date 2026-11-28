@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\Orders\Contracts\OrderNotes;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderNote;
-use Illuminate\Database\Eloquent\Collection;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -20,6 +19,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 
 final class NotesRelationManager extends RelationManager

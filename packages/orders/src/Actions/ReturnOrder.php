@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Features\Lifecycle\Actions\OrderReturned;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Returned;
-use AIArmada\Orders\Features\Lifecycle\Actions\OrderReturned;
 use RuntimeException;
 
 final class ReturnOrder

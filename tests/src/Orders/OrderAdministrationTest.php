@@ -7,6 +7,7 @@ use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Processing;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -49,7 +50,7 @@ it('protects partially paid orders from administrative deletion', function (): v
 
 it('rejects deletion of a free order that has entered processing', function (): void {
     $order = Order::query()->create([
-        'status' => \AIArmada\Orders\States\Processing::class,
+        'status' => Processing::class,
         'currency' => 'MYR',
         'grand_total' => 0,
     ]);

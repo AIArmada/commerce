@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Events\OrderShipped;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Support\PackageUnit;
-use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Arr;

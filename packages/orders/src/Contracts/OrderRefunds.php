@@ -10,7 +10,7 @@ interface OrderRefunds
     public function processRefund(string $orderId, int $amount, string $transactionId, string $reason, array $metadata = [], ?string $paymentId = null): void;
 
     /**
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>  $metadata
      * @return list<string>
      */
     public function createPendingRefund(string $orderId, int $amount, string $transactionId, string $reason, array $metadata = [], ?string $paymentId = null): array;

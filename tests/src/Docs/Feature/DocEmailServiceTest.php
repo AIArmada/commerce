@@ -12,6 +12,7 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     Doc::query()->delete();
@@ -276,7 +277,7 @@ it('rejects malformed and future email tracking tokens', function (): void {
     expect($service->trackOpen($token))->toBeFalse();
 
     $token = Crypt::encryptString(json_encode([
-        'email_id' => (string) \Illuminate\Support\Str::uuid(),
+        'email_id' => (string) Str::uuid(),
         'type' => 'click',
         'url' => 'https://example.com',
         'issued_at' => now()->addDay()->timestamp,
