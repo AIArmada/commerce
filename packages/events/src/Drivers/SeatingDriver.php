@@ -124,7 +124,6 @@ final class SeatingDriver implements EventSeatingDriver
 
             $allocations = $this->convertHolds->handle(
                 holds: $holds,
-                mode: $mode,
                 allocToType: $allocatedToType,
                 allocToId: $allocatedToId,
                 reference: $reference,
@@ -206,7 +205,6 @@ final class SeatingDriver implements EventSeatingDriver
 
             $allocations = $this->convertHolds->handle(
                 holds: $holds,
-                mode: $seatingMode,
                 allocToType: $pass->getMorphClass(),
                 allocToId: (string) $pass->getKey(),
                 reference: $pass->pass_no,

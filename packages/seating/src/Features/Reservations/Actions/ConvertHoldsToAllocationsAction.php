@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
@@ -27,7 +26,6 @@ final readonly class ConvertHoldsToAllocationsAction
      */
     public function handle(
         iterable $holds,
-        SeatingMode $mode,
         string $allocToType,
         string $allocToId,
         ?string $reference = null,
@@ -59,6 +57,7 @@ final readonly class ConvertHoldsToAllocationsAction
                 ->orderBy('seat_section_id')
                 ->orderBy('row_number')
                 ->orderBy('column_number')
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
                 ->keyBy(fn (Model $seat): string => (string) $seat->getKey());
@@ -72,7 +71,7 @@ final readonly class ConvertHoldsToAllocationsAction
 
             $lockedSeatIds = $lockedHolds->map(fn (SeatHold $hold): string => (string) $hold->seat_id)->unique()->sort()->values()->all();
 
-            if ($lockedSeatIds !== $seatIds) {
+            if ($lockedHolds->count() !== count($requestedIds) || $lockedSeatIds !== $seatIds) {
                 throw new StaleSeatHoldException('Seat hold targets changed while converting.');
             }
 
@@ -156,10 +155,8 @@ final readonly class ConvertHoldsToAllocationsAction
                 if ($hold->owner_type !== null && $hold->owner_id !== null) {
                     $allocation->owner_type = $hold->owner_type;
                     $allocation->owner_id = $hold->owner_id;
-                } else {
-                    if (! OwnerContext::isExplicitGlobal()) {
-                        throw new AuthorizationException('Converting a global seat hold requires explicit global owner context.');
-                    }
+                } elseif (SeatHold::ownerScopeConfig()->enabled && ! OwnerContext::isExplicitGlobal()) {
+                    throw new AuthorizationException('Converting a global seat hold requires explicit global owner context.');
                 }
 
                 $allocation->save();

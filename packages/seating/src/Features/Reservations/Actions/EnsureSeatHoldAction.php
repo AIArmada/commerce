@@ -198,6 +198,7 @@ final readonly class EnsureSeatHoldAction
             ->orderBy('seat_section_id')
             ->orderBy('row_number')
             ->orderBy('column_number')
+            ->orderBy('id')
             ->lock('for update skip locked');
     }
 }

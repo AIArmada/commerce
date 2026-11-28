@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use AIArmada\Seating\Features\Maps\Models\SeatSection;
@@ -44,7 +43,6 @@ it('round-trips integer-like holder ids as strings on allocations', function ():
 
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'user',
         allocToId: '42',
     );

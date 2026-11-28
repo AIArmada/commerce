@@ -55,7 +55,6 @@ it('copies the hold owner onto the converted allocation', function (): void {
 
     $allocations = OwnerContext::withOwner($owner, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
@@ -87,7 +86,6 @@ it('converts a global hold to a global allocation inside explicit global scope',
 
     $allocations = OwnerContext::withOwner(null, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
@@ -118,7 +116,6 @@ it('refuses to convert a global hold under an ambient owner without residue', fu
 
     expect(fn () => OwnerContext::withOwner($owner, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     )))->toThrow(AuthorizationException::class);
@@ -149,7 +146,6 @@ it('refuses to convert another owner hold into the ambient context', function ()
 
     expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     )))->toThrow(ModelNotFoundException::class);
@@ -304,7 +300,6 @@ it('counts assigned allocations across owners against shared section capacity', 
 
         app(ConvertHoldsToAllocationsAction::class)->handle(
             holds: $holds,
-            mode: SeatingMode::Assigned,
             allocToType: 'pass',
             allocToId: (string) Str::orderedUuid(),
         );
