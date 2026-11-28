@@ -151,7 +151,7 @@ class JntClient implements CarrierTransport
             }
         } else {
             $body = $response->body();
-            $payload['body_length'] = mb_strlen($body);
+            $payload['body_length'] = mb_strlen($body, '8bit');
             $payload['body_sha256'] = hash('sha256', $body);
         }
 
@@ -204,7 +204,7 @@ class JntClient implements CarrierTransport
                 continue;
             }
 
-            if (in_array($keyString, ['address', 'addr', 'postcode', 'post_code', 'postal_code', 'postalcode', 'name', 'contactname', 'contact_name'], true)) {
+            if (in_array($keyString, ['address', 'addr', 'street', 'detailaddress', 'detail_address', 'postcode', 'post_code', 'postal_code', 'postalcode', 'name', 'contactname', 'contact_name', 'mailbox', 'mail_box', 'idcard', 'id_card', 'identity_card', 'identitynumber', 'identity_number'], true)) {
                 $masked[$key] = '***MASKED***';
 
                 continue;

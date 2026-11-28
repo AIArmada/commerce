@@ -65,28 +65,21 @@ packages/jnt/
 │   └── jnt.php                 # Configuration file
 ├── database/migrations/        # Database migrations
 ├── src/
-│   ├── Features/              # Orders, tracking, waybills and reporting
+│   ├── Features/              # Orders, Tracking, Waybills, Notifications
 │   ├── Builders/              # OrderBuilder for fluent order creation
-│   ├── Cart/                  # Cart shipping calculator integration
+│   ├── EntryPoints/Cart/      # Cart shipping calculator integration
 │   ├── Drivers/               # API transport and shipping driver
-│   ├── EntryPoints/
-│   │   ├── Commands/         # Artisan commands and JntCommand base
-│   │   ├── Http/Controllers/  # AWB and webhook endpoints
-│   │   ├── Jobs/              # Webhook processing
-│   │   └── Listeners/         # Shipment notifications
 │   ├── Contracts/             # Contracts and interfaces
-│   ├── Data/                  # Data Transfer Objects (Spatie Laravel Data)
-│   ├── Enums/                 # PHP 8.1+ enums for API values
+│   ├── Data/                  # Data Transfer Objects
+│   ├── Enums/                 # PHP enums for API values
 │   ├── Events/                # Laravel events
 │   ├── Exceptions/            # Custom exception classes
 │   ├── Facades/               # JntExpress facade
 │   ├── Health/                # Health check support
-│   ├── Models/                # Eloquent models
 │   ├── Notifications/         # Notification classes
 │   ├── Rules/                 # Laravel validation rules
-│   ├── Services/              # Core service classes
-│   ├── Support/               # Type transformers and utilities
-│   └── Webhooks/              # Signature, profile and response adapters
+│   ├── Services/              # JntExpressService gateway service
+│   └── Support/               # Type transformers, pricing and utilities
 └── docs/                      # Documentation
 ```
 
@@ -128,7 +121,7 @@ Type-safe PHP 8.1+ enums for J&T API values:
 | `ExpressType` | Shipping service type (DOMESTIC, NEXT_DAY, FRESH, etc.) |
 | `ServiceType` | Pickup type (DOOR_TO_DOOR, WALK_IN) |
 | `PaymentType` | Payment method (PREPAID_POSTPAID, COLLECT_CASH, etc.) |
-| `GoodsType` | Package content type (DOCUMENT, PACKAGE) |
+| `GoodsType` (`Data\GoodsType`) | Package content type (DOCUMENT, PACKAGE) |
 | `TrackingStatus` | Normalized tracking states |
 | `ScanTypeCode` | J&T API scan type codes |
 | `CancellationReason` | Order cancellation reasons |

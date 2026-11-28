@@ -273,8 +273,7 @@ final class JntOrderInfolist
                                 ->label('Location')
                                 ->placeholder('—'),
                         ])
-                        ->grid(1)
-                        ->visible(fn (JntOrder $record): bool => JntTrackingEvent::query()->where('order_id', $record->id)->where('owner_type', $record->owner_type)->where('owner_id', $record->owner_id)->exists()),
+                        ->grid(1),
                 ])
                 ->collapsible(),
 

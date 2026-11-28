@@ -454,3 +454,88 @@ it('does not trust composite components injected through raw cart additions', fu
     expect($line->getAttribute('components'))->toBeNull()
         ->and((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
 });
+
+describe('JntShippingCalculator canonical region pricing', function (): void {
+    beforeEach(function (): void {
+        config([
+            'jnt.shipping.base_rate' => 800,
+            'jnt.shipping.per_kg_rate' => 200,
+            'jnt.shipping.min_charge' => 800,
+            'jnt.shipping.default_estimated_days' => 3,
+            'jnt.shipping.east_malaysia_extra_days' => 2,
+            'jnt.shipping.region_multipliers_bp' => [
+                'labuan' => 15000,
+                'sabah' => 15000,
+                'sarawak' => 15000,
+            ],
+            'jnt.shipping.origin' => [
+                'name' => 'Test Sender',
+                'phone' => '0123456789',
+                'address' => '123 Test Street',
+                'post_code' => '50000',
+                'country_code' => 'MYS',
+            ],
+        ]);
+    });
+
+    it('prices Labuan by its canonical postcode range', function (): void {
+        $cart = createJntTestCart('labuan-postcode');
+        $cart->add(['id' => 'labuan-item', 'name' => 'Labuan Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => 1000]]);
+
+        $quote = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Labuan',
+            postCode: '87000',
+            state: 'Wilayah Persekutuan Labuan',
+        ));
+
+        expect($quote['amount'])->toBe(1200)
+            ->and($quote['estimated_days'])->toBe(5);
+    });
+
+    it('treats the postcode as authoritative when state indicators conflict', function (): void {
+        $cart = createJntTestCart('conflicting-indicators');
+        $cart->add(['id' => 'conflict-item', 'name' => 'Conflict Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => 1000]]);
+
+        $westPostcodeWithSabahState = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Kuala Lumpur',
+            postCode: '50000',
+            state: 'Sabah',
+        ));
+
+        $sabahPostcodeWithSelangorState = (new JntShippingCalculator)->calculateShipping($cart, new AddressData(
+            name: 'Receiver',
+            phone: '0123456789',
+            address: 'Kota Kinabalu',
+            postCode: '88000',
+            state: 'Selangor',
+        ));
+
+        expect($westPostcodeWithSabahState['amount'])->toBe(800)
+            ->and($westPostcodeWithSabahState['estimated_days'])->toBe(3)
+            ->and($sabahPostcodeWithSelangorState['amount'])->toBe(1200)
+            ->and($sabahPostcodeWithSelangorState['estimated_days'])->toBe(5);
+    });
+
+    it('falls back to scalar weight when a composite component list is empty', function (): void {
+        $storage = new InMemoryStorage;
+        $cart = new Cart($storage, 'empty-components');
+        $cart->add([
+            'id' => 'empty-composite',
+            'name' => 'Empty composite',
+            'price' => 100,
+            'quantity' => 2,
+            'attributes' => ['weight' => 750],
+        ]);
+
+        $snapshot = $storage->getSnapshot('empty-components', 'default');
+        $items = $storage->getItems('empty-components', 'default');
+        $items[0]['attributes']['components'] = [];
+        $storage->putItems('empty-components', 'default', $items, $snapshot->revision());
+
+        expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
+    });
+});

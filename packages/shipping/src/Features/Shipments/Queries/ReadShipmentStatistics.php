@@ -136,7 +136,8 @@ final readonly class ReadShipmentStatistics implements ShipmentStatistics
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
-            if ($owner === null) {
+
+            if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
                 return $query->whereRaw('0 = 1');
             }
 

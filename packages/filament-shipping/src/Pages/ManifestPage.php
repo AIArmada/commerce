@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
 use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
@@ -251,16 +249,7 @@ class ManifestPage extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return $query->whereRaw('0 = 1');
-            }
-
-            $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
-        }
+        $query = OwnerScopedQuery::apply(Shipment::query());
 
         $query->where('status', ShipmentStatus::normalize(Shipped::class));
 

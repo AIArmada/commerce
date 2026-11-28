@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
+use AIArmada\Jnt\Data\TrackingStatus as JntTrackingStatus;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
@@ -15,6 +16,8 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
+use AIArmada\Shipping\Data\TrackingStatus;
+use Carbon\CarbonImmutable;
 
 // ============================================
 // JntShippingDriver Tests
@@ -199,6 +202,7 @@ describe('getRates', function (): void {
         config([
             'jnt.shipping.base_rate' => 1,
             'jnt.shipping.per_kg_rate' => 0,
+            'jnt.shipping.min_charge' => 0,
             'jnt.shipping.region_multipliers_bp' => ['sabah' => 15000],
         ]);
 
@@ -301,10 +305,7 @@ describe('createShipment', function (): void {
             })
             ->andReturn(new OrderData(orderId: 'REF-MONEY', trackingNumber: 'JNT-MONEY-1'));
 
-        $this->jntService->shouldReceive('printOrder')
-            ->once()
-            ->with('REF-MONEY', 'JNT-MONEY-1')
-            ->andReturn([]);
+        $this->jntService->shouldNotReceive('printOrder');
 
         $shipment = ShipmentData::from([
             'reference' => 'REF-MONEY',
@@ -469,5 +470,44 @@ describe('cancelShipment', function (): void {
 
         expect($result->outcomeType)->toBe('unknown')
             ->and($result->retryable)->toBeTrue();
+    });
+});
+
+describe('track', function (): void {
+    it('orders events chronologically and reports the latest delivery scan', function (): void {
+        $this->trackingService->shouldReceive('track')
+            ->once()
+            ->andReturn([
+                'tracking_number' => 'JNT-TRACK-1',
+                'order_id' => 'ORDER-TRACK-1',
+                'current_status' => JntTrackingStatus::Delivered,
+                'events' => [
+                    [
+                        'status' => JntTrackingStatus::Delivered,
+                        'description' => 'Delivered later',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-16 12:00:00'),
+                        'raw' => [],
+                    ],
+                    [
+                        'status' => JntTrackingStatus::InTransit,
+                        'description' => 'Departed hub',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-15 09:00:00'),
+                        'raw' => [],
+                    ],
+                    [
+                        'status' => JntTrackingStatus::Delivered,
+                        'description' => 'Delivered earlier',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-16 10:00:00'),
+                        'raw' => [],
+                    ],
+                ],
+            ]);
+
+        $tracking = $this->driver->track('JNT-TRACK-1');
+
+        expect($tracking->status)->toBe(TrackingStatus::Delivered)
+            ->and(array_map(static fn ($event): string => $event->description, $tracking->events))
+            ->toBe(['Departed hub', 'Delivered earlier', 'Delivered later'])
+            ->and($tracking->deliveredAt?->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00');
     });
 });

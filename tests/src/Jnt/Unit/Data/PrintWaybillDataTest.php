@@ -307,6 +307,25 @@ describe('PrintWaybillData', function (): void {
         }
     });
 
+    it('writes binary PDF bytes exactly', function (): void {
+        $pdfContent = "%PDF-1.4 \xC3\xA9 binary content";
+        $data = new PrintWaybillData(
+            orderId: 'ORDER-BINARY',
+            base64Content: base64_encode($pdfContent),
+        );
+
+        $tempFile = sys_get_temp_dir() . '/test_waybill_binary_' . uniqid() . '.pdf';
+
+        try {
+            expect((new LocalWaybillWriter)->write($data, $tempFile))->toBeTrue()
+                ->and(file_get_contents($tempFile))->toBe($pdfContent);
+        } finally {
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        }
+    });
+
     it('creates directory when saving PDF', function (): void {
         $pdfContent = '%PDF-1.4 content';
         $data = new PrintWaybillData(

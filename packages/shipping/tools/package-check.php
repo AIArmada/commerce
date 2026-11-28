@@ -254,13 +254,13 @@ try {
             }
 
             if ($isPublicContract) {
-                if (str_starts_with($target, 'Illuminate\\Database\\Eloquent\\') || str_starts_with($target, 'Illuminate\\Http\\')) {
+                if (str_starts_with($target, 'Illuminate\\')) {
                     $report(
                         'contract-leak',
                         $relative,
                         $line,
                         $target,
-                        'Public Contracts/Data/Api must not expose Eloquent or Illuminate\\Http runtime types. Use immutable DTOs, enums, or scalar IDs.'
+                        'Public Contracts/Data/Api must not expose Illuminate runtime types. Use native arrays, immutable DTOs, enums, CarbonImmutable, or scalar IDs.'
                     );
                 }
                 if (str_starts_with($target, $pkgPrefix)

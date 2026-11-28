@@ -40,7 +40,7 @@ use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Enums\ExpressType;
 use AIArmada\Jnt\Enums\ServiceType;
 use AIArmada\Jnt\Enums\PaymentType;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 // Create addresses
 $sender = new AddressData(
@@ -198,7 +198,7 @@ The `PackageInfoData` object describes the package dimensions:
 
 ```php
 use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 $package = new PackageInfoData(
     quantity: 1,                    // Required: Number of packages

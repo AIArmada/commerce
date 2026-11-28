@@ -624,7 +624,7 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
         try {
             // Inventory locations carry no global owner scope; apply the
             // package scoping explicitly under the order's owner context.
-            $owner = OwnerContext::fromTypeAndId($order->owner_type ?? null, $order->owner_id ?? null);
+            $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
 
             $location = OwnerContext::withOwner(
                 $owner,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 
+use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ReturnReason;
@@ -104,13 +105,7 @@ class ViewShipment extends ViewRecord
                     }
                 }),
 
-            Actions\Action::make('print_label')
-                ->label('Print Label')
-                ->icon('heroicon-o-printer')
-                ->visible(fn (Shipment $record) => $record->latestLabel()?->url !== null)
-                ->authorize(fn (Shipment $record): bool => auth()->user()?->can('printLabel', $record) ?? false)
-                ->url(fn (Shipment $record) => $record->latestLabel()?->url)
-                ->openUrlInNewTab(),
+            PrintLabelAction::make(),
         ];
     }
 }

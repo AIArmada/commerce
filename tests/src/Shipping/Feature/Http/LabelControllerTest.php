@@ -37,7 +37,7 @@ it('serves a signed cached label when token, user, and owner payload match', fun
         cachePrefix: 'shipping_label',
         routeName: 'shipping.labels.show',
         routeParameters: ['trackingNumber' => 'TRK-OK-1'],
-        payload: ['content' => 'PDF-CONTENT', 'format' => 'pdf', 'tracking_number' => 'TRK-OK-1'],
+        payload: ['content' => '%PDF-1.4 label content', 'format' => 'pdf', 'tracking_number' => 'TRK-OK-1'],
         ttl: 300,
         owner: EloquentRecordReference::fromModel($owner),
         userId: $user->getAuthIdentifier(),
@@ -46,7 +46,7 @@ it('serves a signed cached label when token, user, and owner payload match', fun
     $this->get($url)
         ->assertOk()
         ->assertHeader('Content-Type', 'application/pdf')
-        ->assertContent('PDF-CONTENT');
+        ->assertContent('%PDF-1.4 label content');
 });
 
 it('rejects a signed label request when cache payload user does not match authenticated user', function (): void {
@@ -68,7 +68,7 @@ it('rejects a signed label request when cache payload user does not match authen
         cachePrefix: 'shipping_label',
         routeName: 'shipping.labels.show',
         routeParameters: ['trackingNumber' => 'TRK-USER-MISMATCH'],
-        payload: ['content' => 'PDF-CONTENT', 'format' => 'pdf', 'tracking_number' => 'TRK-USER-MISMATCH'],
+        payload: ['content' => '%PDF-1.4 label content', 'format' => 'pdf', 'tracking_number' => 'TRK-USER-MISMATCH'],
         ttl: 300,
         owner: null,
         userId: $userB->getAuthIdentifier(),
@@ -114,11 +114,34 @@ it('rejects a signed label request when owner payload does not match current own
         cachePrefix: 'shipping_label',
         routeName: 'shipping.labels.show',
         routeParameters: ['trackingNumber' => 'TRK-OWNER-MISMATCH'],
-        payload: ['content' => 'PDF-CONTENT', 'format' => 'pdf', 'tracking_number' => 'TRK-OWNER-MISMATCH'],
+        payload: ['content' => '%PDF-1.4 label content', 'format' => 'pdf', 'tracking_number' => 'TRK-OWNER-MISMATCH'],
         ttl: 300,
         owner: EloquentRecordReference::fromModel($ownerB),
         userId: $user->getAuthIdentifier(),
     );
 
     $this->get($url)->assertForbidden();
+});
+
+it('rejects signed label payloads without a valid pdf signature', function (): void {
+    $user = User::query()->create([
+        'name' => 'Invalid Label User',
+        'email' => 'invalid-label-user@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+    $owner = OwnerContext::resolve();
+
+    $url = app(SignedDownloadApi::class)->issueUrl(
+        cachePrefix: 'shipping_label',
+        routeName: 'shipping.labels.show',
+        routeParameters: ['trackingNumber' => 'TRK-INVALID-PDF'],
+        payload: ['content' => '<html>not a pdf</html>', 'format' => 'pdf', 'tracking_number' => 'TRK-INVALID-PDF'],
+        ttl: 300,
+        owner: EloquentRecordReference::fromModel($owner),
+        userId: $user->getAuthIdentifier(),
+    );
+
+    $this->get($url)->assertNotFound();
 });

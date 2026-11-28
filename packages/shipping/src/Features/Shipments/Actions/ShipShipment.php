@@ -69,7 +69,9 @@ final class ShipShipment
             $priorOperation = ShipmentOperation::query()
                 ->where('shipment_id', $shipment->id)
                 ->where('operation_type', 'create')
-                ->latest('operation_started_at')
+                ->orderByDesc('operation_started_at')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->first();
             $priorStatus = $priorOperation?->status();
             if ($priorStatus === ShipmentOperationStatus::Pending || $priorStatus === ShipmentOperationStatus::Unknown) {

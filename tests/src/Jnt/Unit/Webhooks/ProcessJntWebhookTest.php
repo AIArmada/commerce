@@ -11,6 +11,7 @@ use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Actions\ProcessTrackingWebhook;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -290,4 +291,103 @@ describe('ProcessJntWebhook', function (): void {
             JntTrackingEvent::query()->create($attributes);
         }))->toThrow(QueryException::class);
     });
+});
+
+it('persists sparse webhook details and marks the webhook processed', function (): void {
+    config()->set('jnt.owner.enabled', false);
+
+    Event::fake([TrackingUpdatedEvent::class]);
+
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORDER-SPARSE-1',
+        'tracking_number' => 'JNTSPARSE001',
+        'customer_code' => 'CUST',
+        'status' => 'pending',
+    ]);
+
+    $log = JntWebhookLog::query()->create([
+        'order_id' => $order->id,
+        'tracking_number' => 'JNTSPARSE001',
+        'processing_status' => JntWebhookLog::STATUS_PENDING,
+    ]);
+
+    $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+    $webhookCall->id = $log->id;
+
+    $processor = new ProcessJntWebhook($webhookCall);
+    $method = new ReflectionMethod($processor, 'processEvent');
+    $method->invoke($processor, 'POD', [
+        'bizContent' => json_encode([
+            'billCode' => 'JNTSPARSE001',
+            'details' => [
+                [
+                    'scanTime' => '2024-01-16 12:34:56',
+                    'scanTypeCode' => '602',
+                    'problemType' => '',
+                ],
+            ],
+        ]),
+    ]);
+
+    $order->refresh();
+    $log->refresh();
+
+    expect($order->status)->toBe(TrackingStatus::Delivered->value)
+        ->and($order->delivered_at?->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:34:56')
+        ->and($order->problem_at)->toBeNull()
+        ->and($log->processing_status)->toBe(JntWebhookLog::STATUS_PROCESSED)
+        ->and(JntTrackingEvent::query()->where('order_id', $order->id)->count())->toBe(1);
+
+    Event::assertDispatched(TrackingUpdatedEvent::class);
+});
+
+it('transitions into exception and resolves blank problem details', function (): void {
+    config()->set('jnt.owner.enabled', false);
+
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORDER-PROBLEM-1',
+        'tracking_number' => 'JNTPROBLEM001',
+        'customer_code' => 'CUST',
+        'status' => 'pending',
+    ]);
+
+    $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+    $processor = new ProcessJntWebhook($webhookCall);
+    $method = new ReflectionMethod($processor, 'processEvent');
+
+    $method->invoke($processor, 'PROBLEM', [
+        'bizContent' => json_encode([
+            'billCode' => 'JNTPROBLEM001',
+            'details' => [[
+                'scanTime' => '2024-01-15 09:00:00',
+                'desc' => 'Problematic scanning',
+                'scanTypeCode' => '110',
+                'problemType' => 'DAMAGED',
+            ]],
+        ]),
+    ]);
+
+    $order->refresh();
+
+    expect($order->status)->toBe(TrackingStatus::Exception->value)
+        ->and($order->problem_at)->not->toBeNull()
+        ->and($order->exception_at)->not->toBeNull();
+
+    $method->invoke($processor, 'POD', [
+        'bizContent' => json_encode([
+            'billCode' => 'JNTPROBLEM001',
+            'details' => [[
+                'scanTime' => '2024-01-16 09:00:00',
+                'desc' => 'Parcel signed',
+                'scanTypeCode' => '602',
+                'problemType' => '',
+            ]],
+        ]),
+    ]);
+
+    $order->refresh();
+
+    expect($order->status)->toBe(TrackingStatus::Delivered->value)
+        ->and($order->problem_at)->toBeNull()
+        ->and($order->resolved_at)->not->toBeNull();
 });

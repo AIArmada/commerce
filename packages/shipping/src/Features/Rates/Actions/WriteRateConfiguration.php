@@ -29,7 +29,7 @@ final class WriteRateConfiguration implements ManageRateConfiguration
         }
 
         $zone->save();
-        $this->invalidateQuotes();
+        $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
 
         return (string) $zone->getKey();
     }
@@ -39,8 +39,9 @@ final class WriteRateConfiguration implements ManageRateConfiguration
         unset($data['owner_id'], $data['owner_type'], $data['owner_scope_key']);
 
         DB::transaction(function () use ($zoneId, $data): void {
-            $this->zone($zoneId)->update($data);
-            $this->invalidateQuotes();
+            $zone = $this->zone($zoneId);
+            $zone->update($data);
+            $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
         });
     }
 
@@ -51,7 +52,7 @@ final class WriteRateConfiguration implements ManageRateConfiguration
             unset($data['zone_id']);
 
             $id = (string) $zone->rates()->create($data)->getKey();
-            $this->invalidateQuotes();
+            $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
 
             return $id;
         });
@@ -60,28 +61,34 @@ final class WriteRateConfiguration implements ManageRateConfiguration
     public function updateRate(string $rateId, array $data): void
     {
         DB::transaction(function () use ($rateId, $data): void {
-            $rate = $this->rate($rateId);
+            [$rate, $zone] = $this->rate($rateId);
+            $originalZone = $zone;
 
             if (array_key_exists('zone_id', $data)) {
                 if (! is_string($data['zone_id']) || $data['zone_id'] === '') {
                     throw new DomainException('A shipping rate must belong to a zone.');
                 }
 
-                $this->zone($data['zone_id']);
+                $zone = $this->zone($data['zone_id']);
             }
 
             $rate->update($data);
-            $this->invalidateQuotes();
+            $this->invalidateQuotes($originalZone->owner_type, $originalZone->owner_id);
+
+            if ($zone->getKey() !== $originalZone->getKey()) {
+                $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
+            }
         });
     }
 
     public function deleteRate(string $rateId): bool
     {
         return DB::transaction(function () use ($rateId): bool {
-            $deleted = (bool) $this->rate($rateId)->delete();
+            [$rate, $zone] = $this->rate($rateId);
+            $deleted = (bool) $rate->delete();
 
             if ($deleted) {
-                $this->invalidateQuotes();
+                $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
             }
 
             return $deleted;
@@ -100,18 +107,18 @@ final class WriteRateConfiguration implements ManageRateConfiguration
             $deleted = (bool) $zone->delete();
 
             if ($deleted) {
-                $this->invalidateQuotes();
+                $this->invalidateQuotes($zone->owner_type, $zone->owner_id);
             }
 
             return $deleted;
         });
     }
 
-    private function invalidateQuotes(): void
+    private function invalidateQuotes(?string $ownerType, string | int | null $ownerId): void
     {
         app(ShippingZoneResolver::class)->clearCache();
 
-        $invalidate = static fn () => app(RateCache::class)->invalidateConfiguration();
+        $invalidate = static fn () => app(RateCache::class)->invalidateOwner($ownerType, $ownerId);
 
         if (DB::transactionLevel() > 0) {
             DB::afterCommit($invalidate);
@@ -129,16 +136,19 @@ final class WriteRateConfiguration implements ManageRateConfiguration
         return ShippingZone::query()->lockForUpdate()->findOrFail($id);
     }
 
-    private function rate(string $id): ShippingRate
+    /**
+     * @return array{0: ShippingRate, 1: ShippingZone}
+     */
+    private function rate(string $id): array
     {
         $rate = ShippingRate::query()->findOrFail($id);
-        $this->zone($rate->zone_id);
+        $zone = $this->zone($rate->zone_id);
         $locked = ShippingRate::query()->lockForUpdate()->findOrFail($id);
 
         if ($locked->zone_id !== $rate->zone_id) {
             throw new DomainException('The rate zone has changed. Retry the operation.');
         }
 
-        return $locked;
+        return [$locked, $zone];
     }
 }

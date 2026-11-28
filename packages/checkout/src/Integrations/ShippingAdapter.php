@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -19,8 +18,10 @@ final class ShippingAdapter
 
     public function __construct()
     {
-        $this->hasJnt = class_exists(JntShippingDriver::class)
-            && config('checkout.integrations.shipping.jnt.enabled', true);
+        $this->hasJnt = config('checkout.integrations.shipping.jnt.enabled', true)
+            && interface_exists(CalculateRates::class)
+            && app()->bound(ShippingManager::class)
+            && app(ShippingManager::class)->hasDriver('jnt');
     }
 
     /**

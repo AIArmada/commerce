@@ -67,7 +67,11 @@ final class WriteManualShipment implements ManageManualShipment
      */
     private function fields(array $data): array
     {
-        return array_filter(array_intersect_key($data, array_flip(self::FIELDS)), static fn (mixed $value): bool => $value !== null);
+        return array_filter(
+            array_intersect_key($data, array_flip(self::FIELDS)),
+            static fn (mixed $value, string $key): bool => $value !== null || $key === 'service_code',
+            ARRAY_FILTER_USE_BOTH,
+        );
     }
 
     private function lock(string $id): Shipment

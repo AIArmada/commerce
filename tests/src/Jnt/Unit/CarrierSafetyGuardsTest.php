@@ -11,7 +11,6 @@ use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
-use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderPrintCommand;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Exceptions\JntValidationException;
@@ -35,8 +34,8 @@ use AIArmada\Jnt\Features\Waybills\EntryPoints\Http\AwbController;
 use AIArmada\Jnt\JntServiceProvider;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Support\ShippingRateCalculator;
 use AIArmada\Jnt\Support\TrackingEventHash;
-use AIArmada\Shipping\Data\AddressData;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -228,7 +227,7 @@ describe('carrier safety guards', function (): void {
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
-        expect($latest)->toBe('2024-01-16 12:00:00')->and($queries)->toHaveCount(1);
+        expect($latest?->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00')->and($queries)->toHaveCount(1);
     });
 
     it('sanitizes waybill output paths and filenames', function (): void {
@@ -300,29 +299,11 @@ describe('carrier safety guards', function (): void {
     });
 
     it('classifies only five-digit postcodes into region pricing', function (): void {
-        $driver = new JntShippingDriver(
-            Mockery::mock(JntExpressService::class),
-            Mockery::mock(JntTrackingService::class),
-        );
-
-        $multiplier = new ReflectionMethod($driver, 'getRegionMultiplierBasisPoints');
-        $days = new ReflectionMethod($driver, 'getEstimatedDays');
-
-        $address = static fn (string $postcode): AddressData => new AddressData(
-            name: 'Test',
-            phone: '+60123456789',
-            line1: '123 Test St',
-            postcode: $postcode,
-            country: 'MYS',
-        );
-
-        expect($multiplier->invoke($driver, $address('88000')))->toBe(15000)
-            ->and($multiplier->invoke($driver, $address('50000')))->toBe(10000)
-            ->and($multiplier->invoke($driver, $address('8ABCD')))->toBe(10000)
-            ->and($multiplier->invoke($driver, $address('880000')))->toBe(10000)
-            ->and($days->invoke($driver, $address('8ABCD')))->toBe((int) config('jnt.shipping.default_estimated_days', 3));
-
-        Mockery::close();
+        expect(ShippingRateCalculator::regionMultiplierBasisPoints('88000'))->toBe(15000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('50000'))->toBe(10000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('8ABCD'))->toBe(10000)
+            ->and(ShippingRateCalculator::regionMultiplierBasisPoints('880000'))->toBe(10000)
+            ->and(ShippingRateCalculator::estimatedDays('8ABCD'))->toBe((int) config('jnt.shipping.default_estimated_days', 3));
     });
 
     it('resolves credential-bearing services fresh every time', function (): void {

@@ -7,7 +7,13 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Events\JntOrderStatusChanged;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Queries\FindNotificationOrder;
+use AIArmada\Jnt\Support\InheritedOwnerGuard;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -126,4 +132,51 @@ it('auto-assigns owner on create when enabled', function (): void {
 
     expect($order->owner_type)->toBe($ownerA->getMorphClass())
         ->and($order->owner_id)->toBe($ownerA->getKey());
+});
+
+it('fails closed for orphaned owners at tracking trust boundaries', function (): void {
+    config()->set('jnt.owner.enabled', true);
+
+    $owner = User::query()->create([
+        'name' => 'Deleted Owner',
+        'email' => 'deleted-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $order = OwnerContext::withOwner($owner, fn () => JntOrder::query()->create([
+        'order_id' => 'ORD-ORPHAN-OWNER',
+        'tracking_number' => 'TRK-ORPHAN-OWNER',
+        'customer_code' => 'CUST',
+    ]));
+
+    $ownerId = (string) $owner->getKey();
+    $owner->delete();
+
+    $event = new JntOrderStatusChanged(
+        (string) $order->getKey(),
+        $order->order_id,
+        $order->tracking_number,
+        $order->owner_type,
+        $ownerId,
+        TrackingStatus::InTransit,
+    );
+
+    expect($event->owner())->toBeNull()
+        ->and(app(FindNotificationOrder::class)->find((string) $order->getKey(), $order->owner_type, $ownerId))->toBeNull();
+
+    expect(fn () => OwnerContext::withOwner($order->owner_type === null ? null : $owner, fn () => app(SyncOrderTracking::class)->syncOrderTracking($order)))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('requires an explicit global context for inherited global children', function (): void {
+    config()->set('jnt.owner.enabled', true);
+
+    expect(fn () => InheritedOwnerGuard::assertMatchesContext(null, null, JntOrder::class))
+        ->toThrow(InvalidArgumentException::class);
+
+    OwnerContext::withOwner(null, function (): void {
+        InheritedOwnerGuard::assertMatchesContext(null, null, JntOrder::class);
+    });
+
+    expect(true)->toBeTrue();
 });

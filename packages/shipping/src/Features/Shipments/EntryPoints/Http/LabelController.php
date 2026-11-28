@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Features\Shipments\EntryPoints\Http;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\FileSignature;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -34,6 +35,11 @@ final class LabelController
 
         if (! in_array($format, ['pdf', 'png', 'zpl'], true)) {
             abort(404, 'Unsupported label format');
+        }
+
+        if (($format === 'pdf' && ! FileSignature::isPdf($data['content']))
+            || ($format === 'png' && ! FileSignature::isPng($data['content']))) {
+            abort(404, 'Invalid label content');
         }
 
         $base = mb_trim(preg_replace('/[^A-Za-z0-9._-]+/', '_', $trackingNumber) ?? '', '._');

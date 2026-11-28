@@ -204,8 +204,6 @@ final class CancelOrderAction
 
     private static function canCancel(JntOrder $record): bool
     {
-        $nonCancellableStatuses = ['delivered', 'cancelled', 'returned'];
-
-        return ! in_array($record->status, $nonCancellableStatuses, true);
+        return $record->isCancellable();
     }
 }

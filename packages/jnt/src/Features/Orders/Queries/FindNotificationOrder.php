@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
 use AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use InvalidArgumentException;
 
 final readonly class FindNotificationOrder implements ReadNotificationOrder
 {
@@ -17,9 +19,9 @@ final readonly class FindNotificationOrder implements ReadNotificationOrder
             return null;
         }
 
-        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
-
-        if ($ownerType !== null && $owner === null) {
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
+        } catch (InvalidArgumentException | ModelNotFoundException) {
             return null;
         }
 

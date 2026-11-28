@@ -23,6 +23,6 @@ final readonly class LocalWaybillWriter implements WaybillWriter
             return false;
         }
 
-        return file_put_contents($path, $content, LOCK_EX) === mb_strlen($content);
+        return file_put_contents($path, $content, LOCK_EX) === mb_strlen($content, '8bit');
     }
 }

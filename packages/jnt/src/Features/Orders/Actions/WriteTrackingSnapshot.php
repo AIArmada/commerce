@@ -28,7 +28,7 @@ final readonly class WriteTrackingSnapshot implements UpdateTrackingSnapshot
             $order = JntOrder::query()->lockForUpdate()->findOrFail($orderId);
             $latestStoredScan = app(ReadLatestTrackingScan::class)->forOrder($orderId, $order->owner_type, $order->owner_id);
 
-            if ($scanTime === null || ($latestStoredScan !== null && $scanTime->format('Y-m-d H:i:s') < (string) $latestStoredScan) || $order->isCancelled()) {
+            if ($scanTime === null || ($latestStoredScan !== null && $scanTime < $latestStoredScan) || $order->isCancelled()) {
                 $attributes = array_intersect_key($attributes, ['last_tracked_at' => true]);
             }
 

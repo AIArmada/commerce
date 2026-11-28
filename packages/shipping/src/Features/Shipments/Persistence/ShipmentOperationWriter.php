@@ -46,7 +46,9 @@ final readonly class ShipmentOperationWriter
                 ->where('shipment_id', $shipment->getKey())
                 ->where('operation_type', $operationType)
                 ->whereIn('status', [ShipmentOperationStatus::Pending->value, ShipmentOperationStatus::Unknown->value, ShipmentOperationStatus::Succeeded->value])
-                ->latest('operation_started_at')
+                ->orderByDesc('operation_started_at')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->lockForUpdate()
                 ->first();
 

@@ -7,8 +7,10 @@ namespace AIArmada\Jnt\Features\Tracking;
 use AIArmada\Jnt\Features\Tracking\Api\DeleteOrderTracking;
 use AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan;
 use AIArmada\Jnt\Features\Tracking\Api\StoreTrackingEvents;
+use AIArmada\Jnt\Features\Tracking\Api\TrackingPollCache;
 use AIArmada\Jnt\Features\Tracking\Persistence\OrderTrackingCleanup;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
+use AIArmada\Jnt\Features\Tracking\Persistence\TrackingPollCacheStore;
 use AIArmada\Jnt\Features\Tracking\Queries\LatestTrackingScan;
 use AIArmada\Jnt\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
@@ -20,6 +22,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(StoreTrackingEvents::class, TrackingEventWriter::class);
         $app->bind(ReadLatestTrackingScan::class, LatestTrackingScan::class);
         $app->bind(DeleteOrderTracking::class, OrderTrackingCleanup::class);
+        $app->bind(TrackingPollCache::class, TrackingPollCacheStore::class);
     }
 
     public function boot(Application $app): void {}

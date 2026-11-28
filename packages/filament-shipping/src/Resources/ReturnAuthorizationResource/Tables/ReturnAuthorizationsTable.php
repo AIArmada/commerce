@@ -7,6 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\Shipping\Enums\ReturnReason;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\States\ReturnAuthorizationStatus;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -60,7 +61,8 @@ final class ReturnAuthorizationsTable
             ])
             ->actions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (ReturnAuthorization $record): bool => ! $record->isPackageReturn()),
                 ApproveReturnAction::make(),
                 RejectReturnAction::make(),
             ])

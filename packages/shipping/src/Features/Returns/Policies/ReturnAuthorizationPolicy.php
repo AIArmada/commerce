@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Returns\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Policy for ReturnAuthorization model authorization.
@@ -36,15 +35,11 @@ class ReturnAuthorizationPolicy
      */
     public function view(Authenticatable $user, ReturnAuthorization $rma): bool
     {
-        if ($this->hasPermission($user, 'shipping.returns.view')) {
-            if ((bool) config('shipping.features.owner.enabled', false)) {
-                return $this->isOwner($user, $rma);
-            }
-
-            return true;
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
+            return $this->hasPermission($user, 'shipping.returns.view');
         }
 
-        return $this->isOwner($user, $rma);
+        return OwnerUiScope::canAccessRecord($rma);
     }
 
     /**
@@ -52,7 +47,8 @@ class ReturnAuthorizationPolicy
      */
     public function create(Authenticatable $user): bool
     {
-        return $this->hasPermission($user, 'shipping.returns.create');
+        return $this->hasPermission($user, 'shipping.returns.create')
+            && (! (bool) config('shipping.features.owner.enabled', false) || OwnerUiScope::canCreate(ReturnAuthorization::class));
     }
 
     /**
@@ -72,7 +68,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -95,7 +91,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -118,7 +114,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -141,7 +137,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -164,7 +160,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -187,7 +183,7 @@ class ReturnAuthorizationPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return OwnerUiScope::canMutateRecord($rma);
         }
 
         return true;
@@ -207,28 +203,5 @@ class ReturnAuthorizationPolicy
         }
 
         return false;
-    }
-
-    /**
-     * Check if the user owns the return authorization.
-     */
-    protected function isOwner(Authenticatable $user, ReturnAuthorization $rma): bool
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return false;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return false;
-        }
-
-        if ((bool) config('shipping.features.owner.include_global', false) && $rma->isGlobal()) {
-            return true;
-        }
-
-        return $rma->belongsToOwner($owner);
     }
 }

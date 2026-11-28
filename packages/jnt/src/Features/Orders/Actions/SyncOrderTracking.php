@@ -15,13 +15,16 @@ use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
 use AIArmada\Jnt\Features\Tracking\Api\StoreTrackingEvents;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Support\TrackingEventHash;
+use AIArmada\Jnt\Support\TrackingScanTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Throwable;
 
 class SyncOrderTracking
@@ -40,9 +43,9 @@ class SyncOrderTracking
             OwnerWriteGuard::findOrFailForOwner(JntOrder::class, (string) $order->getKey());
         }
 
-        $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
-
-        if (($order->owner_type !== null || $order->owner_id !== null) && $owner === null) {
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
+        } catch (InvalidArgumentException | ModelNotFoundException) {
             throw new AuthorizationException('The tracked order owner cannot be resolved.');
         }
 
@@ -78,7 +81,7 @@ class SyncOrderTracking
                     $order->last_tracked_at = CarbonImmutable::now();
 
                     // Set lifecycle timestamps based on tracking events
-                    if ($latestDetail->problemType !== null) {
+                    if ($this->hasProblemType($latestDetail->problemType)) {
                         if ($order->problem_at === null) {
                             $order->problem_at = CarbonImmutable::now();
                         }
@@ -97,7 +100,7 @@ class SyncOrderTracking
                         $order->returned_at = CarbonImmutable::now();
                     }
 
-                    if ($latestDetail->problemType === null && $currentStatus !== TrackingStatus::Exception && $order->problem_at !== null) {
+                    if (! $this->hasProblemType($latestDetail->problemType) && $currentStatus !== TrackingStatus::Exception && $order->problem_at !== null) {
                         $order->resolved_at = CarbonImmutable::now();
                         $order->problem_at = null;
                     }
@@ -107,7 +110,7 @@ class SyncOrderTracking
                         $deliveredAt = $this->trackingStatus->parseDetailScanTime($latestDetail);
 
                         if ($deliveredAt !== null) {
-                            $order->delivered_at = $deliveredAt;
+                            $order->delivered_at = TrackingScanTime::normalize($deliveredAt);
                         }
                     }
                 }
@@ -225,6 +228,11 @@ class SyncOrderTracking
             ->get();
     }
 
+    private function hasProblemType(?string $problemType): bool
+    {
+        return $problemType !== null && mb_trim($problemType) !== '';
+    }
+
     private function insertMissingSyncEvents(JntOrder $order, string $trackingNumber, TrackingData $trackingData): void
     {
         $rows = [];
@@ -250,7 +258,7 @@ class SyncOrderTracking
                 'order_id' => $order->id,
                 'tracking_number' => $trackingNumber,
                 'scan_type_code' => $detail->scanTypeCode,
-                'scan_time' => $scanTime->format('Y-m-d H:i:s'),
+                'scan_time' => TrackingScanTime::forStorage($scanTime),
                 'order_reference' => $order->order_id,
                 'scan_type_name' => $detail->scanTypeName,
                 'scan_type' => $detail->scanType,

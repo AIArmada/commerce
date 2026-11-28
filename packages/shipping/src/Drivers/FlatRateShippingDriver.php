@@ -17,6 +17,7 @@ use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Data\TrackingStatus;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * Flat rate shipping driver with configurable rate tiers.
@@ -103,7 +104,7 @@ class FlatRateShippingDriver implements ShippingDriverInterface
 
     public function createShipment(ShipmentData $data): CarrierOperationResult
     {
-        return CarrierOperationResult::succeeded(trackingNumber: 'FLAT-' . mb_strtoupper(uniqid()));
+        return CarrierOperationResult::succeeded(trackingNumber: 'FLAT-' . (string) Str::ulid());
     }
 
     public function cancelShipment(string $trackingNumber): CarrierOperationResult

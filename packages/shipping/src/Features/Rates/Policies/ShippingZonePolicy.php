@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Policy for ShippingZone model authorization.
@@ -36,15 +35,11 @@ class ShippingZonePolicy
      */
     public function view(Authenticatable $user, ShippingZone $zone): bool
     {
-        if ($this->hasPermission($user, 'shipping.zones.view')) {
-            if ((bool) config('shipping.features.owner.enabled', false)) {
-                return $this->isOwner($user, $zone);
-            }
-
-            return true;
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
+            return $this->hasPermission($user, 'shipping.zones.view');
         }
 
-        return $this->isOwner($user, $zone);
+        return OwnerUiScope::canAccessRecord($zone);
     }
 
     /**
@@ -52,7 +47,8 @@ class ShippingZonePolicy
      */
     public function create(Authenticatable $user): bool
     {
-        return $this->hasPermission($user, 'shipping.zones.create');
+        return $this->hasPermission($user, 'shipping.zones.create')
+            && (! (bool) config('shipping.features.owner.enabled', false) || OwnerUiScope::canCreate(ShippingZone::class));
     }
 
     /**
@@ -68,7 +64,7 @@ class ShippingZonePolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $zone);
+            return OwnerUiScope::canMutateRecord($zone);
         }
 
         return true;
@@ -97,7 +93,7 @@ class ShippingZonePolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $zone);
+            return OwnerUiScope::canMutateRecord($zone);
         }
 
         return true;
@@ -116,7 +112,7 @@ class ShippingZonePolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $zone);
+            return OwnerUiScope::canMutateRecord($zone);
         }
 
         return true;
@@ -136,28 +132,5 @@ class ShippingZonePolicy
         }
 
         return false;
-    }
-
-    /**
-     * Check if the user owns the shipping zone.
-     */
-    protected function isOwner(Authenticatable $user, ShippingZone $zone): bool
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return false;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return false;
-        }
-
-        if ((bool) config('shipping.features.owner.include_global', false) && $zone->isGlobal()) {
-            return true;
-        }
-
-        return $zone->belongsToOwner($owner);
     }
 }

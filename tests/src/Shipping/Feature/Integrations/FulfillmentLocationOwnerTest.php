@@ -84,3 +84,22 @@ describe('Forced fulfillment location scoping', function (): void {
             ->and((string) $resolved->getKey())->toBe((string) $ownLocation->getKey());
     });
 });
+
+it('fails closed when the order owner no longer exists', function (): void {
+    $owner = fulfillmentLocationOwner('Existing Location Owner');
+    $location = fulfillmentLocation($owner, 'WH-' . Str::upper(Str::random(6)));
+
+    $missingOwner = new User;
+    $missingOwner->forceFill([
+        'id' => (string) Str::uuid(),
+        'name' => 'Missing Owner',
+        'email' => Str::lower(Str::random(10)) . '@example.com',
+    ]);
+
+    $resolved = OwnerContext::withOwner(
+        $owner,
+        fn (): ?object => resolveFulfillmentLocation((string) $location->getKey(), fulfillmentOrderFor($missingOwner))
+    );
+
+    expect($resolved)->toBeNull();
+});

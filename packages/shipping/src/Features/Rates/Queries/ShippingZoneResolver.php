@@ -274,16 +274,24 @@ class ShippingZoneResolver implements ZoneRateReader
     {
         $this->assertCompleteOwnerTuple($ownerId, $ownerType);
 
-        if ($ownerId !== null && $ownerType !== null) {
-            return OwnerContext::fromTypeAndId($ownerType, $ownerId);
-        }
-
         $owner = OwnerContext::resolve();
 
         OwnerContext::assertResolvedOrExplicitGlobal(
             $owner,
             'Shipping zone resolution requires an owner context or explicit global context.',
         );
+
+        if ($ownerId === null || $ownerType === null) {
+            return $owner;
+        }
+
+        $explicit = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
+
+        if ($owner === null || $explicit === null
+            || $owner->getMorphClass() !== $explicit->getMorphClass()
+            || (string) $owner->getKey() !== (string) $explicit->getKey()) {
+            throw new InvalidArgumentException('The explicit shipping owner must match the current owner context.');
+        }
 
         return $owner;
     }

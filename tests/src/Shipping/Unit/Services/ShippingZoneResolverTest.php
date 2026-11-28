@@ -570,7 +570,7 @@ describe('ShippingZoneResolver', function (): void {
             ->not->toContain('Owner B Zone');
     });
 
-    it('honors an explicit owner tuple even when ambient context differs', function (): void {
+    it('rejects an explicit owner tuple that differs from ambient context', function (): void {
         config()->set('shipping.features.owner.enabled', true);
         config()->set('shipping.features.owner.include_global', false);
 
@@ -599,13 +599,11 @@ describe('ShippingZoneResolver', function (): void {
         );
 
         OwnerContext::withOwner($ownerB, function () use ($address, $ownerA): void {
-            $zones = $this->resolver->resolveAll(
+            expect(fn (): mixed => $this->resolver->resolveAll(
                 $address,
                 (string) $ownerA->getKey(),
                 $ownerA->getMorphClass(),
-            );
-
-            expect($zones->pluck('name')->all())->toBe(['Owner A Explicit Zone']);
+            ))->toThrow(InvalidArgumentException::class);
         });
     });
 

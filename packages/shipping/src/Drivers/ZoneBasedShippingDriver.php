@@ -82,14 +82,12 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
         array $packages,
         array $options = []
     ): array {
-        $ownerId = $options['owner_id'] ?? null;
-        $ownerType = $options['owner_type'] ?? null;
         $cartTotal = (int) ($options['cart_total'] ?? 0);
         $itemCount = (int) ($options['item_count'] ?? 0);
 
         $currency = $this->config['currency'] ?? config('shipping.defaults.currency', 'MYR');
 
-        return $this->zoneResolver->quote($destination, $packages, $cartTotal, $itemCount, $currency, $ownerId, $ownerType);
+        return $this->zoneResolver->quote($destination, $packages, $cartTotal, $itemCount, $currency);
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

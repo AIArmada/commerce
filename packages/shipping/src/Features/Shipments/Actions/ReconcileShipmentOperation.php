@@ -46,8 +46,14 @@ final class ReconcileShipmentOperation
             $driver = $manager->driver((string) $driverData);
 
             $tracking = $driver->track($trackingNumber);
+            $provesCreation = in_array($tracking->status->getCategory(), [
+                'pre_shipment',
+                'in_transit',
+                'out_for_delivery',
+                'delivered',
+            ], true);
 
-            if ($tracking->trackingNumber === $trackingNumber && $tracking->status->getCategory() === 'delivered') {
+            if ($tracking->trackingNumber === $trackingNumber && $provesCreation) {
                 $result = CarrierOperationResult::succeeded($trackingNumber);
                 app(ShipmentOperationWriter::class)->complete($operation, $result);
 

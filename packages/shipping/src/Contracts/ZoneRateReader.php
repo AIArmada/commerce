@@ -14,7 +14,7 @@ interface ZoneRateReader
      * @param  array<PackageData>  $packages
      * @return list<RateQuoteData>
      */
-    public function quote(AddressData $destination, array $packages, int $cartTotal, int $itemCount, string $currency, ?string $ownerId = null, ?string $ownerType = null): array;
+    public function quote(AddressData $destination, array $packages, int $cartTotal, int $itemCount, string $currency): array;
 
-    public function isServiceable(AddressData $address, ?string $ownerId = null, ?string $ownerType = null): bool;
+    public function isServiceable(AddressData $address): bool;
 }

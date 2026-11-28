@@ -170,7 +170,7 @@ $item = new ItemData(
 
 ```php
 use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 $package = new PackageInfoData(
     quantity: 1,

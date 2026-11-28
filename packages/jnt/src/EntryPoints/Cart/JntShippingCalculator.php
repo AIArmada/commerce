@@ -12,7 +12,9 @@ use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Runtime\ConditionProviderInterface;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Support\ShippingRateCalculator;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -46,15 +48,17 @@ final class JntShippingCalculator implements ConditionProviderInterface
             return null;
         }
 
+        $quote = ShippingRateCalculator::quote($totalWeight, $destination->postCode, $destination->state);
+
         return [
             'service_name' => (string) config('jnt.shipping.default_service_name', 'J&T Express'),
             'service_type' => (string) config('jnt.shipping.default_service_type', 'EZ'),
-            'amount' => $this->calculateWeightBasedRate($totalWeight, $destination),
+            'amount' => $quote['amount'],
             'weight_kg' => $totalWeight / 1000,
-            'estimated_days' => $this->getEstimatedDays($destination),
+            'estimated_days' => $quote['estimated_days'],
             'calculated_at' => CarbonImmutable::now()->toISOString(),
             'cart_weight' => $totalWeight,
-            'quote_id' => uniqid('jnt_quote_', true),
+            'quote_id' => 'jnt_quote_' . (string) Str::ulid(),
         ];
     }
 
@@ -69,7 +73,7 @@ final class JntShippingCalculator implements ConditionProviderInterface
             $quantity = (int) $item->quantity;
             $components = $item->getAttribute('components');
 
-            if ($components !== null) {
+            if ($components !== null && $components !== []) {
                 foreach (CompositeComponents::expand(CompositeComponents::read($components), $quantity) as $component) {
                     if ($component['requires_shipping'] && $component['weight'] !== null) {
                         $totalWeight = $this->addWeight($totalWeight, $component['weight'], $component['quantity']);
@@ -196,78 +200,6 @@ final class JntShippingCalculator implements ConditionProviderInterface
             state: isset($origin['state']) ? (string) $origin['state'] : null,
             city: isset($origin['city']) ? (string) $origin['city'] : null,
         );
-    }
-
-    /**
-     * Calculate a weight-based shipping rate in integer minor units.
-     */
-    private function calculateWeightBasedRate(int $weightGrams, AddressData $destination): int
-    {
-        $weightKg = intdiv($weightGrams - 1, 1000) + 1;
-        $baseRate = (int) config('jnt.shipping.base_rate', 800);
-        $perKgRate = (int) config('jnt.shipping.per_kg_rate', 200);
-        $minCharge = (int) config('jnt.shipping.min_charge', 800);
-        $regionMultiplierBasisPoints = $this->getRegionMultiplierBasisPoints($destination);
-
-        if (min($baseRate, $perKgRate, $minCharge, $regionMultiplierBasisPoints) < 0
-            || ($perKgRate > 0 && $weightKg - 1 > intdiv(PHP_INT_MAX - $baseRate, $perKgRate))) {
-            throw new InvalidArgumentException('Invalid or overflowing shipping rate configuration.');
-        }
-
-        $rate = $baseRate + ($perKgRate * ($weightKg - 1));
-        $rate = $this->applyRegionMultiplier($rate, $regionMultiplierBasisPoints);
-
-        return max($rate, $minCharge);
-    }
-
-    /**
-     * Resolve a regional multiplier represented as basis points (10000 = 1x).
-     */
-    private function getRegionMultiplierBasisPoints(AddressData $destination): int
-    {
-        $regionRates = config('jnt.shipping.region_multipliers_bp', []);
-
-        if (! is_array($regionRates) || $regionRates === []) {
-            return 10000;
-        }
-
-        $state = mb_strtolower($destination->state ?? '');
-
-        foreach ($regionRates as $region => $basisPoints) {
-            if (str_contains($state, mb_strtolower((string) $region))) {
-                return (int) $basisPoints;
-            }
-        }
-
-        return 10000;
-    }
-
-    private function applyRegionMultiplier(int $rate, int $basisPoints): int
-    {
-        if ($basisPoints > 0 && $rate > intdiv(PHP_INT_MAX - 5000, $basisPoints)) {
-            throw new InvalidArgumentException('Regional shipping rate exceeds the supported range.');
-        }
-
-        return intdiv(($rate * $basisPoints) + 5000, 10000);
-    }
-
-    /**
-     * Get estimated delivery days based on destination.
-     */
-    private function getEstimatedDays(AddressData $destination): int
-    {
-        $defaultDays = (int) config('jnt.shipping.default_estimated_days', 3);
-        $eastExtraDays = (int) config('jnt.shipping.east_malaysia_extra_days', 2);
-        $eastMalaysiaStates = ['sabah', 'sarawak', 'labuan'];
-        $state = mb_strtolower($destination->state ?? '');
-
-        foreach ($eastMalaysiaStates as $eastState) {
-            if (str_contains($state, $eastState)) {
-                return $defaultDays + $eastExtraDays;
-            }
-        }
-
-        return $defaultDays;
     }
 
     /**

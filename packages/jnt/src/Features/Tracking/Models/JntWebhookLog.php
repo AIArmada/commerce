@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Features\Orders\Api\ReadTrackingOrderOwner;
+use AIArmada\Jnt\Support\InheritedOwnerGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -76,11 +77,15 @@ final class JntWebhookLog extends Model
                     );
                 }
 
+                InheritedOwnerGuard::assertMatchesContext($log->owner_type, $log->owner_id, JntWebhookLog::class);
+
                 return;
             }
 
             $log->owner_type = $order->ownerType;
             $log->owner_id = $order->ownerId;
+
+            InheritedOwnerGuard::assertMatchesContext($log->owner_type, $log->owner_id, JntWebhookLog::class);
         });
     }
 

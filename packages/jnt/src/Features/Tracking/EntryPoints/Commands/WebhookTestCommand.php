@@ -72,7 +72,7 @@ class WebhookTestCommand extends JntCommand
             } else {
                 $body = $response->body();
                 $this->line('Response summary: ' . json_encode([
-                    'body_length' => mb_strlen($body),
+                    'body_length' => mb_strlen($body, '8bit'),
                     'body_sha256' => hash('sha256', $body),
                 ]));
 

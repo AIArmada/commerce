@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Waybills\Actions;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\AbsoluteHttpUrl;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\FileSignature;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\PrintWaybillData;
 use AIArmada\Jnt\Features\Orders\Api\ReadWaybillOrder;
@@ -43,20 +45,17 @@ final readonly class IssuePrintableWaybill implements PrintableWaybill
         $content = $waybill->getPdfContent();
 
         if ($waybill->hasBase64Content()) {
-            if ($content === null || ! str_starts_with($content, '%PDF-')) {
+            if (! FileSignature::isPdf($content)) {
                 return null;
             }
         } else {
-            $url = $waybill->getDownloadUrl();
+            $url = AbsoluteHttpUrl::normalize($waybill->getDownloadUrl());
 
-            if ($url !== null && filter_var($url, FILTER_VALIDATE_URL)
-                && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)
-                && parse_url($url, PHP_URL_USER) === null
-                && parse_url($url, PHP_URL_PASS) === null) {
-                return $url;
+            if ($url === null) {
+                return null;
             }
 
-            return null;
+            return $url;
         }
 
         return $this->downloads->issueUrl(

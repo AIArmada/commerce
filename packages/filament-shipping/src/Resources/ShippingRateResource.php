@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Schemas\ShippingRateForm;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Tables\ShippingRatesTable;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -46,21 +43,8 @@ class ShippingRateResource extends Resource
         /** @var Builder<ShippingRate> $query */
         $query = parent::getEloquentQuery()->with('zone');
 
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return $query;
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner === null) {
-            return $query->whereRaw('0 = 1');
-        }
-
-        return $query->whereHas('zone', function (Builder $q) use ($owner): void {
-            OwnerQuery::applyToEloquentBuilder(
-                $q->withoutGlobalScope(OwnerScope::class),
-                $owner,
-                ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false),
-            );
+        return $query->whereHas('zone', function (Builder $zoneQuery): void {
+            OwnerScopedQuery::apply($zoneQuery);
         });
     }
 

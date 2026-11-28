@@ -14,7 +14,6 @@ use AIArmada\Shipping\ShippingManager;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
 
@@ -93,10 +92,10 @@ describe('RateShoppingEngine', function (): void {
 
         $rates = $engine->getAllRates($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Collection::class);
+        expect($rates)->toBeArray();
         expect($rates)->toHaveCount(3);
-        expect($rates->first()->carrier)->toBe('ups'); // Should be sorted by rate
-        expect($rates->first()->rate)->toBe(1400);
+        expect($rates[0]->carrier)->toBe('ups'); // Should be sorted by rate
+        expect($rates[0]->rate)->toBe(1400);
     });
 
     it('can get best rate using selection strategy', function (): void {
@@ -439,9 +438,9 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 3),
-        ]);
+        ];
 
         $cacheRepository = Mockery::mock(Repository::class);
         $cacheRepository->shouldReceive('getStore')
@@ -508,7 +507,7 @@ describe('RateShoppingEngine', function (): void {
         $rates = $engine->getRatesFromCarriers(['fedex', 'ups'], $origin, $destination, $packages);
 
         expect($rates)->toHaveCount(1);
-        expect($rates->first()->carrier)->toBe('fedex');
+        expect($rates[0]->carrier)->toBe('fedex');
     });
 
     it('skips carriers that do not service destination in getRatesFromCarriers', function (): void {
@@ -636,7 +635,7 @@ describe('RateShoppingEngine', function (): void {
         $rates = $engine->getAllRates($origin, $destination, $packages, $unsafeOptions);
 
         expect($rates)->toHaveCount(1);
-        expect($rates->first()->carrier)->toBe('fedex');
+        expect($rates[0]->carrier)->toBe('fedex');
     });
 });
 

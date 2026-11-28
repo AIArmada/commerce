@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
@@ -205,7 +206,7 @@ describe('ShipmentPolicy', function (): void {
         });
 
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        $shipment->shouldReceive('belongsToOwner')->with(Mockery::on(fn (Model $resolved): bool => $resolved->is($owner)))->andReturnTrue();
+        $shipment->forceFill(['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey()]);
 
         try {
             expect($this->policy->view($user, $shipment))->toBeTrue();
@@ -493,7 +494,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         });
 
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
-        $rma->shouldReceive('belongsToOwner')->with(Mockery::on(fn (Model $resolved): bool => $resolved->is($owner)))->andReturnTrue();
+        $rma->forceFill(['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey()]);
 
         try {
             expect($this->policy->view($user, $rma))->toBeTrue();
@@ -633,5 +634,73 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma->shouldReceive('isReceived')->andReturn(true);
 
         expect($this->policy->complete($user, $rma))->toBeTrue();
+    });
+});
+
+describe('Owner-aware mutation boundaries', function (): void {
+    it('denies tenant mutation of included global shipments but allows explicit global mutation', function (): void {
+        config(['shipping.features.owner.enabled' => true, 'shipping.features.owner.include_global' => true]);
+
+        $owner = User::factory()->create();
+        $user = createUserWithPermissions(['shipping.shipments.update']);
+        $shipment = Mockery::mock(Shipment::class)->makePartial();
+        $shipment->forceFill(['owner_type' => null, 'owner_id' => null]);
+        $shipment->shouldReceive('isTerminal')->andReturnFalse();
+
+        try {
+            OwnerContext::withOwner($owner, function () use ($user, $shipment): void {
+                expect(app(ShipmentPolicy::class)->update($user, $shipment))->toBeFalse();
+            });
+
+            OwnerContext::withOwner(null, function () use ($user, $shipment): void {
+                expect(app(ShipmentPolicy::class)->update($user, $shipment))->toBeTrue();
+            });
+        } finally {
+            config(['shipping.features.owner.enabled' => false]);
+        }
+    });
+
+    it('denies tenant management of included global zones but allows explicit global management', function (): void {
+        config(['shipping.features.owner.enabled' => true, 'shipping.features.owner.include_global' => true]);
+
+        $owner = User::factory()->create();
+        $user = createUserWithPermissions(['shipping.zones.manage-rates']);
+        $zone = Mockery::mock(ShippingZone::class)->makePartial();
+        $zone->forceFill(['owner_type' => null, 'owner_id' => null]);
+
+        try {
+            OwnerContext::withOwner($owner, function () use ($user, $zone): void {
+                expect(app(ShippingZonePolicy::class)->manageRates($user, $zone))->toBeFalse();
+            });
+
+            OwnerContext::withOwner(null, function () use ($user, $zone): void {
+                expect(app(ShippingZonePolicy::class)->manageRates($user, $zone))->toBeTrue();
+            });
+        } finally {
+            config(['shipping.features.owner.enabled' => false]);
+        }
+    });
+
+    it('denies tenant mutation of included global returns but allows explicit global mutation', function (): void {
+        config(['shipping.features.owner.enabled' => true, 'shipping.features.owner.include_global' => true]);
+
+        $owner = User::factory()->create();
+        $user = createUserWithPermissions(['shipping.returns.update']);
+        $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
+        $rma->forceFill(['owner_type' => null, 'owner_id' => null]);
+        $rma->shouldReceive('isCompleted')->andReturnFalse();
+        $rma->shouldReceive('isCancelled')->andReturnFalse();
+
+        try {
+            OwnerContext::withOwner($owner, function () use ($user, $rma): void {
+                expect(app(ReturnAuthorizationPolicy::class)->update($user, $rma))->toBeFalse();
+            });
+
+            OwnerContext::withOwner(null, function () use ($user, $rma): void {
+                expect(app(ReturnAuthorizationPolicy::class)->update($user, $rma))->toBeTrue();
+            });
+        } finally {
+            config(['shipping.features.owner.enabled' => false]);
+        }
     });
 });

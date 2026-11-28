@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Schemas\ShipmentForm;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Tables\ShipmentsTable;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
@@ -42,21 +41,9 @@ class ShipmentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<Shipment> $query */
-        $query = parent::getEloquentQuery()->withoutGlobalScope(OwnerScope::class);
+        $query = parent::getEloquentQuery();
 
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return $query;
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner === null) {
-            return $query->whereRaw('0 = 1');
-        }
-
-        /** @var Builder<Shipment> $scoped */
-        $scoped = $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-
-        return $scoped;
+        return OwnerScopedQuery::apply($query);
     }
 
     public static function form(Schema $schema): Schema

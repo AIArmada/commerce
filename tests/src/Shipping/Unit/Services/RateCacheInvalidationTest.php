@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Unit\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
@@ -75,13 +76,13 @@ describe('Rate cache invalidation on non-taggable stores', function (): void {
 
         $otherEngine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 300]);
 
-        expect($first->first()->rate)->toBe(500)
-            ->and($otherEngine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(500);
+        expect($first[0]->rate)->toBe(500)
+            ->and($otherEngine->getAllRates($origin, $destination, $packages)[0]->rate)->toBe(500);
 
         $otherEngine->clearCache();
 
-        expect($engine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(700)
-            ->and($otherEngine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(700);
+        expect($engine->getAllRates($origin, $destination, $packages)[0]->rate)->toBe(700)
+            ->and($otherEngine->getAllRates($origin, $destination, $packages)[0]->rate)->toBe(700);
 
         $engine->clearCache();
     });
@@ -109,17 +110,42 @@ it('invalidates quotes across all owner partitions when rate configuration chang
 
     $cache = new RateCache;
     $key = 'quote-' . Str::uuid();
-    $rate = static fn (int $amount) => collect([
+    $rate = static fn (int $amount): array => [
         new RateQuoteData(carrier: 'zone', service: 'standard', rate: $amount, currency: 'MYR', estimatedDays: 3),
-    ]);
+    ];
 
     foreach (['owner-a', 'owner-b'] as $owner) {
-        expect($cache->remember([$owner], $key, 300, fn () => $rate(500))->first()->rate)->toBe(500);
+        expect($cache->remember([$owner], $key, 300, fn () => $rate(500))[0]->rate)->toBe(500);
     }
 
     $cache->invalidateConfiguration();
 
     foreach (['owner-a', 'owner-b'] as $owner) {
-        expect($cache->remember([$owner], $key, 300, fn () => $rate(700))->first()->rate)->toBe(700);
+        expect($cache->remember([$owner], $key, 300, fn () => $rate(700))[0]->rate)->toBe(700);
     }
+});
+
+it('invalidates only the written owner rate partition', function (): void {
+    config(['cache.default' => 'array']);
+
+    $cache = new RateCache;
+    $key = 'owner-invalidation-' . Str::uuid();
+    $tagA = 'shipping-rates-owner-' . OwnerScopeKey::forTypeAndId('User', 'owner-a');
+    $tagB = 'shipping-rates-owner-' . OwnerScopeKey::forTypeAndId('User', 'owner-b');
+    $quote = static fn (int $amount): array => [
+        new RateQuoteData(carrier: 'zone', service: 'standard', rate: $amount, currency: 'MYR', estimatedDays: 3),
+    ];
+
+    expect($cache->remember([$tagA], $key, 300, fn (): array => $quote(500))[0]->rate)->toBe(500)
+        ->and($cache->remember([$tagB], $key, 300, fn (): array => $quote(500))[0]->rate)->toBe(500);
+
+    $cache->invalidateOwner('User', 'owner-a');
+
+    expect($cache->remember([$tagA], $key, 300, fn (): array => $quote(700))[0]->rate)->toBe(700)
+        ->and($cache->remember([$tagB], $key, 300, fn (): array => $quote(700))[0]->rate)->toBe(500);
+
+    $cache->invalidateOwner(null, null);
+
+    expect($cache->remember([$tagA], $key, 300, fn (): array => $quote(900))[0]->rate)->toBe(900)
+        ->and($cache->remember([$tagB], $key, 300, fn (): array => $quote(900))[0]->rate)->toBe(900);
 });

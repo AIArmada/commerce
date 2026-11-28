@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentOrders\Resources\OrderResource;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
+use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
@@ -79,15 +79,7 @@ class FulfillmentQueue extends Page implements HasTable
             return null;
         }
 
-        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('orders.owner.include_global', false);
-
-        if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        $owner = OwnerContext::resolve();
-        $count = Order::query()
-            ->forOwner($owner, includeGlobal: $includeGlobal)
+        $count = OwnerScopedQuery::apply(Order::query())
             ->whereState('status', Processing::class)
             ->count();
 
@@ -100,17 +92,9 @@ class FulfillmentQueue extends Page implements HasTable
             return null;
         }
 
-        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('orders.owner.include_global', false);
-
-        if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        $owner = OwnerContext::resolve();
         $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
-        $urgentCount = Order::query()
-            ->forOwner($owner, includeGlobal: $includeGlobal)
+        $urgentCount = OwnerScopedQuery::apply(Order::query())
             ->whereState('status', Processing::class)
             ->where('created_at', '<=', CarbonImmutable::now()->subHours($urgentThreshold))
             ->count();
@@ -120,13 +104,9 @@ class FulfillmentQueue extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $owner = OwnerContext::resolve();
-        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('orders.owner.include_global', false);
-
         return $table
             ->query(
-                Order::query()
-                    ->forOwner($owner, includeGlobal: $includeGlobal)
+                OwnerScopedQuery::apply(Order::query())
                     ->whereState('status', Processing::class)
                     ->with(['customer', 'items'])
             )
@@ -310,18 +290,11 @@ class FulfillmentQueue extends Page implements HasTable
      */
     protected function getCarrierOptions(): array
     {
-        $handlerContract = implode('\\', [
-            'AIArmada',
-            'Orders',
-            'Contracts',
-            'FulfillmentHandler',
-        ]);
-
-        if (! class_exists($handlerContract) || ! app()->bound($handlerContract)) {
+        if (! interface_exists(FulfillmentHandler::class) || ! app()->bound(FulfillmentHandler::class)) {
             return [];
         }
 
-        $handler = app($handlerContract);
+        $handler = app(FulfillmentHandler::class);
 
         if (! is_object($handler) || ! method_exists($handler, 'availableCarriers')) {
             return [];

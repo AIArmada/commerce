@@ -9,6 +9,9 @@
     "table:webhook_calls": [
       "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\WebhookLogWriter",
       "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\OrderTrackingCleanup"
+    ],
+    "store:jnt-tracking-poll-cache": [
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\TrackingPollCacheStore"
     ]
   },
   "extensions": {}

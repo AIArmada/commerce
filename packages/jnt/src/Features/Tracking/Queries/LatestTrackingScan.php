@@ -6,17 +6,20 @@ namespace AIArmada\Jnt\Features\Tracking\Queries;
 
 use AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use DateTimeImmutable;
 
 final readonly class LatestTrackingScan implements ReadLatestTrackingScan
 {
-    public function forOrder(string $orderId, ?string $ownerType, ?string $ownerId): ?string
+    public function forOrder(string $orderId, ?string $ownerType, ?string $ownerId): ?DateTimeImmutable
     {
         $scan = JntTrackingEvent::query()->withoutOwnerScope()
             ->where('order_id', $orderId)
             ->where('owner_type', $ownerType)
             ->where('owner_id', $ownerId)
-            ->max('scan_time');
+            ->orderByDesc('scan_time')
+            ->first(['scan_time'])
+            ?->scan_time;
 
-        return is_string($scan) ? $scan : null;
+        return $scan instanceof DateTimeImmutable ? $scan : null;
     }
 }

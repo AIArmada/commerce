@@ -15,6 +15,7 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Support\ShippingRateCalculator;
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
@@ -30,7 +31,7 @@ use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Data\TrackingStatus;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Arr;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -106,19 +107,29 @@ class JntShippingDriver implements ShippingDriverInterface
         array $packages,
         array $options = []
     ): array {
-        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight * $p->quantity, $packages));
+        $totalWeight = 0;
 
-        // Calculate rate based on weight
-        $rate = $this->calculateWeightBasedRate($totalWeight, $destination);
-        $estimatedDays = $this->getEstimatedDays($destination);
+        foreach ($packages as $package) {
+            if ($package->quantity < 1 || $package->weight < 0) {
+                throw new InvalidArgumentException('Shipping package weight and quantity must not be negative.');
+            }
+
+            if ($package->weight > 0 && $package->quantity > intdiv(PHP_INT_MAX - $totalWeight, $package->weight)) {
+                throw new InvalidArgumentException('Shipping package weight exceeds the supported range.');
+            }
+
+            $totalWeight += $package->weight * $package->quantity;
+        }
+
+        $quote = ShippingRateCalculator::quote($totalWeight, $destination->postcode, $destination->state);
 
         return [
             new RateQuoteData(
                 carrier: 'jnt',
                 service: 'EZ',
-                rate: $rate,
+                rate: $quote['amount'],
                 currency: 'MYR',
-                estimatedDays: $estimatedDays,
+                estimatedDays: $quote['estimated_days'],
                 serviceDescription: 'J&T EZ - Standard Delivery',
                 calculatedLocally: true,
             ),
@@ -148,14 +159,6 @@ class JntShippingDriver implements ShippingDriverInterface
             );
 
             $trackingNumber = $orderData->trackingNumber;
-
-            if ($trackingNumber !== null) {
-                try {
-                    $this->jntService->printOrder(orderId: $data->reference, trackingNumber: $trackingNumber);
-                } catch (Throwable) {
-                    // ponytail: label generation may fail, continue without it
-                }
-            }
 
             return CarrierOperationResult::succeeded(
                 trackingNumber: $trackingNumber,
@@ -259,20 +262,25 @@ class JntShippingDriver implements ShippingDriverInterface
                     location: $event['location'] ?? null,
                     raw: $event,
                 );
-            });
+            })
+            ->sortBy(static fn (TrackingEventData $event): int => $event->timestamp->getTimestamp())
+            ->values();
 
         /** @var JntTrackingStatus $currentJntStatus */
         $currentJntStatus = $response['current_status'];
         $currentStatus = $this->mapJntStatusToNormalized($currentJntStatus);
-        $latestEvent = $events->first();
+        $latestEvent = $events->last();
+        $deliveredEvent = $events->last(
+            static fn (TrackingEventData $event): bool => $event->normalizedStatus === TrackingStatus::Delivered
+        );
 
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: $currentStatus,
-            events: $events->values()->all(),
+            events: $events->all(),
             carrier: 'jnt',
             deliveredAt: $currentStatus === TrackingStatus::Delivered
-            ? $latestEvent?->timestamp
+            ? ($deliveredEvent ?? $latestEvent)?->timestamp
             : null,
         );
     }
@@ -355,88 +363,5 @@ class JntShippingDriver implements ShippingDriverInterface
             JntTrackingStatus::Returned => TrackingStatus::ReturnDelivered,
             JntTrackingStatus::Exception => TrackingStatus::OnHold,
         };
-    }
-
-    /**
-     * Calculate weight-based shipping rate.
-     */
-    protected function calculateWeightBasedRate(int $weightGrams, AddressData $destination): int
-    {
-        $weightKg = max(1, (int) ceil($weightGrams / 1000));
-
-        $baseRate = (int) config('jnt.shipping.base_rate', 800);
-        $perKgRate = (int) config('jnt.shipping.per_kg_rate', 200);
-        $regionMultiplierBasisPoints = $this->getRegionMultiplierBasisPoints($destination);
-
-        $rate = $baseRate + (max(0, $weightKg - 1) * $perKgRate);
-
-        return intdiv(($rate * $regionMultiplierBasisPoints) + 5000, 10000);
-    }
-
-    /**
-     * Get region multiplier basis points for pricing (10000 = 1x).
-     */
-    protected function getRegionMultiplierBasisPoints(AddressData $destination): int
-    {
-        $postcode = $this->numericPostcode($destination->postcode);
-        $regionMultipliers = config('jnt.shipping.region_multipliers_bp', []);
-
-        if ($postcode === null) {
-            return 10000;
-        }
-
-        $eastMalaysiaRanges = [
-            ['87000', '91999'], // Sabah
-            ['93000', '98999'], // Sarawak
-        ];
-
-        foreach ($eastMalaysiaRanges as $range) {
-            if ($postcode >= $range[0] && $postcode <= $range[1]) {
-                return match (true) {
-                    $postcode >= '87000' && $postcode <= '91999' => (int) Arr::get($regionMultipliers, 'sabah', 15000),
-                    $postcode >= '93000' && $postcode <= '98999' => (int) Arr::get($regionMultipliers, 'sarawak', 15000),
-                    default => (int) Arr::get($regionMultipliers, 'labuan', 15000),
-                };
-            }
-        }
-
-        return 10000;
-    }
-
-    /**
-     * Get estimated delivery days.
-     */
-    protected function getEstimatedDays(AddressData $destination): int
-    {
-        $postcode = $this->numericPostcode($destination->postcode);
-        $defaultDays = (int) config('jnt.shipping.default_estimated_days', 3);
-        $eastExtraDays = (int) config('jnt.shipping.east_malaysia_extra_days', 2);
-
-        if ($postcode === null) {
-            return $defaultDays;
-        }
-
-        // East Malaysia takes longer
-        $eastMalaysiaRanges = [
-            ['87000', '91999'],
-            ['93000', '98999'],
-        ];
-
-        foreach ($eastMalaysiaRanges as $range) {
-            if ($postcode >= $range[0] && $postcode <= $range[1]) {
-                return $defaultDays + $eastExtraDays;
-            }
-        }
-
-        return $defaultDays;
-    }
-
-    private function numericPostcode(mixed $postcode): ?string
-    {
-        if (! is_string($postcode) || ! preg_match('/^\d{5}$/', $postcode)) {
-            return null;
-        }
-
-        return $postcode;
     }
 }

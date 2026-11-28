@@ -190,6 +190,22 @@ final class JntOrder extends Model implements Auditable
         return $this->cancelled_at !== null;
     }
 
+    public function isCancellable(): bool
+    {
+        if ($this->isCancelled() || $this->isDelivered() || $this->isReturned()) {
+            return false;
+        }
+
+        if (in_array(mb_strtolower((string) $this->status), ['delivered', 'cancelled', 'returned'], true)) {
+            return false;
+        }
+
+        return ! in_array($this->getNormalizedStatus(), [
+            TrackingStatus::Delivered,
+            TrackingStatus::Returned,
+        ], true);
+    }
+
     private ?TrackingStatus $normalizedStatusMemo = null;
 
     private ?string $normalizedStatusMemoKey = null;

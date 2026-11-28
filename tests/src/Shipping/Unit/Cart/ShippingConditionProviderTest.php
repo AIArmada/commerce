@@ -226,7 +226,7 @@ it('gets selected rate when method is specified', function (): void {
     );
 
     $this->rateEngine->shouldReceive('getAllRates')
-        ->andReturn(collect([
+        ->andReturn([
             new RateQuoteData(
                 carrier: 'jnt',
                 service: 'express',
@@ -235,7 +235,7 @@ it('gets selected rate when method is specified', function (): void {
                 estimatedDays: 1,
             ),
             $selectedRate,
-        ]));
+        ]);
 
     $provider = new ShippingConditionProvider($this->rateEngine);
 

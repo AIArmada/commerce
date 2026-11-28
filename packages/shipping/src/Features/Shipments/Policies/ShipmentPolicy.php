@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Policies;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Policy for Shipment model authorization.
@@ -36,16 +35,11 @@ class ShipmentPolicy
      */
     public function view(Authenticatable $user, Shipment $shipment): bool
     {
-        if ($this->hasPermission($user, 'shipping.shipments.view')) {
-            if ((bool) config('shipping.features.owner.enabled', false)) {
-                return $this->isOwner($user, $shipment);
-            }
-
-            return true;
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
+            return $this->hasPermission($user, 'shipping.shipments.view');
         }
 
-        // Customer self-service fallback: owner can view their own shipment.
-        return $this->isOwner($user, $shipment);
+        return OwnerUiScope::canAccessRecord($shipment);
     }
 
     /**
@@ -53,7 +47,8 @@ class ShipmentPolicy
      */
     public function create(Authenticatable $user): bool
     {
-        return $this->hasPermission($user, 'shipping.shipments.create');
+        return $this->hasPermission($user, 'shipping.shipments.create')
+            && (! (bool) config('shipping.features.owner.enabled', false) || OwnerUiScope::canCreate(Shipment::class));
     }
 
     /**
@@ -73,7 +68,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -96,7 +91,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -119,7 +114,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -142,7 +137,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -165,7 +160,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -188,7 +183,7 @@ class ShipmentPolicy
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $shipment);
+            return OwnerUiScope::canMutateRecord($shipment);
         }
 
         return true;
@@ -210,28 +205,5 @@ class ShipmentPolicy
         }
 
         return false;
-    }
-
-    /**
-     * Check if the user owns the shipment.
-     */
-    protected function isOwner(Authenticatable $user, Shipment $shipment): bool
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return false;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            return false;
-        }
-
-        if ((bool) config('shipping.features.owner.include_global', false) && $shipment->isGlobal()) {
-            return true;
-        }
-
-        return $shipment->belongsToOwner($owner);
     }
 }

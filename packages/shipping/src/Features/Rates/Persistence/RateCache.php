@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Shipping\Data\RateQuoteData;
+use BadMethodCallException;
 use Closure;
 use Illuminate\Cache\TaggableStore;
-use Illuminate\Support\Collection;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -19,10 +21,10 @@ final class RateCache
 
     /**
      * @param  list<string>  $tags
-     * @param  Closure(): Collection<int, RateQuoteData>  $load
-     * @return Collection<int, RateQuoteData>
+     * @param  Closure(): array<int, RateQuoteData>  $load
+     * @return array<int, RateQuoteData>
      */
-    public function remember(array $tags, string $key, int $ttl, Closure $load): Collection
+    public function remember(array $tags, string $key, int $ttl, Closure $load): array
     {
         $repository = Cache::store();
         $configuration = $repository->get(self::CONFIG_GENERATION_KEY);
@@ -39,7 +41,9 @@ final class RateCache
         $key .= ':' . $configuration;
 
         if ($repository->getStore() instanceof TaggableStore) {
-            return $repository->tags($tags)->remember($key, $ttl, $load);
+            $rates = $repository->tags($tags)->remember($key, $ttl, $load);
+
+            return is_array($rates) ? $rates : $load();
         }
 
         $generationKey = $this->generationKey($tags);
@@ -54,7 +58,9 @@ final class RateCache
             return $load();
         }
 
-        return $repository->remember($key . ':' . $generation, $ttl, $load);
+        $rates = $repository->remember($key . ':' . $generation, $ttl, $load);
+
+        return is_array($rates) ? $rates : $load();
     }
 
     /** @param list<string> $tags */
@@ -76,6 +82,17 @@ final class RateCache
         Cache::store()->put(self::CONFIG_GENERATION_KEY, (string) Str::uuid(), self::GENERATION_TTL);
     }
 
+    public function invalidateOwner(?string $ownerType, string | int | null $ownerId): void
+    {
+        if ($ownerType === null && $ownerId === null) {
+            $this->invalidateConfiguration();
+
+            return;
+        }
+
+        $this->clear(['shipping-rates-owner-' . OwnerScopeKey::forTypeAndId($ownerType, $ownerId)]);
+    }
+
     /** @param list<string> $tags */
     private function generationKey(array $tags): string
     {
@@ -90,7 +107,14 @@ final class RateCache
     public function recordFailure(string $key, int $ttl): void
     {
         $repository = Cache::store();
-        $repository->put($key, (int) $repository->get($key, 0) + 1, $ttl);
+
+        try {
+            Cache::lock($key . ':lock', 5)->block(2, function () use ($repository, $key, $ttl): void {
+                $repository->put($key, (int) $repository->get($key, 0) + 1, $ttl);
+            });
+        } catch (BadMethodCallException | LockTimeoutException) {
+            $repository->put($key, (int) $repository->get($key, 0) + 1, $ttl);
+        }
     }
 
     public function failures(string $key): int

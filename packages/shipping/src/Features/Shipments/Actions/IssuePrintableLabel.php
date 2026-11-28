@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\AbsoluteHttpUrl;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\FileSignature;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
@@ -37,10 +39,9 @@ final readonly class IssuePrintableLabel implements PrintableLabel
         ]);
 
         if ($label->hasUrl()) {
-            $url = $label->url;
+            $url = AbsoluteHttpUrl::normalize($label->url);
 
-            if (! is_string($url) || ! filter_var($url, FILTER_VALIDATE_URL)
-                || ! in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            if ($url === null) {
                 throw new RuntimeException('The carrier returned an invalid label URL.');
             }
 
@@ -50,6 +51,11 @@ final readonly class IssuePrintableLabel implements PrintableLabel
         $content = $label->getDecodedContent();
 
         if ($content === null || $content === '' || ! in_array($label->format, ['pdf', 'png', 'zpl'], true)) {
+            return null;
+        }
+
+        if (($label->format === 'pdf' && ! FileSignature::isPdf($content))
+            || ($label->format === 'png' && ! FileSignature::isPng($content))) {
             return null;
         }
 

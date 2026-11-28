@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Services;
 
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Builders\OrderBuilder;
 use AIArmada\Jnt\Contracts\CarrierTransport;
@@ -18,6 +17,7 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
+use AIArmada\Jnt\Features\Tracking\Api\TrackingPollCache;
 use AIArmada\Jnt\Support\FieldNameConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Concurrency;
@@ -37,6 +37,7 @@ class JntExpressService
         protected readonly ?string $customerCode,
         protected readonly ?string $password,
         protected readonly array $config = [],
+        protected ?TrackingPollCache $pollCache = null,
     ) {
         // Client is now lazy-loaded on first use
     }
@@ -243,10 +244,8 @@ class JntExpressService
             return null;
         }
 
-        $owner = OwnerContext::resolve();
-
         foreach ($this->trackingCacheIdentifiers($orderId, $trackingNumber) as $identifier) {
-            $cached = OwnerCache::get($owner, $this->trackingCacheKey($identifier));
+            $cached = $this->pollCache()->get($this->trackingCacheKey($identifier));
 
             if (! is_array($cached) || ! is_string($cached['last_polled_at'] ?? null) || ! is_array($cached['tracking_data'] ?? null)) {
                 continue;
@@ -284,16 +283,18 @@ class JntExpressService
             'last_polled_at' => CarbonImmutable::now()->toIso8601String(),
             'tracking_data' => $trackingData->toApiArray(),
         ];
-        $owner = OwnerContext::resolve();
-
         foreach ($this->trackingCacheIdentifiers($orderId, $trackingNumber, $trackingData) as $identifier) {
-            OwnerCache::put(
-                $owner,
+            $this->pollCache()->put(
                 $this->trackingCacheKey($identifier),
                 $cached,
                 $debounceMinutes * 60 + random_int(0, 60),
             );
         }
+    }
+
+    private function pollCache(): TrackingPollCache
+    {
+        return $this->pollCache ??= app(TrackingPollCache::class);
     }
 
     /**

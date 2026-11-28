@@ -24,6 +24,7 @@ use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
+use AIArmada\Jnt\Features\Tracking\Api\TrackingPollCache;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntSpatieSignatureValidator;
@@ -222,6 +223,7 @@ class JntServiceProvider extends PackageServiceProvider
                 customerCode: $config['customer_code'] ?? null,
                 password: $config['password'] ?? null,
                 config: $config,
+                pollCache: $app->make(TrackingPollCache::class),
             );
         });
 

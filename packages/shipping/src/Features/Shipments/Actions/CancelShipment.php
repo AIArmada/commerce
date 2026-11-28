@@ -50,7 +50,10 @@ final class CancelShipment
             }
 
             $previous = $shipment->operations()->where('operation_type', 'cancel')
-                ->latest('operation_started_at')->first();
+                ->orderByDesc('operation_started_at')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->first();
 
             if (in_array($previous?->status(), [ShipmentOperationStatus::Pending, ShipmentOperationStatus::Unknown], true)) {
                 throw new RuntimeException('Reconcile the existing cancellation before retrying.');
@@ -91,6 +94,12 @@ final class CancelShipment
             }
 
             return DB::transaction(function () use ($shipment, $reason) {
+                $shipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->getKey());
+
+                if (! $shipment->isCancellable()) {
+                    throw new ShipmentNotCancellableException($shipment->reference, $shipment->status->getValue());
+                }
+
                 $oldStatus = $shipment->status;
                 $shipment = $oldStatus->transitionTo(Cancelled::class);
 

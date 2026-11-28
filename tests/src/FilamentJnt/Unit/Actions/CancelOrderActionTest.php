@@ -69,9 +69,11 @@ it('cancels an order and updates the record when authenticated', function (): vo
              */
             public function __construct(private array &$captured) {}
 
-            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
+            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): array
             {
                 $this->captured = compact('orderId', 'reason', 'trackingNumber');
+
+                return ['code' => '1'];
             }
         };
     });

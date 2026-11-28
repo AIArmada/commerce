@@ -83,8 +83,6 @@ final class FeatureModule implements FeatureModuleContract
 
         if (class_exists(ConditionProviderRegistry::class)) {
             $app->scoped(ShippingConditionProvider::class);
-            $app->make(ConditionProviderRegistry::class)
-                ->register(ShippingConditionProvider::class);
         }
     }
 
@@ -92,5 +90,10 @@ final class FeatureModule implements FeatureModuleContract
     {
         Gate::policy(ShippingRate::class, ShippingRatePolicy::class);
         Gate::policy(ShippingZone::class, ShippingZonePolicy::class);
+
+        if (class_exists(ConditionProviderRegistry::class)) {
+            $app->make(ConditionProviderRegistry::class)
+                ->register(ShippingConditionProvider::class);
+        }
     }
 }

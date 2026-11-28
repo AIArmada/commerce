@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
+use AIArmada\FilamentShipping\Support\OwnerScopedQuery;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\States\Pending;
 use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
@@ -31,16 +29,7 @@ class PendingShipmentsWidget extends BaseWidget
     {
         $weightUnit = (string) config('shipping.defaults.weight_unit', 'g');
 
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                $query->whereRaw('0 = 1');
-            } else {
-                $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
-            }
-        }
+        $query = OwnerScopedQuery::apply(Shipment::query());
 
         return $table
             ->query(

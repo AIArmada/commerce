@@ -125,10 +125,13 @@ class ShippingConditionProvider implements ConditionProviderInterface
             // Get specific rate that was selected
             $allRates = $this->rateEngine->getAllRates($origin, $destination, $packages, $options);
 
-            return $allRates->first(
-                fn (RateQuoteData $rate) => $rate->carrier === $selectedMethod['carrier']
-                && $rate->service === $selectedMethod['service']
-            );
+            foreach ($allRates as $rate) {
+                if ($rate->carrier === $selectedMethod['carrier'] && $rate->service === $selectedMethod['service']) {
+                    return $rate;
+                }
+            }
+
+            return null;
         }
 
         // Default to best rate based on strategy

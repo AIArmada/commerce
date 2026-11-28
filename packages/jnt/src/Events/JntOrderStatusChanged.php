@@ -10,7 +10,9 @@ use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
 use AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Events\Dispatchable;
+use InvalidArgumentException;
 
 final class JntOrderStatusChanged
 {
@@ -29,7 +31,11 @@ final class JntOrderStatusChanged
 
     public function owner(): ?Model
     {
-        return OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
+        try {
+            return OwnerContext::fromTypeAndIdOrFail($this->ownerType, $this->ownerId);
+        } catch (InvalidArgumentException | ModelNotFoundException) {
+            return null;
+        }
     }
 
     public function resolveOrder(): ?NotificationOrder

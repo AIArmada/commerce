@@ -63,6 +63,8 @@ final class JntOrderParcel extends Model implements Auditable
                     );
                 }
 
+                InheritedOwnerGuard::assertMatchesContext($parcel->owner_type, $parcel->owner_id, JntOrderParcel::class);
+
                 return;
             }
 

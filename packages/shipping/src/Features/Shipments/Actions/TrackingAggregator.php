@@ -194,8 +194,12 @@ class TrackingAggregator
 
             $existing[$key] = true;
 
-            $normalizedStatus = $eventData->normalizedStatus
-                ?? ($mapper ? $mapper->map($eventData->code) : TrackingStatus::InTransit);
+            $normalizedStatus = $eventData->normalizedStatus;
+
+            if ($normalizedStatus === null) {
+                $mapper ??= $this->shippingManager->getStatusMapper($shipment->carrier_code);
+                $normalizedStatus = $mapper?->map($eventData->code) ?? TrackingStatus::InTransit;
+            }
 
             $event = $shipment->events()->create([
                 'carrier_event_code' => $eventData->code,

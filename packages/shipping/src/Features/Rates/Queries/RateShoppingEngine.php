@@ -47,27 +47,27 @@ class RateShoppingEngine implements ShopRates
      *
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
     public function getAllRates(
         AddressData $origin,
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         $cacheKey = $this->buildCacheKey($origin, $destination, $packages, $options);
         $cacheTtl = $this->config['cache_ttl'] ?? 300;
 
         // If options cannot be safely hashed (objects/resources), caching can return incorrect rates.
         if ($cacheKey === null) {
-            return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options);
+            return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options)->values()->all();
         }
 
         if ($cacheTtl > 0) {
-            return $this->cache->remember($this->cacheTags(), $cacheKey, $cacheTtl, fn (): Collection => $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options));
+            return $this->cache->remember($this->cacheTags(), $cacheKey, $cacheTtl, fn (): array => $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options)->values()->all());
         }
 
-        return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options);
+        return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options)->values()->all();
     }
 
     /**
@@ -84,11 +84,11 @@ class RateShoppingEngine implements ShopRates
     ): ?RateQuoteData {
         $allRates = $this->getAllRates($origin, $destination, $packages, $options);
 
-        if ($allRates->isEmpty()) {
+        if ($allRates === []) {
             return $this->getFallbackRate($origin, $destination, $packages, $options);
         }
 
-        return $this->strategy->select($allRates->values()->all(), $options);
+        return $this->strategy->select($allRates, $options);
     }
 
     /**
@@ -190,7 +190,10 @@ class RateShoppingEngine implements ShopRates
         }
 
         // If options are not concurrency-safe (contain objects/resources), fall back to sequential calls.
-        if ((bool) config('shipping.features.owner.enabled', false) || ! $this->isConcurrencySafe($options)) {
+        if ((bool) config('shipping.features.owner.enabled', false)
+            || OwnerContext::hasOverride()
+            || OwnerScopeOverride::suppressIncludeGlobal()
+            || ! $this->isConcurrencySafe($options)) {
             return $this->getRatesFromCarriers($carrierCodes, $origin, $destination, $packages, $options);
         }
 

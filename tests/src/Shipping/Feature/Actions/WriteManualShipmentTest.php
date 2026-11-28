@@ -26,3 +26,19 @@ it('creates a pending shipment without accepting lifecycle or owner fields', fun
     expect(fn () => $api->update($id, ['total_weight' => -1]))->toThrow(DomainException::class);
     expect($api->delete($id))->toBeTrue();
 });
+
+it('clears a nullable service code through the manual shipment api', function (): void {
+    config(['shipping.features.owner.enabled' => false]);
+    $api = app(ManageManualShipment::class);
+    $id = $api->create([
+        'reference' => 'MANUAL-SERVICE-CODE',
+        'carrier_code' => 'manual',
+        'service_code' => 'express',
+        'origin_address' => [],
+        'destination_address' => [],
+    ]);
+
+    $api->update($id, ['service_code' => null]);
+
+    expect(Shipment::query()->findOrFail($id)->service_code)->toBeNull();
+});

@@ -106,6 +106,9 @@ final class PackageOwnedWriteRule implements Rule
             'Illuminate\Support\Facades\Cache',
             'Illuminate\Support\Facades\Storage',
             'Illuminate\Support\Facades\Redis',
+            'AIArmada\CommerceSupport\Persistence\OwnerCache',
+            'AIArmada\CommerceSupport\Persistence\OwnerFilesystem',
+            'AIArmada\CommerceSupport\Persistence\VersionedCache',
         ]);
 
         if (! ($isDatabase && in_array($method, $dbMethods, true)) && ! ($isStore && in_array($method, $storeMethods, true))) {

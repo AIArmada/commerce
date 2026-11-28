@@ -66,6 +66,8 @@ final class JntOrderItem extends Model implements Auditable
                     );
                 }
 
+                InheritedOwnerGuard::assertMatchesContext($item->owner_type, $item->owner_id, JntOrderItem::class);
+
                 return;
             }
 

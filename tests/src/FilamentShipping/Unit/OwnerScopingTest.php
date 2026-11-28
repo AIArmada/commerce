@@ -125,3 +125,22 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
         ->not->toContain($shipmentGlobal->id)
         ->toBe([]);
 });
+
+it('shows global shipments in explicit global context', function (): void {
+    config()->set('shipping.features.owner.enabled', true);
+    config()->set('shipping.features.owner.include_global', false);
+
+    OwnerContext::withOwner(null, fn () => Shipment::query()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'reference' => 'REF-EXPLICIT-GLOBAL',
+        'carrier_code' => 'test',
+        'status' => Pending::class,
+        'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+        'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+    ]));
+
+    $ids = OwnerContext::withOwner(null, fn (): array => ShipmentResource::getEloquentQuery()->pluck('id')->all());
+
+    expect($ids)->toHaveCount(1);
+});
