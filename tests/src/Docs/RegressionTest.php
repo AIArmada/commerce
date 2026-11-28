@@ -25,7 +25,7 @@ use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -459,7 +459,7 @@ test('mail attachments reuse an existing stored pdf', function (): void {
     $driver = Mockery::mock(PdfRenderer::class);
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
-    app()->forgetInstance(DocRenderService::class);
+    app()->forgetInstance(DocumentRendering::class);
     app(\AIArmada\Docs\Contracts\DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $docEmail = DocEmail::query()->create([
@@ -592,7 +592,7 @@ test('preview of a cross-owner bound doc returns not found', function (): void {
 
     expect(fn (): mixed => OwnerContext::withOwner(
         $ownerB,
-        fn (): mixed => app(DocPreviewController::class)($doc, app(DocRenderService::class))
+        fn (): mixed => app(DocPreviewController::class)($doc, app(DocumentRendering::class))
     ))->toThrow(NotFoundHttpException::class);
 });
 

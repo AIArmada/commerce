@@ -51,16 +51,16 @@ Common issues and solutions for the Docs package.
 2. **Render the canonical HTML output directly**
    ```php
    use AIArmada\Docs\Enums\RenderAudience;
-   use AIArmada\Docs\Services\DocRenderService;
+   use AIArmada\Docs\Runtime\DocumentRendering;
 
-   app(DocRenderService::class)->renderHtml($doc, RenderAudience::CustomerView);
+   app(DocumentRendering::class)->renderHtml($doc, RenderAudience::CustomerView);
    ```
 
 3. **Check template/payload compatibility**
    ```php
    // Throws when body is present without a rich_body block,
    // or when the selected template requires line items but items are empty.
-   app(DocRenderService::class)->validateDocPayload($doc->template, $doc->body, $doc->items ?? []);
+   app(DocumentRendering::class)->validateDocPayload($doc->template, $doc->body, $doc->items ?? []);
    ```
 
 ### Background Colors Not Printing

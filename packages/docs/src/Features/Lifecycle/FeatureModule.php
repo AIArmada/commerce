@@ -12,10 +12,12 @@ use AIArmada\Docs\Features\Lifecycle\Actions\DeleteStoredDocumentPdf;
 use AIArmada\Docs\Features\Lifecycle\Actions\DocumentOperations;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocuments;
+use AIArmada\Docs\Features\Lifecycle\Actions\RenderDocument;
 use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
 use AIArmada\Docs\Features\Lifecycle\Queries\LifecycleRelationModelsResolver;
 use AIArmada\Docs\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Runtime\LifecycleRelationModels;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -24,6 +26,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->scoped(DocumentRecords::class, ManageDocumentRecords::class);
+        $app->singleton(DocumentRendering::class, RenderDocument::class);
         $app->bind(DocumentLifecycle::class, ManageDocuments::class);
         $app->bind(DocumentPdfPublisher::class, StoreDocumentPdf::class);
         $app->bind(DocumentPdfCleanup::class, DeleteStoredDocumentPdf::class);

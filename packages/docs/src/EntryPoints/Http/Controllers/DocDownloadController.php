@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +18,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DocDownloadController
 {
-    public function __invoke(Doc | string $doc, DocRenderService $renderer, DocumentPdfPublisher $storePdf): BinaryFileResponse | StreamedResponse
+    public function __invoke(Doc | string $doc, DocumentRendering $renderer, DocumentPdfPublisher $storePdf): BinaryFileResponse | StreamedResponse
     {
         $ownerEnabled = (bool) config('docs.owner.enabled', false);
 

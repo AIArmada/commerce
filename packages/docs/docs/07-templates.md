@@ -10,7 +10,7 @@ Blade views are package-owned render targets only. Do not store user-authored Bl
 
 ## Breaking Changes
 
-`view_name` is no longer the template mechanism. Migrate templates into `layout` JSON using supported block types, then render documents through `DocRenderService`.
+`view_name` is no longer the template mechanism. Migrate templates into `layout` JSON using supported block types, then render documents through `DocumentRendering`.
 
 ## Supported Blocks
 
@@ -62,12 +62,12 @@ $template = DocTemplate::create([
 ```php
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use Illuminate\Support\HtmlString;
 
 /** @var Doc $doc */
-/** @var DocRenderService $renderer */
-$renderer = app(DocRenderService::class);
+/** @var DocumentRendering $renderer */
+$renderer = app(DocumentRendering::class);
 
 $html = $renderer->renderHtml($doc, RenderAudience::CustomerView);
 
@@ -88,10 +88,10 @@ PDF options resolve in this order:
 
 ```php
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 
 /** @var Doc $doc */
-$pdfContents = app(DocRenderService::class)->renderPdf($doc);
+$pdfContents = app(DocumentRendering::class)->renderPdf($doc);
 ```
 
 ## Share Links
@@ -123,7 +123,7 @@ Document body content is stored as Tiptap JSON on `Doc::body`. Static rich text 
 
 ## Payload Validation
 
-`DocRenderService::validateDocPayload()` is called during create/update/convert flows when a template is selected.
+`DocumentRendering::validateDocPayload()` is called during create/update/convert flows when a template is selected.
 
 - If you submit `body`, the template must contain a `rich_body` block.
 - If the template contains a `line_items` block, you must submit at least one line item.

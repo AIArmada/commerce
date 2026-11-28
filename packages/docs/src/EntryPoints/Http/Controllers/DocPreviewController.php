@@ -8,14 +8,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DocPreviewController
 {
-    public function __invoke(Doc | string $doc, DocRenderService $renderer): Response
+    public function __invoke(Doc | string $doc, DocumentRendering $renderer): Response
     {
         $ownerEnabled = (bool) config('docs.owner.enabled', false);
 

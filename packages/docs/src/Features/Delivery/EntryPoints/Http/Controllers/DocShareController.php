@@ -8,12 +8,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Data\ShareLinkAction;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use Symfony\Component\HttpFoundation\Response;
 
 final class DocShareController
 {
-    public function show(string $token, DocRenderService $renderer, ManageDocShareLinks $sharing): Response
+    public function show(string $token, DocumentRendering $renderer, ManageDocShareLinks $sharing): Response
     {
         $shareLink = $sharing->resolve($token, ShareLinkAction::View);
 
@@ -29,7 +29,7 @@ final class DocShareController
         );
     }
 
-    public function pdf(string $token, DocRenderService $renderer, ManageDocShareLinks $sharing): Response
+    public function pdf(string $token, DocumentRendering $renderer, ManageDocShareLinks $sharing): Response
     {
         $shareLink = $sharing->resolve($token, ShareLinkAction::Pdf);
 

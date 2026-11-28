@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Support\DocPdfPath;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -16,7 +16,7 @@ use RuntimeException;
 final readonly class StoreDocumentPdf implements DocumentPdfPublisher
 {
     public function __construct(
-        private DocRenderService $renderer,
+        private DocumentRendering $renderer,
         private PdfRenderer $pdfRenderer,
     ) {}
 

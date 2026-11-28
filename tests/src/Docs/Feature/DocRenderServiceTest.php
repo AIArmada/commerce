@@ -16,7 +16,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Features\Lifecycle\Actions\StoreDocumentPdf;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -51,7 +51,7 @@ it('renders tiptap json body with merge tags and sanitized text', function (): v
         ],
     ]);
 
-    $html = app(DocRenderService::class)->renderHtml($doc, RenderAudience::AdminPreview)->toHtml();
+    $html = app(DocumentRendering::class)->renderHtml($doc, RenderAudience::AdminPreview)->toHtml();
 
     expect($html)
         ->toContain('Acme Corp')
@@ -80,7 +80,7 @@ it('rejects document body when the selected template has no body slot', function
         ],
     ]);
 
-    expect(fn (): mixed => app(DocRenderService::class)->validateDocPayload(
+    expect(fn (): mixed => app(DocumentRendering::class)->validateDocPayload(
         $template,
         ['type' => 'doc', 'content' => []],
         [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -94,7 +94,7 @@ it('does not require items for hidden line item blocks', function (): void {
         ],
     ]);
 
-    app(DocRenderService::class)->validateDocPayload($template, null, []);
+    app(DocumentRendering::class)->validateDocPayload($template, null, []);
 
     expect(true)->toBeTrue();
 });
@@ -188,9 +188,9 @@ it('delegates PDF generation to a replaceable driver with normalized options', f
             && $options->marginTop === 100,
     )->andReturn('custom PDF');
     app()->instance(PdfRenderer::class, $driver);
-    app()->forgetInstance(DocRenderService::class);
+    app()->forgetInstance(DocumentRendering::class);
 
-    expect(app(DocRenderService::class)->renderPdf($doc))->toBe('custom PDF');
+    expect(app(DocumentRendering::class)->renderPdf($doc))->toBe('custom PDF');
 });
 
 it('reuses identical PDF inputs and regenerates changed document and template content', function (): void {
@@ -209,7 +209,7 @@ it('reuses identical PDF inputs and regenerates changed document and template co
     $driver = Mockery::mock(PdfRenderer::class);
     $driver->shouldReceive('render')->times(3)->andReturn('original', 'edited', 'template changed');
     app()->instance(PdfRenderer::class, $driver);
-    app()->forgetInstance(DocRenderService::class);
+    app()->forgetInstance(DocumentRendering::class);
     $storePdf = app(StoreDocumentPdf::class);
 
     $path = $storePdf->execute((string) $doc->getKey());
@@ -251,7 +251,7 @@ it('retries PDF publication if document content changes while the driver is rend
     )->andReturn('fresh PDF');
 
     app()->instance(PdfRenderer::class, $driver);
-    app()->forgetInstance(DocRenderService::class);
+    app()->forgetInstance(DocumentRendering::class);
     $storePdf = app(StoreDocumentPdf::class);
 
     $path = $storePdf->execute((string) $doc->getKey());

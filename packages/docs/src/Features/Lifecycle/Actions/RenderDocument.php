@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -13,6 +13,7 @@ use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,11 +23,11 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /** @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate */
-final class DocRenderService
+final readonly class RenderDocument implements DocumentRendering
 {
     public function __construct(
-        private readonly RichContentRendererInterface $richContentRenderer,
-        private readonly PdfRenderer $pdfRenderer,
+        private RichContentRendererInterface $richContentRenderer,
+        private PdfRenderer $pdfRenderer,
     ) {}
 
     public function renderHtml(Doc $doc, RenderAudience $audience): HtmlString

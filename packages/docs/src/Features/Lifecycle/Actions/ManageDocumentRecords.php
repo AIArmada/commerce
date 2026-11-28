@@ -20,7 +20,7 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Runtime\DocumentRecords;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
@@ -88,7 +88,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
             $template = $this->resolveTemplateSelection($docType, $data->docTemplateId, $data->templateSlug);
 
             if ($template !== null) {
-                app(DocRenderService::class)->validateDocPayload($template, $data->body, $data->items);
+                app(DocumentRendering::class)->validateDocPayload($template, $data->body, $data->items);
             }
 
             $currency = $this->normalizeCurrency($data->currency ?? $this->resolveDefault($docType, 'currency', 'MYR'));
@@ -265,7 +265,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
 
                 if ($template !== null) {
                     $docData['doc_template_id'] = $template->id;
-                    app(DocRenderService::class)->validateDocPayload(
+                    app(DocumentRendering::class)->validateDocPayload(
                         $template,
                         isset($docData['body']) && is_array($docData['body']) ? $docData['body'] : null,
                         isset($docData['items']) && is_array($docData['items']) ? $docData['items'] : [],
@@ -347,7 +347,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
             }
 
             if ($template !== null) {
-                app(DocRenderService::class)->validateDocPayload(
+                app(DocumentRendering::class)->validateDocPayload(
                     $template,
                     $attributes['body'] ?? self::normalizeBody($doc->body),
                     $attributes['items'] ?? ($doc->items ?? []),
@@ -512,7 +512,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
         }
 
         if (! config('docs.owner.enabled', false)) {
-            return app(DocRenderService::class)->renderPdf(Doc::query()->findOrFail($id));
+            return app(DocumentRendering::class)->renderPdf(Doc::query()->findOrFail($id));
         }
 
         $record = OwnerWriteGuard::findOrFailForOwner(
@@ -523,7 +523,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
 
         return OwnerContext::withOwner(
             OwnerContext::fromTypeAndIdOrFail($record->owner_type, $record->owner_id),
-            fn (): string => app(DocRenderService::class)->renderPdf($record),
+            fn (): string => app(DocumentRendering::class)->renderPdf($record),
         );
     }
 

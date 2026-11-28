@@ -14,7 +14,7 @@ use AIArmada\Docs\Platform\ExtensionRegistry;
 use AIArmada\Docs\Platform\FeatureCatalog;
 use AIArmada\Docs\Platform\FeatureModule;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Runtime\DocumentRecords;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -56,7 +56,6 @@ final class DocsServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(RichContentRendererInterface::class, TiptapJsonRenderer::class);
         $this->app->singleton(PdfRenderer::class, SpatiePdfRenderer::class);
-        $this->app->singleton(DocRenderService::class);
 
     }
 
@@ -75,7 +74,7 @@ final class DocsServiceProvider extends PackageServiceProvider
         return [
             DocumentRecords::class,
             DocServiceInterface::class,
-            DocRenderService::class,
+            DocumentRendering::class,
             RichContentRendererInterface::class,
             PdfRenderer::class,
             DocumentSequence::class,

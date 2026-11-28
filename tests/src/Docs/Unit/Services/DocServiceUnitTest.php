@@ -6,7 +6,7 @@ use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
 use AIArmada\Docs\States\Draft;
@@ -94,7 +94,7 @@ test('downloadPdf returns existing path if exists', function (): void {
     $driver = Mockery::mock(PdfRenderer::class);
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
-    app()->forgetInstance(DocRenderService::class);
+    app()->forgetInstance(DocumentRendering::class);
     app(\AIArmada\Docs\Contracts\DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $path = $this->service->downloadPdf($doc);

@@ -86,7 +86,7 @@ $document = $docService->create(DocData::from([
 ]));
 ```
 
-If the selected template contains a `rich_body` block, you can also pass Tiptap JSON in `body`. `DocRenderService::validateDocPayload()` rejects bodies when the template has no rich-body block, and rejects templates with a `line_items` block when you submit an empty `items` array.
+If the selected template contains a `rich_body` block, you can also pass Tiptap JSON in `body`. `DocumentRendering::validateDocPayload()` rejects bodies when the template has no rich-body block, and rejects templates with a `line_items` block when you submit an empty `items` array.
 
 ## Automatic Calculations
 
@@ -202,16 +202,16 @@ Payment recording is transactional, locks the document inside its owner scope, r
 
 ## Rendering and Share Links
 
-HTML/PDF rendering uses `DocRenderService`; share-link issuance and revocation use `DocumentSharing`.
+HTML/PDF rendering uses `DocumentRendering`; share-link issuance and revocation use `DocumentSharing`.
 
 ```php
 use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Data\ShareLinkAction;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Runtime\DocumentRendering;
 
-$renderer = app(DocRenderService::class);
+$renderer = app(DocumentRendering::class);
 
 $html = $renderer->renderHtml($document, RenderAudience::CustomerView);
 $pdf = $renderer->renderPdf($document);
