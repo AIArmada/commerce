@@ -5,6 +5,12 @@
     "table:docs_approvals": [
       "AIArmada\\Docs\\Features\\Approvals\\Actions\\DecideDocApproval",
       "AIArmada\\Docs\\Features\\Approvals\\Actions\\ManageDocApprovalRequests"
+    ],
+    "table:docs_workflows": [
+      "AIArmada\\Docs\\Features\\Approvals\\Actions\\ManageDocWorkflows"
+    ],
+    "table:docs_workflow_steps": [
+      "AIArmada\\Docs\\Features\\Approvals\\Actions\\ManageDocWorkflows"
     ]
   },
   "extensions": {}

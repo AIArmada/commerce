@@ -6,8 +6,10 @@ namespace AIArmada\Docs\Features\Approvals;
 
 use AIArmada\Docs\Contracts\DocumentApprovalRequests;
 use AIArmada\Docs\Contracts\DocumentApprovals;
+use AIArmada\Docs\Contracts\DocumentWorkflows;
 use AIArmada\Docs\Features\Approvals\Actions\DecideDocApproval;
 use AIArmada\Docs\Features\Approvals\Actions\ManageDocApprovalRequests;
+use AIArmada\Docs\Features\Approvals\Actions\ManageDocWorkflows;
 use AIArmada\Docs\Features\Approvals\Queries\ApprovalRelationModelResolver;
 use AIArmada\Docs\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(DocumentApprovals::class, DecideDocApproval::class);
         $app->bind(DocumentApprovalRequests::class, ManageDocApprovalRequests::class);
+        $app->bind(DocumentWorkflows::class, ManageDocWorkflows::class);
         $app->bind(ApprovalRelationModel::class, ApprovalRelationModelResolver::class);
     }
 

@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentWorkflows;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflow;
 use AIArmada\Docs\Features\Approvals\Models\DocWorkflowStep;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     DocWorkflowStep::query()->delete();
@@ -151,7 +155,7 @@ describe('DocWorkflow', function (): void {
         ]);
 
         $workflowId = $workflow->id;
-        $workflow->delete();
+        app(DocumentWorkflows::class)->remove((string) $workflow->getKey());
 
         expect(DocWorkflowStep::where('workflow_id', $workflowId)->count())->toBe(0);
     });
@@ -368,4 +372,39 @@ test('workflow rules and steps reject documents outside their owner boundary', f
 
     expect($workflow->appliesTo($doc))->toBeFalse()
         ->and($step->conditionsMet($doc))->toBeFalse();
+});
+
+test('workflow write actions serialize steps and enforce the workflow owner', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', true);
+    config()->set('docs.owner.auto_assign_on_create', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $workflows = app(DocumentWorkflows::class);
+
+    $workflowId = OwnerContext::withOwner($owner, fn (): string => $workflows->create([
+        'name' => 'Tenant approval',
+        'doc_type' => DocType::Invoice->value,
+    ]));
+
+    $attributes = ['name' => 'Review', 'action_type' => DocWorkflowStep::ACTION_APPROVAL];
+
+    OwnerContext::withOwner($other, function () use ($workflows, $workflowId, $attributes): void {
+        expect(fn () => $workflows->addStep($workflowId, $attributes))->toThrow(AuthorizationException::class)
+            ->and(fn () => $workflows->remove($workflowId))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($workflows, $workflowId, $attributes, $owner): void {
+        $stepId = $workflows->addStep($workflowId, $attributes);
+        $step = DocWorkflowStep::query()->findOrFail($stepId);
+
+        expect($step->workflow_id)->toBe($workflowId)
+            ->and($step->belongsToOwner($owner))->toBeTrue();
+
+        $workflows->remove($workflowId);
+
+        expect(DocWorkflowStep::query()->find($stepId))->toBeNull()
+            ->and(DocWorkflow::query()->find($workflowId))->toBeNull();
+    });
 });

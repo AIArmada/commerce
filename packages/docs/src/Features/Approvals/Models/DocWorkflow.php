@@ -97,13 +97,6 @@ final class DocWorkflow extends Model implements Auditable
         return WorkflowConditions::matches($doc->attributesToArray(), $this->rules ?? []);
     }
 
-    protected static function booted(): void
-    {
-        static::deleting(function (DocWorkflow $workflow): void {
-            $workflow->steps()->delete();
-        });
-    }
-
     /**
      * @return array<string, string>
      */
