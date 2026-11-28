@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
@@ -23,7 +22,7 @@ final readonly class DocumentOperations implements DocServiceInterface
     public function findForSubject(string $subjectType, string $subjectId, string $docType): ?string
     {
         $id = Doc::query()
-            ->forOwner(OwnerContext::resolve(), false)
+            ->forOwner()
             ->where('docable_type', $subjectType)
             ->where('docable_id', $subjectId)
             ->where('doc_type', $docType)
@@ -52,7 +51,7 @@ final readonly class DocumentOperations implements DocServiceInterface
     private function resolveDocument(string $docId): Doc
     {
         return config('docs.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, owner: OwnerContext::resolve(), includeGlobal: (bool) config('docs.owner.include_global', false))
+            ? OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId, includeGlobal: (bool) config('docs.owner.include_global', false))
             : Doc::query()->findOrFail($docId);
     }
 }

@@ -86,12 +86,12 @@ it('generates pdfs only for docs inside the job owner scope (M4)', function (): 
 
     $docA = OwnerContext::withOwner($ownerA, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
-        'doc_number' => 'INV-PDFA-1',
+        'doc_number' => 'INV-SAME-1',
         'pdf_path' => null,
     ]));
     $docB = OwnerContext::withOwner($ownerB, fn (): Doc => Doc::factory()->create([
         'doc_type' => 'invoice',
-        'doc_number' => 'INV-PDFB-1',
+        'doc_number' => 'INV-SAME-1',
         'pdf_path' => null,
     ]));
 
@@ -104,4 +104,17 @@ it('generates pdfs only for docs inside the job owner scope (M4)', function (): 
 
     expect($docA->fresh()->pdf_path)->not()->toBeNull();
     expect($docB->fresh()->pdf_path)->toBeNull();
+
+    $secondJob = new GenerateDocPdfsJob(
+        [(string) $docB->getKey()],
+        OwnerJobContextMapper::fromModel($ownerB),
+    );
+    $secondJob->handle(app(GenerateDocPdfs::class));
+
+    $pathA = $docA->fresh()->pdf_path;
+    $pathB = $docB->fresh()->pdf_path;
+    expect($pathA)->toBe('docs/' . $docA->id . '.pdf')
+        ->and($pathB)->toBe('docs/' . $docB->id . '.pdf')
+        ->and($pathB)->not->toBe($pathA);
+    Storage::disk('local')->assertExists([$pathA, $pathB]);
 });

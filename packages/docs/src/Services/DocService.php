@@ -477,6 +477,10 @@ final class DocService
      */
     public function downloadPdf(Doc $doc): string
     {
+        if (config('docs.owner.enabled', false)) {
+            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
+        }
+
         $docType = $doc->doc_type ?? 'invoice';
 
         if ($doc->pdf_path === DocPdfPath::forDocument($docType, (string) $doc->getKey()) && Storage::disk($this->resolveStorageDisk($docType))->exists($doc->pdf_path)) {
