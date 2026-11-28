@@ -21,7 +21,6 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
@@ -45,7 +44,7 @@ final readonly class ManageDocumentRecords implements DocumentRecords
     public function __construct(
         private DocumentNumberRegistry $numberRegistry,
         private DocumentSequence $sequenceManager,
-        private DocTotals $totals,
+        private CalculateDocumentTotals $totals,
     ) {}
 
     /**

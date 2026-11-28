@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
 use InvalidArgumentException;
 
 /**
  * Calculates document totals using integer minor-unit amounts.
  */
-final class DocTotals
+final readonly class CalculateDocumentTotals
 {
     /**
      * @param  array<int, array<string, mixed>>  $items

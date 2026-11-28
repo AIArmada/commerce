@@ -79,7 +79,6 @@ final class DocsServiceProvider extends PackageServiceProvider
             RichContentRendererInterface::class,
             PdfRenderer::class,
             DocumentSequence::class,
-            Services\DocTotals::class,
             DocumentPaymentRecorder::class,
             Numbering\DocumentNumberRegistry::class,
         ];

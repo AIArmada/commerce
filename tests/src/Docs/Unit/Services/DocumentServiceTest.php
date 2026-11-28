@@ -8,7 +8,7 @@ use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
-use AIArmada\Docs\Services\DocTotals;
+use AIArmada\Docs\Features\Lifecycle\Actions\CalculateDocumentTotals;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
@@ -23,7 +23,7 @@ beforeEach(function (): void {
     $this->service = new ManageDocumentRecords(
         $this->numberRegistry,
         $this->sequenceManager,
-        new DocTotals,
+        new CalculateDocumentTotals,
     );
 });
 

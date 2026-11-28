@@ -19,7 +19,7 @@ keywords:
 - Composer: `aiarmada/docs`
 - Role: Business documents: numbering, PDF render, email, approvals, versions, e-invoice tracking.
 - Triggers: document, invoice-pdf, numbering, sequence, approval, e-invoice
-- Search first: `src/Models, src/Services, config, docs`
+- Search first: `src/Features, src/Contracts, src/Runtime, config, docs`
 - Related: `filament-docs`, `orders`, `checkout`, `chip`
 - Paired: `filament-docs` (Filament admin adapter)
 
@@ -45,7 +45,7 @@ keywords:
 - Versioning feature: `Features/Versioning` owns document version writes; use `Contracts/DocumentVersions` for capture and restore.
 - Numbering feature: `Features/Numbering` owns sequence configuration and counters; document creation uses `Contracts/DocumentSequence`.
 - Models: `Doc`, `Features/Approvals/Models/DocApproval`, `Features/Lifecycle/Models/DocEInvoiceSubmission`, `Features/Delivery/Models/DocEmail`, `Features/Delivery/Models/DocEmailTemplate`, `Features/Payments/Models/DocPayment`, `DocSequence`, `Features/Delivery/Models/DocShareLink`, `Features/Lifecycle/Models/DocStatusHistory`, `Features/Templates/Models/DocTemplate`, `Features/Versioning/Models/DocVersion`, `Features/Approvals/Models/DocWorkflow`, `Features/Approvals/Models/DocWorkflowStep`, `SequenceNumber`
-- Actions/Services: `Features/Delivery/Actions/DocEmailService`, `Features/Payments/Actions/RecordDocPayment`, `Services/DocRenderService`, `Services/DocumentRecords`, `Services/DocTotals`, `Features/Delivery/Queries/DueDocReminders`, `Services/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
+- Actions/Services: `Features/Delivery/Actions/DocEmailService`, `Features/Payments/Actions/RecordDocPayment`, `Services/DocRenderService`, `Runtime/DocumentRecords`, `Features/Lifecycle/Actions/CalculateDocumentTotals`, `Features/Delivery/Queries/DueDocReminders`, `Features/Numbering/Actions/SequenceManager`, `Numbering/DocumentNumberRegistry`, `Support/DocRichContentStorage`, `Support/TemplateBlockRegistry`
 - Config `docs.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `docs`, `doc_templates`, `doc_share_links`, `doc_status_histories`, `doc_payments`, `doc_email_templates`
 
 ## Docs map
