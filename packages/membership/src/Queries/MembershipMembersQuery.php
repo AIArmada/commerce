@@ -30,7 +30,19 @@ final readonly class MembershipMembersQuery
 
     public function find(Model $subject, Model $user): ?Model
     {
-        return $this->relation($subject)->whereKey($user->getKey())->first();
+        return $this->relationForMember($subject, $user)->whereKey($user->getKey())->first();
+    }
+
+    /** @return BelongsToMany<Model, Model> */
+    public function relationForMember(Model $subject, Model $user): BelongsToMany
+    {
+        $relation = $this->relation($subject);
+
+        if (! is_a($user, $relation->getRelated()::class) || ! $user->exists || $user->getKey() === null) {
+            throw new InvalidArgumentException('The member must be a persisted instance of the membership user model.');
+        }
+
+        return $relation;
     }
 
     public function role(?Model $member): ?string

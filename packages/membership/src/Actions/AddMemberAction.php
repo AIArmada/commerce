@@ -74,11 +74,17 @@ final class AddMemberAction
 
     private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
     {
+        $relation = $this->members->relationForMember($subject, $user);
+
+        if ($existingMember !== null && ! $existingMember->is($user)) {
+            throw new InvalidArgumentException('The resolved membership does not match the requested user.');
+        }
+
         $existingRole = $this->members->role($existingMember);
         $membershipTable = $this->membershipTable($subject);
 
         try {
-            DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $role, $subject, $user): void {
+            DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $relation, $role, $subject, $user): void {
                 if ($subject instanceof MembershipMutationGuard) {
                     $subject->assertMemberCanBeAdded(MembershipIdentityMapper::fromModel($user), $role->value, MemberRole::fromSpatieRoleName((string) $existingRole)?->value);
                 }
@@ -95,7 +101,7 @@ final class AddMemberAction
                     }
                 }
 
-                $this->members->relation($subject)->syncWithoutDetaching([
+                $relation->syncWithoutDetaching([
                     $user->getKey() => $pivotData,
                 ]);
 
