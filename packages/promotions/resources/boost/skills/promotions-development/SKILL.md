@@ -5,7 +5,7 @@ description: Develop and integrate promotions using owner-safe domain operations
 
 # promotions development
 
-Promotions owns automatic campaigns and promotion targets. Use `AIArmada\Promotions\Runtime\PromotionServiceInterface` for applicability and the concrete CreatePromotion, UpdatePromotion, DeactivatePromotion and DeletePromotion actions for administration. Fixed discounts use integer minor units; promotion percentage values are whole percentages. Voucher issuance converts these into voucher basis points and enforces owner context. Fulfillment must count each order's promotion usage once; order metadata writes belong to Orders. Never directly increment usage from UI or checkout callbacks.
+Promotions owns automatic campaigns and promotion targets. Use `AIArmada\Promotions\Runtime\PromotionServiceInterface` for applicability and the concrete CreatePromotion, UpdatePromotion, DeactivatePromotion and DeletePromotion actions for administration. Fixed discounts use integer minor units; promotion percentage values are whole percentages. Voucher issuance converts these into voucher basis points, checks the shared connection through the Lifecycle `VoucherCatalog` API and enforces matching promotion and voucher ownership. Fulfillment must count each order's promotion usage once; order metadata writes belong to Orders. Never directly increment usage from UI or checkout callbacks.
 
 ## Verification
 

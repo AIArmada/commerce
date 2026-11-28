@@ -8,6 +8,8 @@ use AIArmada\Vouchers\Data\VoucherData;
 
 interface VoucherCatalog
 {
+    public function connectionName(): string;
+
     public function find(string $code, ?string $voucherId = null): ?VoucherData;
 
     public function resolveId(string $code, ?string $voucherId = null): ?string;

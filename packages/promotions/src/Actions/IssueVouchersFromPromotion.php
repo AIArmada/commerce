@@ -10,7 +10,6 @@ use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -66,7 +65,15 @@ final class IssueVouchersFromPromotion
                 $payload['owner_type'] = $promotion->owner_type;
                 $payload['owner_id'] = $promotion->owner_id;
 
-                $issued->push($voucherService->create($payload));
+                $voucher = $voucherService->create($payload);
+
+                if ($voucher->ownerType !== $promotion->owner_type
+                    || ($voucher->ownerId === null) !== ($promotion->owner_id === null)
+                    || (string) $voucher->ownerId !== (string) $promotion->owner_id) {
+                    throw new AuthorizationException('The issued voucher must belong to the promotion owner.');
+                }
+
+                $issued->push($voucher);
             }
 
             return $issued;
@@ -75,15 +82,13 @@ final class IssueVouchersFromPromotion
 
     private function assertSharedConnection(Promotion $promotion): void
     {
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
+        $catalog = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCatalog';
 
-        if (! is_subclass_of($voucherClass, Model::class)) {
+        if (! interface_exists($catalog)) {
             throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');
         }
 
-        $voucher = new $voucherClass;
-
-        if ($voucher->getConnection() !== $promotion->getConnection()) {
+        if (app($catalog)->connectionName() !== $promotion->getConnection()->getName()) {
             throw new LogicException('Promotion voucher issuance requires a shared database connection.');
         }
     }

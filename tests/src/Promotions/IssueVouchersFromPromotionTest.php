@@ -9,6 +9,7 @@ use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -122,4 +123,21 @@ it('does not impersonate another promotion owner when promotion scoping is disab
 
     expect(fn () => OwnerContext::withOwner($other, fn () => IssueVouchersFromPromotion::run($promotion)))
         ->toThrow(AuthorizationException::class);
+});
+
+it('rejects voucher issuance across database connections before writing', function (): void {
+    $promotion = OwnerContext::withOwner(null, fn (): Promotion => Promotion::create([
+        'name' => 'Connection mismatch',
+        'type' => PromotionType::Fixed,
+        'discount_value' => 100,
+    ]));
+
+    $catalog = Mockery::mock(VoucherCatalog::class);
+    $catalog->shouldReceive('connectionName')->once()->andReturn('different-connection');
+    app()->instance(VoucherCatalog::class, $catalog);
+
+    expect(fn () => OwnerContext::withOwner(null, fn () => IssueVouchersFromPromotion::run($promotion)))
+        ->toThrow(LogicException::class, 'shared database connection');
+
+    expect(Voucher::query()->where('promotion_id', $promotion->id)->exists())->toBeFalse();
 });
