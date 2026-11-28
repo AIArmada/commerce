@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Registrations\Actions\ImportEventRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
 use Filament\Actions\Imports\Models\Import;
@@ -120,4 +122,41 @@ it('does not persist unmapped registration columns', function (): void {
     $registration = EventRegistration::query()->where('event_id', $event->getKey())->firstOrFail();
 
     expect($registration->total_amount)->not->toBe(999999);
+});
+
+it('validates and authorizes registration import writes at the domain boundary', function (): void {
+    $owner = User::factory()->create();
+    $outsider = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($owner, $outsider): void {
+        $event = Event::factory()->create();
+        $action = app(ImportEventRegistrationAction::class);
+        $data = [
+            'event_id' => $event->id,
+            'registration_type' => 'individual',
+            'status' => 'confirmed',
+            'source' => 'import',
+        ];
+
+        foreach ([
+            ['total_participants' => '0'],
+            ['total_participants' => '2147483648'],
+            ['total_amount' => '-1'],
+            ['total_amount' => '1.5'],
+            ['status' => 'invalid'],
+            ['registration_type' => str_repeat('x', 65)],
+        ] as $invalid) {
+            expect(fn () => $action->handle(array_replace($data, $invalid), $owner))
+                ->toThrow(ValidationException::class);
+        }
+
+        expect(fn () => $action->handle($data, $outsider))->toThrow(ValidationException::class)
+            ->and(EventRegistration::query()->where('event_id', $event->id)->exists())->toBeFalse();
+
+        $record = $action->handle([...$data, 'total_participants' => null, 'notes' => 'Not importable'], $owner)->refresh();
+
+        expect($record->total_participants)->toBe(1)
+            ->and($record->notes)->toBeNull()
+            ->and($record->status->getValue())->toBe('confirmed');
+    });
 });

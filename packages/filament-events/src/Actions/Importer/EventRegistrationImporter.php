@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
-use AIArmada\Events\Contracts\EventImportScopeValidator;
-use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Features\Registrations\Actions\ImportEventRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\RegistrationStatus;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
-use Closure;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
+use Illuminate\Validation\Rule;
 use LogicException;
 
 final class EventRegistrationImporter extends Importer
@@ -46,36 +44,27 @@ final class EventRegistrationImporter extends Importer
                 ->label('Occurrence ID'),
             ImportColumn::make('registration_type')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:64'])
                 ->label('Registration Type'),
             ImportColumn::make('status')
                 ->requiredMapping()
-                ->rules([
-                    function (string $attribute, mixed $value, Closure $fail): void {
-                        if (! is_string($value)) {
-                            $fail('A valid registration status is required.');
-
-                            return;
-                        }
-
-                        try {
-                            static::newRegistration()->initializeStatus($value);
-                        } catch (InvalidArgumentException | LogicException $exception) {
-                            $fail($exception->getMessage());
-                        }
-                    },
-                ])
+                ->rules(['required', Rule::in(array_keys(RegistrationStatus::options()))])
                 ->fillRecordUsing(static function (): void {})
                 ->label('Status'),
             ImportColumn::make('source')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:64'])
                 ->label('Source'),
             ImportColumn::make('total_participants')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:1', 'max:2147483647'])
                 ->label('Total Participants'),
             ImportColumn::make('total_amount')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0'])
                 ->label('Total Amount'),
             ImportColumn::make('currency')
+                ->rules(['nullable', 'string', 'max:16'])
                 ->label('Currency'),
         ];
     }
@@ -100,54 +89,11 @@ final class EventRegistrationImporter extends Importer
     protected function beforeCreate(): void
     {
         $this->authorizeRecordCreate();
-        $data = $this->mappedImportData();
-        $this->assertEventScope($data['event_id'] ?? null, $data['event_occurrence_id'] ?? null);
-    }
-
-    protected function beforeUpdate(): void
-    {
-        $this->authorizeRecordUpdate();
-
-        $record = $this->record;
-        $data = $this->mappedImportData();
-        $eventId = array_key_exists('event_id', $data)
-            ? $data['event_id']
-            : $record?->getAttribute('event_id');
-        $occurrenceId = array_key_exists('event_occurrence_id', $data)
-            ? $data['event_occurrence_id']
-            : $record?->getAttribute('event_occurrence_id');
-
-        $this->assertEventScope($eventId, $occurrenceId);
-    }
-
-    private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
-    {
-        app(EventImportScopeValidator::class)->validate($eventId, $occurrenceId, $this->resolveImportUser(), 'manageAdmissions');
     }
 
     public function saveRecord(): void
     {
-        $data = $this->mappedImportData();
-
-        foreach (['total_participants', 'total_amount'] as $field) {
-            if (isset($data[$field])) {
-                $value = filter_var($data[$field], FILTER_VALIDATE_INT);
-
-                if ($value === false) {
-                    throw ValidationException::withMessages([$field => 'An integer is required.']);
-                }
-
-                $data[$field] = $value;
-            }
-        }
-
-        try {
-            $registrationId = app(RegistrationServiceInterface::class)->register($data);
-        } catch (InvalidArgumentException | LogicException $exception) {
-            throw ValidationException::withMessages(['status' => $exception->getMessage()]);
-        }
-
-        $this->record = static::getModel()::query()->findOrFail($registrationId);
+        $this->record = app(ImportEventRegistrationAction::class)->handle($this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string
