@@ -850,3 +850,25 @@ it('expires only the current owner lots in a scoped sweep and all owners in syst
         ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(2)
         ->and($sweep->handle($expiry)['movements'])->toBe(0);
 });
+
+it('batch validates linked awards while rejecting foreign provenance', function (): void {
+    [$ownerA, $ownerB, , , , $award] = guardCrossTenantFixture('guard-batch-awards');
+
+    $awards = app(RewardAwardLockApi::class);
+    $awardId = (string) $award->getKey();
+    $missingId = (string) Str::uuid();
+
+    OwnerContext::withOwner($ownerA, function () use ($awards, $awardId, $missingId): void {
+        $awards->assertAwardsInScopeWhenExist([$awardId, $missingId, $awardId]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($awards, $missingId): void {
+        $awards->assertAwardsInScopeWhenExist([]);
+        $awards->assertAwardsInScopeWhenExist([$missingId]);
+    });
+
+    expect(fn () => OwnerContext::withOwner(
+        $ownerB,
+        fn () => $awards->assertAwardsInScopeWhenExist([$missingId, $awardId]),
+    ))->toThrow(AuthorizationException::class);
+});

@@ -8,6 +8,9 @@ interface RewardAwardLockApi
 {
     public function assertAwardInScopeWhenExists(string $awardId): void;
 
+    /** @param list<string> $awardIds */
+    public function assertAwardsInScopeWhenExist(array $awardIds): void;
+
     /** Run system work under an existing award's program owner. */
     public function withAwardOwnerWhenExists(string $awardId, callable $callback): mixed;
 

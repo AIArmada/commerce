@@ -31,9 +31,7 @@ final class RewardPointLotScope
         $awards = app(RewardAwardLockApi::class);
         $programs = app(RewardProgramLockApi::class);
 
-        foreach (array_keys($awardIds) as $awardId) {
-            $awards->assertAwardInScopeWhenExists($awardId);
-        }
+        $awards->assertAwardsInScopeWhenExist(array_keys($awardIds));
 
         foreach (array_keys($programIds) as $programId) {
             $programs->assertProgramInScopeWhenExists($programId);

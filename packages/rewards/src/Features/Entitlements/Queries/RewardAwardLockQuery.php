@@ -17,7 +17,25 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 {
     public function assertAwardInScopeWhenExists(string $awardId): void
     {
-        RewardAwardGuard::assertAwardInScopeWhenExists($awardId);
+        $this->assertAwardsInScopeWhenExist([$awardId]);
+    }
+
+    public function assertAwardsInScopeWhenExist(array $awardIds): void
+    {
+        if ($awardIds === []) {
+            return;
+        }
+
+        $programIds = RewardAward::query()
+            ->whereIn('id', array_values(array_unique($awardIds)))
+            ->distinct()
+            ->pluck('program_id');
+
+        $programs = app(RewardProgramLockApi::class);
+
+        foreach ($programIds as $programId) {
+            $programs->assertProgramInScope((string) $programId);
+        }
     }
 
     public function withAwardOwnerWhenExists(string $awardId, callable $callback): mixed
