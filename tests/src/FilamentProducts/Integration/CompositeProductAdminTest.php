@@ -180,3 +180,18 @@ it('updates composite components and publishes the package through domain action
 
     expect($headsetComponent?->quantity)->toBe(2);
 });
+
+it('validates component integer fields before normalizing the form payload', function (): void {
+    $component = ['component_product_id' => 'component-id', 'quantity' => '2', 'position' => '0'];
+
+    $payload = \AIArmada\FilamentProducts\Support\CompositeComponentsFormData::toActionPayload([$component]);
+
+    expect($payload[0]['quantity'])->toBe(2)
+        ->and($payload[0]['position'])->toBe(0);
+
+    foreach ([['quantity' => 0], ['quantity' => '1.5'], ['position' => -1]] as $invalid) {
+        expect(fn () => \AIArmada\FilamentProducts\Support\CompositeComponentsFormData::toActionPayload([
+            array_replace($component, $invalid),
+        ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+});

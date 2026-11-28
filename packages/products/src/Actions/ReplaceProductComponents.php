@@ -24,19 +24,19 @@ use Illuminate\Support\Facades\DB;
  * Empty component lists are allowed while the parent is not active. An active
  * package must remain non-empty and publishable after every replacement.
  */
-final class ReplaceProductComponents
+final readonly class ReplaceProductComponents
 {
     public function __construct(
-        private readonly CompositePackageValidator $validator,
-        private readonly CompositePackageService $service,
+        private CompositePackageValidator $validator,
+        private CompositePackageService $service,
     ) {}
 
     /**
      * @param  list<array{
      *     component_product_id: string,
      *     variant_id?: string|null,
-     *     quantity?: int,
-     *     position?: int,
+     *     quantity?: int|string,
+     *     position?: int|string,
      *     unit_price?: int|null,
      *     metadata?: array<string, mixed>|null
      * }>  $components
@@ -146,7 +146,8 @@ final class ReplaceProductComponents
 
             $variantId = $component['variant_id'] ?? null;
             $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;
-            $quantity = (int) ($component['quantity'] ?? 0);
+            $quantity = $this->integerField($component['quantity'] ?? null, 'quantity', 1);
+            $position = $this->integerField($component['position'] ?? $index, 'position', 0);
 
             $componentProduct = $isExternal ? null : $this->resolveComponentProduct($componentProductId);
             $variant = $variantId !== null ? $this->resolveVariant($variantId) : null;
@@ -192,13 +193,28 @@ final class ReplaceProductComponents
                 'buyable_id' => $isExternal ? $buyableId : null,
                 'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                 'quantity' => $quantity,
-                'position' => (int) ($component['position'] ?? $index),
+                'position' => $position,
                 'unit_price' => $unitPrice,
                 'metadata' => $metadata,
             ];
         }
 
         return $prepared;
+    }
+
+    private function integerField(mixed $value, string $field, int $minimum): int
+    {
+        if (! is_int($value) && ! is_string($value)) {
+            throw new InvalidCompositePackageException("Composite component {$field} must be an integer.");
+        }
+
+        $number = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => $minimum, 'max_range' => 2147483647]]);
+
+        if ($number === false) {
+            throw new InvalidCompositePackageException("Composite component {$field} must be an integer between {$minimum} and 2147483647.");
+        }
+
+        return $number;
     }
 
     private function resolveComponentProduct(string $id): Product

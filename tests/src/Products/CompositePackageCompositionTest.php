@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
-use AIArmada\Inventory\Queries\CompositeComponents;
+use AIArmada\Inventory\Features\Reservations\Queries\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
@@ -638,4 +638,29 @@ it('resolves frozen inventory components within the active owner scope override'
 
         expect(CompositeComponents::resolveInventoryModel($component)?->getKey())->toBe($global->id);
     });
+});
+
+it('rejects malformed component quantities and positions without replacing the persisted graph', function (): void {
+    $parent = makeCompositeParent();
+    $child = makeComponentProduct();
+    $replace = app(ReplaceProductComponents::class);
+
+    $original = $replace->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 2, 'position' => 0],
+    ])->firstOrFail();
+
+    foreach ([1.5, '2.5', true, [], '2147483648', 0, -1] as $quantity) {
+        expect(fn () => $replace->handle($parent, [
+            ['component_product_id' => $child->id, 'quantity' => $quantity],
+        ]))->toThrow(InvalidCompositePackageException::class, 'quantity');
+    }
+
+    foreach ([-1, 2.5, '2147483648', true] as $position) {
+        expect(fn () => $replace->handle($parent, [
+            ['component_product_id' => $child->id, 'quantity' => 1, 'position' => $position],
+        ]))->toThrow(InvalidCompositePackageException::class, 'position');
+    }
+
+    expect($parent->components()->firstOrFail()->getKey())->toBe($original->getKey())
+        ->and($original->fresh()->quantity)->toBe(2);
 });
