@@ -283,3 +283,31 @@ it('rejects direct serial creation in a tenant-visible global location', functio
         'serial_number' => 'DIRECT-GLOBAL-WRITE',
     ]))->toThrow(AuthorizationException::class);
 });
+
+it('reads available serials across visible locations without mutation authorization', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+    $service = $fixture['service'];
+    $sku = $fixture['sku'];
+
+    $own = $service->register($sku, 'SN-AVAILABLE-OWN', $fixture['locationA']->id);
+
+    ($fixture['setOwnerContext'])($fixture['ownerB']);
+    $foreign = $service->register($sku, 'SN-AVAILABLE-FOREIGN', $fixture['locationB']->id);
+
+    ($fixture['setOwnerContext'])($fixture['ownerA']);
+    $global = OwnerContext::withOwner(null, fn (): InventorySerial => $service->register(
+        $sku,
+        'SN-AVAILABLE-GLOBAL',
+        $fixture['locationGlobal']->id,
+    ));
+
+    expect($service->getAvailableSerials($sku)->modelKeys())
+        ->toContain($own->id, $global->id)
+        ->not->toContain($foreign->id)
+        ->and($service->getAvailableSerials($sku, $fixture['locationGlobal']->id)->modelKeys())->toBe([$global->id])
+        ->and($service->getAvailableSerials($sku, $fixture['locationB']->id))->toBeEmpty();
+
+    config()->set('inventory.owner.include_global', false);
+
+    expect($service->getAvailableSerials($sku)->modelKeys())->toBe([$own->id]);
+});

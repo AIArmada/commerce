@@ -58,21 +58,6 @@ final readonly class RegisterTraceability
             $level = $this->level($levelId);
             $batchId = isset($attributes['batch_id']) ? (string) $attributes['batch_id'] : null;
 
-            if ($batchId !== null) {
-                $query = InventoryBatch::query();
-
-                if (InventoryOwnerScope::isEnabled()) {
-                    $query->forOwner(InventoryOwnerScope::resolveOwner(), false);
-                }
-
-                $query->whereKey($batchId)
-                    ->where('inventoryable_type', $level->inventoryable_type)
-                    ->where('inventoryable_id', $level->inventoryable_id)
-                    ->where('location_id', $level->location_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-            }
-
             $serial = $this->serials->register(
                 model: $this->item($level),
                 serialNumber: $this->identifier($attributes, 'serial_number'),

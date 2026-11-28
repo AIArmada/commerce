@@ -104,21 +104,20 @@ final class SerialService
             $userId
         ): InventorySerial {
             $this->assertLocationIdAllowedForCurrentOwner($locationId);
-            $this->assertBatchIdAllowedForCurrentOwner($batchId);
-
-            if ($locationId !== null && ! InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId)->exists()) {
-                throw new InvalidArgumentException('Invalid serial location');
-            }
 
             if ($batchId !== null) {
                 $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
                     ->whereKey($batchId)
-                    ->where('inventoryable_type', $model->getMorphClass())
-                    ->where('inventoryable_id', $model->getKey())
                     ->lockForUpdate()
                     ->first();
 
-                if ($batch === null || ($locationId !== null && $batch->location_id !== $locationId)) {
+                if ($batch === null) {
+                    throw new InvalidArgumentException('Invalid batch for current owner');
+                }
+
+                if ($batch->inventoryable_type !== $model->getMorphClass()
+                    || (string) $batch->inventoryable_id !== (string) $model->getKey()
+                    || ($locationId !== null && $batch->location_id !== $locationId)) {
                     throw new InvalidArgumentException('Batch does not match the serial item or location');
                 }
             }
@@ -179,8 +178,6 @@ final class SerialService
      */
     public function getAvailableSerials(Model $model, ?string $locationId = null): Collection
     {
-        $this->assertLocationIdAllowedForCurrentOwner($locationId);
-
         $query = InventorySerial::query()
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
@@ -588,49 +585,17 @@ final class SerialService
 
     private function assertLocationIdAllowedForCurrentOwner(?string $locationId): void
     {
-        if (! InventoryOwnerScope::isEnabled()) {
-            return;
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+            if ($locationId === null && $owner !== null) {
+                throw new InvalidArgumentException('Location is required when owner scoping is enabled');
+            }
         }
 
-        $owner = InventoryOwnerScope::resolveOwner();
-        OwnerContext::assertResolvedOrExplicitGlobal($owner);
-
-        if ($locationId === null && $owner !== null) {
-            throw new InvalidArgumentException('Location is required when owner scoping is enabled');
-        }
-
-        if ($locationId === null) {
-            return;
-        }
-
-        $isAllowed = InventoryLocation::query()->forOwner($owner, false)
-            ->whereKey($locationId)
-            ->exists();
-
-        if (! $isAllowed) {
+        if ($locationId !== null && ! InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId)->exists()) {
             throw new InvalidArgumentException('Invalid location for current owner');
-        }
-    }
-
-    private function assertBatchIdAllowedForCurrentOwner(?string $batchId): void
-    {
-        if (! InventoryOwnerScope::isEnabled()) {
-            return;
-        }
-
-        if ($batchId === null) {
-            return;
-        }
-
-        $owner = InventoryOwnerScope::resolveOwner();
-        OwnerContext::assertResolvedOrExplicitGlobal($owner);
-
-        $isAllowed = InventoryBatch::query()->forOwner($owner, false)
-            ->whereKey($batchId)
-            ->exists();
-
-        if (! $isAllowed) {
-            throw new InvalidArgumentException('Invalid batch for current owner');
         }
     }
 }
