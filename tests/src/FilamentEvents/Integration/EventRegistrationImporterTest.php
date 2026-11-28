@@ -8,6 +8,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Actions\ImportEventRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
+use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Validation\ValidationException;
@@ -17,12 +18,14 @@ final class ConfiguredEventRegistration extends EventRegistration {}
 it('initializes registration lifecycle state during import', function (): void {
     $owner = OwnerContext::resolve();
 
-    if ($owner instanceof Authenticatable) {
-        $this->actingAs($owner);
-    }
+    expect($owner)->toBeInstanceOf(Authenticatable::class);
+    $this->actingAs($owner);
+
+    $import = new Import;
+    $import->user()->associate($owner);
 
     $event = Event::factory()->create();
-    $importer = new EventRegistrationImporter(new Import, [
+    $importer = new EventRegistrationImporter($import, [
         'event_id' => 'event_id',
         'registration_type' => 'registration_type',
         'status' => 'status',
@@ -46,8 +49,14 @@ it('initializes registration lifecycle state during import', function (): void {
 });
 
 it('rejects an unknown registration status during import', function (): void {
+    $owner = OwnerContext::resolve();
+    expect($owner)->toBeInstanceOf(Authenticatable::class);
+
+    $import = new Import;
+    $import->user()->associate($owner);
+
     $event = Event::factory()->create();
-    $importer = new EventRegistrationImporter(new Import, [
+    $importer = new EventRegistrationImporter($import, [
         'event_id' => 'event_id',
         'registration_type' => 'registration_type',
         'status' => 'status',
@@ -69,12 +78,14 @@ it('imports through the configured registration model', function (): void {
 
     $owner = OwnerContext::resolve();
 
-    if ($owner instanceof Authenticatable) {
-        $this->actingAs($owner);
-    }
+    expect($owner)->toBeInstanceOf(Authenticatable::class);
+    $this->actingAs($owner);
+
+    $import = new Import;
+    $import->user()->associate($owner);
 
     $event = Event::factory()->create();
-    $importer = new EventRegistrationImporter(new Import, [
+    $importer = new EventRegistrationImporter($import, [
         'event_id' => 'event_id',
         'registration_type' => 'registration_type',
         'status' => 'status',
@@ -99,12 +110,14 @@ it('imports through the configured registration model', function (): void {
 it('does not persist unmapped registration columns', function (): void {
     $owner = OwnerContext::resolve();
 
-    if ($owner instanceof Authenticatable) {
-        $this->actingAs($owner);
-    }
+    expect($owner)->toBeInstanceOf(Authenticatable::class);
+    $this->actingAs($owner);
+
+    $import = new Import;
+    $import->user()->associate($owner);
 
     $event = Event::factory()->create();
-    $importer = new EventRegistrationImporter(new Import, [
+    $importer = new EventRegistrationImporter($import, [
         'event_id' => 'event_id',
         'registration_type' => 'registration_type',
         'status' => 'status',
@@ -159,4 +172,38 @@ it('validates and authorizes registration import writes at the domain boundary',
             ->and($record->notes)->toBeNull()
             ->and($record->status->getValue())->toBe('confirmed');
     });
+});
+
+it('never substitutes the ambient actor for an unattributed import', function (): void {
+    $owner = OwnerContext::resolve();
+    expect($owner)->toBeInstanceOf(Authenticatable::class);
+    $this->actingAs($owner);
+
+    $event = Event::factory()->create();
+    $columns = [
+        'event_id' => 'event_id',
+        'registration_type' => 'registration_type',
+        'status' => 'status',
+        'source' => 'source',
+    ];
+    $data = [
+        'event_id' => $event->getKey(),
+        'registration_type' => 'individual',
+        'status' => 'confirmed',
+        'source' => 'import',
+    ];
+
+    $unattributed = new Import;
+    $unresolved = new Import;
+    $unresolved->user()->associate($owner);
+    $unresolved->setRelation('user', null);
+
+    foreach ([$unattributed, $unresolved] as $import) {
+        $importer = new EventRegistrationImporter($import, $columns, []);
+
+        expect(fn () => $importer($data))
+            ->toThrow(RowImportFailedException::class, 'not authorized');
+    }
+
+    expect(EventRegistration::query()->where('event_id', $event->getKey())->exists())->toBeFalse();
 });

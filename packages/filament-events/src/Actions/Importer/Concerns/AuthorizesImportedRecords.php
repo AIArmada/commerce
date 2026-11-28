@@ -64,20 +64,12 @@ trait AuthorizesImportedRecords
 
     protected function resolveImportUser(): ?Authenticatable
     {
-        if ($this->import->relationLoaded('user')) {
-            $loaded = $this->import->getRelation('user');
-
-            return $loaded instanceof Authenticatable ? $loaded : null;
+        if ($this->import->getAttribute('user_id') === null) {
+            return null;
         }
 
-        if ($this->import->getAttribute('user_id') !== null) {
-            $resolved = $this->import->user;
+        $user = $this->import->user;
 
-            return $resolved instanceof Authenticatable ? $resolved : null;
-        }
-
-        $current = auth()->user();
-
-        return $current instanceof Authenticatable ? $current : null;
+        return $user instanceof Authenticatable ? $user : null;
     }
 }
