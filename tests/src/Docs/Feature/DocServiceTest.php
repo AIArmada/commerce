@@ -283,3 +283,16 @@ test('it honors owner auto-assign on create config', function (): void {
     expect($doc->owner_type)->toBeNull()
         ->and($doc->owner_id)->toBeNull();
 });
+
+test('it persists allocated line taxes without an explicit document tax total', function (): void {
+    config()->set('docs.defaults.tax_rate', 0);
+
+    $doc = app(DocService::class)->create(DocData::from([
+        'items' => [
+            ['name' => 'Taxed item', 'quantity' => 1, 'unit_price_minor' => 1000, 'tax_amount_minor' => 60],
+        ],
+    ]));
+
+    expect($doc->tax_amount_minor)->toBe(60)
+        ->and($doc->total_minor)->toBe(1060);
+});

@@ -112,7 +112,7 @@ final class DocService
             }
 
             $subtotalMinor = $data->subtotalMinor ?? $calculatedSubtotalMinor;
-            $taxAmountMinor = $data->taxAmountMinor ?? $this->applyBasisPoints($subtotalMinor, $taxRateBasisPoints);
+            $taxAmountMinor = $data->taxAmountMinor ?? ($hasLineTaxes ? $calculatedTaxMinor : $this->applyBasisPoints($subtotalMinor, $taxRateBasisPoints));
             $totalMinor = $data->totalMinor ?? $this->totals->net($subtotalMinor, $taxAmountMinor, $discountAmountMinor);
             $this->assertNonNegativeAmounts($subtotalMinor, $taxAmountMinor, $discountAmountMinor, $totalMinor);
 
@@ -161,7 +161,7 @@ final class DocService
                 throw $this->translateDocNumberViolation($exception, $docNumber);
             }
 
-            $this->createVersion($doc, 'Initial creation');
+            OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocVersion => $this->createVersion($doc, 'Initial creation'));
 
             // Load relationships
             $doc->loadMissing(['template', 'docable']);
@@ -246,7 +246,7 @@ final class DocService
                 }
 
                 // Create initial version
-                $this->createVersion($doc, 'Initial creation');
+                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocVersion => $this->createVersion($doc, 'Initial creation'));
 
                 return $doc;
             });

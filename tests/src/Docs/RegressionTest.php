@@ -426,7 +426,7 @@ test('unresolvable statuses throw instead of becoming draft', function (): void 
     expect(fn (): string => DocStatus::resolveStateClassFor('bogus-status'))
         ->toThrow(InvalidArgumentException::class, 'Unknown document status');
 
-    expect(fn (): DocData => DocData::from(['status' => 'bogus-status']))
+    expect(fn (): Doc => app(DocService::class)->create(DocData::from(['status' => 'bogus-status'])))
         ->toThrow(InvalidArgumentException::class);
 });
 

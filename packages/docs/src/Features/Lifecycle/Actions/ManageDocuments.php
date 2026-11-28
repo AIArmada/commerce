@@ -8,10 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Illuminate\Support\Facades\DB;
@@ -29,12 +27,7 @@ final readonly class ManageDocuments implements DocumentLifecycle
             }
 
             return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc, $target, $notes): bool {
-                match ($target) {
-                    Sent::class => $doc->markAsSent($notes),
-                    Paid::class => $doc->markAsPaid($notes),
-                    Cancelled::class => $doc->cancel($notes),
-                    default => $doc->transitionStatusTo($target, $notes),
-                };
+                $doc->transitionStatusTo($target, $notes);
 
                 return $doc->status->equals($target);
             });
