@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\Resources\OrganizationResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
-use AIArmada\Membership\Actions\AddMemberAction;
-use AIArmada\Membership\Actions\ChangeMemberRoleAction;
-use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Organizations\Actions\AddOrganizationMemberAction;
+use AIArmada\Organizations\Actions\ChangeOrganizationMemberRoleAction;
+use AIArmada\Organizations\Actions\RemoveOrganizationMemberAction;
 use AIArmada\Organizations\Models\Organization;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -39,14 +38,12 @@ final class MembersRelationManager extends RelationManager
                 Action::make('addMember')
                     ->form([
                         TextInput::make('email')->email()->required(),
-                        Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
+                        Select::make('role')->options(collect(MemberRole::cases())->reject(fn (MemberRole $role): bool => $role === MemberRole::Owner)->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
                     ])
                     ->action(function (MembersRelationManager $livewire, array $data): void {
                         $organization = self::ownerOrganization($livewire);
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
-                        OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-
                         // Normalized lookup with a generic failure so the
                         // response never reveals whether an email exists.
                         $email = mb_strtolower(mb_trim((string) ($data['email'] ?? '')));
@@ -55,27 +52,29 @@ final class MembersRelationManager extends RelationManager
                             ->first();
 
                         abort_unless($member instanceof Model, 422, 'Unable to add this member.');
-                        app(AddMemberAction::class)->handle($organization, $member, MemberRole::from($data['role']));
+                        app(AddOrganizationMemberAction::class)->handle($organization, $actor, $member, MemberRole::from($data['role']));
                     }),
             ])
             ->actions([
                 Action::make('changeRole')
                     ->form([
-                        Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->required(),
+                        Select::make('role')->options(collect(MemberRole::cases())->reject(fn (MemberRole $role): bool => $role === MemberRole::Owner)->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->required(),
                     ])
-                    ->fillForm(fn (Model $record): array => ['role' => (string) data_get($record->getRelationValue('pivot'), 'role')])
+                    ->fillForm(fn (Model $record): array => ['role' => MemberRole::fromSpatieRoleName((string) data_get($record->getRelationValue('pivot'), 'role'))?->value])
                     ->action(function (MembersRelationManager $livewire, Model $record, array $data): void {
                         $organization = self::ownerOrganization($livewire);
-                        OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-                        app(ChangeMemberRoleAction::class)->handle($organization, $record, MemberRole::from($data['role']));
+                        $actor = Filament::auth()->user();
+                        abort_unless($actor instanceof Model, 403);
+                        app(ChangeOrganizationMemberRoleAction::class)->handle($organization, $actor, $record, MemberRole::from($data['role']));
                     })
                     ->visible(fn (Model $record): bool => (string) data_get($record->getRelationValue('pivot'), 'role') !== MemberRole::Owner->spatieRoleName()),
                 Action::make('remove')
                     ->requiresConfirmation()
                     ->action(function (MembersRelationManager $livewire, Model $record): void {
                         $organization = self::ownerOrganization($livewire);
-                        OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-                        app(RemoveMemberAction::class)->handle($organization, $record);
+                        $actor = Filament::auth()->user();
+                        abort_unless($actor instanceof Model, 403);
+                        app(RemoveOrganizationMemberAction::class)->handle($organization, $actor, $record);
                     })
                     ->visible(fn (Model $record): bool => (string) data_get($record->getRelationValue('pivot'), 'role') !== MemberRole::Owner->spatieRoleName()),
             ]);

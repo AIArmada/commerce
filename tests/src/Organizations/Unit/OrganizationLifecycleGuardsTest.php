@@ -6,10 +6,14 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Organizations\OrganizationsTestCase;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Organizations\Actions\AddOrganizationMemberAction;
 use AIArmada\Organizations\Actions\ArchiveOrganizationAction;
+use AIArmada\Organizations\Actions\ChangeOrganizationMemberRoleAction;
 use AIArmada\Organizations\Actions\CreateOrganizationAction;
+use AIArmada\Organizations\Actions\InviteOrganizationMemberAction;
 use AIArmada\Organizations\Actions\MakeOrganizationPrivateAction;
 use AIArmada\Organizations\Actions\MakeOrganizationPublicAction;
+use AIArmada\Organizations\Actions\RemoveOrganizationMemberAction;
 use AIArmada\Organizations\Actions\RestoreOrganizationAction;
 use AIArmada\Organizations\Actions\SuspendOrganizationAction;
 use AIArmada\Organizations\Actions\TransferOrganizationOwnershipAction;
@@ -156,4 +160,21 @@ it('denies a former owner attempting to transfer ownership again', function (): 
     expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $other))
         ->toThrow(AuthorizationException::class);
     expect($organization->fresh()->ownerMember()->first()->is($newOwner))->toBeTrue();
+});
+
+it('authorizes ordinary organization member writes against current membership', function (): void {
+    $creator = User::factory()->create();
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Member Authorization']);
+    app(AddOrganizationMemberAction::class)->handle($organization, $creator, $admin, MemberRole::Admin);
+    app(AddOrganizationMemberAction::class)->handle($organization, $admin, $target, MemberRole::Viewer);
+    app(ChangeOrganizationMemberRoleAction::class)->handle($organization, $creator, $admin, MemberRole::Viewer);
+
+    expect(fn () => app(RemoveOrganizationMemberAction::class)->handle($organization, $admin, $target))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => app(InviteOrganizationMemberAction::class)->handle($organization, $creator, 'owner@example.com', MemberRole::Owner))
+        ->toThrow(AuthorizationException::class);
+
+    expect($organization->members()->whereKey($target->getKey())->exists())->toBeTrue();
 });
