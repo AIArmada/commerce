@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Counters",
+  "owns": {
+    "table:engagement_counters": [
+      "AIArmada\\Engagement\\Features\\Counters\\Actions\\UpdateEngagementCountersAction"
+    ]
+  },
+  "extensions": {}
+}

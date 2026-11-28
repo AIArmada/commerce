@@ -7,7 +7,7 @@ title: Usage
 ## Create a form
 
 ```php
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -24,7 +24,7 @@ $form = OwnerContext::withOwner($tenant, fn () =>
 ## Create from template
 
 ```php
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
 
 $template = FeedbackTemplate::where('slug', 'post-event-feedback')->first();
 $form = app(CreateFeedbackFormFromTemplateAction::class)->execute($template, [
@@ -45,14 +45,15 @@ class Event extends Model
     use ReceivesFeedback;
 }
 
-$event->feedbackForms(); // MorphMany
-$event->createFeedbackFormFromTemplate('post-event-feedback');
+$event->feedbackFormIds(); // list of UUIDs
+$formId = $event->createFeedbackFormFromTemplate('post-event-feedback'); // string UUID
+// Use $formId with feature actions and queries.
 ```
 
 ## Add questions and sections
 
 ```php
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 
 app(SaveFeedbackFormStructureAction::class)->saveQuestion(
     formId: $form->id,
@@ -69,7 +70,7 @@ app(SaveFeedbackFormStructureAction::class)->saveQuestion(
 ## Publish form
 
 ```php
-use AIArmada\Feedback\Actions\PublishFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\PublishFeedbackFormAction;
 
 app(PublishFeedbackFormAction::class)->execute($form);
 ```
@@ -77,10 +78,10 @@ app(PublishFeedbackFormAction::class)->execute($form);
 ## Send invitation
 
 ```php
-use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
+use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
 
 $result = app(SendFeedbackInvitationAction::class)->execute(
-    form: $form,
+    formId: $form->id,
     email: 'user@example.com',
 );
 
@@ -90,7 +91,7 @@ $url = $result['url']; // Send this to the user
 The raw invitation token is only available when the invitation is created. Store or
 send the returned URL immediately; only its hash is persisted. Sending an
 invitation marks it `sent` (with `sent_at`) and dispatches
-`FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`.
+`FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`. Both events expose `invitationId`, `ownerType`, and `ownerId`, never the invitation model or token hash.
 
 ### Reading invitation status
 
@@ -115,7 +116,7 @@ must define a route matching that shape whose handler resolves the raw token and
 renders the form:
 
 ```php
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/feedback/invitations/{token}', function (string $token) {
@@ -128,20 +129,20 @@ Route::get('/feedback/invitations/{token}', function (string $token) {
 ## Submit response
 
 ```php
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
 
 $response = app(SubmitFeedbackResponseAction::class)->execute(
     new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: collect([
+        answers: [
             new SubmittedAnswerData(
                 questionId: $question->id,
                 questionKey: 'overall_rating',
                 value: 5,
             ),
-        ]),
+        ],
     )
 );
 ```
@@ -165,7 +166,7 @@ later submissions create additional submitted responses.
 $response = app(SubmitFeedbackResponseAction::class)->execute(
     new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: collect([...]),
+        answers: [...],
         isAnonymous: true,
     )
 );
@@ -174,24 +175,24 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 ## NPS / CSAT
 
 ```php
-use AIArmada\Feedback\Analytics\NpsCalculator;
-use AIArmada\Feedback\Analytics\CsatCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
-$nps = app(NpsCalculator::class)->calculate($form);
-$csat = app(CsatCalculator::class)->calculate($form);
+
+$nps = app(FeedbackAnalyticsQuery::class)->nps($form->id);
+$csat = app(FeedbackAnalyticsQuery::class)->csat($form->id);
 
 // Per-question aggregates run over that question's answer scores.
-$npsForQuestion = app(NpsCalculator::class)->calculate($form, 'recommendation');
+$npsForQuestion = app(FeedbackAnalyticsQuery::class)->nps($form->id, 'recommendation');
 ```
 
-`FeedbackAnalyticsService::nps($form, $questionKey)` and `csat($form,
+`FeedbackAnalyticsQuery::nps($form->id, $questionKey)` and `csat($form->id,
 $questionKey)` return the calculated result objects directly.
 
 ## Testimonials
 
 ```php
-use AIArmada\Feedback\Actions\ApproveFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\PublishFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
 
 app(ApproveFeedbackTestimonialAction::class)->execute($testimonial);
 app(PublishFeedbackTestimonialAction::class)->execute($testimonial);
@@ -203,7 +204,7 @@ app(PublishFeedbackTestimonialAction::class)->execute($testimonial);
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 
 Event::listen(FeedbackResponseSubmitted::class, function ($event) {
-    // Issue certificate, update metrics, etc.
+    // Use $event->responseId and $event->formId to identify the submission.
 });
 ```
 
@@ -212,7 +213,7 @@ Event::listen(FeedbackResponseSubmitted::class, function ($event) {
 `SaveFeedbackFormStructureAction` is the single owner-guarded structure path (`saveSection` / `saveQuestion` / `saveOption`, each via `OwnerWriteGuard::findOrFailForOwner`). Pass the parent id every time so cross-form attaches fail fast:
 
 ```php
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 
 app(SaveFeedbackFormStructureAction::class)->saveSection(formId: $form->id, data: ['title' => 'Basics']);
 app(SaveFeedbackFormStructureAction::class)->saveOption(questionId: $question->id, data: ['label' => 'Yes', 'value' => 'yes']);
@@ -236,7 +237,7 @@ explicit owner scope:
 
 ```php
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 
 FeedbackInvitation::query()
     ->whereNotIn('status', [
@@ -257,18 +258,18 @@ FeedbackInvitation::query()
 `SendFeedbackInvitationAction` mints `bin2hex(random_bytes(32))` and persists only `hash('sha256', $rawToken)`. Resolve via `ResolveFeedbackInvitationTokenAction`, which does the hashed lookup plus expiry, single-use (`submitted` rejects reuse), and rate-limit (`feedback.security.invitation_rate_limit`):
 
 ```php
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 
 $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToken);
 ```
 
 ## Analytics aggregates
 
-`summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob::forResponse($response)` to refresh the aggregate:
+`summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob` with the response event's form ID and owner tuple to refresh the aggregate:
 
 ```php
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
-$data = app(FeedbackAnalyticsService::class)->summaryForForm($form);
-$dashboard = app(FeedbackAnalyticsService::class)->dashboard();
+$data = app(FeedbackAnalyticsQuery::class)->summaryForForm($form->id);
+$dashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
 ```

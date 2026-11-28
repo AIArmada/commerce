@@ -16,7 +16,7 @@ keywords:
 - Composer: `aiarmada/filament-feedback`
 - Role: Filament admin for surveys/responses/invitations/templates/testimonials + NPS dashboards.
 - Triggers: filament, surveys-ui, nps
-- Search first: `src/Resources, src/Pages, src/Widgets, config, docs`
+- Search first: `src/Features/*/EntryPoints/Filament, src/Features/*/Queries, config, docs`
 - Related: `feedback`, `commerce-support`
 - Paired: `feedback` (core domain owner)
 

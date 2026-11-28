@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
-use Illuminate\Support\Collection;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 
 it('submits and scores each supported question type', function (
     string $type,
@@ -40,13 +39,14 @@ it('submits and scores each supported question type', function (
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($question->id, $question->key, $value),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
-    expect((float) $response->fresh()->score)->toBe($expectedScore);
+    expect((float) $response->score)->toBe($expectedScore)
+        ->and((float) $response->fresh()->score)->toBe($expectedScore);
 })->with([
     'short text map' => [
         'short_text', 'excellent', 5.0, [], [], ['map' => ['excellent' => 5]],

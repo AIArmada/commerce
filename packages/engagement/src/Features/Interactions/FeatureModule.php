@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Engagement\Features\Interactions;
+
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionCounts;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
+use AIArmada\Engagement\Features\Interactions\Queries\ReadInteractionCountsQuery;
+use AIArmada\Engagement\Features\Interactions\Queries\ReadInteractionStateQuery;
+use AIArmada\Engagement\Platform\FeatureModule as FeatureModuleContract;
+use Illuminate\Contracts\Foundation\Application;
+
+final class FeatureModule implements FeatureModuleContract
+{
+    public function register(Application $app): void
+    {
+        $app->bind(WritesInteractionRecords::class, ManageInteractionsAction::class);
+        $app->bind(ReadsInteractionState::class, ReadInteractionStateQuery::class);
+        $app->bind(ReadsInteractionCounts::class, ReadInteractionCountsQuery::class);
+    }
+
+    public function boot(Application $app): void {}
+}

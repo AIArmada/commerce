@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -110,4 +111,26 @@ it('keeps global email uniqueness separate from owned email uniqueness', functio
             ]);
             $duplicate->addContactMethod(ContactMethodData::email('GLOBAL@example.com'));
         }))->toThrow(ValidationException::class);
+});
+
+it('does not expose existing contact records through a cross-owner customer instance', function (): void {
+    $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+    $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
+    $customer = OwnerContext::withOwner($ownerA, function (): Customer {
+        $customer = Customer::query()->create([
+            'first_name' => 'Private',
+            'last_name' => 'Customer',
+        ]);
+        $customer->addContactMethod(ContactMethodData::email('private@example.com'));
+        $customer->addContactMethod(ContactMethodData::phone('+60123456789'));
+
+        return $customer;
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($customer): void {
+        expect(fn () => $customer->addContactMethod(ContactMethodData::email('private@example.com')))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => $customer->addContactMethod(ContactMethodData::phone('+60123456789')))
+            ->toThrow(AuthorizationException::class);
+    });
 });

@@ -491,7 +491,7 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
 
             $cursor = ($cursorKey === 'ending_before' ? $page->first() : $page->last())?->id();
 
-            if ($cursor === null || $cursor === ($invoiceParameters[$cursorKey] ?? null)) {
+            if ($cursor === ($invoiceParameters[$cursorKey] ?? null)) {
                 break;
             }
 

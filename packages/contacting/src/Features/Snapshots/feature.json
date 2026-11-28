@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Snapshots",
+  "owns": {
+    "table:contact_snapshots": [
+      "AIArmada\\Contacting\\Features\\Snapshots\\Actions\\CreateContactSnapshotAction"
+    ]
+  },
+  "extensions": {}
+}

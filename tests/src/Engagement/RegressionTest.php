@@ -6,13 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\EngagementCounterService;
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Contracts\Respondable;
+use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Enums\ReminderStatus;
@@ -20,13 +17,21 @@ use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\EngagementCounter;
-use AIArmada\Engagement\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementContextSubject;
@@ -35,18 +40,18 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('stores the same share token that is embedded in the share url', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['channel' => 'whatsapp']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['channel' => 'whatsapp']);
 
     expect($share->share_token)->toBeString()
         ->and(mb_strlen((string) $share->share_token))->toBe(32);
@@ -57,7 +62,7 @@ it('stores the same share token that is embedded in the share url', function ():
 });
 
 it('respects an explicit share token in storage and url', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['token' => 'explicit-token-1']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['token' => 'explicit-token-1']);
 
     expect($share->share_token)->toBe('explicit-token-1');
 
@@ -73,8 +78,8 @@ it('reconciles counters per owner without an ambient owner', function (): void {
     $actorA = EngagementActor::query()->create(['name' => 'Reconcile Actor A', 'email' => 'reconcile-actor-a-' . uniqid() . '@example.com', 'password' => 'secret']);
     $actorB = EngagementActor::query()->create(['name' => 'Reconcile Actor B', 'email' => 'reconcile-actor-b-' . uniqid() . '@example.com', 'password' => 'secret']);
 
-    OwnerContext::withOwner($ownerA, fn () => app(EngagementManager::class)->follow($actorA, $subject));
-    OwnerContext::withOwner($ownerB, fn () => app(EngagementManager::class)->follow($actorB, $subject));
+    OwnerContext::withOwner($ownerA, fn () => app(ManageInteractionsAction::class)->follow($actorA, $subject));
+    OwnerContext::withOwner($ownerB, fn () => app(ManageInteractionsAction::class)->follow($actorB, $subject));
 
     OwnerContext::withOwner($ownerA, function (): void {
         EngagementCounter::query()->where('counter_type', 'followers')->update(['count_value' => 99]);
@@ -84,8 +89,8 @@ it('reconciles counters per owner without an ambient owner', function (): void {
 
     expect(Artisan::call('engagement:reconcile-counters'))->toBe(0);
 
-    $countA = OwnerContext::withOwner($ownerA, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
-    $countB = OwnerContext::withOwner($ownerB, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
+    $countA = OwnerContext::withOwner($ownerA, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
+    $countB = OwnerContext::withOwner($ownerB, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
 
     expect($countA)->toBe(1)->and($countB)->toBe(1);
 });
@@ -95,7 +100,7 @@ it('reconciles a single subject without an ambient owner', function (): void {
     $subject = EngagementSubject::query()->create(['name' => 'Single Subject', 'email' => 'single-subject-' . uniqid() . '@example.com', 'password' => 'secret']);
     $actor = EngagementActor::query()->create(['name' => 'Single Actor', 'email' => 'single-actor-' . uniqid() . '@example.com', 'password' => 'secret']);
 
-    OwnerContext::withOwner($owner, fn () => app(EngagementManager::class)->follow($actor, $subject));
+    OwnerContext::withOwner($owner, fn () => app(ManageInteractionsAction::class)->follow($actor, $subject));
     OwnerContext::withOwner($owner, function (): void {
         EngagementCounter::query()->where('counter_type', 'followers')->update(['count_value' => 42]);
     });
@@ -107,7 +112,7 @@ it('reconciles a single subject without an ambient owner', function (): void {
         'subjectId' => $subject->getKey(),
     ]))->toBe(0);
 
-    $count = OwnerContext::withOwner($owner, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
+    $count = OwnerContext::withOwner($owner, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
 
     expect($count)->toBe(1);
 });
@@ -117,7 +122,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
     CarbonImmutable::setTestNow($now);
 
     try {
-        $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+        $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
             'offset_minutes' => 30,
             'anchor_type' => 'start',
         ]);
@@ -128,7 +133,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
             ->and($reminder->offset_minutes)->toBe(30)
             ->and($reminder->anchor_type)->toBe('start');
 
-        $due = collect(app(ReminderManager::class)->dueReminders($now->addMinutes(31)));
+        $due = collect(app(ReadDueRemindersQuery::class)->execute($now->addMinutes(31)));
 
         expect($due)->not->toBeEmpty();
     } finally {
@@ -137,7 +142,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
 });
 
 it('rejects offset reminders without an anchor', function (): void {
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
         'offset_minutes' => 30,
     ]))->toThrow(InvalidArgumentException::class);
 });
@@ -171,15 +176,24 @@ it('rejects offsets that cannot be anchored', function (): void {
         }
     };
     $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
+    DB::table('users')->insert([
+        'id' => $subject->getKey(),
+        'name' => 'Private Response Subject',
+        'email' => 'private-response-' . uniqid() . '@example.com',
+        'password' => 'secret',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $subject->exists = true;
 
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $subject, 'event', [
         'offset_minutes' => 15,
         'anchor_type' => 'start',
     ]))->toThrow(InvalidArgumentException::class);
 });
 
 it('rejects providing both remind_at and offset_minutes', function (): void {
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'offset_minutes' => 15,
         'anchor_type' => 'start',
@@ -187,7 +201,7 @@ it('rejects providing both remind_at and offset_minutes', function (): void {
 });
 
 it('dedupes subscriptions by normalized criteria hash', function (): void {
-    $manager = app(SubscriptionManager::class);
+    $manager = app(ManageSubscriptionsAction::class);
 
     $first = $manager->subscribe($this->actor, $this->subject, 'updates', ['b' => 2, 'a' => 1]);
     $second = $manager->subscribe($this->actor, $this->subject, 'updates', ['a' => 1, 'b' => 2]);
@@ -205,7 +219,7 @@ it('dedupes subscriptions by normalized criteria hash', function (): void {
 });
 
 it('keeps collection items unique and reactivates removed rows', function (): void {
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     $bookmark = Bookmark::query()->create([
         'bookmarker_type' => $this->actor->getMorphClass(),
@@ -247,20 +261,20 @@ it('only accepts allowlisted reminder notification classes', function (): void {
         }
     });
 
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'notification_class' => $unlisted,
     ]))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
             'remind_at' => CarbonImmutable::now()->addHour(),
             'notification_class' => stdClass::class,
         ]))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
             'remind_at' => CarbonImmutable::now()->addHour(),
             'notification_class' => 'App\\Notifications\\DoesNotExist',
         ]))->toThrow(InvalidArgumentException::class);
 
-    $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'notification_class' => EngagementReminderNotification::class,
     ]);
@@ -293,12 +307,12 @@ it('refuses to dispatch a reminder with a non-allowlisted stored class', functio
         }
     });
 
-    $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinute(),
     ]);
     $reminder->forceFill(['notification_class' => $unlisted])->save();
 
-    expect(fn () => event(new ReminderDue($reminder->fresh())))
+    expect(fn () => event(new ReminderDue($reminder->id, $reminder->recipient_type, $reminder->recipient_id, $reminder->remindable_type, $reminder->remindable_id, $reminder->owner_type, $reminder->owner_id, $reminder->reminder_type)))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -314,12 +328,12 @@ it('records a failed reminder and continues past dispatch failures', function ()
         'password' => 'secret',
     ]);
 
-    $bad = app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
+    $bad = app(ManageRemindersAction::class)->setReminder($recipient, $subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinutes(5),
     ]);
     $bad->forceFill(['notification_class' => stdClass::class])->save();
 
-    $good = app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
+    $good = app(ManageRemindersAction::class)->setReminder($recipient, $subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinutes(4),
     ]);
 
@@ -336,7 +350,7 @@ it('emits response created/changed events with reactivation semantics', function
         ResponseChanged::class,
     ]);
 
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     $manager->respond($this->actor, $this->subject, 'interested');
 
@@ -351,6 +365,9 @@ it('emits response created/changed events with reactivation semantics', function
     $manager->respond($this->actor, $this->subject, 'going');
 
     Event::assertDispatchedTimes(ResponseChanged::class, 1);
+    Event::assertDispatched(ResponseChanged::class, fn (ResponseChanged $event): bool => $event->previousType === 'interested'
+        && $event->responseType === 'going'
+        && $event->subjectId === $this->subject->getKey());
 
     $manager->cancelResponse($this->actor, $this->subject);
     $restored = $manager->respond($this->actor, $this->subject, 'going');
@@ -364,8 +381,8 @@ it('emits response created/changed events with reactivation semantics', function
 });
 
 it('keeps keyed response counters exact across change and cancel', function (): void {
-    $manager = app(EngagementManager::class);
-    $counters = app(EngagementCounterService::class);
+    $manager = app(ManageInteractionsAction::class);
+    $counters = app(UpdateEngagementCountersAction::class);
 
     $manager->respond($this->actor, $this->subject, 'interested');
 
@@ -428,24 +445,25 @@ it('authorizes share creation through the policy resolver', function (): void {
         }
     });
 
-    expect(fn () => app(EngagementManager::class)->share($this->actor, $this->subject))
+    expect(fn () => app(ManageInteractionsAction::class)->share($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class);
 });
 
-it('returns bounded collections from the state resolver', function (): void {
+it('returns bounded detached snapshots from the feature state queries', function (): void {
     config()->set('engagement.state.result_limit', 2);
 
-    $subscriptions = app(SubscriptionManager::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
 
     foreach (['State One', 'State Two', 'State Three'] as $name) {
-        $subscriptions->subscribe($this->actor, new EngagementSubject(['name' => $name]), 'updates');
+        $subscriptions->subscribe($this->actor, engagementSubject(['name' => $name]), 'updates');
     }
 
-    $resolved = app(EngagementStateResolver::class)->subscriptionsFor($this->actor);
+    $resolved = app(ReadsSubscriptionState::class)->subscriptionsFor($this->actor);
 
-    expect($resolved)->toBeInstanceOf(Collection::class)->and($resolved->count())->toBe(2);
+    expect($resolved)->toBeArray()->toHaveCount(2)
+        ->and($resolved[0])->toBeArray();
 
-    $reminders = app(ReminderManager::class);
+    $reminders = app(ManageRemindersAction::class);
 
     foreach (['state_one', 'state_two', 'state_three'] as $type) {
         $reminders->setReminder($this->actor, $this->subject, $type, [
@@ -453,14 +471,15 @@ it('returns bounded collections from the state resolver', function (): void {
         ]);
     }
 
-    $resolvedReminders = app(EngagementStateResolver::class)->remindersFor($this->actor, $this->subject);
+    $resolvedReminders = app(ReadsReminderState::class)->remindersFor($this->actor, $this->subject);
 
-    expect($resolvedReminders)->toBeInstanceOf(Collection::class)->and($resolvedReminders->count())->toBe(2);
+    expect($resolvedReminders)->toBeArray()->toHaveCount(2)
+        ->and($resolvedReminders[0])->toBeArray();
 });
 
 it('rejects overlong free-form inputs at manager boundaries', function (): void {
     $long = str_repeat('x', 300);
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     expect(fn () => $manager->respond($this->actor, $this->subject, $long))
         ->toThrow(InvalidArgumentException::class)
@@ -470,9 +489,9 @@ it('rejects overlong free-form inputs at manager boundaries', function (): void 
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => $manager->share($this->actor, $this->subject, ['channel' => $long]))
         ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(SubscriptionManager::class)->subscribe($this->actor, $this->subject, $long))
+        ->and(fn () => app(ManageSubscriptionsAction::class)->subscribe($this->actor, $this->subject, $long))
         ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, $long, ['remind_at' => CarbonImmutable::now()->addHour()]))
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, $long, ['remind_at' => CarbonImmutable::now()->addHour()]))
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => $manager->bookmark($this->actor, $this->subject, ['notes' => str_repeat('n', 70000)]))
         ->toThrow(InvalidArgumentException::class)
@@ -481,7 +500,7 @@ it('rejects overlong free-form inputs at manager boundaries', function (): void 
 });
 
 it('url-encodes the share token in generated urls', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['token' => 'a+b/c=d?&']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['token' => 'a+b/c=d?&']);
 
     expect($share->share_token)->toBe('a+b/c=d?&')
         ->and($share->share_url)->toContain('share=a%2Bb%2Fc%3Dd%3F%26');
@@ -498,8 +517,8 @@ it('matches subscriptions without exposing sensitive subject attributes', functi
         'password' => 'secret-protected',
     ]);
 
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', ['password' => 'secret-protected']);
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', []);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', ['password' => 'secret-protected']);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', []);
 
     Event::fake([SubscriptionMatched::class]);
 
@@ -519,7 +538,7 @@ it('exposes subject-approved match context via subscriptionMatchContext', functi
         'password' => 'secret',
     ]);
 
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', ['tier' => 'gold']);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', ['tier' => 'gold']);
 
     Event::fake([SubscriptionMatched::class]);
 
@@ -534,7 +553,7 @@ it('exposes subject-approved match context via subscriptionMatchContext', functi
 
 it('dedupes identical pending reminders', function (): void {
     $at = CarbonImmutable::now()->addHour();
-    $manager = app(ReminderManager::class);
+    $manager = app(ManageRemindersAction::class);
 
     $first = $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => $at]);
     $second = $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => $at]);
@@ -545,4 +564,151 @@ it('dedupes identical pending reminders', function (): void {
     $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => CarbonImmutable::now()->addHours(2)]);
 
     expect(Reminder::query()->count())->toBe(2);
+});
+
+it('places share tokens before URL fragments and preserves existing query parameters', function (): void {
+    $subject = new class
+    {
+        public function shareUrl(): string
+        {
+            return 'https://example.test/event?source=feed#details';
+        }
+    };
+
+    $url = app(ShareUrlGenerator::class)
+        ->generateShareUrl($subject, ['token' => 'a+b']);
+
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+    expect($query)->toBe(['source' => 'feed', 'share' => 'a+b'])
+        ->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
+});
+
+it('returns interaction snapshots through feature APIs without exposing mutable models', function (): void {
+    $manager = app(ManageInteractionsAction::class);
+    $manager->follow($this->actor, $this->subject);
+    $manager->bookmark($this->actor, $this->subject);
+    $response = $manager->respond($this->actor, $this->subject, 'going');
+    $reaction = $manager->react($this->actor, $this->subject, 'like');
+    $share = $manager->share($this->actor, $this->subject);
+    $state = app(ReadsInteractionState::class);
+
+    expect($state->isFollowing($this->actor, $this->subject))->toBeTrue()
+        ->and($state->isBookmarked($this->actor, $this->subject))->toBeTrue()
+        ->and($state->responseFor($this->actor, $this->subject)['id'])->toBe($response->getKey())
+        ->and($state->reactionFor($this->actor, $this->subject, 'like')['id'])->toBe($reaction->getKey())
+        ->and($state->shareFor($this->actor, $this->subject)['id'])->toBe($share->getKey())
+        ->and($state->responseFor(engagementActor(), $this->subject))->toBeNull()
+        ->and(fn () => $state->isFollowing('invalid', $this->subject))->toThrow(InvalidArgumentException::class);
+});
+
+it('prevents another actor from modifying bookmark collection membership', function (): void {
+    $manager = app(ManageInteractionsAction::class);
+    $bookmark = $manager->bookmark($this->actor, $this->subject);
+    $collection = BookmarkCollection::query()->create([
+        'name' => 'Actor isolation',
+        'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
+        'status' => BookmarkCollectionStatus::Active,
+    ]);
+    $otherActor = engagementActor();
+
+    expect(fn () => $manager->addBookmarkToCollection($otherActor, $bookmark, $collection))
+        ->toThrow(AuthorizationException::class)
+        ->and(BookmarkCollectionItem::query()->count())->toBe(0);
+
+    $manager->addBookmarkToCollection($this->actor, $bookmark, $collection);
+
+    expect(fn () => $manager->removeBookmarkFromCollection($otherActor, $bookmark, $collection))
+        ->toThrow(AuthorizationException::class)
+        ->and(BookmarkCollectionItem::query()->whereNull('removed_at')->count())->toBe(1);
+});
+
+it('replaces existing share parameters without rewriting unrelated query values', function (): void {
+    $subject = new class
+    {
+        public function shareUrl(): string
+        {
+            return 'https://example.test/event?tag=a&share=old&tag=b&%73hare=older&share%5B0%5D=bad&source=a%20b#details';
+        }
+    };
+
+    $url = app(ShareUrlGenerator::class)->generateShareUrl($subject, ['token' => 'new+token']);
+
+    expect($url)->toBe('https://example.test/event?tag=a&tag=b&source=a%20b&share=new%2Btoken#details');
+});
+
+it('rejects missing model keys at each engagement state boundary', function (): void {
+    $missing = engagementActor();
+    $missing->setAttribute($missing->getKeyName(), null);
+    $interactions = app(ReadsInteractionState::class);
+
+    expect(fn () => $interactions->isFollowing($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->isBookmarked($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->responseFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->reactionFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->shareFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(ReadsSubscriptionState::class)->subscriptionsFor($missing))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(ReadsReminderState::class)->remindersFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('honors a subject private response default without resetting existing visibility', function (): void {
+    config(['engagement.defaults.response_visibility' => 'public']);
+
+    $subject = new class extends Model implements Respondable
+    {
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        public function getTable(): string
+        {
+            return 'users';
+        }
+
+        public function getMorphClass(): string
+        {
+            return 'private-response-subject';
+        }
+
+        public function allowedResponseTypes(): array
+        {
+            return ['going', 'maybe'];
+        }
+
+        public function defaultResponseVisibility(): string
+        {
+            return 'private';
+        }
+
+        public function allowsMultipleResponsesFromSameResponder(): bool
+        {
+            return false;
+        }
+    };
+    $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
+    DB::table('users')->insert([
+        'id' => $subject->getKey(),
+        'name' => 'Private Response Subject',
+        'email' => 'private-response-' . uniqid() . '@example.com',
+        'password' => 'secret',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $subject->exists = true;
+
+    $action = app(ManageInteractionsAction::class);
+    $response = $action->respond($this->actor, $subject, 'going');
+    expect($response->visibility)->toBe('private');
+
+    $changed = $action->respond($this->actor, $subject, 'maybe', ['visibility' => 'public']);
+    expect($changed->visibility)->toBe('public');
+
+    expect($action->respond($this->actor, $subject, 'going')->visibility)->toBe('public');
 });

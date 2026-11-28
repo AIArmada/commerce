@@ -77,7 +77,7 @@ final class ActionGuard
         }
 
         $ownerEnabled = (bool) config('commerce-support.owner.enabled', false)
-            || (method_exists($billable, 'ownerScopeConfig') && $billable::ownerScopeConfig()->enabled);
+            || (method_exists($billable, 'ownerScopeConfig') && $billable->ownerScopeConfig()->enabled);
 
         if (! $ownerEnabled) {
             return;

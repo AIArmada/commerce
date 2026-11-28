@@ -35,5 +35,5 @@ public function panel(Panel $panel): Panel
 If you want the engagement overview widget on your dashboard, add it to your dashboard widgets:
 
 ```php
-use AIArmada\FilamentEngagement\Widgets\EngagementOverviewWidget;
+use AIArmada\FilamentEngagement\Features\Overview\EntryPoints\Filament\Widgets\EngagementOverviewWidget;
 ```
