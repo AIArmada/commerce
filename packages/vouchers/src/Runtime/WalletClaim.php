@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Runtime;
 
-use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Illuminate\Database\Eloquent\Model;
 
 interface WalletClaim
 {
     /** @param array<string, mixed>|null $metadata */
-    public function handle(string | Voucher $code, Model $holder, ?array $metadata = null): VoucherWallet;
+    public function handle(string $code, Model $holder, ?array $metadata = null, ?string $voucherId = null): VoucherWallet;
 }

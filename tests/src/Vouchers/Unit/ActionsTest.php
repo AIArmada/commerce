@@ -274,7 +274,7 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
+        $action = app(AddVoucherToWallet::class);
         $wallet = $action->handle('WALLET-TEST', $owner);
 
         expect($wallet)->toBeInstanceOf(VoucherWallet::class)
@@ -301,7 +301,7 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
+        $action = app(AddVoucherToWallet::class);
         $action->handle('NON-EXISTENT', $owner);
     })->throws(VoucherNotFoundException::class);
 
@@ -331,7 +331,7 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
+        $action = app(AddVoucherToWallet::class);
         $wallet = $action->handle('META-TEST', $owner, ['source' => 'signup']);
 
         expect($wallet->metadata)->toBe(['source' => 'signup']);
@@ -363,7 +363,7 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
+        $action = app(AddVoucherToWallet::class);
         $wallet = $action->handle('  normalize-test  ', $owner);
 
         expect($wallet->voucher_id)->toBe($voucher->id);

@@ -376,7 +376,7 @@ it('resolves wallet code queries to the tenant voucher ahead of a matching globa
     $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
 
     OwnerContext::withOwner($owner, function () use ($owner, $global, $owned): void {
-        app(WalletClaim::class)->handle($global, $owner);
+        app(WalletClaim::class)->handle($global->code, $owner, voucherId: $global->id);
         expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeFalse();
 
         $owner->addVoucherToWallet('WALLET-PRIORITY');

@@ -79,7 +79,7 @@ final class AddToMyWalletAction
 
                 try {
                     $metadata = ! empty($data['notes']) ? ['notes' => $data['notes']] : null;
-                    $walletEntry = app(WalletClaim::class)->handle($record, $user, $metadata);
+                    $walletEntry = app(WalletClaim::class)->handle($record->code, $user, $metadata, (string) $record->getKey());
 
                     if (! $walletEntry->wasRecentlyCreated) {
                         Notification::make()
