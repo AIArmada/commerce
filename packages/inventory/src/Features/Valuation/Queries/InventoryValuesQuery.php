@@ -152,8 +152,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
             }
         }
 
-        usort($items, static fn (array $a, array $b): int =>
-            ($b['total_value'] <=> $a['total_value'])
+        usort($items, static fn (array $a, array $b): int => ($b['total_value'] <=> $a['total_value'])
             ?: ($a['inventoryable_type'] <=> $b['inventoryable_type'])
             ?: ($a['inventoryable_id'] <=> $b['inventoryable_id']));
 
