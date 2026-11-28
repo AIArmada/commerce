@@ -391,3 +391,24 @@ it('rejects all stock mutations against tenant-visible global locations', functi
             ->and(app(InventoryService::class)->getLevel($item, $global->id)?->quantity_on_hand)->toBe(10);
     });
 });
+
+it('does not approve or reject tenant-visible global reorder suggestions', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+
+    $owner = InventoryItem::create(['name' => 'Reorder Operator']);
+    $suggestion = OwnerContext::withOwner(null, fn (): InventoryReorderSuggestion => InventoryReorderSuggestion::factory()->create([
+        'location_id' => null,
+        'status' => ReorderSuggestionStatus::Pending,
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($suggestion): void {
+        expect(InventoryReorderSuggestion::query()->whereKey($suggestion->id)->exists())->toBeTrue();
+
+        (ApproveReorderSuggestionAction::make()->getActionFunction())($suggestion);
+        (RejectReorderSuggestionAction::make()->getActionFunction())($suggestion);
+    });
+
+    OwnerContext::withOwner(null, function () use ($suggestion): void {
+        expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Pending);
+    });
+});

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\Inventory\Features\Replenishment\Actions\RejectReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -21,34 +20,14 @@ final class RejectReorderSuggestionAction
             ->color('danger')
             ->requiresConfirmation()
             ->action(function (InventoryReorderSuggestion $record): void {
-                if (InventoryOwnerScope::isEnabled()) {
-                    $allowNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::resolveOwner() === null;
+                if (! InventoryOwnerScope::forMutation(InventoryReorderSuggestion::query())->whereKey($record->getKey())->exists()) {
+                    Notification::make()
+                        ->title('Not allowed')
+                        ->body('This record is not writable in the current owner context.')
+                        ->danger()
+                        ->send();
 
-                    if ($record->location_id === null && ! $allowNullLocation) {
-                        Notification::make()
-                            ->title('Not allowed')
-                            ->body('This record is not available for the current owner context.')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    if ($record->location_id !== null) {
-                        $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                            ->whereKey($record->location_id)
-                            ->exists();
-
-                        if (! $isAllowed) {
-                            Notification::make()
-                                ->title('Not allowed')
-                                ->body('This record is not available for the current owner context.')
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-                    }
+                    return;
                 }
 
                 $rejected = RejectReorderSuggestion::run($record);

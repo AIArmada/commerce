@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
@@ -349,5 +350,51 @@ describe('getStatistics', function (): void {
         expect($stats['approved'])->toBeGreaterThanOrEqual($initialStats['approved'] + 1);
         expect($stats['ordered'])->toBeGreaterThanOrEqual($initialStats['ordered'] + 1);
         expect($stats['critical'])->toBeGreaterThanOrEqual($initialStats['critical'] + 1);
+    });
+});
+
+it('generates replenishment suggestions only for writable stock and same-owner suppliers', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+
+    $owner = InventoryItem::create(['name' => 'Replenishment Owner']);
+    $product = $this->product;
+    $global = OwnerContext::withOwner(null, function () use ($product): InventoryLocation {
+        $location = InventoryLocation::factory()->create(['is_active' => true]);
+        InventoryLevel::factory()->forInventoryable($product->getMorphClass(), $product->getKey())
+            ->forLocation($location)->create([
+                'quantity_on_hand' => 2,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::LowStock->value,
+            ]);
+        InventorySupplierLeadtime::factory()->create([
+            'inventoryable_type' => $product->getMorphClass(),
+            'inventoryable_id' => $product->getKey(),
+            'is_primary' => true,
+            'is_active' => true,
+            'lead_time_days' => 2,
+        ]);
+
+        return $location;
+    });
+
+    OwnerContext::withOwner($owner, function () use ($product, $global): void {
+        $location = InventoryLocation::factory()->create(['is_active' => true]);
+        InventoryLevel::factory()->forInventoryable($product->getMorphClass(), $product->getKey())
+            ->forLocation($location)->create([
+                'quantity_on_hand' => 2,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::LowStock->value,
+                'lead_time_days' => 9,
+            ]);
+
+        expect($this->service->getPrimarySupplier($product))->toBeNull()
+            ->and(fn () => $this->service->generateSuggestions($global->id))->toThrow(InvalidArgumentException::class);
+
+        $suggestions = $this->service->generateSuggestions();
+
+        expect($suggestions)->toHaveCount(1)
+            ->and($suggestions->first()->location_id)->toBe($location->id)
+            ->and($suggestions->first()->supplier_leadtime_id)->toBeNull()
+            ->and($suggestions->first()->lead_time_days)->toBe(9);
     });
 });

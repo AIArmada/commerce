@@ -35,16 +35,16 @@ final class ReplenishmentService
     public function generateSuggestions(?string $locationId = null): Collection
     {
         if ($locationId !== null && InventoryOwnerScope::isEnabled()) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($locationId))->exists();
+            $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query()->whereKey($locationId))->exists();
 
             if (! $isAllowed) {
                 throw new InvalidArgumentException('Invalid location for current owner');
             }
         }
 
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryLevel::query()->needsReorder()->with(['location', 'inventoryable'])
-        );
+        )->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::forMutation($query)->where('is_active', true));
 
         if ($locationId !== null) {
             $query->where('location_id', $locationId);
@@ -114,7 +114,7 @@ final class ReplenishmentService
             }
 
             $currentStock = $level->quantity_available;
-            $reorderPoint = $level->safety_stock + ($avgDailyDemand * $leadTimeDays);
+            $reorderPoint = ($level->safety_stock ?? 0) + ($avgDailyDemand * $leadTimeDays);
             $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
             $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
 
@@ -185,18 +185,12 @@ final class ReplenishmentService
      */
     public function getPrimarySupplier(Model $model): ?InventorySupplierLeadtime
     {
-        return InventoryOwnerScope::applyToLocationQuery(
-            InventorySupplierLeadtime::query()
-                ->forModel($model)
-                ->active()
-                ->primary()
-        )->first()
-            ?? InventoryOwnerScope::applyToLocationQuery(
-                InventorySupplierLeadtime::query()
-                    ->forModel($model)
-                    ->active()
-                    ->orderedByLeadTime()
-            )->first();
+        return InventoryOwnerScope::forMutation(
+            InventorySupplierLeadtime::query()->forModel($model)->active()
+        )->orderByDesc('is_primary')
+            ->orderBy('lead_time_days')
+            ->orderBy('id')
+            ->first();
     }
 
     /**
