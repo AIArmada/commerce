@@ -8,7 +8,7 @@ use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
-use AIArmada\Inventory\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

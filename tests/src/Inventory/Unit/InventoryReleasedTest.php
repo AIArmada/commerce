@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Events\InventoryReleased;
+use AIArmada\Inventory\Features\Reservations\Events\InventoryReleased;
 
 describe('InventoryReleased', function (): void {
     beforeEach(function (): void {
