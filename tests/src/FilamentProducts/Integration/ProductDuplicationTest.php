@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
@@ -110,6 +111,26 @@ it('duplicates a product with its relations and unique identity', function (): v
             'owner_id' => $owner->getKey(),
         ]);
 
+        Price::query()->create([
+            'price_list_id' => $priceList->id,
+            'priceable_type' => $variant->getMorphClass(),
+            'priceable_id' => $variant->id,
+            'amount' => 1250,
+            'currency' => 'MYR',
+        ]);
+
+        foreach ([$product, $variant] as $priceable) {
+            PriceTier::query()->create([
+                'price_list_id' => $priceList->id,
+                'tierable_type' => $priceable->getMorphClass(),
+                'tierable_id' => $priceable->id,
+                'min_quantity' => 10,
+                'amount' => 850,
+                'is_active' => true,
+                'currency' => 'MYR',
+            ]);
+        }
+
         return $product;
     });
 
@@ -126,6 +147,19 @@ it('duplicates a product with its relations and unique identity', function (): v
         ->and($copy->variants->first()->optionValues)->toHaveCount(1)
         ->and($copy->variants->first()->sku)->toBe('ORIG-1-L-COPY')
         ->and($copy->prices()->count())->toBe(1);
+
+    OwnerContext::withOwner($owner, static function () use ($copy): void {
+        $variant = $copy->variants->firstOrFail();
+
+        expect(Price::query()->where('priceable_type', $variant->getMorphClass())->where('priceable_id', $variant->id)->sole()->amount)->toBe(1250);
+
+        foreach ([$copy, $variant] as $priceable) {
+            $tier = PriceTier::query()->where('tierable_type', $priceable->getMorphClass())->where('tierable_id', $priceable->id)->sole();
+
+            expect($tier->amount)->toBe(850)
+                ->and($tier->min_quantity)->toBe(10);
+        }
+    });
 
     $secondCopy = OwnerContext::withOwner($owner, static fn (): Product => duplicateTestProduct($product));
 

@@ -11,3 +11,5 @@ description: Develop integrations using AIArmada Pricing's immutable results, tr
 - Resolve the tenant before quoting or writing when owner scoping is enabled. Do not use an arbitrary customer or price-list ID from a request without validating its access.
 - Prices are stored as integer minor units with an explicit currency. Respect effective-date windows and inactive records.
 - Run the package architecture checks and affected pricing, checkout and Filament regression tests after changes.
+
+- `AIArmada\Pricing\Actions\CopyPriceablePrices` copies price-list entries and quantity tiers between distinct persisted priceable records in the authorized owner scope.

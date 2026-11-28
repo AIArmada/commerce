@@ -65,6 +65,7 @@ final readonly class DuplicateProduct
             }
 
             $variantMap = [];
+            $copyPricing = class_exists(Price::class) && Schema::hasTable((new Price)->getTable());
 
             foreach ($record->variants()->with('optionValues')->get() as $variant) {
                 $newVariant = $variant->replicate();
@@ -79,6 +80,10 @@ final readonly class DuplicateProduct
                     ->all();
 
                 $newVariant->optionValues()->sync($remapped);
+
+                if ($copyPricing) {
+                    app(CopyPriceablePrices::class)->execute($variant, $newVariant);
+                }
             }
 
             if ($record->isCompositeProduct()) {
@@ -92,7 +97,7 @@ final readonly class DuplicateProduct
                 }
             }
 
-            if (class_exists(Price::class) && Schema::hasTable((new Price)->getTable())) {
+            if ($copyPricing) {
                 app(CopyPriceablePrices::class)->execute($record, $newProduct);
             }
 
