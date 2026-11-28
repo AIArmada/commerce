@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
@@ -113,7 +113,7 @@ it('inserts a pass batch and dispatches one event per pass after commit', functi
 
     Event::fake([PassIssued::class]);
 
-    $passes = app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+    $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
         ticketType: $ticketType,
         quantity: 3,
     ));
@@ -151,7 +151,7 @@ it('generates pass numbers that are unique across owners', function (): void {
     ]);
 
     try {
-        $passes = OwnerContext::withOwner($ownerB, fn (): Collection => app(DefaultPassIssuer::class)->issuePassesFor(
+        $passes = OwnerContext::withOwner($ownerB, fn (): Collection => app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
                 ticketType: $ticketType,
                 quantity: 1,

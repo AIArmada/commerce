@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Models\Pass;
@@ -10,15 +10,16 @@ use AIArmada\Ticketing\Models\PassHolder;
 use AIArmada\Ticketing\Support\HolderAttributesValidator;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
-final class IssuePassesAction
+final readonly class IssuePassesAction
 {
+    public function __construct(private PassIssuerInterface $issuer) {}
+
     /** @return Collection<int, Pass> */
     public function handle(PassIssuanceContext $context): Collection
     {
-        return DB::transaction(function () use ($context) {
-            $passes = app(PassIssuerInterface::class)->issuePassesFor($context);
+        return (new Pass)->getConnection()->transaction(function () use ($context): Collection {
+            $passes = $this->issuer->issuePassesFor($context);
 
             foreach ($passes->values() as $index => $pass) {
                 $holderAttributes = $this->resolveHolderAttributesForPass($context->holderAttributes, $index);
@@ -66,6 +67,8 @@ final class IssuePassesAction
             $holder->holder_id = $holderAttributes['holder_id'];
         }
 
+        $holder->owner_type = $pass->owner_type;
+        $holder->owner_id = $pass->owner_id;
         $holder->is_current = true;
         $holder->save();
 

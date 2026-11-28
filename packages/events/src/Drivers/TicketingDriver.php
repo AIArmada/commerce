@@ -13,7 +13,8 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
-use AIArmada\Ticketing\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
@@ -27,6 +28,7 @@ final class TicketingDriver implements EventTicketingDriver
     public function __construct(
         private readonly EnsureTicketTypeAction $ensureTicketType,
         private readonly IssuePassesAction $issuePasses,
+        private readonly RevokePassAction $revokePass,
         private readonly InventoryService $inventory,
         private readonly ?PassDeliveryServiceInterface $passDelivery = null,
     ) {}
@@ -94,7 +96,7 @@ final class TicketingDriver implements EventTicketingDriver
 
         foreach ($passes as $pass) {
             if ($pass->isValid()) {
-                $pass->markRevoked($reason ?? 'Registration terminal');
+                $this->revokePass->handle($pass, $reason ?? 'Registration terminal');
                 $revoked++;
             }
         }
@@ -116,7 +118,7 @@ final class TicketingDriver implements EventTicketingDriver
                 continue;
             }
 
-            $pass->markRevoked($reason);
+            $this->revokePass->handle($pass, $reason);
             $revoked++;
         }
 

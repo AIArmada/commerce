@@ -8,7 +8,7 @@ use AIArmada\Events\Features\Commerce\Actions\RevokePassesForRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -32,7 +32,7 @@ it('round-trips a uuid registration id through pass issuance', function (): void
     $passes = OwnerContext::withOwner($owner, function () use ($registration): Collection {
         $ticketType = createRegistrationMorphTicketType();
 
-        return app(DefaultPassIssuer::class)->issuePassesFor(
+        return app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
                 ticketType: $ticketType,
                 quantity: 1,
@@ -78,7 +78,7 @@ it('revokes passes by uuid registration through the string morph', function (): 
     OwnerContext::withOwner($owner, function () use ($registration): void {
         $ticketType = createRegistrationMorphTicketType();
 
-        app(DefaultPassIssuer::class)->issuePassesFor(
+        app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
                 ticketType: $ticketType,
                 quantity: 1,

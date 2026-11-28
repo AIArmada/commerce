@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\EntryPoints\Listeners;
+namespace AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners;
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Ticketing\Actions\IssuePassesForOrderAction;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesForOrderAction;
 
 final readonly class IssuePassesOnFulfillment
 {

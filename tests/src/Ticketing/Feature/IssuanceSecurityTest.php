@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Exceptions\IssuanceQuantityExceededException;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,7 +26,7 @@ function createIssuanceTicketType(): TicketType
 it('rejects issuance above the configured maximum', function (): void {
     config()->set('ticketing.issuance.max_quantity', 3);
 
-    expect(fn () => app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+    expect(fn () => app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
         ticketType: createIssuanceTicketType(),
         quantity: 4,
     )))->toThrow(IssuanceQuantityExceededException::class);
@@ -35,7 +35,7 @@ it('rejects issuance above the configured maximum', function (): void {
 it('issues batches up to the configured maximum', function (): void {
     config()->set('ticketing.issuance.max_quantity', 3);
 
-    $passes = app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+    $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
         ticketType: createIssuanceTicketType(),
         quantity: 3,
     ));
@@ -51,7 +51,7 @@ it('regenerates colliding qr codes instead of failing', function (): void {
     Str::createUuidsUsingSequence(['QR-COLLIDE-VALUE', 'QR-FRESH-VALUE']);
 
     try {
-        $passes = app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+        $passes = app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
             ticketType: $ticketType,
             quantity: 1,
         ));
@@ -144,4 +144,20 @@ it('rejects invalid holder emails on the transfer path', function (): void {
         null,
         ['name' => 'Bad Email', 'email' => 'not-an-email'],
     ))->toThrow(InvalidArgumentException::class, 'email');
+});
+
+it('terminates pass-number generation when the random source repeats indefinitely', function (): void {
+    $ticketType = createIssuanceTicketType();
+    Str::createRandomStringsUsing(static fn (int $length): string => str_repeat('A', $length));
+
+    try {
+        expect(fn () => app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+            ticketType: $ticketType,
+            quantity: 2,
+        )))->toThrow(RuntimeException::class, 'Unable to generate unique pass numbers');
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    expect(Pass::query()->where('ticket_type_id', $ticketType->getKey())->count())->toBe(0);
 });

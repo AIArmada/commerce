@@ -4,26 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing;
 
-use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
-use AIArmada\Ticketing\Events\PassCancelled;
-use AIArmada\Ticketing\Events\PassExpired;
-use AIArmada\Ticketing\Events\PassRevoked;
-use AIArmada\Ticketing\Events\PassVoided;
-use AIArmada\Ticketing\EntryPoints\Listeners\IssuePassesOnFulfillment;
-use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassCancelled;
-use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassExpired;
-use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassRevoked;
-use AIArmada\Ticketing\EntryPoints\Listeners\ReleaseSeatsOnPassVoided;
 use AIArmada\Ticketing\Services\DefaultPassDeliveryService;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
 use AIArmada\Ticketing\Services\NullPassDeliveryService;
-use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
-use Illuminate\Support\Facades\Event;
 use AIArmada\Ticketing\Platform\ExtensionRegistry;
 use AIArmada\Ticketing\Platform\FeatureCatalog;
 use AIArmada\Ticketing\Platform\FeatureModule;
@@ -48,7 +34,6 @@ final class TicketingServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(TicketableTypeRegistry::class);
-        $this->app->bind(PassIssuerInterface::class, DefaultPassIssuer::class);
         $this->app->singleton(PassDeliveryServiceInterface::class, function ($app) {
             return config('ticketing.notifications.ticket.enabled', true)
                 ? $app->make(DefaultPassDeliveryService::class)
@@ -74,31 +59,6 @@ final class TicketingServiceProvider extends PackageServiceProvider
         foreach ($this->modules as $module) {
             $module->boot($this->app);
         }
-        $this->registerOrderFulfillment();
-        $this->registerSeatReleaseListeners();
-    }
-
-    private function registerOrderFulfillment(): void
-    {
-        if (! config('ticketing.features.auto_issue_passes', true)) {
-            return;
-        }
-
-        if (TicketingIntegration::ordersAvailable() && class_exists(OrderFulfillmentRequired::class)) {
-            Event::listen(OrderFulfillmentRequired::class, IssuePassesOnFulfillment::class);
-        }
-    }
-
-    private function registerSeatReleaseListeners(): void
-    {
-        if (! class_exists(ReleaseAllocationsAction::class)) {
-            return;
-        }
-
-        Event::listen(PassRevoked::class, ReleaseSeatsOnPassRevoked::class);
-        Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
-        Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
-        Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
     }
 
     /** @return array<int, string> */

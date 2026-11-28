@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\EntryPoints\Listeners;
+namespace AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners;
 
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
-use AIArmada\Ticketing\Events\PassExpired;
+use AIArmada\Ticketing\Events\PassRevoked;
 
-final class ReleaseSeatsOnPassExpired
+final class ReleaseSeatsOnPassRevoked
 {
     public function __construct(
         private readonly ReleaseAllocationsAction $releaseAllocations,
     ) {}
 
-    public function handle(PassExpired $event): void
+    public function handle(PassRevoked $event): void
     {
         $this->releaseAllocations->handle(
             allocToType: $event->pass->getMorphClass(),

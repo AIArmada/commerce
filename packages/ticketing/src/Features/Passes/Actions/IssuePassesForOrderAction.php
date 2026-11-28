@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Actions;
+namespace AIArmada\Ticketing\Features\Passes\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
@@ -10,7 +10,6 @@ use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 final readonly class IssuePassesForOrderAction
 {
@@ -18,7 +17,6 @@ final readonly class IssuePassesForOrderAction
 
     public function handle(Order $order): void
     {
-
         OwnerContext::withOwner($order->owner ?? null, function () use ($order): void {
             foreach ($order->items as $item) {
                 $ticketType = $item->purchasable;
@@ -40,7 +38,7 @@ final readonly class IssuePassesForOrderAction
 
     private function issueRemainderForItem(mixed $orderId, Model $item, TicketType $ticketType): void
     {
-        DB::transaction(function () use ($orderId, $item, $ticketType): void {
+        $item->getConnection()->transaction(function () use ($orderId, $item, $ticketType): void {
             $locked = $item->newQuery()->whereKey($item->getKey())->lockForUpdate()->first();
 
             if (! $locked instanceof Model) {

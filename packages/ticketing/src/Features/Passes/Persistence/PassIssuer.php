@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Ticketing\Services;
+namespace AIArmada\Ticketing\Features\Passes\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
@@ -16,11 +16,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-final class DefaultPassIssuer implements PassIssuerInterface
+final readonly class PassIssuer implements PassIssuerInterface
 {
     private const int MAX_COLLISION_ATTEMPTS = 10;
 
@@ -54,7 +53,7 @@ final class DefaultPassIssuer implements PassIssuerInterface
             }
 
             try {
-                return DB::transaction(function () use ($context, $passes): Collection {
+                return (new Pass)->getConnection()->transaction(function () use ($context, $passes): Collection {
                     $this->assertHomogeneousBatch($passes);
 
                     /** @var Pass $firstPass */
@@ -68,7 +67,7 @@ final class DefaultPassIssuer implements PassIssuerInterface
                     $this->insertPasses($passes);
 
                     foreach ($passes as $pass) {
-                        DB::afterCommit(function () use ($pass, $context): void {
+                        $pass->getConnection()->afterCommit(function () use ($pass, $context): void {
                             event(new PassIssued($pass, $context->issuedAt));
                         });
                     }
@@ -123,12 +122,16 @@ final class DefaultPassIssuer implements PassIssuerInterface
                 throw new RuntimeException('Unable to generate unique pass numbers.');
             }
 
-            while (count($passNumbers) < $quantity) {
+            for ($attempt = 0; count($passNumbers) < $quantity && $attempt < $quantity * self::MAX_COLLISION_ATTEMPTS; $attempt++) {
                 $candidate = $this->generatePassNo();
 
                 if (! in_array($candidate, $passNumbers, true)) {
                     $passNumbers[] = $candidate;
                 }
+            }
+
+            if (count($passNumbers) < $quantity) {
+                throw new RuntimeException('Unable to generate unique pass numbers.');
             }
 
             $collisions = $this->findCollisions('pass_no', $passNumbers);

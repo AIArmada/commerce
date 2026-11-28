@@ -11,10 +11,10 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Ticketing\Events\PassIssued;
-use AIArmada\Ticketing\EntryPoints\Listeners\IssuePassesOnFulfillment;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfillment;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 use Illuminate\Support\Facades\Event;
 
@@ -74,7 +74,7 @@ it('issues only the remainder when passes already exist for the item', function 
     $order = createDedupOrderWithTicketItem('ORD-DEDUP-2', $ticketType, 3);
     $item = $order->items->first();
 
-    app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+    app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
         ticketType: $ticketType,
         quantity: 1,
         metadata: ['order_id' => $order->getKey(), 'order_item_id' => $item->getKey()],

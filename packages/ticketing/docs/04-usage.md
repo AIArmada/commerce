@@ -138,7 +138,7 @@ $ticketType->bundleProducts()->create([
 Use `IssuePassesAction` to issue passes:
 
 ```php
-use AIArmada\Ticketing\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Support\PassIssuanceContext;
 
 $context = new PassIssuanceContext(
@@ -255,7 +255,7 @@ There is no per-state action class. `RevokePassAction` is the only lifecycle act
 the package; every other transition goes through the state machine:
 
 ```php
-use AIArmada\Ticketing\Actions\RevokePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 
 // Activate at entry
 $pass->markActivated();
