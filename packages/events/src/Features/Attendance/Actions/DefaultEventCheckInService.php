@@ -93,7 +93,18 @@ final class DefaultEventCheckInService implements EventCheckInService
             throw new InvalidArgumentException('The selected pass is not valid for check-in.');
         }
 
-        $session = $this->resolveSession($eventId, $data['event_session_id'] ?? null);
+        $sessionClass = ModelResolver::sessionClass();
+        $passSessionId = $pass?->session_id;
+
+        if ($passSessionId === null && $pass?->ticketable instanceof $sessionClass) {
+            $passSessionId = (string) $pass->ticketable->getKey();
+        }
+
+        $session = $this->resolveSession($eventId, $data['event_session_id'] ?? $passSessionId);
+
+        if ($passSessionId !== null && (string) $session?->getKey() !== (string) $passSessionId) {
+            throw new InvalidArgumentException('The selected pass does not belong to the selected event session.');
+        }
 
         $occurrenceId = $data['event_occurrence_id']
             ?? $session?->getAttribute('event_occurrence_id')

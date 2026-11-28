@@ -9,6 +9,7 @@ use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Features\Attendance\Models\EventAttendance;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as EventFacade;
@@ -170,7 +171,7 @@ it('rejects check-in against an explicitly supplied occurrence that is not accep
     ]))->toThrow(InvalidArgumentException::class, 'not accepting check-ins');
 });
 
-it('rejects invalid passes during check-in', function (): void {
+it('rejects invalid passes during check-in', function (string $status): void {
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
     $registration = EventRegistration::factory()->create([
@@ -178,7 +179,7 @@ it('rejects invalid passes during check-in', function (): void {
         'event_occurrence_id' => $occurrence->id,
     ]);
     $ticketType = createEventTicketType($occurrence);
-    $pass = createEventPass($ticketType, $registration, ['status' => 'revoked']);
+    $pass = createEventPass($ticketType, $registration, ['status' => $status]);
 
     expect(fn () => app(EventCheckInService::class)->checkIn([
         'event_id' => $event->id,
@@ -186,7 +187,7 @@ it('rejects invalid passes during check-in', function (): void {
         'event_registration_id' => $registration->id,
         'pass_id' => $pass->id,
     ]))->toThrow(InvalidArgumentException::class, 'not valid for check-in');
-});
+})->with(['revoked', 'pending']);
 
 it('keeps anonymous walk-ins independent of existing attendances', function (): void {
     $event = Event::factory()->create();
@@ -254,4 +255,38 @@ it('does not emit check-in events when the enclosing transaction rolls back', fu
     expect(EventAttendance::query()->where('event_registration_id', $registration->id)->exists())->toBeFalse();
     EventFacade::assertNotDispatched(EventAttendanceCheckedIn::class);
     EventFacade::assertNotDispatched(RegistrationCheckedIn::class);
+});
+
+it('rejects a session pass at a different session and infers its assigned session', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $sessions = EventSession::factory()->count(2)->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+    $pass = createEventPass(createEventTicketType($occurrence), $registration, [
+        'session_id' => $sessions[0]->id,
+        'status' => 'issued',
+    ]);
+    $payload = [
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_registration_id' => $registration->id,
+        'pass_id' => $pass->id,
+    ];
+
+    expect(fn () => app(EventCheckInService::class)->checkIn([
+        ...$payload,
+        'event_session_id' => $sessions[1]->id,
+    ]))->toThrow(InvalidArgumentException::class, 'does not belong to the selected event session');
+
+    expect(EventAttendance::query()->count())->toBe(0);
+
+    $attendance = app(EventCheckInService::class)->checkIn($payload);
+
+    expect($attendance->sessionId)->toBe($sessions[0]->id);
 });

@@ -216,6 +216,10 @@ class Pass extends Model
             $status = $status::getMorphClass();
         }
 
+        if (! in_array($status, ['issued', 'activated'], true)) {
+            return false;
+        }
+
         $registration = $this->registration;
 
         if ($registration instanceof Model) {
@@ -236,13 +240,7 @@ class Pass extends Model
             }
         }
 
-        return ! in_array($status, [
-            'used',
-            'cancelled',
-            'revoked',
-            'voided',
-            'expired',
-        ], true);
+        return true;
     }
 
     public function generateQrCode(): string

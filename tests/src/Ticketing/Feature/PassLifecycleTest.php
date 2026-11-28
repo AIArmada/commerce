@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 use AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction;
 use AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction;
 use AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction;
@@ -118,4 +119,11 @@ it('refuses redemption when the associated registration has been refunded', func
 
     expect((string) $pass->fresh()->status)->toBe('activated')
         ->and($pass->fresh()->used_at)->toBeNull();
+});
+
+it('does not consider pending passes valid or transferable', function (): void {
+    $pass = Pass::factory()->create(['status' => 'pending']);
+
+    expect($pass->isValid())->toBeFalse()
+        ->and(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
 });
