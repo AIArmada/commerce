@@ -19,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 final class AddVoucherToWallet implements WalletClaim
 {
     use AsAction;
+
     public function __construct(private readonly VoucherCatalog $catalog) {}
 
     /**

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Queries;
 
-use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\Depleted;

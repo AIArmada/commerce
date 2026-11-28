@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Events\VoucherExpired;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherExpiry;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
