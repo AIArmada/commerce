@@ -31,8 +31,8 @@
         "AIArmada\\Inventory\\InventoryServiceProvider"
       ],
       "aliases": {
-        "Inventory": "AIArmada\\Inventory\\Facades\\Inventory",
-        "InventoryAllocation": "AIArmada\\Inventory\\Facades\\InventoryAllocation"
+        "Inventory": "AIArmada\\Inventory\\Features\\Stock\\Facades\\Inventory",
+        "InventoryAllocation": "AIArmada\\Inventory\\Features\\Reservations\\Facades\\InventoryAllocation"
       }
     }
   },
