@@ -146,3 +146,19 @@ it('protects e-invoice evidence even when deletion bypasses model events', funct
     expect(Doc::query()->find($doc->getKey()))->not->toBeNull()
         ->and(DocEInvoiceSubmission::query()->find($submission->getKey()))->not->toBeNull();
 });
+
+it('does not remove a PDF when another deleting listener vetoes deletion', function (): void {
+    $disk = DocPdfPath::diskForType('invoice');
+    Storage::fake($disk);
+    $doc = Doc::factory()->invoice()->create(['status' => Draft::class]);
+    $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
+    $doc->forceFill(['pdf_path' => $path])->save();
+    Storage::disk($disk)->put($path, 'document');
+
+    Doc::deleting(static fn (Doc $candidate): ?bool => $candidate->is($doc) ? false : null);
+
+    expect($doc->delete())->toBeFalse()
+        ->and(Doc::query()->find($doc->getKey()))->not->toBeNull();
+
+    Storage::disk($disk)->assertExists($path);
+});

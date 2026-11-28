@@ -248,7 +248,9 @@ final class Doc extends Model implements Auditable
             if ($doc->hasFinancialEvidence()) {
                 throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
             }
+        });
 
+        self::deleted(function (Doc $doc): void {
             $id = (string) $doc->getKey();
             $type = $doc->doc_type;
             $path = $doc->pdf_path;

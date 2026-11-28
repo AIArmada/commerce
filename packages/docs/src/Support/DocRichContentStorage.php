@@ -35,13 +35,15 @@ final class DocRichContentStorage
             return false;
         }
 
-        if (str_contains($file, '\\') || str_contains($file, '..') || str_starts_with($file, '/')) {
+        if (str_contains($file, '\\') || str_contains($file, '..') || str_starts_with($file, '/') || preg_match('/[\x00-\x1f\x7f]/', $file) === 1) {
             return false;
         }
 
         $directory = self::directory();
 
-        return Str::startsWith($file, $directory . '/');
+        $prefix = $directory . '/';
+
+        return Str::startsWith($file, $prefix) && mb_strlen($file) > mb_strlen($prefix) && ! str_ends_with($file, '/');
     }
 
     private static function configuredDirectory(): string

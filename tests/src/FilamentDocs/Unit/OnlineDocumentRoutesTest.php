@@ -225,3 +225,14 @@ it('resolves authorized attachment ids without trusting a supplied source URL', 
 
     expect($html)->toContain('allowed.png')->not->toContain('127.0.0.1', 'fallback.png', 'missing.png');
 });
+
+it('rejects invalid rich content attachment identifiers before accessing storage', function (string $suffix): void {
+    config()->set('docs.owner.enabled', false);
+
+    expect(DocRichContentStorage::isAllowedFileId(DocRichContentStorage::directory() . '/' . $suffix))->toBeFalse();
+})->with([
+    'empty file name' => '',
+    'directory only' => 'images/',
+    'null byte' => "image\0.png",
+    'control character' => "image\n.png",
+]);
