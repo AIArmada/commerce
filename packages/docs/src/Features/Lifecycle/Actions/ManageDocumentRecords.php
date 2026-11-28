@@ -93,14 +93,15 @@ final readonly class ManageDocumentRecords implements DocumentRecords
             }
 
             $currency = $this->normalizeCurrency($data->currency ?? $this->resolveDefault($docType, 'currency', 'MYR'));
-            $calculatedSubtotalMinor = $this->calculateSubtotalMinor($data->items, $currency);
+            $discountAmountMinor = $data->discountAmountMinor ?? 0;
+            $lineTotals = $this->totals->calculate($data->items, $discountAmountMinor, $currency);
+            $calculatedSubtotalMinor = $lineTotals['subtotal_minor'];
             $taxRateBasisPoints = $data->taxRateBasisPoints ?? $this->resolveConfiguredTaxRateBasisPoints();
             $this->assertBasisPoints($taxRateBasisPoints);
             $hasLineTaxes = array_any($data->items, static fn (array $item): bool => array_key_exists('tax_amount_minor', $item));
             $calculatedTaxMinor = $hasLineTaxes
-                ? $this->totals->calculate($data->items, 0, $currency)['tax_amount_minor']
+                ? $lineTotals['tax_amount_minor']
                 : $this->applyBasisPoints($calculatedSubtotalMinor, $taxRateBasisPoints);
-            $discountAmountMinor = $data->discountAmountMinor ?? 0;
 
             if ($data->items !== []) {
                 $this->assertMatchesComputed('subtotal_minor', $data->subtotalMinor, $calculatedSubtotalMinor);
@@ -319,6 +320,10 @@ final readonly class ManageDocumentRecords implements DocumentRecords
                 );
             }
 
+            if (array_key_exists('currency', $attributes) && ! array_key_exists('items', $attributes)) {
+                $this->totals->assertItemCurrencies($doc->items ?? [], $attributes['currency']);
+            }
+
             // Totals are derived: recompute from items, or re-derive the total
             // when only the discount changed.
             if (array_key_exists('items', $attributes)) {
@@ -528,12 +533,6 @@ final readonly class ManageDocumentRecords implements DocumentRecords
     public function calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null): array
     {
         return $this->totals->calculate($items, $discountAmountMinor, $currency);
-    }
-
-    /** @param array<int, array<string, mixed>> $items */
-    private function calculateSubtotalMinor(array $items, string $currency): int
-    {
-        return $this->totals->subtotal($items, $currency);
     }
 
     private function applyBasisPoints(int $amountMinor, int $basisPoints): int

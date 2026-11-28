@@ -51,6 +51,14 @@ final class DocTotals
         return $this->calculate($items, 0, $currency)['subtotal_minor'];
     }
 
+    /** @param array<int, array<string, mixed>> $items */
+    public function assertItemCurrencies(array $items, string $currency): void
+    {
+        foreach ($items as $index => $item) {
+            $this->assertItemCurrency($item, $index, $currency);
+        }
+    }
+
     public function net(int $subtotalMinor, int $taxAmountMinor, int $discountAmountMinor): int
     {
         if (min($subtotalMinor, $taxAmountMinor, $discountAmountMinor) < 0) {
@@ -124,7 +132,15 @@ final class DocTotals
             throw new InvalidArgumentException(sprintf('Document item %d tax_amount_minor must be a non-negative integer.', $index));
         }
 
-        if (isset($item['currency']) && $currency !== null && mb_strtoupper((string) $item['currency']) !== $currency) {
+        if ($currency !== null) {
+            $this->assertItemCurrency($item, $index, $currency);
+        }
+    }
+
+    /** @param array<string, mixed> $item */
+    private function assertItemCurrency(array $item, int $index, string $currency): void
+    {
+        if (isset($item['currency']) && (! is_string($item['currency']) || mb_strtoupper($item['currency']) !== $currency)) {
             throw new InvalidArgumentException(sprintf('Document item %d currency does not match document currency.', $index));
         }
     }

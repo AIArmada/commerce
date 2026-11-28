@@ -119,3 +119,29 @@ it('replays the same document payment transaction without recording it twice', f
     expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), array_replace($data, ['amount_minor' => 99])))
         ->toThrow(InvalidArgumentException::class, 'different payment details');
 });
+
+it('creates documents without overflowing the discounted gross line total', function (): void {
+    $doc = app(DocumentRecords::class)->create(new DocData(
+        items: [['quantity' => 1, 'unit_price_minor' => PHP_INT_MAX, 'tax_amount_minor' => 1]],
+        discountAmountMinor: 1,
+        currency: 'MYR',
+    ));
+
+    expect($doc->total_minor)->toBe(PHP_INT_MAX);
+});
+
+it('rejects currency-only updates that conflict with existing item currencies', function (): void {
+    $doc = Doc::factory()->draft()->create([
+        'currency' => 'MYR',
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'MYR']],
+        'subtotal_minor' => 100,
+        'tax_amount_minor' => 0,
+        'discount_amount_minor' => 0,
+        'total_minor' => 100,
+    ]);
+
+    expect(fn () => app(DocumentRecords::class)->update($doc, ['currency' => 'USD']))
+        ->toThrow(InvalidArgumentException::class, 'currency does not match');
+
+    expect($doc->fresh()->currency)->toBe('MYR');
+});
