@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Data\OutboxStatus;
@@ -612,4 +613,39 @@ it('leaves a claimed outbox row to its relay worker', function (): void {
     Event::assertNotDispatched(OrderProcessingStarted::class);
     Event::assertNotDispatched(OrderFulfillmentRequired::class);
     expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Relaying->value);
+});
+
+it('blocks live outbox dispatch across owner boundaries', function (): void {
+    config()->set('orders.owner.enabled', true);
+    config()->set('orders.owner.include_global', false);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $order = OwnerContext::withOwner($owner, fn (): Order => makeOutboxRelayOrder('ORD-RELAY-OWNER-BOUNDARY'));
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+    $id = insertOutboxRelayRow($order);
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$id], 'txn-relay-1', 'stripe')))
+        ->toThrow(RuntimeException::class, 'Cross-owner mutation blocked');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Pending->value);
+
+    OwnerContext::withOwner($owner, fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [$id], 'txn-relay-1', 'stripe'));
+
+    Event::assertDispatchedTimes(OrderProcessingStarted::class, 1);
+    expect(outboxRelayRows()[0]->status)->toBe(OutboxStatus::Relayed->value);
+});
+
+it('does not dispatch unstaged events when the outbox is enabled', function (): void {
+    config()->set('orders.outbox.enabled', true);
+    $order = makeOutboxRelayOrder('ORD-RELAY-UNSTAGED');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), [null, null], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertNotDispatched(OrderFulfillmentRequired::class);
 });

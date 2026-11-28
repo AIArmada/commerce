@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -68,7 +69,8 @@ final class FreeOrderConfirmed extends Transition
             ];
 
             $order->getConnection()->afterCommit(function () use ($order, $outboxIds): void {
-                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, (string) $order->getKey(), 'free');
+                $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
+                OwnerContext::withOwner($owner, static fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, (string) $order->getKey(), 'free'));
             });
 
             return $order;

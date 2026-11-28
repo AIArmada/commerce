@@ -15,6 +15,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
+use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -23,6 +24,8 @@ use InvalidArgumentException;
  */
 final readonly class OrderOutbox implements OrderOutboxWriter
 {
+    use AssertsOrderOwnerBoundary;
+
     /**
      * Stage one replayable event row. Call inside the caller's transaction
      * so the row commits atomically with the order state change.
@@ -105,9 +108,11 @@ final readonly class OrderOutbox implements OrderOutboxWriter
                 return;
             }
 
+            $this->assertOwnerBoundaryForMutation($locked, __METHOD__);
+
             OwnerContext::withOwner($locked->owner, function () use ($locked, $ids, $transactionId, $gateway): void {
                 // Disabled outbox: no durable rows were staged.
-                if ($ids === [null, null]) {
+                if ($ids === [null, null] && ! config('orders.outbox.enabled', true)) {
                     event(new OrderProcessingStarted($locked, $transactionId, $gateway));
                     event(new OrderFulfillmentRequired($locked, $transactionId, $gateway));
 

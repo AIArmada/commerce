@@ -155,7 +155,7 @@ final class PaymentConfirmed extends Transition
                     return;
                 }
 
-                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, $transactionId, $gateway);
+                OwnerContext::withOwner($owner, static fn () => app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, $transactionId, $gateway));
             });
 
             return $originalOrder;
