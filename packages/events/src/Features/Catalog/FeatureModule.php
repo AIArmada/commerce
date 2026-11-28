@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog;
 
 use AIArmada\Events\Contracts\EventCloneService;
+use AIArmada\Events\Contracts\EventImportScopeValidator;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventTemplateService;
@@ -24,6 +25,7 @@ use AIArmada\Events\Features\Catalog\Policies\EventSessionPolicy;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventReferenceResolver;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventTranslationProvider;
 use AIArmada\Events\Features\Catalog\Queries\EloquentCatalogApi;
+use AIArmada\Events\Features\Catalog\Queries\OwnerScopedEventImportValidator;
 use AIArmada\Events\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Contracts\Foundation\Application;
@@ -52,6 +54,7 @@ final class FeatureModule implements FeatureModuleContract
         }
 
         $app->bind(CatalogApi::class, EloquentCatalogApi::class);
+        $app->bind(EventImportScopeValidator::class, OwnerScopedEventImportValidator::class);
     }
 
     public function boot(Application $app): void

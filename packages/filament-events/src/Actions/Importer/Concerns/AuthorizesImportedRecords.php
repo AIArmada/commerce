@@ -37,7 +37,11 @@ trait AuthorizesImportedRecords
             throw new RowImportFailedException('Unable to resolve existing record for update authorization.');
         }
 
-        $persisted = $record->newQuery()->whereKey($record->getKey())->first() ?? $record;
+        $persisted = $record->newQuery()->whereKey($record->getKey())->first();
+
+        if (! $persisted instanceof Model) {
+            throw new RowImportFailedException('Unable to resolve existing record for update authorization.');
+        }
 
         if (Gate::getPolicyFor($persisted) === null) {
             return;
@@ -50,7 +54,7 @@ trait AuthorizesImportedRecords
         }
     }
 
-    private function resolveImportUser(): ?Authenticatable
+    protected function resolveImportUser(): ?Authenticatable
     {
         if ($this->import->relationLoaded('user')) {
             $loaded = $this->import->getRelation('user');

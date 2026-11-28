@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
@@ -12,10 +14,16 @@ use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\Events\Features\Catalog\Models\EventTemplateItem;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class DefaultEventTemplateService implements EventTemplateService
@@ -49,6 +57,64 @@ final class DefaultEventTemplateService implements EventTemplateService
         private readonly CreateEventOccurrenceAction $createOccurrence,
         private readonly CreateEventSessionAction $createSession,
     ) {}
+
+    public function publishedEventOptions(string $search): array
+    {
+        $query = $this->publishedEventQuery();
+        LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+
+        return $query->orderBy('name')->orderBy('id')->limit(50)
+            ->get(['id', 'name', 'code'])
+            ->mapWithKeys(fn (EventTemplate $template): array => [$template->id => $this->templateLabel($template)])
+            ->all();
+    }
+
+    public function publishedEventLabel(string $templateId): ?string
+    {
+        if (! Str::isUuid($templateId)) {
+            return null;
+        }
+
+        $template = $this->publishedEventQuery()->whereKey($templateId)->first(['id', 'name', 'code']);
+
+        return $template instanceof EventTemplate ? $this->templateLabel($template) : null;
+    }
+
+    public function createFromPublishedEventTemplate(string $templateId, mixed $actor): string
+    {
+        if (! $actor instanceof Authenticatable) {
+            throw new AuthorizationException('An authenticated actor is required.');
+        }
+
+        Gate::forUser($actor)->authorize('create', ModelResolver::eventClass());
+
+        return DB::transaction(function () use ($templateId): string {
+            $template = Str::isUuid($templateId)
+                ? $this->publishedEventQuery()->whereKey($templateId)->lockForUpdate()->first()
+                : null;
+
+            if (! $template instanceof EventTemplate) {
+                throw ValidationException::withMessages([
+                    'event_template_id' => 'The selected published event template is not available.',
+                ]);
+            }
+
+            return (string) $this->createEventFromTemplate($template, [])->getKey();
+        });
+    }
+
+    /** @return Builder<EventTemplate> */
+    private function publishedEventQuery(): Builder
+    {
+        return OwnerUiScope::apply(EventTemplate::query(), includeGlobal: false)
+            ->where('template_type', 'event')
+            ->where('status', 'published');
+    }
+
+    private function templateLabel(EventTemplate $template): string
+    {
+        return filled($template->code) ? "{$template->name} ({$template->code})" : $template->name;
+    }
 
     public function createFromTemplate(string $templateId, array $overrides = []): string
     {

@@ -16,6 +16,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final readonly class DefaultEventApprovalWorkflow implements EventApprovalWorkflow
@@ -71,6 +72,10 @@ final readonly class DefaultEventApprovalWorkflow implements EventApprovalWorkfl
     {
         if (! $actor instanceof Authenticatable) {
             throw new AuthorizationException('Approval requests require an authenticated actor.');
+        }
+
+        if (! Str::isUuid($requestId)) {
+            throw new InvalidArgumentException('A valid approval request ID is required.');
         }
 
         DB::transaction(function () use ($requestId, $actor, $operation): void {
