@@ -21,6 +21,8 @@ use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardProgram;
 use Illuminate\Auth\GenericUser;
+use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -69,7 +71,10 @@ describe('reward resource navigation', function (): void {
 
 describe('RewardAdminPresenter', function (): void {
     it('denies authenticated users without role support unless explicitly granted staff access', function (): void {
-        $user = new GenericUser(['id' => 'roleless-user']);
+        $user = new class(['id' => 'roleless-user']) extends GenericUser implements AuthorizableContract
+        {
+            use Authorizable;
+        };
         auth()->setUser($user);
 
         expect(RewardAdminPresenter::staffActor())->toBeNull()

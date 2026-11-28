@@ -12,6 +12,7 @@ use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use BackedEnum;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -215,7 +216,7 @@ final class RewardAdminPresenter
             return $user->hasAnyRole(is_array($roles) ? $roles : ['super_admin', 'admin']) ? $user : null;
         }
 
-        return Gate::forUser($user)->allows('reward-staff') ? $user : null;
+        return $user instanceof Authorizable && Gate::forUser($user)->allows('reward-staff') ? $user : null;
     }
 
     public static function staffRole(): string

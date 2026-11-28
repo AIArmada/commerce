@@ -12,6 +12,7 @@ use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointLedger;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -131,7 +132,7 @@ final readonly class ExpireRewardPointsAction
                 continue;
             }
 
-            $lotMovements = $movements->get((string) $lot->getKey(), new \Illuminate\Database\Eloquent\Collection);
+            $lotMovements = $movements->get((string) $lot->getKey(), new Collection);
             $remainder = RewardPointLedger::unreservedResidual($lot, $lotMovements);
 
             if ($remainder < 0) {

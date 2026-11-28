@@ -40,7 +40,6 @@ final readonly class ExpireDueRewardPointLotsAction
             ));
         }
 
-
         return ['movements' => $movements, 'scopes' => $scopes->count()];
     }
 }

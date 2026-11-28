@@ -118,7 +118,7 @@ final class ApplyForMembershipAction
 
         $encoded = json_encode($meta);
 
-        if ($encoded === false || strlen($encoded) > 65535) {
+        if ($encoded === false || mb_strlen($encoded, '8bit') > 65535) {
             throw new InvalidArgumentException('Application metadata must not exceed 65535 bytes.');
         }
     }
