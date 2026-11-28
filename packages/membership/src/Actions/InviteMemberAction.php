@@ -49,23 +49,44 @@ final class InviteMemberAction
 
         $tokenLength = max(32, (int) config('membership.invitations.token_length', 64));
 
-        if ($expiresAt !== null && CarbonImmutable::createFromInterface($expiresAt)->isPast()) {
+        $deadline = $expiresAt === null
+            ? CarbonImmutable::now()->addDays((int) config('membership.invitations.default_expiry_days', 14))
+            : CarbonImmutable::createFromInterface($expiresAt);
+
+        if ($deadline->lessThanOrEqualTo(CarbonImmutable::now())) {
             throw new InvalidArgumentException('The invitation expiry must be in the future.');
         }
 
         $token = null;
 
-        $invitation = DB::transaction(function () use ($channelName, $expiresAt, $inviter, $recipient, $role, $subject, $tokenLength, &$token): MembershipInvitation {
+        $invitation = DB::transaction(function () use ($channelName, $deadline, $inviter, $recipient, $role, $subject, $tokenLength, &$token): MembershipInvitation {
             $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
-            $existing = $this->pendingInvitationQuery($subject, $channelName, $recipient, $role)
-                ->lockForUpdate()
-                ->get()
-                ->first(fn (MembershipInvitation $invitation): bool => $invitation->channel === $channelName
-                    && $invitation->recipient === $recipient);
+            $existing = null;
 
-            if ($existing instanceof MembershipInvitation && ! ExpireMembershipInvitationAction::make()->handle($existing)) {
+            foreach ($this->pendingInvitationQuery($subject, $channelName, $recipient, $role)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get() as $candidate) {
+                if ($candidate->channel !== $channelName || $candidate->recipient !== $recipient) {
+                    continue;
+                }
+
+                if ($candidate->isExpired()) {
+                    ExpireMembershipInvitationAction::make()->handle($candidate);
+
+                    continue;
+                }
+
+                $existing ??= $candidate;
+            }
+
+            if ($existing !== null) {
                 return $existing;
+            }
+
+            if ($deadline->lessThanOrEqualTo(CarbonImmutable::now())) {
+                throw new InvalidArgumentException('The invitation expiry must be in the future.');
             }
 
             $token = Str::random($tokenLength);
@@ -78,12 +99,7 @@ final class InviteMemberAction
                 'role' => $role->spatieRoleName(),
                 'invited_by' => $inviter->getKey(),
             ]);
-            $invitation->issue(
-                $token,
-                $expiresAt ?? CarbonImmutable::now()->addDays(
-                    (int) config('membership.invitations.default_expiry_days', 14)
-                ),
-            );
+            $invitation->issue($token, $deadline);
             $invitation->save();
 
             return $invitation;

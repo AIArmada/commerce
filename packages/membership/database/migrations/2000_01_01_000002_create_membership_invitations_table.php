@@ -10,10 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tokenLength = max(64, (int) config('membership.invitations.token_length', 64));
         $tableName = (string) config('membership.database.tables.invitations', 'membership_invitations');
 
-        Schema::create($tableName, function (Blueprint $table) use ($tokenLength): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('subject_type');
@@ -21,7 +20,7 @@ return new class extends Migration
             $table->string('channel')->index();
             $table->string('recipient');
             $table->string('role');
-            $table->string('token', $tokenLength)->unique();
+            $table->string('token', 64)->unique();
             $table->string('status')->default('pending')->index();
             $table->foreignUuid('invited_by');
             $table->timestampTz('expires_at')->nullable();

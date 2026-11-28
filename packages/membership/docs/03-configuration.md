@@ -70,7 +70,7 @@ The shipped `config/membership.php` top-level keys, with their default values:
 
 ## Notes
 
-- Invitation tokens are always hashed with SHA-256 before persistence. The plaintext token is carried on the `InvitationDeliveryData` passed to the channel and on `MembershipInvitationSent`.
+- Invitation tokens are always hashed with SHA-256 before persistence in a fixed 64-character column, independently of the configured plaintext token length. The plaintext token is carried on the `InvitationDeliveryData` passed to the channel and on `MembershipInvitationSent`.
 - Recipient identifiers are normalized by the channel (`AIArmada\Membership\Drivers\EmailInvitationChannel` lowercases and validates the address); the model stores whatever the channel returns.
 - Configure owner scoping under `membership.owner`; the legacy nested key is not read.
 - When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
