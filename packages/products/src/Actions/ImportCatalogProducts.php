@@ -12,8 +12,10 @@ use AIArmada\Products\Models\Product;
 use Closure;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 final readonly class ImportCatalogProducts
 {
@@ -74,6 +76,16 @@ final readonly class ImportCatalogProducts
                     } else {
                         $imported++;
                     }
+                } catch (QueryException $exception) {
+                    report($exception);
+
+                    $message = "Row {$offset}: The product could not be saved.";
+
+                    if (! $skipErrors) {
+                        throw new RuntimeException($message, previous: $exception);
+                    }
+
+                    $errors[] = $message;
                 } catch (Exception $exception) {
                     if (! $skipErrors) {
                         throw $exception;
@@ -161,11 +173,17 @@ final readonly class ImportCatalogProducts
         }
 
         if ($present('weight')) {
-            if (! is_numeric($text('weight'))) {
+            $weight = $text('weight');
+
+            if (! is_numeric($weight)) {
                 throw new Exception('The weight must be numeric.');
             }
 
-            $data['weight'] = $text('weight');
+            if (! is_finite((float) $weight) || (float) $weight < 0 || (float) $weight > 99999999.99) {
+                throw new Exception('The weight must be between 0 and 99999999.99.');
+            }
+
+            $data['weight'] = $weight;
         }
 
         if ($present('currency')) {

@@ -14,6 +14,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Queries\CatalogExport;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -227,5 +228,33 @@ it('rejects unapproved export columns and neutralizes spreadsheet formulas', fun
         expect(fn () => $query->rows(['owner_id']))->toThrow(ValidationException::class)
             ->and(fn () => $query->rows(['name'], 'bogus'))->toThrow(ValidationException::class)
             ->and($query->rows(['name'])->first())->toBe(["'=1+1"]);
+    });
+});
+
+it('rejects negative and out-of-range import weights', function (): void {
+    foreach (['-0.01', '100000000', '1e999'] as $weight) {
+        expect(fn () => validateImportRow(['weight' => $weight], true))
+            ->toThrow(Exception::class, 'weight must be between 0 and 99999999.99');
+    }
+
+    expect(validateImportRow(['weight' => '0'], true))->toBe(['weight' => '0'])
+        ->and(validateImportRow(['weight' => '99999999.99'], true))->toBe(['weight' => '99999999.99']);
+});
+
+it('does not expose database error details in catalog import results', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        $action = app(ImportCatalogProducts::class);
+        $rows = [['name' => 'Database Error', 'price' => '9.99']];
+        $authorize = static fn (?Product $product): bool => throw new QueryException(
+            'sqlite',
+            'select confidential_column from confidential_table',
+            [],
+            new PDOException('private database error'),
+        );
+
+        expect($action->execute($rows, false, true, $authorize))
+            ->toBe([0, 0, ['Row 0: The product could not be saved.']])
+            ->and(fn () => $action->execute($rows, false, false, $authorize))
+            ->toThrow(RuntimeException::class, 'Row 0: The product could not be saved.');
     });
 });
