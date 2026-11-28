@@ -16,6 +16,7 @@ use AIArmada\Events\Data\EventOrderItemData;
 use AIArmada\Events\Data\EventRefundMatchData;
 use AIArmada\Events\Data\EventRefundResultData;
 use AIArmada\Events\Data\EventRefundStateData;
+use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
 use AIArmada\Orders\Contracts\OrderRefunds;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
@@ -33,6 +34,7 @@ final class OrdersDriver implements EventOrderDriver
     public function __construct(
         private readonly ?OrderRefunds $orders,
         private readonly ?PaymentGatewayResolverInterface $gateways,
+        private readonly ?OrderItemFulfillmentMarker $itemMarkers,
     ) {}
 
     public function isPaidOrder(string $orderId): bool
@@ -130,37 +132,17 @@ final class OrdersDriver implements EventOrderDriver
 
     public function markItemFulfillment(string $orderItemId): ?array
     {
-        /** @var OrderItem|null $orderItem */
-        $orderItem = OrderItem::query()->find($orderItemId);
-
-        if (! $orderItem instanceof OrderItem) {
-            return null;
-        }
-
-        $originalOptions = $orderItem->getAttribute('options');
-        $options = is_array($originalOptions) ? $originalOptions : [];
-
-        if (($options['event_fulfillment'] ?? null) === 'event_registration') {
-            return null;
-        }
-
-        $orderItem->forceFill([
-            'options' => [...$options, 'event_fulfillment' => 'event_registration'],
-        ])->save();
-
-        return ['options' => $originalOptions];
+        return $this->itemMarkerService()->mark($orderItemId, 'event_fulfillment', 'event_registration');
     }
 
     public function restoreItemOptions(string $orderItemId, ?array $options): void
     {
-        /** @var OrderItem|null $orderItem */
-        $orderItem = OrderItem::query()->find($orderItemId);
+        $this->itemMarkerService()->restore($orderItemId, 'event_fulfillment', 'event_registration', $options);
+    }
 
-        if (! $orderItem instanceof OrderItem) {
-            return;
-        }
-
-        $orderItem->forceFill(['options' => $options])->save();
+    private function itemMarkerService(): OrderItemFulfillmentMarker
+    {
+        return $this->itemMarkers ?? throw new RuntimeException('The AIArmada order item fulfillment integration is unavailable.');
     }
 
     public function createRefund(

@@ -39,6 +39,7 @@ use AIArmada\Events\Platform\ExtensionRegistry;
 use AIArmada\Events\Platform\FeatureCatalog;
 use AIArmada\Events\Platform\FeatureModule;
 use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
 use AIArmada\Orders\Contracts\OrderRefunds;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -128,6 +129,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventSeatingDriver::class, SeatingDriver::class);
         $this->app->bind(EventOrderDriver::class, static fn (Application $app): OrdersDriver => new OrdersDriver(
             orders: $app->bound(OrderRefunds::class) ? $app->make(OrderRefunds::class) : null,
+            itemMarkers: $app->bound(OrderItemFulfillmentMarker::class) ? $app->make(OrderItemFulfillmentMarker::class) : null,
             gateways: $app->bound(PaymentGatewayResolverInterface::class) ? $app->make(PaymentGatewayResolverInterface::class) : null,
         ));
         $this->app->bind(EventCartDriver::class, CartCheckoutDriver::class);

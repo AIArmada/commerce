@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Contracts\OrderAdministration;
+use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -131,4 +132,27 @@ it('floors over-discounted order totals at zero and rejects unfolded line discou
 
     expect(fn () => $administration->recalculateTotals((string) $order->getKey()))
         ->toThrow(InvalidArgumentException::class, 'Line discounts must be included');
+});
+
+it('restores only the fulfillment marker without overwriting concurrent item options', function (): void {
+    $order = Order::factory()->create();
+    $item = $order->items()->create([
+        'name' => 'Admission',
+        'quantity' => 1,
+        'unit_price' => 100,
+        'currency' => $order->currency,
+        'options' => ['seat' => 'A1'],
+    ]);
+
+    $markers = app(OrderItemFulfillmentMarker::class);
+    $original = $markers->mark((string) $item->getKey(), 'event_fulfillment', 'event_registration');
+
+    expect($original)->toBe(['options' => ['seat' => 'A1']])
+        ->and($markers->mark((string) $item->getKey(), 'event_fulfillment', 'event_registration'))->toBeNull();
+
+    $item->refresh()->update(['options' => [...$item->options, 'seat' => 'A2', 'extra' => true]]);
+
+    $markers->restore((string) $item->getKey(), 'event_fulfillment', 'event_registration', $original['options']);
+
+    expect($item->refresh()->options)->toBe(['seat' => 'A2', 'extra' => true]);
 });

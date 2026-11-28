@@ -20,7 +20,8 @@
     "table:order_items": [
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\DeliveryConfirmed",
-      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder"
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ManageItemFulfillmentMarker"
     ],
     "table:order_notes": [
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderHeld",
