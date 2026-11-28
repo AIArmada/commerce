@@ -170,3 +170,21 @@ it('does not query gateways for an unsaved billable', function (): void {
     expect($result['items'])->toBeEmpty()
         ->and($result['hasMore'])->toBeFalse();
 });
+
+it('forces a fresh connection probe and evicts previously cached health', function (): void {
+    config()->set('chip.collect.brand_id', 'brand-force');
+    config()->set('chip.collect.api_key', 'key-force');
+
+    $service = Mockery::mock(ChipCollectService::class);
+    $service->shouldReceive('getAccountBalance')->once()->andReturn(['balance' => 100]);
+    $service->shouldReceive('getAccountBalance')->twice()->andThrow(new RuntimeException('connection failed'));
+    app()->instance(ChipCollectService::class, $service);
+
+    $method = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
+    $page = app(GatewayManagement::class);
+
+    expect($method->invoke($page, 'chip')['status'])->toBe('healthy')
+        ->and($method->invoke($page, 'chip')['status'])->toBe('healthy')
+        ->and($method->invoke($page, 'chip', true)['status'])->toBe('error')
+        ->and($method->invoke($page, 'chip')['status'])->toBe('error');
+});

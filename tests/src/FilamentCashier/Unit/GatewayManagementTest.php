@@ -6,8 +6,6 @@ use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use Filament\Actions\Action;
@@ -65,19 +63,8 @@ it('reports gateway health and default gateway without network calls', function 
     expect($testActionFn)->not->toBeNull();
     $testActionFn(['gateway' => 'chip']);
 
-    $setDefaultAction = $page->setDefaultAction();
-    expect($setDefaultAction)->toBeInstanceOf(Action::class);
-    $setDefaultFn = $setDefaultAction->getActionFunction();
-    expect($setDefaultFn)->not->toBeNull();
-    $setDefaultFn(['gateway' => 'chip']);
-    $setDefaultFn(['gateway' => 'not-a-real-gateway']);
-
-    $owner = OwnerContext::resolve();
-    $cacheKey = 'filament-cashier.default_gateway.default';
-
-    expect($owner)->not->toBeNull();
-    expect(OwnerCache::get($owner, $cacheKey))->toBe('chip');
-    expect(cache()->get('filament-cashier.default_gateway'))->toBeNull();
+    config()->set('cashier.default', 'stripe');
+    expect($page->getDefaultGateway())->toBe('stripe');
 
     $reflection = new ReflectionClass(GatewayManagement::class);
     $method = $reflection->getMethod('checkGatewayHealth');

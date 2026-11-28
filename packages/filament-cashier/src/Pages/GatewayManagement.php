@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Pages;
 
 use AIArmada\Cashier\Actions\ProbeGatewayHealth;
+use AIArmada\Cashier\GatewayManager;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -89,16 +87,7 @@ final class GatewayManagement extends Page
      */
     public function getDefaultGateway(): ?string
     {
-        $cached = OwnerCache::get(
-            OwnerContext::resolve(),
-            $this->getDefaultGatewayCacheKey(),
-        );
-
-        if (is_string($cached) && $cached !== '') {
-            return $cached;
-        }
-
-        return config('cashier.default');
+        return app(GatewayManager::class)->getDefaultDriver();
     }
 
     /**
@@ -128,7 +117,7 @@ final class GatewayManagement extends Page
                     return;
                 }
 
-                $health = $this->checkGatewayHealth($gateway);
+                $health = $this->checkGatewayHealth($gateway, force: true);
                 $label = $this->getGatewayDetector()->getLabel($gateway);
 
                 if ($health['status'] === 'healthy') {
@@ -146,54 +135,10 @@ final class GatewayManagement extends Page
             });
     }
 
-    /**
-     * Set default gateway action.
-     */
-    public function setDefaultAction(): Action
-    {
-        return Action::make('setDefault')
-            ->label(__('filament-cashier::gateway.actions.set_default'))
-            ->icon('heroicon-o-star')
-            ->form([
-                Forms\Components\Select::make('gateway')
-                    ->label(__('filament-cashier::gateway.fields.gateway'))
-                    ->options($this->getGatewayDetector()->getGatewayOptions())
-                    ->default($this->getDefaultGateway())
-                    ->required(),
-            ])
-            ->action(function (array $data): void {
-                $gateway = $data['gateway'] ?? null;
-
-                if (! is_string($gateway) || ! $this->getGatewayDetector()->isAvailable($gateway)) {
-                    Notification::make()
-                        ->danger()
-                        ->title(__('filament-cashier::gateway.notifications.connection_failed', ['gateway' => __('filament-cashier::gateway.fields.gateway')]))
-                        ->body(__('filament-cashier::gateway.health.unknown'))
-                        ->send();
-
-                    return;
-                }
-
-                // Store in cache for runtime configuration
-                OwnerCache::put(
-                    OwnerContext::resolve(),
-                    $this->getDefaultGatewayCacheKey(),
-                    $gateway,
-                );
-
-                Notification::make()
-                    ->success()
-                    ->title(__('filament-cashier::gateway.notifications.default_set', [
-                        'gateway' => $this->getGatewayDetector()->getLabel($gateway),
-                    ]))
-                    ->send();
-            });
-    }
-
     /** @return array{status: string, color: string, message: string|null} */
-    protected function checkGatewayHealth(string $gateway): array
+    protected function checkGatewayHealth(string $gateway, bool $force = false): array
     {
-        $status = app(ProbeGatewayHealth::class)->handle($gateway);
+        $status = app(ProbeGatewayHealth::class)->handle($gateway, $force);
 
         return [
             'status' => $status === 'sdk_missing' ? 'unknown' : $status,
@@ -217,14 +162,6 @@ final class GatewayManagement extends Page
     {
         return [
             $this->testConnectionAction(),
-            $this->setDefaultAction(),
         ];
-    }
-
-    private function getDefaultGatewayCacheKey(): string
-    {
-        $panelId = Filament::getCurrentPanel()?->getId() ?? 'default';
-
-        return 'filament-cashier.default_gateway.' . $panelId;
     }
 }

@@ -69,13 +69,11 @@ return [
 
     'actions' => [
         'test_connection' => 'Test Connection',
-        'set_default' => 'Set Default Gateway',
         'configure' => 'Configure',
     ],
 
     'notifications' => [
         'connection_success' => ':gateway connection successful',
         'connection_failed' => ':gateway connection failed',
-        'default_set' => ':gateway set as default gateway',
     ],
 ];

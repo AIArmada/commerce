@@ -14,7 +14,7 @@ final readonly class ProbeGatewayHealth
 {
     public function __construct(private GatewayHealthProbe $probe) {}
 
-    public function handle(string $gateway): string
+    public function handle(string $gateway, bool $force = false): string
     {
         if (! in_array($gateway, ['stripe', 'chip'], true)) {
             return 'unknown';
@@ -24,7 +24,11 @@ final readonly class ProbeGatewayHealth
             $owner = OwnerContext::resolve();
             $key = 'cashier.gateway_health.' . $gateway . '.' . $this->probe->fingerprint($gateway);
 
-            if (OwnerCache::get($owner, $key) === 'healthy') {
+            if ($force) {
+                OwnerCache::forget($owner, $key);
+            }
+
+            if (! $force && OwnerCache::get($owner, $key) === 'healthy') {
                 return 'healthy';
             }
 

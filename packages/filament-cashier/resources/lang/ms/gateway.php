@@ -69,13 +69,11 @@ return [
 
     'actions' => [
         'test_connection' => 'Uji Sambungan',
-        'set_default' => 'Tetapkan Gateway Lalai',
         'configure' => 'Konfigurasi',
     ],
 
     'notifications' => [
         'connection_success' => 'Sambungan :gateway berjaya',
         'connection_failed' => 'Sambungan :gateway gagal',
-        'default_set' => ':gateway ditetapkan sebagai gateway lalai',
     ],
 ];

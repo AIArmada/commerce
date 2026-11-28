@@ -486,7 +486,6 @@ it('covers the filament-cashier public surface', function (): void {
     expect($gatewayManagement->getTitle())->toBeString();
     expect($gatewayManagement->getGatewayHealth())->toBeInstanceOf(Collection::class);
     expect($gatewayManagement->testConnectionAction())->toBeInstanceOf(Action::class);
-    expect($gatewayManagement->setDefaultAction())->toBeInstanceOf(Action::class);
 
     $checkGatewayHealth = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
     expect($checkGatewayHealth->invoke($gatewayManagement, 'unknown'))->toBeArray();
