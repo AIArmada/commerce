@@ -7,7 +7,9 @@ namespace AIArmada\Docs;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentSequence;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\Docs\Drivers\SpatiePdfRenderer;
 use AIArmada\Docs\Platform\ExtensionRegistry;
 use AIArmada\Docs\Platform\FeatureCatalog;
 use AIArmada\Docs\Platform\FeatureModule;
@@ -53,6 +55,7 @@ final class DocsServiceProvider extends PackageServiceProvider
         $this->app->scoped(Numbering\DocumentNumberRegistry::class);
 
         $this->app->singleton(RichContentRendererInterface::class, TiptapJsonRenderer::class);
+        $this->app->singleton(PdfRenderer::class, SpatiePdfRenderer::class);
         $this->app->singleton(DocRenderService::class);
 
         // Register Doc Service
@@ -85,6 +88,7 @@ final class DocsServiceProvider extends PackageServiceProvider
             DocServiceInterface::class,
             DocRenderService::class,
             RichContentRendererInterface::class,
+            PdfRenderer::class,
             DocumentSequence::class,
             Services\DocTotals::class,
             DocumentPaymentRecorder::class,

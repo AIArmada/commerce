@@ -7,7 +7,9 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\Docs\Data\PdfRenderOptions;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocMergeTag;
@@ -26,7 +28,6 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
-use Spatie\LaravelPdf\Facades\Pdf;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -34,6 +35,7 @@ final class DocRenderService
 {
     public function __construct(
         private readonly RichContentRendererInterface $richContentRenderer,
+        private readonly PdfRenderer $pdfRenderer,
     ) {}
 
     public function renderHtml(Doc $doc, RenderAudience $audience): HtmlString
@@ -61,29 +63,7 @@ final class DocRenderService
     public function renderPdf(Doc $doc): string
     {
         $html = $this->renderHtml($doc, RenderAudience::Pdf)->toHtml();
-        $opts = $this->resolvePdfOptions($doc);
-
-        $pdf = Pdf::html($html)
-            ->format($opts['format'])
-            ->orientation($opts['orientation'])
-            ->margins(
-                $opts['margin']['top'],
-                $opts['margin']['right'],
-                $opts['margin']['bottom'],
-                $opts['margin']['left']
-            );
-
-        if (! empty($opts['full_bleed'])) {
-            $pdf->margins(0, 0, 0, 0);
-        }
-
-        if (! empty($opts['print_background'])) {
-            $pdf->withBrowsershot(static function ($browsershot): void {
-                $browsershot->showBackground();
-            });
-        }
-
-        return $pdf->generatePdfContent();
+        return $this->pdfRenderer->render($html, $this->resolvePdfOptions($doc));
     }
 
     public function storePdf(Doc $doc): string
@@ -187,10 +167,7 @@ final class DocRenderService
         }
     }
 
-    /**
-     * @return array{format: string, orientation: string, margin: array{top: int, right: int, bottom: int, left: int}, full_bleed: bool, print_background: bool}
-     */
-    private function resolvePdfOptions(Doc $doc): array
+    private function resolvePdfOptions(Doc $doc): PdfRenderOptions
     {
         $template = $this->resolveTemplate($doc);
         $defaults = [
@@ -214,22 +191,16 @@ final class DocRenderService
         $format = mb_strtolower((string) ($options['format'] ?? $defaults['format']));
         $orientation = mb_strtolower((string) ($options['orientation'] ?? $defaults['orientation']));
 
-        return [
-            'format' => in_array($format, ['a3', 'a4', 'a5', 'letter', 'legal'], true)
-                ? $format
-                : $defaults['format'],
-            'orientation' => in_array($orientation, ['portrait', 'landscape'], true)
-                ? $orientation
-                : $defaults['orientation'],
-            'margin' => [
-                'top' => $this->clampMargin(data_get($options, 'margin.top', $defaults['margin']['top'])),
-                'right' => $this->clampMargin(data_get($options, 'margin.right', $defaults['margin']['right'])),
-                'bottom' => $this->clampMargin(data_get($options, 'margin.bottom', $defaults['margin']['bottom'])),
-                'left' => $this->clampMargin(data_get($options, 'margin.left', $defaults['margin']['left'])),
-            ],
-            'full_bleed' => (bool) ($options['full_bleed'] ?? $defaults['full_bleed']),
-            'print_background' => (bool) ($options['print_background'] ?? $defaults['print_background']),
-        ];
+        return new PdfRenderOptions(
+            format: in_array($format, ['a3', 'a4', 'a5', 'letter', 'legal'], true) ? $format : $defaults['format'],
+            orientation: in_array($orientation, ['portrait', 'landscape'], true) ? $orientation : $defaults['orientation'],
+            marginTop: $this->clampMargin(data_get($options, 'margin.top', $defaults['margin']['top'])),
+            marginRight: $this->clampMargin(data_get($options, 'margin.right', $defaults['margin']['right'])),
+            marginBottom: $this->clampMargin(data_get($options, 'margin.bottom', $defaults['margin']['bottom'])),
+            marginLeft: $this->clampMargin(data_get($options, 'margin.left', $defaults['margin']['left'])),
+            fullBleed: (bool) ($options['full_bleed'] ?? $defaults['full_bleed']),
+            printBackground: (bool) ($options['print_background'] ?? $defaults['print_background']),
+        );
     }
 
     private function clampMargin(mixed $value): int

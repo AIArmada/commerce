@@ -4,6 +4,7 @@
 @verbatim
 - Use `Data\DocData` for document creation and integer minor-unit values.
 - Use `Contracts\DocumentPaymentRecorder`, `CreateDocVersion`, and the document service for changes. Do not mutate document versions or payment totals directly.
+- Inject `Contracts\PdfRenderer` for HTML-to-PDF rendering; use `Data\PdfRenderOptions` and bind custom drivers in the host container.
 - Keep rendering and delivery tenant-scoped; public share and tracking endpoints must validate their tokens and prevent sensitive caching.
 - Use the canonical `EntryPoints` namespaces for jobs and HTTP controllers.
 

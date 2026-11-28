@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\PdfRenderer;
+use AIArmada\Docs\Data\PdfRenderOptions;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
@@ -163,4 +165,23 @@ it('does not issue a share link for a document owned by another tenant', functio
             allowedActions: [ShareLinkAction::View],
         )))->toThrow(AuthorizationException::class);
     });
+});
+
+it('delegates PDF generation to a replaceable driver with normalized options', function (): void {
+    $doc = Doc::factory()->create([
+        'doc_number' => 'DRIVER-TEST',
+        'metadata' => ['pdf' => ['format' => 'a5', 'orientation' => 'landscape', 'margin' => ['top' => 500]]],
+    ]);
+
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->withArgs(
+        fn (string $html, PdfRenderOptions $options): bool => str_contains($html, 'DRIVER-TEST')
+            && $options->format === 'a5'
+            && $options->orientation === 'landscape'
+            && $options->marginTop === 100,
+    )->andReturn('custom PDF');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+
+    expect(app(DocRenderService::class)->renderPdf($doc))->toBe('custom PDF');
 });
