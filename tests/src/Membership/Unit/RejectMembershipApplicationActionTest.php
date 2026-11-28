@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
+use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationRejected;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -75,4 +77,22 @@ it('rejects without note', function (): void {
     );
 
     expect($this->application->fresh()->status)->toBe(ApplicationStatus::Rejected);
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    $notifier = Mockery::mock(MembershipApplicationNotifier::class);
+    $notifier->shouldNotReceive('notifyRejected');
+    app()->instance(MembershipApplicationNotifier::class, $notifier);
+
+    DB::beginTransaction();
+
+    try {
+        RejectMembershipApplicationAction::make()->handle(application: $this->application, reviewer: $this->reviewer);
+        Event::assertNotDispatched(MembershipApplicationRejected::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipApplicationRejected::class);
+    expect($this->application->fresh()->status)->toBe(ApplicationStatus::Pending);
 });

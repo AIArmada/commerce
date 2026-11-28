@@ -87,11 +87,13 @@ final class ApplyForMembershipAction
             return $application;
         }
 
-        MembershipApplicationSubmitted::dispatch($application);
+        DB::afterCommit(static function () use ($application): void {
+            MembershipApplicationSubmitted::dispatch($application);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifySubmitted(MembershipApplicationMapper::snapshot($application));
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifySubmitted(MembershipApplicationMapper::snapshot($application));
+            }
+        });
 
         return $application;
     }

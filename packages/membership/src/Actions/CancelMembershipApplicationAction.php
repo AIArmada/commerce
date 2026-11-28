@@ -49,6 +49,8 @@ final class CancelMembershipApplicationAction
             return $lockedApplication;
         });
 
-        MembershipApplicationCancelled::dispatch($cancelledApplication);
+        DB::afterCommit(static function () use ($cancelledApplication): void {
+            MembershipApplicationCancelled::dispatch($cancelledApplication);
+        });
     }
 }

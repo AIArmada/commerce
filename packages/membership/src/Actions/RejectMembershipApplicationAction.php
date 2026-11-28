@@ -50,11 +50,13 @@ final class RejectMembershipApplicationAction
             return $lockedApplication;
         });
 
-        MembershipApplicationRejected::dispatch($rejectedApplication);
+        DB::afterCommit(static function () use ($rejectedApplication): void {
+            MembershipApplicationRejected::dispatch($rejectedApplication);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyRejected(MembershipApplicationMapper::snapshot($rejectedApplication));
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifyRejected(MembershipApplicationMapper::snapshot($rejectedApplication));
+            }
+        });
     }
 
     private function normalizeNote(?string $note): ?string

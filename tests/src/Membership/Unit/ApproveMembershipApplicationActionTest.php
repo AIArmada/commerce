@@ -6,12 +6,14 @@ use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\ApproveMembershipApplicationAction;
+use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -107,4 +109,22 @@ it('rejects approving a terminal application', function (): void {
         reviewer: $this->reviewer,
         role: MemberRole::Admin,
     ))->toThrow(RuntimeException::class, 'Only pending membership applications can be approved.');
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    $notifier = Mockery::mock(MembershipApplicationNotifier::class);
+    $notifier->shouldNotReceive('notifyApproved');
+    app()->instance(MembershipApplicationNotifier::class, $notifier);
+
+    DB::beginTransaction();
+
+    try {
+        ApproveMembershipApplicationAction::make()->handle(application: $this->application, reviewer: $this->reviewer, role: MemberRole::Admin);
+        Event::assertNotDispatched(MembershipApplicationApproved::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipApplicationApproved::class);
+    expect($this->application->fresh()->status)->toBe(ApplicationStatus::Pending);
 });

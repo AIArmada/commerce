@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\ApplyForMembershipAction;
+use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -127,4 +129,22 @@ it('reuses a pending application for the same subject and applicant', function (
             ->count())->toBe(1);
 
     Event::assertDispatchedTimes(MembershipApplicationSubmitted::class, 1);
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    $notifier = Mockery::mock(MembershipApplicationNotifier::class);
+    $notifier->shouldNotReceive('notifySubmitted');
+    app()->instance(MembershipApplicationNotifier::class, $notifier);
+
+    DB::beginTransaction();
+
+    try {
+        ApplyForMembershipAction::make()->handle(subject: $this->subject, user: $this->user, justification: 'Rolled back application.');
+        Event::assertNotDispatched(MembershipApplicationSubmitted::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipApplicationSubmitted::class);
+    expect(MembershipApplication::query()->count())->toBe(0);
 });

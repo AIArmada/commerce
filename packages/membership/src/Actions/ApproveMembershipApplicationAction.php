@@ -76,11 +76,13 @@ final class ApproveMembershipApplicationAction
             return $lockedApplication;
         });
 
-        MembershipApplicationApproved::dispatch($approvedApplication);
+        DB::afterCommit(static function () use ($approvedApplication): void {
+            MembershipApplicationApproved::dispatch($approvedApplication);
 
-        if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyApproved(MembershipApplicationMapper::snapshot($approvedApplication));
-        }
+            if (app()->bound(MembershipApplicationNotifier::class)) {
+                app(MembershipApplicationNotifier::class)->notifyApproved(MembershipApplicationMapper::snapshot($approvedApplication));
+            }
+        });
     }
 
     private function normalizeNote(?string $note): ?string

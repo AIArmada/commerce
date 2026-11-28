@@ -13,6 +13,7 @@ use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -159,6 +160,20 @@ it('rolls back acceptance when role assignment fails', function (): void {
 
     expect($this->invitation->fresh()->accepted_at)->toBeNull()
         ->and($this->subject->members()->count())->toBe(0);
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    DB::beginTransaction();
+
+    try {
+        AcceptInvitationAction::make()->handle(invitation: $this->invitation, user: $this->acceptor);
+        Event::assertNotDispatched(MembershipInvitationAccepted::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipInvitationAccepted::class);
+    expect($this->invitation->fresh()->accepted_at)->toBeNull();
 });
 
 class MembershipUserWithoutRoles extends Model

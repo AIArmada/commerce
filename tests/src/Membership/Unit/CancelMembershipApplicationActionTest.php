@@ -10,6 +10,7 @@ use AIArmada\Membership\Events\MembershipApplicationCancelled;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 uses(MembershipTestCase::class);
@@ -52,4 +53,18 @@ it('rejects cancelling an approved application', function (): void {
 
     expect(fn () => CancelMembershipApplicationAction::make()->handle(application: $this->application))
         ->toThrow(RuntimeException::class, 'Only pending membership applications can be cancelled.');
+});
+
+it('does not dispatch lifecycle side effects for a rolled back host transaction', function (): void {
+    DB::beginTransaction();
+
+    try {
+        CancelMembershipApplicationAction::make()->handle(application: $this->application);
+        Event::assertNotDispatched(MembershipApplicationCancelled::class);
+    } finally {
+        DB::rollBack();
+    }
+
+    Event::assertNotDispatched(MembershipApplicationCancelled::class);
+    expect($this->application->fresh()->status)->toBe(ApplicationStatus::Pending);
 });

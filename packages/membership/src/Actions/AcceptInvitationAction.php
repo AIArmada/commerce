@@ -83,7 +83,9 @@ final class AcceptInvitationAction
             return $lockedInvitation;
         });
 
-        MembershipInvitationAccepted::dispatch($acceptedInvitation->fresh());
+        DB::afterCommit(static function () use ($acceptedInvitation): void {
+            MembershipInvitationAccepted::dispatch($acceptedInvitation);
+        });
     }
 
     private function emailFor(Model $user): ?string
