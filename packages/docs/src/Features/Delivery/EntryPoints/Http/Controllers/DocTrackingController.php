@@ -38,49 +38,13 @@ final class DocTrackingController extends Controller
      */
     public function click(string $token): RedirectResponse
     {
-        $url = $this->sanitizeRedirectUrl($this->tracking->trackClick($token));
+        $url = $this->tracking->trackClick($token) ?? $this->fallbackRedirectUrl();
 
         return redirect()->to($url)->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',
             'Referrer-Policy' => 'no-referrer',
         ]);
-    }
-
-    private function sanitizeRedirectUrl(?string $url): string
-    {
-        $fallback = $this->fallbackRedirectUrl();
-
-        if (! is_string($url)) {
-            return $fallback;
-        }
-
-        $candidate = mb_trim($url);
-
-        if (
-            $candidate === ''
-            || str_starts_with($candidate, '//')
-            || str_contains($candidate, '\\')
-            || preg_match('/[\x00-\x20\x7f]/', $candidate) === 1
-        ) {
-            return $fallback;
-        }
-
-        if (str_starts_with($candidate, '/')) {
-            return $candidate;
-        }
-
-        if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
-            return $fallback;
-        }
-
-        $scheme = mb_strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
-
-        if (! in_array($scheme, ['http', 'https'], true)) {
-            return $fallback;
-        }
-
-        return $candidate;
     }
 
     private function fallbackRedirectUrl(): string

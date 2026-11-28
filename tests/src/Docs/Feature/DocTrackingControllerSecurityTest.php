@@ -33,7 +33,9 @@ test('click tracking rejects non-http redirect schemes', function (): void {
     expect($response->getTargetUrl())->toBe('https://app.example.test')
         ->and($cacheControl)->toContain('no-store')
         ->and($cacheControl)->toContain('no-cache')
-        ->and($response->headers->get('Referrer-Policy'))->toBe('no-referrer');
+        ->and($response->headers->get('Referrer-Policy'))->toBe('no-referrer')
+        ->and($email->refresh()->click_count)->toBe(0)
+        ->and($email->clicked_at)->toBeNull();
 });
 
 test('click tracking allows safe absolute http urls', function (): void {
@@ -155,7 +157,9 @@ test('click tracking rejects backslash-based relative redirects', function (): v
     $trackedUrl = app(TrackDocEmail::class)->getTrackedLinkUrl($email, '/\\external.example.test');
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
 
-    expect($response->getTargetUrl())->toBe('https://app.example.test');
+    expect($response->getTargetUrl())->toBe('https://app.example.test')
+        ->and($email->refresh()->click_count)->toBe(0)
+        ->and($email->clicked_at)->toBeNull();
 });
 
 test('tracking rejects an email whose owning document has a different owner', function (): void {

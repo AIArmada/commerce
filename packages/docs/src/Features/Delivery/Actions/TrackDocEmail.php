@@ -79,7 +79,13 @@ final readonly class TrackDocEmail
             return null;
         }
 
-        return (new DocEmail)->getConnection()->transaction(function () use ($data): ?string {
+        $url = $this->safeRedirectUrl($data['url']);
+
+        if ($url === null) {
+            return null;
+        }
+
+        return (new DocEmail)->getConnection()->transaction(function () use ($data, $url): ?string {
             $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
 
             if (! $email instanceof DocEmail || ! $this->matchesDocumentOwner($email)) {
@@ -98,8 +104,38 @@ final readonly class TrackDocEmail
                 $email->save();
             });
 
-            return $data['url'];
+            return $url;
         });
+    }
+
+    private function safeRedirectUrl(string $url): ?string
+    {
+        $candidate = mb_trim($url);
+
+        if (
+            $candidate === ''
+            || str_starts_with($candidate, '//')
+            || str_contains($candidate, '\\')
+            || preg_match('/[\x00-\x20\x7f]/', $candidate) === 1
+        ) {
+            return null;
+        }
+
+        if (str_starts_with($candidate, '/')) {
+            return $candidate;
+        }
+
+        if (filter_var($candidate, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $scheme = mb_strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
+
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        return $candidate;
     }
 
     private function matchesDocumentOwner(DocEmail $email): bool
