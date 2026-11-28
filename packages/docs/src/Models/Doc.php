@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
+use AIArmada\Docs\Runtime\LifecycleRelationModels;
 use AIArmada\Docs\Runtime\PaymentRelationModel;
 use AIArmada\Docs\Runtime\TemplateRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
@@ -74,7 +75,8 @@ use Throwable;
  * @property CarbonImmutable $updated_at
  * @property-read RelatedDocTemplate|null $template
  * @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate
- * @property-read Collection<int, DocStatusHistory> $statusHistories
+ * @property-read Collection<int, RelatedDocStatusHistory> $statusHistories
+ * @phpstan-type RelatedDocStatusHistory \AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory
  * @property-read Collection<int, RelatedDocPayment> $payments
  * @phpstan-type RelatedDocPayment \AIArmada\Docs\Features\Payments\Models\DocPayment
  * @property-read Collection<int, RelatedDocVersion> $versions
@@ -85,7 +87,8 @@ use Throwable;
  * @phpstan-type RelatedDocApproval \AIArmada\Docs\Features\Approvals\Models\DocApproval
  * @property-read Collection<int, RelatedDocShareLink> $shareLinks
  * @phpstan-type RelatedDocShareLink \AIArmada\Docs\Features\Delivery\Models\DocShareLink
- * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
+ * @property-read RelatedDocEInvoiceSubmission|null $eInvoiceSubmission
+ * @phpstan-type RelatedDocEInvoiceSubmission \AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission
  * @property-read Model|null $docable
  */
 final class Doc extends Model implements Auditable
@@ -150,11 +153,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocStatusHistory, $this>
+     * @return HasMany<RelatedDocStatusHistory, $this>
      */
     public function statusHistories(): HasMany
     {
-        return $this->hasMany(DocStatusHistory::class);
+        return $this->hasMany(app(LifecycleRelationModels::class)->statusHistory(), 'doc_id');
     }
 
     /**
@@ -198,11 +201,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasOne<DocEInvoiceSubmission, $this>
+     * @return HasOne<RelatedDocEInvoiceSubmission, $this>
      */
     public function eInvoiceSubmission(): HasOne
     {
-        return $this->hasOne(DocEInvoiceSubmission::class);
+        return $this->hasOne(app(LifecycleRelationModels::class)->eInvoiceSubmission(), 'doc_id');
     }
 
     public function isOverdue(): bool

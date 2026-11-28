@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
 use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
-use AIArmada\Docs\Models\DocEInvoiceSubmission;
+use AIArmada\Docs\Features\Lifecycle\Models\DocEInvoiceSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -60,4 +60,12 @@ test('einvoice portal url generation', function (): void {
     // No long id
     $sub->update(['long_id' => null]);
     expect($sub->getPortalUrl())->toBeNull();
+});
+
+test('einvoice portal URL encodes the submission identifier as one path segment', function (): void {
+    config(['docs.einvoice.sandbox' => true]);
+
+    $submission = new DocEInvoiceSubmission(['long_id' => 'id?redirect=https://example.test/#fragment']);
+
+    expect($submission->getPortalUrl())->toBe('https://preprod.myinvois.hasil.gov.my/document/id%3Fredirect%3Dhttps%3A%2F%2Fexample.test%2F%23fragment');
 });

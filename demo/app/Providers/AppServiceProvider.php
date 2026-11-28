@@ -28,7 +28,7 @@ use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Approvals\Models\DocApproval;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
-use AIArmada\Docs\Models\DocStatusHistory;
+use AIArmada\Docs\Features\Lifecycle\Models\DocStatusHistory;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;

@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Lifecycle\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Database\Factories\DocEInvoiceSubmissionFactory;
 use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
 use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
+use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,6 +44,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 final class DocEInvoiceSubmission extends Model implements Auditable
 {
     use HasCommerceAudit;
+    /** @use HasFactory<DocEInvoiceSubmissionFactory> */
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -66,6 +69,11 @@ final class DocEInvoiceSubmission extends Model implements Auditable
         'completed_at',
         'failed_at',
     ];
+
+    protected static function newFactory(): DocEInvoiceSubmissionFactory
+    {
+        return DocEInvoiceSubmissionFactory::new();
+    }
 
     public function getTable(): string
     {
@@ -123,7 +131,7 @@ final class DocEInvoiceSubmission extends Model implements Auditable
             ? 'https://preprod.myinvois.hasil.gov.my'
             : 'https://myinvois.hasil.gov.my';
 
-        return $baseUrl . '/document/' . $this->long_id;
+        return $baseUrl . '/document/' . rawurlencode($this->long_id);
     }
 
     /**
