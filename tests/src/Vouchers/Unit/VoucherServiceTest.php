@@ -12,6 +12,7 @@ use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Services\VoucherService;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -464,7 +465,7 @@ test('voucher service get usage history', function (): void {
 
     $service = app(VoucherService::class);
 
-    $service->recordUsage($voucher->code, \Akaunting\Money\Money::MYR(250), metadata: ['idempotency_key' => 'history-1']);
+    $service->recordUsage($voucher->code, Money::MYR(250), metadata: ['idempotency_key' => 'history-1']);
 
     $history = $service->getUsageHistory('history');
 
