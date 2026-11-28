@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
-use AIArmada\Inventory\Features\Reservations\Queries\CompositeComponents;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;

@@ -31,12 +31,13 @@ final readonly class InventoryStockQuery
             ->select('location_id')
             ->selectRaw($this->availableAggregateExpression() . ' as available_total')
             ->groupBy('location_id')
+            ->toBase()
             ->get();
 
         $availability = [];
 
         foreach ($rows as $row) {
-            $availability[$row->location_id] = (int) $row->getAttribute('available_total');
+            $availability[$row->location_id] = (int) $row->available_total;
         }
 
         return $availability;
@@ -106,13 +107,14 @@ final readonly class InventoryStockQuery
                 ->select('inventoryable_type', 'inventoryable_id')
                 ->selectRaw($this->availableAggregateExpression() . ' as available_total')
                 ->groupBy('inventoryable_type', 'inventoryable_id')
+                ->toBase()
                 ->get();
 
             foreach ($rows as $row) {
                 $key = $row->inventoryable_type . ':' . $row->inventoryable_id;
 
                 if (array_key_exists($key, $totals)) {
-                    $totals[$key] = (int) $row->getAttribute('available_total');
+                    $totals[$key] = (int) $row->available_total;
                 }
             }
         }
