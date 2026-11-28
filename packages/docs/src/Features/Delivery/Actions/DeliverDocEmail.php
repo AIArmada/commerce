@@ -10,7 +10,9 @@ use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Cache;
+use InvalidArgumentException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
@@ -19,28 +21,24 @@ final readonly class DeliverDocEmail
 {
     public function execute(string $docEmailId, string $docId, bool $attachPdf): void
     {
-        $email = DocEmail::query()->withoutOwnerScope()->find($docEmailId);
-        $doc = Doc::query()->withoutOwnerScope()->find($docId);
+        Cache::lock('docs.email.delivery.' . $docEmailId, 300)->block(10, function () use ($docEmailId, $docId, $attachPdf): void {
+            $email = DocEmail::query()->withoutOwnerScope()->find($docEmailId);
+            $doc = Doc::query()->withoutOwnerScope()->find($docId);
 
-        if (
-            ! $email instanceof DocEmail || ! $doc instanceof Doc
-            || (string) $email->doc_id !== (string) $doc->getKey()
-            || $email->getAttribute('owner_type') !== $doc->getAttribute('owner_type')
-            || (string) $email->getAttribute('owner_id') !== (string) $doc->getAttribute('owner_id')
-        ) {
-            return;
-        }
+            if (! $email instanceof DocEmail || ! $doc instanceof Doc
+                || (string) $email->doc_id !== (string) $doc->getKey()
+                || $email->owner_type !== $doc->owner_type
+                || (string) $email->owner_id !== (string) $doc->owner_id) {
+                return;
+            }
 
-        $owner = $email->owner;
+            try {
+                $owner = OwnerContext::fromTypeAndIdOrFail($email->owner_type, $email->owner_id);
+            } catch (InvalidArgumentException | ModelNotFoundException) {
+                return;
+            }
 
-        if ($email->hasOwner() && $owner === null) {
-            return;
-        }
-
-        Cache::lock('docs.email.delivery.' . $docEmailId, 300)->block(10, function () use ($owner, $email, $doc, $attachPdf): void {
             OwnerContext::withOwner($owner, function () use ($email, $doc, $attachPdf): void {
-                $email->refresh();
-
                 if (in_array($email->status, [EmailStatus::Sent, EmailStatus::Delivered, EmailStatus::Bounced], true)) {
                     return;
                 }

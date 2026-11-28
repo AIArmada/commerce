@@ -96,7 +96,7 @@ final class DocEmailService implements DocumentEmailSender
             ?? $this->getDefaultBody($doc);
 
         // Create email record
-        $email = OwnerContext::withOwner($doc->owner, fn (): DocEmail => $doc->emails()->create([
+        $email = OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocEmail => $doc->emails()->create([
             'doc_email_template_id' => $template?->id,
             'recipient_email' => $recipientEmail,
             'recipient_name' => $recipientName,
@@ -174,7 +174,7 @@ final class DocEmailService implements DocumentEmailSender
             return $query;
         }
 
-        return $query->forOwner($doc->owner, (bool) config('docs.owner.include_global', false));
+        return $query->forOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), (bool) config('docs.owner.include_global', false));
     }
 
     /**

@@ -40,7 +40,7 @@ final class DocRenderService
 
     public function renderHtml(Doc $doc, RenderAudience $audience): HtmlString
     {
-        $doc->loadMissing(['template', 'docable']);
+        $doc->loadMissing('docable');
 
         $template = $this->resolveTemplate($doc);
         $layout = $template?->layout ?: TemplateBlockRegistry::defaultLayout();
@@ -92,7 +92,7 @@ final class DocRenderService
 
         $plainToken = Str::random(48);
 
-        $shareLink = OwnerContext::withOwner($doc->owner, function () use ($data, $doc, $plainToken): DocShareLink {
+        $shareLink = OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($data, $doc, $plainToken): DocShareLink {
             $shareLink = new DocShareLink([
                 'doc_id' => $doc->getKey(),
                 'token_hash' => hash('sha256', $plainToken),
@@ -433,12 +433,8 @@ final class DocRenderService
 
     private function resolveTemplate(Doc $doc): ?DocTemplate
     {
-        if ($doc->relationLoaded('template') && $doc->template instanceof DocTemplate) {
-            return $doc->template;
-        }
-
         if ($doc->doc_template_id !== null) {
-            return $this->templateQueryForDoc($doc)->whereKey($doc->doc_template_id)->first();
+            return $this->templateQueryForDoc($doc)->where('doc_type', $doc->doc_type)->whereKey($doc->doc_template_id)->first();
         }
 
         return $this->templateQueryForDoc($doc)
@@ -452,7 +448,15 @@ final class DocRenderService
      */
     private function templateQueryForDoc(Doc $doc): Builder
     {
-        return DocTemplate::query()->forOwner($doc->owner, (bool) config('docs.owner.include_global', false));
+        $query = DocTemplate::query();
+
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
+        }
+
+        $owner = OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id);
+
+        return $query->forOwner($owner, (bool) config('docs.owner.include_global', false));
     }
 
     private function resolveStorageDisk(string $docType): string

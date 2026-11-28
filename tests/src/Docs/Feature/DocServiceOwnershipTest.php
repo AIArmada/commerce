@@ -12,6 +12,7 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Services\DocService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
@@ -116,5 +117,22 @@ test('copies documents only inside the source owner scope', function (): void {
             ->and((string) $converted->owner_id)->toBe((string) $owner->getKey())
             ->and($clone->discount_amount_minor)->toBe(100)
             ->and($converted->discount_amount_minor)->toBe(100);
+    });
+});
+
+test('orphaned document owners cannot be silently treated as global', function (): void {
+    $owner = User::factory()->create();
+    $service = app(DocService::class);
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
+        DocType::Invoice,
+        ['total_minor' => 100, 'currency' => 'MYR'],
+        $owner,
+    ));
+
+    $owner->delete();
+
+    OwnerContext::withOwner($owner, function () use ($doc): void {
+        expect(fn () => app(DocumentVersions::class)->capture((string) $doc->getKey()))
+            ->toThrow(ModelNotFoundException::class);
     });
 });

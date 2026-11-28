@@ -28,7 +28,7 @@ final readonly class CreateDocVersion
                 ->lockForUpdate()
                 ->findOrFail($docId);
 
-            return OwnerContext::withOwner($lockedDoc->owner, function () use ($lockedDoc, $summary): string {
+            return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($lockedDoc->owner_type, $lockedDoc->owner_id), function () use ($lockedDoc, $summary): string {
                 $latest = (int) $lockedDoc->versions()->max('version_number');
 
                 if ($latest >= 2147483647) {

@@ -44,7 +44,7 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 throw (new ModelNotFoundException)->setModel(Doc::class, [$docId]);
             }
 
-            return OwnerContext::withOwner($lockedDoc->owner, function () use ($lockedDoc, $paymentData): string {
+            return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($lockedDoc->owner_type, $lockedDoc->owner_id), function () use ($lockedDoc, $paymentData): string {
                 $paymentCurrency = mb_strtoupper((string) ($paymentData['currency'] ?? $lockedDoc->currency));
 
                 if ($paymentCurrency !== mb_strtoupper($lockedDoc->currency)) {
