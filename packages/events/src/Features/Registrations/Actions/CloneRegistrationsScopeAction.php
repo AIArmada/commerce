@@ -29,20 +29,18 @@ final class CloneRegistrationsScopeAction
             throw new InvalidArgumentException('Registration questions can only be cloned between the same scope type.');
         }
 
-        $sourceColumn = match ($sourceScopeType) {
-            'event' => 'event_id',
-            'occurrence' => 'event_occurrence_id',
-            'session' => 'event_session_id',
-            default => throw new InvalidArgumentException(sprintf('Unknown event scope type [%s].', $sourceScopeType)),
-        };
-
-        $target = $this->catalog->describeScope($targetScopeType, $targetScopeId);
-
-        if ($target === null) {
-            throw new InvalidArgumentException(sprintf('The clone target scope [%s] does not exist.', $targetScopeId));
+        if ($sourceScopeId === $targetScopeId) {
+            throw new InvalidArgumentException('Cannot clone a scope into itself.');
         }
 
-        DB::transaction(function () use ($sourceColumn, $sourceScopeId, $target): void {
+        $source = $this->catalog->resolveScope($sourceScopeType, $sourceScopeId);
+        $target = $this->catalog->resolveScope($targetScopeType, $targetScopeId);
+
+        if ($source === null || $target === null) {
+            throw new InvalidArgumentException('Both clone scopes must exist in the current owner scope.');
+        }
+
+        DB::transaction(function () use ($source, $target): void {
             $existingFieldKeys = EventRegistrationQuestion::query()
                 ->where('event_id', $target->eventId)
                 ->where('event_occurrence_id', $target->occurrenceId)
@@ -51,8 +49,10 @@ final class CloneRegistrationsScopeAction
                 ->all();
 
             EventRegistrationQuestion::query()
-                ->where($sourceColumn, $sourceScopeId)
-                ->chunkById(200, function (iterable $questions) use ($existingFieldKeys, $target): void {
+                ->where('event_id', $source->eventId)
+                ->where('event_occurrence_id', $source->occurrenceId)
+                ->where('event_session_id', $source->sessionId)
+                ->chunkById(200, function (iterable $questions) use (&$existingFieldKeys, $target): void {
                     foreach ($questions as $question) {
                         $fieldKey = (string) $question->field_key;
 

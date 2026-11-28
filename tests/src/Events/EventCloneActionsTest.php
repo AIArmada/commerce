@@ -617,3 +617,52 @@ it('restores an event template using the configured event model', function (): v
 
     expect($restored->occurrences()->count())->toBe(1);
 });
+
+it('clones only event-level locations into an event-level clone', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => null,
+        'event_session_id' => null,
+        'label' => 'Event hall',
+    ]);
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_session_id' => null,
+        'label' => 'Occurrence hall',
+    ]);
+
+    $cloneId = app(EventCloneService::class)->cloneEvent($event->id);
+    $locations = EventLocation::query()->where('event_id', $cloneId)->get();
+
+    expect($locations)->toHaveCount(1)
+        ->and($locations->first()->label)->toBe('Event hall')
+        ->and($locations->first()->event_occurrence_id)->toBeNull();
+});
+
+it('remaps occurrence location parent IDs when cloning across events', function (): void {
+    $event = Event::factory()->create();
+    $target = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_session_id' => null,
+        'label' => 'Occurrence hall',
+    ]);
+
+    $cloneId = app(EventCloneService::class)->cloneOccurrence($occurrence->id, [
+        'target_event_id' => $target->id,
+        'clone_sessions' => false,
+    ]);
+
+    $location = EventLocation::query()->where('event_occurrence_id', $cloneId)->sole();
+
+    expect($location->event_id)->toBe($target->id)
+        ->and($location->event_session_id)->toBeNull()
+        ->and($location->label)->toBe('Occurrence hall');
+});
