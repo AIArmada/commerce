@@ -45,11 +45,11 @@ final class CostArithmetic
             throw new OverflowException('Inventory aggregate is not a supported non-negative integer.');
         }
 
-        $digits = ltrim($value, '0');
+        $digits = mb_ltrim($value, '0');
         $maximum = (string) PHP_INT_MAX;
 
-        if (strlen($digits) > strlen($maximum)
-            || (strlen($digits) === strlen($maximum) && strcmp($digits, $maximum) > 0)) {
+        if (mb_strlen($digits) > mb_strlen($maximum)
+            || (mb_strlen($digits) === mb_strlen($maximum) && strcmp($digits, $maximum) > 0)) {
             throw new OverflowException('Inventory aggregate exceeds the supported integer range.');
         }
 
