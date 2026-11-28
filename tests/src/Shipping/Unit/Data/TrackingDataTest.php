@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\TrackingStatus;
-use Illuminate\Support\Collection;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 describe('TrackingData', function (): void {
     it('can create tracking data with events', function (): void {
-        $events = collect([
+        $events = [
             new TrackingEventData(
                 code: 'PU',
                 description: 'Package picked up',
@@ -24,7 +23,7 @@ describe('TrackingData', function (): void {
                 normalizedStatus: TrackingStatus::InTransit,
                 location: 'Distribution Center'
             ),
-        ]);
+        ];
 
         $tracking = new TrackingData(
             trackingNumber: 'TRACK123',
@@ -37,7 +36,7 @@ describe('TrackingData', function (): void {
 
         expect($tracking->trackingNumber)->toBe('TRACK123');
         expect($tracking->status)->toBe(TrackingStatus::InTransit);
-        expect($tracking->events)->toBeInstanceOf(Collection::class);
+        expect($tracking->events)->toBeArray();
         expect($tracking->events)->toHaveCount(2);
         expect($tracking->carrier)->toBe('FedEx');
         expect($tracking->estimatedDelivery)->not->toBeNull();
@@ -48,35 +47,49 @@ describe('TrackingData', function (): void {
         $delivered = new TrackingData(
             trackingNumber: 'TRACK123',
             status: TrackingStatus::Delivered,
-            events: collect()
+            events: []
         );
 
         $inTransit = new TrackingData(
             trackingNumber: 'TRACK456',
             status: TrackingStatus::InTransit,
-            events: collect()
+            events: []
         );
 
         expect($delivered->isDelivered())->toBeTrue();
         expect($inTransit->isDelivered())->toBeFalse();
     });
 
+    it('recognizes all successful delivery statuses without treating loss or return as delivery', function (TrackingStatus $status, bool $expected): void {
+        $tracking = new TrackingData(trackingNumber: 'TRACK123', status: $status, events: []);
+
+        expect($tracking->isDelivered())->toBe($expected);
+    })->with([
+        [TrackingStatus::Delivered, true],
+        [TrackingStatus::DeliveredToNeighbor, true],
+        [TrackingStatus::DeliveredToLocker, true],
+        [TrackingStatus::SignedFor, true],
+        [TrackingStatus::Lost, false],
+        [TrackingStatus::ReturnDelivered, false],
+        [TrackingStatus::InTransit, false],
+    ]);
+
     it('checks if tracking has events', function (): void {
         $withEvents = new TrackingData(
             trackingNumber: 'TRACK123',
             status: TrackingStatus::InTransit,
-            events: collect([new TrackingEventData(
+            events: [new TrackingEventData(
                 code: 'PU',
                 description: 'Picked up',
                 timestamp: now(),
                 normalizedStatus: TrackingStatus::PickedUp
-            )])
+            )]
         );
 
         $withoutEvents = new TrackingData(
             trackingNumber: 'TRACK456',
             status: TrackingStatus::LabelCreated,
-            events: collect()
+            events: []
         );
 
         expect($withEvents->hasEvents())->toBeTrue();
@@ -101,18 +114,26 @@ describe('TrackingData', function (): void {
         $tracking = new TrackingData(
             trackingNumber: 'TRACK123',
             status: TrackingStatus::InTransit,
-            events: collect([$event1, $event2])
+            events: [$event1, $event2]
         );
 
         $latest = $tracking->getLatestEvent();
-        expect($latest)->toBe($event1); // First in collection is latest
+        expect($latest)->toBe($event2);
+
+        $reversed = new TrackingData(
+            trackingNumber: 'TRACK123',
+            status: TrackingStatus::InTransit,
+            events: [$event2, $event1]
+        );
+
+        expect($reversed->getLatestEvent())->toBe($event2);
     });
 
     it('returns null for latest event when no events', function (): void {
         $tracking = new TrackingData(
             trackingNumber: 'TRACK123',
             status: TrackingStatus::LabelCreated,
-            events: collect()
+            events: []
         );
 
         expect($tracking->getLatestEvent())->toBeNull();

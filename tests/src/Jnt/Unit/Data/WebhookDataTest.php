@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntValidationException;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 describe('WebhookData', function (): void {
-    describe('fromRequest', function (): void {
+    describe('parseWebhook', function (): void {
         it('parses valid webhook payload', function (): void {
             $bizContent = json_encode([
                 'billCode' => 'JT001',
@@ -36,7 +38,7 @@ describe('WebhookData', function (): void {
                 'timestamp' => '1622520000000',
             ]);
 
-            $webhook = WebhookData::fromRequest($request);
+            $webhook = (new WebhookService(null))->parseWebhook($request);
 
             expect($webhook->billCode)->toBe('JT001')
                 ->and($webhook->txlogisticId)->toBe('ORDER123')
@@ -68,7 +70,7 @@ describe('WebhookData', function (): void {
                 'bizContent' => $bizContent,
             ]);
 
-            $webhook = WebhookData::fromRequest($request);
+            $webhook = (new WebhookService(null))->parseWebhook($request);
 
             expect($webhook->billCode)->toBe('JT002')
                 ->and($webhook->txlogisticId)->toBeNull()
@@ -119,7 +121,7 @@ describe('WebhookData', function (): void {
                 'bizContent' => $bizContent,
             ]);
 
-            $webhook = WebhookData::fromRequest($request);
+            $webhook = (new WebhookService(null))->parseWebhook($request);
 
             expect($webhook->details)->toHaveCount(3)
                 ->and($webhook->details[0]->scanType)->toBe('收件')
@@ -132,7 +134,7 @@ describe('WebhookData', function (): void {
                 'digest' => 'test_signature',
             ]);
 
-            WebhookData::fromRequest($request);
+            (new WebhookService(null))->parseWebhook($request);
         })->throws(ValidationException::class);
 
         it('throws exception when bizContent is not valid JSON', function (): void {
@@ -140,7 +142,7 @@ describe('WebhookData', function (): void {
                 'bizContent' => 'not-valid-json',
             ]);
 
-            WebhookData::fromRequest($request);
+            (new WebhookService(null))->parseWebhook($request);
         })->throws(JntValidationException::class);
 
         it('throws exception when bizContent is missing billCode', function (): void {
@@ -152,7 +154,7 @@ describe('WebhookData', function (): void {
                 'bizContent' => $bizContent,
             ]);
 
-            WebhookData::fromRequest($request);
+            (new WebhookService(null))->parseWebhook($request);
         })->throws(JntValidationException::class);
 
         it('throws exception when bizContent is missing details', function (): void {
@@ -164,7 +166,7 @@ describe('WebhookData', function (): void {
                 'bizContent' => $bizContent,
             ]);
 
-            WebhookData::fromRequest($request);
+            (new WebhookService(null))->parseWebhook($request);
         })->throws(JntValidationException::class);
 
         it('throws exception when details is not an array', function (): void {
@@ -177,8 +179,18 @@ describe('WebhookData', function (): void {
                 'bizContent' => $bizContent,
             ]);
 
-            WebhookData::fromRequest($request);
+            (new WebhookService(null))->parseWebhook($request);
         })->throws(JntValidationException::class);
+    });
+
+    it('rejects non-string webhook identifiers', function (): void {
+        $service = new WebhookService(null);
+
+        foreach ([['billCode' => ['invalid'], 'details' => []], ['billCode' => 'JT001', 'txlogisticId' => 123, 'details' => []]] as $payload) {
+            $request = Request::create('/webhook', 'POST', ['bizContent' => json_encode($payload)]);
+
+            expect(fn () => $service->parseWebhook($request))->toThrow(JntValidationException::class);
+        }
     });
 
     describe('getLatestDetail', function (): void {
@@ -207,7 +219,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'PP',
             ]);
 
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: [$detail1, $detail2]
@@ -220,8 +232,27 @@ describe('WebhookData', function (): void {
                 ->and($latest->scanTime)->toBe('2024-01-16 15:00:00');
         });
 
+        it('selects the latest valid scan regardless of carrier event order', function (): void {
+            $delivered = new TrackingDetailData('2024-01-16T15:00:00+08:00', 'Delivered', '5', 'Delivery', 'SIGN');
+            $collected = new TrackingDetailData('2024-01-15T10:00:00+08:00', 'Collected', '1', 'Collection', 'PICKUP');
+            $invalid = new TrackingDetailData('not-a-date', 'Invalid', '0', 'Unknown', 'UNKNOWN');
+
+            foreach ([[$delivered, $collected, $invalid], [$invalid, $collected, $delivered]] as $details) {
+                $webhook = new WebhookData('JT001', null, $details);
+                $tracking = TrackingData::make('JT001', $details);
+
+                expect($webhook->getLatestDetail())->toBe($delivered)
+                    ->and($tracking->getLatestDetail())->toBe($delivered)
+                    ->and($webhook->isDelivered())->toBeTrue()
+                    ->and($tracking->isDelivered())->toBeTrue();
+            }
+
+            expect((new WebhookData('JT001', null, [$invalid]))->getLatestDetail())->toBeNull()
+                ->and(TrackingData::make('JT001', [$invalid])->getLatestDetail())->toBeNull();
+        });
+
         it('returns null when no details exist', function (): void {
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: []
@@ -243,7 +274,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'WP',
             ]);
 
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: [$detail]
@@ -253,7 +284,7 @@ describe('WebhookData', function (): void {
         });
     });
 
-    describe('toArray (Spatie Data)', function (): void {
+    describe('toArray', function (): void {
         it('converts webhook to array with camelCase keys', function (): void {
             $detail = TrackingDetailData::fromApiArray([
                 'scanType' => '收件',
@@ -267,7 +298,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'Wilayah Persekutuan',
             ]);
 
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT001',
                 txlogisticId: 'ORDER123',
                 details: [$detail]
@@ -284,7 +315,7 @@ describe('WebhookData', function (): void {
         });
 
         it('handles null txlogisticId', function (): void {
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT002',
                 txlogisticId: null,
                 details: []
@@ -296,7 +327,7 @@ describe('WebhookData', function (): void {
         });
 
         it('handles empty details array', function (): void {
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT003',
                 txlogisticId: 'ORDER789',
                 details: []
@@ -322,7 +353,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'PP',
             ]);
 
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT004',
                 txlogisticId: null,
                 details: [$detail]
@@ -333,7 +364,7 @@ describe('WebhookData', function (): void {
         });
 
         it('returns null for helper methods when empty', function (): void {
-            $webhook = WebhookData::make(
+            $webhook = new WebhookData(
                 billCode: 'JT005',
                 txlogisticId: null,
                 details: []
@@ -404,7 +435,7 @@ describe('WebhookData', function (): void {
                 'timestamp' => '1622520000000',
             ]);
 
-            $webhook = WebhookData::fromRequest($request);
+            $webhook = (new WebhookService(null))->parseWebhook($request);
 
             expect($webhook->billCode)->toBe('JNTMY12345678')
                 ->and($webhook->txlogisticId)->toBe('SHOP-ORDER-2024-001')
@@ -412,7 +443,7 @@ describe('WebhookData', function (): void {
                 ->and($webhook->getLatestDetail()->scanType)->toBe('派件')
                 ->and($webhook->getLatestDetail()->description)->toBe('Out for delivery');
 
-            $response = $webhook->toJntAckResponse();
+            $response = (new WebhookService(null))->successResponse();
             expect($response['code'])->toBe('1')
                 ->and($response['data'])->toBe('SUCCESS');
 

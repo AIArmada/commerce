@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
+use AIArmada\Jnt\Data\TrackingStatus as JntTrackingStatus;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\JntStatusMapper;
-use AIArmada\Jnt\Services\JntTrackingService;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Enums\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
+use Carbon\CarbonImmutable;
 
 // ============================================
 // JntShippingDriver Tests
@@ -24,12 +26,10 @@ use AIArmada\Shipping\Enums\DriverCapability;
 beforeEach(function (): void {
     $this->jntService = Mockery::mock(JntExpressService::class);
     $this->trackingService = Mockery::mock(JntTrackingService::class);
-    $this->statusMapper = new JntStatusMapper;
 
     $this->driver = new JntShippingDriver(
         $this->jntService,
         $this->trackingService,
-        $this->statusMapper
     );
 });
 
@@ -104,8 +104,8 @@ describe('available methods', function (): void {
         $methods = $this->driver->getAvailableMethods();
 
         expect($methods)->toHaveCount(2);
-        expect($methods->first()->code)->toBe('EZ');
-        expect($methods->last()->code)->toBe('EXPRESS');
+        expect($methods[0]->code)->toBe('EZ');
+        expect($methods[array_key_last($methods)]->code)->toBe('EXPRESS');
     });
 
     it('methods have tracking available', function (): void {
@@ -146,9 +146,21 @@ describe('getRates', function (): void {
         $rates = $this->driver->getRates($origin, $destination, $packages);
 
         expect($rates)->not->toBeEmpty();
-        expect($rates->first()->carrier)->toBe('jnt');
-        expect($rates->first()->service)->toBe('EZ');
-        expect($rates->first()->currency)->toBe('MYR');
+        expect($rates[0]->carrier)->toBe('jnt');
+        expect($rates[0]->service)->toBe('EZ');
+        expect($rates[0]->currency)->toBe('MYR');
+    });
+
+    it('quotes repeated packages using their combined weight', function (): void {
+        config(['jnt.shipping.base_rate' => 500, 'jnt.shipping.per_kg_rate' => 200]);
+
+        $address = new AddressData(name: 'Test', phone: '123', line1: 'Test', postcode: '50000', country: 'MYS');
+        $repeated = $this->driver->getRates($address, $address, [new PackageData(weight: 1000, quantity: 3)]);
+        $combined = $this->driver->getRates($address, $address, [new PackageData(weight: 3000)]);
+        $single = $this->driver->getRates($address, $address, [new PackageData(weight: 1000)]);
+
+        expect($repeated[0]->rate)->toBe($combined[0]->rate)
+            ->and($repeated[0]->rate)->toBeGreaterThan($single[0]->rate);
     });
 
     it('applies higher rate for East Malaysia', function (): void {
@@ -183,13 +195,14 @@ describe('getRates', function (): void {
         $ratesWest = $this->driver->getRates($origin, $destinationWest, $packages);
         $ratesEast = $this->driver->getRates($origin, $destinationEast, $packages);
 
-        expect($ratesEast->first()->rate)->toBeGreaterThan($ratesWest->first()->rate);
+        expect($ratesEast[0]->rate)->toBeGreaterThan($ratesWest[0]->rate);
     });
 
     it('rounds regional multipliers in integer minor units at the half-sen boundary', function (): void {
         config([
             'jnt.shipping.base_rate' => 1,
             'jnt.shipping.per_kg_rate' => 0,
+            'jnt.shipping.min_charge' => 0,
             'jnt.shipping.region_multipliers_bp' => ['sabah' => 15000],
         ]);
 
@@ -214,10 +227,10 @@ describe('getRates', function (): void {
         );
 
         config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 15000]]);
-        $roundedUp = $this->driver->getRates($origin, $halfSen, $packages)->first();
+        $roundedUp = $this->driver->getRates($origin, $halfSen, $packages)[0] ?? null;
 
         config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 14999]]);
-        $roundedDown = $this->driver->getRates($origin, $halfSen, $packages)->first();
+        $roundedDown = $this->driver->getRates($origin, $halfSen, $packages)[0] ?? null;
 
         expect($roundedUp?->rate)->toBe(2)
             ->and($roundedDown?->rate)->toBe(1);
@@ -292,10 +305,7 @@ describe('createShipment', function (): void {
             })
             ->andReturn(new OrderData(orderId: 'REF-MONEY', trackingNumber: 'JNT-MONEY-1'));
 
-        $this->jntService->shouldReceive('printOrder')
-            ->once()
-            ->with('REF-MONEY', 'JNT-MONEY-1')
-            ->andReturn([]);
+        $this->jntService->shouldNotReceive('printOrder');
 
         $shipment = ShipmentData::from([
             'reference' => 'REF-MONEY',
@@ -460,5 +470,44 @@ describe('cancelShipment', function (): void {
 
         expect($result->outcomeType)->toBe('unknown')
             ->and($result->retryable)->toBeTrue();
+    });
+});
+
+describe('track', function (): void {
+    it('orders events chronologically and reports the latest delivery scan', function (): void {
+        $this->trackingService->shouldReceive('track')
+            ->once()
+            ->andReturn([
+                'tracking_number' => 'JNT-TRACK-1',
+                'order_id' => 'ORDER-TRACK-1',
+                'current_status' => JntTrackingStatus::Delivered,
+                'events' => [
+                    [
+                        'status' => JntTrackingStatus::Delivered,
+                        'description' => 'Delivered later',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-16 12:00:00'),
+                        'raw' => [],
+                    ],
+                    [
+                        'status' => JntTrackingStatus::InTransit,
+                        'description' => 'Departed hub',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-15 09:00:00'),
+                        'raw' => [],
+                    ],
+                    [
+                        'status' => JntTrackingStatus::Delivered,
+                        'description' => 'Delivered earlier',
+                        'occurred_at' => CarbonImmutable::parse('2024-01-16 10:00:00'),
+                        'raw' => [],
+                    ],
+                ],
+            ]);
+
+        $tracking = $this->driver->track('JNT-TRACK-1');
+
+        expect($tracking->status)->toBe(TrackingStatus::Delivered)
+            ->and(array_map(static fn ($event): string => $event->description, $tracking->events))
+            ->toBe(['Departed hub', 'Delivered earlier', 'Delivered later'])
+            ->and($tracking->deliveredAt?->format('Y-m-d H:i:s'))->toBe('2024-01-16 12:00:00');
     });
 });

@@ -45,20 +45,6 @@ Define available shipping methods for dropdowns:
 ],
 ```
 
-## Carriers
-
-The shipped config ships an empty `carriers` array:
-
-```php
-'carriers' => [
-    // Will use shipping.drivers if empty
-],
-```
-
-Note: no code in this package reads `filament-shipping.carriers`. Carrier
-options come from `config/shipping.php` `drivers` instead, so populating this
-key has no effect.
-
 ## Features
 
 Toggle features on/off:
@@ -94,10 +80,6 @@ return [
         'express' => 'Express',
         'overnight' => 'Overnight',
         'pickup' => 'Self Pickup',
-    ],
-
-    'carriers' => [
-        // Will use shipping.drivers if empty
     ],
 
     'features' => [

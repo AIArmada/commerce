@@ -6,8 +6,11 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Policies;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Models\ShippingZone;
-use AIArmada\Shipping\Policies\ShippingZonePolicy;
+use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 
@@ -133,5 +136,26 @@ describe('ShippingZonePolicy owner boundary', function (): void {
         );
 
         expect($allowed)->toBeTrue();
+    });
+});
+
+it('keeps rate mutations within the source and destination owner boundaries', function (): void {
+    config(['shipping.features.owner.enabled' => true, 'shipping.features.owner.include_global' => false]);
+
+    $ownerA = zonePolicyOwner('Rate Owner A');
+    $ownerB = zonePolicyOwner('Rate Owner B');
+    $zoneA = zonePolicyZone($ownerA, 'RATE-A-' . Str::random(6));
+    $zoneB = zonePolicyZone($ownerB, 'RATE-B-' . Str::random(6));
+    $api = app(ManageRateConfiguration::class);
+    $data = ['name' => 'Standard', 'method_code' => 'standard', 'calculation_type' => 'flat', 'base_rate' => 500];
+    $rateId = OwnerContext::withOwner($ownerA, fn (): string => $api->createRate($zoneA->id, $data));
+
+    OwnerContext::withOwner($ownerB, function () use ($api, $rateId): void {
+        expect(fn () => $api->updateRate($rateId, ['base_rate' => 1]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($api, $rateId, $zoneA, $zoneB): void {
+        expect(fn () => $api->updateRate($rateId, ['zone_id' => $zoneB->id]))->toThrow(AuthorizationException::class);
+        expect(ShippingRate::query()->findOrFail($rateId)->zone_id)->toBe($zoneA->id);
     });
 });

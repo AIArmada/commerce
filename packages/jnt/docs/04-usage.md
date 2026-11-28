@@ -40,7 +40,7 @@ use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Enums\ExpressType;
 use AIArmada\Jnt\Enums\ServiceType;
 use AIArmada\Jnt\Enums\PaymentType;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 // Create addresses
 $sender = new AddressData(
@@ -124,18 +124,18 @@ $result = $jntService->createOrder(
 );
 ```
 
-### Using Action Classes
+### Using Dependency Injection
 
-The package provides action classes for dependency injection:
+Inject the carrier service when creating an order from a controller:
 
 ```php
-use AIArmada\Jnt\Actions\Orders\CreateOrder;
+use AIArmada\Jnt\Services\JntExpressService;
 
 class OrderController
 {
-    public function store(CreateOrder $createOrder)
+    public function store(JntExpressService $jnt)
     {
-        $result = $createOrder->handle(
+        $result = $jnt->createOrder(
             sender: $sender,
             receiver: $receiver,
             items: [$items],
@@ -198,7 +198,7 @@ The `PackageInfoData` object describes the package dimensions:
 
 ```php
 use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 $package = new PackageInfoData(
     quantity: 1,                    // Required: Number of packages
@@ -337,7 +337,7 @@ $waybill = PrintWaybillData::fromApiArray($result);
 
 $waybill->hasBase64Content();  // true for single parcel
 $waybill->hasUrlContent();     // true for multi-parcel
-$waybill->savePdf('/path/to/waybill.pdf');
+app(\AIArmada\Jnt\Contracts\WaybillWriter::class)->write($waybill, '/path/to/waybill.pdf');
 $waybill->getPdfContent();     // Binary PDF content
 $waybill->getPdfSize();        // Size in bytes
 $waybill->getFormattedSize();  // "1.5 MB"
@@ -501,7 +501,7 @@ php artisan jnt:webhook:test --url=https://example.test/webhooks/jnt/status
 Subscribe to `TrackingUpdatedEvent` and rate carts through `JntShippingCalculator`:
 
 ```php
-use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 
 final class RecordTrackingUpdate

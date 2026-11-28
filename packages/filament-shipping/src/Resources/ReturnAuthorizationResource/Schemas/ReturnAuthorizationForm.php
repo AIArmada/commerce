@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Schemas;
 
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
+use AIArmada\Shipping\Features\Returns\States\ReturnAuthorizationStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -31,7 +31,9 @@ final class ReturnAuthorizationForm
 
                         Select::make('status')
                             ->options(fn (): array => ReturnAuthorizationStatus::options())
-                            ->required(),
+                            ->default('pending')
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Select::make('type')
                             ->options([

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Support\DestinationAddressValidator;
+use AIArmada\Shipping\Features\Shipments\Api\ValidateDestination;
 
 function shippableTestDestination(array $overrides = []): AddressData
 {
@@ -22,17 +22,17 @@ function shippableTestDestination(array $overrides = []): AddressData
 }
 
 it('passes complete destinations', function (): void {
-    expect(app(DestinationAddressValidator::class)->validate(shippableTestDestination()))->toBe([]);
+    expect(app(ValidateDestination::class)->validate(shippableTestDestination()))->toBe([]);
 });
 
 it('reports missing country-required fields', function (): void {
-    $violations = app(DestinationAddressValidator::class)->validate(shippableTestDestination(['city' => null]));
+    $violations = app(ValidateDestination::class)->validate(shippableTestDestination(['city' => null]));
 
     expect($violations)->toHaveKey('city');
 });
 
 it('reports malformed postcodes', function (): void {
-    $violations = app(DestinationAddressValidator::class)->validate(shippableTestDestination(['postcode' => 'ABC']));
+    $violations = app(ValidateDestination::class)->validate(shippableTestDestination(['postcode' => 'ABC']));
 
     expect($violations)->toHaveKey('postcode');
 });
@@ -41,5 +41,5 @@ it('returns no violations when the optional addressing integration is unavailabl
     app()->offsetUnset(AddressValidator::class);
 
     expect(app()->bound(AddressValidator::class))->toBeFalse()
-        ->and(app(DestinationAddressValidator::class)->validate(shippableTestDestination(['city' => null])))->toBe([]);
+        ->and(app(ValidateDestination::class)->validate(shippableTestDestination(['city' => null])))->toBe([]);
 });
