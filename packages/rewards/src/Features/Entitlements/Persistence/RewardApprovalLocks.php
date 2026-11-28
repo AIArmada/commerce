@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceCoordinator;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 
 /**
  * Shared approval-chain acquisition for direct approvals and appeal
@@ -39,7 +39,7 @@ final class RewardApprovalLocks
         }
 
         if ($pre->program_id !== null) {
-            RewardProgram::query()->whereKey((string) $pre->program_id)->lockForUpdate()->first();
+            app(RewardProgramLockApi::class)->lockScopedProgram((string) $pre->program_id);
         }
 
         RewardSourceComponentClaim::query()

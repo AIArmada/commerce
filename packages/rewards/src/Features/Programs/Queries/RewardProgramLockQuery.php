@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Programs\Queries;
 
-use AIArmada\Rewards\Features\Programs\Api\RewardEnrollmentPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
@@ -22,7 +22,7 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
         }
     }
 
-    public function findEnrollmentPolicy(string $programId, string $versionId): ?RewardEnrollmentPolicySnapshot
+    public function findPolicy(string $programId, string $versionId): ?RewardPolicySnapshot
     {
         RewardProgramGuard::findProgramOrFail($programId);
 
@@ -35,7 +35,7 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
             return null;
         }
 
-        return new RewardEnrollmentPolicySnapshot(
+        return new RewardPolicySnapshot(
             id: (string) $version->getKey(),
             version: $version->version,
             materialTermsHash: $version->material_terms_hash,
@@ -43,6 +43,7 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
             terms: $version->terms,
             publishedAt: $version->published_at->toIso8601String(),
             effectiveFrom: $version->effective_from->toIso8601String(),
+            compatibleWith: array_values(array_filter($version->compatible_with, is_string(...))),
         );
     }
 }

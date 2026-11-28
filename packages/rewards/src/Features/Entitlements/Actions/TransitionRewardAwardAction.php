@@ -37,7 +37,7 @@ use AIArmada\Rewards\Features\Finance\Api\RewardBudgetApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Points\Api\RewardPointsApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
@@ -516,10 +516,10 @@ final readonly class TransitionRewardAwardAction
         }
 
         $version = $award->policy_version_id !== null
-            ? RewardProgramVersion::query()->whereKey((string) $award->policy_version_id)->first()
+            ? app(RewardProgramLockApi::class)->findPolicy((string) $award->program_id, (string) $award->policy_version_id)
             : null;
 
-        if (! $version instanceof RewardProgramVersion) {
+        if ($version === null) {
             throw new InvalidArgumentException('Refused: milestone award carries no frozen policy version; fulfillment requires qualified evidence.');
         }
 
@@ -866,9 +866,9 @@ final readonly class TransitionRewardAwardAction
             throw new InvalidArgumentException('Refused: held award carries no frozen policy version; the approval is incoherent.');
         }
 
-        $version = RewardProgramVersion::query()->whereKey((string) $award->policy_version_id)->first();
+        $version = app(RewardProgramLockApi::class)->findPolicy((string) $award->program_id, (string) $award->policy_version_id);
 
-        if (! $version instanceof RewardProgramVersion) {
+        if ($version === null) {
             throw new InvalidArgumentException('Refused: held award carries no frozen policy version; the approval is incoherent.');
         }
 
@@ -1108,14 +1108,14 @@ final readonly class TransitionRewardAwardAction
     private function acquireOverturnClaimAndCaps(RewardAward $award, CarbonImmutable $decided): void
     {
         $version = $award->policy_version_id !== null
-            ? RewardProgramVersion::query()->whereKey((string) $award->policy_version_id)->first()
+            ? app(RewardProgramLockApi::class)->findPolicy((string) $award->program_id, (string) $award->policy_version_id)
             : null;
 
-        if (! $version instanceof RewardProgramVersion) {
+        if ($version === null) {
             throw new InvalidArgumentException('Refused: overturn requires the frozen policy version; milestone aggregates overturn through contribution correction.');
         }
 
-        $compatible = array_values(array_filter($version->compatible_with, is_string(...)));
+        $compatible = array_values(array_filter($version->compatibleWith, is_string(...)));
 
         $claims = RewardSourceComponentClaim::query()
             ->where('source_business_key', (string) $award->source_business_key)

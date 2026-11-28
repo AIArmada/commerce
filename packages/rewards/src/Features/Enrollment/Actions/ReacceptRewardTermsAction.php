@@ -50,7 +50,7 @@ final readonly class ReacceptRewardTermsAction
                 throw new InvalidArgumentException('Unknown reward enrollment.');
             }
 
-            $version = app(RewardProgramLockApi::class)->findEnrollmentPolicy((string) $locked->program_id, $versionId);
+            $version = app(RewardProgramLockApi::class)->findPolicy((string) $locked->program_id, $versionId);
 
             if ($version === null) {
                 throw new InvalidArgumentException('Policy version does not belong to the enrollment program.');

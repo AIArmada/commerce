@@ -8,7 +8,7 @@ use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
-use AIArmada\Rewards\Features\Programs\Api\RewardEnrollmentPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
@@ -73,7 +73,7 @@ final readonly class EnrollRewardMemberAction
         return DB::transaction(function () use ($programId, $memberType, $memberId, $versionId, $acceptedVia, $decision): RewardEnrollment {
             $programs = app(RewardProgramLockApi::class);
             $programs->lockScopedProgram($programId);
-            $version = $programs->findEnrollmentPolicy($programId, $versionId);
+            $version = $programs->findPolicy($programId, $versionId);
 
             if ($version === null) {
                 throw new InvalidArgumentException('Policy version does not belong to the program.');
@@ -181,7 +181,7 @@ final readonly class EnrollRewardMemberAction
 
     private function appendAcceptance(
         RewardEnrollment $enrollment,
-        RewardEnrollmentPolicySnapshot $version,
+        RewardPolicySnapshot $version,
         ?string $acceptedVia,
         CarbonImmutable $decision,
     ): RewardEnrollmentAcceptance {
