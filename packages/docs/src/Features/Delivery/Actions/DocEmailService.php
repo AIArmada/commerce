@@ -15,6 +15,8 @@ use AIArmada\Docs\Models\DocEmailTemplate;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
@@ -42,12 +44,14 @@ final class DocEmailService
         $this->assertValidRecipient($recipientEmail, $recipientName);
 
         if (config('docs.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(
+            $doc = OwnerWriteGuard::findOrFailForOwner(
                 Doc::class,
                 (string) $doc->getKey(),
                 owner: OwnerContext::resolve(),
                 includeGlobal: (bool) config('docs.owner.include_global', false),
             );
+        } else {
+            $doc = $doc->newQuery()->findOrFail($doc->getKey());
         }
 
         if ($template !== null) {
@@ -181,20 +185,23 @@ final class DocEmailService
             return false;
         }
 
-        $email = DocEmail::query()
-            ->when(
-                config('docs.owner.enabled', false),
-                fn (Builder $query): Builder => $query->withoutOwnerScope(),
-            )
-            ->find($data['email_id']);
+        return DB::transaction(function () use ($data): bool {
+            $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
 
-        if ($email instanceof DocEmail) {
-            OwnerContext::withOwner($email->owner, static function () use ($email): void {
-                $email->markAsOpened();
-            });
-        }
+            if (! $email instanceof DocEmail) {
+                return false;
+            }
 
-        return $email !== null;
+            try {
+                $owner = OwnerContext::fromTypeAndIdOrFail($email->owner_type, $email->owner_id);
+            } catch (Throwable) {
+                return false;
+            }
+
+            OwnerContext::withOwner($owner, static fn () => $email->markAsOpened());
+
+            return true;
+        });
     }
 
     /**
@@ -208,20 +215,23 @@ final class DocEmailService
             return null;
         }
 
-        $email = DocEmail::query()
-            ->when(
-                config('docs.owner.enabled', false),
-                fn (Builder $query): Builder => $query->withoutOwnerScope(),
-            )
-            ->find($data['email_id']);
+        return DB::transaction(function () use ($data): ?string {
+            $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
 
-        if ($email instanceof DocEmail) {
-            OwnerContext::withOwner($email->owner, static function () use ($email): void {
-                $email->markAsClicked();
-            });
-        }
+            if (! $email instanceof DocEmail) {
+                return null;
+            }
 
-        return $email instanceof DocEmail ? ($data['url'] ?? null) : null;
+            try {
+                $owner = OwnerContext::fromTypeAndIdOrFail($email->owner_type, $email->owner_id);
+            } catch (Throwable) {
+                return null;
+            }
+
+            OwnerContext::withOwner($owner, static fn () => $email->markAsClicked());
+
+            return $data['url'];
+        });
     }
 
     /**
@@ -333,7 +343,11 @@ final class DocEmailService
             /** @var array<string, mixed>|null $decoded */
             $decoded = json_decode($payload, true);
 
-            if (! is_array($decoded) || ! isset($decoded['email_id'], $decoded['type'])) {
+            if (! is_array($decoded)
+                || ! is_string($decoded['email_id'] ?? null)
+                || ! Str::isUuid($decoded['email_id'])
+                || ! in_array($decoded['type'] ?? null, ['open', 'click'], true)
+                || ($decoded['type'] === 'click' && (! is_string($decoded['url'] ?? null) || $decoded['url'] === ''))) {
                 return null;
             }
 
@@ -345,7 +359,8 @@ final class DocEmailService
 
             $ttlDays = max(1, (int) config('docs.email.tracking.ttl_days', 180));
 
-            if ($issuedAt < CarbonImmutable::now()->subDays($ttlDays)->getTimestamp()) {
+            $now = CarbonImmutable::now();
+            if ($issuedAt > $now->getTimestamp() || $issuedAt < $now->subDays($ttlDays)->getTimestamp()) {
                 return null;
             }
 

@@ -28,6 +28,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -627,16 +628,11 @@ final class DocService implements DocServiceInterface
 
     private function translateDocNumberViolation(QueryException $exception, string $docNumber): QueryException | InvalidArgumentException
     {
-        if (! self::isUniqueViolation($exception)) {
+        if (! $exception instanceof UniqueConstraintViolationException) {
             return $exception;
         }
 
         return new InvalidArgumentException("Document number [{$docNumber}] is already in use.", previous: $exception);
-    }
-
-    private static function isUniqueViolation(QueryException $exception): bool
-    {
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true);
     }
 
     /**

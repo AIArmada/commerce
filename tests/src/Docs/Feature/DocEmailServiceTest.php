@@ -10,6 +10,7 @@ use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function (): void {
@@ -262,4 +263,24 @@ test('email tracks opened timestamp', function (): void {
     $email->markAsOpened();
 
     expect($email->opened_at)->not->toBeNull();
+});
+
+it('rejects malformed and future email tracking tokens', function (): void {
+    $service = app(DocEmailService::class);
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => ['not-a-scalar'],
+        'type' => 'open',
+        'issued_at' => now()->timestamp,
+    ], JSON_THROW_ON_ERROR));
+
+    expect($service->trackOpen($token))->toBeFalse();
+
+    $token = Crypt::encryptString(json_encode([
+        'email_id' => (string) \Illuminate\Support\Str::uuid(),
+        'type' => 'click',
+        'url' => 'https://example.com',
+        'issued_at' => now()->addDay()->timestamp,
+    ], JSON_THROW_ON_ERROR));
+
+    expect($service->trackClick($token))->toBeNull();
 });
