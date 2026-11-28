@@ -20,6 +20,7 @@ final readonly class MembershipUserModel
 
         return $model;
     }
+
     public static function assertPersisted(Model $user): void
     {
         if (! is_a($user, self::resolve()) || ! $user->exists || $user->getKey() === null) {

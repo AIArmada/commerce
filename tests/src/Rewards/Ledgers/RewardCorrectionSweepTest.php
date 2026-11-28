@@ -18,9 +18,9 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardPointsEntitlementApi;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Features\Entitlements\EntryPoints\Jobs\RecheckRewardAwardsJob;
-use AIArmada\Rewards\Features\Entitlements\Api\RewardPointsEntitlementApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -468,7 +468,7 @@ it('does not widen a tenant-scoped referral reversal or correction sweep to anot
     [$program, $held, $approved, $memberId, $staff] = OwnerContext::withOwner($owner, static fn (): array => sweepHarness('tenant-sweep'));
     $key = 'src-tenant-sweep-2';
 
-    OwnerContext::withOwner($other, static function () use ($approved, $key, $memberId, $staff): void {
+    OwnerContext::withOwner($other, static function () use ($key, $memberId, $staff): void {
         app(RewardPointsEntitlementApi::class)->reversePoints($key, 'user', $memberId, 'recipient', 'referral-reversal', []);
 
         $report = ApplyRewardSourceCorrectionsAction::run(

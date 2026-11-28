@@ -38,8 +38,8 @@ use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDecisionHistoryApi;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
@@ -61,6 +61,7 @@ use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Exceptions\ActionNotResolvableException;
 use Filament\Notifications\Notification;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -767,7 +768,7 @@ it('scopes admin queries to programs visible in the current owner context', func
 
     expect(OwnerContext::withOwner($owner, fn (): array => $history->awardHistory((string) $award->getKey())))->not->toBeEmpty();
     expect(fn () => OwnerContext::withOwner($other, fn (): array => $history->awardHistory((string) $award->getKey())))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('refuses settling a foreign recovery from the admin table', function (): void {

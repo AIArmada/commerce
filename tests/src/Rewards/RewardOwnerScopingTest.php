@@ -717,8 +717,16 @@ it('refuses new refunds and replay of refunds from a foreign program', function 
 
     OwnerContext::withOwner($ownerA, static function () use ($program, $recipient, $at): void {
         CreditRewardPointsAction::run(
-            'user', $recipient, $program->family_key, 'pts', 50, $at,
-            null, null, (string) $program->getKey(), 'credit:scope-refund-replay',
+            'user',
+            $recipient,
+            $program->family_key,
+            'pts',
+            50,
+            $at,
+            null,
+            null,
+            (string) $program->getKey(),
+            'credit:scope-refund-replay',
         );
         DebitRewardPointsAction::run('user', $recipient, $program->family_key, 'pts', 20, 'debit:scope-refund-replay', 'spend', null, $at);
         RefundRewardPointsAction::run('refund:scope-refund-replay', 'debit:scope-refund-replay', 10, 'return', $at);

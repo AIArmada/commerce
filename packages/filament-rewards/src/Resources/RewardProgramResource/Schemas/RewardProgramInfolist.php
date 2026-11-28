@@ -6,9 +6,9 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use AIArmada\Rewards\Features\Programs\Api\RewardVersionSummary;
+use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;

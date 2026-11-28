@@ -13,6 +13,7 @@ use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -182,7 +183,7 @@ it('enforces pending application uniqueness directly in the database', function 
         'applicant_id' => $pending->applicant_id,
         'status' => ApplicationStatus::Pending,
         'justification' => 'Direct duplicate.',
-    ]))))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    ]))))->toThrow(UniqueConstraintViolationException::class);
 });
 
 it('refuses applications attributed to a non-user model', function (): void {
