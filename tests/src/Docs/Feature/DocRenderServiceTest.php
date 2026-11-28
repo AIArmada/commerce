@@ -218,3 +218,38 @@ it('reuses identical PDF inputs and regenerates changed document and template co
     expect($renderer->storePdf($doc))->toBe($path);
     expect(Storage::disk('local')->get($path))->toBe('template changed');
 });
+
+it('retries PDF publication if document content changes while the driver is rendering', function (): void {
+    config()->set('docs.storage.disk', 'local');
+    Storage::fake('local');
+    $template = DocTemplate::factory()->create([
+        'doc_type' => 'invoice',
+        'layout' => [['type' => DocTemplateBlockType::NotesTerms->value, 'data' => []]],
+    ]);
+    $doc = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'doc_template_id' => $template->id,
+        'notes' => 'Before render',
+    ]);
+
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->withArgs(
+        fn (string $html, PdfRenderOptions $options): bool => str_contains($html, 'Before render'),
+    )->andReturnUsing(function () use ($doc): string {
+        $doc->update(['notes' => 'After render began']);
+
+        return 'stale PDF';
+    });
+    $driver->shouldReceive('render')->once()->withArgs(
+        fn (string $html, PdfRenderOptions $options): bool => str_contains($html, 'After render began'),
+    )->andReturn('fresh PDF');
+
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    $renderer = app(DocRenderService::class);
+
+    $path = $renderer->storePdf($doc);
+
+    expect(Storage::disk('local')->get($path))->toBe('fresh PDF')
+        ->and($renderer->storePdf($doc))->toBe($path);
+});

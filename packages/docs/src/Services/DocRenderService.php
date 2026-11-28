@@ -40,9 +40,13 @@ final class DocRenderService
 
     public function renderHtml(Doc $doc, RenderAudience $audience): HtmlString
     {
+        return $this->renderWithTemplate($doc, $audience, $this->resolveTemplate($doc));
+    }
+
+    private function renderWithTemplate(Doc $doc, RenderAudience $audience, ?DocTemplate $template): HtmlString
+    {
         $doc->loadMissing('docable');
 
-        $template = $this->resolveTemplate($doc);
         $layout = $template?->layout ?: TemplateBlockRegistry::defaultLayout();
 
         TemplateBlockRegistry::assertValid($layout);
@@ -62,8 +66,9 @@ final class DocRenderService
 
     public function renderPdf(Doc $doc): string
     {
-        $html = $this->renderHtml($doc, RenderAudience::Pdf)->toHtml();
-        return $this->pdfRenderer->render($html, $this->resolvePdfOptions($doc));
+        [$html, $options] = $this->pdfInput($doc);
+
+        return $this->pdfRenderer->render($html, $options);
     }
 
     public function storePdf(Doc $doc): string
@@ -124,8 +129,9 @@ final class DocRenderService
     /** @return array{string, PdfRenderOptions, string} */
     private function pdfInput(Doc $doc): array
     {
-        $html = $this->renderHtml($doc, RenderAudience::Pdf)->toHtml();
-        $options = $this->resolvePdfOptions($doc);
+        $template = $this->resolveTemplate($doc);
+        $html = $this->renderWithTemplate($doc, RenderAudience::Pdf, $template)->toHtml();
+        $options = $this->resolvePdfOptions($doc, $template);
         $fingerprint = hash('sha256', json_encode([$html, $options, $this->pdfRenderer::class], JSON_THROW_ON_ERROR));
 
         return [$html, $options, $fingerprint];
@@ -214,9 +220,8 @@ final class DocRenderService
         }
     }
 
-    private function resolvePdfOptions(Doc $doc): PdfRenderOptions
+    private function resolvePdfOptions(Doc $doc, ?DocTemplate $template): PdfRenderOptions
     {
-        $template = $this->resolveTemplate($doc);
         $defaults = [
             'format' => (string) config('docs.pdf.format', 'a4'),
             'orientation' => (string) config('docs.pdf.orientation', 'portrait'),
