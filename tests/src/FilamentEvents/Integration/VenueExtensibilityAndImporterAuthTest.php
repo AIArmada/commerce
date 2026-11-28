@@ -24,6 +24,7 @@ use Filament\Actions\Imports\Models\Import;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 
 final class ConfiguredCustomVenue extends Venue {}
@@ -122,6 +123,8 @@ it('resolves configured venue models, navigation groups, and relation managers',
 });
 
 it('enforces model policies on venue, session, and registration importers for create and update', function (): void {
+    app()->bind(Authenticatable::class, User::class);
+
     $user = User::factory()->create();
     $this->actingAs($user);
 

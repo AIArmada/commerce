@@ -18,7 +18,6 @@ final class EventRegistrationParticipantFactory extends Factory
     {
         return [
             'name' => $this->faker->name(),
-            'email' => $this->faker->safeEmail(),
             'status' => 'registered',
         ];
     }

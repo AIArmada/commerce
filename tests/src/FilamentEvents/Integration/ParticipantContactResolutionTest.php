@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;

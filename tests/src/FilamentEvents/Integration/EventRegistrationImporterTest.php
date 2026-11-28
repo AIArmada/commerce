@@ -15,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 final class ConfiguredEventRegistration extends EventRegistration {}
 
+beforeEach(function (): void {
+    app()->bind(Authenticatable::class, User::class);
+});
+
 it('initializes registration lifecycle state during import', function (): void {
     $owner = OwnerContext::resolve();
 
