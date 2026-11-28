@@ -227,9 +227,17 @@ trait HasLocationHierarchy
      */
     public function scopeWithinSubtree(Builder $query, InventoryLocation $ancestor): Builder
     {
+        if (InventoryOwnerScope::isEnabled()) {
+            $query->where('owner_type', $ancestor->owner_type)
+                ->where('owner_id', $ancestor->owner_id);
+        }
+
         return $query->where(function (Builder $q) use ($ancestor): void {
-            $q->where('id', $ancestor->id)
-                ->orWhere('path', 'like', $ancestor->path . '/%');
+            $q->where('id', $ancestor->id);
+
+            if ($ancestor->path !== null && $ancestor->path !== '') {
+                $q->orWhere('path', 'like', $ancestor->path . '/%');
+            }
         });
     }
 

@@ -396,6 +396,8 @@ final class InventoryLocation extends Model implements Auditable
             if ($location->isDirty('parent_id')) {
                 $location->updatePathAndDepth();
                 app(LocationTreeService::class)->assertSubtreeDepth($location);
+            } elseif ($location->isDirty(['path', 'depth'])) {
+                throw new InvalidArgumentException('Location path and depth are derived from the parent hierarchy.');
             }
 
             if ($location->isDirty('path')) {

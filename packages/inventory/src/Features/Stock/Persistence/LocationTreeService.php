@@ -54,22 +54,20 @@ final class LocationTreeService
      */
     public function getSubtree(InventoryLocation $root): Collection
     {
-        $rootIsAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($root->getKey()))->exists();
+        $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+        $persistedRoot = (clone $query)->whereKey($root->getKey())->first();
 
-        if (! $rootIsAllowed) {
+        if ($persistedRoot === null) {
             throw new InvalidArgumentException('Invalid root location for current owner');
         }
 
-        $locations = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-            ->where(function (Builder $query) use ($root): void {
-                $query->where('id', $root->id)
-                    ->orWhere('path', 'like', $root->path . '/%');
-            })
+        $locations = $query
+            ->withinSubtree($persistedRoot)
             ->orderBy('depth')
             ->orderBy('name')
             ->get();
 
-        return $this->buildTree($locations, $root->parent_id);
+        return $this->buildTree($locations, $persistedRoot->parent_id);
     }
 
     /**

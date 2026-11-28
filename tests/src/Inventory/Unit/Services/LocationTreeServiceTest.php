@@ -55,6 +55,31 @@ describe('getActiveTree', function (): void {
 });
 
 describe('getSubtree', function (): void {
+    it('uses the persisted root rather than a stale path after moving a subtree', function (): void {
+        $first = InventoryLocation::factory()->create();
+        $second = InventoryLocation::factory()->create();
+        $root = InventoryLocation::factory()->create(['parent_id' => $first->id]);
+        $child = InventoryLocation::factory()->create(['parent_id' => $root->id]);
+
+        $this->service->moveLocation($root, $second);
+
+        $subtree = $this->service->getSubtree($root);
+
+        expect($subtree)->toHaveCount(1)
+            ->and($subtree->first()->id)->toBe($root->id)
+            ->and($subtree->first()->children->modelKeys())->toBe([$child->id]);
+    });
+
+    it('rejects direct changes to derived hierarchy attributes', function (): void {
+        $root = InventoryLocation::factory()->create();
+
+        expect(fn () => $root->update(['path' => 'forged', 'depth' => 5]))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($root->fresh()->path)->toBe($root->id)
+            ->and($root->fresh()->depth)->toBe(0);
+    });
+
     it('returns subtree starting from location', function (): void {
         $root = InventoryLocation::factory()->create([
             'name' => 'Root',
