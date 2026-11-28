@@ -16,8 +16,9 @@ use AIArmada\FilamentAuthz\Concerns\CanBeImpersonated;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use AIArmada\Vouchers\Traits\HasVoucherOwnership;
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherOwnership;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -100,7 +101,8 @@ abstract class VoucherOwnershipHarness extends Model
 
 abstract class VoucherHolderHarness extends Model
 {
-    use HasVouchers;
+    use HasVoucherUsage;
+    use HasVoucherWallet;
 }
 
 /**

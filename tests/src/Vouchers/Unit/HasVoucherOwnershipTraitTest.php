@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Traits\HasVoucherOwnership;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherOwnership;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Traits\HasVoucherUsage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -13,6 +14,7 @@ uses(RefreshDatabase::class);
 class VoucherOwnerModel extends Model
 {
     use HasVoucherOwnership;
+    use HasVoucherUsage;
 
     public $timestamps = false;
 
@@ -92,4 +94,12 @@ describe('HasVoucherOwnership Trait', function (): void {
 
         expect($ownedVouchers)->toBeEmpty();
     });
+});
+
+it('exposes voucher usage relations independently of wallet support', function (): void {
+    $owner = new VoucherOwnerModel;
+    $relation = $owner->voucherUsages();
+
+    expect($relation->getMorphType())->toBe('redeemed_by_type')
+        ->and($relation->getRelated())->toBeInstanceOf(\AIArmada\Vouchers\Models\VoucherUsage::class);
 });

@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 
 /**
- * HasVouchers trait adds voucher management capabilities to the Cart.
+ * InteractsWithVouchers adds voucher management capabilities to the Cart.
  *
  * This trait provides convenient methods for applying, removing, and checking vouchers
  * while integrating seamlessly with the cart's condition system.

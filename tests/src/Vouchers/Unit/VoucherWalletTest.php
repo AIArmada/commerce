@@ -9,7 +9,7 @@ use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
@@ -548,7 +548,7 @@ test('wallet entry knows if voucher can be used', function (): void {
 
 final class TestWalletUser extends Model
 {
-    use HasVouchers;
+    use HasVoucherWallet;
 
     protected $table = 'test_wallet_users';
 

@@ -116,13 +116,15 @@ Cart::clearVouchers();
 Allow users to save vouchers for later use:
 
 ```php
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 
 class User extends Model
 {
-    use HasVouchers;
+    use HasVoucherWallet;
 }
 ```
+
+For redemption history on a model, use the independent `AIArmada\\Vouchers\\Features\\Lifecycle\\EntryPoints\\Traits\\HasVoucherUsage` trait.
 
 ```php
 // Add voucher to wallet

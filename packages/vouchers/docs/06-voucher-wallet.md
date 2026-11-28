@@ -10,16 +10,18 @@ The voucher wallet allows users to save vouchers for later use. This is useful f
 
 ## Setup
 
-Add the `HasVouchers` trait to your User model (or any model that should have a wallet):
+Add the `HasVoucherWallet` trait to your User model (or any model that should have a wallet):
 
 ```php
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 
 class User extends Authenticatable
 {
-    use HasVouchers;
+    use HasVoucherWallet;
 }
 ```
+
+For redemption history on a model, use the independent `AIArmada\\Vouchers\\Features\\Lifecycle\\EntryPoints\\Traits\\HasVoucherUsage` trait.
 
 ## Adding Vouchers
 

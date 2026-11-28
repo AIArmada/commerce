@@ -23,7 +23,7 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Akaunting\Money\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -38,7 +38,7 @@ beforeEach(function (): void {
 final class ScopeWalletUser extends Model
 {
     use HasUuids;
-    use HasVouchers;
+    use HasVoucherWallet;
 
     protected $table = 'users';
 

@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +26,7 @@ use Illuminate\Validation\ValidationException;
 final class GuardWalletUser extends Model
 {
     use HasUuids;
-    use HasVouchers;
+    use HasVoucherWallet;
 
     protected $table = 'users';
 

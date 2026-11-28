@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Traits;
+namespace AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits;
 
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
-use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +20,7 @@ use Illuminate\Support\Collection;
 /**
  * @mixin Model
  */
-trait HasVouchers
+trait HasVoucherWallet
 {
     /**
      * Get all vouchers in the wallet (Coupon System).
@@ -34,16 +33,6 @@ trait HasVouchers
         $relation->getQuery()->forOwner(includeGlobal: false);
 
         return $relation;
-    }
-
-    /**
-     * Get the voucher usages redeemed by this model.
-     *
-     * @return MorphMany<VoucherUsage, $this>
-     */
-    public function voucherUsages(): MorphMany
-    {
-        return $this->morphMany(VoucherUsage::class, 'redeemedBy');
     }
 
     /**
