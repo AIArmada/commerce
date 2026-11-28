@@ -308,6 +308,29 @@ describe('CheckoutReservationService', function (): void {
         expect($outcome->state)->toBe('not_found');
     });
 
+    it('persists expiry cleanup even when a repeat reserve or commit is rejected', function (): void {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
+
+        foreach (['reserve', 'commit'] as $operation) {
+            $reference = 'expired-conflict-' . $operation;
+            $this->reservationService->reserve($reference, $lines, 900);
+            $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+            $group->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+
+            if ($operation === 'reserve') {
+                expect(fn () => $this->reservationService->reserve($reference, $lines, 900))
+                    ->toThrow(ReservationReferenceConflict::class);
+            } else {
+                expect(fn () => $this->reservationService->commit($reference, 'ORDER-EXPIRED'))
+                    ->toThrow(InvalidReservationTransition::class);
+            }
+
+            expect($group->fresh()->status)->toBe(InventoryReservation::STATE_EXPIRED)
+                ->and($group->allocations()->count())->toBe(0)
+                ->and($this->inventoryService->getLevel($this->item, $this->location->id)->fresh()->quantity_reserved)->toBe(0);
+        }
+    });
+
     it('commit is idempotent', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-idem-commit', $lines, 900);

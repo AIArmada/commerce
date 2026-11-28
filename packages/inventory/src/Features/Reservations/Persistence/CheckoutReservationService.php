@@ -17,6 +17,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\DeadlockException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\QueryException;
@@ -64,8 +65,14 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
         for (; ;) {
             try {
-                return $this->reserveInTransaction($reference, $lines, $ttlSeconds);
-            } catch (QueryException $exception) {
+                $outcome = $this->reserveInTransaction($reference, $lines, $ttlSeconds);
+
+                if ($outcome instanceof ReservationReferenceConflict) {
+                    throw $outcome;
+                }
+
+                return $outcome;
+            } catch (QueryException | DeadlockException $exception) {
                 if ($backoffMicros === [] || ! $this->isTransientLockError($exception)) {
                     throw $exception;
                 }
@@ -75,8 +82,12 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
         }
     }
 
-    private function isTransientLockError(QueryException $exception): bool
+    private function isTransientLockError(QueryException | DeadlockException $exception): bool
     {
+        if ($exception instanceof DeadlockException) {
+            return true;
+        }
+
         $sqlState = (string) ($exception->errorInfo[0] ?? '');
         $driverCode = (int) ($exception->errorInfo[1] ?? 0);
 
@@ -89,9 +100,9 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
     /**
      * @param  list<ReservationLine>  $lines
      */
-    private function reserveInTransaction(string $reference, array $lines, int $ttlSeconds): ReservationOutcome
+    private function reserveInTransaction(string $reference, array $lines, int $ttlSeconds): ReservationOutcome | ReservationReferenceConflict
     {
-        return DB::transaction(function () use ($reference, $lines, $ttlSeconds): ReservationOutcome {
+        return DB::transaction(function () use ($reference, $lines, $ttlSeconds): ReservationOutcome | ReservationReferenceConflict {
             $resolvedLines = $this->resolveLines($reference, $lines);
             $lineSnapshot = array_map(
                 static fn (array $line): array => ['requested' => $line['quantity'], 'reserved' => $line['quantity']],
@@ -149,7 +160,7 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
     /**
      * @param  array<string, array{requested: int, reserved: int}>  $lineSnapshot
      */
-    private function idempotentOutcome(string $reference, InventoryReservation $group, array $lineSnapshot): ReservationOutcome
+    private function idempotentOutcome(string $reference, InventoryReservation $group, array $lineSnapshot): ReservationOutcome | ReservationReferenceConflict
     {
         $this->expireIfNeeded($group);
 
@@ -158,7 +169,8 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             return $this->outcome($group);
         }
 
-        throw new ReservationReferenceConflict(
+        // Return the conflict so the transaction commits any expiration cleanup first.
+        return new ReservationReferenceConflict(
             $reference,
             'A reservation for this reference already exists in state: ' . $group->status,
         );
@@ -238,7 +250,7 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             throw new InvalidArgumentException('Order ID is required to commit a reservation.');
         }
 
-        return DB::transaction(function () use ($reference, $orderId): ReservationOutcome {
+        $outcome = DB::transaction(function () use ($reference, $orderId): ReservationOutcome | InvalidReservationTransition {
             $group = $this->lockGroup($reference);
 
             if ($group === null) {
@@ -256,7 +268,7 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             }
 
             if ($group->status !== InventoryReservation::STATE_RESERVED) {
-                throw new InvalidReservationTransition($reference, $group->status, InventoryReservation::STATE_COMMITTED);
+                return new InvalidReservationTransition($reference, $group->status, InventoryReservation::STATE_COMMITTED);
             }
 
             $this->allocationService->commitReservationGroup($group->id, $reference, $orderId);
@@ -264,6 +276,12 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
             return $this->outcome($group);
         });
+
+        if ($outcome instanceof InvalidReservationTransition) {
+            throw $outcome;
+        }
+
+        return $outcome;
     }
 
     public function extend(string $reference, int $ttlSeconds): ReservationOutcome
