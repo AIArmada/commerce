@@ -20,6 +20,7 @@ final class ReadWalletStatistics implements WalletStatistics
         }
 
         $counts = VoucherWallet::query()
+            ->forOwner(includeGlobal: false)
             ->where('voucher_id', $voucherId)
             ->toBase()
             ->selectRaw('COUNT(*) as total')

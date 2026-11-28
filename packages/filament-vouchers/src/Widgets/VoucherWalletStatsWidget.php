@@ -160,6 +160,6 @@ final class VoucherWalletStatsWidget extends BaseWidget
             (bool) config('vouchers.owner.include_global', false),
         );
 
-        return $query->whereIn('voucher_id', $voucherQuery);
+        return $query->forOwner(includeGlobal: false)->whereIn('voucher_id', $voucherQuery);
     }
 }

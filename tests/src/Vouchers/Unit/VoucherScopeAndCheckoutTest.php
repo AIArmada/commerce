@@ -16,6 +16,7 @@ use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
@@ -432,6 +433,17 @@ it('isolates claims of the same global voucher to each exact wallet owner', func
 
     expect($entryA->id)->not->toBe($entryB->id)
         ->and($entryA->id)->not->toBe($globalEntry->id);
+
+    foreach ([$ownerA, $ownerB, null] as $walletOwner) {
+        OwnerContext::withOwner($walletOwner, function () use ($global): void {
+            expect(app(WalletStatistics::class)->forVoucher($global->id))->toBe([
+                'total' => 1,
+                'claimed' => 1,
+                'redeemed' => 0,
+                'available' => 1,
+            ]);
+        });
+    }
 
     OwnerContext::withOwner($ownerA, function () use ($holder, $global): void {
         expect($holder->removeVoucherFromWallet($global->code))->toBeTrue()

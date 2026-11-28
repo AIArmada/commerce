@@ -33,7 +33,10 @@ final class WalletEntriesRelationManager extends RelationManager
     #[Unexposed]
     public function getRelationship(): HasMany
     {
-        return $this->getOwnerRecord()->hasMany(VoucherWallet::class, 'voucher_id');
+        $relationship = $this->getOwnerRecord()->hasMany(VoucherWallet::class, 'voucher_id');
+        $relationship->getQuery()->forOwner(includeGlobal: false);
+
+        return $relationship;
     }
 
     #[Unexposed]

@@ -105,6 +105,20 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'is_redeemed' => false,
     ]);
 
+    $explicitGlobalWallet = OwnerContext::withOwner(null, static fn (): VoucherWallet => VoucherWallet::query()->create([
+        'voucher_id' => $globalVoucher->id,
+        'holder_type' => $ownerA->getMorphClass(),
+        'holder_id' => $ownerA->getKey(),
+        'claimed_at' => now(),
+    ]));
+
+    $otherOwnerGlobalVoucherWallet = OwnerContext::withOwner($ownerB, static fn (): VoucherWallet => VoucherWallet::query()->create([
+        'voucher_id' => $globalVoucher->id,
+        'holder_type' => $ownerA->getMorphClass(),
+        'holder_id' => $ownerA->getKey(),
+        'claimed_at' => now(),
+    ]));
+
     $ownerBWallet = VoucherWallet::query()->create([
         'voucher_id' => $ownerBVoucher->id,
         'holder_type' => $ownerB->getMorphClass(),
@@ -124,7 +138,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
 
     $wallets = VoucherWalletResource::getEloquentQuery()->pluck('id')->all();
     expect($wallets)->toContain($globalWallet->id)
-        ->not->toContain($ownerBWallet->id);
+        ->not->toContain($ownerBWallet->id, $explicitGlobalWallet->id, $otherOwnerGlobalVoucherWallet->id);
 });
 
 it('can exclude global records from Filament Vouchers resources', function (): void {

@@ -93,7 +93,7 @@ final class VoucherWalletResource extends Resource
             (bool) config('vouchers.owner.include_global', false),
         );
 
-        return $query->whereIn('voucher_id', $voucherQuery);
+        return $query->forOwner(includeGlobal: false)->whereIn('voucher_id', $voucherQuery);
     }
 
     public static function getNavigationBadgeColor(): string
