@@ -28,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -224,7 +223,7 @@ final class Doc extends Model implements Auditable
 
         $oldStatus = $this->status;
 
-        DB::transaction(function () use ($oldStatus, $statusClass, $notes): void {
+        $this->getConnection()->transaction(function () use ($oldStatus, $statusClass, $notes): void {
             $this->status->transitionTo($statusClass);
 
             $transitionTimestamp = match ($statusClass) {

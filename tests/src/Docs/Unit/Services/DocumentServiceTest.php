@@ -170,3 +170,41 @@ test('can convert a document', function (): void {
         ->metadata->toHaveKey('converted_from')
         ->metadata->converted_from->doc_number->toBe('QUO-123');
 });
+
+test('preserves document financial terms after a partial payment while allowing notes', function (): void {
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'currency' => 'MYR',
+        'subtotal_minor' => 100,
+        'tax_amount_minor' => 0,
+        'discount_amount_minor' => 0,
+        'total_minor' => 100,
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100]],
+    ]);
+
+    $this->service->recordPayment($doc, [
+        'amount_minor' => 50,
+        'payment_method' => 'bank_transfer',
+    ]);
+
+    foreach ([
+        ['currency' => 'USD'],
+        ['items' => [['quantity' => 1, 'unit_price_minor' => 20]]],
+        ['discount_amount_minor' => 75],
+    ] as $changes) {
+        expect(fn () => $this->service->update($doc, $changes))
+            ->toThrow(InvalidArgumentException::class, 'Document financial terms cannot change');
+    }
+
+    $updated = $this->service->update($doc, [
+        'currency' => 'MYR',
+        'items' => $doc->items,
+        'discount_amount_minor' => 0,
+        'notes' => 'Payment reference confirmed.',
+    ]);
+
+    expect($updated->currency)->toBe('MYR')
+        ->and($updated->total_minor)->toBe(100)
+        ->and($updated->notes)->toBe('Payment reference confirmed.')
+        ->and($updated->status->equals(PartiallyPaid::class))->toBeTrue();
+});

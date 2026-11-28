@@ -21,6 +21,8 @@ use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
@@ -29,7 +31,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -81,7 +82,7 @@ final class DocService
 
         $owner = $this->resolveOwner();
 
-        return DB::transaction(function () use ($data, $type, $docType, $owner): Doc {
+        return (new Doc)->getConnection()->transaction(function () use ($data, $type, $docType, $owner): Doc {
             $docNumber = $data->docNumber ?? $this->sequenceManager->nextNumber($type->value);
             $this->assertDocNumberAvailable($docNumber, $owner);
 
@@ -183,7 +184,7 @@ final class DocService
     public function createFromType(DocType $type, array $data, ?Model $owner = null): Doc
     {
         return OwnerContext::withOwner($owner, function () use ($type, $data, $owner): Doc {
-            return DB::transaction(function () use ($type, $data, $owner): Doc {
+            return (new Doc)->getConnection()->transaction(function () use ($type, $data, $owner): Doc {
                 // Generate document number
                 $docNumber = $this->sequenceManager->nextNumber($type->value);
                 $this->assertDocNumberAvailable($docNumber, $owner);
@@ -281,6 +282,7 @@ final class DocService
                 ->findOrFail($doc->getKey());
 
             $attributes = $this->filterUpdatableAttributes($data);
+            $this->guardFinancialChanges($doc, $attributes);
 
             if (array_key_exists('body', $attributes)) {
                 $attributes['body'] = self::normalizeBody($attributes['body']);
@@ -714,6 +716,44 @@ final class DocService
         }
 
         return $attributes;
+    }
+
+    /**
+     * Financial terms cannot be rewritten after any payment evidence exists.
+     * Ignore unchanged values submitted by edit forms to avoid recomputing
+     * historical tax and discount totals.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function guardFinancialChanges(Doc $doc, array &$attributes): void
+    {
+        $fields = ['currency', 'items', 'discount_amount_minor'];
+        if (array_intersect_key($attributes, array_flip($fields)) === []) {
+            return;
+        }
+
+        if (! $doc->status->equals(Paid::class)
+            && ! $doc->status->equals(PartiallyPaid::class)
+            && ! $doc->status->equals(Refunded::class)
+            && $doc->paid_at === null
+            && ! $doc->payments()->exists()
+            && ! $doc->eInvoiceSubmission()->exists()) {
+            return;
+        }
+
+        foreach ($fields as $field) {
+            if (! array_key_exists($field, $attributes)) {
+                continue;
+            }
+
+            $current = $field === 'items' ? ($doc->items ?? []) : $doc->getAttribute($field);
+
+            if ($attributes[$field] !== $current) {
+                throw new InvalidArgumentException('Document financial terms cannot change after payment or e-invoice evidence exists.');
+            }
+
+            unset($attributes[$field]);
+        }
     }
 
     /**

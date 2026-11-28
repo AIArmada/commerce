@@ -14,7 +14,6 @@ use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
 
@@ -25,7 +24,7 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
      */
     public function record(string $docId, array $paymentData): string
     {
-        return DB::transaction(function () use ($docId, $paymentData): string {
+        return (new Doc)->getConnection()->transaction(function () use ($docId, $paymentData): string {
             if (config('docs.owner.enabled', false)) {
                 OwnerWriteGuard::findOrFailForOwner(
                     Doc::class,

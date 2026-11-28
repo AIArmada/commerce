@@ -12,14 +12,13 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final readonly class ManageDocuments implements DocumentLifecycle
 {
     public function changeStatus(string $docId, string $status, ?string $notes = null): bool
     {
-        return DB::transaction(function () use ($docId, $status, $notes): bool {
+        return (new Doc)->getConnection()->transaction(function () use ($docId, $status, $notes): bool {
             $doc = $this->lockDocument($docId);
             $target = DocStatus::resolveStateClassFor($status, $doc);
 
@@ -40,7 +39,7 @@ final readonly class ManageDocuments implements DocumentLifecycle
         $docIds = array_values(array_unique($docIds));
         sort($docIds, SORT_STRING);
 
-        DB::transaction(function () use ($docIds): void {
+        (new Doc)->getConnection()->transaction(function () use ($docIds): void {
             foreach ($docIds as $docId) {
                 $doc = $this->lockDocument($docId);
                 OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc): void {
@@ -61,7 +60,7 @@ final readonly class ManageDocuments implements DocumentLifecycle
         $docIds = array_values(array_unique($docIds));
         sort($docIds, SORT_STRING);
 
-        return DB::transaction(function () use ($docIds): array {
+        return (new Doc)->getConnection()->transaction(function () use ($docIds): array {
             $marked = 0;
             $skipped = 0;
 
