@@ -10,7 +10,7 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
@@ -79,9 +79,9 @@ final readonly class CancelRewardPayoutAction
             throw new InvalidArgumentException('Only requested, approved, or unknown payouts can be cancelled.');
         }
 
-        $preAward = RewardAward::query()->whereKey((string) $pre->award_id)->first();
+        $preAward = app(RewardAwardLockApi::class)->findAwardDecision((string) $pre->award_id);
 
-        if ($preAward instanceof RewardAward && $actorId === (string) $preAward->recipient_id) {
+        if ($preAward !== null && $actorId === $preAward->recipientId) {
             throw new InvalidArgumentException('Recipient-owned payout cancellation is prohibited.');
         }
 
@@ -236,7 +236,7 @@ final readonly class CancelRewardPayoutAction
     {
         $pre = RewardPayoutRequest::query()->whereKey($requestId)->firstOrFail();
 
-        RewardAward::query()->whereKey((string) $pre->award_id)->lockForUpdate()->firstOrFail();
+        app(RewardAwardLockApi::class)->lockScopedAward((string) $pre->award_id);
 
         $row = RewardPayoutRequest::query()->whereKey($requestId)->lockForUpdate()->firstOrFail();
 

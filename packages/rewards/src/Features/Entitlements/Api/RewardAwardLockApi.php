@@ -6,6 +6,9 @@ namespace AIArmada\Rewards\Features\Entitlements\Api;
 
 interface RewardAwardLockApi
 {
+    /** Read a scoped award decision; a locking read requires the caller's transaction. */
+    public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision;
+
     /** Lock a scoped award inside the caller's transaction. */
     public function lockScopedAward(string $awardId): void;
 

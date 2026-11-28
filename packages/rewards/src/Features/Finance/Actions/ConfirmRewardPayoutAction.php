@@ -10,7 +10,7 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
@@ -94,7 +94,11 @@ final readonly class ConfirmRewardPayoutAction
                 ): RewardPayoutRequest {
                     $pre = RewardPayoutRequest::query()->whereKey($requestId)->firstOrFail();
 
-                    RewardAward::query()->whereKey((string) $pre->award_id)->lockForUpdate()->firstOrFail();
+                    $award = app(RewardAwardLockApi::class)->findAwardDecision((string) $pre->award_id, lock: true);
+
+                    if ($award === null) {
+                        throw new InvalidArgumentException('Unknown reward award.');
+                    }
 
                     $locked = RewardPayoutRequest::query()->whereKey($requestId)->lockForUpdate()->firstOrFail();
 
@@ -102,9 +106,11 @@ final readonly class ConfirmRewardPayoutAction
                         throw new InvalidArgumentException('Only submitted payouts can be confirmed.');
                     }
 
-                    $award = RewardAward::query()->whereKey((string) $locked->award_id)->firstOrFail();
+                    if ((string) $locked->award_id !== $award->id) {
+                        throw new InvalidArgumentException('Payout award binding is incoherent.');
+                    }
 
-                    if ($actorId === (string) $award->recipient_id) {
+                    if ($actorId === $award->recipientId) {
                         throw new InvalidArgumentException('Recipient-owned payout confirmation is prohibited.');
                     }
 

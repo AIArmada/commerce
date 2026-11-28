@@ -8,7 +8,7 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -55,6 +55,18 @@ final readonly class ApproveRewardPayoutAction
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
 
         return DB::transaction(function () use ($requestId, $actorId, $decided): RewardPayoutRequest {
+            $pre = RewardPayoutRequest::query()->whereKey($requestId)->first();
+
+            if (! $pre instanceof RewardPayoutRequest) {
+                throw new InvalidArgumentException('Unknown reward payout request.');
+            }
+
+            $award = app(RewardAwardLockApi::class)->findAwardDecision((string) $pre->award_id, lock: true);
+
+            if ($award === null) {
+                throw new InvalidArgumentException('Unknown reward award.');
+            }
+
             $locked = RewardPayoutRequest::query()->whereKey($requestId)->lockForUpdate()->first();
 
             if (! $locked instanceof RewardPayoutRequest) {
@@ -65,13 +77,11 @@ final readonly class ApproveRewardPayoutAction
                 throw new InvalidArgumentException('Only requested payouts can be approved.');
             }
 
-            $award = RewardAward::query()->whereKey((string) $locked->award_id)->lockForUpdate()->first();
-
-            if (! $award instanceof RewardAward) {
-                throw new InvalidArgumentException('Unknown reward award.');
+            if ((string) $locked->award_id !== $award->id) {
+                throw new InvalidArgumentException('Payout award binding is incoherent.');
             }
 
-            if ($actorId === (string) $award->recipient_id) {
+            if ($actorId === $award->recipientId) {
                 throw new InvalidArgumentException('Recipient-owned payout approval is prohibited.');
             }
 

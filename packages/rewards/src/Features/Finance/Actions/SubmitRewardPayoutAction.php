@@ -13,7 +13,7 @@ use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardPayoutGuard;
-use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Queries\RewardPayoutInstructionMapper;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use Carbon\CarbonImmutable;
@@ -72,16 +72,16 @@ final readonly class SubmitRewardPayoutAction
 
         $awardId = (string) $pre->award_id;
 
-        $preAward = RewardAward::query()->whereKey($awardId)->first();
+        $preAward = app(RewardAwardLockApi::class)->findAwardDecision($awardId);
 
-        if ($preAward instanceof RewardAward && $actorId === (string) $preAward->recipient_id) {
+        if ($preAward !== null && $actorId === $preAward->recipientId) {
             throw new InvalidArgumentException('Recipient-owned payout submission is prohibited.');
         }
 
         $locked = DB::transaction(function () use ($requestId, $awardId): RewardPayoutRequest {
-            $award = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();
+            $award = app(RewardAwardLockApi::class)->findAwardDecision($awardId, lock: true);
 
-            if (! $award instanceof RewardAward || $award->status !== RewardAwardStatus::Approved) {
+            if ($award === null || $award->status !== RewardAwardStatus::Approved->value) {
                 throw new InvalidArgumentException('Payout submission requires an approved award.');
             }
 
@@ -144,7 +144,7 @@ final readonly class SubmitRewardPayoutAction
 
             // Award -> request -> funding: the shared cross-domain order,
             // so spend/release appends serialize with every other funder.
-            RewardAward::query()->whereKey((string) $pre->award_id)->lockForUpdate()->firstOrFail();
+            app(RewardAwardLockApi::class)->lockScopedAward((string) $pre->award_id);
 
             $row = RewardPayoutRequest::query()->whereKey($requestId)->lockForUpdate()->firstOrFail();
 
