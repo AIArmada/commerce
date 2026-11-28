@@ -316,12 +316,22 @@ class Order extends Model implements Auditable
 
         try {
             return $this->getConnection()->transaction(function (): ?bool {
-                if ($this->exists) {
-                    $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
-                    $this->refresh();
+                if (! $this->exists) {
+                    return parent::delete();
                 }
 
-                return parent::delete();
+                $this->newQuery()->lockForUpdate()->findOrFail($this->getKey());
+                $this->refresh();
+
+                return app(OrderPaymentRetention::class)->deleteOrder(
+                    (string) $this->getKey(),
+                    $this->allowUnsafeDelete,
+                    function (): bool {
+                        app(AddressAttachmentWriter::class)->detachAll($this->getMorphClass(), (string) $this->getKey());
+
+                        return parent::delete() === true;
+                    },
+                );
             });
         } finally {
             $this->allowUnsafeDelete = $previous;
@@ -492,9 +502,6 @@ class Order extends Model implements Auditable
             if (! $order->allowUnsafeDelete && ($order->isPaid() || $order->getTotalPaid() > 0 || $order->isFinal())) {
                 throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
             }
-
-            app(AddressAttachmentWriter::class)->detachAll($order->getMorphClass(), (string) $order->getKey());
-            app(OrderPaymentRetention::class)->removeForOrder((string) $order->getKey(), $order->allowUnsafeDelete);
         });
     }
 

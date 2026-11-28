@@ -6,5 +6,6 @@ namespace AIArmada\Orders\Contracts;
 
 interface OrderPaymentRetention
 {
-    public function removeForOrder(string $orderId, bool $force = false): void;
+    /** @param callable(): bool $deleteOrder */
+    public function deleteOrder(string $orderId, bool $force, callable $deleteOrder): bool;
 }

@@ -14,9 +14,9 @@ final readonly class RemoveOrderPaymentRecords implements OrderPaymentRetention
 {
     use AssertsOrderOwnerBoundary;
 
-    public function removeForOrder(string $orderId, bool $force = false): void
+    public function deleteOrder(string $orderId, bool $force, callable $deleteOrder): bool
     {
-        (new Order)->getConnection()->transaction(function () use ($orderId, $force): void {
+        return (new Order)->getConnection()->transaction(function () use ($orderId, $force, $deleteOrder): bool {
             $order = Order::query()->forOwner()->lockForUpdate()->findOrFail($orderId);
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
@@ -43,6 +43,12 @@ final readonly class RemoveOrderPaymentRecords implements OrderPaymentRetention
 
             $order->refunds()->withoutOwnerScope()->delete();
             $order->payments()->withoutOwnerScope()->delete();
+
+            if (! $deleteOrder() || Order::query()->withoutOwnerScope()->whereKey($orderId)->exists()) {
+                throw new LogicException('Payment retention requires deletion of the parent order.');
+            }
+
+            return true;
         });
     }
 }

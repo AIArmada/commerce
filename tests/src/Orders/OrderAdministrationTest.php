@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Contracts\OrderAdministration;
+use AIArmada\Orders\Contracts\OrderPaymentRetention;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
@@ -75,4 +76,20 @@ it('prevents bulk order deletion from orphaning payment records', function (): v
         ->toThrow(QueryException::class);
 
     expect($order->refresh()->payments()->count())->toBe(1);
+});
+
+it('rolls back financial record cleanup unless the parent order is deleted', function (): void {
+    $order = Order::query()->create([
+        'status' => PendingPayment::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+    app(RegisterOrderPayment::class)->execute($order, 'rollback-' . $order->getKey(), 'manual', 5000);
+
+    expect(fn () => app(OrderPaymentRetention::class)->deleteOrder((string) $order->getKey(), true, static fn (): bool => true))
+        ->toThrow(LogicException::class, 'requires deletion of the parent order');
+
+    expect($order->refresh()->payments()->count())->toBe(1)
+        ->and($order->getTotalPaid())->toBe(5000);
 });
