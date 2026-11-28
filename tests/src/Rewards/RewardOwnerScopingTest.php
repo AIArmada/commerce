@@ -606,3 +606,30 @@ it('rejects recovery replay with conflicting frozen terms', function (): void {
 
     expect($recovery->refresh()->points)->toBe(100);
 });
+
+it('resolves frozen award policies only through scoped program identities', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    [$programA, $versionA] = OwnerContext::withOwner(
+        $ownerA,
+        static fn (): array => RewardLedgerFixtures::seedActiveEnrolled('guard-policy-a', RewardProgramMode::Points),
+    );
+
+    [$programB, $versionB] = OwnerContext::withOwner(
+        $ownerB,
+        static fn (): array => RewardLedgerFixtures::seedActiveEnrolled('guard-policy-b', RewardProgramMode::Points),
+    );
+
+    $programs = app(RewardProgramLockApi::class);
+    $idA = (string) $programA->getKey();
+    $idB = (string) $programB->getKey();
+    $versionIdA = (string) $versionA->getKey();
+    $versionIdB = (string) $versionB->getKey();
+
+    OwnerContext::withOwner($ownerA, static function () use ($programs, $idA, $idB, $versionIdA, $versionIdB): void {
+        expect($programs->findPolicy($idA, $versionIdA)?->id)->toBe($versionIdA)
+            ->and($programs->findPolicy($idA, $versionIdB))->toBeNull()
+            ->and(fn () => $programs->findPolicy($idB, $versionIdB))->toThrow(AuthorizationException::class);
+    });
+});

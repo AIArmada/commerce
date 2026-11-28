@@ -8,14 +8,11 @@ use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Database\Factories\RewardAwardFactory;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -61,8 +58,6 @@ use LogicException;
  * @property CarbonImmutable|null $acknowledged_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read RewardProgram $program
- * @property-read RewardProgramVersion $policyVersion
  * @property-read Collection<int, RewardAwardEntry> $entries
  */
 class RewardAward extends Model
@@ -124,22 +119,6 @@ class RewardAward extends Model
             'corrected_at' => 'immutable_datetime',
             'acknowledged_at' => 'immutable_datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<RewardProgram, $this>
-     */
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(RewardProgram::class, 'program_id');
-    }
-
-    /**
-     * @return BelongsTo<RewardProgramVersion, $this>
-     */
-    public function policyVersion(): BelongsTo
-    {
-        return $this->belongsTo(RewardProgramVersion::class, 'policy_version_id');
     }
 
     /**
