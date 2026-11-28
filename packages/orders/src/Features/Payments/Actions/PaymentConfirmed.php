@@ -153,10 +153,7 @@ final class PaymentConfirmed extends Transition
                     return;
                 }
 
-                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, static function () use ($order, $transactionId, $gateway): void {
-                    event(new OrderProcessingStarted($order, $transactionId, $gateway));
-                    event(new OrderFulfillmentRequired($order, $transactionId, $gateway));
-                });
+                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, $transactionId, $gateway);
             });
 
             return $originalOrder;

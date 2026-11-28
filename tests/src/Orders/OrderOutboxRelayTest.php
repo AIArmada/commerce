@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Data\OutboxStatus;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
@@ -570,4 +571,27 @@ it('rejects invalid relay batch limits', function (): void {
 
     $this->artisan('orders:outbox-relay', ['--limit' => 'invalid'])
         ->assertExitCode(2);
+});
+
+it('skips previously relayed rows during live dispatch', function (): void {
+    $order = makeOutboxRelayOrder('ORD-RELAY-LIVE-RACE');
+
+    Event::fake([OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
+
+    $alreadyRelayed = insertOutboxRelayRow($order, [
+        'event_class' => OrderProcessingStarted::class,
+        'status' => OutboxStatus::Relayed->value,
+    ]);
+    $pending = insertOutboxRelayRow($order, [
+        'event_class' => OrderFulfillmentRequired::class,
+    ]);
+
+    $writer = app(OrderOutboxWriter::class);
+    $writer->dispatchReplayable((string) $order->getKey(), [$alreadyRelayed, $pending], 'txn-relay-1', 'stripe');
+    $writer->dispatchReplayable((string) $order->getKey(), [$alreadyRelayed, $pending], 'txn-relay-1', 'stripe');
+
+    Event::assertNotDispatched(OrderProcessingStarted::class);
+    Event::assertDispatchedTimes(OrderFulfillmentRequired::class, 1);
+
+    expect(array_column(outboxRelayRows(), 'status'))->toBe([OutboxStatus::Relayed->value, OutboxStatus::Relayed->value]);
 });

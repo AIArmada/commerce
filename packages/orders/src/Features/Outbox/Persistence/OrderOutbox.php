@@ -8,13 +8,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
+use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
-use Closure;
 use InvalidArgumentException;
 
 /**
@@ -87,9 +88,9 @@ final readonly class OrderOutbox implements OrderOutboxWriter
      *
      * @param  list<string|null>  $ids
      */
-    public function dispatchReplayable(string $orderId, array $ids, Closure $dispatch): void
+    public function dispatchReplayable(string $orderId, array $ids, string $transactionId, string $gateway): void
     {
-        (new Order)->getConnection()->transaction(function () use ($orderId, $ids, $dispatch): void {
+        (new Order)->getConnection()->transaction(function () use ($orderId, $ids, $transactionId, $gateway): void {
             $locked = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($orderId)
@@ -104,36 +105,49 @@ final readonly class OrderOutbox implements OrderOutboxWriter
                 return;
             }
 
-            OwnerContext::withOwner($locked->owner, $dispatch);
-            $this->markRelayed($orderId, $ids);
+            OwnerContext::withOwner($locked->owner, function () use ($locked, $ids, $transactionId, $gateway): void {
+                // Disabled outbox: no durable rows were staged.
+                if ($ids === [null, null]) {
+                    event(new OrderProcessingStarted($locked, $transactionId, $gateway));
+                    event(new OrderFulfillmentRequired($locked, $transactionId, $gateway));
+
+                    return;
+                }
+
+                $rows = OrderOutboxMessage::query()
+                    ->withoutGlobalScope(OwnerScope::class)
+                    ->where('order_id', $locked->getKey())
+                    ->whereIn('id', array_values(array_filter($ids)))
+                    ->where('status', OutboxStatus::Pending->value)
+                    ->where('owner_type', $locked->owner_type)
+                    ->where('owner_id', $locked->owner_id)
+                    ->where('transaction_id', $transactionId)
+                    ->where('gateway', $gateway)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                // Preserve staging order and skip rows already claimed or delivered
+                // by a relay worker before the after-commit callback ran.
+                foreach (array_unique($ids) as $id) {
+                    $row = $rows->get($id);
+                    if (! $row instanceof OrderOutboxMessage || ! in_array($row->event_class, OrderOutboxMessage::REPLAYABLE_EVENTS, true)) {
+                        continue;
+                    }
+
+                    $eventClass = $row->event_class;
+                    event(new $eventClass($locked, $transactionId, $gateway));
+
+                    $row->forceFill([
+                        'status' => OutboxStatus::Relayed,
+                        'relayed_at' => CarbonImmutable::now(),
+                        'claimed_at' => null,
+                        'next_retry_at' => null,
+                        'last_error' => null,
+                    ])->save();
+                }
+            });
         });
-    }
-
-    /**
-     * Mark staged rows relayed after live dispatch. Unscoped by design:
-     * the ids were staged by the caller in the same flow.
-     *
-     * @param  list<string|null>  $ids
-     */
-    private function markRelayed(string $orderId, array $ids): void
-    {
-        $ids = array_values(array_filter($ids));
-
-        if ($ids === []) {
-            return;
-        }
-
-        OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->where('order_id', $orderId)
-            ->whereIn('id', $ids)
-            ->where('status', OutboxStatus::Pending->value)
-            ->update([
-                'status' => OutboxStatus::Relayed->value,
-                'relayed_at' => CarbonImmutable::now(),
-                'claimed_at' => null,
-                'last_error' => null,
-                'updated_at' => CarbonImmutable::now(),
-            ]);
     }
 }

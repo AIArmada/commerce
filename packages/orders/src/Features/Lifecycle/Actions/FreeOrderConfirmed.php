@@ -68,10 +68,7 @@ final class FreeOrderConfirmed extends Transition
             ];
 
             $order->getConnection()->afterCommit(function () use ($order, $outboxIds): void {
-                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, static function () use ($order): void {
-                    event(new OrderProcessingStarted($order, (string) $order->getKey(), 'free'));
-                    event(new OrderFulfillmentRequired($order, (string) $order->getKey(), 'free'));
-                });
+                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, (string) $order->getKey(), 'free');
             });
 
             return $order;
