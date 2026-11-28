@@ -103,3 +103,22 @@ it('fails closed when the order owner no longer exists', function (): void {
 
     expect($resolved)->toBeNull();
 });
+
+it('rejects a tenant-visible global warehouse as a forced location', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = fulfillmentLocationOwner('Tenant Location Owner');
+    $location = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::query()->create([
+        'name' => 'Global warehouse',
+        'code' => 'GLOBAL-' . Str::upper(Str::random(6)),
+        'is_active' => true,
+    ]));
+
+    $resolved = OwnerContext::withOwner(
+        $owner,
+        fn (): ?object => resolveFulfillmentLocation((string) $location->getKey(), fulfillmentOrderFor($owner))
+    );
+
+    expect($resolved)->toBeNull();
+});

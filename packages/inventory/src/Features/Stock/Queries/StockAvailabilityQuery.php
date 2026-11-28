@@ -13,6 +13,24 @@ final readonly class StockAvailabilityQuery implements StockAvailability
 {
     public function byItem(array $items): iterable
     {
+        return $this->availability($items, false);
+    }
+
+    /**
+     * @param  list<array{type: string, id: string}>  $items
+     * @return iterable<array{type: string, id: string, location_id: string, available: int}>
+     */
+    public function forAllocation(array $items): iterable
+    {
+        return $this->availability($items, true);
+    }
+
+    /**
+     * @param  list<array{type: string, id: string}>  $items
+     * @return iterable<array{type: string, id: string, location_id: string, available: int}>
+     */
+    private function availability(array $items, bool $exactOwner): iterable
+    {
         $unique = [];
 
         foreach ($items as $item) {
@@ -26,15 +44,18 @@ final readonly class StockAvailabilityQuery implements StockAvailability
                 $byType[$item['type']][] = $item['id'];
             }
 
-            $query = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-                ->where(function (Builder $query) use ($byType): void {
+            $query = $exactOwner
+                ? InventoryOwnerScope::forMutation(InventoryLevel::query())
+                : InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query());
+
+            $query->where(function (Builder $query) use ($byType): void {
                     foreach ($byType as $type => $ids) {
                         $query->orWhere(function (Builder $match) use ($type, $ids): void {
                             $match->where('inventoryable_type', $type)->whereIn('inventoryable_id', $ids);
                         });
                     }
                 })
-                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
+                ->whereHas('location', fn (Builder $query): Builder => ($exactOwner ? InventoryOwnerScope::forMutation($query) : InventoryOwnerScope::applyToLocationQuery($query))->where('is_active', true))
                 ->select(['inventoryable_type', 'inventoryable_id', 'location_id'])
                 ->selectRaw('SUM(CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END) as available')
                 ->groupBy('inventoryable_type', 'inventoryable_id', 'location_id');

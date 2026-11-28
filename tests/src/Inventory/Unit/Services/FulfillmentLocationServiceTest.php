@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Stock\Queries\NearestLocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
@@ -39,6 +41,8 @@ it('aggregates duplicate order item demand and prefers a fully stocked location'
 
     expect($service->getBestFulfillmentLocation($order)?->id)->toBe($full->id)
         ->and($service->canFulfillFromSingleLocation($order))->toBeTrue()
+        ->and($service->canFulfillAtLocation($order, $full->id))->toBeTrue()
+        ->and($service->canFulfillAtLocation($order, $partial->id))->toBeFalse()
         ->and($service->getAvailabilitySummary($order)['total_required'])->toBe(6);
 
     $plan = $service->getFulfillmentPlan($order);
@@ -129,4 +133,45 @@ it('uses frozen composite component demand and combines standalone quantities', 
         ->and($summary['fully_available'])->toBeFalse()
         ->and($service->canFulfillFromSingleLocation($order))->toBeFalse()
         ->and($service->getFulfillmentPlan($order)->first()['items'][0]['quantity'])->toBe(6);
+});
+
+it('excludes visible global stock from tenant fulfillment and nearest-location plans', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = InventoryItem::create(['name' => 'Tenant']);
+    $item = InventoryItem::create(['name' => 'Tenant SKU']);
+
+    $createStock = function (int $quantity, int $priority) use ($item): InventoryLocation {
+        $location = InventoryLocation::factory()->create(['is_active' => true, 'priority' => $priority]);
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => $quantity,
+            'quantity_reserved' => 0,
+        ]);
+
+        return $location;
+    };
+
+    $owned = OwnerContext::withOwner($owner, fn (): InventoryLocation => $createStock(5, 1));
+    $global = OwnerContext::withOwner(null, fn (): InventoryLocation => $createStock(100, 100));
+
+    $order = new Order;
+    $line = new OrderItem(['name' => 'Tenant SKU', 'quantity' => 6, 'metadata' => null]);
+    $line->setRelation('purchasable', $item);
+    $order->setRelation('items', new Collection([$line]));
+
+    OwnerContext::withOwner($owner, function () use ($order, $item, $owned, $global): void {
+        $service = app(FulfillmentLocationService::class);
+        $strategy = app(NearestLocationStrategy::class);
+
+        expect($service->getBestFulfillmentLocation($order)?->id)->toBe($owned->id)
+            ->and($service->canFulfillFromSingleLocation($order))->toBeFalse()
+            ->and($service->canFulfillAtLocation($order, $global->id))->toBeFalse()
+            ->and($service->getAvailabilitySummary($order)['total_available'])->toBe(5)
+            ->and($strategy->canFulfill($item, 6))->toBeFalse()
+            ->and($strategy->getRecommendedOrder($item)->modelKeys())->toBe([$owned->id]);
+    });
 });

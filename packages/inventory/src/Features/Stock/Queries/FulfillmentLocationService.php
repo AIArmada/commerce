@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Queries;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Models\Order;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -36,8 +34,10 @@ use Illuminate\Support\Collection;
  * }
  * ```
  */
-final class FulfillmentLocationService
+final readonly class FulfillmentLocationService
 {
+    public function __construct(private StockAvailabilityQuery $stock) {}
+
     /**
      * Get the best fulfillment location for an order.
      *
@@ -91,6 +91,23 @@ final class FulfillmentLocationService
         }
 
         return false;
+    }
+
+    public function canFulfillAtLocation(Order $order, string $locationId): bool
+    {
+        $requirements = $this->getItemRequirements($order);
+
+        if ($requirements->isEmpty()) {
+            return false;
+        }
+
+        $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
+            ->whereKey($locationId)
+            ->where('is_active', true)
+            ->first();
+
+        return $location !== null
+            && $this->locationCanFulfillAll($location, $requirements, $this->getAvailabilityByLocation($requirements));
     }
 
     /**
@@ -227,7 +244,7 @@ final class FulfillmentLocationService
      */
     private function getActiveLocations(): Collection
     {
-        return InventoryOwnerScope::applyToLocationQuery(
+        return InventoryOwnerScope::forMutation(
             InventoryLocation::query()
                 ->where('is_active', true)
                 ->orderByDesc('priority')
@@ -286,28 +303,16 @@ final class FulfillmentLocationService
             return [];
         }
 
-        $byType = [];
-
-        foreach ($requirements as $item) {
-            $byType[$item['model']->getMorphClass()][] = $item['model']->getKey();
-        }
-
-        $levels = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
-            ->where(function (Builder $query) use ($byType): void {
-                foreach ($byType as $type => $ids) {
-                    $query->orWhere(fn (Builder $group): Builder => $group
-                        ->where('inventoryable_type', $type)
-                        ->whereIn('inventoryable_id', $ids));
-                }
-            })
-            ->get(['location_id', 'inventoryable_type', 'inventoryable_id', 'quantity_on_hand', 'quantity_reserved']);
+        $items = $requirements->map(static fn (array $item): array => [
+            'type' => $item['model']->getMorphClass(),
+            'id' => (string) $item['model']->getKey(),
+        ])->all();
 
         $availability = [];
 
-        foreach ($levels as $level) {
-            $key = $level->inventoryable_type . ':' . $level->inventoryable_id;
-            $availability[$level->location_id][$key] = $level->available;
+        foreach ($this->stock->forAllocation($items) as $row) {
+            $key = $row['type'] . ':' . $row['id'];
+            $availability[$row['location_id']][$key] = $row['available'];
         }
 
         return $availability;

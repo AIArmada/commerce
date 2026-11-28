@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * Nearest Location allocation strategy.
  * Allocates from locations closest to a specified origin point.
  */
-final class NearestLocationStrategy
+final readonly class NearestLocationStrategy
 {
     public function name(): string
     {
@@ -104,7 +104,7 @@ final class NearestLocationStrategy
      */
     public function getLocationsByDistance(float $originX, float $originY, ?float $originZ = null): Collection
     {
-        $locationsQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        $locationsQuery = InventoryOwnerScope::forMutation(InventoryLocation::query())
             ->where('is_active', true)
             ->orderBy('id');
 
@@ -138,12 +138,12 @@ final class NearestLocationStrategy
      */
     private function eligibleLevels(Model $model, AllocationContext $context): Builder
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
+        $query = InventoryOwnerScope::forMutation(
             InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
-                ->whereHas('location', fn (Builder $locationQuery): Builder => InventoryOwnerScope::applyToLocationQuery($locationQuery)->where('is_active', true))
+                ->whereHas('location', fn (Builder $locationQuery): Builder => InventoryOwnerScope::forMutation($locationQuery)->where('is_active', true))
         );
 
         if ($context->locationId !== null) {
