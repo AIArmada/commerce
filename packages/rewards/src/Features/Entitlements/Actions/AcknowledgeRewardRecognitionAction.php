@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +32,7 @@ final readonly class AcknowledgeRewardRecognitionAction
         string $recipientId,
         ?CarbonInterface $acknowledgedAt = null,
     ): RewardAward {
-        RewardProgramGuard::findAwardOrFail($award);
+        RewardAwardGuard::findAwardOrFail($award);
 
         if (! Str::isUuid($recipientId)) {
             throw new InvalidArgumentException('Recipient id must be a UUID.');

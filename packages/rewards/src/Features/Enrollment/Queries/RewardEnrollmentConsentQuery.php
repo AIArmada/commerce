@@ -10,7 +10,7 @@ use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentPreview;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -18,7 +18,7 @@ final readonly class RewardEnrollmentConsentQuery implements RewardEnrollmentCon
 {
     public function countForProgram(string $programId): int
     {
-        RewardProgramGuard::findProgramOrFail($programId);
+        app(RewardProgramLockApi::class)->assertProgramInScope($programId);
 
         return RewardEnrollment::query()->where('program_id', $programId)->count();
     }

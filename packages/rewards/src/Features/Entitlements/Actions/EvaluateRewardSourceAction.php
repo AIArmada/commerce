@@ -12,7 +12,7 @@ use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Features\Entitlements\Queries\RewardEvaluationCandidates;
 use AIArmada\Rewards\Features\Programs\Api\RewardPolicySnapshot;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
@@ -45,7 +45,7 @@ final readonly class EvaluateRewardSourceAction
             }
 
             try {
-                RewardProgramGuard::withProgramOwner($candidate['program']->id, function () use ($evaluate, $fact, $candidate, $now, $recipientType, $reader): void {
+                app(RewardProgramLockApi::class)->withProgramOwner($candidate['program']->id, function () use ($evaluate, $fact, $candidate, $now, $recipientType, $reader): void {
                     foreach ($candidate['components'] as $component) {
                         try {
                             $evaluate->handle(

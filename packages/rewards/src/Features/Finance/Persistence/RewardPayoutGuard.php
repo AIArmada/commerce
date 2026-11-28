@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Finance\Persistence;
 
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final class RewardPayoutGuard
@@ -19,7 +19,7 @@ final class RewardPayoutGuard
             throw new InvalidArgumentException('Unknown reward payout request.');
         }
 
-        RewardProgramGuard::findProgramOrFail($resolved->program_id);
+        app(RewardProgramLockApi::class)->assertProgramInScope($resolved->program_id);
 
         return $resolved;
     }

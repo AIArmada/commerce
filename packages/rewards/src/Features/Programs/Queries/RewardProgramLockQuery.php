@@ -11,12 +11,27 @@ use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramSnapshot;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Persistence\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
 final readonly class RewardProgramLockQuery implements RewardProgramLockApi
 {
+    public function assertProgramInScope(string $programId): void
+    {
+        RewardProgramGuard::findProgramOrFail($programId);
+    }
+
+    public function assertProgramInScopeWhenExists(string $programId): void
+    {
+        RewardProgramGuard::assertProgramInScopeWhenExists($programId);
+    }
+
+    public function withProgramOwner(string $programId, callable $callback): mixed
+    {
+        return RewardProgramGuard::withProgramOwner($programId, $callback);
+    }
+
     public function lockScopedProgram(string $programId): void
     {
         RewardProgramGuard::findProgramOrFail($programId);

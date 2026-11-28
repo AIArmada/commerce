@@ -9,7 +9,7 @@ use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardMaterialTerms;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Persistence\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

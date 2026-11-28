@@ -9,7 +9,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +41,7 @@ final readonly class OpenRewardAppealAction
         ?CarbonInterface $openedAt = null,
         int $windowDays = 30,
     ): RewardAppeal {
-        RewardProgramGuard::findAwardOrFail($award);
+        RewardAwardGuard::findAwardOrFail($award);
 
         RewardLedgerEntries::assertActor($openedByType, $openedById, $openedByRole);
         RewardLedgerEntries::assertReason($reason);

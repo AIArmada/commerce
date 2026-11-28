@@ -24,7 +24,6 @@ use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
 use AIArmada\Rewards\Support\RewardPointInput;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -88,7 +87,7 @@ final readonly class RecordRewardMilestoneContributionAction
         string $actorType = 'system',
         ?string $actorId = null,
     ): array {
-        RewardProgramGuard::findProgramOrFail($programId);
+        app(RewardProgramLockApi::class)->assertProgramInScope($programId);
 
         RewardPointInput::assertRecipient($recipientType, $recipientId);
         RewardPointInput::assertFamily($familyKey);

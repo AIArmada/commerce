@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Benefits\Persistence;
 
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final class RewardBenefitGuard
@@ -44,7 +44,7 @@ final class RewardBenefitGuard
             throw new InvalidArgumentException('Unknown reward benefit item.');
         }
 
-        RewardProgramGuard::findProgramOrFail((string) $resolved->program_id);
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $resolved->program_id);
 
         return $resolved;
     }

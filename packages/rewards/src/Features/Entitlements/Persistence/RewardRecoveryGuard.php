@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use InvalidArgumentException;
 
 final class RewardRecoveryGuard
@@ -24,7 +23,7 @@ final class RewardRecoveryGuard
             throw new InvalidArgumentException('Unknown reward recovery.');
         }
 
-        RewardProgramGuard::findAwardOrFail((string) $resolved->award_id);
+        RewardAwardGuard::findAwardOrFail((string) $resolved->award_id);
 
         return $resolved;
     }

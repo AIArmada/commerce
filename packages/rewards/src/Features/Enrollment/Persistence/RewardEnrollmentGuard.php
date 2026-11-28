@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Enrollment\Persistence;
 
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final class RewardEnrollmentGuard
@@ -18,7 +18,7 @@ final class RewardEnrollmentGuard
             throw new InvalidArgumentException('Unknown reward enrollment.');
         }
 
-        RewardProgramGuard::findProgramOrFail($enrollment->program_id);
+        app(RewardProgramLockApi::class)->assertProgramInScope($enrollment->program_id);
 
         return $enrollment;
     }

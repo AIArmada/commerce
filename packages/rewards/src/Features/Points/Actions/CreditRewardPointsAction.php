@@ -11,7 +11,8 @@ use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointInput;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
+use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -78,11 +79,11 @@ final readonly class CreditRewardPointsAction
         // current owner scope. Dangling references stay allowed for
         // append-only annotations.
         if ($awardId !== null) {
-            RewardProgramGuard::assertAwardInScopeWhenExists($awardId);
+            app(RewardAwardLockApi::class)->assertAwardInScopeWhenExists($awardId);
         }
 
         if ($programId !== null) {
-            RewardProgramGuard::assertProgramInScopeWhenExists($programId);
+            app(RewardProgramLockApi::class)->assertProgramInScopeWhenExists($programId);
         }
 
         $key = $operationKey ?? ($awardId !== null

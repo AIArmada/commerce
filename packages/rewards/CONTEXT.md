@@ -37,6 +37,6 @@ keywords:
 ## Guardrails
 - Owns programs, versions, enrollments, awards, points/badges/milestones/caps/appeals/adjustments ledgers, funding, payees, payout requests, benefit catalog/grants, and recoveries.
 - Host rails stay contracts, never implementations: `RewardSourceFactReader`, `RewardPayoutExecutor`, `RewardPayoutMethodCatalog`, `RewardBenefitCouponFulfillment`, `RewardRecipientResolver`, `RewardCorrectionKeySource`, `RewardGratitudePlanner`.
-- The program is the tenant boundary (`HasOwner` on `RewardProgram`); ledger tables carry no owner columns. Resolve programs/awards/requests/grants through `RewardProgramGuard` on write paths.
+- The program is the tenant boundary (`HasOwner` on `RewardProgram`); ledger tables carry no owner columns. Resolve programs/awards/requests/grants through the owning feature's scoped guard on write paths.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 - Filament UI belongs in `filament-rewards`, never here.

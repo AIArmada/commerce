@@ -9,11 +9,17 @@ use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardDecision;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardPayoutAwardSnapshot;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 {
+    public function assertAwardInScopeWhenExists(string $awardId): void
+    {
+        RewardAwardGuard::assertAwardInScopeWhenExists($awardId);
+    }
+
     public function findAwardDecision(string $awardId, bool $lock = false): ?RewardAwardDecision
     {
         $query = RewardAward::query()->whereKey($awardId);
@@ -28,7 +34,7 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
             return null;
         }
 
-        RewardProgramGuard::findProgramOrFail((string) $award->program_id);
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $award->program_id);
 
         return new RewardAwardDecision(
             id: (string) $award->getKey(),
@@ -49,7 +55,7 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
             throw new InvalidArgumentException('Unknown reward award.');
         }
 
-        RewardProgramGuard::findProgramOrFail((string) $award->program_id);
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $award->program_id);
 
         return new RewardPayoutAwardSnapshot(
             id: (string) $award->getKey(),
@@ -66,7 +72,7 @@ final readonly class RewardAwardLockQuery implements RewardAwardLockApi
 
     public function lockScopedAward(string $awardId): void
     {
-        RewardProgramGuard::findAwardOrFail($awardId);
+        RewardAwardGuard::findAwardOrFail($awardId);
 
         if (! RewardAward::query()->whereKey($awardId)->lockForUpdate()->first(['id']) instanceof RewardAward) {
             throw new InvalidArgumentException('Unknown reward award.');

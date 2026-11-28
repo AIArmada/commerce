@@ -44,7 +44,7 @@ use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Support\RewardCapWindows;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -120,7 +120,7 @@ final readonly class TransitionRewardAwardAction
         ?CarbonInterface $decidedAt = null,
         ?CarbonInterface $pointsExpiresAt = null,
     ): RewardAward {
-        RewardProgramGuard::findAwardOrFail($award);
+        RewardAwardGuard::findAwardOrFail($award);
 
         $toEnum = $to instanceof RewardAwardStatus ? $to : RewardAwardStatus::tryFrom($to);
 

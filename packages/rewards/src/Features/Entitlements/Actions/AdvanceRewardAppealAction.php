@@ -13,7 +13,7 @@ use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +58,7 @@ final readonly class AdvanceRewardAppealAction
         ?array $evidence = null,
         ?CarbonInterface $decidedAt = null,
     ): RewardAppeal {
-        RewardProgramGuard::findAppealOrFail($appeal);
+        RewardAwardGuard::findAppealOrFail($appeal);
 
         $toEnum = $to instanceof RewardAppealStatus ? $to : RewardAppealStatus::tryFrom($to);
 

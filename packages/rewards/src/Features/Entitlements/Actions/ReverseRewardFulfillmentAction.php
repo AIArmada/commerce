@@ -12,7 +12,7 @@ use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +55,7 @@ final readonly class ReverseRewardFulfillmentAction
         ?array $evidence = null,
         ?CarbonInterface $decidedAt = null,
     ): array {
-        RewardProgramGuard::findAwardOrFail($award);
+        RewardAwardGuard::findAwardOrFail($award);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);

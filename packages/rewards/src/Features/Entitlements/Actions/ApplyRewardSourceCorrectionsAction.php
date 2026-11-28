@@ -9,7 +9,7 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -107,7 +107,7 @@ final readonly class ApplyRewardSourceCorrectionsAction
                 try {
                     // Sweeps run without an ambient owner: each award's work
                     // runs under the owning program's own owner.
-                    RewardProgramGuard::withProgramOwner((string) $award->program_id, function () use ($awardId, $award, $to, $cause, $actorType, $actorId, $actorRole, $decided, &$report): void {
+                    app(RewardProgramLockApi::class)->withProgramOwner((string) $award->program_id, function () use ($awardId, $award, $to, $cause, $actorType, $actorId, $actorRole, $decided, &$report): void {
                         // Same routing as the queued recheck: unapproved work
                         // rejects, approved work reverses, fulfilled work goes
                         // through recovery.
@@ -187,7 +187,7 @@ final readonly class ApplyRewardSourceCorrectionsAction
                     throw new InvalidArgumentException('Unknown reward program.');
                 }
 
-                RewardProgramGuard::withProgramOwner(
+                app(RewardProgramLockApi::class)->withProgramOwner(
                     (string) $programId,
                     static fn () => app(InvalidateRewardMilestoneContributionAction::class)->handle(
                         $contribution,

@@ -10,7 +10,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -74,11 +74,11 @@ final readonly class AppendRewardAdjustmentAction
         // references stay allowed because adjustments are append-only
         // annotations that may precede (or outlive) the referenced row.
         if ($awardId !== null) {
-            RewardProgramGuard::assertAwardInScopeWhenExists($awardId);
+            RewardAwardGuard::assertAwardInScopeWhenExists($awardId);
         }
 
         if ($appealId !== null) {
-            RewardProgramGuard::assertAppealInScopeWhenExists($appealId);
+            RewardAwardGuard::assertAppealInScopeWhenExists($appealId);
         }
 
         if ($linkedAdjustmentId !== null) {
@@ -234,11 +234,11 @@ final readonly class AppendRewardAdjustmentAction
             }
 
             if ($adjustment->award_id !== null) {
-                RewardProgramGuard::assertAwardInScopeWhenExists($adjustment->award_id);
+                RewardAwardGuard::assertAwardInScopeWhenExists($adjustment->award_id);
             }
 
             if ($adjustment->appeal_id !== null) {
-                RewardProgramGuard::assertAppealInScopeWhenExists($adjustment->appeal_id);
+                RewardAwardGuard::assertAppealInScopeWhenExists($adjustment->appeal_id);
             }
 
             if ($adjustment->linked_adjustment_id === null) {

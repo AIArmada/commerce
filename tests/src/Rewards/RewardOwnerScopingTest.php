@@ -32,7 +32,7 @@ use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
@@ -219,8 +219,8 @@ it('degrades to plain lookups when owner scoping is disabled', function (): void
         'family_key' => 'scope-plain-' . Str::lower(Str::random(6)),
     ]);
 
-    expect(RewardProgramGuard::findProgramOrFail((string) $program->getKey())->getKey())->toBe($program->getKey())
-        ->and(fn () => RewardProgramGuard::findProgramOrFail((string) Str::uuid()))->toThrow(InvalidArgumentException::class, 'Unknown reward program.');
+    expect(app(RewardProgramLockApi::class)->readProgram((string) $program->getKey())->id)->toBe($program->getKey())
+        ->and(fn () => app(RewardProgramLockApi::class)->readProgram((string) Str::uuid()))->toThrow(InvalidArgumentException::class, 'Unknown reward program.');
 });
 
 it('refuses evaluation against a foreign program', function (): void {

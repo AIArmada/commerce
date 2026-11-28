@@ -226,7 +226,7 @@ keys are trusted by design — the caller owns the business meaning of the key.
 System runs (`EvaluateRewardEntitlementJob`, `RecheckRewardAwardsJob`, the
 corrections sweep, and the sweep command) need no ambient owner: every
 unit of work fans out under the owning program's own owner context via
-`RewardProgramGuard::withProgramOwner()`. Global (platform) programs run
+`app(RewardProgramLockApi::class)->withProgramOwner()`. Global (platform) programs run
 under an explicit-global context. A program whose owner row was deleted
 fails per award — the queued job retries/dead-letters, and the sweep
 records a per-award entry in `errors` and continues with the rest.

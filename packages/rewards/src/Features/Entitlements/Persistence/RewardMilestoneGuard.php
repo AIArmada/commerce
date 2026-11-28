@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final class RewardMilestoneGuard
@@ -32,7 +32,7 @@ final class RewardMilestoneGuard
             throw new InvalidArgumentException('Milestone contribution references no program.');
         }
 
-        RewardProgramGuard::findProgramOrFail((string) $programId);
+        app(RewardProgramLockApi::class)->assertProgramInScope((string) $programId);
 
         return $resolved;
     }

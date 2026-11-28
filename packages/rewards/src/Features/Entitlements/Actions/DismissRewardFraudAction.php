@@ -9,7 +9,7 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
 use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardAwardGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +39,7 @@ final readonly class DismissRewardFraudAction
         ?string $sourceOperationId = null,
         ?CarbonInterface $decidedAt = null,
     ): RewardAward {
-        RewardProgramGuard::findAwardOrFail($award);
+        RewardAwardGuard::findAwardOrFail($award);
 
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);

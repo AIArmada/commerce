@@ -11,7 +11,7 @@ use AIArmada\Rewards\Data\RewardSourceFact;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardMilestoneContribution;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use InvalidArgumentException;
 
 final readonly class RecheckRewardSourceAction
@@ -69,7 +69,7 @@ final readonly class RecheckRewardSourceAction
                 : RewardAwardStatus::Rejected;
 
             try {
-                RewardProgramGuard::withProgramOwner((string) $award->program_id, static function () use ($transition, $award, $to, $evidence): void {
+                app(RewardProgramLockApi::class)->withProgramOwner((string) $award->program_id, static function () use ($transition, $award, $to, $evidence): void {
                     $transition->handle(
                         $award,
                         $to,
@@ -96,7 +96,7 @@ final readonly class RecheckRewardSourceAction
             ->lazyById();
 
         foreach ($contributions as $contribution) {
-            RewardProgramGuard::withProgramOwner(
+            app(RewardProgramLockApi::class)->withProgramOwner(
                 (string) ($contribution->cycle?->program_id ?? ''),
                 static fn () => $invalidate->handle(
                     $contribution,

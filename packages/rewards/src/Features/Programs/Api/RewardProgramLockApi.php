@@ -6,6 +6,13 @@ namespace AIArmada\Rewards\Features\Programs\Api;
 
 interface RewardProgramLockApi
 {
+    public function assertProgramInScope(string $programId): void;
+
+    public function assertProgramInScopeWhenExists(string $programId): void;
+
+    /** Run system work under the program's owner, restoring the previous context. */
+    public function withProgramOwner(string $programId, callable $callback): mixed;
+
     /** Acquire the scoped program row lock within the caller's transaction. */
     public function lockScopedProgram(string $programId): void;
 
