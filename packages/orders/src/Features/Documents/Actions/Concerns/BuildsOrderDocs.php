@@ -12,6 +12,7 @@ use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Carbon\CarbonImmutable;
+use DomainException;
 use Illuminate\Support\Facades\View;
 use InvalidArgumentException;
 use Spatie\Browsershot\Browsershot;
@@ -93,6 +94,10 @@ trait BuildsOrderDocs
         array $metadata = [],
         bool $generatePdf = false,
     ): DocData {
+        if (! $order->isFullyPaid()) {
+            throw new DomainException('Paid order documents require full payment settlement.');
+        }
+
         // Preserve exact allocated taxes rather than reconstructing a rounded rate.
         $linesSubtotalMinor = (int) $order->subtotal + max(0, (int) $order->shipping_total);
 

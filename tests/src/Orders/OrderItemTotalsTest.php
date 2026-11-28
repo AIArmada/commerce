@@ -6,6 +6,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
@@ -89,6 +90,15 @@ it('builds invoice documents for orders carrying line discounts', function (): v
         'discount_amount' => 1000,
         'tax_amount' => 600,
         'currency' => 'MYR',
+    ]);
+
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-discount-' . $order->getKey(),
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
     ]);
 
     $docId = app(CreateOrderInvoiceDoc::class)->execute($order, 'txn_docs_disc', 'stripe');

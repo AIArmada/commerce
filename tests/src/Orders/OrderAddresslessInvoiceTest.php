@@ -10,6 +10,7 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrder;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -35,6 +36,15 @@ it('keeps a digital order addressless through persistence snapshot and invoice r
         ]],
     ));
 
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-digital-' . $order->getKey(),
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
     $snapshot = $order->fresh(['items', 'addresses']) ?? $order;
 
     expect($snapshot)->toBeInstanceOf(Order::class)
@@ -56,7 +66,7 @@ it('keeps a digital order addressless through persistence snapshot and invoice r
 
     view()->addNamespace('orders', dirname(__DIR__, 3) . '/packages/orders/resources/views');
 
-    $response = (new GenerateInvoice)->download($snapshot);
+    $response = (new GenerateInvoice)->download((string) $snapshot->getKey());
     expect($response)->toBeInstanceOf(StreamedResponse::class);
 
     ob_start();
@@ -128,6 +138,15 @@ it('renders canonical customer and address data, then omits the block after deta
         return $order->fresh(['items', 'addresses']) ?? $order;
     });
 
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-addressful-' . $order->getKey(),
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
     $invoiceId = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
         $order,
         'txn-addressful-order',
@@ -144,7 +163,7 @@ it('renders canonical customer and address data, then omits the block after deta
 
     view()->addNamespace('orders', dirname(__DIR__, 3) . '/packages/orders/resources/views');
 
-    $addressfulResponse = (new GenerateInvoice)->download($order);
+    $addressfulResponse = (new GenerateInvoice)->download((string) $order->getKey());
     expect($addressfulResponse)->toBeInstanceOf(StreamedResponse::class);
 
     ob_start();
@@ -160,7 +179,7 @@ it('renders canonical customer and address data, then omits the block after deta
 
     OwnerContext::withOwner(null, fn (): int => $order->addresses()->detach());
     $addressless = $order->fresh(['items', 'addresses']) ?? $order;
-    $addresslessResponse = (new GenerateInvoice)->download($addressless);
+    $addresslessResponse = (new GenerateInvoice)->download((string) $addressless->getKey());
     expect($addresslessResponse)->toBeInstanceOf(StreamedResponse::class);
 
     ob_start();
@@ -206,6 +225,15 @@ it('falls back to the primary shipping address for document customer data', func
         return $order->fresh(['addresses']) ?? $order;
     });
 
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-shipping-' . $order->getKey(),
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
     $invoiceId = OwnerContext::withOwner(null, fn () => app(CreateOrderInvoiceDoc::class)->execute(
         $order,
         'txn-shipping-fallback',
@@ -219,7 +247,7 @@ it('falls back to the primary shipping address for document customer data', func
     ]);
 });
 
-it('renders an owned order invoice while the ambient context belongs to another owner', function (): void {
+it('requires the owning context to render an owned order invoice', function (): void {
     config()->set('orders.owner.enabled', true);
     config()->set('orders.owner.auto_assign_on_create', true);
     config()->set('docs.owner.enabled', false);
@@ -271,7 +299,10 @@ it('renders an owned order invoice while the ambient context belongs to another 
     // The ambient context resolves the default test owner, not $owner.
     view()->addNamespace('orders', dirname(__DIR__, 3) . '/packages/orders/resources/views');
 
-    $response = (new GenerateInvoice)->download($order);
+    expect(fn () => (new GenerateInvoice)->download((string) $order->getKey()))
+        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+    $response = OwnerContext::withOwner($owner, fn () => (new GenerateInvoice)->download((string) $order->getKey()));
     expect($response)->toBeInstanceOf(StreamedResponse::class);
 
     ob_start();

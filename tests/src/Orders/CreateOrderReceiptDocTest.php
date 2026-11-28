@@ -6,6 +6,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 
 it('creates a receipt document for a paid order', function (): void {
@@ -48,6 +49,15 @@ function receiptDocumentOrder(string $suffix): Order
         'paid_at' => now(),
     ]);
 
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-receipt-' . $suffix,
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
+        'paid_at' => now(),
+    ]);
+
     $order->items()->create([
         'name' => 'Receipt Product',
         'sku' => 'receipt-product-' . $suffix,
@@ -76,3 +86,21 @@ function receiptDocumentOrder(string $suffix): Order
 
     return $order->fresh(['items', 'addresses']) ?? $order;
 }
+
+it('refuses to issue paid documents for an order with an outstanding balance', function (): void {
+    $order = Order::factory()->create([
+        'subtotal' => 1000,
+        'grand_total' => 1000,
+        'currency' => 'MYR',
+        'paid_at' => null,
+    ]);
+
+    $documents = app(\AIArmada\Orders\Contracts\OrderDocuments::class);
+
+    foreach (['invoice', 'receipt'] as $type) {
+        expect(fn () => $documents->issue((string) $order->getKey(), $type, 'unsettled', 'chip'))
+            ->toThrow(DomainException::class, 'full payment settlement');
+    }
+
+    expect(Doc::query()->where('docable_id', $order->getKey())->exists())->toBeFalse();
+});

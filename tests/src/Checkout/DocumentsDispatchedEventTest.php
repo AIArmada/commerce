@@ -14,6 +14,7 @@ use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Contracts\OrderDocuments;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
@@ -144,6 +145,27 @@ describe('DocumentsDispatched event', function (): void {
         ))->handle();
     });
 
+    it('does not issue paid documents before checkout payment settlement', function (): void {
+        config()->set('orders.owner.enabled', false);
+
+        $order = Order::factory()->create(['grand_total' => 1000, 'paid_at' => null]);
+        $session = CheckoutSession::forceCreate([
+            'cart_id' => 'cart-unsettled-documents',
+            'order_id' => $order->id,
+        ]);
+
+        $documents = mock(OrderDocuments::class);
+        $documents->shouldNotReceive('issue');
+        app()->instance(OrderDocuments::class, $documents);
+
+        (new GenerateCheckoutDocumentsJob(
+            sessionId: $session->id,
+            orderId: $order->id,
+            documentTypes: ['invoice', 'receipt'],
+            ownerIsGlobal: true,
+        ))->handle();
+    });
+
     it('generates configured documents when the dispatched job runs', function (): void {
         config()->set('docs.owner.enabled', false);
         config()->set('orders.owner.enabled', false);
@@ -198,6 +220,15 @@ function checkoutDocumentGenerationOrder(string $suffix): Order
         'tax_total' => 600,
         'grand_total' => 12100,
         'currency' => 'MYR',
+        'paid_at' => now(),
+    ]);
+
+    $order->payments()->create([
+        'gateway' => 'chip',
+        'transaction_id' => 'paid-checkout-' . $suffix,
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'status' => PaymentStatus::Completed,
         'paid_at' => now(),
     ]);
 

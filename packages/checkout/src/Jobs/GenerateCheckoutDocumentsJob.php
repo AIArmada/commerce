@@ -53,7 +53,7 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 
         $order = $this->resolveOrder($session);
 
-        if (! $order instanceof Order) {
+        if (! $order instanceof Order || ! $order->isFullyPaid()) {
             return;
         }
 
