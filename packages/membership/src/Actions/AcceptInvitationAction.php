@@ -60,7 +60,7 @@ final class AcceptInvitationAction
                 throw new RuntimeException('Invitation contains an invalid membership role.');
             }
 
-            $lockedInvitation->transitionStatus(InvitationStatus::Accepted, $user);
+            $lockedInvitation->transitionTo(InvitationStatus::Accepted, $user)->save();
 
             AddMemberAction::make()->handle(
                 $lockedInvitation->subject,

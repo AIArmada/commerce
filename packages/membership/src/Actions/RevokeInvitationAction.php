@@ -28,7 +28,7 @@ final class RevokeInvitationAction
                 ->whereKey($guardedInvitation->getKey())
                 ->firstOrFail();
 
-            $lockedInvitation->transitionStatus(InvitationStatus::Revoked, $actor);
+            $lockedInvitation->transitionTo(InvitationStatus::Revoked, $actor)->save();
         });
     }
 }

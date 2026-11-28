@@ -259,12 +259,12 @@ Acceptance is gated on the date, not the stored status: `isValid()` consults
 `isExpired()`, so a past-due invitation is refused whether or not anything has
 written `expired`. There is no sweep command.
 
-`expireIfDue()` performs the transition on demand and returns whether it did.
+`ExpireMembershipInvitationAction::run($invitation)` performs the transition on demand and returns whether it did.
 `InviteMemberAction` already calls it, which is why re-inviting a past-due
 subject replaces the stale invitation instead of returning it.
 
 ```php
-$invitation->expireIfDue(); // true when it transitioned pending → expired
+$invitation->ExpireMembershipInvitationAction::run($invitation); // true when it transitioned pending → expired
 ```
 
 To bulk-normalise rows for reporting, iterate inside an explicit owner scope:
@@ -280,7 +280,7 @@ OwnerContext::withOwner(null, function (): void {
         ->whereNotNull('expires_at')
         ->where('expires_at', '<=', now())
         ->get()
-        ->each(fn (MembershipInvitation $invitation) => $invitation->expireIfDue());
+        ->each(fn (MembershipInvitation $invitation) => $invitation->ExpireMembershipInvitationAction::run($invitation));
 });
 ```
 

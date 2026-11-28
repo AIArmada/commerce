@@ -64,7 +64,7 @@ final class InviteMemberAction
                 ->first(fn (MembershipInvitation $invitation): bool => $invitation->channel === $channelName
                     && $invitation->recipient === $recipient);
 
-            if ($existing instanceof MembershipInvitation && ! $existing->expireIfDue()) {
+            if ($existing instanceof MembershipInvitation && ! ExpireMembershipInvitationAction::make()->handle($existing)) {
                 return $existing;
             }
 

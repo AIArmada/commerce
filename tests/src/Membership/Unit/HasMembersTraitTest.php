@@ -112,7 +112,7 @@ it('cancels pending records and preserves terminal history when a subject is del
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->user->getKey(),
     ]);
-    $terminalInvitation->transitionStatus(InvitationStatus::Accepted, $this->user);
+    $terminalInvitation->transitionTo(InvitationStatus::Accepted, $this->user)->save();
 
     AddMemberAction::make()->handle(
         subject: $this->subject,

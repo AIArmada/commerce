@@ -99,7 +99,7 @@ it('dispatches MembershipInvitationAccepted event', function (): void {
 });
 
 it('throws on expired invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Expired);
+    $this->invitation->transitionTo(InvitationStatus::Expired)->save();
 
     $this->expectException(RuntimeException::class);
 
@@ -110,7 +110,7 @@ it('throws on expired invitation', function (): void {
 });
 
 it('throws on revoked invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Revoked, $this->inviter);
+    $this->invitation->transitionTo(InvitationStatus::Revoked, $this->inviter)->save();
 
     $this->expectException(RuntimeException::class);
 
@@ -121,7 +121,7 @@ it('throws on revoked invitation', function (): void {
 });
 
 it('throws on already accepted invitation', function (): void {
-    $this->invitation->transitionStatus(InvitationStatus::Accepted, $this->acceptor);
+    $this->invitation->transitionTo(InvitationStatus::Accepted, $this->acceptor)->save();
 
     $this->expectException(RuntimeException::class);
 

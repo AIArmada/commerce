@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Membership\Actions\ExpireMembershipInvitationAction;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -92,14 +93,14 @@ it('self-heals a past-due invitation on read instead of relying on a sweep', fun
     expect($due->isExpired())->toBeTrue()
         ->and($upcoming->isExpired())->toBeFalse();
 
-    // expireIfDue() is the self-heal the re-invite path calls.
-    expect($due->expireIfDue())->toBeTrue()
+    // The re-invite path uses the expiry action.
+    expect(ExpireMembershipInvitationAction::run($due))->toBeTrue()
         ->and($due->fresh()->status)->toBe(InvitationStatus::Expired)
-        ->and($upcoming->expireIfDue())->toBeFalse()
+        ->and(ExpireMembershipInvitationAction::run($upcoming))->toBeFalse()
         ->and($upcoming->fresh()->status)->toBe(InvitationStatus::Pending);
 
     // A second call is a no-op, so the transition is idempotent.
-    expect($due->fresh()->expireIfDue())->toBeFalse();
+    expect(ExpireMembershipInvitationAction::run($due->fresh()))->toBeFalse();
 });
 
 it('refuses a past-due invitation at the accept gate without any sweep', function (): void {
