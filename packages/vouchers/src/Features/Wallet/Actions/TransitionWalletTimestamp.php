@@ -5,49 +5,41 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Collection;
 
 final readonly class TransitionWalletTimestamp implements WalletTimestampTransition
 {
-    public function handle(VoucherWallet $wallet, bool $redeemed): void
+    public function handle(string $walletId, bool $redeemed): void
     {
-        if (! $wallet->exists || $wallet->getKey() === null) {
-            return;
-        }
-
         $column = $redeemed ? 'redeemed_at' : 'claimed_at';
 
-        $wallet->getConnection()->transaction(function () use ($wallet, $column): void {
+        (new VoucherWallet)->getConnection()->transaction(function () use ($walletId, $column): void {
             $fresh = config('vouchers.owner.enabled', false)
-                ? OwnerWriteGuard::findOrFailForOwner(VoucherWallet::class, $wallet->getKey(), lockForUpdate: true)
-                : $wallet->newQuery()->whereKey($wallet->getKey())->lockForUpdate()->first();
-
-            if (! $fresh instanceof VoucherWallet) {
-                return;
-            }
+                ? OwnerWriteGuard::findOrFailForOwner(VoucherWallet::class, $walletId, lockForUpdate: true)
+                : VoucherWallet::query()->whereKey($walletId)->lockForUpdate()->firstOrFail();
 
             if ($fresh->getAttribute($column) === null) {
                 $fresh->setAttribute($column, CarbonImmutable::now());
                 $fresh->saveOrFail();
             }
-
-            $wallet->setRawAttributes($fresh->getAttributes(), true);
         });
     }
 
-    /** @param Collection<int, VoucherWallet> $records */
-    public function handleMany(Collection $records, bool $redeemed): void
+    /** @param list<string> $walletIds */
+    public function handleMany(array $walletIds, bool $redeemed): void
     {
-        if ($records->isEmpty()) {
+        if ($walletIds === []) {
             return;
         }
 
-        (new VoucherWallet)->getConnection()->transaction(function () use ($records, $redeemed): void {
-            foreach ($records->sortBy(static fn (VoucherWallet $record): string => (string) $record->getKey()) as $record) {
-                $this->handle($record, $redeemed);
+        $walletIds = array_values(array_unique($walletIds));
+        sort($walletIds, SORT_STRING);
+
+        (new VoucherWallet)->getConnection()->transaction(function () use ($walletIds, $redeemed): void {
+            foreach ($walletIds as $walletId) {
+                $this->handle($walletId, $redeemed);
             }
         });
     }

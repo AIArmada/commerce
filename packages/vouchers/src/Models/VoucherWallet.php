@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -81,20 +81,22 @@ final class VoucherWallet extends Model implements Auditable
 
     public function claim(): void
     {
-        if ($this->claimed_at !== null) {
+        if (! $this->exists || $this->getKey() === null || $this->claimed_at !== null) {
             return;
         }
 
-        app(WalletTimestampTransition::class)->handle($this, false);
+        app(WalletTimestampTransition::class)->handle((string) $this->getKey(), false);
+        $this->refresh();
     }
 
     public function markAsRedeemed(): void
     {
-        if ($this->redeemed_at !== null) {
+        if (! $this->exists || $this->getKey() === null || $this->redeemed_at !== null) {
             return;
         }
 
-        app(WalletTimestampTransition::class)->handle($this, true);
+        app(WalletTimestampTransition::class)->handle((string) $this->getKey(), true);
+        $this->refresh();
     }
 
     public function isAvailable(): bool

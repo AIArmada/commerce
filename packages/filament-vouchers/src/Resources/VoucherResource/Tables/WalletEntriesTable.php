@@ -6,9 +6,9 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\Runtime\WalletEntryDeletion;
-use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
@@ -186,7 +186,7 @@ final class WalletEntriesTable
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
                     ->action(function (VoucherWallet $record): void {
-                        app(WalletEntryDeletion::class)->handle($record);
+                        app(WalletEntryDeletion::class)->handle((string) $record->getKey());
                     }),
 
                 Action::make('viewMetadata')
@@ -209,14 +209,14 @@ final class WalletEntriesTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
-                        app(WalletTimestampTransition::class)->handleMany($records, true);
+                        app(WalletTimestampTransition::class)->handleMany($records->map(static fn (VoucherWallet $record): string => (string) $record->getKey())->values()->all(), true);
                     }),
 
                 DeleteBulkAction::make()
                     ->label('Remove from Wallets')
                     ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
                     ->action(function (Collection $records): void {
-                        app(WalletEntryDeletion::class)->handleMany($records);
+                        app(WalletEntryDeletion::class)->handleMany($records->map(static fn (VoucherWallet $record): string => (string) $record->getKey())->values()->all());
                     }),
             ])
             ->recordUrl(null);

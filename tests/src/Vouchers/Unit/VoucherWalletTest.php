@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -62,6 +64,37 @@ test('rejects wallet writes for an unpersisted holder', function (): void {
     expect(fn () => $user->addVoucherToWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
         ->and(fn () => $user->removeVoucherFromWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
         ->and(VoucherWallet::query()->count())->toBe(0);
+});
+
+test('wallet mutation APIs deduplicate identifiers and keep bulk deletion atomic', function (): void {
+    config(['vouchers.owner.enabled' => false]);
+
+    $user = TestWalletUser::create(['name' => 'Bulk User', 'email' => 'bulk@example.com']);
+
+    $voucher = Voucher::create([
+        'code' => 'BULK-WALLET',
+        'name' => 'Bulk Wallet',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $wallet = $user->addVoucherToWallet($voucher->code);
+    $id = (string) $wallet->getKey();
+
+    app(WalletTimestampTransition::class)->handleMany([$id, $id], true);
+
+    expect($wallet->fresh()->redeemed_at)->not->toBeNull();
+
+    expect(fn () => app(WalletEntryDeletion::class)->handleMany([$id, 'ffffffff-ffff-ffff-ffff-ffffffffffff']))
+        ->toThrow(RuntimeException::class);
+
+    expect($wallet->fresh())->not->toBeNull();
+
+    app(WalletEntryDeletion::class)->handleMany([$id, $id]);
+
+    expect($wallet->fresh())->toBeNull();
 });
 
 test('can check if voucher exists in wallet', function (): void {
