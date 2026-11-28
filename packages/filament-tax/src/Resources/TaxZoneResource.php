@@ -42,11 +42,10 @@ final class TaxZoneResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $query = OwnerUiScope::apply(TaxZone::query(), includeGlobal: false);
 
-        /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->withCount([
-            'rates as rates_count' => fn (Builder $builder) => $builder,
+            'rates as rates_count' => fn (Builder $builder) => OwnerUiScope::apply($builder, includeGlobal: false),
         ]);
     }
 

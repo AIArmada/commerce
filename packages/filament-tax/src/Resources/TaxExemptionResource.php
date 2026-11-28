@@ -43,9 +43,8 @@ final class TaxExemptionResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $query = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false);
 
-        /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->with(['exemptable', 'taxZone']);
     }
 

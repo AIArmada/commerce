@@ -35,8 +35,10 @@ final class RatesRelationManager extends RelationManager
      */
     protected function getTableQuery(): Builder
     {
-        /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return OwnerUiScope::apply(parent::getTableQuery(), includeGlobal: false);
+        /** @var Builder<TaxRate> $query */
+        $query = parent::getTableQuery();
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     public function table(Table $table): Table

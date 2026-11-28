@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use Filament\Facades\Filament;
 use AIArmada\Tax\Models\TaxZone;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,16 +20,25 @@ final class ZoneCoverageWidget extends Widget
 
     protected static ?int $sort = 3;
 
+    public static function canView(): bool
+    {
+        $actor = Filament::auth()->user();
+
+        return $actor !== null
+            && $actor->can('tax.zones.view')
+            && $actor->can('tax.rates.view');
+    }
+
     /**
      * @return array<string, mixed>
      */
     protected function getViewData(): array
     {
         /** @var Builder<TaxZone> $query */
-        $query = TaxZone::query();
+        $query = OwnerUiScope::apply(TaxZone::query(), includeGlobal: false);
 
         $zones = $query
-            ->with('rates')
+            ->with(['rates' => fn (Builder $rates): Builder => OwnerUiScope::apply($rates, includeGlobal: false)])
             ->active()
             ->orderBy('priority', 'desc')
             ->limit(50)
@@ -40,20 +51,8 @@ final class ZoneCoverageWidget extends Widget
 
     /**
      * @param  Collection<int, TaxZone>  $zones
-     * @return Collection<int, array{
-     *     id: string,
-     *     name: string,
-     *     code: string,
-     *     type: string,
-     *     countries: array,
-     *     states: array,
-     *     priority: int,
-     *     is_default: bool,
-     *     rates: array<int, array{name: string, class: string, rate: string, is_compound: bool}>,
-     *     rate_count: int
-     * }>
+     * @return Collection<int, array<string, mixed>>
      */
-    // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
     protected function formatZones(Collection $zones): Collection
     {
         $formattedZones = $zones->map(function (TaxZone $zone): array {
@@ -80,8 +79,6 @@ final class ZoneCoverageWidget extends Widget
                 'rate_count' => $zone->rates->count(),
             ];
         })->values();
-
-        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
         return $formattedZones;
     }
 }

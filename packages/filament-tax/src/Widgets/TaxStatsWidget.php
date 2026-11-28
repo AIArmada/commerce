@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use Filament\Facades\Filament;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
@@ -18,6 +20,17 @@ final class TaxStatsWidget extends BaseWidget
     protected ?string $pollingInterval = '30s';
 
     protected static ?int $sort = 1;
+
+    public static function canView(): bool
+    {
+        $actor = Filament::auth()->user();
+
+        return $actor !== null
+            && $actor->can('tax.zones.view')
+            && $actor->can('tax.rates.view')
+            && $actor->can('tax.classes.view')
+            && $actor->can('tax.exemptions.view');
+    }
 
     protected function getStats(): array
     {
@@ -47,7 +60,7 @@ final class TaxStatsWidget extends BaseWidget
     }
 
     /**
-     * Fetch all stats in a single optimized query.
+     * Fetch active counts for each tax aggregate.
      * All queries are scoped by owner via OwnerScope to prevent cross-tenant data leakage.
      *
      * @return array{zones: int, rates: int, classes: int, exemptions: int}
@@ -57,19 +70,19 @@ final class TaxStatsWidget extends BaseWidget
         $now = CarbonImmutable::now();
 
         // All queries scoped by owner to ensure multitenancy safety
-        $zoneCount = TaxZone::query()
-            ->where('is_active', 1)
+        $zoneCount = OwnerUiScope::apply(TaxZone::query(), includeGlobal: false)
+            ->where('is_active', true)
             ->count();
 
-        $rateCount = TaxRate::query()
-            ->where('is_active', 1)
+        $rateCount = OwnerUiScope::apply(TaxRate::query(), includeGlobal: false)
+            ->where('is_active', true)
             ->count();
 
-        $classCount = TaxClass::query()
-            ->where('is_active', 1)
+        $classCount = OwnerUiScope::apply(TaxClass::query(), includeGlobal: false)
+            ->where('is_active', true)
             ->count();
 
-        $exemptionCount = TaxExemption::query()
+        $exemptionCount = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
             ->where('status', 'approved')
             ->where(function (Builder $builder) use ($now): void {
                 $builder

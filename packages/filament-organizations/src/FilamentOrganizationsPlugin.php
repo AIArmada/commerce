@@ -16,8 +16,13 @@ final class FilamentOrganizationsPlugin implements Plugin
 
     public static function get(): static
     {
-        /* @phpstan-ignore return.type */
-        return filament(app(self::class)->getId());
+        $plugin = filament(app(self::class)->getId());
+
+        if (! $plugin instanceof static) {
+            throw new \LogicException('The Filament Organizations plugin is not registered.');
+        }
+
+        return $plugin;
     }
 
     public function getId(): string
