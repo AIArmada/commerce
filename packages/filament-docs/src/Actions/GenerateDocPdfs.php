@@ -9,13 +9,13 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final readonly class GenerateDocPdfs
 {
-    public function __construct(private DocService $docService) {}
+    public function __construct(private DocumentRecords $docService) {}
 
     /**
      * @param  array<int, string>  $docIds

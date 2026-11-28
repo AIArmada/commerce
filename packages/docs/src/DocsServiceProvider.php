@@ -15,7 +15,7 @@ use AIArmada\Docs\Platform\FeatureCatalog;
 use AIArmada\Docs\Platform\FeatureModule;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -58,16 +58,6 @@ final class DocsServiceProvider extends PackageServiceProvider
         $this->app->singleton(PdfRenderer::class, SpatiePdfRenderer::class);
         $this->app->singleton(DocRenderService::class);
 
-        // Register Doc Service
-        $this->app->scoped(DocService::class, function ($app) {
-            return new DocService(
-                $app->make(Numbering\DocumentNumberRegistry::class),
-                $app->make(DocumentSequence::class),
-                $app->make(Services\DocTotals::class),
-            );
-        });
-
-        $this->app->alias(DocService::class, 'doc');
     }
 
     public function packageBooted(): void
@@ -83,7 +73,7 @@ final class DocsServiceProvider extends PackageServiceProvider
     public function provides(): array
     {
         return [
-            DocService::class,
+            DocumentRecords::class,
             DocServiceInterface::class,
             DocRenderService::class,
             RichContentRendererInterface::class,
@@ -91,7 +81,6 @@ final class DocsServiceProvider extends PackageServiceProvider
             DocumentSequence::class,
             Services\DocTotals::class,
             DocumentPaymentRecorder::class,
-            'doc',
             Numbering\DocumentNumberRegistry::class,
         ];
     }

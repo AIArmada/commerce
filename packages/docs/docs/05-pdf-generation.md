@@ -9,7 +9,7 @@ Use this page when you need rendering, storage, or download behavior rather than
 ## Generating PDFs
 
 ```php
-$docService = app(DocService::class);
+$docService = app(DocumentRecords::class);
 
 // Generate and save to disk
 $pdfPath = $docService->generatePdf($document, save: true);
@@ -106,10 +106,10 @@ You can override storage per document type under `docs.types.{type}.storage`:
 Access stored PDFs:
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Support\Facades\Storage;
 
-$disk = app(DocService::class)->resolveStorageDiskForDocType($document->doc_type);
+$disk = app(DocumentRecords::class)->resolveStorageDiskForDocType($document->doc_type);
 $path = $document->pdf_path;
 
 // Get URL (if disk supports it)

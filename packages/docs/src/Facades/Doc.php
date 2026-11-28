@@ -6,7 +6,7 @@ namespace AIArmada\Docs\Facades;
 
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\DocStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
@@ -25,12 +25,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static void updateStatus(\AIArmada\Docs\Models\Doc $doc, DocStatus|string $status, ?string $notes = null)
  * @method static array calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null)
  *
- * @see DocService
+ * @see DocumentRecords
  */
 class Doc extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return 'doc';
+        return DocumentRecords::class;
     }
 }

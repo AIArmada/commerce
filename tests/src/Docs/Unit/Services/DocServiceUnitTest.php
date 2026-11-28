@@ -7,7 +7,7 @@ use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
@@ -22,7 +22,7 @@ beforeEach(function (): void {
     config()->set('docs.storage.disk', 'docs');
     $this->numberRegistry = new DocumentNumberRegistry;
     $this->sequenceManager = new SequenceManager;
-    $this->service = new DocService(
+    $this->service = new ManageDocumentRecords(
         $this->numberRegistry,
         $this->sequenceManager,
         new DocTotals,
@@ -95,7 +95,7 @@ test('downloadPdf returns existing path if exists', function (): void {
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocRenderService::class);
-    app(DocRenderService::class)->storePdf($doc);
+    app(\AIArmada\Docs\Contracts\DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $path = $this->service->downloadPdf($doc);
     expect($path)->toBe('docs/' . $doc->id . '.pdf');

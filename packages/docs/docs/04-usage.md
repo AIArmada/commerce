@@ -6,14 +6,14 @@ title: Usage
 
 ## Creating Documents
 
-Use the `DocService` to create documents:
+Use the `DocumentRecords` to create documents:
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$docService = app(DocService::class);
+$docService = app(DocumentRecords::class);
 
 $document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
@@ -69,7 +69,7 @@ Configure numbering per type in `config/docs.php`:
 ],
 ```
 
-Default template selection no longer lives in config. `DocService` resolves the default template from `DocTemplate` records for the current `doc_type`, or you can pass `doc_template_id` / `template_slug` when you want a specific layout.
+Default template selection no longer lives in config. `DocumentRecords` resolves the default template from `DocTemplate` records for the current `doc_type`, or you can pass `doc_template_id` / `template_slug` when you want a specific layout.
 
 ## Selecting a Template Explicitly
 
@@ -163,10 +163,10 @@ Use `OwnerContext::withOwner($owner, ...)` around background or explicit tenant 
 
 ## Updating Documents
 
-`DocService::update()` persists an explicit allowlist only: template selection, docable link, dates, body, notes, terms, customer/company data, items, metadata, currency, discount, and pdf options. `doc_number`, `doc_type`, `pdf_path`, lifecycle timestamps, and derived totals are immutable here and silently ignored when passed.
+`DocumentRecords::update()` persists an explicit allowlist only: template selection, docable link, dates, body, notes, terms, customer/company data, items, metadata, currency, discount, and pdf options. `doc_number`, `doc_type`, `pdf_path`, lifecycle timestamps, and derived totals are immutable here and silently ignored when passed.
 
 ```php
-$document = app(DocService::class)->update($document, [
+$document = app(DocumentRecords::class)->update($document, [
     'notes' => 'Updated payment terms',
     'items' => [
         ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000],

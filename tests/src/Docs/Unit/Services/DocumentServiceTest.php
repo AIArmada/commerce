@@ -7,7 +7,7 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Features\Lifecycle\Actions\ManageDocumentRecords;
 use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -20,7 +20,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $this->sequenceManager = new SequenceManager;
     $this->numberRegistry = new DocumentNumberRegistry;
-    $this->service = new DocService(
+    $this->service = new ManageDocumentRecords(
         $this->numberRegistry,
         $this->sequenceManager,
         new DocTotals,

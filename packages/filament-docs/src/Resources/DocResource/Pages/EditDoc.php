@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -38,6 +38,6 @@ final class EditDoc extends EditRecord
             abort(404);
         }
 
-        return app(DocService::class)->update($record, $data);
+        return app(DocumentRecords::class)->update($record, $data);
     }
 }

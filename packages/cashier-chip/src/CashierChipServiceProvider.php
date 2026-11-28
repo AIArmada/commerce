@@ -19,7 +19,7 @@ use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
@@ -92,7 +92,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
                 return $app->make($renderer);
             }
 
-            if (class_exists(DocService::class)) {
+            if (class_exists(DocumentRecords::class)) {
                 return $app->make(DocsInvoiceRenderer::class);
             }
 

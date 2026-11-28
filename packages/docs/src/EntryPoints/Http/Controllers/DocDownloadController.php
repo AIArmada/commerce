@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentPdfPublisher;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -67,7 +67,7 @@ final class DocDownloadController
         }
 
         $path = $storePdf->execute((string) $docModel->getKey());
-        $disk = app(DocService::class)->resolveStorageDiskForDocType($docModel->doc_type);
+        $disk = app(DocumentRecords::class)->resolveStorageDiskForDocType($docModel->doc_type);
 
         return Storage::disk($disk)->download($path, $this->generateFilename($docModel), [
             'Content-Type' => 'application/pdf',

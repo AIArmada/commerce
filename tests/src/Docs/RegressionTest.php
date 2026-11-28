@@ -26,7 +26,7 @@ use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -77,8 +77,8 @@ test('two owners can hold identically formatted sequence numbers', function (): 
     $ownerA = regressionOwner('Repair Owner A');
     $ownerB = regressionOwner('Repair Owner B');
 
-    $docA = app(DocService::class)->createFromType(DocType::Invoice, [], $ownerA);
-    $docB = app(DocService::class)->createFromType(DocType::Invoice, [], $ownerB);
+    $docA = app(DocumentRecords::class)->createFromType(DocType::Invoice, [], $ownerA);
+    $docB = app(DocumentRecords::class)->createFromType(DocType::Invoice, [], $ownerB);
 
     expect($docA->doc_number)->toBe($docB->doc_number)
         ->and((string) $docA->owner_id)->toBe((string) $ownerA->getKey())
@@ -86,12 +86,12 @@ test('two owners can hold identically formatted sequence numbers', function (): 
 });
 
 test('duplicate explicit doc numbers are rejected with a domain error', function (): void {
-    app(DocService::class)->create(DocData::from([
+    app(DocumentRecords::class)->create(DocData::from([
         'doc_number' => 'REPAIR-DUP-1',
         'items' => regressionItems(),
     ]));
 
-    expect(fn (): Doc => app(DocService::class)->create(DocData::from([
+    expect(fn (): Doc => app(DocumentRecords::class)->create(DocData::from([
         'doc_number' => 'REPAIR-DUP-1',
         'items' => regressionItems(),
     ])))->toThrow(InvalidArgumentException::class, 'already in use');
@@ -110,7 +110,7 @@ test('pdf_path cannot be mass-assigned but update ignores it safely', function (
 
     expect($doc->fresh()->pdf_path)->toBeNull();
 
-    $updated = app(DocService::class)->update($doc, [
+    $updated = app(DocumentRecords::class)->update($doc, [
         'pdf_path' => 'docs/evil.pdf',
         'notes' => 'updated',
     ]);
@@ -125,9 +125,9 @@ test('dotted doc types fall back to global storage defaults', function (): void 
     config()->set('docs.storage.disk', 'local');
     config()->set('docs.types.invoice.storage.disk', 'invoices');
 
-    expect(app(DocService::class)->resolveStorageDiskForDocType('invoice.storage.disk'))->toBe('local')
-        ->and(app(DocService::class)->resolveStorageDiskForDocType('..'))->toBe('local')
-        ->and(app(DocService::class)->resolveStorageDiskForDocType('invoice'))->toBe('invoices')
+    expect(app(DocumentRecords::class)->resolveStorageDiskForDocType('invoice.storage.disk'))->toBe('local')
+        ->and(app(DocumentRecords::class)->resolveStorageDiskForDocType('..'))->toBe('local')
+        ->and(app(DocumentRecords::class)->resolveStorageDiskForDocType('invoice'))->toBe('invoices')
         ->and(DocTypeKey::sanitize('invoice.evil'))->toBeNull()
         ->and(DocTypeKey::sanitize('invoice'))->toBe('invoice')
         ->and(DocTypeKey::sanitize('custom_type-1'))->toBe('custom_type-1');
@@ -207,7 +207,7 @@ test('duplicate default sequences for one owner are rejected', function (): void
 // --- single atomic numbering path, unpredictable suffixes ---
 
 test('create numbers sequentially from the atomic sequence', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $first = $service->create(DocData::from(['items' => regressionItems()]));
     $second = $service->create(DocData::from(['items' => regressionItems()]));
@@ -217,7 +217,7 @@ test('create numbers sequentially from the atomic sequence', function (): void {
 });
 
 test('strategy suffixes are dot-free crypto random values', function (): void {
-    $numbers = collect(range(1, 10))->map(fn (): string => app(DocService::class)->generateNumber('invoice'));
+    $numbers = collect(range(1, 10))->map(fn (): string => app(DocumentRecords::class)->generateNumber('invoice'));
 
     expect($numbers->unique())->toHaveCount(10)
         ->and($numbers->first())->toMatch('/^INV\d{2}-[A-Z0-9]{6}$/')
@@ -237,7 +237,7 @@ test('update ignores immutable keys and recalculates totals', function (): void 
         'total_minor' => 100,
     ]);
 
-    $updated = app(DocService::class)->update($doc, [
+    $updated = app(DocumentRecords::class)->update($doc, [
         'doc_number' => 'HACKED',
         'doc_type' => 'receipt',
         'pdf_path' => 'docs/evil.pdf',
@@ -261,17 +261,17 @@ test('update ignores immutable keys and recalculates totals', function (): void 
 test('update routes status changes through the state machine', function (): void {
     $doc = Doc::factory()->create(['status' => Draft::class]);
 
-    app(DocService::class)->update($doc, ['status' => Sent::class]);
+    app(DocumentRecords::class)->update($doc, ['status' => Sent::class]);
 
     expect($doc->fresh()->status->equals(Sent::class))->toBeTrue()
         ->and($doc->statusHistories()->count())->toBe(1);
 
     $paid = Doc::factory()->create(['status' => Paid::class]);
 
-    expect(fn (): Doc => app(DocService::class)->update($paid, ['status' => Draft::class]))
+    expect(fn (): Doc => app(DocumentRecords::class)->update($paid, ['status' => Draft::class]))
         ->toThrow(CouldNotPerformTransition::class);
 
-    expect(fn (): Doc => app(DocService::class)->update($doc, ['status' => 'bogus-status']))
+    expect(fn (): Doc => app(DocumentRecords::class)->update($doc, ['status' => 'bogus-status']))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -284,7 +284,7 @@ test('update re-derives the total when only the discount changes', function (): 
         'total_minor' => 110,
     ]);
 
-    $updated = app(DocService::class)->update($doc, ['discount_amount_minor' => 20]);
+    $updated = app(DocumentRecords::class)->update($doc, ['discount_amount_minor' => 20]);
 
     expect($updated->fresh()->total_minor)->toBe(90);
 });
@@ -300,7 +300,7 @@ test('update by template slug persists the resolved template', function (): void
 
     $doc = Doc::factory()->create(['doc_type' => 'invoice', 'doc_template_id' => null]);
 
-    $updated = app(DocService::class)->update($doc, ['template_slug' => 'repair-slug-template']);
+    $updated = app(DocumentRecords::class)->update($doc, ['template_slug' => 'repair-slug-template']);
 
     expect($updated->fresh()->doc_template_id)->toBe($template->id);
 });
@@ -314,25 +314,25 @@ test('cross-owner updates are rejected', function (): void {
 
     $doc = OwnerContext::withOwner($ownerA, fn (): Doc => Doc::factory()->create());
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): Doc => app(DocService::class)->update($doc, ['notes' => 'x'])))
+    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): Doc => app(DocumentRecords::class)->update($doc, ['notes' => 'x'])))
         ->toThrow(AuthorizationException::class);
 });
 
 // --- unvalidated caller totals ---
 
 test('item-less creation validates stored monetary fields', function (): void {
-    expect(fn (): Doc => app(DocService::class)->createFromType(DocType::Invoice, ['total_minor' => -5]))
+    expect(fn (): Doc => app(DocumentRecords::class)->createFromType(DocType::Invoice, ['total_minor' => -5]))
         ->toThrow(InvalidArgumentException::class);
 
-    expect(fn (): Doc => app(DocService::class)->createFromType(DocType::Invoice, ['total_minor' => '100']))
+    expect(fn (): Doc => app(DocumentRecords::class)->createFromType(DocType::Invoice, ['total_minor' => '100']))
         ->toThrow(InvalidArgumentException::class);
 
-    expect(fn (): Doc => app(DocService::class)->createFromType(DocType::Invoice, ['total' => 10.5]))
+    expect(fn (): Doc => app(DocumentRecords::class)->createFromType(DocType::Invoice, ['total' => 10.5]))
         ->toThrow(InvalidArgumentException::class);
 });
 
 test('explicit totals contradicting items are rejected', function (): void {
-    expect(fn (): Doc => app(DocService::class)->create(DocData::from([
+    expect(fn (): Doc => app(DocumentRecords::class)->create(DocData::from([
         'items' => regressionItems(),
         'total_minor' => 999999,
     ])))->toThrow(InvalidArgumentException::class, 'total_minor');
@@ -341,7 +341,7 @@ test('explicit totals contradicting items are rejected', function (): void {
 // --- version restore through the service ---
 
 test('restore applies the snapshot through the service and records a version', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from(['items' => regressionItems(), 'notes' => 'v1 notes']));
     $service->update($doc, ['notes' => 'v2 notes']);
@@ -431,7 +431,7 @@ test('unresolvable statuses throw instead of becoming draft', function (): void 
     expect(fn (): string => DocStatus::resolveStateClassFor('bogus-status'))
         ->toThrow(InvalidArgumentException::class, 'Unknown document status');
 
-    expect(fn (): Doc => app(DocService::class)->create(DocData::from(['status' => 'bogus-status'])))
+    expect(fn (): Doc => app(DocumentRecords::class)->create(DocData::from(['status' => 'bogus-status'])))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -460,7 +460,7 @@ test('mail attachments reuse an existing stored pdf', function (): void {
     $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
     app()->instance(PdfRenderer::class, $driver);
     app()->forgetInstance(DocRenderService::class);
-    app(DocRenderService::class)->storePdf($doc);
+    app(\AIArmada\Docs\Contracts\DocumentPdfPublisher::class)->execute((string) $doc->getKey());
 
     $docEmail = DocEmail::query()->create([
         'doc_id' => $doc->id,
@@ -632,19 +632,19 @@ test('unknown doc types are rejected at the boundary', function (): void {
     expect(fn (): DocData => DocData::from(['doc_type' => 'bogus']))
         ->toThrow(InvalidArgumentException::class, 'Unknown document type');
 
-    expect(fn (): Doc => app(DocService::class)->create(new DocData(docType: 'bogus')))
+    expect(fn (): Doc => app(DocumentRecords::class)->create(new DocData(docType: 'bogus')))
         ->toThrow(InvalidArgumentException::class, 'Unknown document type');
 });
 
 // --- atomic creation with an initial version ---
 
 test('create records an initial version and rolls back on failure', function (): void {
-    $doc = app(DocService::class)->create(DocData::from(['items' => regressionItems()]));
+    $doc = app(DocumentRecords::class)->create(DocData::from(['items' => regressionItems()]));
 
     expect($doc->versions()->count())->toBe(1)
         ->and($doc->versions()->first()->change_summary)->toBe('Initial creation');
 
-    expect(fn (): Doc => app(DocService::class)->create(DocData::from([
+    expect(fn (): Doc => app(DocumentRecords::class)->create(DocData::from([
         'items' => [['name' => 'Bad', 'quantity' => 0, 'unit_price_minor' => 100]],
     ])))->toThrow(InvalidArgumentException::class);
 
@@ -672,7 +672,7 @@ test('caller pdf options are constrained to safe values', function (): void {
 
     Pdf::shouldReceive('html')->once()->andReturn($pdfBuilder);
 
-    expect(app(DocService::class)->generatePdf($doc))->toBe('docs/' . $doc->id . '.pdf');
+    expect(app(DocumentRecords::class)->generatePdf($doc))->toBe('docs/' . $doc->id . '.pdf');
 });
 
 // --- Cache sanity for the sequence lock path ---

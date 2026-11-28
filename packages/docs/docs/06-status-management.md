@@ -35,17 +35,17 @@ $lifecycle->cancel($id, 'Customer requested cancellation');
 Use the service for full tracking:
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\Paid;
 
-app(DocService::class)->updateStatus(
+app(DocumentRecords::class)->updateStatus(
     $document, 
     Paid::class,
     'Payment received via bank transfer'
 );
 ```
 
-Lifecycle actions and service payment transitions delegate to the same state machine and status-history path. Unknown status strings throw `InvalidArgumentException` instead of resolving to draft. `DocService::update()` also accepts a `status` key and routes it through the same machine (unreachable transitions throw; unchanged values are a no-op).
+Lifecycle actions and service payment transitions delegate to the same state machine and status-history path. Unknown status strings throw `InvalidArgumentException` instead of resolving to draft. `DocumentRecords::update()` also accepts a `status` key and routes it through the same machine (unreachable transitions throw; unchanged values are a no-op).
 
 ## Checking Status
 

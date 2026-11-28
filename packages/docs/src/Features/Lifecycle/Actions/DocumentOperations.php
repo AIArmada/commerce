@@ -8,15 +8,15 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 
 final readonly class DocumentOperations implements DocServiceInterface
 {
-    public function __construct(private DocService $service) {}
+    public function __construct(private DocumentRecords $records) {}
 
     public function create(DocData $data): string
     {
-        return (string) $this->service->create($data)->getKey();
+        return (string) $this->records->create($data)->getKey();
     }
 
     public function findForSubject(string $subjectType, string $subjectId, string $docType): ?string
@@ -35,17 +35,17 @@ final readonly class DocumentOperations implements DocServiceInterface
 
     public function update(string $docId, array $data, string $summary = 'Document updated'): void
     {
-        $this->service->update($this->resolveDocument($docId), $data, $summary);
+        $this->records->update($this->resolveDocument($docId), $data, $summary);
     }
 
     public function generatePdf(string $docId, bool $save = true): string
     {
-        return $this->service->generatePdf($this->resolveDocument($docId), $save);
+        return $this->records->generatePdf($this->resolveDocument($docId), $save);
     }
 
     public function resolveStorageDiskForDocType(string $docType): string
     {
-        return $this->service->resolveStorageDiskForDocType($docType);
+        return $this->records->resolveStorageDiskForDocType($docType);
     }
 
     private function resolveDocument(string $docId): Doc

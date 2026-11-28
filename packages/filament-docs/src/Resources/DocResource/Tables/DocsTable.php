@@ -7,7 +7,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -162,7 +162,7 @@ final class DocsTable
                         ->icon(Heroicon::OutlinedDocumentArrowDown)
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateRecord($record, 'Document not found.');
-                            app(DocService::class)->generatePdf($record, save: true);
+                            app(DocumentRecords::class)->generatePdf($record, save: true);
                             Notification::make()->title('PDF generated')->success()->send();
                         }),
 

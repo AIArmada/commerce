@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 
 it('stores a rich content array body unchanged on update', function (): void {
     $doc = Doc::factory()->create();
@@ -20,7 +20,7 @@ it('stores a rich content array body unchanged on update', function (): void {
         ],
     ];
 
-    $updated = app(DocService::class)->update($doc, ['body' => $body]);
+    $updated = app(DocumentRecords::class)->update($doc, ['body' => $body]);
 
     expect($updated->fresh()->body)->toBe($body);
 });
@@ -28,7 +28,7 @@ it('stores a rich content array body unchanged on update', function (): void {
 it('normalizes an html string body to the stored array shape on update', function (): void {
     $doc = Doc::factory()->create();
 
-    $updated = app(DocService::class)->update($doc, ['body' => '<p>Hello</p>']);
+    $updated = app(DocumentRecords::class)->update($doc, ['body' => '<p>Hello</p>']);
 
     $stored = $updated->fresh()->body;
 
@@ -43,7 +43,7 @@ it('treats a blank string body as empty on update', function (): void {
         'body' => ['type' => 'doc', 'content' => []],
     ]);
 
-    $updated = app(DocService::class)->update($doc, ['body' => '   ']);
+    $updated = app(DocumentRecords::class)->update($doc, ['body' => '   ']);
 
     expect($updated->fresh()->body)->toBeNull();
 });

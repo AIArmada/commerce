@@ -4,7 +4,7 @@
 
 ## What ships today
 
-- `AIArmada\Docs\Services\DocService` for document creation, updates, conversion, payment recording, and PDF generation
+- `AIArmada\Docs\Runtime\DocumentRecords` for document creation, updates, conversion, payment recording, and PDF generation
 - `AIArmada\Docs\Features\Delivery\Actions\DocEmailService` for send/send-reminder flows with tracking records
 - Config-backed numbering through `AIArmada\Docs\Features\Numbering\Actions\SequenceManager`
 - Models for documents, templates, payments, versions, emails, approvals, workflows, and e-invoice submissions
@@ -28,9 +28,9 @@ php artisan vendor:publish --tag=docs-views
 
 ```php
 use AIArmada\Docs\Data\DocData;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 
-$doc = app(DocService::class)->create(DocData::from([
+$doc = app(DocumentRecords::class)->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
         [
@@ -51,19 +51,19 @@ $doc = app(DocService::class)->create(DocData::from([
 
 ### Create a document
 
-Use `DocService::create()` with `DocData::from([...])`.
+Use `DocumentRecords::create()` with `DocData::from([...])`.
 
 ### Update or transition status
 
-- `app(DocService::class)->updateStatus($doc, $statusClass, $notes)`
+- `app(DocumentRecords::class)->updateStatus($doc, $statusClass, $notes)`
 - `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markSent([(string) $doc->getKey()])`
 - `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->markPaid((string) $doc->getKey())`
 - `app(\AIArmada\Docs\Contracts\DocumentLifecycle::class)->cancel((string) $doc->getKey())`
 
 ### Generate or locate PDFs
 
-- `app(DocService::class)->generatePdf($doc, save: true)`
-- `app(DocService::class)->downloadPdf($doc)`
+- `app(DocumentRecords::class)->generatePdf($doc, save: true)`
+- `app(DocumentRecords::class)->downloadPdf($doc)`
 
 ### Record payments
 

@@ -9,7 +9,7 @@ use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Templates\Models\DocTemplate;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -20,7 +20,7 @@ use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Validation\ValidationException;
 
 test('default strategy respects numbering format overrides', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
     $originalFormat = config('docs.numbering.format');
     $originalPrefix = config('docs.types.invoice.numbering.prefix');
 
@@ -44,7 +44,7 @@ test('default strategy respects numbering format overrides', function (): void {
 });
 
 test('it can create a doc', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'doc_type' => 'invoice',
@@ -77,7 +77,7 @@ test('it can create a doc', function (): void {
 });
 
 test('it calculates totals correctly', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'items' => [
@@ -99,7 +99,7 @@ test('it applies the configured decimal tax rate', function (): void {
     config()->set('docs.defaults.tax_rate', 0.06);
 
     try {
-        $doc = app(DocService::class)->create(DocData::from([
+        $doc = app(DocumentRecords::class)->create(DocData::from([
             'items' => [['name' => 'Taxable item', 'quantity' => 1, 'unit_price_minor' => 100]],
         ]));
 
@@ -111,7 +111,7 @@ test('it applies the configured decimal tax rate', function (): void {
 });
 
 test('it can update doc status', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -132,7 +132,7 @@ test('it can update doc status', function (): void {
 });
 
 test('it can mark doc as paid', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -150,19 +150,19 @@ test('it can mark doc as paid', function (): void {
 });
 
 test('it records the refunded timestamp through the canonical status transition', function (): void {
-    $doc = app(DocService::class)->create(DocData::from([
+    $doc = app(DocumentRecords::class)->create(DocData::from([
         'status' => Paid::class,
         'items' => [['name' => 'Refundable item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ]));
 
-    app(DocService::class)->updateStatus($doc, Refunded::class);
+    app(DocumentRecords::class)->updateStatus($doc, Refunded::class);
 
     expect($doc->fresh()->status->equals(Refunded::class))->toBeTrue()
         ->and($doc->fresh()->refunded_at)->not->toBeNull();
 });
 
 test('it can check if doc is overdue', function (): void {
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -187,7 +187,7 @@ test('it uses default template when none specified', function (): void {
         'layout' => TemplateBlockRegistry::defaultLayout(),
     ]);
 
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -206,7 +206,7 @@ test('it can use custom template', function (): void {
         'layout' => TemplateBlockRegistry::defaultLayout(),
     ]);
 
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = $service->create(DocData::from([
         'doc_template_id' => $template->id,
@@ -226,7 +226,7 @@ test('it rejects templates from a different document type', function (): void {
         'layout' => TemplateBlockRegistry::defaultLayout(),
     ]);
 
-    expect(fn (): Doc => app(DocService::class)->create(DocData::from([
+    expect(fn (): Doc => app(DocumentRecords::class)->create(DocData::from([
         'doc_type' => 'invoice',
         'doc_template_id' => $template->id,
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
@@ -265,7 +265,7 @@ test('it honors owner auto-assign on create config', function (): void {
         'password' => bcrypt('password'),
     ]);
 
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $doc = OwnerContext::withOwner($owner, function () use ($service): Doc {
         return $service->create(DocData::from([
@@ -291,7 +291,7 @@ test('it honors owner auto-assign on create config', function (): void {
 test('it persists allocated line taxes without an explicit document tax total', function (): void {
     config()->set('docs.defaults.tax_rate', 0);
 
-    $doc = app(DocService::class)->create(DocData::from([
+    $doc = app(DocumentRecords::class)->create(DocData::from([
         'items' => [
             ['name' => 'Taxed item', 'quantity' => 1, 'unit_price_minor' => 1000, 'tax_amount_minor' => 60],
         ],

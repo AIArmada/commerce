@@ -12,7 +12,7 @@ use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Sent;
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Runtime\DocumentRecords;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -34,7 +34,7 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
         'password' => bcrypt('password'),
     ]);
 
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
     $doc = $service->createFromType(
         DocType::Invoice,
         [
@@ -62,7 +62,7 @@ test('global document visibility does not grant tenant write access', function (
     config()->set('docs.owner.include_global', true);
     $owner = User::factory()->create();
     $doc = OwnerContext::withOwner(null, function (): Doc {
-        $doc = app(DocService::class)->createFromType(DocType::Invoice, [
+        $doc = app(DocumentRecords::class)->createFromType(DocType::Invoice, [
             'total_minor' => 100,
             'currency' => 'MYR',
         ]);
@@ -90,7 +90,7 @@ test('global document visibility does not grant tenant write access', function (
 test('copies documents only inside the source owner scope', function (): void {
     $owner = User::factory()->create();
     $other = User::factory()->create();
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
 
     $source = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
         DocType::Quotation,
@@ -123,7 +123,7 @@ test('copies documents only inside the source owner scope', function (): void {
 
 test('orphaned document owners cannot be silently treated as global', function (): void {
     $owner = User::factory()->create();
-    $service = app(DocService::class);
+    $service = app(DocumentRecords::class);
     $doc = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
         DocType::Invoice,
         ['total_minor' => 100, 'currency' => 'MYR'],
@@ -158,7 +158,7 @@ test('payment recording and document deletion reject mismatched financial eviden
         // Simulate an inconsistent document state without hiding the financial evidence.
         $doc->forceFill(['status' => Sent::class, 'paid_at' => null])->save();
 
-        expect(fn () => app(DocService::class)->update($doc, ['currency' => 'USD']))
+        expect(fn () => app(DocumentRecords::class)->update($doc, ['currency' => 'USD']))
             ->toThrow(InvalidArgumentException::class, 'financial terms cannot change')
             ->and(fn () => $doc->delete())
             ->toThrow(LogicException::class, 'payment or e-invoice evidence')

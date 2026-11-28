@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -19,6 +19,9 @@ use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
@@ -33,16 +36,16 @@ use InvalidArgumentException;
 /**
  * @phpstan-type RelatedDocTemplate \AIArmada\Docs\Features\Templates\Models\DocTemplate
  *
- * Core document management service.
+ * Owns document record creation, editing, and copying.
  *
- * Handles document creation, updates, PDF generation, payments, versioning, and conversions.
+ * Delegates PDF publication, version capture, and status transitions to their owning contracts.
  */
-final class DocService
+final readonly class ManageDocumentRecords implements DocumentRecords
 {
     public function __construct(
-        protected DocumentNumberRegistry $numberRegistry,
-        protected DocumentSequence $sequenceManager,
-        protected DocTotals $totals,
+        private DocumentNumberRegistry $numberRegistry,
+        private DocumentSequence $sequenceManager,
+        private DocTotals $totals,
     ) {}
 
     /**
@@ -511,7 +514,7 @@ final class DocService
     }
 
     /** @param array<int, array<string, mixed>> $items */
-    protected function calculateSubtotalMinor(array $items, string $currency): int
+    private function calculateSubtotalMinor(array $items, string $currency): int
     {
         return $this->totals->subtotal($items, $currency);
     }
@@ -774,7 +777,7 @@ final class DocService
         return $statusClass;
     }
 
-    protected function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed
+    private function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed
     {
         $typeKey = DocTypeKey::sanitize($docType);
 
@@ -790,7 +793,7 @@ final class DocService
     }
 
     /** @return RelatedDocTemplate|null */
-    protected function resolveTemplateSelection(string $docType, ?string $templateId = null, ?string $templateSlug = null): ?Model
+    private function resolveTemplateSelection(string $docType, ?string $templateId = null, ?string $templateSlug = null): ?Model
     {
         $query = $this->getTemplateQuery()->where('doc_type', $docType);
 
@@ -834,7 +837,7 @@ final class DocService
     /**
      * Resolve the current owner from the configured resolver.
      */
-    protected function resolveOwner(): ?Model
+    private function resolveOwner(): ?Model
     {
         if (! config('docs.owner.enabled', false)) {
             return null;
@@ -848,7 +851,7 @@ final class DocService
      *
      * @return Builder<RelatedDocTemplate>
      */
-    protected function getTemplateQuery(): Builder
+    private function getTemplateQuery(): Builder
     {
         $query = app(TemplateRelationModel::class)->template()::query();
 
