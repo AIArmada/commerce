@@ -6,11 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Commerce\Actions\RevokePassesForRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 function createRegistrationMorphTicketType(): TicketType
 {
@@ -29,12 +28,12 @@ it('round-trips a uuid registration id through pass issuance', function (): void
 
     $registration = OwnerContext::withOwner($owner, fn (): EventRegistration => EventRegistration::factory()->create());
 
-    $passes = OwnerContext::withOwner($owner, function () use ($registration): Collection {
+    $passes = OwnerContext::withOwner($owner, function () use ($registration): array {
         $ticketType = createRegistrationMorphTicketType();
 
-        return app(DefaultPassIssuer::class)->issuePassesFor(
+        return app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: 1,
                 registrationType: $registration->getMorphClass(),
                 registrationId: (string) $registration->getKey(),
@@ -42,7 +41,7 @@ it('round-trips a uuid registration id through pass issuance', function (): void
         );
     });
 
-    $pass = $passes->first()->fresh();
+    $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::query()->findOrFail($passes[0]));
 
     expect($pass->registration_type)->toBe($registration->getMorphClass());
     expect($pass->registration_id)->toBe((string) $registration->getKey());
@@ -54,10 +53,13 @@ it('round-trips a custom uuid registration id on a non-owner-scoped morph target
         'email' => 'registration-morph-two@example.com',
         'password' => 'secret',
     ]);
-    $registrationId = '00000000-0000-4000-8000-000000000042';
+    $registration = User::query()->create([
+        'name' => 'Registration Target',
+        'email' => 'registration-target@example.com',
+        'password' => 'secret',
+    ]);
+    $registrationId = (string) $registration->getKey();
 
-    // User is not an owner-scoped model, so the ticketing owner guard skips
-    // existence validation and this pins pure storage semantics for the morph.
     $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::factory()->create([
         'registration_type' => User::class,
         'registration_id' => $registrationId,
@@ -78,9 +80,9 @@ it('revokes passes by uuid registration through the string morph', function (): 
     OwnerContext::withOwner($owner, function () use ($registration): void {
         $ticketType = createRegistrationMorphTicketType();
 
-        app(DefaultPassIssuer::class)->issuePassesFor(
+        app(PassIssuer::class)->issuePassesFor(
             new PassIssuanceContext(
-                ticketType: $ticketType,
+                ticketTypeId: (string) $ticketType->getKey(),
                 quantity: 1,
                 registrationType: $registration->getMorphClass(),
                 registrationId: (string) $registration->getKey(),

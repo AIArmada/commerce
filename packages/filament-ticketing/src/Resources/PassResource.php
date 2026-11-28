@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTicketing\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -33,22 +33,22 @@ final class PassResource extends Resource
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass.view');
+        return FilamentPermission::hasAbility('pass.view') && OwnerUiScope::canAccessRecord($record);
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('pass.create');
+        return FilamentPermission::hasAbility('pass.create') && OwnerUiScope::canCreate(Pass::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass.update');
+        return FilamentPermission::hasAbility('pass.update') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('pass.delete');
+        return FilamentPermission::hasAbility('pass.delete') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function shouldRegisterNavigation(): bool

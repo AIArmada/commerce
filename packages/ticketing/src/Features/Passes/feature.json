@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "Passes",
+  "owns": {
+    "table:ticket_pass_holders": [
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\IssuePassesAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePassDependents"
+    ],
+    "table:ticket_pass_transfers": [
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassTransferWriter",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePassDependents"
+    ],
+    "table:ticket_passes": [
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassIssuer",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\RevokePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\DeletePass",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\ActivatePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\UsePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\CancelPassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\VoidPassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Actions\\ExpirePassAction",
+      "AIArmada\\Ticketing\\Features\\Passes\\Persistence\\PassDetacher"
+    ]
+  },
+  "extensions": {}
+}

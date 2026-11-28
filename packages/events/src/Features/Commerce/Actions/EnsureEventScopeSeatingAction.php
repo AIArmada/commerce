@@ -6,7 +6,7 @@ namespace AIArmada\Events\Features\Commerce\Actions;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Exceptions\InconsistentSeatingModeException;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 final class EnsureEventScopeSeatingAction
 {

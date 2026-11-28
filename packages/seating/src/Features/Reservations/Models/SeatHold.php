@@ -1,0 +1,111 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Seating\Features\Reservations\Models;
+
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Seating\Database\Factories\SeatHoldFactory;
+use AIArmada\Seating\Platform\ModelResolver;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
+use InvalidArgumentException;
+
+/**
+ * @property string $id
+ * @property string|null $held_by_type
+ * @property string|null $held_by_id
+ * @property string $seat_id
+ * @property string|null $reference
+ * @property CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $converted_at
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+class SeatHold extends Model
+{
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'seating.owner';
+
+    protected static function newFactory(): SeatHoldFactory
+    {
+        return SeatHoldFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (SeatHold $hold): void {
+            if ($hold->seat_id === null || $hold->seat_id === '') {
+                throw new InvalidArgumentException('A hold requires a seat_id.');
+            }
+
+            if (($hold->held_by_type === null) !== ($hold->held_by_id === null)) {
+                throw new InvalidArgumentException('Held-by type and id must both be present or both be null.');
+            }
+
+            if (! ModelResolver::seatClass()::query()->whereKey($hold->seat_id)->exists()) {
+                throw new InvalidArgumentException('The hold references a seat that does not exist in the current scope.');
+            }
+        });
+    }
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'held_by_type',
+        'held_by_id',
+        'seat_id',
+        'reference',
+        'expires_at',
+        'converted_at',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return config('seating.database.tables.seat_holds', 'seat_holds');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'immutable_datetime',
+            'converted_at' => 'immutable_datetime',
+            'metadata' => 'array',
+        ];
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at?->lessThanOrEqualTo(CarbonImmutable::now()) ?? false;
+    }
+
+    /** @return BelongsTo<Model, $this> */
+    public function seat(): BelongsTo
+    {
+        return $this->belongsTo(ModelResolver::seatClass(), 'seat_id');
+    }
+
+    public function isConverted(): bool
+    {
+        return $this->converted_at !== null;
+    }
+
+    public function heldBy(): MorphTo
+    {
+        return $this->morphTo('held_by', 'held_by_type', 'held_by_id');
+    }
+}

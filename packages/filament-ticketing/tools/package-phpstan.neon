@@ -1,0 +1,21 @@
+parameters:
+    customRulesetUsed: true
+    reportUnmatchedIgnoredErrors: false
+    paths:
+        - ../src
+    excludePaths:
+        analyse:
+            - ../database/migrations/*
+            - ../src/Features/*/Database/Migrations/*
+    ignoreErrors:
+        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+
+    tmpDir: ../../../build/phpstan-arch-filament-ticketing
+
+services:
+    -
+        class: PackageArchitecture\StaticAnalysis\PackageOwnedWriteRule
+        arguments:
+            projectRoot: null
+        tags:
+            - phpstan.rules.rule

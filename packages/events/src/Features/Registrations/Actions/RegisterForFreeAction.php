@@ -18,7 +18,7 @@ use AIArmada\Events\Exceptions\UseRecordWalkInActionException;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Queries\RegistrationCapacityQuery;
 use AIArmada\Events\Platform\EventWriteGuard;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Services\SeatLayoutRenderer;
 use Illuminate\Support\Facades\DB;
 
@@ -51,7 +51,7 @@ it('cascades map deletion through sections, seats, holds, and allocations', func
         ->and(SeatAllocation::query()->count())->toBe(0);
 });
 
-it('renders the layout with a single eager load per level', function (): void {
+it('renders the authorized layout with a single query per level', function (): void {
     $map = SeatMap::factory()->create();
 
     foreach (['A', 'B', 'C'] as $index => $code) {
@@ -74,12 +74,12 @@ it('renders the layout with a single eager load per level', function (): void {
 
     DB::enableQueryLog();
 
-    $layout = app(SeatLayoutRenderer::class)->describe($map);
+    $layout = app(SeatLayoutRenderer::class)->describe($map->id);
 
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
 
     expect($layout['seats'])->toHaveCount(6)
         ->and($layout['bounds'])->toBe(['rows' => 3, 'cols' => 6])
-        ->and($queries)->toHaveCount(2);
+        ->and($queries)->toHaveCount(3);
 });

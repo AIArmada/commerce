@@ -6,23 +6,26 @@ namespace AIArmada\Events\Drivers;
 
 use AIArmada\Events\Contracts\EventSeatingDriver;
 use AIArmada\Events\Platform\ModelResolver;
-use AIArmada\Seating\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Actions\EnsureSeatHoldAction;
-use AIArmada\Seating\Actions\EnsureSectionAllocationAction;
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
-use AIArmada\Seating\Actions\ResolveSeatMapForHostAction;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
+use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Exceptions\SeatMapNotFoundException;
 use AIArmada\Seating\Exceptions\SeatSectionNotFoundException;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Models\TicketTypeSeatingOption;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Queries\ResolveSeatMapForHostAction;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeSeatingOption;
+use AIArmada\Ticketing\States\Activated;
+use AIArmada\Ticketing\States\Issued;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class SeatingDriver implements EventSeatingDriver
@@ -33,33 +36,12 @@ final class SeatingDriver implements EventSeatingDriver
         private readonly ConvertHoldsToAllocationsAction $convertHolds,
         private readonly ResolveSeatMapForHostAction $resolveSeatMap,
         private readonly ReleaseAllocationsAction $releaseAllocations,
+        private readonly DeleteSeatMap $deleteSeatMap,
     ) {}
 
     public function hasActiveSeatMap(string $scopeType, string $scopeId): bool
     {
-        $host = $this->scopeModel($scopeType, $scopeId);
-
-        if (SeatMap::forHost($host)->active()->exists()) {
-            return true;
-        }
-
-        if ($scopeType === 'session') {
-            $occurrence = $this->related($host, 'occurrence');
-
-            if ($occurrence instanceof Model && SeatMap::forHost($occurrence)->active()->exists()) {
-                return true;
-            }
-        }
-
-        if (in_array($scopeType, ['session', 'occurrence'], true)) {
-            $event = $this->related($host, 'event');
-
-            if ($event instanceof Model && SeatMap::forHost($event)->active()->exists()) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->resolveActiveMap($scopeType, $scopeId) !== null;
     }
 
     public function holdSeats(
@@ -76,14 +58,14 @@ final class SeatingDriver implements EventSeatingDriver
             return [];
         }
 
-        $map = $this->resolveSeatMap->handle($this->scopeModel($scopeType, $scopeId), $mode);
+        $map = $this->resolveActiveMap($scopeType, $scopeId);
 
         if ($map === null) {
             return [];
         }
 
         $holds = $this->ensureSeatHold->handle(
-            map: $map,
+            mapId: (string) $map->getKey(),
             quantity: $quantity,
             mode: $mode,
             heldByType: $heldByType,
@@ -111,17 +93,17 @@ final class SeatingDriver implements EventSeatingDriver
             return [];
         }
 
-        $map = $this->resolveSeatMap->handle($this->scopeModel($scopeType, $scopeId), $mode);
+        $map = $this->resolveActiveMap($scopeType, $scopeId);
 
         if ($map === null) {
             throw new SeatMapNotFoundException('No active seat map found for the event scope.');
         }
 
         if ($mode === SeatingMode::GeneralAdmission) {
-            $section = $this->sectionFor(TicketType::query()->findOrFail($ticketTypeId));
+            $section = $this->sectionFor(TicketType::query()->findOrFail($ticketTypeId), $map);
 
             $allocation = $this->ensureSectionAllocation->handle(
-                section: $section,
+                sectionId: (string) $section->getKey(),
                 allocToType: $allocatedToType,
                 allocToId: $allocatedToId,
                 reference: $reference,
@@ -130,27 +112,32 @@ final class SeatingDriver implements EventSeatingDriver
             return [(string) $allocation->getKey()];
         }
 
-        $holds = $this->ensureSeatHold->handle(
-            map: $map,
-            quantity: 1,
-            mode: $mode,
-            heldByType: $allocatedToType,
-            heldById: $allocatedToId,
-            reference: $reference,
-        );
+        return $map->getConnection()->transaction(function () use ($map, $mode, $allocatedToType, $allocatedToId, $reference): array {
+            $holds = $this->ensureSeatHold->handle(
+                mapId: (string) $map->getKey(),
+                quantity: 1,
+                mode: $mode,
+                heldByType: $allocatedToType,
+                heldById: $allocatedToId,
+                reference: $reference,
+            );
 
-        $allocations = $this->convertHolds->handle(
-            holds: $holds,
-            mode: $mode,
-            allocToType: $allocatedToType,
-            allocToId: $allocatedToId,
-            reference: $reference,
-        );
+            $allocations = $this->convertHolds->handle(
+                holds: $holds,
+                allocToType: $allocatedToType,
+                allocToId: $allocatedToId,
+                reference: $reference,
+            );
 
-        return $allocations
-            ->map(static fn (SeatAllocation $allocation): string => (string) $allocation->getKey())
-            ->values()
-            ->all();
+            if ($allocations->count() !== 1) {
+                throw new InsufficientSeatsException('Unable to convert the seat hold into an allocation.');
+            }
+
+            return $allocations
+                ->map(static fn (SeatAllocation $allocation): string => (string) $allocation->getKey())
+                ->values()
+                ->all();
+        });
     }
 
     public function releaseAllocations(string $allocatedToType, string $allocatedToId): int
@@ -160,40 +147,45 @@ final class SeatingDriver implements EventSeatingDriver
 
     public function allocatePassSeats(string $passId): void
     {
-        $pass = Pass::query()->with(['ticketType.ticketable'])->find($passId);
+        (new Pass)->getConnection()->transaction(function () use ($passId): void {
+            $pass = Pass::query()->whereKey($passId)->lockForUpdate()->first();
 
-        if (! $pass instanceof Pass) {
-            return;
-        }
+            if (! $pass instanceof Pass || ! ($pass->status instanceof Issued || $pass->status instanceof Activated) || ! $pass->isValid()) {
+                return;
+            }
 
-        $ticketType = $pass->ticketType;
+            if ($pass->seatAllocations()->withoutOwnerScope()->where('status', 'active')->exists()) {
+                return;
+            }
 
-        if (! $ticketType instanceof TicketType) {
-            return;
-        }
+            $pass->load('ticketType.ticketable');
+            $ticketType = $pass->ticketType;
 
-        $seatingMode = $ticketType->seating_mode;
+            if (! $ticketType instanceof TicketType) {
+                return;
+            }
 
-        if ($seatingMode === null || ! $seatingMode->requiresAllocation()) {
-            return;
-        }
+            $seatingMode = $ticketType->seating_mode;
 
-        $scope = $this->passScope($pass);
+            if ($seatingMode === null || ! $seatingMode->requiresAllocation()) {
+                return;
+            }
 
-        if ($scope === null) {
-            return;
-        }
+            $scope = $this->passScope($pass);
 
-        $map = $this->resolveActiveMap($scope['type'], $scope['id']);
+            if ($scope === null) {
+                return;
+            }
 
-        if ($map === null) {
-            throw new SeatMapNotFoundException('No active seat map found for the event scope.');
-        }
+            $map = $this->resolveActiveMap($scope['type'], $scope['id']);
 
-        DB::transaction(function () use ($pass, $ticketType, $seatingMode, $map): void {
+            if ($map === null) {
+                throw new SeatMapNotFoundException('No active seat map found for the event scope.');
+            }
+
             if ($seatingMode === SeatingMode::GeneralAdmission) {
                 $this->ensureSectionAllocation->handle(
-                    section: $this->sectionFor($ticketType),
+                    sectionId: (string) $this->sectionFor($ticketType, $map)->getKey(),
                     allocToType: $pass->getMorphClass(),
                     allocToId: (string) $pass->getKey(),
                     reference: $pass->pass_no,
@@ -203,7 +195,7 @@ final class SeatingDriver implements EventSeatingDriver
             }
 
             $holds = $this->ensureSeatHold->handle(
-                map: $map,
+                mapId: (string) $map->getKey(),
                 quantity: 1,
                 mode: $seatingMode,
                 heldByType: $pass->getMorphClass(),
@@ -211,13 +203,16 @@ final class SeatingDriver implements EventSeatingDriver
                 reference: (string) $pass->getKey(),
             );
 
-            $this->convertHolds->handle(
+            $allocations = $this->convertHolds->handle(
                 holds: $holds,
-                mode: $seatingMode,
                 allocToType: $pass->getMorphClass(),
                 allocToId: (string) $pass->getKey(),
                 reference: $pass->pass_no,
             );
+
+            if ($allocations->count() !== 1) {
+                throw new InsufficientSeatsException('Unable to convert a seat hold for the pass.');
+            }
         });
     }
 
@@ -247,7 +242,7 @@ final class SeatingDriver implements EventSeatingDriver
             ->where('seatable_id', $scopeId)
             ->chunkById(200, function (iterable $maps): void {
                 foreach ($maps as $map) {
-                    $map->delete();
+                    $this->deleteSeatMap->handle($map);
                 }
             });
     }
@@ -259,6 +254,7 @@ final class SeatingDriver implements EventSeatingDriver
     {
         $sessionClass = ModelResolver::sessionClass();
         $occurrenceClass = ModelResolver::occurrenceClass();
+        $eventClass = ModelResolver::eventClass();
         $ticketable = $pass->ticketable;
 
         $sessionId = $pass->session_id ?? ($ticketable instanceof $sessionClass ? $ticketable->getKey() : null);
@@ -273,7 +269,7 @@ final class SeatingDriver implements EventSeatingDriver
             return ['type' => 'occurrence', 'id' => (string) $occurrenceId];
         }
 
-        if ($ticketable instanceof Model) {
+        if ($ticketable instanceof $eventClass) {
             return ['type' => 'event', 'id' => (string) $ticketable->getKey()];
         }
 
@@ -302,7 +298,7 @@ final class SeatingDriver implements EventSeatingDriver
         }
 
         foreach ($candidates as $candidate) {
-            $map = SeatMap::forHost($candidate)->active()->first();
+            $map = $this->resolveSeatMap->handle($candidate, SeatingMode::Assigned);
 
             if ($map instanceof SeatMap) {
                 return $map;
@@ -312,20 +308,22 @@ final class SeatingDriver implements EventSeatingDriver
         return null;
     }
 
-    private function sectionFor(TicketType $ticketType): SeatSection
+    private function sectionFor(TicketType $ticketType, SeatMap $map): SeatSection
     {
-        $ticketType->loadMissing('seatingOptions.section');
-
-        $option = $ticketType->seatingOptions->first();
+        $option = $ticketType->seatingOptions()
+            ->with('section')
+            ->whereHas('section', static fn ($query) => $query->where('seat_map_id', $map->getKey()))
+            ->orderBy('id')
+            ->first();
 
         if (! $option instanceof TicketTypeSeatingOption) {
-            throw new SeatSectionNotFoundException('No seating option configured for this ticket type.');
+            throw new SeatSectionNotFoundException('No seating option configured for this ticket type matches the active seat map.');
         }
 
         $section = $option->section;
 
         if (! $section instanceof SeatSection) {
-            throw new SeatSectionNotFoundException('No seat section found for the configured seating option.');
+            throw new SeatSectionNotFoundException('The configured seat section does not belong to the resolved seat map.');
         }
 
         return $section;

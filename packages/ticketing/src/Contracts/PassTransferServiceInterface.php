@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Contracts;
 
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Data\TransferInputData;
 
 interface PassTransferServiceInterface
 {
-    public function transfer(Pass $pass, PassHolder $newHolder, ?string $reason = null): PassHolder;
+    public function transfer(TransferInputData $input): string;
 
-    public function canTransfer(Pass $pass): bool;
+    public function canTransfer(string $passId): bool;
 }

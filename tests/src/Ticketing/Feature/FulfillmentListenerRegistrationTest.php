@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Ticketing\Listeners\IssuePassesOnFulfillment;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfillment;
 use Illuminate\Support\Facades\Event;
 
 it('registers pass issuance on the fulfillment event', function (): void {

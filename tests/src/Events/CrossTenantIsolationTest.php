@@ -24,7 +24,7 @@ use AIArmada\Events\Features\Governance\Models\EventReport;
 use AIArmada\Events\Features\Governance\Models\EventSubmission;
 use AIArmada\Events\Features\Governance\Models\EventSubmissionAttachment;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 

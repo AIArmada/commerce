@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support\Filament;
 
+use AIArmada\CommerceSupport\Contracts\InheritsOwnerScope;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -82,6 +84,34 @@ final class OwnerUiScope
             $config->ownerTypeColumn,
             $config->ownerIdColumn,
         );
+    }
+
+    public static function canMutateHost(Model $host): bool
+    {
+        if ($host instanceof InheritsOwnerScope) {
+            $sourceType = $host->ownerScopeSourceType();
+            $sourceId = $host->ownerScopeSourceId();
+
+            if ($sourceType === null || $sourceId === null) {
+                return false;
+            }
+
+            try {
+                $source = OwnerContext::fromTypeAndIdOrFail($sourceType, $sourceId);
+
+                return $source instanceof Model && self::canMutateRecord($source);
+            } catch (ModelNotFoundException | InvalidArgumentException) {
+                return false;
+            }
+        }
+
+        if (in_array(HasOwner::class, class_uses_recursive($host), true)
+            || method_exists($host, 'ownerScopeConfig')
+            || method_exists($host, 'scopeForOwner')) {
+            return self::canMutateRecord($host);
+        }
+
+        return $host->exists && $host::query()->whereKey($host->getKey())->exists();
     }
 
     public static function canAccessRecord(Model $record, ?bool $includeGlobal = null, ?string $configKey = null): bool

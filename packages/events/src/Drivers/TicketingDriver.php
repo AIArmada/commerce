@@ -12,12 +12,17 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
-use AIArmada\Ticketing\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
+use AIArmada\Ticketing\Features\Passes\Actions\DeletePass;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\States\Activated;
+use AIArmada\Ticketing\States\Issued;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -27,6 +32,9 @@ final class TicketingDriver implements EventTicketingDriver
     public function __construct(
         private readonly EnsureTicketTypeAction $ensureTicketType,
         private readonly IssuePassesAction $issuePasses,
+        private readonly RevokePassAction $revokePass,
+        private readonly DeletePass $deletePass,
+        private readonly DeleteTicketType $deleteTicketType,
         private readonly InventoryService $inventory,
         private readonly ?PassDeliveryServiceInterface $passDelivery = null,
     ) {}
@@ -67,7 +75,7 @@ final class TicketingDriver implements EventTicketingDriver
         $ticketType = TicketType::query()->findOrFail($issuance->ticketTypeId);
 
         $passes = $this->issuePasses->handle(new PassIssuanceContext(
-            ticketType: $ticketType,
+            ticketTypeId: (string) $ticketType->getKey(),
             quantity: max(1, $issuance->quantity),
             holderAttributes: $issuance->holderAttributes,
             metadata: $issuance->metadata,
@@ -93,8 +101,8 @@ final class TicketingDriver implements EventTicketingDriver
         $revoked = 0;
 
         foreach ($passes as $pass) {
-            if ($pass->isValid()) {
-                $pass->markRevoked($reason ?? 'Registration terminal');
+            if ($pass->status instanceof Issued || $pass->status instanceof Activated) {
+                $this->revokePass->handle($pass, $reason ?? 'Registration terminal');
                 $revoked++;
             }
         }
@@ -112,11 +120,11 @@ final class TicketingDriver implements EventTicketingDriver
         $revoked = 0;
 
         foreach ($passes as $pass) {
-            if (! $pass->isValid()) {
+            if (! ($pass->status instanceof Issued || $pass->status instanceof Activated)) {
                 continue;
             }
 
-            $pass->markRevoked($reason);
+            $this->revokePass->handle($pass, $reason);
             $revoked++;
         }
 
@@ -144,11 +152,7 @@ final class TicketingDriver implements EventTicketingDriver
             return;
         }
 
-        $passes = Pass::query()->whereKey($passIds)->get();
-
-        foreach ($passes as $pass) {
-            $delivery->deliver($pass);
-        }
+        $delivery->deliverMany($passIds);
     }
 
     public function shipInventory(string $ticketTypeId, int $quantity, string $reason, ?string $reference = null): void
@@ -262,7 +266,7 @@ final class TicketingDriver implements EventTicketingDriver
                 ->where('registration_id', $scopeId)
                 ->chunkById(200, function (iterable $passes): void {
                     foreach ($passes as $pass) {
-                        $pass->delete();
+                        $this->deletePass->handle($pass);
                     }
                 });
 
@@ -277,7 +281,7 @@ final class TicketingDriver implements EventTicketingDriver
             ->where('ticketable_id', $scopeId)
             ->chunkById(200, function (iterable $ticketTypes): void {
                 foreach ($ticketTypes as $ticketType) {
-                    $ticketType->delete();
+                    $this->deleteTicketType->handle($ticketType);
                 }
             });
 
@@ -286,7 +290,7 @@ final class TicketingDriver implements EventTicketingDriver
             ->where('ticketable_id', $scopeId)
             ->chunkById(200, function (iterable $passes): void {
                 foreach ($passes as $pass) {
-                    $pass->delete();
+                    $this->deletePass->handle($pass);
                 }
             });
     }

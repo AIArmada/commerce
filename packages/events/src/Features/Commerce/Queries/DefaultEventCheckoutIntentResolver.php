@@ -10,7 +10,7 @@ use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Features\Commerce\Actions\AddEventTicketTypeToCartAction;
 use AIArmada\Events\Features\Registrations\Api\EventRegistrationParticipantData;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use RuntimeException;
 
 final class DefaultEventCheckoutIntentResolver implements EventCheckoutIntentResolver

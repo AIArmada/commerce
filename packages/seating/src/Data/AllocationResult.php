@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Data;
 
-use Spatie\LaravelData\Data;
-
-class AllocationResult extends Data
+final readonly class AllocationResult
 {
     public function __construct(
         public string $seatId,

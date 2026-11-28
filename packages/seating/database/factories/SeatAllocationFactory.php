@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Database\Factories;
 
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatAllocation;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

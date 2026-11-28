@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
-use AIArmada\Ticketing\Models\PassTransfer;
+use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Data\TransferInputData;
+use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Models\PassTransfer;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 function createUserHolder(string $name, string $email): User
 {
@@ -214,4 +217,90 @@ it('rejects model holders outside the configured allow-list', function (): void 
 
     expect(fn () => app(TransferPassToHolderAction::class)->handle($pass, $otherPass))
         ->toThrow(InvalidArgumentException::class, 'not allowed');
+});
+
+it('does not authorize an arbitrary user to transfer an unlinked holder', function (): void {
+    $intruder = createUserHolder('Unlinked Intruder', 'unlinked-intruder@example.com');
+    $pass = Pass::factory()->create();
+    PassHolder::factory()->create([
+        'pass_id' => $pass->getKey(),
+        'holder_type' => null,
+        'holder_id' => null,
+        'is_current' => true,
+    ]);
+
+    expect(fn () => app(TransferPassToHolderAction::class)->handle(
+        $pass,
+        PassHolder::factory()->make(),
+        authorizedBy: $intruder,
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('reauthorizes a transfer against the current holder rather than a stale relation', function (): void {
+    $original = createUserHolder('Original Holder', 'original-holder@example.com');
+    $replacement = createUserHolder('Replacement Holder', 'replacement-holder@example.com');
+    $pass = Pass::factory()->create();
+    linkPassToUser($pass, $original);
+    $pass->load('holder');
+
+    app(TransferPassToHolderAction::class)->handle($pass->fresh(), $replacement);
+
+    expect(fn () => app(TransferPassToHolderAction::class)->handle(
+        $pass,
+        PassHolder::factory()->make(),
+        authorizedBy: $original,
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('does not allow a stale or foreign holder id to be used through the transfer contract', function (): void {
+    $first = Pass::factory()->create();
+    $second = Pass::factory()->create();
+    $holder = PassHolder::factory()->create(['pass_id' => $first->getKey()]);
+
+    expect(fn () => app(PassTransferServiceInterface::class)->transfer(
+        new TransferInputData(
+            pass_id: (string) $second->getKey(),
+            existing_holder_id: (string) $holder->getKey(),
+        ),
+    ))->toThrow(InvalidArgumentException::class, 'different pass');
+});
+
+it('does not let an owner transfer a readable global pass', function (): void {
+    config()->set('ticketing.owner.include_global', true);
+    Pass::clearBootedModels();
+
+    try {
+        $owner = User::factory()->create();
+        $pass = OwnerContext::withOwner(null, fn (): Pass => Pass::factory()->create());
+
+        OwnerContext::withOwner($owner, function () use ($pass): void {
+            expect(Pass::query()->whereKey($pass->getKey())->exists())->toBeTrue();
+
+            $writer = app(PassTransferServiceInterface::class);
+
+            expect($writer->canTransfer((string) $pass->getKey()))->toBeFalse()
+                ->and(fn () => $writer->transfer(new TransferInputData(
+                    pass_id: (string) $pass->getKey(),
+                    name: 'Unauthorized Recipient',
+                )))->toThrow(AuthorizationException::class)
+                ->and(fn () => app(TransferPassToHolderAction::class)->handle(
+                    $pass,
+                    PassHolder::factory()->make(),
+                ))->toThrow(AuthorizationException::class)
+                ->and(fn () => app(BulkTransferPassesAction::class)->handle(
+                    [(string) $pass->getKey()],
+                    PassHolder::factory()->make(),
+                ))->toThrow(ModelNotFoundException::class);
+        });
+
+        OwnerContext::withOwner(null, function () use ($pass): void {
+            expect(PassHolder::query()->where('pass_id', $pass->getKey())->count())->toBe(0)
+                ->and(PassTransfer::query()->where('pass_id', $pass->getKey())->count())->toBe(0);
+
+            expect(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeTrue();
+        });
+    } finally {
+        config()->set('ticketing.owner.include_global', false);
+        Pass::clearBootedModels();
+    }
 });

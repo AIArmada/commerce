@@ -6,7 +6,7 @@ use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 it('allows free ticket type on free event', function (): void {
     $event = Event::factory()->free()->create();

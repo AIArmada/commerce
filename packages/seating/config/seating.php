@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'database' => [
-        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', 'jsonb'),
+        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', 'json'),
         'tables' => [
             'seat_maps' => env('SEATING_TABLE_SEAT_MAPS', 'seat_maps'),
             'seat_sections' => env('SEATING_TABLE_SEAT_SECTIONS', 'seat_sections'),
@@ -15,6 +15,14 @@ return [
 
     ],
 
+    'models' => [
+        'seat_map' => null,
+        'seat_section' => null,
+        'seat' => null,
+        'seat_hold' => null,
+        'seat_allocation' => null,
+    ],
+
     'holds' => [
         'ttl_minutes' => (int) env('SEATING_HOLD_TTL_MINUTES', 15),
     ],
@@ -23,13 +31,6 @@ return [
         'enabled' => env('SEATING_OWNER_ENABLED', true),
         'include_global' => env('SEATING_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('SEATING_OWNER_AUTO_ASSIGN_ON_CREATE', true),
-    ],
-
-    'modes' => [
-        // none — standing, open entry, no row created
-        // general_admission — section, no specific seat
-        // assigned — specific seat
-        // hybrid — section + optional seat
     ],
 
     'scheduling' => [

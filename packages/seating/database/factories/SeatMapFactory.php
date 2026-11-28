@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Database\Factories;
 
-use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 final class SeatMapFactory extends Factory

@@ -28,4 +28,4 @@ Make sure seating migrations are loaded. If using the project test suite, verify
 
 ## Double allocation under concurrency
 
-`ConvertHoldsToAllocationsAction` locks each hold and seat (`FOR UPDATE`) and the `seat_allocations` table carries a partial unique index on `(seat_id)` for active rows (PostgreSQL/SQLite). A concurrent convert of the same seat is skipped instead of double-allocated. On drivers without partial-index support the row locks are the integrity guard.
+`ConvertHoldsToAllocationsAction` converts physical seat holds and counts each seat against its section capacity. It locks the seats, holds, and sections in a consistent order. Repeating the same allocation can skip holds already processed. A conflicting allocation aborts the batch. PostgreSQL and SQLite also enforce at most one active allocation per seat with a partial unique index.

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTicketing\Schemas;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Support\TicketMoney;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 use AIArmada\Ticketing\Enums\TicketAccessType;
 use AIArmada\Ticketing\Enums\TicketTypeStatus;
 use AIArmada\Ticketing\Enums\TicketTypeVisibility;
@@ -22,7 +21,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
 
@@ -69,6 +67,11 @@ final class TicketTypeFormSchema
                     TextInput::make('price')
                         ->numeric()
                         ->minValue(0)
+                        ->rules([static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                            if ($value !== null && $value !== '' && TicketMoney::toMinor((string) $value) === null) {
+                                $fail('Enter a valid ticket price in decimal notation within the supported range.');
+                            }
+                        }])
                         ->suffix(fn (Get $get): string => (string) ($get('currency') ?? 'MYR'))
                         ->helperText('Ticket price in major units; stored as integer minor units.')
                         ->formatStateUsing(
@@ -132,11 +135,8 @@ final class TicketTypeFormSchema
             ->types(
                 fn (TicketableTypeRegistry $registry) => collect($registry->all())->map(
                     fn (string $class): MorphToSelect\Type => MorphToSelect\Type::make($class)
-                        ->titleAttribute(TicketableReferenceGuard::titleAttributeFor($class))
-                        ->searchColumns(TicketableReferenceGuard::searchColumnsFor($class))
-                        ->modifyOptionsQueryUsing(
-                            static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
-                        )
+                        ->titleAttribute(TicketablePickerColumns::titleAttributeFor($class))
+                        ->searchColumns(TicketablePickerColumns::searchColumnsFor($class))
                 )->toArray()
             )
             ->searchable()

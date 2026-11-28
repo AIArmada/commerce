@@ -10,12 +10,13 @@ use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 use AIArmada\Ticketing\Events\PassIssued;
-use AIArmada\Ticketing\Listeners\IssuePassesOnFulfillment;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Features\Passes\EntryPoints\Listeners\IssuePassesOnFulfillment;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Persistence\PassIssuer;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 function createDedupTicketType(): TicketType
@@ -55,7 +56,7 @@ it('does not issue duplicate passes on redelivered fulfillment', function (): vo
     $ticketType = createDedupTicketType();
     $order = createDedupOrderWithTicketItem('ORD-DEDUP-1', $ticketType, 2);
 
-    $listener = new IssuePassesOnFulfillment;
+    $listener = app(IssuePassesOnFulfillment::class);
     $event = new OrderFulfillmentRequired($order, 'txn-dedup-1', 'stripe');
 
     $listener->handle($event);
@@ -74,15 +75,15 @@ it('issues only the remainder when passes already exist for the item', function 
     $order = createDedupOrderWithTicketItem('ORD-DEDUP-2', $ticketType, 3);
     $item = $order->items->first();
 
-    app(DefaultPassIssuer::class)->issuePassesFor(new PassIssuanceContext(
-        ticketType: $ticketType,
+    app(PassIssuer::class)->issuePassesFor(new PassIssuanceContext(
+        ticketTypeId: (string) $ticketType->getKey(),
         quantity: 1,
         metadata: ['order_id' => $order->getKey(), 'order_item_id' => $item->getKey()],
     ));
 
     expect(Pass::count())->toBe(1);
 
-    (new IssuePassesOnFulfillment)->handle(
+    app(IssuePassesOnFulfillment::class)->handle(
         new OrderFulfillmentRequired($order->fresh(), 'txn-dedup-2', 'stripe')
     );
 
@@ -105,9 +106,26 @@ it('restores the order owner context when ambient context is missing', function 
     OwnerContext::flushState();
     app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
 
-    (new IssuePassesOnFulfillment)->handle(
+    app(IssuePassesOnFulfillment::class)->handle(
         new OrderFulfillmentRequired($order, 'txn-dedup-ctx', 'stripe')
     );
 
     expect(Pass::query()->withoutOwnerScope()->count())->toBe(2);
+});
+
+it('fails closed for an incomplete persisted order owner tuple', function (): void {
+    Event::fake([PassIssued::class]);
+
+    $ticketType = createDedupTicketType();
+    $order = createDedupOrderWithTicketItem('ORD-DEDUP-ORPHAN', $ticketType, 1);
+
+    DB::table((new Order)->getTable())
+        ->where($order->getKeyName(), $order->getKey())
+        ->update(['owner_id' => null]);
+
+    expect(fn () => app(IssuePassesOnFulfillment::class)->handle(
+        new OrderFulfillmentRequired($order->fresh(), 'txn-dedup-orphan', 'stripe')
+    ))->toThrow(InvalidArgumentException::class);
+
+    expect(Pass::query()->withoutOwnerScope()->count())->toBe(0);
 });

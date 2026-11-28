@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Database\Factories;
 
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +17,8 @@ final class TicketTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'ticketable_type' => 'workshop',
-            'ticketable_id' => $this->faker->uuid(),
+            'ticketable_type' => config('ticketing.testing.ticketable_type', 'workshop'),
+            'ticketable_id' => config('ticketing.testing.ticketable_id', $this->faker->uuid()),
             'name' => $this->faker->words(3, true),
             'code' => $this->faker->unique()->word(),
             'description' => $this->faker->sentence(),

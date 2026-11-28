@@ -10,14 +10,17 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentSeating\Pages\SeatMapEditor;
-use AIArmada\FilamentSeating\Pages\SeatMapOccupancy;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\FilamentSeating\EntryPoints\Filament\Pages\SeatMapEditor;
+use AIArmada\FilamentSeating\EntryPoints\Filament\Pages\SeatMapOccupancy;
 use AIArmada\FilamentSeating\Resources\SeatMapResource;
 use AIArmada\FilamentSeating\Widgets\SeatMapOverview;
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Actions\SaveSeatMap;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Gate;
@@ -170,4 +173,26 @@ it('scopes seat map slug uniqueness to the resolved owner', function (): void {
     );
 
     expect($otherOwner->fails())->toBeFalse();
+});
+
+it('authorizes inherited event hosts for seat-map writes', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $event = OwnerContext::withOwner($owner, fn () => Event::factory()->create());
+
+    $map = OwnerContext::withOwner($owner, fn () => app(SaveSeatMap::class)->handle([
+        'name' => 'Event Map',
+        'slug' => 'event-map',
+        'status' => 'active',
+    ], host: $event));
+
+    expect($map->seatable_type)->toBe($event->getMorphClass())
+        ->and((string) $map->seatable_id)->toBe((string) $event->getKey());
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(SaveSeatMap::class)->handle([
+        'name' => 'Foreign Event Map',
+        'slug' => 'foreign-event-map',
+        'status' => 'active',
+    ], host: $event)))->toThrow(AuthorizationException::class);
 });

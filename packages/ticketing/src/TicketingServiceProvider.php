@@ -4,103 +4,75 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing;
 
-use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
-use AIArmada\Ticketing\Console\Commands\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
-use AIArmada\Ticketing\Events\PassCancelled;
-use AIArmada\Ticketing\Events\PassExpired;
-use AIArmada\Ticketing\Events\PassRevoked;
-use AIArmada\Ticketing\Events\PassVoided;
-use AIArmada\Ticketing\Listeners\IssuePassesOnFulfillment;
-use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassCancelled;
-use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassExpired;
-use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassRevoked;
-use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassVoided;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Policies\PassTransferPolicy;
-use AIArmada\Ticketing\Services\DefaultPassDeliveryService;
-use AIArmada\Ticketing\Services\DefaultPassIssuer;
-use AIArmada\Ticketing\Services\DefaultPassTransferService;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Services\DefaultPassDeliveryService;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Platform\ExtensionRegistry;
+use AIArmada\Ticketing\Platform\FeatureCatalog;
+use AIArmada\Ticketing\Platform\FeatureModule;
 use AIArmada\Ticketing\Services\NullPassDeliveryService;
-use AIArmada\Ticketing\Support\Integration\TicketingIntegration;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class TicketingServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
             ->name('ticketing')
             ->hasConfigFile()
             ->runsMigrations()
-            ->discoversMigrations()
-            ->hasCommands([
-                ExpireTransfersCommand::class,
-            ]);
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(TicketableTypeRegistry::class);
-        $this->app->bind(PassIssuerInterface::class, DefaultPassIssuer::class);
+        $modelDefaults = [
+            'ticketing.models.ticket_type' => TicketType::class,
+            'ticketing.models.pass' => Pass::class,
+            'ticketing.models.pass_holder' => PassHolder::class,
+        ];
+
+        foreach ($modelDefaults as $key => $model) {
+            if (! $this->app['config']->get($key)) {
+                $this->app['config']->set($key, $model);
+            }
+        }
+
         $this->app->singleton(PassDeliveryServiceInterface::class, function ($app) {
             return config('ticketing.notifications.ticket.enabled', true)
                 ? $app->make(DefaultPassDeliveryService::class)
                 : $app->make(NullPassDeliveryService::class);
         });
-        $this->app->bind(PassTransferServiceInterface::class, DefaultPassTransferService::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid ticketing feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     public function packageBooted(): void
     {
-        $this->registerTransferPolicy();
-        $this->registerOrderFulfillment();
-        $this->registerSeatReleaseListeners();
-        $this->registerSchedule();
-    }
-
-    private function registerTransferPolicy(): void
-    {
-        Gate::policy(Pass::class, PassTransferPolicy::class);
-    }
-
-    private function registerOrderFulfillment(): void
-    {
-        if (! config('ticketing.features.auto_issue_passes', true)) {
-            return;
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
         }
-
-        if (TicketingIntegration::ordersAvailable() && class_exists(OrderFulfillmentRequired::class)) {
-            Event::listen(OrderFulfillmentRequired::class, IssuePassesOnFulfillment::class);
-        }
-    }
-
-    private function registerSeatReleaseListeners(): void
-    {
-        if (! class_exists(ReleaseAllocationsAction::class)) {
-            return;
-        }
-
-        Event::listen(PassRevoked::class, ReleaseSeatsOnPassRevoked::class);
-        Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
-        Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
-        Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
-    }
-
-    private function registerSchedule(): void
-    {
-        $this->app->booted(function (): void {
-            $schedule = $this->app->make(Schedule::class);
-            $schedule->command(ExpireTransfersCommand::class)->hourly();
-        });
     }
 
     /** @return array<int, string> */

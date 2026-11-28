@@ -6,8 +6,8 @@ use AIArmada\Cart\Cart;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Ticketing\Actions\AddTicketTypeToCartAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\AddTicketTypeToCartAction;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('adds required variant merchandise with the real variant identity and reconciles repeated ticket additions', function (): void {
@@ -34,7 +34,7 @@ it('adds required variant merchandise with the real variant identity and reconci
         'currency' => 'USD',
     ]);
 
-    $ticketType->bundleProducts()->create([
+    $bundle = $ticketType->bundleProducts()->create([
         'product_type' => Product::class,
         'product_id' => $product->getKey(),
         'variant_type' => Variant::class,
@@ -48,7 +48,7 @@ it('adds required variant merchandise with the real variant identity and reconci
 
     $action->handle($cart, $ticketType, 1);
 
-    $bundleLineId = sprintf('ticket-bundle:%s:%s:%s', $ticketType->getKey(), Variant::class, $variant->getKey());
+    $bundleLineId = sprintf('ticket-bundle:%s:%s:%s:%s', $ticketType->getKey(), $bundle->getKey(), Variant::class, $variant->getKey());
     $bundleLine = $cart->get($bundleLineId);
 
     expect($bundleLine)->not->toBeNull()
@@ -69,4 +69,33 @@ it('adds required variant merchandise with the real variant identity and reconci
     expect($cart->get($variant->getKey())?->quantity)->toBe(1)
         ->and($cart->get($bundleLineId)?->quantity)->toBe(4)
         ->and($cart->countItems())->toBe(3);
+});
+
+it('preserves separate required bundle rows pointing to the same product', function (): void {
+    $product = Product::create([
+        'name' => 'Event merchandise',
+        'slug' => 'event-merchandise',
+        'price' => 1000,
+        'currency' => 'USD',
+        'status' => ProductStatus::Active,
+        'tracks_inventory' => false,
+    ]);
+
+    $ticket = TicketType::factory()->create(['status' => 'active', 'visibility' => 'public', 'currency' => 'USD']);
+    foreach ([2, 3] as $quantity) {
+        $ticket->bundleProducts()->create([
+            'product_type' => Product::class,
+            'product_id' => $product->getKey(),
+            'quantity' => $quantity,
+            'inclusion_mode' => 'required',
+        ]);
+    }
+
+    $cart = new Cart(new InMemoryStorage, 'multiple-required-bundle-rows');
+    app(AddTicketTypeToCartAction::class)->handle($cart, $ticket, 2);
+
+    $lines = $cart->search(fn ($item): bool => $item->getAttribute('bundle_parent_line_id') === $ticket->getKey());
+
+    expect($lines)->toHaveCount(2)
+        ->and($lines->sum('quantity'))->toBe(10);
 });

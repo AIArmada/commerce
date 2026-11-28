@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Console\Commands\ReleaseExpiredHoldsCommand;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $map = SeatMap::factory()->create();
@@ -73,4 +74,32 @@ it('releases expired holds across owners when no request owner is active', funct
             ->and(SeatHold::query()->withoutOwnerScope()->whereKey($expiredB->id)->exists())->toBeFalse()
             ->and(SeatHold::query()->withoutOwnerScope()->whereKey($activeB->id)->exists())->toBeTrue();
     });
+});
+
+it('preserves expired holds that have already been converted', function (): void {
+    $converted = SeatHold::factory()->expired()->converted()->create(['seat_id' => $this->seat->id]);
+    $expired = SeatHold::factory()->expired()->create(['seat_id' => $this->seat->id]);
+
+    $this->artisan(ReleaseExpiredHoldsCommand::class, ['--chunk' => 1])
+        ->assertSuccessful();
+
+    expect(SeatHold::query()->whereKey($converted->id)->exists())->toBeTrue()
+        ->and(SeatHold::query()->whereKey($expired->id)->exists())->toBeFalse();
+});
+
+it('releases holds at the exact expiry timestamp', function (): void {
+    $expiry = CarbonImmutable::now()->startOfSecond();
+    $expired = SeatHold::factory()->create(['seat_id' => $this->seat->id, 'expires_at' => $expiry]);
+    $active = SeatHold::factory()->create(['seat_id' => $this->seat->id, 'expires_at' => $expiry->addSecond()]);
+
+    CarbonImmutable::setTestNow($expiry);
+
+    try {
+        $this->artisan(ReleaseExpiredHoldsCommand::class)->assertSuccessful();
+
+        expect(SeatHold::query()->whereKey($expired->id)->exists())->toBeFalse()
+            ->and(SeatHold::query()->whereKey($active->id)->exists())->toBeTrue();
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
 });

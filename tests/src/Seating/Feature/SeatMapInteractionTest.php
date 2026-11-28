@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Livewire\SeatMap;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatMap as SeatMapModel;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
@@ -151,5 +151,32 @@ it('stops toggling once the per-minute budget is spent', function (): void {
 
     // 60 effective toggles is even, so the seat ends deselected; without a
     // limit the 65 attempts would end with the seat selected.
+    expect($component->picked)->toBe([]);
+});
+
+it('rejects selection outside the requested section', function (): void {
+    $component = makeSeatMapComponent((string) $this->map->id, (string) $this->sectionA->id);
+
+    $component->toggleSeat((string) $this->seatB->id);
+
+    expect($component->picked)->toBe([]);
+});
+
+it('allows deselecting a picked seat that has since become blocked', function (): void {
+    $component = makeSeatMapComponent((string) $this->map->id);
+    $component->toggleSeat((string) $this->seatA->id);
+
+    $this->seatA->update(['status' => SeatStatus::Blocked]);
+    $component->toggleSeat((string) $this->seatA->id);
+
+    expect($component->picked)->toBe([]);
+});
+
+it('does not allow selection on an inactive map supplied by id', function (): void {
+    $this->map->update(['status' => 'inactive']);
+    $component = makeSeatMapComponent((string) $this->map->id);
+
+    $component->toggleSeat((string) $this->seatA->id);
+
     expect($component->picked)->toBe([]);
 });

@@ -12,6 +12,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Features\Passes\Queries\MapPassData;
 use AIArmada\Ticketing\Notifications\TicketNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification;
@@ -120,7 +121,7 @@ it('delivers ticket notifications through the default delivery service', functio
             'is_current' => true,
         ]);
 
-        app(PassDeliveryServiceInterface::class)->deliver($pass);
+        app(PassDeliveryServiceInterface::class)->deliver((string) $pass->getKey());
 
         NotificationFacade::assertSentOnDemand(
             TicketNotification::class,
@@ -159,7 +160,7 @@ it('restores owner context while rendering serialized queued notifications', fun
                 ownerType: $owner->getMorphClass(),
                 ownerId: (string) $owner->getKey(),
             )),
-            new TicketNotification($pass),
+            new TicketNotification(app(MapPassData::class)->handle($pass)),
         ];
     });
 

@@ -39,3 +39,11 @@ it('keeps ticketing resources behind permissions', function (): void {
         ->and(PassTransferResource::canViewAny())->toBeFalse()
         ->and(PassTransferResource::shouldRegisterNavigation())->toBeFalse();
 });
+
+it('rejects ticket prices that cannot be represented as integer minor units', function (): void {
+    expect(TicketMoney::toMinor('1e3'))->toBeNull()
+        ->and(TicketMoney::toMinor((string) PHP_INT_MAX))->toBeNull()
+        ->and(TicketMoney::toMinor('92233720368547758.075'))->toBeNull()
+        ->and(TicketMoney::toMinor('92233720368547758.07'))->toBe(PHP_INT_MAX)
+        ->and(TicketMoney::toDisplay(PHP_INT_MIN))->toBe('-92233720368547758.08');
+});

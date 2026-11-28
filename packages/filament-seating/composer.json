@@ -25,5 +25,17 @@
         "sort-packages": true
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require-dev": {
+        "nikic/php-parser": "^5"
+    },
+    "scripts": {
+        "arch:boundaries": "@php tools/package-check.php",
+        "arch:boundaries:diff": "@php tools/package-check.php --diff-base=main",
+        "arch:writes": "cd ../.. && php vendor/bin/phpstan analyse -c packages/filament-seating/tools/package-phpstan.neon --autoload-file=packages/filament-seating/tools/Architecture/PackageOwnedWriteRule.php --no-progress",
+        "arch:check": [
+            "@arch:boundaries",
+            "@arch:writes"
+        ]
+    }
 }

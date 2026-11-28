@@ -13,7 +13,7 @@ use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventSessionExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ExportAction;

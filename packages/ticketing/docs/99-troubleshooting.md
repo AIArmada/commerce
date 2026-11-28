@@ -36,7 +36,7 @@ pass one holder array per pass in order:
 
 ```php
 $context = new PassIssuanceContext(
-    ticketType: $ticketType,
+    ticketTypeId: (string) $ticketType->getKey(),
     quantity: 1,
     holderAttributes: [
         ['name' => 'Alice', 'email' => 'alice@example.com'],
@@ -46,7 +46,7 @@ $context = new PassIssuanceContext(
 
 ### Pass Won't Transfer
 
-**Problem**: `PassTransferServiceInterface::canTransfer($pass)` returns false.
+**Problem**: `PassTransferServiceInterface::canTransfer($pass->getKey())` returns false.
 
 **Solution**: Check the pass is valid and within its transfer window:
 
@@ -69,18 +69,6 @@ Check `transfer_expires_at` on the pass:
 $deadline = $workshop->transferWindowEndsAt();
 ```
 
-### Pricing Consistency Errors
-
-**Problem**: Order validation fails due to pricing mismatch.
-
-**Solution**: The `pricing_consistency_check` feature validates ticket prices against order line items. You can disable it:
-
-```bash
-TICKETING_PRICING_CONSISTENCY_CHECK=false
-```
-
-Or ensure prices match exactly between ticket type and order.
-
 ### JSON Column Errors on PostgreSQL
 
 **Problem**: Migration errors with JSON columns on PostgreSQL.
@@ -89,7 +77,7 @@ Or ensure prices match exactly between ticket type and order.
 
 ```php
 // Use the commerce_json_column_type() helper in migrations
-// commerce_json_column_type('ticketing', 'jsonb') // For PostgreSQL
+// commerce_json_column_type('ticketing', 'json') // Override for PostgreSQL jsonb
 ```
 - Set `TICKETING_JSON_COLUMN_TYPE=json` to use SQLite-compatible JSON columns
 
@@ -253,3 +241,14 @@ When reporting issues, include:
 
 - [Configuration](03-configuration.md) — Review configuration options
 - [Usage](04-usage.md) — Review usage patterns
+
+## Order-item issuance deduplication
+
+`IssuePassesForOrderAction` counts previously issued passes through the JSON path `metadata->order_item_id`. That lookup is not indexed on every database driver.
+
+A dedicated indexed column is intentionally not added: the repository forbids data backfills, and existing completed passes would become invisible to the counter, allowing a retry to reissue passes that already exist. Keep the JSON lookup until a safe backfill can populate a dedicated column for historical rows.
+
+## Related docs
+
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)

@@ -6,9 +6,15 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentTicketing\Support\TicketableReferenceGuard;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\FilamentTicketing\Actions\ValidateTicketableReference;
+use AIArmada\FilamentTicketing\Support\TicketablePickerColumns;
 use AIArmada\FilamentTicketing\Tests\Fixtures\OwnedTicketable;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\DeleteTicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\SaveTicketType;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -49,7 +55,7 @@ it('accepts registered ticketables inside the current owner scope', function ():
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
-    $data = app(TicketableReferenceGuard::class)->sanitize([
+    $data = app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => $ticketable->getMorphClass(),
         'ticketable_id' => (string) $ticketable->getKey(),
     ]);
@@ -63,7 +69,7 @@ it('rejects cross-owner ticketable references', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => $foreign->getMorphClass(),
         'ticketable_id' => (string) $foreign->getKey(),
     ]))->toThrow(ValidationException::class);
@@ -73,18 +79,80 @@ it('rejects unregistered types and missing ids', function (): void {
     $owner = ticketableOwner('ticketable-guard-missing@example.com');
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => User::class,
         'ticketable_id' => (string) $owner->getKey(),
     ]))->toThrow(ValidationException::class);
 
-    expect(fn (): array => app(TicketableReferenceGuard::class)->sanitize([
+    expect(fn (): array => app(ValidateTicketableReference::class)->handle([
         'ticketable_type' => (new OwnedTicketable)->getMorphClass(),
         'ticketable_id' => '00000000-0000-0000-0000-000000000000',
     ]))->toThrow(ValidationException::class);
 });
 
 it('derives search columns only from existing table columns', function (): void {
-    expect(TicketableReferenceGuard::searchColumnsFor(OwnedTicketable::class))->toBe(['name'])
-        ->and(TicketableReferenceGuard::titleAttributeFor(OwnedTicketable::class))->toBe('name');
+    expect(TicketablePickerColumns::searchColumnsFor(OwnedTicketable::class))->toBe(['name'])
+        ->and(TicketablePickerColumns::titleAttributeFor(OwnedTicketable::class))->toBe('name');
+});
+
+it('rejects forged scalar ticketable identifiers', function (): void {
+    expect(fn () => app(ValidateTicketableReference::class)->handle([
+        'ticketable_type' => OwnedTicketable::class,
+        'ticketable_id' => true,
+    ]))->toThrow(ValidationException::class);
+});
+
+it('keeps the ticket type attached to its original host', function (): void {
+    $owner = ticketableOwner('ticketable-write@example.com');
+    $first = ownedTicketable($owner, 'First show');
+    $second = ownedTicketable($owner, 'Second show');
+
+    OwnerContext::withOwner($owner, function () use ($first, $second): void {
+        $data = [
+            'name' => 'Admission',
+            'code' => 'GENERAL',
+            'access_type' => 'general',
+            'admits_quantity' => 1,
+            'status' => 'active',
+            'visibility' => 'public',
+            'price' => 5000,
+        ];
+
+        $type = app(SaveTicketType::class)->handle($first, $data);
+        expect($type->ticketable_id)->toBe($first->getKey());
+
+        expect(fn () => app(SaveTicketType::class)->handle($second, $data, $type))
+            ->toThrow(AuthorizationException::class);
+
+        expect(fn () => app(DeleteTicketType::class)->handle($type, $second))
+            ->toThrow(AuthorizationException::class);
+
+        expect(app(DeleteTicketType::class)->handle($type, $first))->toBeTrue();
+    });
+});
+
+it('authorizes inherited event occurrence hosts for ticket-type writes', function (): void {
+    $owner = ticketableOwner('ticketable-occurrence@example.com');
+    $other = ticketableOwner('ticketable-occurrence-other@example.com');
+
+    $event = OwnerContext::withOwner($owner, fn () => Event::factory()->create());
+    $occurrence = OwnerContext::withOwner($owner, fn () => EventOccurrence::factory()->create(['event_id' => $event->id]));
+
+    $data = [
+        'name' => 'Occurrence Admission',
+        'code' => 'OCC',
+        'access_type' => 'general',
+        'admits_quantity' => 1,
+        'status' => 'active',
+        'visibility' => 'public',
+        'price' => 1000,
+    ];
+
+    $type = OwnerContext::withOwner($owner, fn () => app(SaveTicketType::class)->handle($occurrence, $data));
+
+    expect($type->ticketable_type)->toBe($occurrence->getMorphClass())
+        ->and((string) $type->ticketable_id)->toBe((string) $occurrence->getKey());
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => app(SaveTicketType::class)->handle($occurrence, $data)))
+        ->toThrow(AuthorizationException::class);
 });

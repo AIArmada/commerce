@@ -1,0 +1,12 @@
+---
+name: ticketing-development
+description: Develop and integrate ticketing using owner-safe domain operations.
+---
+
+# Ticketing development
+
+Ticketing owns ticket types, component and product bundles, passes, holders and transfer records. Use IssuePassesAction for issuance, IssuePassesForOrderAction for idempotent order fulfillment, the lifecycle actions for atomic transitions, and the dedicated transfer actions. Transfer notifications and bulk notification jobs carry immutable DTOs; restore owner context before reading holders. Maintain owner context for all mutations, especially asynchronous fulfillment. Do not issue additional passes on retries.
+
+## Verification
+
+Run the package architecture checks, affected monorepo Pest tests, PHPStan and Pint. Update callers directly; do not introduce compatibility aliases or backfill migrations.

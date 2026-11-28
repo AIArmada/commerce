@@ -16,7 +16,7 @@ use AIArmada\Events\Features\Registrations\Api\RegistrationSummary;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\LifecyclePolicy;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 

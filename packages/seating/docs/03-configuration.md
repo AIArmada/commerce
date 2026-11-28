@@ -36,6 +36,10 @@ that documents the accepted `SeatingMode` values):
 ],
 ```
 
+## `models`
+
+`seating.models` maps the seat-map, section, seat, hold, and allocation model classes used by cross-feature relations and feature APIs. The service provider binds the package defaults; override a value only when replacing that model with a compatible subclass.
+
 ## `holds.ttl_minutes`
 
 Duration (in minutes) that a seat hold remains active. After this period the hold is eligible for release via the `seating:release-expired-holds` command.
@@ -48,7 +52,7 @@ Owner scoping configuration. When enabled, all seating models are scoped to the 
 - `include_global`: Include ownerless (global) records in owner-scoped queries (default: `false`).
 - `auto_assign_on_create`: Automatically assign the current owner to new records (default: `true`).
 
-JSON column type is controlled by `commerce_json_column_type('seating', 'json')`. Set `COMMERCE_JSON_COLUMN_TYPE=jsonb` in your `.env` to override.
+JSON column type is controlled by `commerce_json_column_type('seating', 'json')`. Set `SEATING_JSON_COLUMN_TYPE=jsonb` in your `.env` to override.
 
 ## `scheduling.release_expired_holds`
 

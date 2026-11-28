@@ -14,7 +14,7 @@ use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedA
 use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 

@@ -59,7 +59,7 @@ your app overrides `events.models.*`, resolve through `ModelResolver` instead.
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 $event = OwnerContext::withOwner($owner, function (): Event {
     return Event::query()->create([
@@ -111,7 +111,7 @@ Sessions and occurrences can override the parent's mode:
 use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 
 $occurrence = EventOccurrence::query()->findOrFail($occurrenceId);
 
@@ -706,7 +706,7 @@ semantics.
 ## Managing Ticket Types
 
 ```php
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 
 $ticketType = app(EnsureTicketTypeAction::class)->handle($occurrence, [
     'name' => 'Early Bird',
@@ -917,7 +917,7 @@ pipeline alongside products.
 
 ```php
 use AIArmada\Events\Features\Commerce\Actions\AddEventTicketTypeToCartAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 $ticketType = TicketType::query()->findOrFail($ticketTypeId);
 
@@ -1378,12 +1378,12 @@ step.
 ## Ticketing DTOs and delivery
 
 ```php
-use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Ticketing\Data\PassData;
 use AIArmada\Ticketing\Data\TicketTypeData;
 
-$dto = TicketTypeData::fromTicketType($ticketType);
-$passDto = PassData::fromPass($pass);
+$dto = app(\AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData::class)->handle($ticketType);
+$passDto = app(\AIArmada\Ticketing\Features\Passes\Queries\MapPassData::class)->handle($pass);
 $components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType);
 ```
 

@@ -111,7 +111,7 @@ which own the allowed transitions, actor recording, and reason requirements. Con
 pass's current status first:
 
 ```bash
-php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->status->getValue();'
+php artisan tinker --execute '$pass = \AIArmada\Ticketing\Features\Passes\Models\Pass::find("pass-uuid"); echo $pass->status->getValue();'
 ```
 
 A pass status in `used`, `revoked`, `voided`, or `expired` is terminal and will not accept
@@ -219,7 +219,7 @@ When reporting issues, include:
 
 ### State Actions
 - **Terminal** states cannot transition — create a new pass if needed
-- **Reasons** are optional on transitions (`markCancelled/markRevoked/markVoided`, `RevokePassAction`) — always provide context anyway
+- **Reasons** are optional on transitions (`CancelPassAction`, `RevokePassAction`, `VoidPassAction`) — always provide context anyway
 - **Transfers** are logged immutably — no deletion of transfer records
 - The admin panel is read-only for pass state; drive transitions from application code
 

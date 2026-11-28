@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace AIArmada\Seating\Services;
 
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\SeatMap;
-use Illuminate\Support\Collection;
+use AIArmada\Seating\Contracts\SeatingMode;
 
-final class NullSeatAllocator implements SeatAllocatorInterface
+final readonly class NullSeatAllocator implements SeatAllocatorInterface
 {
     public function allocate(
-        SeatMap $map,
+        string $mapId,
         int $quantity,
         SeatingMode $mode = SeatingMode::Assigned,
         ?string $heldByType = null,
         ?string $heldById = null,
         ?string $reference = null,
         array $categoryPreferences = [],
-    ): Collection {
-        return new Collection;
+    ): array {
+        return [];
     }
 }

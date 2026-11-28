@@ -12,8 +12,8 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
@@ -85,7 +85,7 @@ it('issues and delivers all passes created for matching registrations', function
         ]);
 
         $delivery = mock(PassDeliveryServiceInterface::class);
-        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
+        $delivery->shouldReceive('deliverMany')->once()->with(Mockery::type('array'));
 
         $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),
@@ -200,7 +200,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
         ]);
 
         $delivery = mock(PassDeliveryServiceInterface::class);
-        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(Pass::class));
+        $delivery->shouldReceive('deliverMany')->twice()->with(Mockery::type('array'));
 
         $session = createEventsCheckoutSession([
             'cart_id' => (string) Str::uuid(),

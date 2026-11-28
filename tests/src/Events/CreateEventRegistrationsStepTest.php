@@ -14,7 +14,7 @@ use AIArmada\Events\Features\Commerce\EntryPoints\Checkout\CreateEventRegistrati
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;

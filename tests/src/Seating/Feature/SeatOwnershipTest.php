@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Actions\EnsureSectionAllocationAction;
-use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Contracts\SeatingMode;
+use AIArmada\Seating\EntryPoints\Livewire\SeatMap as SeatMapComponent;
+use AIArmada\Seating\Exceptions\InsufficientSeatsException;
+use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
+use AIArmada\Seating\Features\Maps\Actions\DeleteSeatMap;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -50,7 +55,6 @@ it('copies the hold owner onto the converted allocation', function (): void {
 
     $allocations = OwnerContext::withOwner($owner, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
@@ -82,7 +86,6 @@ it('converts a global hold to a global allocation inside explicit global scope',
 
     $allocations = OwnerContext::withOwner(null, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
@@ -113,7 +116,6 @@ it('refuses to convert a global hold under an ambient owner without residue', fu
 
     expect(fn () => OwnerContext::withOwner($owner, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     )))->toThrow(AuthorizationException::class);
@@ -144,7 +146,6 @@ it('refuses to convert another owner hold into the ambient context', function ()
 
     expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     )))->toThrow(ModelNotFoundException::class);
@@ -166,7 +167,7 @@ it('copies the section owner onto section allocations', function (): void {
     });
 
     $allocation = OwnerContext::withOwner($owner, fn (): SeatAllocation => app(EnsureSectionAllocationAction::class)->handle(
-        section: $section,
+        sectionId: $section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
@@ -175,7 +176,7 @@ it('copies the section owner onto section allocations', function (): void {
         ->and($allocation->owner_id)->toBe($section->owner_id);
 });
 
-it('keeps a global section global when allocating under an ambient owner', function (): void {
+it('creates a tenant allocation from a shared global section', function (): void {
     config()->set('seating.owner.include_global', true);
     Model::clearBootedModels();
 
@@ -194,13 +195,14 @@ it('keeps a global section global when allocating under an ambient owner', funct
     expect($section->owner_type)->toBeNull();
 
     $allocation = OwnerContext::withOwner($owner, fn (): SeatAllocation => app(EnsureSectionAllocationAction::class)->handle(
-        section: $section,
+        sectionId: $section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     ));
 
-    expect($allocation->owner_type)->toBeNull()
-        ->and($allocation->owner_id)->toBeNull();
+    expect($allocation->owner_type)->toBe($owner->getMorphClass())
+        ->and((string) $allocation->owner_id)->toBe((string) $owner->getKey())
+        ->and($allocation->seat_section_id)->toBe($section->id);
 });
 
 it('rejects holds for seats outside the current scope', function (): void {
@@ -242,4 +244,122 @@ it('rejects allocations pointing at nothing or at unknown rows', function (): vo
         'seat_id' => null,
         'seat_section_id' => (string) Str::orderedUuid(),
     ]))->toThrow(InvalidArgumentException::class, 'does not exist in the current scope');
+});
+
+it('does not let different owners hold the same shared global seat', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $map = OwnerContext::withOwner(null, function (): SeatMap {
+        $map = SeatMap::factory()->create();
+        $section = SeatSection::factory()->create(['seat_map_id' => $map->id]);
+        Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+
+        return $map;
+    });
+
+    OwnerContext::withOwner($ownerA, fn () => app(EnsureSeatHoldAction::class)->handle(
+        mapId: $map->id,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    ));
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(EnsureSeatHoldAction::class)->handle(
+        mapId: $map->id,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    )))->toThrow(InsufficientSeatsException::class);
+
+    expect(SeatHold::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('counts assigned allocations across owners against shared section capacity', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $section = OwnerContext::withOwner(null, function (): SeatSection {
+        $map = SeatMap::factory()->create();
+        $section = SeatSection::factory()->create(['seat_map_id' => $map->id, 'capacity' => 1]);
+        Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+
+        return $section;
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($section): void {
+        $holds = app(EnsureSeatHoldAction::class)->handle(
+            mapId: $section->seatMap->id,
+            quantity: 1,
+            mode: SeatingMode::Assigned,
+        );
+
+        app(ConvertHoldsToAllocationsAction::class)->handle(
+            holds: $holds,
+            allocToType: 'pass',
+            allocToId: (string) Str::orderedUuid(),
+        );
+    });
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(EnsureSectionAllocationAction::class)->handle(
+        sectionId: $section->id,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    )))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('isolates cached layouts for different owners viewing a shared seat map', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $map = OwnerContext::withOwner(null, fn (): SeatMap => SeatMap::factory()->create());
+
+    $createSeat = function (User $owner, string $code) use ($map): Seat {
+        return OwnerContext::withOwner($owner, function () use ($map, $code): Seat {
+            $section = SeatSection::factory()->create(['seat_map_id' => $map->id, 'code' => $code]);
+
+            return Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+        });
+    };
+
+    $seatA = $createSeat($ownerA, 'PRIVATE-A');
+    $seatB = $createSeat($ownerB, 'PRIVATE-B');
+
+    $layoutFor = function (User $owner) use ($map): array {
+        return OwnerContext::withOwner($owner, function () use ($map): array {
+            $component = new SeatMapComponent;
+            $component->mount(seatMapId: $map->id);
+
+            return $component->getLayoutProperty();
+        });
+    };
+
+    expect(array_column($layoutFor($ownerA)['seats'], 'id'))->toBe([$seatA->id])
+        ->and(array_column($layoutFor($ownerB)['seats'], 'id'))->toBe([$seatB->id])
+        ->and(array_column($layoutFor($ownerA)['seats'], 'id'))->toBe([$seatA->id]);
+});
+
+it('refuses to delete a shared map that has cross-owner sections', function (): void {
+    config()->set('seating.owner.include_global', true);
+    Model::clearBootedModels();
+
+    $owner = User::factory()->create();
+    $map = OwnerContext::withOwner(null, fn (): SeatMap => SeatMap::factory()->create());
+    $section = OwnerContext::withOwner($owner, fn (): SeatSection => SeatSection::factory()->create([
+        'seat_map_id' => $map->getKey(),
+    ]));
+
+    expect(fn () => OwnerContext::withOwner(null, fn () => app(DeleteSeatMap::class)->handle($map)))
+        ->toThrow(AuthorizationException::class);
+
+    expect(SeatMap::query()->withoutOwnerScope()->whereKey($map->getKey())->exists())->toBeTrue()
+        ->and(SeatSection::query()->withoutOwnerScope()->whereKey($section->getKey())->exists())->toBeTrue();
 });

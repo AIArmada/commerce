@@ -7,7 +7,7 @@ namespace AIArmada\Events\Features\Commerce\Actions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use InvalidArgumentException;
 use RuntimeException;
 

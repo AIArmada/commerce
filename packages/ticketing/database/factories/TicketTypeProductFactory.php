@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Database\Factories;
 
-use AIArmada\Ticketing\Models\TicketType;
-use AIArmada\Ticketing\Models\TicketTypeProduct;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketTypeProduct;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

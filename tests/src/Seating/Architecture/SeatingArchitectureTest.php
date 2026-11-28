@@ -9,11 +9,14 @@ arch('seating')
 
 arch('seating contracts')
     ->expect('AIArmada\Seating\Contracts')
+    ->interfaces()
     ->toBeInterface();
 
 arch('seating data')
     ->expect('AIArmada\Seating\Data')
-    ->toExtend('Spatie\LaravelData\Data');
+    ->classes()
+    ->toBeFinal()
+    ->toBeReadonly();
 
 arch('seating allocators')
     ->expect('AIArmada\Seating\Services\DefaultSeatAllocator')
@@ -31,10 +34,14 @@ arch('seating enums')
     ->expect('AIArmada\Seating\Enums')
     ->toBeEnums();
 
-arch('seating actions')
-    ->expect('AIArmada\Seating\Actions')
+arch('seating map actions')
+    ->expect('AIArmada\Seating\Features\Maps\Actions')
     ->toHaveMethod('handle');
 
 arch('seating exceptions')
     ->expect('AIArmada\Seating\Exceptions')
     ->toExtend('RuntimeException');
+
+arch('seating reservation actions')
+    ->expect('AIArmada\Seating\Features\Reservations\Actions')
+    ->toHaveMethod('handle');

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Actions\ReleaseAllocationsAction;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\ReleaseAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -70,4 +70,19 @@ it('does not release revoked allocations', function (): void {
     );
 
     expect($count)->toBe(0);
+});
+
+it('records the release reason without overwriting existing metadata', function (): void {
+    SeatAllocation::query()->firstOrFail()->update(['metadata' => ['source' => 'checkout']]);
+
+    app(ReleaseAllocationsAction::class)->handle(
+        allocToType: $this->allocToType,
+        allocToId: $this->allocToId,
+        reason: 'Order cancelled',
+    );
+
+    expect(SeatAllocation::query()->firstOrFail()->metadata)->toBe([
+        'source' => 'checkout',
+        'release_reason' => 'Order cancelled',
+    ]);
 });

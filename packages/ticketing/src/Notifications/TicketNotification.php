@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Notifications;
 
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Data\PassData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,7 +15,7 @@ final class TicketNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public function __construct(
-        public readonly Pass $pass,
+        public readonly PassData $pass,
     ) {}
 
     public function via(object $notifiable): array
@@ -36,7 +36,7 @@ final class TicketNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'pass_id' => $this->pass->getKey(),
+            'pass_id' => $this->pass->id,
             'pass_no' => $this->pass->pass_no,
         ];
     }

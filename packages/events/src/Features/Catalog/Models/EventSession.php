@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog\Models;
 
 use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
+use AIArmada\CommerceSupport\Contracts\InheritsOwnerScope;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
@@ -15,10 +16,10 @@ use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\RegistersEventMedia;
 use AIArmada\Events\Platform\ScopesByEventOwner;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Ticketing\Data\PricingMode;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -90,7 +91,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Model> $updates
  * @property-read Collection<int, SeatMap> $seatMaps
  */
-final class EventSession extends Model implements HasMedia
+final class EventSession extends Model implements HasMedia, InheritsOwnerScope
 {
     use HasContactMethods;
     use HasFactory;

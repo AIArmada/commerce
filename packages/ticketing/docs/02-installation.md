@@ -59,16 +59,9 @@ php artisan vendor:publish --provider="AIArmada\Ticketing\TicketingServiceProvid
 
 This creates `config/ticketing.php` with all available options.
 
-## Scheduled Tasks
+## Transfer Expiry
 
-`ticketing:expire-transfers` is the package's only console command. It closes transfer
-windows that have lapsed; add it to `routes/console.php`:
-
-```php
-use Illuminate\Support\Facades\Schedule;
-
-Schedule::command('ticketing:expire-transfers')->hourly();
-```
+Transfer deadlines are enforced during every transfer. No scheduled cleanup is required.
 
 ## Optional Dependencies
 
@@ -88,7 +81,7 @@ These packages are detected at runtime — no hard coupling required:
 Verify the package is working:
 
 ```bash
-php artisan tinker --execute 'app(\AIArmada\Ticketing\Actions\EnsureTicketTypeAction::class)::class;'
+php artisan tinker --execute 'app(\AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction::class)::class;'
 ```
 
 Or check that migrations ran:
@@ -108,7 +101,6 @@ php artisan migrate:status | grep ticket_
 ],
 'transfers' => [
     'bulk_max_size' => 100,
-    'expiry_grace_period' => 0,
 ],
 ```
 

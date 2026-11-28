@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Actions\EnsureSectionAllocationAction;
 use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -19,7 +19,7 @@ beforeEach(function (): void {
 
 it('creates allocation when under capacity', function (): void {
     $allocation = app(EnsureSectionAllocationAction::class)->handle(
-        section: $this->section,
+        sectionId: $this->section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -40,7 +40,7 @@ it('throws when section is at capacity', function (): void {
     ]);
 
     app(EnsureSectionAllocationAction::class)->handle(
-        section: $this->section,
+        sectionId: $this->section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -52,7 +52,7 @@ it('ignores released allocations when counting capacity', function (): void {
     ]);
 
     $allocation = app(EnsureSectionAllocationAction::class)->handle(
-        section: $this->section,
+        sectionId: $this->section->id,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );

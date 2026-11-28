@@ -3,9 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\UsePassAction;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
 beforeEach(function (): void {
@@ -14,9 +23,9 @@ beforeEach(function (): void {
 
 it('issues a pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markActivated();
+    app(ActivatePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('activated');
+    expect((string) $pass->fresh()->status)->toBe('activated');
 });
 
 it('receives owner assignment from HasOwner trait', function (): void {
@@ -34,37 +43,37 @@ it('prevents transfer on used pass', function (): void {
 
 it('transitions from issued to cancelled', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markCancelled('cancelled by organiser');
+    app(CancelPassAction::class)->handle($pass, 'cancelled by organiser');
 
-    expect((string) $pass->status)->toBe('cancelled')
-        ->and($pass->status_reason)->toBe('cancelled by organiser');
+    expect((string) $pass->fresh()->status)->toBe('cancelled')
+        ->and($pass->fresh()->status_reason)->toBe('cancelled by organiser');
 });
 
 it('transitions from issued to revoked', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
-    $pass->markRevoked('revoked for fraud');
+    app(RevokePassAction::class)->handle($pass, 'revoked for fraud');
 
-    expect((string) $pass->status)->toBe('revoked');
+    expect((string) $pass->fresh()->status)->toBe('revoked');
 });
 
 it('transitions from activated to used', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    $pass->markUsed();
+    app(UsePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('used');
+    expect((string) $pass->fresh()->status)->toBe('used');
 });
 
 it('transitions from activated to expired', function (): void {
     $pass = Pass::factory()->create(['status' => 'activated']);
-    $pass->markExpired();
+    app(ExpirePassAction::class)->handle($pass);
 
-    expect((string) $pass->status)->toBe('expired');
+    expect((string) $pass->fresh()->status)->toBe('expired');
 });
 
 it('blocks invalid transition', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);
 
-    expect(fn () => $pass->markUsed())
+    expect(fn () => app(UsePassAction::class)->handle($pass))
         ->toThrow(TransitionNotFound::class);
 });
 
@@ -84,4 +93,73 @@ it('returns isValid false when its registration has been refunded', function ():
     $pass->setRelation('registration', $registration);
 
     expect($pass->isValid())->toBeFalse();
+});
+
+it('refuses activation when the associated registration has been refunded', function (): void {
+    $registration = EventRegistration::factory()->create(['status' => 'refunded']);
+    $pass = Pass::factory()->create([
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'issued',
+    ]);
+
+    expect(fn () => app(ActivatePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+
+    expect((string) $pass->fresh()->status)->toBe('issued')
+        ->and($pass->fresh()->activated_at)->toBeNull();
+});
+
+it('refuses redemption when the associated registration has been refunded', function (): void {
+    $registration = EventRegistration::factory()->create(['status' => 'refunded']);
+    $pass = Pass::factory()->create([
+        'registration_type' => $registration->getMorphClass(),
+        'registration_id' => $registration->getKey(),
+        'status' => 'activated',
+    ]);
+
+    expect(fn () => app(UsePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+
+    expect((string) $pass->fresh()->status)->toBe('activated')
+        ->and($pass->fresh()->used_at)->toBeNull();
+});
+
+it('does not consider pending passes valid or transferable', function (): void {
+    $pass = Pass::factory()->create(['status' => 'pending']);
+
+    expect($pass->isValid())->toBeFalse()
+        ->and(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
+});
+
+it('rejects passes whose linked registration is missing', function (): void {
+    $pass = Pass::factory()->make([
+        'registration_type' => User::class,
+        'registration_id' => (string) Str::uuid(),
+        'status' => 'issued',
+    ]);
+    $owner = OwnerContext::resolve();
+    $pass->owner_type = $owner?->getMorphClass();
+    $pass->owner_id = $owner?->getKey();
+    $pass->saveQuietly();
+
+    expect($pass->isValid())->toBeFalse()
+        ->and(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
+
+    expect(fn () => app(ActivatePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+});
+
+it('rejects incomplete registration references but permits standalone issued passes', function (): void {
+    $pass = Pass::factory()->create(['status' => 'issued']);
+
+    expect($pass->isValid())->toBeTrue();
+
+    $pass->registration_type = User::class;
+
+    expect($pass->isValid())->toBeFalse();
+});
+
+it('rejects half-specified registration morph references', function (): void {
+    expect(fn () => Pass::factory()->create([
+        'registration_type' => User::class,
+        'registration_id' => null,
+    ]))->toThrow(InvalidArgumentException::class, 'type and id must both be present');
 });

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Services;
 
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
 
 final class NullPassDeliveryService implements PassDeliveryServiceInterface
 {
-    public function deliver(Pass $pass): void {}
+    public function deliver(string $passId): void {}
+
+    public function deliverMany(array $passIds): void {}
 }

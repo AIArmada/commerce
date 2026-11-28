@@ -7,12 +7,12 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\Actions\EnsureSeatHoldAction;
-use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Seating\Contracts\SeatingMode;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSeatHoldAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 use Illuminate\Database\Eloquent\Model;
 
@@ -42,7 +42,7 @@ beforeEach(function (): void {
 
 it('fills preferred categories before other seats in one pass', function (): void {
     $holds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 3,
         mode: SeatingMode::Assigned,
         categoryPreferences: ['vip'],
@@ -56,7 +56,7 @@ it('fills preferred categories before other seats in one pass', function (): voi
 
 it('keeps category preference order identical between the action and the allocator', function (): void {
     $actionHolds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 2,
         mode: SeatingMode::Assigned,
         categoryPreferences: ['vip'],
@@ -67,13 +67,13 @@ it('keeps category preference order identical between the action and the allocat
     SeatHold::query()->delete();
 
     $results = app(DefaultSeatAllocator::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 2,
         categoryPreferences: ['vip'],
     );
 
-    expect($results->pluck('seatId')->all())->toBe($actionSeatIds)
-        ->and($results->pluck('category')->all())->toBe(['vip', 'vip']);
+    expect(collect($results)->pluck('seatId')->all())->toBe($actionSeatIds)
+        ->and(collect($results)->pluck('category')->all())->toBe(['vip', 'vip']);
 });
 
 it('never returns seats that gained an active hold', function (): void {
@@ -81,7 +81,7 @@ it('never returns seats that gained an active hold', function (): void {
     SeatHold::factory()->create(['seat_id' => $firstSeat->id]);
 
     $holds = app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 4,
         mode: SeatingMode::Assigned,
     );
@@ -92,7 +92,7 @@ it('never returns seats that gained an active hold', function (): void {
 
 it('rejects a half-specified holder instead of storing it', function (): void {
     expect(fn (): mixed => app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         mode: SeatingMode::Assigned,
         heldByType: User::class,
@@ -100,7 +100,7 @@ it('rejects a half-specified holder instead of storing it', function (): void {
     ))->toThrow(InvalidArgumentException::class, 'Held-by type and id');
 
     expect(fn (): mixed => app(DefaultSeatAllocator::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         heldByType: null,
         heldById: 'some-id',
@@ -119,7 +119,7 @@ it('requires an owner context when owner mode is enabled', function (): void {
     });
 
     expect(fn (): mixed => app(EnsureSeatHoldAction::class)->handle(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         mode: SeatingMode::Assigned,
     ))->toThrow(NoCurrentOwnerException::class);
@@ -144,11 +144,45 @@ it('creates global holds inside explicit global scope', function (): void {
     });
 
     $holds = OwnerContext::withOwner(null, fn () => app(EnsureSeatHoldAction::class)->handle(
-        map: $map,
+        mapId: $map->id,
         quantity: 2,
         mode: SeatingMode::Assigned,
     ));
 
     expect($holds)->toHaveCount(2)
         ->and($holds->every(fn (SeatHold $hold): bool => $hold->owner_type === null && $hold->owner_id === null))->toBeTrue();
+});
+
+it('does not assign an ambient owner to bulk holds when owner mode is disabled', function (): void {
+    config()->set('seating.owner.enabled', false);
+    Model::clearBootedModels();
+
+    $owner = OwnerContext::resolve();
+
+    $holds = OwnerContext::withOwner($owner, fn () => app(EnsureSeatHoldAction::class)->handle(
+        mapId: $this->map->id,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    ));
+
+    expect($holds)->toHaveCount(1)
+        ->and($holds->firstOrFail()->fresh()->owner_type)->toBeNull()
+        ->and($holds->firstOrFail()->fresh()->owner_id)->toBeNull();
+});
+
+it('assigns the resolved tenant owner to bulk holds when model auto-assignment is disabled', function (): void {
+    config()->set('seating.owner.auto_assign_on_create', false);
+    Model::clearBootedModels();
+
+    $owner = OwnerContext::resolve();
+
+    $holds = OwnerContext::withOwner($owner, fn () => app(EnsureSeatHoldAction::class)->handle(
+        mapId: $this->map->id,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    ));
+
+    expect($holds)->toHaveCount(1)
+        ->and($holds->firstOrFail()->owner_type)->toBe($owner->getMorphClass())
+        ->and((string) $holds->firstOrFail()->owner_id)->toBe((string) $owner->getKey());
 });

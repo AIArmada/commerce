@@ -2,13 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Seating\Actions\ConvertHoldsToAllocationsAction;
-use AIArmada\Seating\Enums\SeatingMode;
-use AIArmada\Seating\Models\Seat;
-use AIArmada\Seating\Models\SeatAllocation;
-use AIArmada\Seating\Models\SeatHold;
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Seating\Enums\SeatStatus;
+use AIArmada\Seating\Exceptions\SectionCapacityExceededException;
+use AIArmada\Seating\Exceptions\StaleSeatHoldException;
+use AIArmada\Seating\Features\Maps\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
+use AIArmada\Seating\Features\Reservations\Actions\EnsureSectionAllocationAction;
+use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
+use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,7 +29,6 @@ beforeEach(function (): void {
 it('converts holds to allocations', function (): void {
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$this->hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -33,12 +38,33 @@ it('converts holds to allocations', function (): void {
     expect($this->hold->fresh()->isConverted())->toBeTrue();
 });
 
+it('converts ownerless holds without requiring global context when owner mode is disabled', function (): void {
+    config()->set('seating.owner.enabled', false);
+    Model::clearBootedModels();
+
+    $map = SeatMap::factory()->create();
+    $section = SeatSection::factory()->create(['seat_map_id' => $map->id]);
+    $seat = Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+    $hold = SeatHold::factory()->create(['seat_id' => $seat->id]);
+
+    expect(OwnerContext::isExplicitGlobal())->toBeFalse();
+
+    $allocation = app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$hold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    )->sole();
+
+    expect($allocation->owner_type)->toBeNull()
+        ->and($allocation->owner_id)->toBeNull()
+        ->and($hold->fresh()->isConverted())->toBeTrue();
+});
+
 it('skips already converted holds', function (): void {
-    $this->hold->markConverted();
+    $this->hold->update(['converted_at' => CarbonImmutable::now()]);
 
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$this->hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -49,7 +75,6 @@ it('skips already converted holds', function (): void {
 it('denormalizes seat_section_id on allocation', function (): void {
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$this->hold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -63,7 +88,6 @@ it('does not create duplicate active allocations for competing holds', function 
 
     $allocations = app(ConvertHoldsToAllocationsAction::class)->handle(
         holds: [$this->hold, $competingHold],
-        mode: SeatingMode::Assigned,
         allocToType: 'pass',
         allocToId: (string) Str::orderedUuid(),
     );
@@ -83,4 +107,111 @@ it('enforces one active allocation per seat at the database boundary', function 
     expect(fn (): SeatAllocation => DB::transaction(
         fn (): SeatAllocation => SeatAllocation::factory()->create(['seat_id' => $this->hold->seat_id]),
     ))->toThrow(QueryException::class);
+});
+
+it('does not convert a hold after its seat has been blocked', function (): void {
+    $this->hold->seat->update(['status' => SeatStatus::Blocked]);
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(StaleSeatHoldException::class);
+
+    expect(SeatAllocation::count())->toBe(0)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
+});
+
+it('rejects conversion at the exact hold expiry timestamp', function (): void {
+    $expiry = CarbonImmutable::now()->startOfSecond();
+    $this->hold->update(['expires_at' => $expiry]);
+
+    CarbonImmutable::setTestNow($expiry);
+
+    try {
+        expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+            holds: [$this->hold],
+            allocToType: 'pass',
+            allocToId: (string) Str::orderedUuid(),
+        ))->toThrow(StaleSeatHoldException::class);
+
+        expect(SeatAllocation::count())->toBe(0)
+            ->and($this->hold->fresh()->isConverted())->toBeFalse();
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
+});
+
+it('counts general admission allocations against assigned seat conversion capacity', function (): void {
+    $section = $this->hold->seat->section;
+    $section->update(['capacity' => 1]);
+
+    app(EnsureSectionAllocationAction::class)->handle(
+        sectionId: $section->id,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    );
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::count())->toBe(1)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
+});
+
+it('rolls back a batch that would exceed section capacity', function (): void {
+    $section = $this->hold->seat->section;
+    $section->update(['capacity' => 1]);
+    $secondSeat = Seat::factory()->available()->create(['seat_section_id' => $section->id]);
+    $secondHold = SeatHold::factory()->create(['seat_id' => $secondSeat->id]);
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold, $secondHold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::count())->toBe(0)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse()
+        ->and($secondHold->fresh()->isConverted())->toBeFalse();
+});
+
+it('rejects a conflicting target atomically without converting the hold', function (): void {
+    SeatAllocation::factory()->create([
+        'seat_id' => $this->hold->seat_id,
+        'allocated_to_type' => 'pass',
+        'allocated_to_id' => (string) Str::orderedUuid(),
+    ]);
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(StaleSeatHoldException::class, 'conflicts with an active allocation');
+
+    expect(SeatAllocation::query()->where('seat_id', $this->hold->seat_id)->count())->toBe(1)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
+});
+
+it('counts a converted seat against subsequent general admission allocation', function (): void {
+    $section = $this->hold->seat->section;
+    $section->update(['capacity' => 1]);
+
+    app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    );
+
+    expect(fn () => app(EnsureSectionAllocationAction::class)->handle(
+        sectionId: (string) $section->getKey(),
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(SectionCapacityExceededException::class);
+
+    expect(SeatAllocation::query()->where('seat_id', $this->hold->seat_id)->count())->toBe(1)
+        ->and($this->hold->fresh()->isConverted())->toBeTrue();
 });

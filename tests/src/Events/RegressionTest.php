@@ -37,7 +37,7 @@ use AIArmada\Events\Features\Search\Models\EventSearchDocument;
 use AIArmada\Events\Features\Search\Queries\EloquentEventSearchEngine;
 use AIArmada\Events\Features\Taxonomy\Actions\SyncEventClassificationsAction;
 use AIArmada\Events\Features\Venues\Models\EventLocation;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;

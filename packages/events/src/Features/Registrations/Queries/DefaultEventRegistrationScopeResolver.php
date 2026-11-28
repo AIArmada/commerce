@@ -8,7 +8,7 @@ use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Data\EventRegistrationScopeData;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
-use AIArmada\Ticketing\Enums\PricingMode;
+use AIArmada\Ticketing\Data\PricingMode;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
 

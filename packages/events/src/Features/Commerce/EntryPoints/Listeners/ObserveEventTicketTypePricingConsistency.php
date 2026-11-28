@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Commerce\EntryPoints\Listeners;
 
 use AIArmada\Events\Features\Commerce\Actions\AssertEventTicketTypePricingConsistencyAction;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 final class ObserveEventTicketTypePricingConsistency
 {

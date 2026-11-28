@@ -10,7 +10,7 @@ use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Data\EventCartLineData;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

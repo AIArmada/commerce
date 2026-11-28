@@ -96,6 +96,23 @@ trait ScopesByEventOwner
         return $query->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE);
     }
 
+    public function ownerScopeSourceType(): ?string
+    {
+        return $this->ownerScopeSourceModel()?->getMorphClass();
+    }
+
+    public function ownerScopeSourceId(): string | int | null
+    {
+        return $this->ownerScopeSourceModel()?->getKey();
+    }
+
+    private function ownerScopeSourceModel(): ?Model
+    {
+        $relation = static::eventOwnerRelation();
+
+        return $relation === null ? null : self::resolveRelationPath($this, $relation);
+    }
+
     protected static function eventOwnerRelation(): ?string
     {
         return 'event';

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 
 it('transfers a pass to a new holder', function (): void {
     $pass = Pass::factory()->create();

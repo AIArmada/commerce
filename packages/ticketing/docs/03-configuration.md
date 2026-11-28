@@ -45,10 +45,9 @@ TICKETING_TABLE_PREFIX=festival_
 
 ### JSON Column Type
 
-Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
+Use the `commerce_json_column_type('ticketing', 'json')` helper in migrations.
 
-- Use `jsonb` for PostgreSQL (default) — better performance, supports indexing
-- Use `json` for SQLite; PostgreSQL defaults to `jsonb`
+- The package config defaults to `json`; set `TICKETING_JSON_COLUMN_TYPE=json` for PostgreSQL indexing
 
 ## Defaults
 
@@ -85,14 +84,12 @@ registrations.
 ```php
 'transfers' => [
     'bulk_max_size' => env('TICKETING_BULK_TRANSFER_MAX', 100),
-    'expiry_grace_period' => env('TICKETING_TRANSFER_EXPIRY_GRACE', 0),
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
 | `bulk_max_size` | Maximum passes per bulk transfer operation |
-| `expiry_grace_period` | Additional minutes after transfer window closes during which transfers are still allowed |
 
 ## Issuance Settings
 
@@ -130,23 +127,27 @@ registrations.
 |-----|-------------|
 | `max_participants` | Maximum participants stored on one cart line; larger sets throw `InvalidArgumentException` |
 
+## Model mappings
+
+`ticketing.models` maps the ticket-type, pass, and holder model classes used by cross-feature relations. The service provider binds the package defaults; override a value only when replacing that model with a compatible subclass.
+
 ## Notifications
 
 ```php
 'notifications' => [
     'ticket' => [
         'enabled' => true,
-        'from_address' => env('TICKETING_FROM_ADDRESS'),
-        'from_name' => env('TICKETING_FROM_NAME'),
+    ],
+    'transfer' => [
+        'enabled' => true,
     ],
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
-| `enabled` | Enable or disable ticket-related notifications |
-| `from_address` | Sender email address for ticket notifications |
-| `from_name` | Sender name for ticket notifications |
+| `ticket.enabled` | Enable or disable ticket delivery notifications |
+| `transfer.enabled` | Register the single-transfer notification listener |
 
 ## Features
 
@@ -176,30 +177,15 @@ reads and writes; global operations must be wrapped in an explicit
 `OwnerContext::withOwner(null, ...)` scope. Existing rows with no owner are not
 implicitly visible to tenants.
 
-## Events
-
-```php
-'events' => [
-    'pricing_consistency_check' => env('TICKETING_PRICING_CONSISTENCY_CHECK', true),
-],
-```
-
-| Key | Description |
-|-----|-------------|
-| `pricing_consistency_check` | Validate pricing consistency between ticket type and order line items |
-
 ## Environment Variables
 
 ```bash
 # .env
 TICKETING_TABLE_PREFIX=ticket_
-TICKETING_JSON_COLUMN_TYPE=jsonb
+TICKETING_JSON_COLUMN_TYPE=json
 TICKETING_CURRENCY=MYR
 TICKETING_PASS_NO_PREFIX=PASS-
 TICKETING_BULK_TRANSFER_MAX=100
-TICKETING_TRANSFER_EXPIRY_GRACE=0
-TICKETING_FROM_ADDRESS=tickets@example.com
-TICKETING_FROM_NAME=Ticketing
 TICKETING_AUTO_ISSUE_PASSES=true
 TICKETING_OWNER_ENABLED=true
 TICKETING_OWNER_AUTO_ASSIGN=true
@@ -222,7 +208,7 @@ $maxSize = config('ticketing.transfers.bulk_max_size'); // 100
 Models automatically resolve table names from config:
 
 ```php
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 
 $table = (new Pass)->getTable(); // Uses config value
 ```
@@ -239,7 +225,7 @@ The migrations include optimized indexes for common queries:
 
 ### JSON Column Optimization
 
-For PostgreSQL, `jsonb` is default. Add GIN indexes on metadata columns (manual migration):
+For PostgreSQL, set `TICKETING_JSON_COLUMN_TYPE=jsonb` and add GIN indexes on metadata columns (manual migration):
 
 ```php
 Schema::table('ticket_passes', function (Blueprint $table) {

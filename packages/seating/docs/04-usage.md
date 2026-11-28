@@ -5,9 +5,9 @@ title: Seating Usage
 ## Creating a Seat Map
 
 ```php
-use AIArmada\Seating\Models\SeatMap;
-use AIArmada\Seating\Models\SeatSection;
-use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\SeatMap;
+use AIArmada\Seating\Features\Maps\Models\SeatSection;
+use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Enums\SeatStatus;
 
 $map = SeatMap::query()->create([
@@ -39,10 +39,10 @@ Seat::query()->create([
 
 ```php
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
-use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Contracts\SeatingMode;
 
 $results = app(SeatAllocatorInterface::class)->allocate(
-    map: $map,
+    mapId: $map->id,
     quantity: 2,
     mode: SeatingMode::Assigned,
     heldByType: 'cart',
@@ -54,7 +54,7 @@ $results = app(SeatAllocatorInterface::class)->allocate(
 
 Each result is an `AllocationResult` DTO with `seatId`, `sectionCode`, `rowLabel`, `seatLabel`, and `category`.
 
-`DefaultSeatAllocator`/`EnsureSeatHoldAction` select with set-based `limit($quantity)` preferred + `limit($remaining)` fallback batches inside a `DB::transaction()`, constrained to the map's sections (`whereHas('section')`), `available()` status, unheld TTL (`whereDoesntHave('holds', expires_at > now)`), and the ambient owner scope, with `lockForUpdate()`. Shortfalls throw `InsufficientSeatsException` before any `SeatHold` insert; holds are batch-inserted via a single `SeatHold::insert()`. `SeatingMode::requiresSeatAllocation()` returns `true` only for `Assigned`/`Hybrid`, so `None`/`GeneralAdmission` intentionally return an empty collection. The Livewire picker (`toggleSeat()`) applies the same map/available/TTL/active-allocation checks and silently ignores ineligible seats.
+`DefaultSeatAllocator` delegates to `ReservationsApi::allocateHolds()`, which uses `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates in deterministic seat order, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty list. The Livewire picker reads through `MapsApi` and `ReservationsApi`, and layout caching is owner-scoped inside the Maps feature.
 
 ## Livewire Component
 
@@ -94,7 +94,7 @@ Options:
 
 ```php
 use AIArmada\Seating\Enums\SeatStatus;
-use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Features\Maps\Models\Seat;
 
 $open = Seat::query()->available()->get();
 $seat->status === SeatStatus::Available;

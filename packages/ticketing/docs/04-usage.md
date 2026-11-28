@@ -10,9 +10,9 @@ Any Eloquent model can sell tickets by implementing `TicketableInterface`:
 
 ```php
 use AIArmada\Ticketing\Contracts\TicketableInterface;
-use AIArmada\Ticketing\Enums\PricingMode;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Data\PricingMode;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -50,12 +50,10 @@ config()->set('ticketing.ticketable_types', [Workshop::class]);
 app(TicketableTypeRegistry::class)->register(Workshop::class);
 ```
 
-The `TicketableInterface` requires four methods:
+The `TicketableInterface` requires two methods. Eloquent relationships are defined on the host model separately:
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `ticketTypes()` | `MorphMany` | Relationship to ticket types |
-| `passes()` | `MorphMany` | Relationship to passes |
 | `effectivePricingMode()` | `PricingMode` | Default pricing mode for this model |
 | `transferWindowEndsAt()` | `?CarbonImmutable` | Deadline for pass transfers, or null for no limit |
 
@@ -64,7 +62,7 @@ The `TicketableInterface` requires four methods:
 Use `EnsureTicketTypeAction` to create or update a ticket type:
 
 ```php
-use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\EnsureTicketTypeAction;
 
 $ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
     'name' => 'General Admission',
@@ -138,11 +136,11 @@ $ticketType->bundleProducts()->create([
 Use `IssuePassesAction` to issue passes:
 
 ```php
-use AIArmada\Ticketing\Actions\IssuePassesAction;
-use AIArmada\Ticketing\Support\PassIssuanceContext;
+use AIArmada\Ticketing\Features\Passes\Actions\IssuePassesAction;
+use AIArmada\Ticketing\Data\PassIssuanceContext;
 
 $context = new PassIssuanceContext(
-    ticketType: $ticketType,
+    ticketTypeId: (string) $ticketType->getKey(),
     quantity: 2,
     holderAttributes: [
         ['name' => 'Alice', 'email' => 'alice@example.com'],
@@ -163,8 +161,8 @@ Each pass receives:
 ### Single Transfer
 
 ```php
-use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
-use AIArmada\Ticketing\Models\PassHolder;
+use AIArmada\Ticketing\Features\Passes\Actions\TransferPassToHolderAction;
+use AIArmada\Ticketing\Features\Passes\Models\PassHolder;
 
 $newHolder = PassHolder::make([
     'name' => 'Charlie',
@@ -201,21 +199,21 @@ use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
 
 $transferService = app(PassTransferServiceInterface::class);
 
-if ($transferService->canTransfer($pass)) {
+if ($transferService->canTransfer((string) $pass->getKey())) {
     // Pass is valid and not past its transfer_expires_at date
 }
 ```
 
 A pass can transfer when `Pass::isValid()` is `true` and it is not past
 `transfer_expires_at`. `transfer_expires_at` is populated from the ticketable's
-`transferWindowEndsAt()` (plus `ticketing.transfers.expiry_grace_period`).
+`transferWindowEndsAt()`. The deadline remains stored after expiry; null means no configured deadline.
 
 ## Bulk Transfer
 
 Transfer multiple passes at once:
 
 ```php
-use AIArmada\Ticketing\Actions\BulkTransferPassesAction;
+use AIArmada\Ticketing\Features\Passes\Actions\BulkTransferPassesAction;
 
 $result = app(BulkTransferPassesAction::class)->handle(
     passIds: [$pass1->getKey(), $pass2->getKey(), $pass3->getKey()],
@@ -251,37 +249,31 @@ States and allowed transitions, exactly as configured in `States/PassState::conf
 
 ### Transition Actions
 
-There is no per-state action class. `RevokePassAction` is the only lifecycle action in
-the package; every other transition goes through the state machine:
+Each lifecycle transition runs through a feature-owned Action, which locks the current pass and persists the state machine transition:
 
 ```php
-use AIArmada\Ticketing\Actions\RevokePassAction;
+use AIArmada\Ticketing\Features\Passes\Actions\RevokePassAction;
 
 // Activate at entry
-$pass->markActivated();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\ActivatePassAction::class)->handle($pass);
 
 // Mark as used
-$pass->markUsed();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\UsePassAction::class)->handle($pass);
 
 // Cancel
-$pass->markCancelled('Order refunded');
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\CancelPassAction::class)->handle($pass, 'Order refunded');
 
 // Revoke for policy violation
 app(RevokePassAction::class)->handle($pass, reason: 'Fraud detected');
 
 // Void (admin action, only from Revoked)
-$pass->markVoided('Duplicate issuance');
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\VoidPassAction::class)->handle($pass, 'Duplicate issuance');
 
 // Expire
-$pass->markExpired();
-$pass->save();
+app(\AIArmada\Ticketing\Features\Passes\Actions\ExpirePassAction::class)->handle($pass);
 ```
 
-`RevokePassAction` persists the pass itself; the `mark*()` methods only transition state and timestamps, so call `save()` afterwards.
+Lifecycle Actions persist the transition and timestamps atomically. Repeated requests for the same state are idempotent.
 
 ## Pass Delivery
 
@@ -292,20 +284,29 @@ lives on the pass's current `PassHolder` row, not on the pass itself:
 
 ```php
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Support\Facades\Mail;
 
 class EmailPassDeliveryService implements PassDeliveryServiceInterface
 {
-    public function deliver(Pass $pass): void
+    public function deliver(string $passId): void
     {
-        $email = $pass->holder?->email;
+        $this->deliverMany([$passId]);
+    }
 
-        if ($email === null) {
-            return;
+    public function deliverMany(array $passIds): void
+    {
+        $passes = Pass::query()->with('holder')->whereKey($passIds)->get();
+
+        foreach ($passes as $pass) {
+            $email = $pass->holder?->email;
+
+            if ($email === null) {
+                continue;
+            }
+
+            Mail::to($email)->send(new TicketMail($pass));
         }
-
-        Mail::to($email)->send(new TicketMail($pass));
     }
 }
 ```
@@ -358,8 +359,8 @@ $allPasses = Pass::withoutOwnerScope()->get();
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `PassIssued` | `$pass` | Fired when a pass is issued |
-| `PassTransferred` | `$pass, $previousHolder, $newHolder` | Fired after transfer completes |
+| `PassIssued` | `$pass` (`PassData`), `$issuedAt` | Fired after issuance commits |
+| `PassTransferred` | `$transfer` (`PassTransferData`) | Fired after transfer commits |
 
 Listen to events as usual:
 
@@ -368,23 +369,23 @@ use AIArmada\Ticketing\Events\PassTransferred;
 use Illuminate\Support\Facades\Event;
 
 Event::listen(function (PassTransferred $event): void {
-    Log::info("Pass {$event->pass->pass_no} transferred");
+    Log::info("Pass {$event->transfer->pass->pass_no} transferred");
 });
 ```
 
 ## Canonical DTOs and component expansion
 
 ```php
-use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Ticketing\Features\TicketTypes\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Ticketing\Data\PassData;
 use AIArmada\Ticketing\Data\TicketTypeData;
 
-$typeDto = TicketTypeData::fromTicketType($ticketType);
-$passDto = PassData::fromPass($pass);
+$typeDto = app(\AIArmada\Ticketing\Features\TicketTypes\Queries\MapTicketTypeData::class)->handle($ticketType);
+$passDto = app(\AIArmada\Ticketing\Features\Passes\Queries\MapPassData::class)->handle($pass);
 $components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType, multiplier: 2);
 ```
 
-Use `TicketTypeData::fromTicketType()` and `PassData::fromPass()` at boundaries instead of hand-mapping models. `ExpandTicketTypeComponentsAction` expands `components → componentTicketType` by `quantity × multiplier` and returns an empty collection when there are no components.
+Use `MapTicketTypeData` and `MapPassData` at boundaries instead of hand-mapping models. `ExpandTicketTypeComponentsAction` expands `components → componentTicketType` by `quantity × multiplier` and returns an empty collection when there are no components.
 
 ## Ticketing owner guard
 

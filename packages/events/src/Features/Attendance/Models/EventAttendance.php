@@ -8,7 +8,7 @@ use AIArmada\Events\Database\Factories\EventAttendanceFactory;
 use AIArmada\Events\Features\Attendance\Actions\DeleteAttendanceDependents;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\ScopesByEventOwner;
-use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

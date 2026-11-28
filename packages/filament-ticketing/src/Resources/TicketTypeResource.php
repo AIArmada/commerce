@@ -11,7 +11,7 @@ use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\Tic
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource\RelationManagers\TicketTypeProductsRelationManager;
 use AIArmada\FilamentTicketing\Schemas\TicketTypeFormSchema;
 use AIArmada\FilamentTicketing\Tables\TicketTypeTable;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 use AIArmada\Ticketing\Support\TicketableTypeRegistry;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -55,17 +55,17 @@ final class TicketTypeResource extends Resource
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('ticket-type.create');
+        return FilamentPermission::hasAbility('ticket-type.create') && OwnerUiScope::canCreate(TicketType::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('ticket-type.update');
+        return FilamentPermission::hasAbility('ticket-type.update') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('ticket-type.delete');
+        return FilamentPermission::hasAbility('ticket-type.delete') && OwnerUiScope::canMutateRecord($record);
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -94,12 +94,7 @@ final class TicketTypeResource extends Resource
             return $query;
         }
 
-        return $query
-            ->whereHasMorph(
-                'ticketable',
-                $ticketableTypes,
-                fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
-            );
+        return $query->whereHasMorph('ticketable', $ticketableTypes);
     }
 
     public static function form(Schema $schema): Schema

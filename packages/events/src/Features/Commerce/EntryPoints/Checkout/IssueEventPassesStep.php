@@ -12,7 +12,7 @@ use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Platform\EventTicketScope;
-use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Features\TicketTypes\Models\TicketType;
 
 final class IssueEventPassesStep extends AbstractCheckoutStep
 {
