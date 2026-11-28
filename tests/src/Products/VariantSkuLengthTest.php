@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Products\Strategies\MatrixVariantGenerator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -193,7 +193,7 @@ it('bounds default skus generated through the queued entry point', function (): 
     seedSkuLengthOptions($product, 'Cut', ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9'], 1);
     seedSkuLengthOptions($product, 'Finish', ['B1', 'B2', 'B3', 'B4', 'B5', 'B6'], 2);
 
-    $variants = app(MatrixVariantGenerator::class)->generateSynchronously($product);
+    $variants = app(GenerateVariantMatrix::class)->generateSynchronously($product);
 
     expect($variants)->toHaveCount(54)
         ->and($variants->pluck('sku')->unique()->count())->toBe(54)
@@ -256,7 +256,7 @@ it('rejects an oversized custom pattern through the queued entry point without p
     seedSkuLengthOptions($product, 'Finish', ['B1', 'B2', 'B3', 'B4', 'B5', 'B6'], 2);
 
     try {
-        app(MatrixVariantGenerator::class)->generateSynchronously($product);
+        app(GenerateVariantMatrix::class)->generateSynchronously($product);
         $thrown = null;
     } catch (InvalidArgumentException $exception) {
         $thrown = $exception;

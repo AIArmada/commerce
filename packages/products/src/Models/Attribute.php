@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\IsCatalogEntity;
 use AIArmada\Products\Enums\AttributeType;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -343,12 +344,8 @@ class Attribute extends Model implements Auditable
             $attribute->assignOwner($owner);
         });
 
-        static::deleting(function (Attribute $attribute): void {
-            // Delete all attribute values
-            $attribute->values()->delete();
-            // Detach from groups and sets
-            $attribute->groups()->detach();
-            $attribute->attributeSets()->detach();
+        static::deleting(static function (Attribute $attribute): void {
+            app(CleanupCatalogRelationships::class)->beforeAttributeDeletion($attribute);
         });
     }
 }

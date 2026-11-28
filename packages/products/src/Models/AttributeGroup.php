@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -202,9 +203,8 @@ class AttributeGroup extends Model implements Auditable
             }
         });
 
-        static::deleting(function (AttributeGroup $group): void {
-            $group->groupAttributes()->detach();
-            $group->attributeSets()->detach();
+        static::deleting(static function (AttributeGroup $group): void {
+            app(CleanupCatalogRelationships::class)->beforeAttributeGroupDeletion($group);
         });
     }
 }

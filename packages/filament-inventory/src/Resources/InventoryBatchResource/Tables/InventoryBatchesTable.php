@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Tables;
 
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityBulkAction;
 use AIArmada\Inventory\Enums\BatchStatus;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -42,17 +42,17 @@ final class InventoryBatchesTable
                     ->placeholder('No location')
                     ->sortable(),
 
-                TextColumn::make('current_quantity')
+                TextColumn::make('quantity_on_hand')
                     ->label('Current')
                     ->numeric()
                     ->sortable(),
 
-                TextColumn::make('available_quantity')
+                TextColumn::make('available')
                     ->label('Available')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderByRaw('CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END ' . ($direction === 'desc' ? 'DESC' : 'ASC'))),
 
-                TextColumn::make('reserved_quantity')
+                TextColumn::make('quantity_reserved')
                     ->label('Reserved')
                     ->numeric()
                     ->toggleable(),
@@ -98,7 +98,7 @@ final class InventoryBatchesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteTraceabilityBulkAction::make(),
                 ]),
             ]);
     }

@@ -1,0 +1,173 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Valuation\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Database\Factories\InventoryStandardCostFactory;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string $inventoryable_type
+ * @property string $inventoryable_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
+ * @property int $standard_cost_minor
+ * @property string $currency
+ * @property CarbonImmutable $effective_from
+ * @property CarbonImmutable|null $effective_to
+ * @property string|null $approved_by
+ * @property string|null $notes
+ * @property array<string, mixed>|null $metadata
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Model $inventoryable
+ */
+final class InventoryStandardCost extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
+
+    protected $fillable = [
+        'inventoryable_type',
+        'inventoryable_id',
+        'standard_cost_minor',
+        'currency',
+        'effective_from',
+        'effective_to',
+        'approved_by',
+        'notes',
+        'metadata',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (InventoryStandardCost $cost): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($owner === null) {
+                if ($cost->owner_type !== null || $cost->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned inventory standard costs without an owner context.');
+                }
+
+                return;
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($cost->owner_type !== null || $cost->owner_id !== null) {
+                return;
+            }
+
+            $cost->assignOwner($owner);
+        });
+    }
+
+    public function getTable(): string
+    {
+        return config('inventory.database.tables.standard_costs', 'inventory_standard_costs');
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function inventoryable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function scopeForModel(Builder $query, Model $model): Builder
+    {
+        return $query->where('inventoryable_type', $model->getMorphClass())
+            ->where('inventoryable_id', $model->getKey());
+    }
+
+    public function scopeCurrent(Builder $query): Builder
+    {
+        return $query->where('effective_from', '<=', CarbonImmutable::now())
+            ->where(function ($q): void {
+                $q->whereNull('effective_to')
+                    ->orWhere('effective_to', '>', CarbonImmutable::now());
+            });
+    }
+
+    public function scopeEffectiveAt(Builder $query, CarbonImmutable $date): Builder
+    {
+        return $query->where('effective_from', '<=', $date)
+            ->where(function ($q) use ($date): void {
+                $q->whereNull('effective_to')
+                    ->orWhere('effective_to', '>', $date);
+            });
+    }
+
+    public function scopeFuture(Builder $query): Builder
+    {
+        return $query->where('effective_from', '>', CarbonImmutable::now());
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('effective_to')
+            ->where('effective_to', '<=', CarbonImmutable::now());
+    }
+
+    public function isCurrent(): bool
+    {
+        $now = CarbonImmutable::now();
+
+        return $this->effective_from <= $now
+            && ($this->effective_to === null || $this->effective_to > $now);
+    }
+
+    public function isFuture(): bool
+    {
+        return $this->effective_from > CarbonImmutable::now();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->effective_to !== null && $this->effective_to <= CarbonImmutable::now();
+    }
+
+    protected static function newFactory(): InventoryStandardCostFactory
+    {
+        return InventoryStandardCostFactory::new();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'standard_cost_minor' => 'integer',
+            'effective_from' => 'immutable_datetime',
+            'effective_to' => 'immutable_datetime',
+            'metadata' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
+}

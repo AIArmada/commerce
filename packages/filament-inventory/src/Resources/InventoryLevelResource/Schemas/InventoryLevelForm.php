@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Schemas;
 
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryCostLayer;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Costing\FifoCostService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use Carbon\CarbonImmutable;
 
 describe('FifoCostService', function (): void {
@@ -14,6 +14,43 @@ describe('FifoCostService', function (): void {
         $this->service = new FifoCostService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
+    });
+
+    it('does not mix or consume cost layers in another currency', function (): void {
+        config(['inventory.defaults.currency' => 'MYR']);
+        $foreign = InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity' => 10,
+            'remaining_quantity' => 10,
+            'unit_cost_minor' => 900,
+            'total_cost_minor' => 9000,
+            'currency' => 'USD',
+            'costing_method' => CostingMethod::Fifo,
+        ]);
+
+        $this->service->addLayer($this->item, 5, 100, $this->location->id);
+        expect($this->service->calculateValuation($this->item, $this->location->id)['value'])->toBe(500)
+            ->and($this->service->consume($this->item, 8, $this->location->id)['consumed'])->toBe(5)
+            ->and($foreign->fresh()->remaining_quantity)->toBe(10)
+            ->and($foreign->fresh()->unit_cost_minor)->toBe(900);
+    });
+
+    it('rejects negative costs and non-positive quantities', function (): void {
+        expect(fn () => $this->service->addLayer($this->item, 0, 500, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->addLayer($this->item, 1, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->consume($this->item, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
+    it('rejects overflowing layer values without creating a layer', function (): void {
+        expect(fn () => $this->service->addLayer($this->item, 2, PHP_INT_MAX, $this->location->id))
+            ->toThrow(OverflowException::class);
+
+        expect(InventoryCostLayer::query()->forModel($this->item)->count())->toBe(0);
     });
 
     it('add layer', function (): void {
@@ -57,6 +94,32 @@ describe('FifoCostService', function (): void {
         // FIFO: 50 @ 400 + 20 @ 600 = 20000 + 12000 = 32000
         expect($result['cost'])->toBe(32000);
         expect($result['layers'])->toHaveCount(2);
+    });
+
+    it('uses the same deterministic FIFO order for estimates and consumption when timestamps tie', function (): void {
+        $date = CarbonImmutable::parse('2026-01-01 00:00:00');
+        $layers = [];
+
+        foreach ([100, 200] as $cost) {
+            $layers[] = InventoryCostLayer::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+                'quantity' => 10,
+                'remaining_quantity' => 10,
+                'unit_cost_minor' => $cost,
+                'total_cost_minor' => 10 * $cost,
+                'currency' => config('inventory.defaults.currency', 'MYR'),
+                'layer_date' => $date,
+                'created_at' => $date,
+            ]);
+        }
+
+        usort($layers, fn (InventoryCostLayer $a, InventoryCostLayer $b): int => strcmp($a->id, $b->id));
+
+        expect($this->service->getOldestLayer($this->item, $this->location->id)->id)->toBe($layers[0]->id)
+            ->and($this->service->estimateCogs($this->item, 1, $this->location->id))->toBe($layers[0]->unit_cost_minor)
+            ->and($this->service->consume($this->item, 1, $this->location->id)['layers'][0]['layer_id'])->toBe($layers[0]->id);
     });
 
     it('consume returns partial when insufficient', function (): void {

@@ -6,10 +6,13 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CollectionResource;
-use AIArmada\Products\Models\Category;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
+use AIArmada\Products\Actions\SaveCollection;
+use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditCollection extends EditRecord
 {
@@ -19,8 +22,15 @@ final class EditCollection extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Collection $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Collection
+    {
+        abort_unless($record instanceof Collection, 404);
+
+        return app(SaveCollection::class)->update($record, $data);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -29,30 +39,6 @@ final class EditCollection extends EditRecord
             /** @var array<int, string>|null $products */
             $products = is_array($data['products'] ?? null) ? $data['products'] : null;
             $data['products'] = OwnerScopedIds::ensureAllowed('products', Product::class, $products);
-        }
-
-        if (isset($data['conditions']) && is_array($data['conditions'])) {
-            foreach ($data['conditions'] as $index => $condition) {
-                if (! is_array($condition)) {
-                    continue;
-                }
-
-                if (($condition['field'] ?? null) !== 'category') {
-                    continue;
-                }
-
-                $value = $condition['value'] ?? null;
-                if (! is_string($value)) {
-                    continue;
-                }
-
-                $allowed = OwnerScopedIds::allowedIds(Category::class, [$value]);
-                if ($allowed === []) {
-                    unset($data['conditions'][$index]['value']);
-                } else {
-                    $data['conditions'][$index]['value'] = $allowed[0];
-                }
-            }
         }
 
         return $data;

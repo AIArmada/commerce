@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Database\Factories;
 
-use AIArmada\Inventory\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

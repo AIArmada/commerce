@@ -8,9 +8,11 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentProducts\Resources\ProductResource\Tables\ProductsTable;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Models\PriceTier;
+use AIArmada\Products\Actions\DuplicateProduct;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Option;
@@ -20,6 +22,7 @@ use AIArmada\Products\Models\Variant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
 
@@ -53,16 +56,7 @@ beforeEach(function (): void {
 
 function duplicateTestProduct(Product $record): Product
 {
-    $method = new ReflectionMethod(ProductsTable::class, 'duplicateProduct');
-
-    return $method->invoke(null, $record);
-}
-
-function computePriceAdjustments(string $action, mixed $value): array
-{
-    $method = new ReflectionMethod(ProductsTable::class, 'priceAdjustments');
-
-    return $method->invoke(null, $action, $value);
+    return app(DuplicateProduct::class)->execute($record);
 }
 
 it('duplicates a product with its relations and unique identity', function (): void {
@@ -96,6 +90,7 @@ it('duplicates a product with its relations and unique identity', function (): v
         $variant = Variant::query()->create([
             'product_id' => $product->id,
             'sku' => 'ORIG-1-L',
+            'combination_key' => Variant::combinationKeyFor($product->id, [$value->id]),
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => $owner->getKey(),
         ]);
@@ -117,6 +112,26 @@ it('duplicates a product with its relations and unique identity', function (): v
             'owner_id' => $owner->getKey(),
         ]);
 
+        Price::query()->create([
+            'price_list_id' => $priceList->id,
+            'priceable_type' => $variant->getMorphClass(),
+            'priceable_id' => $variant->id,
+            'amount' => 1250,
+            'currency' => 'MYR',
+        ]);
+
+        foreach ([$product, $variant] as $priceable) {
+            PriceTier::query()->create([
+                'price_list_id' => $priceList->id,
+                'tierable_type' => $priceable->getMorphClass(),
+                'tierable_id' => $priceable->id,
+                'min_quantity' => 10,
+                'amount' => 850,
+                'is_active' => true,
+                'currency' => 'MYR',
+            ]);
+        }
+
         return $product;
     });
 
@@ -132,7 +147,22 @@ it('duplicates a product with its relations and unique identity', function (): v
         ->and($copy->variants)->toHaveCount(1)
         ->and($copy->variants->first()->optionValues)->toHaveCount(1)
         ->and($copy->variants->first()->sku)->toBe('ORIG-1-L-COPY')
+        ->and($copy->variants->first()->combination_key)->toBe(Variant::combinationKeyFor($copy->id, [$copy->options->first()->values->first()->id]))
+        ->and($copy->variants->first()->combination_key)->not->toBe($product->variants->first()->combination_key)
         ->and($copy->prices()->count())->toBe(1);
+
+    OwnerContext::withOwner($owner, static function () use ($copy): void {
+        $variant = $copy->variants->firstOrFail();
+
+        expect(Price::query()->where('priceable_type', $variant->getMorphClass())->where('priceable_id', $variant->id)->sole()->amount)->toBe(1250);
+
+        foreach ([$copy, $variant] as $priceable) {
+            $tier = PriceTier::query()->where('tierable_type', $priceable->getMorphClass())->where('tierable_id', $priceable->id)->sole();
+
+            expect($tier->amount)->toBe(850)
+                ->and($tier->min_quantity)->toBe(10);
+        }
+    });
 
     $secondCopy = OwnerContext::withOwner($owner, static fn (): Product => duplicateTestProduct($product));
 
@@ -140,12 +170,59 @@ it('duplicates a product with its relations and unique identity', function (): v
         ->and($secondCopy->sku)->toBe('ORIG-1-COPY-2');
 });
 
-it('computes bulk price adjustments in minor units with capped percentages', function (): void {
-    expect(computePriceAdjustments('set', '12.34')['minor'])->toBe(1234)
-        ->and(computePriceAdjustments('increase_amount', 2.5)['minor'])->toBe(250)
-        ->and(computePriceAdjustments('decrease_amount', 2.5)['minor'])->toBe(-250)
-        ->and(computePriceAdjustments('increase_percent', 10)['factor'])->toBe(1.1)
-        ->and(computePriceAdjustments('decrease_percent', 25)['factor'])->toBe(0.75)
-        ->and(computePriceAdjustments('increase_percent', 500)['factor'])->toBe(2.0)
-        ->and(computePriceAdjustments('bogus', 10))->toBe(['mode' => 'percent', 'minor' => 0, 'factor' => 1.0]);
+it('applies validated bulk price adjustments in minor units', function (): void {
+    OwnerContext::withOwner($this->owner, function (): void {
+        $product = Product::query()->create([
+            'name' => 'Adjustable product',
+            'slug' => 'adjustable-product',
+            'sku' => 'ADJUSTABLE',
+            'price' => 1000,
+            'status' => ProductStatus::Active,
+        ]);
+        $action = app(UpdateCatalogProducts::class);
+
+        $action->adjustPrices([$product], 'set', '12.34');
+        expect($product->fresh()->price)->toBe(1234);
+
+        $action->adjustPrices([$product], 'increase_amount', 2.5);
+        expect($product->fresh()->price)->toBe(1484);
+
+        $action->adjustPrices([$product], 'decrease_amount', 2.5);
+        expect($product->fresh()->price)->toBe(1234);
+
+        $action->adjustPrices([$product], 'increase_percent', 10);
+        expect($product->fresh()->price)->toBe(1357);
+
+        $action->adjustPrices([$product], 'decrease_percent', 25);
+        expect($product->fresh()->price)->toBe(1018);
+
+        expect(fn () => $action->adjustPrices([$product], 'increase_percent', 500))->toThrow(ValidationException::class)
+            ->and(fn () => $action->adjustPrices([$product], 'bogus', 10))->toThrow(ValidationException::class)
+            ->and($product->fresh()->price)->toBe(1018);
+    });
+});
+
+it('bounds duplicated product identities to the schema even on repeated copies', function (): void {
+    OwnerContext::withOwner($this->owner, function (): void {
+        $product = Product::query()->create([
+            'name' => str_repeat('N', 255),
+            'slug' => str_repeat('s', 255),
+            'sku' => str_repeat('S', 255),
+            'price' => 1000,
+            'status' => ProductStatus::Active,
+        ]);
+
+        $first = duplicateTestProduct($product);
+        $second = duplicateTestProduct($product);
+
+        expect(mb_strlen($first->name))->toBe(255)
+            ->and(mb_strlen($first->slug))->toBe(255)
+            ->and(mb_strlen($first->sku))->toBe(255)
+            ->and($first->slug)->toEndWith('-copy')
+            ->and($first->sku)->toEndWith('-COPY')
+            ->and(mb_strlen($second->slug))->toBe(255)
+            ->and(mb_strlen($second->sku))->toBe(255)
+            ->and($second->slug)->toEndWith('-copy-2')
+            ->and($second->sku)->toEndWith('-COPY-2');
+    });
 });

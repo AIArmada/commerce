@@ -9,6 +9,7 @@ use AIArmada\FilamentPricing\Support\PricingSettingsAccess;
 use AIArmada\Pricing\Settings\PricingSettings;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(TestCase::class);
 
@@ -33,6 +34,10 @@ it('rejects out-of-range settings instead of persisting them', function (array $
 
     app()->instance(PricingSettings::class, $settings);
 
+    config()->set('filament-pricing.authorization.settings_ability', 'pricing.manage-settings');
+    Gate::define('pricing.manage-settings', fn (): bool => true);
+    $this->actingAs(User::factory()->create());
+
     $page = new ManagePricingSettings;
     $page->data = array_merge(validPricingSettingsData(), $override);
 
@@ -43,6 +48,7 @@ it('rejects out-of-range settings instead of persisting them', function (array $
     'unknown currency' => [['defaultCurrency' => 'XX']],
     'unknown rounding' => [['roundingMode' => 'sideways']],
     'negative minimum' => [['minimumOrderValue' => -5]],
+    'maximum below minimum' => [['minimumOrderValue' => 2000, 'maximumOrderValue' => 1000]],
 ]);
 
 it('keeps the settings page closed without the configured ability', function (): void {
@@ -67,4 +73,19 @@ it('opens the settings page for ability holders', function (): void {
     $this->actingAs($user);
 
     expect(ManagePricingSettings::canAccess())->toBeTrue();
+});
+
+it('rejects direct save calls without the configured ability', function (): void {
+    config()->set('filament-pricing.authorization.settings_ability', 'pricing.manage-settings');
+    Gate::define('pricing.manage-settings', fn (): bool => false);
+    $this->actingAs(User::factory()->create());
+
+    $settings = Mockery::mock(PricingSettings::class);
+    $settings->shouldNotReceive('save');
+    app()->instance(PricingSettings::class, $settings);
+
+    $page = new ManagePricingSettings;
+    $page->data = validPricingSettingsData();
+
+    expect(fn () => $page->save())->toThrow(HttpException::class);
 });

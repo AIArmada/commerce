@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\CreateProduct;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\EditProduct;
 use AIArmada\FilamentProducts\Resources\ProductResource\Schemas\ProductForm;
+use AIArmada\FilamentProducts\Support\CompositeComponentsFormData;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
@@ -19,6 +20,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component as LivewireComponent;
 
 uses(TestCase::class);
@@ -179,4 +181,19 @@ it('updates composite components and publishes the package through domain action
         ->first();
 
     expect($headsetComponent?->quantity)->toBe(2);
+});
+
+it('validates component integer fields before normalizing the form payload', function (): void {
+    $component = ['component_product_id' => 'component-id', 'quantity' => '2', 'position' => '0'];
+
+    $payload = CompositeComponentsFormData::toActionPayload([$component]);
+
+    expect($payload[0]['quantity'])->toBe(2)
+        ->and($payload[0]['position'])->toBe(0);
+
+    foreach ([['quantity' => 0], ['quantity' => '1.5'], ['position' => -1]] as $invalid) {
+        expect(fn () => CompositeComponentsFormData::toActionPayload([
+            array_replace($component, $invalid),
+        ]))->toThrow(ValidationException::class);
+    }
 });

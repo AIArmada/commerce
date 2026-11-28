@@ -4,26 +4,28 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\Tables;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogImportFile;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Actions\DuplicateProduct;
+use AIArmada\Products\Actions\ImportCatalogProducts;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
-use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\Variant;
-use BackedEnum;
+use AIArmada\Products\Queries\CatalogExport;
 use Carbon\CarbonImmutable;
+use Closure;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
@@ -35,9 +37,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -171,7 +171,9 @@ class ProductsTable
                             ->default(true),
                     ])
                     ->action(function (array $data): void {
-                        self::importProducts($data);
+                        self::importProducts($data, static fn (?Product $product): bool => $product === null
+                            ? FilamentPermission::hasAbility('product.create')
+                            : FilamentPermission::hasAbility('product.update') && (auth()->user()?->can('update', $product) ?? false));
                     }),
 
                 Action::make('export')
@@ -268,7 +270,7 @@ class ProductsTable
                     ->authorize(fn (Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
                     ->action(function (Product $record) {
                         try {
-                            $newProduct = self::duplicateProduct($record);
+                            $newProduct = app(DuplicateProduct::class)->execute($record);
                             self::duplicateProductMedia($record, $newProduct);
 
                             return redirect(ProductResource::getUrl('edit', ['record' => $newProduct]));
@@ -283,16 +285,17 @@ class ProductsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteCatalogBulkAction::make()
                         ->authorize(fn (): bool => FilamentPermission::hasAbility('product.delete')),
                     BulkAction::make('activate')
                         ->label('Activate')
                         ->icon('heroicon-o-check-circle')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Product $record): void {
-                                $record->update(['status' => ProductStatus::Active]);
+                                app(UpdateProductStatus::class)->execute($record, ProductStatus::Active);
                             });
                         }),
                     BulkAction::make('draft')
@@ -300,9 +303,10 @@ class ProductsTable
                         ->icon('heroicon-o-pencil')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Product $record): void {
-                                $record->update(['status' => ProductStatus::Draft]);
+                                app(UpdateProductStatus::class)->execute($record, ProductStatus::Draft);
                             });
                         }),
 
@@ -341,23 +345,9 @@ class ProductsTable
                                 ->minValue(0)
                                 ->maxValue(fn (Get $get): int | float => in_array($get('price_action'), ['increase_percent', 'decrease_percent'], true) ? 100 : 1000000),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            $adjustments = self::priceAdjustments($data['price_action'] ?? '', $data['value'] ?? 0);
-
-                            DB::transaction(static function () use ($records, $adjustments): void {
-                                foreach ($records as $product) {
-                                    $currentMinor = (int) $product->getAttribute('price');
-
-                                    $newMinor = match ($adjustments['mode']) {
-                                        'set' => $adjustments['minor'],
-                                        'percent' => (int) round($currentMinor * $adjustments['factor']),
-                                        'amount' => $currentMinor + $adjustments['minor'],
-                                        default => $currentMinor,
-                                    };
-
-                                    $product->update(['price' => max(0, $newMinor)]);
-                                }
-                            });
+                            app(UpdateCatalogProducts::class)->adjustPrices($records, $data['price_action'] ?? '', $data['value'] ?? null);
 
                             Notification::make()
                                 ->title('Prices updated')
@@ -376,10 +366,9 @@ class ProductsTable
                                 ->options(ProductVisibility::class)
                                 ->required(),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            foreach ($records as $product) {
-                                $product->update(['visibility' => $data['visibility']]);
-                            }
+                            app(UpdateCatalogProducts::class)->setVisibility($records, ProductVisibility::from($data['visibility']));
 
                             Notification::make()
                                 ->title('Visibility updated')
@@ -414,17 +403,9 @@ class ProductsTable
                                 ->default('add')
                                 ->required(),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            $categories = $data['categories'] ?? [];
-                            $categories = OwnerScopedIds::ensureAllowed('categories', Category::class, $categories);
-
-                            foreach ($records as $product) {
-                                if ($data['mode'] === 'replace') {
-                                    $product->categories()->sync($categories);
-                                } else {
-                                    $product->categories()->syncWithoutDetaching($categories);
-                                }
-                            }
+                            app(UpdateCatalogProducts::class)->assignCategories($records, $data['categories'] ?? [], $data['mode'] === 'add');
 
                             Notification::make()
                                 ->title('Categories assigned')
@@ -448,84 +429,6 @@ class ProductsTable
         return OwnerQuery::applyToEloquentBuilder($query->select(['id', 'name']), $owner, false);
     }
 
-    /**
-     * @return array{mode: string, minor: int, factor: float}
-     */
-    private static function priceAdjustments(string $action, mixed $value): array
-    {
-        $value = is_numeric($value) ? (float) $value : 0.0;
-        $value = max(0.0, $value);
-
-        return match ($action) {
-            'set' => ['mode' => 'set', 'minor' => (int) round($value * 100), 'factor' => 1.0],
-            'increase_percent' => ['mode' => 'percent', 'minor' => 0, 'factor' => (float) (1 + min($value, 100) / 100)],
-            'decrease_percent' => ['mode' => 'percent', 'minor' => 0, 'factor' => (float) (1 - min($value, 100) / 100)],
-            'increase_amount' => ['mode' => 'amount', 'minor' => (int) round($value * 100), 'factor' => 1.0],
-            'decrease_amount' => ['mode' => 'amount', 'minor' => -1 * (int) round($value * 100), 'factor' => 1.0],
-            default => ['mode' => 'percent', 'minor' => 0, 'factor' => 1.0],
-        };
-    }
-
-    private static function duplicateProduct(Product $record): Product
-    {
-        return DB::transaction(static function () use ($record): Product {
-            $ownerType = $record->getAttribute('owner_type');
-            $ownerId = $record->getAttribute('owner_id');
-
-            $newProduct = $record->replicate();
-            $newProduct->name = $record->name . ' (Copy)';
-            $newProduct->slug = self::uniqueOwnerValue(Product::class, 'slug', $record->slug . '-copy', $ownerType, $ownerId);
-            $newProduct->sku = $record->sku !== null && $record->sku !== ''
-                ? self::uniqueOwnerValue(Product::class, 'sku', $record->sku . '-COPY', $ownerType, $ownerId)
-                : null;
-            $newProduct->status = ProductStatus::Draft;
-            $newProduct->save();
-
-            $newProduct->categories()->sync($record->categories->pluck('id')->all());
-            $newProduct->collections()->sync($record->collections->pluck('id')->all());
-            $newProduct->tags()->sync($record->tags->pluck('id')->all());
-
-            $valueMap = [];
-
-            foreach ($record->options()->with('values')->get() as $option) {
-                $newOption = $option->replicate();
-                $newOption->product_id = $newProduct->getKey();
-                $newOption->save();
-
-                foreach ($option->values as $value) {
-                    $newValue = $value->replicate();
-                    $newValue->option_id = $newOption->getKey();
-                    $newValue->save();
-                    $valueMap[(string) $value->getKey()] = (string) $newValue->getKey();
-                }
-            }
-
-            foreach ($record->variants()->with('optionValues')->get() as $variant) {
-                $newVariant = $variant->replicate();
-                $newVariant->product_id = $newProduct->getKey();
-                $newVariant->sku = self::uniqueOwnerValue(Variant::class, 'sku', $variant->sku . '-COPY', $ownerType, $ownerId);
-                $newVariant->save();
-
-                $remapped = $variant->optionValues
-                    ->map(static fn ($optionValue): ?string => $valueMap[(string) $optionValue->getKey()] ?? null)
-                    ->filter()
-                    ->all();
-
-                $newVariant->optionValues()->sync($remapped);
-            }
-
-            if (class_exists(Price::class)) {
-                foreach ($record->prices()->get() as $price) {
-                    $newPrice = $price->replicate();
-                    $newPrice->setAttribute('priceable_id', $newProduct->getKey());
-                    $newPrice->save();
-                }
-            }
-
-            return $newProduct;
-        });
-    }
-
     private static function duplicateProductMedia(Product $record, Product $newProduct): void
     {
         foreach ($record->getMedia() as $media) {
@@ -533,33 +436,7 @@ class ProductsTable
         }
     }
 
-    /**
-     * @param  class-string<Model>  $modelClass
-     */
-    private static function uniqueOwnerValue(string $modelClass, string $column, string $base, mixed $ownerType, mixed $ownerId): string
-    {
-        $candidate = $base;
-
-        for ($suffix = 2; $suffix <= 100; $suffix++) {
-            $query = $modelClass::query()->withoutGlobalScope(OwnerScope::class)->where($column, $candidate);
-
-            if ($ownerType === null || $ownerId === null) {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            } else {
-                $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
-            }
-
-            if (! $query->exists()) {
-                return $candidate;
-            }
-
-            $candidate = $base . '-' . $suffix;
-        }
-
-        throw new Exception("Unable to generate a unique {$column} for the duplicated product.");
-    }
-
-    private static function importProducts(array $data): void
+    private static function importProducts(array $data, Closure $authorize): void
     {
         $csvFile = $data['csv_file'] ?? null;
 
@@ -572,7 +449,7 @@ class ProductsTable
                 throw new Exception('CSV file is missing.');
             }
 
-            if (! Str::startsWith($csvFile, 'imports/')) {
+            if (! preg_match('~^imports/[a-zA-Z0-9_-]+\\.csv$~i', $csvFile)) {
                 throw new Exception('Invalid CSV file path.');
             }
 
@@ -598,49 +475,9 @@ class ProductsTable
             $updateExisting = (bool) ($data['update_existing'] ?? false);
             $skipErrors = (bool) ($data['skip_errors'] ?? true);
 
-            $run = static function () use ($rows, $updateExisting, $skipErrors): array {
-                $imported = 0;
-                $updated = 0;
-                $errors = [];
+            [$imported, $updated, $errors] = app(ImportCatalogProducts::class)->execute($rows, $updateExisting, $skipErrors, $authorize);
 
-                foreach ($rows as $offset => $record) {
-                    try {
-                        $existing = null;
-
-                        if ($updateExisting && isset($record['sku']) && mb_trim((string) $record['sku']) !== '') {
-                            $existing = Product::query()->forOwner(self::resolveOwner(), false)->where('sku', mb_trim((string) $record['sku']))->first();
-                        }
-
-                        $productData = self::validateImportRow($record, $existing instanceof Product);
-
-                        if ($existing instanceof Product) {
-                            $existing->update($productData);
-                            $updated++;
-
-                            continue;
-                        }
-
-                        $product = new Product($productData);
-                        $owner = self::resolveOwner();
-                        if ($owner !== null) {
-                            $product->assignOwner($owner);
-                        }
-                        $product->save();
-                        $imported++;
-                    } catch (Exception $e) {
-                        $errors[] = "Row {$offset}: {$e->getMessage()}";
-                        if (! $skipErrors) {
-                            throw $e;
-                        }
-                    }
-                }
-
-                return [$imported, $updated, $errors];
-            };
-
-            [$imported, $updated, $errors] = $skipErrors ? $run() : DB::transaction($run);
-
-            Storage::disk('local')->delete((string) $csvFile);
+            app(DeleteCatalogImportFile::class)->execute($csvFile);
 
             Notification::make()
                 ->title('Import completed')
@@ -664,185 +501,16 @@ class ProductsTable
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $record
-     * @return array<string, mixed>
-     */
-    private static function validateImportRow(array $record, bool $isUpdate): array
-    {
-        $present = static fn (string $key): bool => isset($record[$key]) && mb_trim((string) $record[$key]) !== '';
-        $text = static fn (string $key): string => mb_trim((string) ($record[$key] ?? ''));
-        $data = [];
-
-        if (! $isUpdate || $present('name')) {
-            $name = $text('name');
-
-            if ($name === '') {
-                throw new Exception('The name field is required.');
-            }
-
-            if (mb_strlen($name) > 255) {
-                throw new Exception('The name may not be longer than 255 characters.');
-            }
-
-            $data['name'] = $name;
-        }
-
-        if ($present('sku')) {
-            if (mb_strlen($text('sku')) > 255) {
-                throw new Exception('The sku may not be longer than 255 characters.');
-            }
-
-            $data['sku'] = $text('sku');
-        } elseif (! $isUpdate && isset($record['sku'])) {
-            $data['sku'] = null;
-        }
-
-        if (! $isUpdate || $present('slug')) {
-            $slug = $present('slug') ? Str::slug($text('slug')) : Str::slug($text('name'));
-            $slugMaxLength = (int) config('products.seo.slug_max_length', 100);
-
-            if ($slug === '') {
-                throw new Exception('The slug field is required.');
-            }
-
-            if (mb_strlen($slug) > $slugMaxLength) {
-                throw new Exception("The slug may not be longer than {$slugMaxLength} characters.");
-            }
-
-            $data['slug'] = $slug;
-        }
-
-        foreach (['description', 'short_description', 'tax_class'] as $key) {
-            if ($present($key)) {
-                $value = $text($key);
-
-                if ($key === 'tax_class' && mb_strlen($value) > 255) {
-                    throw new Exception('The tax class may not be longer than 255 characters.');
-                }
-
-                $data[$key] = $value;
-            }
-        }
-
-        if (! $isUpdate || $present('price')) {
-            $data['price'] = self::importMinorAmount($record, 'price', true);
-        }
-
-        foreach (['compare_price', 'cost'] as $key) {
-            if ($present($key)) {
-                $data[$key] = self::importMinorAmount($record, $key, false);
-            }
-        }
-
-        if ($present('weight')) {
-            if (! is_numeric($text('weight'))) {
-                throw new Exception('The weight must be numeric.');
-            }
-
-            $data['weight'] = $text('weight');
-        }
-
-        if ($present('currency')) {
-            $currency = mb_strtoupper($text('currency'));
-
-            if (! preg_match('/^[A-Z]{3}$/', $currency)) {
-                throw new Exception('The currency must be a three-letter code.');
-            }
-
-            $data['currency'] = $currency;
-        }
-
-        $enumDefaults = [
-            'status' => ProductStatus::Draft,
-            'type' => ProductType::Simple,
-            'visibility' => ProductVisibility::CatalogSearch,
-        ];
-
-        foreach (['status' => ProductStatus::class, 'type' => ProductType::class, 'visibility' => ProductVisibility::class] as $key => $enum) {
-            if ($present($key)) {
-                $value = $enum::tryFrom($text($key));
-
-                if ($value === null) {
-                    throw new Exception("The {$key} value is invalid.");
-                }
-
-                $data[$key] = $value;
-            } elseif (! $isUpdate) {
-                $data[$key] = $enumDefaults[$key];
-            }
-        }
-
-        foreach (['is_featured' => false, 'is_taxable' => true, 'requires_shipping' => true] as $key => $default) {
-            if (array_key_exists($key, $record) && mb_trim((string) $record[$key]) !== '') {
-                $data[$key] = filter_var($record[$key], FILTER_VALIDATE_BOOLEAN);
-            } elseif (! $isUpdate) {
-                $data[$key] = $default;
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param  array<string, mixed>  $record
-     */
-    private static function importMinorAmount(array $record, string $key, bool $required): int
-    {
-        $raw = isset($record[$key]) ? mb_trim((string) $record[$key]) : '';
-
-        if ($raw === '') {
-            if ($required) {
-                throw new Exception("The {$key} field is required.");
-            }
-
-            return 0;
-        }
-
-        if (! is_numeric($raw) || (float) $raw < 0) {
-            throw new Exception("The {$key} must be a positive number.");
-        }
-
-        return (int) round(((float) $raw) * 100);
-    }
-
     private static function exportProducts(array $data): StreamedResponse
     {
-        $fields = array_values(array_filter(
-            (array) ($data['fields'] ?? []),
-            static fn (mixed $field): bool => is_string($field) && $field !== ''
-        ));
-        $statusFilter = $data['status_filter'] ?? 'all';
+        $fields = array_values((array) ($data['fields'] ?? []));
+        $rows = app(CatalogExport::class)->rows($fields, (string) ($data['status_filter'] ?? 'all'));
 
-        return response()->streamDownload(function () use ($fields, $statusFilter): void {
-            $query = Product::query()->forOwner();
-
-            if ($statusFilter !== 'all') {
-                $query->where('status', $statusFilter);
-            }
-
+        return response()->streamDownload(function () use ($fields, $rows): void {
             $csv = Writer::createFromPath('php://output', 'w');
             $csv->insertOne($fields);
 
-            foreach ($query->cursor() as $product) {
-                $row = [];
-                foreach ($fields as $field) {
-                    $value = $product->{$field};
-
-                    if (in_array($field, ['price', 'compare_price', 'cost'], true) && is_numeric($value)) {
-                        $value /= 100;
-                    }
-
-                    if ($value instanceof BackedEnum) {
-                        $value = $value->value;
-                    }
-
-                    if (is_bool($value)) {
-                        $value = $value ? 'true' : 'false';
-                    }
-
-                    $row[] = $value;
-                }
+            foreach ($rows as $row) {
                 $csv->insertOne($row);
             }
         }, 'products-export-' . CarbonImmutable::now()->format('Y-m-d-His') . '.csv', [

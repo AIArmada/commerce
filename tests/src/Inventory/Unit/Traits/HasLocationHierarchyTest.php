@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\LocationTreeService;
+use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Persistence\LocationTreeService;
 use Illuminate\Database\Eloquent\Collection;
 
 describe('HasLocationHierarchy', function (): void {
@@ -191,6 +193,28 @@ describe('HasLocationHierarchy', function (): void {
     });
 
     describe('getSiblings', function (): void {
+        it('keeps root siblings within the exact owner even when global locations are visible', function (): void {
+            config([
+                'inventory.owner.enabled' => true,
+                'inventory.owner.include_global' => true,
+                'inventory.owner.auto_assign_on_create' => true,
+            ]);
+
+            $owner = InventoryItem::create(['name' => 'Hierarchy owner']);
+            $global = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create());
+
+            OwnerContext::withOwner($owner, function () use ($global): void {
+                $first = InventoryLocation::factory()->create();
+                $second = InventoryLocation::factory()->create();
+
+                expect($first->isSiblingOf($second))->toBeTrue()
+                    ->and($first->isSiblingOf($global))->toBeFalse()
+                    ->and($global->isSiblingOf($first))->toBeFalse()
+                    ->and($first->getSiblings()->modelKeys())->toBe([$second->id])
+                    ->and($global->getSiblings()->modelKeys())->not->toContain($first->id, $second->id);
+            });
+        });
+
         it('returns sibling locations', function (): void {
             $root = InventoryLocation::factory()->create(['name' => 'Root']);
             $child1 = InventoryLocation::factory()->create(['name' => 'Child 1', 'parent_id' => $root->id]);

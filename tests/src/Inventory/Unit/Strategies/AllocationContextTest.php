@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Strategies\AllocationContext;
+use AIArmada\Inventory\Data\AllocationContext;
 
 describe('AllocationContext', function (): void {
+    it('is a readonly data object', function (): void {
+        expect((new ReflectionClass(AllocationContext::class))->isReadOnly())->toBeTrue();
+    });
+
     describe('constructor', function (): void {
         it('creates with custom values', function (): void {
             $context = new AllocationContext(

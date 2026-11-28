@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Backorders",
+  "owns": {
+    "table:inventory_backorders": [
+      "AIArmada\\Inventory\\Features\\Backorders\\Persistence\\BackorderService"
+    ]
+  },
+  "extensions": {}
+}

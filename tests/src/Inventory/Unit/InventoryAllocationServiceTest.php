@@ -3,17 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryAllocated;
-use AIArmada\Inventory\Events\InventoryReleased;
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Events\InventoryAllocated;
+use AIArmada\Inventory\Features\Reservations\Events\InventoryReleased;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
+use AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected;
+use AIArmada\Inventory\Features\Stock\Events\OutOfInventory;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
 describe('InventoryAllocationService', function (): void {
@@ -85,7 +88,17 @@ describe('InventoryAllocationService', function (): void {
         $levelB = $this->inventoryService->getLevel($this->item, $this->locationB->id)?->fresh();
 
         expect($movements)->toHaveCount($allocations->count());
-        expect($movements[0]->type)->toBe(MovementType::Shipment->value);
+        expect($movements[0])->toBeInstanceOf(CommittedStockMovement::class)
+            ->and($movements[0]->type)->toBe(MovementType::Shipment->value)
+            ->and($movements[0]->reference)->toBe('ORDER-123')
+            ->and($movements[0]->quantity)->toBe(8)
+            ->and(InventoryMovement::query()->findOrFail($movements[0]->id)->reference)->toBe('ORDER-123');
+
+        $ledger = InventoryMovement::query()->findOrFail($movements[0]->id);
+
+        expect($ledger->quantity_before)->toBe(10)
+            ->and($ledger->quantity_after)->toBe(2)
+            ->and(InventoryMovement::query()->where('inventoryable_id', $this->item->getKey())->count())->toBe(3);
         expect($levelA?->quantity_reserved)->toBe(0);
         expect($levelB?->quantity_reserved)->toBe(0);
         expect($levelA?->quantity_on_hand + $levelB?->quantity_on_hand)->toBe(8); // 16 received - 8 committed
@@ -105,7 +118,7 @@ describe('InventoryAllocationService', function (): void {
             'expires_at' => now()->subMinute(),
         ]);
 
-        $level?->incrementReserved($allocation->quantity);
+        app(ReservationStockStore::class)->reserve($allocation->level_id, $allocation->quantity);
 
         $removed = $this->allocationService->cleanupExpired();
 
@@ -226,6 +239,27 @@ describe('InventoryAllocationService', function (): void {
         expect($result['issues'][0]['available'])->toBe(16);
     });
 
+    it('validates combined demand for repeated inventory identities', function (): void {
+        $result = $this->allocationService->validateAvailability([
+            ['model' => $this->item, 'quantity' => 9],
+            ['model' => $this->item, 'quantity' => 8],
+        ]);
+
+        expect($result['available'])->toBeFalse()
+            ->and($result['issues'])->toHaveCount(1)
+            ->and($result['issues'][0]['requested'])->toBe(17)
+            ->and($result['issues'][0]['available'])->toBe(16);
+    });
+
+    it('does not allocate stock at an inactive location', function (): void {
+        $this->locationA->update(['is_active' => false]);
+
+        $allocations = $this->allocationService->allocate($this->item, 6, 'active-location-only');
+
+        expect($allocations)->toHaveCount(1)
+            ->and($allocations->first()->location_id)->toBe($this->locationB->id);
+    });
+
     it('resolves every configured allocation strategy', function (): void {
         foreach (AllocationStrategy::cases() as $configuredStrategy) {
             config()->set('inventory.allocation_strategy', $configuredStrategy->value);
@@ -318,4 +352,27 @@ describe('InventoryAllocationService', function (): void {
 
         expect($released)->toBe(0);
     });
+});
+
+it('validates the largest eligible location rather than aggregate stock when splitting is disabled', function (): void {
+    config()->set('inventory.allow_split_allocation', false);
+
+    $item = InventoryItem::create(['name' => 'Single warehouse SKU']);
+    $first = InventoryLocation::factory()->create(['priority' => 100, 'is_active' => true]);
+    $second = InventoryLocation::factory()->create(['priority' => 10, 'is_active' => true]);
+    $stock = app(InventoryService::class);
+    $stock->receive($item, $first->id, 6);
+    $stock->receive($item, $second->id, 5);
+
+    $allocations = app(InventoryAllocationService::class);
+    $allocations->allocate($item, 4, 'single-location-cart');
+
+    expect($allocations->getTotalAvailable($item))->toBe(7)
+        ->and($allocations->hasAvailableInventory($item, 6))->toBeFalse()
+        ->and($allocations->validateAvailability([['model' => $item, 'quantity' => 6]])['issues'][0]['available'])->toBe(5)
+        ->and($allocations->effectiveAvailable($item, 'single-location-cart'))->toBe(6);
+
+    $first->update(['is_active' => false]);
+
+    expect($allocations->effectiveAvailable($item, 'single-location-cart'))->toBe(5);
 });

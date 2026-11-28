@@ -1,0 +1,518 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Traceability\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Inventory\Database\Factories\InventorySerialFactory;
+use AIArmada\Inventory\Enums\SerialCondition;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\ModelStates\HasStates;
+
+/**
+ * @property string $id
+ * @property string $inventoryable_type
+ * @property string $inventoryable_id
+ * @property string $serial_number
+ * @property string|null $sku
+ * @property string|null $location_id
+ * @property string|null $batch_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
+ * @property SerialStatus $status
+ * @property string $condition
+ * @property int|null $unit_cost_minor
+ * @property string $currency
+ * @property CarbonImmutable|null $warranty_expires_at
+ * @property CarbonImmutable|null $manufactured_at
+ * @property CarbonImmutable|null $received_at
+ * @property string|null $order_id
+ * @property CarbonImmutable|null $sold_at
+ * @property string|null $customer_id
+ * @property string|null $supplier_id
+ * @property string|null $purchase_order_number
+ * @property string|null $notes
+ * @property array<string, mixed>|null $metadata
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
+ * @property-read bool $is_warranty_active
+ * @property-read int|null $days_until_warranty_expires
+ * @property-read InventoryLocation|null $location
+ * @property-read InventoryBatch|null $batch
+ * @property-read Model $inventoryable
+ * @property-read Collection<int, InventorySerialHistory> $history
+ */
+final class InventorySerial extends Model implements Auditable
+{
+    use HasCommerceAudit;
+
+    /** @use HasFactory<InventorySerialFactory> */
+    use HasFactory;
+
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
+    use HasStates;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
+
+    /** @var list<string> */
+    protected $hidden = ['owner_scope'];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'inventoryable_type',
+        'inventoryable_id',
+        'serial_number',
+        'sku',
+        'location_id',
+        'batch_id',
+        'status',
+        'condition',
+        'unit_cost_minor',
+        'currency',
+        'warranty_expires_at',
+        'manufactured_at',
+        'received_at',
+        'order_id',
+        'sold_at',
+        'customer_id',
+        'supplier_id',
+        'purchase_order_number',
+        'notes',
+        'metadata',
+    ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'inventoryable_type',
+            'inventoryable_id',
+            'serial_number',
+            'sku',
+            'location_id',
+            'batch_id',
+            'status',
+            'condition',
+            'unit_cost_minor',
+            'currency',
+            'warranty_expires_at',
+            'manufactured_at',
+            'received_at',
+            'order_id',
+            'sold_at',
+            'customer_id',
+            'supplier_id',
+            'purchase_order_number',
+            'notes',
+            'metadata',
+        ];
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return config('inventory.database.tables.serials', 'inventory_serials');
+    }
+
+    /**
+     * Get the inventoryable model.
+     */
+    public function inventoryable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * Get the location.
+     *
+     * @return BelongsTo<InventoryLocation, $this>
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
+    }
+
+    /**
+     * Get the batch.
+     *
+     * @return BelongsTo<InventoryBatch, $this>
+     */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBatch::class, 'batch_id');
+    }
+
+    /**
+     * Get the history.
+     *
+     * @return HasMany<InventorySerialHistory, $this>
+     */
+    public function history(): HasMany
+    {
+        return $this->hasMany(InventorySerialHistory::class, 'serial_id')
+            ->orderByDesc('occurred_at');
+    }
+
+    /**
+     * Get the status as enum.
+     */
+    public function getStatusEnum(): SerialStatus
+    {
+        return $this->status;
+    }
+
+    /**
+     * Get the condition as enum.
+     */
+    public function getConditionEnum(): SerialCondition
+    {
+        return SerialCondition::from($this->condition);
+    }
+
+    /**
+     * Check if warranty is active.
+     */
+    public function getIsWarrantyActiveAttribute(): bool
+    {
+        if ($this->warranty_expires_at === null) {
+            return false;
+        }
+
+        return $this->warranty_expires_at->isFuture();
+    }
+
+    /**
+     * Get days until warranty expires.
+     */
+    public function getDaysUntilWarrantyExpiresAttribute(): ?int
+    {
+        if ($this->warranty_expires_at === null) {
+            return null;
+        }
+
+        return (int) CarbonImmutable::now()->diffInDays($this->warranty_expires_at, false);
+    }
+
+    /**
+     * Check if serial is under warranty (method form for Filament compatibility).
+     */
+    public function isUnderWarranty(): bool
+    {
+        return $this->is_warranty_active;
+    }
+
+    /**
+     * Get warranty days remaining (method form for Filament compatibility).
+     */
+    public function warrantyDaysRemaining(): ?int
+    {
+        return $this->days_until_warranty_expires;
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'inventory';
+    }
+
+    /**
+     * Check if serial is available for sale.
+     */
+    public function isAvailable(): bool
+    {
+        return $this->getStatusEnum()->isAllocatable()
+            && $this->getConditionEnum()->isSellable();
+    }
+
+    /**
+     * Check if transition to new status is allowed, delegating to the state object.
+     */
+    public function canTransitionTo(string | SerialStatus $newStatus): bool
+    {
+        $targetClass = SerialStatus::resolveStateClass($newStatus instanceof SerialStatus ? $newStatus->getValue() : $newStatus);
+
+        return $this->status->canTransitionTo($targetClass);
+    }
+
+    /**
+     * Update status with validation via the state object.
+     */
+    public function transitionStatusTo(string | SerialStatus $newStatus): self
+    {
+        $targetClass = SerialStatus::resolveStateClass($newStatus instanceof SerialStatus ? $newStatus->getValue() : $newStatus);
+
+        if (! $this->status->canTransitionTo($targetClass)) {
+            $target = new $targetClass($this);
+
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Cannot transition from %s to %s',
+                    $this->getStatusEnum()->label(),
+                    $target->label()
+                )
+            );
+        }
+
+        $this->status->transitionTo($newStatus);
+
+        return $this->refresh();
+    }
+
+    /**
+     * Scope to filter by status.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithStatus(Builder $query, SerialStatus | string $status): Builder
+    {
+        return $query->where('status', SerialStatus::normalize($status));
+    }
+
+    /**
+     * Scope to filter available serials.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAvailable(Builder $query): Builder
+    {
+        return $query->where('status', SerialStatus::normalize(Available::class));
+    }
+
+    /**
+     * Scope to filter in stock serials.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            SerialStatus::normalize(Available::class),
+            SerialStatus::normalize(Reserved::class),
+        ]);
+    }
+
+    /**
+     * Scope to filter by location.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAtLocation(Builder $query, string $locationId): Builder
+    {
+        return $query->where('location_id', $locationId);
+    }
+
+    /**
+     * Scope to filter by condition.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithCondition(Builder $query, SerialCondition $condition): Builder
+    {
+        return $query->where('condition', $condition->value);
+    }
+
+    /**
+     * Scope to filter sellable serials.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeSellable(Builder $query): Builder
+    {
+        return $query->where('status', SerialStatus::normalize(Available::class))
+            ->whereIn('condition', [
+                SerialCondition::New->value,
+                SerialCondition::LikeNew->value,
+                SerialCondition::Refurbished->value,
+                SerialCondition::Used->value,
+            ]);
+    }
+
+    /**
+     * Scope to filter by warranty status.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeUnderWarranty(Builder $query): Builder
+    {
+        return $query->where('warranty_expires_at', '>', CarbonImmutable::now());
+    }
+
+    /**
+     * Scope to filter warranty expiring soon.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWarrantyExpiringSoon(Builder $query, int $days = 30): Builder
+    {
+        return $query->whereNotNull('warranty_expires_at')
+            ->whereBetween('warranty_expires_at', [CarbonImmutable::now(), CarbonImmutable::now()->addDays($days)]);
+    }
+
+    /**
+     * Handle model lifecycle events.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (InventorySerial $serial): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $resolvedOwnerType = null;
+            $resolvedOwnerId = null;
+            $ownerResolvedFromRelation = false;
+
+            if ($serial->location_id !== null) {
+                $location = InventoryOwnerScope::forMutation(InventoryLocation::query())
+                    ->whereKey($serial->location_id)
+                    ->first();
+
+                if ($location === null) {
+                    throw new AuthorizationException('Invalid location for current owner context.');
+                }
+
+                $resolvedOwnerType = $location->owner_type;
+                $resolvedOwnerId = $location->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($serial->batch_id !== null) {
+                $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
+                    ->whereKey($serial->batch_id)
+                    ->where('inventoryable_type', $serial->inventoryable_type)
+                    ->where('inventoryable_id', $serial->inventoryable_id)
+                    ->first();
+
+                if ($batch === null) {
+                    throw new AuthorizationException('Invalid batch for current owner context.');
+                }
+
+                if ($serial->location_id !== null && $batch->location_id !== $serial->location_id) {
+                    throw new AuthorizationException('Batch location does not match serial location.');
+                }
+
+                if (($resolvedOwnerType !== null || $resolvedOwnerId !== null)
+                    && ($resolvedOwnerType !== $batch->owner_type || $resolvedOwnerId !== $batch->owner_id)) {
+                    throw new AuthorizationException('Owner mismatch between serial location and batch.');
+                }
+
+                $resolvedOwnerType = $batch->owner_type;
+                $resolvedOwnerId = $batch->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($serial->owner_type !== null || $serial->owner_id !== null) {
+                    throw new AuthorizationException('Owner mismatch for inventory serial.');
+                }
+
+                $serial->removeOwner();
+
+                return;
+            }
+
+            if (! $ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($serial->owner_type !== null || $serial->owner_id !== null) {
+                    return;
+                }
+
+                if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                    return;
+                }
+
+                $owner = InventoryOwnerScope::resolveOwner();
+
+                if ($owner === null) {
+                    return;
+                }
+
+                $serial->assignOwner($owner);
+
+                return;
+            }
+
+            if (($serial->owner_type !== null || $serial->owner_id !== null)
+                && ($serial->owner_type !== $resolvedOwnerType || $serial->owner_id !== $resolvedOwnerId)) {
+                throw new AuthorizationException('Owner mismatch for inventory serial.');
+            }
+
+            $serial->owner_type = $resolvedOwnerType;
+            $serial->owner_id = $resolvedOwnerId;
+        });
+
+        self::deleting(function (InventorySerial $serial): bool {
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($serial->getKey())->firstOrFail();
+
+            return $record->status instanceof Available
+                && $record->order_id === null
+                && $record->customer_id === null
+                && $record->sold_at === null
+                && ! $record->history()->withoutGlobalScopes()->exists();
+        });
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): InventorySerialFactory
+    {
+        return InventorySerialFactory::new();
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => SerialStatus::class,
+            'unit_cost_minor' => 'integer',
+            'warranty_expires_at' => 'immutable_date',
+            'manufactured_at' => 'immutable_date',
+            'received_at' => 'immutable_date',
+            'sold_at' => 'immutable_datetime',
+            'metadata' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
+}

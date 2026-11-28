@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Pricing\Actions\EnsurePriceListBySlug;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
@@ -127,4 +128,60 @@ it('keeps price list and price ensure calls idempotent', function (): void {
     expect($ids[0])->toBe($ids[1]);
     expect($ids[2])->toBe($ids[3]);
     expect($ids[4])->toBe(1);
+});
+
+it('enforces unique global slugs while allowing a tenant to reuse them', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.database.tables.price_lists', 'global_slug_price_lists');
+
+    Schema::dropIfExists('global_slug_price_lists');
+    $migration = require __DIR__ . '/../../../packages/pricing/database/migrations/2000_12_01_000001_create_price_lists_table.php';
+    $migration->up();
+
+    try {
+        $owner = createSlugPricingOwner('Global Slug Owner', 'global-slug-owner@example.com');
+
+        $global = OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create(['name' => 'Global Retail', 'slug' => 'retail']));
+        $tenant = OwnerContext::withOwner($owner, fn (): PriceList => PriceList::query()->create(['name' => 'Tenant Retail', 'slug' => 'retail']));
+
+        expect($global->getKey())->not->toBe($tenant->getKey());
+
+        expect(fn () => OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create([
+            'name' => 'Duplicate Global Retail',
+            'slug' => 'retail',
+        ])))->toThrow(UniqueConstraintViolationException::class);
+    } finally {
+        Schema::dropIfExists('global_slug_price_lists');
+    }
+});
+
+it('ensures lists within the exact owner even when global lists are visible', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.features.owner.include_global', true);
+    config()->set('pricing.database.tables.price_lists', 'ensure_scoped_price_lists');
+
+    Schema::dropIfExists('ensure_scoped_price_lists');
+    $migration = require __DIR__ . '/../../../packages/pricing/database/migrations/2000_12_01_000001_create_price_lists_table.php';
+    $migration->up();
+
+    try {
+        $owner = createSlugPricingOwner('Scoped Ensure Owner', 'scoped-ensure-owner@example.com');
+        $action = app(EnsurePriceListBySlug::class);
+        $global = OwnerContext::withOwner(null, fn (): PriceList => $action->execute('retail', ['name' => 'Global Retail']));
+
+        OwnerContext::withOwner($owner, function () use ($action, $global, $owner): void {
+            $tenant = $action->execute('retail', ['name' => 'Tenant Retail']);
+            $updated = $action->execute('retail', ['name' => 'Updated Retail', 'slug' => 'different']);
+
+            expect($tenant->id)->not->toBe($global->id)
+                ->and($tenant->owner_id)->toBe($owner->getKey())
+                ->and($updated->id)->toBe($tenant->id)
+                ->and($updated->slug)->toBe('retail')
+                ->and($updated->name)->toBe('Updated Retail');
+        });
+
+        expect(OwnerContext::withOwner(null, fn (): string => $global->fresh()->name))->toBe('Global Retail');
+    } finally {
+        Schema::dropIfExists('ensure_scoped_price_lists');
+    }
 });

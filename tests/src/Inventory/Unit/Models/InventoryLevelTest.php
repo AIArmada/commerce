@@ -3,11 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 
 describe('InventoryLevel', function (): void {
     beforeEach(function (): void {
@@ -48,15 +52,6 @@ describe('InventoryLevel', function (): void {
         ]);
 
         expect($level->available)->toBe(0);
-    });
-
-    it('get available quantity method', function (): void {
-        $level = InventoryLevel::factory()->create([
-            'quantity_on_hand' => 50,
-            'quantity_reserved' => 10,
-        ]);
-
-        expect($level->getAvailableQuantity())->toBe(40);
     });
 
     it('is low stock returns true when below threshold', function (): void {
@@ -187,32 +182,39 @@ describe('InventoryLevel', function (): void {
         expect($level->getEffectiveAllocationStrategy())->toBe(AllocationStrategy::Priority);
     });
 
-    it('increment on hand', function (): void {
+    it('receives stock through the owning action', function (): void {
         $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
             'quantity_on_hand' => 100,
         ]);
 
-        $level->incrementOnHand(25);
+        app(InventoryService::class)->receive($this->item, $this->location->id, 25);
 
         expect($level->fresh()->quantity_on_hand)->toBe(125);
     });
 
-    it('decrement on hand', function (): void {
+    it('ships stock through the owning action', function (): void {
         $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
             'quantity_on_hand' => 100,
         ]);
 
-        $level->decrementOnHand(30);
+        app(InventoryService::class)->ship($this->item, $this->location->id, 30);
 
         expect($level->fresh()->quantity_on_hand)->toBe(70);
     });
 
     it('increment reserved', function (): void {
         $level = InventoryLevel::factory()->create([
+            'quantity_on_hand' => 100,
             'quantity_reserved' => 20,
         ]);
 
-        $level->incrementReserved(10);
+        app(ReservationStockStore::class)->reserve($level->id, 10);
 
         expect($level->fresh()->quantity_reserved)->toBe(30);
     });
@@ -222,9 +224,26 @@ describe('InventoryLevel', function (): void {
             'quantity_reserved' => 30,
         ]);
 
-        $level->decrementReserved(15);
+        app(ReservationStockStore::class)->release($level->id, 15);
 
         expect($level->fresh()->quantity_reserved)->toBe(15);
+    });
+
+    it('rejects non-positive stock mutation quantities without changing balances', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'quantity_on_hand' => 100,
+            'quantity_reserved' => 20,
+        ]);
+
+        foreach ([-1, 0] as $quantity) {
+            expect(fn () => app(InventoryService::class)->receive($this->item, $this->location->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(InventoryService::class)->ship($this->item, $this->location->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(ReservationStockStore::class)->reserve($level->id, $quantity))->toThrow(InvalidArgumentException::class)
+                ->and(fn () => app(ReservationStockStore::class)->release($level->id, $quantity))->toThrow(InvalidArgumentException::class);
+        }
+
+        expect($level->fresh()->quantity_on_hand)->toBe(100)
+            ->and($level->fresh()->quantity_reserved)->toBe(20);
     });
 
     it('scope at location', function (): void {
@@ -340,11 +359,13 @@ describe('InventoryLevel', function (): void {
         expect($level->inventoryable->id)->toBe($this->item->id);
     });
 
-    it('deleting level cascades to allocations', function (): void {
+    it('rejects deleting a level referenced by an allocation', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
+            'quantity_on_hand' => 0,
+            'quantity_reserved' => 0,
         ]);
 
         $allocation = InventoryAllocation::factory()->create([
@@ -353,11 +374,145 @@ describe('InventoryLevel', function (): void {
             'location_id' => $this->location->id,
             'level_id' => $level->id,
             'cart_id' => 'cart-1',
+            'level_id' => $level->id,
+            'location_id' => $this->location->id,
             'expires_at' => now()->addHour(),
         ]);
 
-        $level->delete();
-
-        expect(InventoryAllocation::find($allocation->id))->toBeNull();
+        expect($level->delete())->toBeFalse()
+            ->and(InventoryAllocation::find($allocation->id))->not->toBeNull();
     });
+});
+
+it('rejects deleting a stale level after stock is received', function (): void {
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'location_id' => $location->id,
+        'quantity_on_hand' => 0,
+        'quantity_reserved' => 0,
+    ]);
+    $stale = $level->fresh();
+    app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 5]);
+
+    expect($stale->delete())->toBeFalse()
+        ->and($level->fresh()->quantity_on_hand)->toBe(5);
+});
+
+it('rejects stale direct stock edits without creating a false movement', function (): void {
+    $item = InventoryItem::create(['name' => 'Concurrent Stock']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 20,
+    ]);
+    $stale = $level->fresh();
+    app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 110]);
+
+    $movements = InventoryMovement::query()->count();
+
+    expect(fn () => $stale->update(['quantity_on_hand' => 90]))
+        ->toThrow(RuntimeException::class, 'reload it')
+        ->and(fn () => $level->fresh()->update(['quantity_on_hand' => 10]))
+        ->toThrow(InvalidArgumentException::class, 'reserved stock')
+        ->and($level->fresh()->quantity_on_hand)->toBe(110)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('does not record a direct adjustment when the stock update is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Cancelled Stock']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+    ]);
+    $movements = InventoryMovement::query()->count();
+
+    InventoryLevel::updating(static fn (InventoryLevel $record): bool => $record->getKey() !== $level->getKey());
+
+    expect($level->update(['quantity_on_hand' => 80]))->toBeFalse()
+        ->and($level->fresh()->quantity_on_hand)->toBe(100)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('rejects changing a persisted stock level identity without affecting balances or movements', function (): void {
+    $item = InventoryItem::create(['name' => 'Original Stock Item']);
+    $other = InventoryItem::create(['name' => 'Other Stock Item']);
+    $location = InventoryLocation::factory()->create();
+    $destination = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 20,
+    ]);
+
+    $movements = InventoryMovement::query()->count();
+
+    foreach ([
+        ['inventoryable_id' => $other->getKey()],
+        ['inventoryable_type' => 'another-type'],
+        ['location_id' => $destination->id],
+        ['location_id' => $destination->id, 'quantity_on_hand' => 90],
+    ] as $attributes) {
+        expect(fn () => $level->fresh()->update($attributes))
+            ->toThrow(InvalidArgumentException::class, 'identity cannot be changed');
+    }
+
+    $level->refresh();
+
+    expect($level->inventoryable_id)->toBe($item->getKey())
+        ->and($level->inventoryable_type)->toBe($item->getMorphClass())
+        ->and($level->location_id)->toBe($location->id)
+        ->and($level->quantity_on_hand)->toBe(100)
+        ->and($level->quantity_reserved)->toBe(20)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('rolls back direct and action-based stock edits when adjustment creation is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Rejected Adjustment']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+    ]);
+
+    $movements = InventoryMovement::query()->count();
+
+    InventoryMovement::creating(static fn (InventoryMovement $movement): bool => $movement->inventoryable_id !== $item->getKey());
+
+    expect(fn () => $level->fresh()->update(['quantity_on_hand' => 90]))
+        ->toThrow(RuntimeException::class, 'movement creation was cancelled')
+        ->and(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 80]))
+        ->toThrow(RuntimeException::class, 'movement creation was cancelled')
+        ->and($level->fresh()->quantity_on_hand)->toBe(100)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('does not report a cancelled operator edit as successful', function (): void {
+    $level = InventoryLevel::factory()->create(['quantity_on_hand' => 100]);
+
+    InventoryLevel::updating(static fn (InventoryLevel $record): bool => $record->getKey() !== $level->getKey());
+
+    expect(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 80]))
+        ->toThrow(RuntimeException::class, 'level update was cancelled')
+        ->and($level->fresh()->quantity_on_hand)->toBe(100);
+});
+
+it('does not return an unpersisted stock level when creation is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Rejected Level']);
+    $location = InventoryLocation::factory()->create();
+
+    InventoryLevel::creating(static fn (InventoryLevel $level): bool => $level->inventoryable_id !== $item->getKey());
+
+    expect(fn () => app(InventoryService::class)->getOrCreateLevel($item, $location->id))
+        ->toThrow(RuntimeException::class, 'level creation was cancelled')
+        ->and(app(InventoryService::class)->getLevel($item, $location->id))->toBeNull();
 });

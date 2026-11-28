@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -85,8 +85,8 @@ final class InventoryBatchInfolist
                             ->label('Available')
                             ->weight(FontWeight::Bold)
                             ->size('lg')
-                            ->color(fn (InventoryBatch $record): string => $record->available_quantity <= 0 ? 'danger' : 'success')
-                            ->state(fn (InventoryBatch $record): int => $record->available_quantity),
+                            ->color(fn (InventoryBatch $record): string => $record->available <= 0 ? 'danger' : 'success')
+                            ->state(fn (InventoryBatch $record): int => $record->available),
                     ]),
                 ]),
 
@@ -152,13 +152,13 @@ final class InventoryBatchInfolist
 
             Section::make('Notes')
                 ->schema([
-                    TextEntry::make('notes')
+                    TextEntry::make('metadata.notes')
                         ->label('')
                         ->prose()
                         ->placeholder('No notes'),
                 ])
                 ->collapsed()
-                ->hidden(fn (InventoryBatch $record): bool => empty($record->notes)),
+                ->hidden(fn (InventoryBatch $record): bool => empty($record->metadata['notes'])),
 
             Section::make('Timestamps')
                 ->schema([

@@ -14,8 +14,15 @@ use Illuminate\Support\Facades\DB;
 /**
  * Creates a composite parent and its initial component rows in one transaction.
  */
-final class CreateCompositeProduct
+final readonly class CreateCompositeProduct
 {
+    public function __construct(
+        private CreateProduct $create,
+        private ReplaceProductComponents $replace,
+        private PublishCompositeProduct $publish,
+        private UpdateProductStatus $updateStatus,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  list<array{
@@ -48,28 +55,25 @@ final class CreateCompositeProduct
 
             unset($attributes['status'], $attributes['price_mode']);
 
-            $parent = new Product;
-            $parent->fill($attributes);
-            $parent->forceFill([
+            $parent = $this->create->execute(array_replace($attributes, [
                 'type' => ProductType::Composite,
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
                 'requires_shipping' => false,
                 'supports_variants' => (bool) ($attributes['supports_variants'] ?? false),
                 'tracks_inventory' => false,
-            ]);
-            $parent->save();
+            ]));
 
             if ($components !== []) {
-                app(ReplaceProductComponents::class)->handle($parent, $components);
+                $this->replace->handle($parent, $components);
             }
 
             if ($requestedStatus === ProductStatus::Active) {
-                return app(PublishCompositeProduct::class)->handle($parent);
+                return $this->publish->handle($parent);
             }
 
             if ($requestedStatus !== ProductStatus::Draft) {
-                return app(UpdateProductStatus::class)->execute($parent, $requestedStatus);
+                return $this->updateStatus->execute($parent, $requestedStatus);
             }
 
             return $parent->fresh() ?? $parent;

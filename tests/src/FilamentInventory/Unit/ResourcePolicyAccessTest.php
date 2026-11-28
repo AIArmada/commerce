@@ -8,10 +8,10 @@ use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource;
-use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 

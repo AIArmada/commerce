@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create(config('inventory.database.tables.serials', 'inventory_serials'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->string('owner_scope')->default('global');
 
             // The inventoryable item this serial belongs to
             $table->uuidMorphs('inventoryable');
@@ -67,10 +68,7 @@ return new class extends Migration
             $table->index('order_id');
             $table->index('customer_id');
             $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inventory_serials_item_status_idx');
-            // Serial lookups are owner-scoped, so serials are unique per
-            // owner. The composite leftmost prefix also serves plain owner
-            // queries, replacing a separate owner index.
-            $table->unique(['owner_type', 'owner_id', 'serial_number'], 'inventory_serials_owner_serial_unique');
+            $table->unique(['owner_scope', 'serial_number'], 'inventory_serials_owner_serial_unique');
         });
     }
 };

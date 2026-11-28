@@ -13,6 +13,7 @@ use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
@@ -225,9 +226,9 @@ it('preserves typed values and locale isolation through direct models and the ca
     Attribute::create(['code' => 'integrity_flag', 'name' => 'Integrity Flag', 'type' => AttributeType::Boolean]);
     Attribute::create(['code' => 'integrity_note', 'name' => 'Integrity Note', 'type' => AttributeType::Text]);
 
-    $product->setCustomAttribute('integrity_note', 'English', 'en');
-    $product->setCustomAttribute('integrity_note', 'Malay', 'ms');
-    $product->setCustomAttribute('integrity_note', 'Default');
+    app(CustomAttributeValues::class)->set($product, 'integrity_note', 'English', 'en');
+    app(CustomAttributeValues::class)->set($product, 'integrity_note', 'Malay', 'ms');
+    app(CustomAttributeValues::class)->set($product, 'integrity_note', 'Default');
 
     $result = app(ApplyAttributeChanges::class)->execute($product, ['integrity_flag' => true]);
 
@@ -238,7 +239,7 @@ it('preserves typed values and locale isolation through direct models and the ca
         ->and(AttributeValue::query()->count())->toBe(4);
 
     // Re-setting a locale replaces it without duplicating rows.
-    $result->setCustomAttribute('integrity_note', 'Updated English', 'en');
+    app(CustomAttributeValues::class)->set($result, 'integrity_note', 'Updated English', 'en');
 
     expect($result->getCustomAttribute('integrity_note', 'en'))->toBe('Updated English')
         ->and(AttributeValue::query()->count())->toBe(4);

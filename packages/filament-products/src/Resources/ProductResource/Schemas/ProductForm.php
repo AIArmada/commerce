@@ -11,12 +11,11 @@ use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\FilamentProducts\Support\CompositeComponentsFormData;
-use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
-use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Forms\Components\MarkdownEditor;
@@ -452,7 +451,7 @@ class ProductForm
                                         }
                                     )
                                     ->multiple()
-                                    ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(Category::class))
+                                    ->saveRelationshipsUsing(fn (Product $record, ?array $state) => app(SyncCatalogRelationships::class)->syncProductCategories($record, $state ?? []))
                                     ->preload()
                                     ->searchable(),
 

@@ -7,7 +7,7 @@ use AIArmada\FilamentInventory\Actions\CycleCountAction;
 use AIArmada\FilamentInventory\Actions\ReceiveStockAction;
 use AIArmada\FilamentInventory\Actions\ShipStockAction;
 use AIArmada\FilamentInventory\Actions\TransferStockAction;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;

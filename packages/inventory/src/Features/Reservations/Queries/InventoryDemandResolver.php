@@ -1,0 +1,239 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Reservations\Queries;
+
+use AIArmada\Cart\Models\CartItem;
+use AIArmada\Inventory\Queries\CompositeComponents;
+use AIArmada\Orders\Models\OrderItem;
+use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
+use RuntimeException;
+
+/**
+ * Builds one aggregated demand row per actual inventory model.
+ *
+ * Composite lines expand to their component quantities multiplied by the
+ * number of packages. Standalone lines for the same model merge into the
+ * same row so allocation and deduction happen exactly once for that stock
+ * identity.
+ */
+/** @phpstan-import-type Component from \AIArmada\CommerceSupport\Support\CompositeComponents */
+final class InventoryDemandResolver
+{
+    /**
+     * @param  iterable<CartItem>  $items
+     * @return array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>
+     */
+    public static function forCart(iterable $items): array
+    {
+        $demand = [];
+        $resolved = [];
+
+        foreach ($items as $item) {
+            if ($item instanceof CartItem) {
+                self::addCartItem($demand, $item, $resolved);
+            }
+        }
+
+        return self::sorted($demand);
+    }
+
+    /**
+     * @param  iterable<OrderItem>  $items
+     * @return array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>
+     */
+    public static function forOrder(iterable $items): array
+    {
+        $demand = [];
+        $resolved = [];
+
+        foreach ($items as $item) {
+            $components = CompositeComponents::fromOrderItem($item);
+
+            if ($components === null) {
+                self::addOrdinaryOrderItem($demand, $item);
+
+                continue;
+            }
+
+            self::addComponents($demand, $components, $item->quantity, (string) $item->getKey(), $item->name, $resolved);
+        }
+
+        return self::sorted($demand);
+    }
+
+    /**
+     * @param  array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>  $demand
+     * @param  array<string, Model|null>  $resolved
+     */
+    private static function addCartItem(array &$demand, CartItem $item, array &$resolved): void
+    {
+        $components = CompositeComponents::fromCartItem($item);
+
+        if ($components !== null) {
+            self::addComponents($demand, $components, (int) $item->quantity, (string) $item->id, $item->name, $resolved);
+
+            return;
+        }
+
+        $model = $item->getAssociatedModel();
+
+        if (! $model instanceof Model || CompositeComponents::isCompositeModel($model) || ! CompositeComponents::tracksInventory($model)) {
+            return;
+        }
+
+        self::addDemand($demand, $model, (int) $item->quantity, (string) $item->id, $item->name);
+    }
+
+    /**
+     * @param  array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>  $demand
+     */
+    private static function addOrdinaryOrderItem(array &$demand, OrderItem $item): void
+    {
+        $model = $item->purchasable;
+
+        if (! $model instanceof Model || CompositeComponents::isCompositeModel($model)) {
+            return;
+        }
+
+        if (! CompositeComponents::tracksInventory($model)) {
+            return;
+        }
+
+        self::addDemand(
+            $demand,
+            $model,
+            (int) $item->quantity,
+            (string) $item->getKey(),
+            $item->name,
+        );
+    }
+
+    /**
+     * @param  array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>  $demand
+     * @param  list<Component>  $components
+     * @param  array<string, Model|null>  $resolved
+     */
+    private static function addComponents(
+        array &$demand,
+        array $components,
+        int $packageQuantity,
+        string $sourceId,
+        string $sourceName,
+        array &$resolved,
+    ): void {
+        if ($packageQuantity <= 0) {
+            return;
+        }
+
+        foreach ($components as $component) {
+            if (! $component['tracks_inventory']) {
+                continue;
+            }
+
+            $key = $component['inventoryable_type'] . ':' . $component['inventoryable_id'];
+            $model = $resolved[$key] ??= CompositeComponents::resolveInventoryModel($component);
+
+            if (! $model instanceof Model) {
+                throw new RuntimeException('Inventory for a composite component could not be resolved.');
+            }
+
+            $quantity = $component['quantity'] * $packageQuantity;
+
+            if (! is_int($quantity)) {
+                throw new InvalidArgumentException('Composite inventory demand exceeds the supported quantity.');
+            }
+
+            self::addDemand($demand, $model, $quantity, $sourceId, $sourceName);
+        }
+    }
+
+    /**
+     * @param  array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>  $demand
+     */
+    private static function addDemand(
+        array &$demand,
+        Model $model,
+        int $quantity,
+        string $sourceId,
+        string $sourceName,
+    ): void {
+        if ($quantity <= 0) {
+            return;
+        }
+
+        $key = $model->getMorphClass() . ':' . $model->getKey();
+
+        if (! isset($demand[$key])) {
+            $demand[$key] = [
+                'model' => $model,
+                'quantity' => 0,
+                'sources' => [],
+            ];
+        }
+
+        if ($quantity > PHP_INT_MAX - $demand[$key]['quantity']) {
+            throw new InvalidArgumentException('Aggregate inventory demand exceeds the supported quantity.');
+        }
+
+        $demand[$key]['quantity'] += $quantity;
+
+        $source = $demand[$key]['sources'][$sourceId] ?? [
+            'name' => $sourceName,
+            'quantity' => 0,
+        ];
+        $source['quantity'] += $quantity;
+        $demand[$key]['sources'][$sourceId] = $source;
+    }
+
+    /**
+     * @param  array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>  $demand
+     * @return array<string, array{
+     *     model: Model,
+     *     quantity: int,
+     *     sources: array<string, array{name: string, quantity: int}>
+     * }>
+     */
+    private static function sorted(array $demand): array
+    {
+        ksort($demand);
+
+        foreach ($demand as &$entry) {
+            ksort($entry['sources']);
+        }
+
+        unset($entry);
+
+        return $demand;
+    }
+}

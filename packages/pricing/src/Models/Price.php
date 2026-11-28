@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Pricing\Queries\OwnerScopedPricingReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -140,34 +141,17 @@ class Price extends Model implements Auditable
                 }
             }
 
-            $priceListQuery = PriceList::query();
-
-            $priceListExists = $priceListQuery
+            $priceListExists = PriceList::query()
                 ->whereKey($price->price_list_id)
+                ->where('owner_type', $price->owner_type)
+                ->where('owner_id', $price->owner_id)
                 ->exists();
 
             if (! $priceListExists) {
                 throw new AuthorizationException('Price list is not accessible in the current owner scope.');
             }
 
-            $type = $price->priceable_type;
-
-            if ($owner !== null && is_string($type) && class_exists($type) && is_a($type, Model::class, true)) {
-                $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);
-
-                if ($usesHasOwner) {
-                    /** @var Builder<Model> $query */
-                    $query = $type::query();
-
-                    $exists = $query
-                        ->whereKey($price->priceable_id)
-                        ->exists();
-
-                    if (! $exists) {
-                        throw new AuthorizationException('Priceable entity is not accessible in the current owner scope.');
-                    }
-                }
-            }
+            OwnerScopedPricingReference::assertAccessible($price->priceable_type, $price->priceable_id, $price->owner_type, $price->owner_id, 'Priceable entity');
         });
     }
 
@@ -201,9 +185,9 @@ class Price extends Model implements Auditable
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive(Builder $query, ?CarbonImmutable $now = null): Builder
     {
-        $now = CarbonImmutable::now();
+        $now ??= CarbonImmutable::now();
 
         return $query
             ->whereNull('deactivated_at')

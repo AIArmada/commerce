@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * The parent product is only a commercial identity: it has no inventory of
  * its own; individual components control shipping and inventory behavior.
  */
-final class CompositePackageValidator
+final readonly class CompositePackageValidator
 {
     public const int MAX_DEPTH = 32;
 
@@ -232,33 +232,52 @@ final class CompositePackageValidator
 
     private function assertAcyclicReference(Product $parent, Product $child): void
     {
-        $target = (string) $parent->getKey();
-        $stack = [[$child->getKey(), []]];
+        $visiting = [(string) $parent->getKey() => true];
+        $depths = [];
 
-        while ($stack !== []) {
-            [$current, $ancestors] = array_pop($stack);
-            $id = (string) $current;
+        $this->compositionDepth((string) $child->getKey(), $visiting, $depths);
+    }
 
-            if ($id === $target || in_array($id, $ancestors, true)) {
-                throw new InvalidCompositePackageException('Composite package composition contains a cycle.');
-            }
+    /**
+     * @param  array<string, true>  $visiting
+     * @param  array<string, int>  $depths
+     */
+    private function compositionDepth(string $id, array &$visiting, array &$depths): int
+    {
+        if (isset($visiting[$id])) {
+            throw new InvalidCompositePackageException('Composite package composition contains a cycle.');
+        }
 
-            if (count($ancestors) >= self::MAX_DEPTH) {
+        if (count($visiting) >= self::MAX_DEPTH) {
+            throw new InvalidCompositePackageException('Composite package nesting exceeds the maximum depth.');
+        }
+
+        if (isset($depths[$id])) {
+            if (count($visiting) + $depths[$id] > self::MAX_DEPTH) {
                 throw new InvalidCompositePackageException('Composite package nesting exceeds the maximum depth.');
             }
 
-            $ancestors[] = $id;
-
-            $children = ProductComponent::query()
-                ->withoutOwnerScope()
-                ->where('product_id', $id)
-                ->whereNotNull('component_product_id')
-                ->pluck('component_product_id');
-
-            foreach ($children as $next) {
-                $stack[] = [(string) $next, $ancestors];
-            }
+            return $depths[$id];
         }
+
+        $visiting[$id] = true;
+
+        $children = ProductComponent::query()
+            ->withoutOwnerScope()
+            ->where('product_id', $id)
+            ->whereNotNull('component_product_id')
+            ->distinct()
+            ->pluck('component_product_id');
+
+        $depth = 1;
+
+        foreach ($children as $child) {
+            $depth = max($depth, 1 + $this->compositionDepth((string) $child, $visiting, $depths));
+        }
+
+        unset($visiting[$id]);
+
+        return $depths[$id] = $depth;
     }
 
     public function sameOwner(Product $parent, Product $componentProduct): bool

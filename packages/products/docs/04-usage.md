@@ -88,7 +88,7 @@ $service->availability($package, context: ['session' => 'morning']); // app-defi
 $snapshot = $service->snapshot($package); // canonical frozen composition
 ```
 
-The default `StockBackedCompositeCapacityResolver` handles warehouse quantities directly. Applications can bind `CompositeCapacityResolverInterface` for context-dependent capacity. It receives the package parent, component row, and a free-form context array. **This is an availability check, not a reservation**; applications must independently enforce concurrency-safe booking and allocations in their own checkout workflow.
+The default `StockBackedCompositeCapacityResolver` handles warehouse quantities directly. Applications can bind `CompositeCapacityResolverInterface` for context-dependent capacity. It receives an immutable `CompositeCapacityRequest` containing parent and component identities, quantity, metadata, context, and the observed stock availability. **This is an availability check, not a reservation**; applications must independently enforce concurrency-safe booking and allocations in their own checkout workflow.
 
 Nested composites are flattened into purchasable leaf products; the product hierarchy never enters warehouse stock or shipments. Quantities multiply along each branch (2 × 3 units becomes 6), and finite availability groups identical leaf inventory identities across separate branches before evaluating capacity. Nested entries carry a `composition_path` with each traversed child product ID, component row ID, quantity, and optional `unit_price`/`metadata`; changing this ancestry changes the snapshot fingerprint and triggers checkout revalidation. The capacity resolver additionally receives this path through its generic context for nested leaves.
 
@@ -98,26 +98,24 @@ The core snapshot entry keys remain stable across cart, checkout, orders, shippi
 
 When Products consume resource pools that are shared, windowed or weighted,
 implement `CompositeCapacityDemandResolverInterface`. It extends the
-existing `CompositeCapacityResolverInterface`, so older stock-only
-implementations remain valid.
+`CompositeCapacityResolverInterface` for scoped or weighted pools.
 
 ```php
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
-use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 
 final class ScopedCapacityResolver implements CompositeCapacityDemandResolverInterface
 {
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        return $this->demandFor($parent, $component, $context)->available;
+        return $this->demandFor($request)->available;
     }
 
-    public function demandFor(Product $parent, ProductComponent $component, array $context = []): CompositeCapacityDemand
+    public function demandFor(CompositeCapacityRequest $request): CompositeCapacityDemand
     {
-        $resourceKey = $this->resourceKey($component, $context);
-        $scopeKey = $this->scopeKey($context);
+        $resourceKey = $this->resourceKey($request);
+        $scopeKey = $this->scopeKey($request->context);
 
         return new CompositeCapacityDemand(
             resourceKey: $resourceKey,
@@ -403,14 +401,14 @@ $collection = Collection::query()->create([
 ]);
 
 $matches = $collection->getMatchingProducts();
-$collection->rebuildProductList();
+app(\AIArmada\Products\Actions\RebuildCollectionMembership::class)->execute($collection);
 ```
 
 ## Use custom attributes
 
 ```php
-$product->setCustomAttribute('material', 'Cotton');
-$product->setCustomAttribute('care_instructions', 'Cold wash only');
+app(CustomAttributeValues::class)->set($product, 'material', 'Cotton');
+app(CustomAttributeValues::class)->set($product, 'care_instructions', 'Cold wash only');
 
 $material = $product->getCustomAttribute('material');
 $attributes = $product->getCustomAttributesArray();

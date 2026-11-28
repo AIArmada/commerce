@@ -3,21 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Batch\BatchService;
-use AIArmada\Inventory\Services\Batch\ExpiryMonitorService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Queries\ExpiryMonitorService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->batchService = app(BatchService::class);
-    $this->service = new ExpiryMonitorService($this->batchService);
+    $this->service = new ExpiryMonitorService;
 });
 
 describe('ExpiryMonitorService', function (): void {
-    it('gets expiring batches from batch service', function (): void {
+    it('gets expiring batches', function (): void {
         $batch = InventoryBatch::factory()->forInventoryable(
             InventoryItem::class,
             $this->item->id,
@@ -274,4 +272,24 @@ describe('ExpiryMonitorService', function (): void {
         expect($summary)->toBeArray();
         expect($summary)->toBeEmpty();
     });
+});
+
+it('includes fractional-day expiries between severity thresholds without overlap', function (): void {
+    $warning = InventoryBatch::factory()->forInventoryable(InventoryItem::class, $this->item->id)->create([
+        'location_id' => $this->location->id,
+        'expires_at' => CarbonImmutable::now()->addDays(7)->addHours(12),
+        'status' => 'active',
+    ]);
+    $attention = InventoryBatch::factory()->forInventoryable(InventoryItem::class, $this->item->id)->create([
+        'location_id' => $this->location->id,
+        'expires_at' => CarbonImmutable::now()->addDays(30)->addHours(12),
+        'status' => 'active',
+    ]);
+
+    $risk = $this->service->getExpiryRiskAssessment();
+
+    expect($risk['critical'])->toBeEmpty()
+        ->and($risk['warning']->modelKeys())->toBe([$warning->id])
+        ->and($risk['attention']->modelKeys())->toBe([$attention->id])
+        ->and(array_column($this->service->generateExpiryAlerts(), 'batch_id'))->toBe([$warning->id]);
 });

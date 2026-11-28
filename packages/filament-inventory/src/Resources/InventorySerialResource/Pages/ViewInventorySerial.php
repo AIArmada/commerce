@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages;
 
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -17,7 +17,7 @@ final class ViewInventorySerial extends ViewRecord
     {
         return [
             EditAction::make(),
-            DeleteAction::make(),
+            DeleteTraceabilityAction::make(),
         ];
     }
 }

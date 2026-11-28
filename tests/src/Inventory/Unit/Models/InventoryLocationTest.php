@@ -8,9 +8,11 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,14 +41,14 @@ describe('InventoryLocation', function (): void {
     });
 
     it('is default', function (): void {
-        $defaultLocation = InventoryLocation::getOrCreateDefault();
+        $defaultLocation = app(SaveInventoryLocation::class)->getOrCreateDefault();
         $regularLocation = InventoryLocation::factory()->create(['code' => 'REGULAR']);
 
         expect($defaultLocation->isDefault())->toBeTrue();
         expect($regularLocation->isDefault())->toBeFalse();
     });
 
-    it('deleting location cascades to inventory levels', function (): void {
+    it('rejects deleting a location with inventory levels', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -57,9 +59,9 @@ describe('InventoryLocation', function (): void {
         ]);
         $levelId = $level->id;
 
-        $location->delete();
-
-        expect(InventoryLevel::find($levelId))->toBeNull();
+        expect($location->delete())->toBeFalse()
+            ->and(InventoryLevel::find($levelId))->not->toBeNull()
+            ->and($location->fresh())->not->toBeNull();
     });
 
     it('depth property', function (): void {
@@ -84,14 +86,14 @@ describe('InventoryLocation', function (): void {
     });
 
     it('get or create default', function (): void {
-        $default = InventoryLocation::getOrCreateDefault();
+        $default = app(SaveInventoryLocation::class)->getOrCreateDefault();
 
         expect($default)->toBeInstanceOf(InventoryLocation::class);
         expect($default->code)->toBe(InventoryLocation::DEFAULT_LOCATION_CODE);
         expect($default->is_active)->toBeTrue();
 
         // Calling again should return same location
-        $default2 = InventoryLocation::getOrCreateDefault();
+        $default2 = app(SaveInventoryLocation::class)->getOrCreateDefault();
         expect($default2->id)->toBe($default->id);
     });
 
@@ -109,12 +111,31 @@ describe('InventoryLocation', function (): void {
             }
         });
 
-        expect(fn () => InventoryLocation::getOrCreateDefault())
-            ->toThrow(RuntimeException::class, 'InventoryLocation::getOrCreateDefault() requires an owner context or explicit global context.');
+        expect(fn () => app(SaveInventoryLocation::class)->getOrCreateDefault())
+            ->toThrow(RuntimeException::class, 'Default location creation requires an owner context or explicit global context.');
 
-        $default = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::getOrCreateDefault());
+        $default = OwnerContext::withOwner(null, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
 
         expect($default->isDefault())->toBeTrue();
+    });
+
+    it('creates distinct owned default locations even with automatic owner assignment disabled', function (): void {
+        config([
+            'inventory.owner.enabled' => true,
+            'inventory.owner.include_global' => true,
+            'inventory.owner.auto_assign_on_create' => false,
+        ]);
+
+        $firstOwner = InventoryItem::create(['name' => 'First Owner']);
+        $secondOwner = InventoryItem::create(['name' => 'Second Owner']);
+
+        $first = OwnerContext::withOwner($firstOwner, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
+        $second = OwnerContext::withOwner($secondOwner, fn (): InventoryLocation => app(SaveInventoryLocation::class)->getOrCreateDefault());
+
+        expect($first->belongsToOwner($firstOwner))->toBeTrue()
+            ->and($second->belongsToOwner($secondOwner))->toBeTrue()
+            ->and($first->id)->not->toBe($second->id)
+            ->and(OwnerContext::withOwner($firstOwner, fn (): string => app(SaveInventoryLocation::class)->getOrCreateDefault()->id))->toBe($first->id);
     });
 
     it('owner columns are not mass assignable', function (): void {
@@ -170,7 +191,7 @@ describe('InventoryLocation', function (): void {
             'code' => 'FORGED-OWNER',
             'owner_type' => $otherOwner->getMorphClass(),
             'owner_id' => $otherOwner->getKey(),
-        ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Models\InventoryLocation.');
+        ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Features\Stock\Models\InventoryLocation.');
     });
 
     it('has available capacity', function (): void {
@@ -331,7 +352,7 @@ describe('InventoryLocation', function (): void {
         expect($notCertified->canStoreHazmat())->toBeFalse();
     });
 
-    it('deleting location cascades to allocations', function (): void {
+    it('preserves allocations when location deletion is rejected', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -350,9 +371,8 @@ describe('InventoryLocation', function (): void {
         ]);
         $allocationId = $allocation->id;
 
-        $location->delete();
-
-        expect(InventoryAllocation::find($allocationId))->toBeNull();
+        expect($location->delete())->toBeFalse()
+            ->and(InventoryAllocation::find($allocationId))->not->toBeNull();
     });
 
     it('scope for owner when disabled', function (): void {
@@ -505,4 +525,16 @@ describe('InventoryLocation', function (): void {
 
         expect($distance)->toBe(10.0);
     });
+});
+
+it('preserves a location referenced only by a shipped serial history', function (): void {
+    $location = InventoryLocation::factory()->create();
+    $item = InventoryItem::create(['name' => 'Tracked item']);
+    $service = app(SerialService::class);
+    $serial = $service->register($item, 'SN-HISTORY-LOCATION', $location->id);
+    $serial->update(['location_id' => null]);
+
+    expect($location->delete())->toBeFalse()
+        ->and($location->fresh())->not->toBeNull()
+        ->and($serial->history()->count())->toBe(1);
 });

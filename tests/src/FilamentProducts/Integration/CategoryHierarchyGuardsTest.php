@@ -33,11 +33,11 @@ beforeEach(function (): void {
     config()->set('products.features.owner.auto_assign_on_create', true);
 });
 
-function invokeCategorySaveMutator(EditCategory $page, array $data): array
+function invokeCategoryUpdate(EditCategory $page, Category $category, array $data): Category
 {
-    $method = new ReflectionMethod(EditCategory::class, 'mutateFormDataBeforeSave');
+    $method = new ReflectionMethod(EditCategory::class, 'handleRecordUpdate');
 
-    return $method->invoke($page, $data);
+    return $method->invoke($page, $category, $data);
 }
 
 function resolveCategoryOwner(?Model $owner): void
@@ -65,7 +65,7 @@ it('rejects a category parented to itself', function (): void {
     $page = new EditCategory;
     $page->record = $category;
 
-    expect(fn () => invokeCategorySaveMutator($page, ['parent_id' => $category->id]))
+    expect(fn () => invokeCategoryUpdate($page, $category, ['parent_id' => $category->id]))
         ->toThrow(ValidationException::class, 'own parent');
 });
 
@@ -84,8 +84,8 @@ it('rejects a category parented to one of its descendants', function (): void {
     $page = new EditCategory;
     $page->record = $root;
 
-    expect(fn () => invokeCategorySaveMutator($page, ['parent_id' => $grandchild->id]))
-        ->toThrow(ValidationException::class, 'cycle');
+    expect(fn () => invokeCategoryUpdate($page, $root, ['parent_id' => $grandchild->id]))
+        ->toThrow(ValidationException::class, 'descendant');
 });
 
 it('allows moving a category to an unrelated parent', function (): void {
@@ -102,9 +102,10 @@ it('allows moving a category to an unrelated parent', function (): void {
     $page = new EditCategory;
     $page->record = $category;
 
-    $data = invokeCategorySaveMutator($page, ['parent_id' => $newParent->id]);
+    $updated = invokeCategoryUpdate($page, $category, ['parent_id' => $newParent->id]);
 
-    expect($data['parent_id'])->toBe($newParent->id);
+    expect($updated->parent_id)->toBe($newParent->id)
+        ->and($category->fresh()->parent_id)->toBe($newParent->id);
 });
 
 it('computes category depth without hanging on cyclic data', function (): void {

@@ -47,7 +47,7 @@ final class PriceTierPolicy
      */
     public function update(mixed $user, PriceTier $tier): bool
     {
-        return $this->canAccessTier($tier);
+        return $this->canMutate($tier);
     }
 
     /**
@@ -63,7 +63,7 @@ final class PriceTierPolicy
      */
     public function delete(mixed $user, PriceTier $tier): bool
     {
-        return $this->canAccessTier($tier);
+        return $this->canMutate($tier);
     }
 
     /**
@@ -71,6 +71,6 @@ final class PriceTierPolicy
      */
     public function duplicate(mixed $user, PriceTier $tier): bool
     {
-        return $this->view($user, $tier);
+        return $this->canMutate($tier);
     }
 }

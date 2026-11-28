@@ -8,15 +8,16 @@ use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\Buyable;
-use AIArmada\Inventory\Cart\CartManagerWithInventory;
-use AIArmada\Inventory\Cart\CompositeComponents;
-use AIArmada\Inventory\Cart\InventoryValidator;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Listeners\ReserveStockOnCheckout;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Actions\ReserveCartInventory;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\InventoryValidator;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockOnCheckout;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use Illuminate\Database\Eloquent\Model;
 
 it('recognizes only typed catalog composites under strict Eloquent attribute access', function (): void {
@@ -43,6 +44,14 @@ it('recognizes only typed catalog composites under strict Eloquent attribute acc
         Model::preventAccessingMissingAttributes($original);
     }
 });
+
+final class NonTrackingCartInventoryItem extends InventoryItem
+{
+    public function tracksInventory(): bool
+    {
+        return false;
+    }
+}
 
 final class CompositeFakeCartManager implements CartManagerInterface
 {
@@ -278,6 +287,44 @@ describe('composite cart inventory demand', function (): void {
             ->and(InventoryAllocation::query()->count())->toBe(0);
     });
 
+    it('does not require stock or allocate non-tracked standalone items', function (): void {
+        config()->set('inventory.cart.allow_backorder', false);
+        config()->set('inventory.cart.validate_on_add', false);
+
+        $service = NonTrackingCartInventoryItem::create(['name' => 'Untracked Service']);
+        $cart = new Cart(new InMemoryStorage, 'non-tracked-stock-cart');
+        $cart->add(id: 'service', name: 'Service', price: 500, quantity: 2, associatedModel: $service);
+
+        $validator = new InventoryValidator($this->allocationService);
+        $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+
+        expect($validator->validateCart($cart)->isValid)->toBeTrue()
+            ->and($manager->allocateAllInventory())->toBeEmpty()
+            ->and(InventoryAllocation::query()->count())->toBe(0);
+    });
+
+    it('counts only the current cart allocations when validating reserved stock', function (): void {
+        config()->set('inventory.cart.allow_backorder', false);
+        config()->set('inventory.cart.validate_on_add', false);
+
+        $mouse = InventoryItem::create(['name' => 'Reserved Mouse']);
+        $this->inventoryService->receive($mouse, $this->location->id, 5);
+
+        $cart = new Cart(new InMemoryStorage, 'reserved-stock-cart');
+        $cart->add(id: 'mouse', name: 'Mouse', price: 500, quantity: 5, associatedModel: $mouse);
+
+        $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+        $manager->allocateAllInventory();
+
+        $validator = new InventoryValidator($this->allocationService);
+
+        $otherCart = new Cart(new InMemoryStorage, 'other-stock-cart');
+        $otherCart->add(id: 'mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
+
+        expect($validator->validateCart($cart)->isValid)->toBeTrue()
+            ->and($validator->validateCart($otherCart)->isValid)->toBeFalse();
+    });
+
     it('rejects an empty composite snapshot before writing the cart', function (): void {
         $parent = InventoryItem::create(['name' => 'Empty Bundle']);
         $this->inventoryService->receive($parent, $this->location->id, 10);
@@ -392,7 +439,7 @@ describe('composite add and checkout reservation listeners', function (): void {
         ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
-        $listener = new ReserveStockOnCheckout($this->allocationService);
+        $listener = app(ReserveStockOnCheckout::class);
         $listener->handle(new class($cart)
         {
             public function __construct(public Cart $cart) {}
@@ -408,4 +455,82 @@ describe('composite add and checkout reservation listeners', function (): void {
                 ->count())->toBe(0)
             ->and($cart->getMetadata('inventory_allocations')['allocations'])->toHaveKeys(['mouse-pair', 'standalone-mouse']);
     });
+
+    it('rolls back the entire checkout allocation when a later item has insufficient stock', function (): void {
+        config()->set('inventory.cart.reserve_on_checkout', true);
+        config()->set('inventory.cart.validate_on_add', false);
+        config()->set('inventory.cart.block_checkout_on_insufficient', true);
+
+        $available = InventoryItem::create(['name' => 'Available']);
+        $unavailable = InventoryItem::create(['name' => 'Unavailable']);
+        $this->inventoryService->receive($available, $this->location->id, 5);
+
+        $cart = new Cart(new InMemoryStorage, 'atomic-checkout-cart');
+        $cart->add(id: 'available', name: 'Available', price: 100, quantity: 2, associatedModel: $available);
+        $cart->add(id: 'unavailable', name: 'Unavailable', price: 100, quantity: 1, associatedModel: $unavailable);
+
+        $event = new class($cart)
+        {
+            public function __construct(public Cart $cart) {}
+        };
+
+        expect(fn () => app(ReserveStockOnCheckout::class)->handle($event))
+            ->toThrow(InsufficientInventoryException::class);
+
+        expect($this->allocationService->getAllocationsForCart((string) $cart->getId()))->toBeEmpty()
+            ->and($this->inventoryService->getLevel($available, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
+    });
+});
+
+it('rebuilds checkout allocation metadata across all composite components and removes stale entries', function (): void {
+    config()->set('inventory.cart.validate_on_add', false);
+    config()->set('inventory.cart.block_checkout_on_insufficient', true);
+
+    $mouse = InventoryItem::create(['name' => 'Metadata Mouse']);
+    $cable = InventoryItem::create(['name' => 'Metadata Cable']);
+    $parent = InventoryItem::create(['name' => 'Metadata Bundle']);
+    $this->inventoryService->receive($mouse, $this->location->id, 10);
+    $this->inventoryService->receive($cable, $this->location->id, 10);
+
+    config()->set('cart.empty_cart_behavior', 'preserve');
+    $cart = new Cart(new InMemoryStorage, 'composite-metadata-cart');
+    $cart->addBuyable(compositeCartBuyable('metadata-bundle', 'Bundle', 1000, compositeComponentSnapshot([
+        ['product' => $mouse, 'quantity' => 2],
+        ['product' => $cable, 'quantity' => 1],
+    ]), $parent), 2);
+
+    $action = app(ReserveCartInventory::class);
+    $action->execute($cart);
+
+    $metadata = $cart->getMetadata('inventory_allocations')['allocations'];
+    expect($metadata['metadata-bundle']['quantity'])->toBe(6)
+        ->and($metadata['metadata-bundle']['allocation_count'])->toBe(2);
+
+    $cart->remove('metadata-bundle');
+    $action->execute($cart);
+
+    expect($cart->getMetadata('inventory_allocations')['allocations'])->toBe([])
+        ->and($this->inventoryService->getLevel($mouse, $this->location->id)?->fresh()->quantity_reserved)->toBe(0)
+        ->and($this->inventoryService->getLevel($cable, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
+});
+
+it('releases removed identities when the cart is allocated again', function (): void {
+    config()->set('inventory.cart.validate_on_add', false);
+
+    $mouse = InventoryItem::create(['name' => 'Removed Mouse']);
+    $cable = InventoryItem::create(['name' => 'Retained Cable']);
+    $this->inventoryService->receive($mouse, $this->location->id, 10);
+    $this->inventoryService->receive($cable, $this->location->id, 10);
+
+    $cart = new Cart(new InMemoryStorage, 'reallocate-removed-cart');
+    $cart->add(id: 'mouse', name: 'Mouse', price: 100, quantity: 2, associatedModel: $mouse);
+    $cart->add(id: 'cable', name: 'Cable', price: 100, quantity: 3, associatedModel: $cable);
+
+    $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+    $manager->allocateAllInventory();
+    $cart->remove('mouse');
+    $manager->allocateAllInventory();
+
+    expect($this->inventoryService->getLevel($mouse, $this->location->id)?->fresh()->quantity_reserved)->toBe(0)
+        ->and($this->inventoryService->getLevel($cable, $this->location->id)?->fresh()->quantity_reserved)->toBe(3);
 });

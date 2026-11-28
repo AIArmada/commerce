@@ -6,7 +6,7 @@ namespace AIArmada\Pricing\Support;
 
 use AIArmada\Pricing\Contracts\CustomerPriceResolverInterface;
 use AIArmada\Pricing\Models\Price;
-use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use Illuminate\Support\Arr;
 
 final class CustomerPriceResolver implements CustomerPriceResolverInterface
@@ -32,32 +32,18 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->where('currency', $currency)
-            ->whereNull('deactivated_at')
+            ->active($effectiveAt)
             ->forQuantity($quantity)
-            ->where(function ($q) use ($effectiveAt): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
-            })
-            ->where(function ($q) use ($effectiveAt): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $effectiveAt);
-            })
             ->whereIn(
                 'price_list_id',
-                PriceList::query()
-                    ->where('is_active', true)
-                    ->whereNull('deactivated_at')
-                    ->where('currency', $currency)
-                    ->where(function ($q) use ($effectiveAt): void {
-                        $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
-                    })
-                    ->where(function ($q) use ($effectiveAt): void {
-                        $q->whereNull('ends_at')->orWhere('ends_at', '>=', $effectiveAt);
-                    })
+                EligiblePriceLists::query($context, $effectiveAt, $currency)
                     ->where('customer_id', $customerId)
                     ->select('id')
             )
             ->orderByDesc('min_quantity')
-            ->first();
+            ->orderBy('id')
+            ->value('amount');
 
-        return $price?->amount;
+        return $price === null ? null : (int) $price;
     }
 }

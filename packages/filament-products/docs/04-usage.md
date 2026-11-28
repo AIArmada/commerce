@@ -347,16 +347,16 @@ This prevents cross-tenant category assignment attacks.
 
 ### Relationship Select Write Boundaries
 
-Multiple relationship selects (product categories, collection products, attribute groups, group attributes, set attributes, set groups) are not dehydrated, so page-level `mutateFormDataBefore*` hooks never see their submitted IDs. Each select instead registers an owner-scope guard in its `saveRelationshipsBeforeChildren()` slot, which runs inside the save transaction immediately before the relationship sync:
+Multiple relationship selects delegate persistence directly to the Products action, which locks the owning record and validates every submitted ID against the configured owner scope before syncing the pivot rows.
 
 ```php
-use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
-use AIArmada\Products\Models\Category;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
+use AIArmada\Products\Models\Product;
 
 Select::make('categories')
     ->relationship('categories', 'name')
     ->multiple()
-    ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(Category::class));
+    ->saveRelationshipsUsing(fn (Product $record, ?array $state) => app(SyncCatalogRelationships::class)->syncProductCategories($record, $state ?? []));
 ```
 
-The guard revalidates every submitted ID through `OwnerScopedIds::ensureAllowed()` and throws a `ValidationException` keyed to the component's state path when any ID falls outside the current owner scope (or the `include_global` policy). Filament's own `Rule::in` validation against rendered option labels is presentation-bound; this boundary check is the server-side authority.
+Invalid identifiers or foreign records fail before any membership changes are persisted.

@@ -6,7 +6,8 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CollectionResource;
-use AIArmada\Products\Models\Category;
+use AIArmada\Products\Actions\SaveCollection;
+use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -14,36 +15,17 @@ final class CreateCollection extends CreateRecord
 {
     protected static string $resource = CollectionResource::class;
 
+    protected function handleRecordCreation(array $data): Collection
+    {
+        return app(SaveCollection::class)->create($data);
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         if (array_key_exists('products', $data)) {
             /** @var array<int, string>|null $products */
             $products = is_array($data['products'] ?? null) ? $data['products'] : null;
             $data['products'] = OwnerScopedIds::ensureAllowed('products', Product::class, $products);
-        }
-
-        if (isset($data['conditions']) && is_array($data['conditions'])) {
-            foreach ($data['conditions'] as $index => $condition) {
-                if (! is_array($condition)) {
-                    continue;
-                }
-
-                if (($condition['field'] ?? null) !== 'category') {
-                    continue;
-                }
-
-                $value = $condition['value'] ?? null;
-                if (! is_string($value)) {
-                    continue;
-                }
-
-                $allowed = OwnerScopedIds::allowedIds(Category::class, [$value]);
-                if ($allowed === []) {
-                    unset($data['conditions'][$index]['value']);
-                } else {
-                    $data['conditions'][$index]['value'] = $allowed[0];
-                }
-            }
         }
 
         return $data;

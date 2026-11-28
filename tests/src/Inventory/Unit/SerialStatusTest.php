@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Disposed;
 use AIArmada\Inventory\States\Lost;

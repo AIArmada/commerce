@@ -47,7 +47,7 @@ final class PriceListPolicy
      */
     public function update(mixed $user, PriceList $priceList): bool
     {
-        return $this->canAccessList($priceList);
+        return $this->canMutate($priceList);
     }
 
     /**
@@ -63,7 +63,7 @@ final class PriceListPolicy
      */
     public function delete(mixed $user, PriceList $priceList): bool
     {
-        return $this->canAccessList($priceList);
+        return $this->canMutate($priceList);
     }
 
     /**
@@ -71,6 +71,6 @@ final class PriceListPolicy
      */
     public function duplicate(mixed $user, PriceList $priceList): bool
     {
-        return $this->view($user, $priceList);
+        return $this->canMutate($priceList);
     }
 }

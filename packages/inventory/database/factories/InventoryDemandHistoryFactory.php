@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\DemandPeriodType;
-use AIArmada\Inventory\Models\InventoryDemandHistory;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

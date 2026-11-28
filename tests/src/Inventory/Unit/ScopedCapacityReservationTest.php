@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Data\ScopedCapacityLine;
-use AIArmada\Inventory\Models\CapacityHold;
-use AIArmada\Inventory\Models\CapacityPool;
+use AIArmada\Inventory\Features\ScopedCapacity\Models\CapacityHold;
+use AIArmada\Inventory\Features\ScopedCapacity\Models\CapacityPool;
 use Carbon\CarbonImmutable;
 
 it('atomically holds pooled scoped capacity and enforces reference idempotency', function (): void {

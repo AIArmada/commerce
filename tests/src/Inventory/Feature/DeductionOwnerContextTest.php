@@ -7,8 +7,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
-use AIArmada\Inventory\Models\InventoryOperation;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
@@ -101,4 +101,36 @@ test('deduction skips malformed and half-null owner tuples without an operation'
 
     expect(findDeductionOperation($emptyType))->toBeNull()
         ->and(findDeductionOperation($halfNull))->toBeNull();
+});
+
+test('deduction rejects a mismatched persisted order owner before recording an operation', function (): void {
+    config()->set('inventory.owner.enabled', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $order = createOwnedDeductionOrder($owner, 'ORD-CTX-D-MISMATCH');
+
+    simulateQueueWorkerWithoutAmbientOwner();
+
+    $event = new InventoryDeductionRequired($order);
+    $event->owner_type = $other->getMorphClass();
+    $event->owner_id = (string) $other->getKey();
+
+    $listener = app(DeductInventoryFromOrder::class);
+    $listener->handle($event);
+
+    expect(findDeductionOperation($order))->toBeNull();
+
+    $event->owner_type = null;
+    $event->owner_id = null;
+    $event->owner_is_global = true;
+
+    $listener->handle($event);
+
+    expect(findDeductionOperation($order))->toBeNull();
+
+    $listener->handle(new InventoryDeductionRequired($order));
+
+    expect(findDeductionOperation($order))->not->toBeNull()
+        ->and(findDeductionOperation($order)->status)->toBe(InventoryOperation::STATUS_COMPLETED);
 });

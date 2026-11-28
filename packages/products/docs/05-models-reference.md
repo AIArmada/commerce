@@ -61,9 +61,9 @@ the lifecycle timestamps in sync:
 - `hasDiscount()`
 - `getDiscountPercentage()`
 - `getProfitMargin()`
-- `activate()`
-- `disable()`
-- `archive()`
+- `UpdateProductStatus` (Active)
+- `UpdateProductStatus` (Disabled)
+- `UpdateProductStatus` (Archived)
 - `hasVariants()`
 - `supportsVariants()`
 - `isPhysical()` / `isDigital()` / `isService()` / `isSubscription()`
@@ -78,7 +78,7 @@ Create a new variant when the parent product changes.
 
 Generation identity comes from `combination_key` (`<product id>:<sha256 of the sorted
 option-value IDs>`, built with `Variant::combinationKeyFor()`), which is unique per owner and
-per global scope through partial indexes. `MatrixVariantGenerator` fills the key on insert;
+per global scope through partial indexes. `GenerateVariantMatrix` fills the key on insert;
 direct creates may leave it `null`, and later generation adopts a keyless variant when its
 option-value membership matches a combination exactly.
 
@@ -166,7 +166,7 @@ Collections can be manual or automatic. Automatic-collection conditions accept t
 - `isAutomatic()`
 - `getMatchingProducts()`
 - `matchingProductsQuery()` — chunk or paginate this for large rule results
-- `rebuildProductList()` — chunked attach/detach, preserves pivot positions
+- `RebuildCollectionMembership::execute($collection)` (Products action) — transactional, owner-checked chunked attach/detach, preserves pivot positions
 - `isPublished()`
 - `isScheduled()`
 
@@ -219,12 +219,12 @@ These models are owner-aware and use config-driven table resolution like the res
 Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 
 - `getCustomAttribute()`
-- `setCustomAttribute()`
-- `setCustomAttributes()`
+- `CustomAttributeValues::set()`
+- `CustomAttributeValues::setMany()`
 - `getCustomAttributesArray()`
 - `hasCustomAttribute()`
-- `removeCustomAttribute()`
-- `clearCustomAttributes()`
+- `CustomAttributeValues::remove()`
+- `CustomAttributeValues::clear()`
 - `getFilterableCustomAttributes()`
 - `getVisibleCustomAttributes()`
 - `getComparableCustomAttributes()`

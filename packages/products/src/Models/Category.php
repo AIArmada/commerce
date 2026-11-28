@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Enums\CatalogStatus;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -528,11 +529,8 @@ class Category extends Model implements Auditable, HasMedia
             $category->validateParentHierarchy();
         });
 
-        static::deleting(function (Category $category): void {
-            // Nullify parent_id for children
-            $category->children()->update(['parent_id' => null]);
-            // Detach from products pivot
-            $category->products()->detach();
+        static::deleting(static function (Category $category): void {
+            app(CleanupCatalogRelationships::class)->beforeCategoryDeletion($category);
         });
     }
 

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\AlertDispatchService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Persistence\AlertDispatchService;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
@@ -168,6 +168,23 @@ describe('AlertDispatchService', function (): void {
         $level->refresh();
         expect($level->metadata['acknowledged_note'])->toBe('Acknowledged by admin');
         expect($level->metadata)->toHaveKey('last_acknowledged_at');
+    });
+
+    it('preserves metadata written since the alert record was loaded', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'metadata' => ['initial' => true],
+        ]);
+
+        $level->fresh()->update(['metadata' => ['concurrent' => true]]);
+        $this->service->acknowledgeAlert($level, 'Reviewed');
+
+        expect($level->fresh()->metadata)->toMatchArray([
+            'concurrent' => true,
+            'acknowledged_note' => 'Reviewed',
+        ]);
     });
 
     it('clear alert', function (): void {

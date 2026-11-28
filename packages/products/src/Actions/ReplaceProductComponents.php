@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -16,6 +17,7 @@ use AIArmada\Products\Services\CompositePackageValidator;
 use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Transactionally replaces the complete component list of one composite package.
@@ -23,19 +25,19 @@ use Illuminate\Support\Facades\DB;
  * Empty component lists are allowed while the parent is not active. An active
  * package must remain non-empty and publishable after every replacement.
  */
-final class ReplaceProductComponents
+final readonly class ReplaceProductComponents
 {
     public function __construct(
-        private readonly CompositePackageValidator $validator,
-        private readonly CompositePackageService $service,
+        private CompositePackageValidator $validator,
+        private CompositePackageService $service,
     ) {}
 
     /**
      * @param  list<array{
      *     component_product_id: string,
      *     variant_id?: string|null,
-     *     quantity?: int,
-     *     position?: int,
+     *     quantity?: int|string,
+     *     position?: int|string,
      *     unit_price?: int|null,
      *     metadata?: array<string, mixed>|null
      * }>  $components
@@ -44,8 +46,15 @@ final class ReplaceProductComponents
     public function handle(Product $product, array $components, ?Variant $parentVariant = null): Collection
     {
         return DB::transaction(function () use ($product, $components, $parentVariant): Collection {
-            $parent = Product::query()
-                ->whereKey($product->getKey())
+            $query = Product::query();
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $parent = $query->whereKey($product->getKey())
                 ->lockForUpdate()
                 ->first();
 
@@ -89,14 +98,20 @@ final class ReplaceProductComponents
                 ->delete();
 
             foreach ($prepared as $row) {
-                ProductComponent::query()->create($row);
+                $created = ProductComponent::query()->create($row);
+
+                if (! $created->exists) {
+                    throw new RuntimeException('Composite component creation was cancelled.');
+                }
             }
 
             $current = $this->service->componentsFor($parent, $parentVariant);
 
             // Recalculate the persisted parent shipping flag from the exact
             // composition, including when a draft package becomes empty.
-            $parent->save();
+            if (! $parent->save()) {
+                throw new RuntimeException('Composite shipping synchronization was cancelled.');
+            }
 
             if ($parent->status === ProductStatus::Active
                 && (! $parentVariant instanceof Variant || $parentVariant->is_enabled)) {
@@ -117,7 +132,11 @@ final class ReplaceProductComponents
         $seen = [];
 
         foreach (array_values($components) as $index => $component) {
-            $componentProductId = (string) ($component['component_product_id'] ?? '');
+            $rawProductId = $component['component_product_id'] ?? null;
+            if ($rawProductId !== null && ! is_string($rawProductId)) {
+                throw new InvalidCompositePackageException('Component product ID must be a string.');
+            }
+            $componentProductId = $rawProductId ?? '';
 
             $buyableType = $component['buyable_type'] ?? null;
             $rawBuyableId = $component['buyable_id'] ?? null;
@@ -137,8 +156,12 @@ final class ReplaceProductComponents
             $isExternal = $hasExternal;
 
             $variantId = $component['variant_id'] ?? null;
-            $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;
-            $quantity = (int) ($component['quantity'] ?? 0);
+            if ($variantId !== null && ! is_string($variantId)) {
+                throw new InvalidCompositePackageException('Component variant ID must be a string.');
+            }
+            $variantId = $variantId === '' ? null : $variantId;
+            $quantity = $this->integerField($component['quantity'] ?? 1, 'quantity', 1);
+            $position = $this->integerField($component['position'] ?? $index, 'position', 0);
 
             $componentProduct = $isExternal ? null : $this->resolveComponentProduct($componentProductId);
             $variant = $variantId !== null ? $this->resolveVariant($variantId) : null;
@@ -184,13 +207,28 @@ final class ReplaceProductComponents
                 'buyable_id' => $isExternal ? $buyableId : null,
                 'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                 'quantity' => $quantity,
-                'position' => (int) ($component['position'] ?? $index),
+                'position' => $position,
                 'unit_price' => $unitPrice,
                 'metadata' => $metadata,
             ];
         }
 
         return $prepared;
+    }
+
+    private function integerField(mixed $value, string $field, int $minimum): int
+    {
+        if (! is_int($value) && ! is_string($value)) {
+            throw new InvalidCompositePackageException("Composite component {$field} must be an integer.");
+        }
+
+        $number = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => $minimum, 'max_range' => 2147483647]]);
+
+        if ($number === false) {
+            throw new InvalidCompositePackageException("Composite component {$field} must be an integer between {$minimum} and 2147483647.");
+        }
+
+        return $number;
     }
 
     private function resolveComponentProduct(string $id): Product

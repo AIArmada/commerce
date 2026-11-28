@@ -13,7 +13,7 @@ use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
 use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
-use AIArmada\Inventory\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;

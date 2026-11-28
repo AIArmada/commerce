@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -214,12 +215,8 @@ class Option extends Model implements Auditable
             }
         });
 
-        static::deleting(function (Option $option): void {
-            // Delete values individually so OptionValue::deleting detaches
-            // variant pivots instead of leaving orphaned pivot rows.
-            $option->values()->reorder()->chunkById(100, function ($values): void {
-                $values->each(fn ($value) => $value->delete());
-            });
+        static::deleting(static function (Option $option): void {
+            app(CleanupCatalogRelationships::class)->beforeOptionDeletion($option);
         });
     }
 }

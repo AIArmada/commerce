@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
-use AIArmada\Inventory\Actions\ReleaseStock;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -18,11 +18,12 @@ final class ReleaseAllocationAction
             ->label('Release')
             ->icon(Heroicon::OutlinedArrowUturnLeft)
             ->color('danger')
+            ->visible(fn (InventoryAllocation $record): bool => $record->reservation_group_id === null)
             ->requiresConfirmation()
             ->modalHeading('Release Allocation')
             ->modalDescription('This will release the allocated inventory back to available stock.')
             ->action(function (InventoryAllocation $record): void {
-                $released = ReleaseStock::make()->releaseAllocation($record);
+                $released = InventoryAllocationFacade::releaseAllocation($record);
 
                 if ($released <= 0) {
                     Notification::make()

@@ -3,18 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\CompositeComponents;
-use AIArmada\Inventory\Cart\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
+use AIArmada\Products\Services\CompositePackageValidator;
 use Illuminate\Support\Str;
 
 function nestedLeaf(ProductType $type, string $name, int $price): Product
@@ -50,12 +52,11 @@ final class NestedCompositeCapacityResolver implements CompositeCapacityResolver
     /** @var list<array<string, mixed>> */
     public array $contexts = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $this->contexts[] = $context;
+        $this->contexts[] = $request->context;
 
-        return $this->capacities[$component->component_product_id] ?? null;
+        return $this->capacities[$request->componentProductId] ?? null;
     }
 }
 
@@ -278,4 +279,73 @@ it('rejects a direct model mutation that would introduce a cycle', function (): 
     ]))->toThrow(InvalidCompositePackageException::class, 'cycle');
 
     expect($b->components()->count())->toBe(0);
+});
+
+it('reports zero availability when an intermediate composite is not purchasable', function (): void {
+    $resolver = new NestedCompositeCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
+
+    $stock = nestedLeaf(ProductType::Simple, 'Draft Nested Stock', 100);
+    $resolver->capacities[(string) $stock->id] = 20;
+    $child = nestedPackage('Draft Nested Branch', 'sum', [
+        ['component_product_id' => $stock->id, 'quantity' => 2],
+    ], active: false);
+    $root = nestedPackage('Draft Nested Root', 'sum', [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+        ['component_product_id' => $stock->id, 'quantity' => 1],
+    ], active: false);
+
+    expect($child->compositeAvailability()->packages)->toBe(10)
+        ->and($root->compositeAvailability()->packages)->toBe(0)
+        ->and($root->compositeSnapshot()->entries)->toHaveCount(2)
+        ->and($root->fresh()->requires_shipping)->toBeTrue();
+});
+
+it('does not report capacity for a composition with an empty nested branch', function (): void {
+    $resolver = new NestedCompositeCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
+
+    $stock = nestedLeaf(ProductType::Simple, 'Incomplete Nested Stock', 100);
+    $resolver->capacities[(string) $stock->id] = 20;
+    $empty = nestedPackage('Empty Nested Branch', 'sum', [], active: false);
+    $root = nestedPackage('Incomplete Nested Root', 'sum', [
+        ['component_product_id' => $empty->id, 'quantity' => 1],
+        ['component_product_id' => $stock->id, 'quantity' => 1],
+    ], active: false);
+
+    expect($root->compositeAvailability()->packages)->toBe(0)
+        ->and($root->compositeSnapshot()->entries)->toHaveCount(1)
+        ->and($root->fresh()->requires_shipping)->toBeTrue();
+});
+
+it('visits a shared composite descendant only once during cycle validation', function (): void {
+    $leaf = nestedLeaf(ProductType::Service, 'Shared Graph Leaf', 100);
+    $shared = nestedPackage('Shared Graph Node', 'sum', [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], active: false);
+    $left = nestedPackage('Shared Graph Left', 'sum', [
+        ['component_product_id' => $shared->id, 'quantity' => 1],
+    ], active: false);
+    $right = nestedPackage('Shared Graph Right', 'sum', [
+        ['component_product_id' => $shared->id, 'quantity' => 1],
+    ], active: false);
+    $child = nestedPackage('Shared Graph Child', 'sum', [
+        ['component_product_id' => $left->id, 'quantity' => 1],
+        ['component_product_id' => $right->id, 'quantity' => 1],
+    ], active: false);
+    $parent = nestedPackage('Shared Graph Parent', 'sum', [], active: false);
+
+    $validator = app(CompositePackageValidator::class);
+    $connection = $child->getConnection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $validator->assertComponent($parent, $child, null, 1);
+
+        expect($connection->getQueryLog())->toHaveCount(5);
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
 });

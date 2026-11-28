@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Services\Costing\FifoCostingMethod;
-use AIArmada\Inventory\Services\Costing\StandardCostingMethod;
-use AIArmada\Inventory\Services\Costing\ValuationService;
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostingMethod;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostingMethod;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostingMethod;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostingMethod;
 
 test('the provider resolves named costing adapters', function (): void {
     expect(app(FifoCostingMethod::class))->toBeInstanceOf(FifoCostingMethod::class)

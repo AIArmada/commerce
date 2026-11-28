@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Actions\ReceiveInventory;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -40,7 +40,7 @@ final class ReceiveStockAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query());
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
                                 return $query
@@ -49,13 +49,13 @@ final class ReceiveStockAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name')),
 
                         TextInput::make('quantity')
                             ->label('Quantity Received')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(1)
                             ->default(1),
@@ -84,7 +84,7 @@ final class ReceiveStockAction
             ->action(function (Model $record, array $data): void {
                 $locationId = (string) $data['location_id'];
 
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($locationId)
                     ->exists();
 
@@ -107,14 +107,14 @@ final class ReceiveStockAction
                     $reason = implode(' - ', $parts);
                 }
 
-                $movement = ReceiveInventory::run(
+                app(InventoryService::class)->receive(
                     model: $record,
                     locationId: $locationId,
                     quantity: (int) $data['quantity'],
                     reason: $reason,
                     note: $data['notes'] ?? null,
                     userId: Auth::id(),
-                    occurredAt: $data['received_at'] ?? null,
+                    occurredAt: isset($data['received_at']) ? CarbonImmutable::parse($data['received_at']) : null,
                 );
 
                 Notification::make()

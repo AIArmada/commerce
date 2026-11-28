@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
-final class CreateProduct
+final readonly class CreateProduct
 {
     /**
      * ProductCreated fires once via the model's $dispatchesEvents mapping.
@@ -16,7 +19,24 @@ final class CreateProduct
      */
     public function execute(array $attributes): Product
     {
-        return DB::transaction(fn (): Product => Product::create($attributes));
+        return DB::transaction(function () use ($attributes): Product {
+            $data = Arr::except($attributes, ['id', 'owner_type', 'owner_id']);
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $data['owner_type'] = $owner?->getMorphClass();
+                $data['owner_id'] = $owner?->getKey();
+            }
+
+            $created = Product::query()->create($data);
+
+            if (! $created->exists) {
+                throw new RuntimeException('Catalog record creation was cancelled.');
+            }
+
+            return $created;
+        }, 3);
     }
 
     /**

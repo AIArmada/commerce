@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Actions\AdjustInventory;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -38,7 +38,7 @@ final class CycleCountAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query());
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
                                 return $query
@@ -47,7 +47,7 @@ final class CycleCountAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name'))
                             ->live()
@@ -56,7 +56,7 @@ final class CycleCountAction
                                     return;
                                 }
 
-                                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                                     ->whereKey($state)
                                     ->exists();
 
@@ -66,7 +66,7 @@ final class CycleCountAction
                                     return;
                                 }
 
-                                $stockLevel = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+                                $stockLevel = InventoryOwnerScope::forMutation(InventoryLevel::query())
                                     ->where('inventoryable_type', $record->getMorphClass())
                                     ->where('inventoryable_id', $record->getKey())
                                     ->where('location_id', $state)
@@ -82,7 +82,7 @@ final class CycleCountAction
 
                         TextInput::make('counted_quantity')
                             ->label('Counted Quantity')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(0)
                             ->autofocus(),
@@ -96,7 +96,7 @@ final class CycleCountAction
             ->action(function (Model $record, array $data): void {
                 $locationId = $data['location_id'];
 
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($locationId)
                     ->exists();
 
@@ -111,11 +111,18 @@ final class CycleCountAction
                 }
 
                 $countedQuantity = (int) $data['counted_quantity'];
-                $systemQuantity = (int) InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-                    ->where('inventoryable_type', $record->getMorphClass())
-                    ->where('inventoryable_id', $record->getKey())
-                    ->where('location_id', $locationId)
-                    ->value('quantity_on_hand');
+                $counter = isset($data['counter']) ? (string) $data['counter'] : null;
+
+                $movement = app(InventoryService::class)->adjust(
+                    model: $record,
+                    locationId: $locationId,
+                    newQuantity: $countedQuantity,
+                    reason: 'cycle_count',
+                    note: $counter !== null && $counter !== '' ? "Counted by {$counter}" : null,
+                    userId: Auth::id(),
+                );
+
+                $systemQuantity = (int) $movement->quantity_before;
                 $variance = $countedQuantity - $systemQuantity;
 
                 if ($variance === 0) {
@@ -127,20 +134,6 @@ final class CycleCountAction
 
                     return;
                 }
-
-                $reason = 'Cycle Count';
-                if (isset($data['counter'])) {
-                    $reason .= " by {$data['counter']}";
-                }
-
-                AdjustInventory::run(
-                    model: $record,
-                    locationId: $locationId,
-                    newQuantity: $countedQuantity,
-                    reason: $reason,
-                    note: "Variance: {$variance} (System: {$systemQuantity}, Counted: {$countedQuantity})",
-                    userId: Auth::id(),
-                );
 
                 $varianceText = $variance > 0 ? "+{$variance}" : (string) $variance;
 

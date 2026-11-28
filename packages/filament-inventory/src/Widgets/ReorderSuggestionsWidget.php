@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Widgets;
 
 use AIArmada\FilamentInventory\Actions\ApproveReorderSuggestionAction;
 use AIArmada\FilamentInventory\Actions\RejectReorderSuggestionAction;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Tables\Columns\TextColumn;

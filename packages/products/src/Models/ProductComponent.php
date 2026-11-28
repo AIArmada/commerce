@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\Products\Database\Factories\ProductComponentFactory;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -186,7 +187,7 @@ class ProductComponent extends Model implements Auditable
             $validator = app(CompositePackageValidator::class);
 
             if ($componentProduct instanceof Product) {
-                if ($parent->status === ProductStatus::Active) {
+                if (self::requiresPublishableComponent($component, $parent)) {
                     $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
                 } else {
                     $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
@@ -199,7 +200,7 @@ class ProductComponent extends Model implements Auditable
                     $parent,
                     $buyable,
                     (int) $component->quantity,
-                    $parent->status === ProductStatus::Active,
+                    self::requiresPublishableComponent($component, $parent),
                 );
             }
 
@@ -225,7 +226,7 @@ class ProductComponent extends Model implements Auditable
             $validator = app(CompositePackageValidator::class);
 
             if ($componentProduct instanceof Product) {
-                if ($parent->status === ProductStatus::Active) {
+                if (self::requiresPublishableComponent($component, $parent)) {
                     $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
                 } else {
                     $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
@@ -238,7 +239,7 @@ class ProductComponent extends Model implements Auditable
                     $parent,
                     $buyable,
                     (int) $component->quantity,
-                    $parent->status === ProductStatus::Active,
+                    self::requiresPublishableComponent($component, $parent),
                 );
             }
 
@@ -246,11 +247,11 @@ class ProductComponent extends Model implements Auditable
         });
 
         static::saved(static function (ProductComponent $component): void {
-            self::syncParentShipping($component);
+            app(SynchronizeCompositeShipping::class)->forComponent($component);
         });
 
         static::deleted(static function (ProductComponent $component): void {
-            self::syncParentShipping($component);
+            app(SynchronizeCompositeShipping::class)->forComponent($component);
         });
 
         static::deleting(function (ProductComponent $component): void {
@@ -366,6 +367,23 @@ class ProductComponent extends Model implements Auditable
         }
     }
 
+    private static function requiresPublishableComponent(ProductComponent $component, Product $parent): bool
+    {
+        if ($parent->status !== ProductStatus::Active) {
+            return false;
+        }
+
+        if ($component->parent_variant_id === null) {
+            return true;
+        }
+
+        return Variant::query()
+            ->whereKey($component->parent_variant_id)
+            ->where('product_id', $parent->getKey())
+            ->where('is_enabled', true)
+            ->exists();
+    }
+
     private static function assertComponentPricing(ProductComponent $component): void
     {
         if ($component->unit_price !== null && $component->unit_price < 0) {
@@ -374,15 +392,6 @@ class ProductComponent extends Model implements Auditable
 
         if ($component->metadata !== null && ! is_array($component->metadata)) {
             throw new InvalidCompositePackageException('Composite component metadata must be an array.');
-        }
-    }
-
-    private static function syncParentShipping(ProductComponent $component): void
-    {
-        $parent = Product::query()->whereKey($component->product_id)->first();
-
-        if ($parent instanceof Product) {
-            $parent->save();
         }
     }
 

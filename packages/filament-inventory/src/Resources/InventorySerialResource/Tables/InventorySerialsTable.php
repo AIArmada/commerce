@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Tables;
 
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityBulkAction;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -106,7 +106,7 @@ final class InventorySerialsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteTraceabilityBulkAction::make(),
                 ]),
             ]);
     }

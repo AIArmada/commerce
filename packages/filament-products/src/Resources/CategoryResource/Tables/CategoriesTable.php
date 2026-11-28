@@ -7,13 +7,14 @@ namespace AIArmada\FilamentProducts\Resources\CategoryResource\Tables;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
+use AIArmada\Products\Actions\SaveCategory;
 use AIArmada\Products\Models\Category;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables;
@@ -116,24 +117,26 @@ class CategoriesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteCatalogBulkAction::make()
                         ->authorize(fn (): bool => FilamentPermission::hasAbility('category.delete')),
                     BulkAction::make('show')
                         ->label('Set Active')
                         ->icon('heroicon-o-eye')
                         ->authorize(fn (): bool => FilamentPermission::hasAbility('category.update'))
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
-                                $record->update(['status' => 'active', 'hidden_at' => null]);
+                                app(SaveCategory::class)->update($record, ['status' => 'active', 'hidden_at' => null]);
                             });
                         }),
                     BulkAction::make('hide')
                         ->label('Set Hidden')
                         ->icon('heroicon-o-eye-slash')
                         ->authorize(fn (): bool => FilamentPermission::hasAbility('category.update'))
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
-                                $record->update(['status' => 'hidden', 'hidden_at' => CarbonImmutable::now()]);
+                                app(SaveCategory::class)->update($record, ['status' => 'hidden', 'hidden_at' => CarbonImmutable::now()]);
                             });
                         }),
                 ]),

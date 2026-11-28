@@ -33,7 +33,7 @@ class TicketTypeData extends Data
 
     public static function fromTicketType(TicketType $ticketType): self
     {
-        $quota = class_exists('AIArmada\\Inventory\\Models\\InventoryLevel')
+        $quota = class_exists('AIArmada\\Inventory\\Features\\Stock\\Models\\InventoryLevel')
             && $ticketType->inventoryLevels()->exists()
             ? $ticketType->getTotalOnHand()
             : null;

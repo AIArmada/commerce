@@ -3,17 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Reports\InventoryKpiService;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->service = new InventoryKpiService;
+    $this->service = app(InventoryKpiService::class);
 });
 
 describe('InventoryKpiService', function (): void {
@@ -263,7 +265,7 @@ describe('InventoryKpiService', function (): void {
                 'low_stock_items',
                 'out_of_stock_items',
             ]);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
 
         it('counts SKUs correctly', function (): void {
             InventoryLevel::factory()->create([
@@ -276,7 +278,7 @@ describe('InventoryKpiService', function (): void {
             $kpis = $this->service->getDashboardKpis();
 
             expect($kpis['total_sku_count'])->toBe(1);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
 
         it('counts out of stock items', function (): void {
             InventoryLevel::factory()->create([
@@ -288,8 +290,8 @@ describe('InventoryKpiService', function (): void {
 
             $kpis = $this->service->getDashboardKpis();
 
-            expect($kpis['out_of_stock_items'])->toBeInt();
-        })->skip('Production code uses SQLite-incompatible SQL');
+            expect($kpis['out_of_stock_items'])->toBe(1);
+        });
     });
 
     describe('getKpiTrends', function (): void {
@@ -320,4 +322,90 @@ describe('InventoryKpiService', function (): void {
             expect($dates)->toBe($sortedDates);
         });
     });
+});
+
+it('values only remaining layers in the selected costing method and currency', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+
+    foreach ([
+        [CostingMethod::Fifo, 'MYR', 4, 100],
+        [CostingMethod::Fifo, 'MYR', 0, 100],
+        [CostingMethod::Fifo, 'USD', 10, 100],
+        [CostingMethod::WeightedAverage, 'MYR', 4, 200],
+    ] as [$method, $currency, $remaining, $unitCost]) {
+        InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity' => 10,
+            'remaining_quantity' => $remaining,
+            'unit_cost_minor' => $unitCost,
+            'total_cost_minor' => 10 * $unitCost,
+            'costing_method' => $method,
+            'currency' => $currency,
+        ]);
+    }
+
+    expect($this->service->getDashboardKpis()['total_inventory_value'])->toBe(400)
+        ->and($this->service->getDashboardKpis(CostingMethod::WeightedAverage)['total_inventory_value'])->toBe(800);
+});
+
+it('classifies each SKU by combined sellable stock across active locations', function (): void {
+    config(['inventory.default_reorder_point' => 10]);
+
+    $emptyLocation = InventoryLocation::factory()->create(['is_active' => true]);
+    $inactiveLocation = InventoryLocation::factory()->create(['is_active' => false]);
+    $this->location->update(['is_active' => true]);
+
+    $low = InventoryItem::create(['name' => 'Low Stock SKU']);
+    $empty = InventoryItem::create(['name' => 'Out of Stock SKU']);
+
+    foreach ([
+        [$this->item, $this->location, 25, 0],
+        [$this->item, $emptyLocation, 0, 8],
+        [$low, $this->location, 4, 0],
+        [$low, $emptyLocation, 5, 0],
+        [$empty, $this->location, 0, 0],
+        [$empty, $inactiveLocation, 100, 0],
+    ] as [$item, $location, $onHand, $reserved]) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->getKey(),
+            'quantity_on_hand' => $onHand,
+            'quantity_reserved' => $reserved,
+        ]);
+    }
+
+    $kpis = $this->service->getDashboardKpis();
+
+    expect($kpis['total_sku_count'])->toBe(3)
+        ->and($kpis['low_stock_items'])->toBe(1)
+        ->and($kpis['out_of_stock_items'])->toBe(1);
+});
+
+it('counts only distinct days with recorded stock depletion', function (): void {
+    $start = CarbonImmutable::parse('2026-01-01 00:00:00');
+    $end = CarbonImmutable::parse('2026-01-10 23:59:59');
+
+    foreach ([[10, 5, 2], [5, 0, 3], [4, 0, 3]] as [$before, $after, $day]) {
+        InventoryMovement::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'from_location_id' => $this->location->id,
+            'type' => MovementType::Shipment,
+            'quantity' => $before - $after,
+            'quantity_before' => $before,
+            'quantity_after' => $after,
+            'occurred_at' => $start->addDays($day),
+        ]);
+    }
+
+    expect($this->service->calculateStockoutRate(
+        $this->item->getMorphClass(),
+        $this->item->getKey(),
+        $this->location->id,
+        $start,
+        $end,
+    ))->toBe(10.0);
 });

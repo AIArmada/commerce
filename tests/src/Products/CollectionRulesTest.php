@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
@@ -42,13 +43,24 @@ it('rebuilds automatic memberships and drops stale pivots', function (): void {
 
     $product = Product::create(['name' => 'Rebuild Featured', 'price' => 1000, 'status' => ProductStatus::Active, 'is_featured' => true]);
 
-    $collection->rebuildProductList();
+    app(RebuildCollectionMembership::class)->execute($collection);
 
     expect($collection->products()->count())->toBe(1);
 
     $product->update(['is_featured' => false]);
 
-    $collection->rebuildProductList();
+    app(RebuildCollectionMembership::class)->execute($collection);
 
     expect($collection->products()->count())->toBe(0);
+});
+
+it('rebuilds using persisted rules rather than stale collection attributes', function (): void {
+    $collection = autoCollection([['field' => 'is_featured', 'value' => true]]);
+    $product = Product::create(['name' => 'Persisted Rules', 'price' => 1000, 'status' => ProductStatus::Active, 'is_featured' => true]);
+
+    $collection->fresh()->update(['conditions' => [['field' => 'is_featured', 'value' => false]]]);
+
+    app(RebuildCollectionMembership::class)->execute($collection);
+
+    expect($collection->products()->whereKey($product->getKey())->exists())->toBeFalse();
 });

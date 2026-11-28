@@ -18,7 +18,7 @@ trait HandlesPricingOwnerScoping
         $owner = OwnerContext::resolve();
 
         if ($owner === null) {
-            return $this->isGlobalModel($model);
+            return OwnerContext::isExplicitGlobal() && $this->isGlobalModel($model);
         }
 
         if ($this->belongsToOwner($model, $owner)) {
@@ -27,6 +27,19 @@ trait HandlesPricingOwnerScoping
 
         return (bool) config('pricing.features.owner.include_global', false)
             && $this->isGlobalModel($model);
+    }
+
+    private function canMutate(Model $model): bool
+    {
+        if (! (bool) config('pricing.features.owner.enabled', false)) {
+            return true;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        return $owner === null
+            ? OwnerContext::isExplicitGlobal() && $this->isGlobalModel($model)
+            : $this->belongsToOwner($model, $owner);
     }
 
     private function belongsToOwner(Model $model, Model $owner): bool
@@ -50,6 +63,6 @@ trait HandlesPricingOwnerScoping
         /** @var bool $isGlobal */
         $isGlobal = $model->isGlobal();
 
-        return $isGlobal;
+        return $isGlobal && $model->getAttribute('owner_type') === null && $model->getAttribute('owner_id') === null;
     }
 }

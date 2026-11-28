@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
 use Illuminate\Support\Str;
 
 final class ScopedTestCapacityResolver implements CompositeCapacityDemandResolverInterface
@@ -24,16 +24,16 @@ final class ScopedTestCapacityResolver implements CompositeCapacityDemandResolve
     /** @var list<array<string, mixed>> */
     public array $contexts = [];
 
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        return $this->demandFor($parent, $component, $context)->available;
+        return $this->demandFor($request)->available;
     }
 
-    public function demandFor(Product $parent, ProductComponent $component, array $context = []): CompositeCapacityDemand
+    public function demandFor(CompositeCapacityRequest $request): CompositeCapacityDemand
     {
-        $this->contexts[] = $context;
-        $path = $context['composition_path'] ?? [];
-        $scope = (string) ($path[0]['metadata']['window'] ?? $context['window'] ?? '');
+        $this->contexts[] = $request->context;
+        $path = $request->context['composition_path'] ?? [];
+        $scope = (string) ($path[0]['metadata']['window'] ?? $request->context['window'] ?? '');
 
         return new CompositeCapacityDemand(
             resourceKey: $this->resource,

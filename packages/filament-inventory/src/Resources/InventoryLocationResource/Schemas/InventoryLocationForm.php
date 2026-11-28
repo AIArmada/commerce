@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryLocationResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;

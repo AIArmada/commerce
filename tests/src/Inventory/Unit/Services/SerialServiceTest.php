@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Disposed;
 use AIArmada\Inventory\States\InRepair;
@@ -19,7 +21,7 @@ use Carbon\CarbonImmutable;
 
 describe('SerialService', function (): void {
     beforeEach(function (): void {
-        $this->service = new SerialService;
+        $this->service = app(SerialService::class);
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
@@ -50,14 +52,14 @@ describe('SerialService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
         ]);
 
-        $found = $this->service->findBySerialNumber('SN-FIND');
+        $found = app(SerialLookupService::class)->findBySerialNumber('SN-FIND');
 
         expect($found)->not->toBeNull();
         expect($found->serial_number)->toBe('SN-FIND');
     });
 
     it('find by serial number returns null when not found', function (): void {
-        $found = $this->service->findBySerialNumber('NONEXISTENT');
+        $found = app(SerialLookupService::class)->findBySerialNumber('NONEXISTENT');
 
         expect($found)->toBeNull();
     });
@@ -68,7 +70,7 @@ describe('SerialService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
         ]);
 
-        $serials = $this->service->getSerialsForModel($this->item);
+        $serials = app(SerialLookupService::class)->getForModel($this->item);
 
         expect($serials)->toHaveCount(3);
     });
@@ -88,7 +90,7 @@ describe('SerialService', function (): void {
             'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        $available = $this->service->getAvailableSerials($this->item, $this->location->id);
+        $available = app(SerialLookupService::class)->getAvailableForSale($this->item, $this->location->id);
 
         expect($available)->toHaveCount(1);
     });
@@ -104,6 +106,32 @@ describe('SerialService', function (): void {
         $transferred = $this->service->transfer($serial, $newLocation->id, 'user-123', 'Moving to warehouse B');
 
         expect($transferred->location_id)->toBe($newLocation->id);
+    });
+
+    it('rejects moving or returning a serial to a location inconsistent with its batch', function (): void {
+        $batch = InventoryBatch::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+        ]);
+        $serial = $this->service->register($this->item, 'SN-BATCH-LOCATION', $this->location->id, $batch->id);
+        $destination = InventoryLocation::factory()->create();
+
+        expect(fn () => $this->service->transfer($serial, $destination->id))
+            ->toThrow(InvalidArgumentException::class, 'Batch does not match the serial item or location')
+            ->and($serial->fresh()->location_id)->toBe($this->location->id)
+            ->and($serial->history()->count())->toBe(1);
+
+        $serial->update(['status' => SerialStatus::normalize(Shipped::class), 'location_id' => null]);
+
+        expect(fn () => $this->service->processReturn($serial, $destination->id, SerialCondition::Used))
+            ->toThrow(InvalidArgumentException::class, 'Batch does not match the serial item or location')
+            ->and($serial->fresh()->status)->toBeInstanceOf(Shipped::class)
+            ->and($serial->fresh()->location_id)->toBeNull()
+            ->and($serial->history()->count())->toBe(1);
+
+        expect($this->service->processReturn($serial, $this->location->id, SerialCondition::Used)->status)
+            ->toBeInstanceOf(Returned::class);
     });
 
     it('reserve serial', function (): void {
@@ -247,7 +275,7 @@ describe('SerialService', function (): void {
         $this->service->reserve($serial->fresh(), 'order-123');
         $this->service->release($serial->fresh());
 
-        $history = $this->service->getHistory($serial, 10);
+        $history = app(SerialLookupService::class)->getHistory($serial, 10);
 
         expect($history)->toHaveCount(3);
     });
@@ -258,8 +286,23 @@ describe('SerialService', function (): void {
         $this->service->release($serial->fresh());
         $this->service->reserve($serial->fresh(), 'order-456');
 
-        $history = $this->service->getHistory($serial, 2);
+        $history = app(SerialLookupService::class)->getHistory($serial, 2);
 
         expect($history)->toHaveCount(2);
     });
+});
+
+it('rejects a second reservation from a stale serial instance', function (): void {
+    $item = InventoryItem::create(['name' => 'Serialized item']);
+    $service = app(SerialService::class);
+    $serial = $service->register($item, 'SN-STALE-RESERVATION');
+    $stale = $serial->fresh();
+
+    $service->reserve($serial, 'order-1');
+
+    expect(fn () => $service->reserve($stale, 'order-2'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($serial->fresh()->status)->toBeInstanceOf(Reserved::class)
+        ->and($serial->history()->count())->toBe(2);
 });

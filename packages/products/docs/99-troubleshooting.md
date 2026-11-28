@@ -66,7 +66,7 @@ Use `Collection::getMatchingProducts()` for automatic collections. Common causes
 
 ## Custom attribute values are not saving
 
-Save the owning model first, then call `setCustomAttribute()` or `setCustomAttributes()`.
+Save the owning model first, then call `CustomAttributeValues::set()` or `CustomAttributeValues::setMany()`.
 
 ## Attribute values are rejected with a cross-tenant or invalid reference error
 

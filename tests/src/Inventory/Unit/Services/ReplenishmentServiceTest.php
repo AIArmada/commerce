@@ -3,15 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
-use AIArmada\Inventory\Services\Stock\ReplenishmentService;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
@@ -91,12 +92,13 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion)->toBeInstanceOf(InventoryReorderSuggestion::class);
         expect($suggestion->status)->toBe(ReorderSuggestionStatus::Pending);
         expect($suggestion->current_stock)->toBe(10);
         expect($suggestion->lead_time_days)->toBe(7);
+        expect($this->service->createSuggestion($this->product, $level->id))->toBeNull();
     });
 
     it('uses supplier lead time when available', function (): void {
@@ -118,7 +120,7 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion->lead_time_days)->toBe(14);
         expect($suggestion->supplier_leadtime_id)->toBe($supplier->id);
@@ -135,7 +137,7 @@ describe('createSuggestion', function (): void {
             'lead_time_days' => 7,
         ]);
 
-        $suggestion = $this->service->createSuggestion($this->product, $level);
+        $suggestion = $this->service->createSuggestion($this->product, $level->id);
 
         expect($suggestion->urgency)->toBeInstanceOf(ReorderUrgency::class);
     });
@@ -349,4 +351,64 @@ describe('getStatistics', function (): void {
         expect($stats['ordered'])->toBeGreaterThanOrEqual($initialStats['ordered'] + 1);
         expect($stats['critical'])->toBeGreaterThanOrEqual($initialStats['critical'] + 1);
     });
+});
+
+it('generates replenishment suggestions only for writable stock and same-owner suppliers', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+
+    $owner = InventoryItem::create(['name' => 'Replenishment Owner']);
+    $product = $this->product;
+    $global = OwnerContext::withOwner(null, function () use ($product): InventoryLocation {
+        $location = InventoryLocation::factory()->create(['is_active' => true]);
+        InventoryLevel::factory()->forInventoryable($product->getMorphClass(), $product->getKey())
+            ->forLocation($location)->create([
+                'quantity_on_hand' => 2,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::LowStock->value,
+            ]);
+        InventorySupplierLeadtime::factory()->create([
+            'inventoryable_type' => $product->getMorphClass(),
+            'inventoryable_id' => $product->getKey(),
+            'is_primary' => true,
+            'is_active' => true,
+            'lead_time_days' => 2,
+        ]);
+
+        return $location;
+    });
+
+    OwnerContext::withOwner($owner, function () use ($product, $global): void {
+        $location = InventoryLocation::factory()->create(['is_active' => true]);
+        InventoryLevel::factory()->forInventoryable($product->getMorphClass(), $product->getKey())
+            ->forLocation($location)->create([
+                'quantity_on_hand' => 2,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::LowStock->value,
+                'lead_time_days' => 9,
+            ]);
+
+        expect($this->service->getPrimarySupplier($product))->toBeNull()
+            ->and(fn () => $this->service->generateSuggestions($global->id))->toThrow(InvalidArgumentException::class);
+
+        $suggestions = $this->service->generateSuggestions();
+
+        expect($suggestions)->toHaveCount(1)
+            ->and($suggestions->first()->location_id)->toBe($location->id)
+            ->and($suggestions->first()->supplier_leadtime_id)->toBeNull()
+            ->and($suggestions->first()->lead_time_days)->toBe(9);
+    });
+});
+
+it('uses fresh stock balances and rejects mismatched stock identities', function (): void {
+    $level = InventoryLevel::factory()->forInventoryable($this->product->getMorphClass(), $this->product->getKey())
+        ->forLocation($this->location)->create(['quantity_on_hand' => 10, 'quantity_reserved' => 0]);
+    $other = InventoryItem::create(['name' => 'Unrelated inventory item']);
+
+    expect(fn () => $this->service->createSuggestion($other, $level->id))
+        ->toThrow(InvalidArgumentException::class, 'does not belong');
+
+    $level->fresh()->update(['quantity_on_hand' => 4]);
+    $suggestion = $this->service->createSuggestion($this->product, $level->id);
+
+    expect($suggestion->current_stock)->toBe(4);
 });

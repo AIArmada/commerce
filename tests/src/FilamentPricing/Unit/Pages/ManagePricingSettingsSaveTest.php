@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
 use AIArmada\Pricing\Settings\PricingSettings;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
 
 uses(TestCase::class);
@@ -55,6 +58,10 @@ it('persists settings from page data when saving', function (): void {
         'customerGroupPricingEnabled' => true,
     ];
 
+    config()->set('filament-pricing.authorization.settings_ability', 'pricing.manage-settings');
+    Gate::define('pricing.manage-settings', fn (): bool => true);
+    $this->actingAs(User::factory()->create());
+
     $page->save();
 
     expect($settings->defaultCurrency)->toBe('SGD');
@@ -79,7 +86,7 @@ it('exposes a save header action', function (): void {
     expect($actions)->toHaveCount(1);
 });
 
-it('seeds default pricing settings when settings payload is missing', function (): void {
+it('does not recreate missing settings during a read', function (): void {
     config()->set('settings.repositories.database', [
         'type' => DatabaseSettingsRepository::class,
         'model' => 'Spatie\\LaravelSettings\\Models\\SettingsProperty',
@@ -102,28 +109,8 @@ it('seeds default pricing settings when settings payload is missing', function (
 
     $page = app(ManagePricingSettings::class);
 
-    $page->mount();
+    expect(fn () => $page->mount())->toThrow(MissingSettings::class);
 
-    expect($page->data['defaultCurrency'])->toBe('MYR')
-        ->and((int) $page->data['decimalPlaces'])->toBe(2)
-        ->and($page->data['roundingMode'])->toBe('half_up')
-        ->and($page->data['pricesIncludeTax'])->toBeFalse()
-        ->and((int) $page->data['maximumOrderValue'])->toBe(10000000);
-
-    $persistedSettingsKeys = DB::table((string) config('settings.stores.database.table', 'settings'))
-        ->where('group', 'pricing')
-        ->pluck('name')
-        ->all();
-
-    expect($persistedSettingsKeys)->toContain(
-        'defaultCurrency',
-        'decimalPlaces',
-        'pricesIncludeTax',
-        'roundingMode',
-        'minimumOrderValue',
-        'maximumOrderValue',
-        'promotionalPricingEnabled',
-        'tieredPricingEnabled',
-        'customerGroupPricingEnabled'
-    );
+    expect(DB::table((string) config('settings.stores.database.table', 'settings'))
+        ->where('group', 'pricing')->count())->toBe(0);
 });

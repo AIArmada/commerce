@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Database\Factories;
 
-use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Data\AllocationStrategy;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

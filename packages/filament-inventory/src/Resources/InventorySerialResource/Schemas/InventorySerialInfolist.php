@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

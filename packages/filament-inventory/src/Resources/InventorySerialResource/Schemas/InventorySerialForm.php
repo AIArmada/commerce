@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentInventory\Support\TraceabilityLevelSelect;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -27,6 +28,7 @@ final class InventorySerialForm
         return $schema->components([
             Section::make('Serial Information')
                 ->schema([
+                    TraceabilityLevelSelect::make(),
                     Grid::make(2)
                         ->schema([
                             TextInput::make('serial_number')
@@ -37,6 +39,9 @@ final class InventorySerialForm
 
                             Select::make('location_id')
                                 ->label('Location')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->relationship(
                                     name: 'location',
                                     titleAttribute: 'name',
@@ -47,22 +52,28 @@ final class InventorySerialForm
 
                             Select::make('batch_id')
                                 ->label('Batch')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->relationship(
                                     name: 'batch',
                                     titleAttribute: 'batch_number',
-                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query),
+                                    modifyQueryUsing: fn (Builder $query): Builder => InventoryOwnerScope::forMutation($query),
                                 )
                                 ->searchable()
                                 ->preload(),
 
                             Select::make('status')
                                 ->label('Status')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->options(SerialStatus::options())
                                 ->required()
                                 ->default(Available::getMorphClass()),
 
                             Select::make('condition')
                                 ->label('Condition')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->options(collect(SerialCondition::cases())->mapWithKeys(
                                     fn (SerialCondition $condition) => [$condition->value => $condition->label()]
                                 ))
@@ -77,11 +88,14 @@ final class InventorySerialForm
                         ->schema([
                             TextInput::make('unit_cost_minor')
                                 ->label('Unit Cost (Minor)')
-                                ->numeric()
+                                ->integer()
+                                ->minValue(0)
                                 ->prefix(config('inventory.defaults.currency', 'MYR')),
 
                             DatePicker::make('warranty_expires_at')
-                                ->label('Warranty Expires'),
+                                ->label('Warranty Expires')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
                         ]),
                 ]),
 
@@ -91,10 +105,16 @@ final class InventorySerialForm
                         ->schema([
                             TextInput::make('order_id')
                                 ->label('Order ID')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->maxLength(36),
 
                             TextInput::make('customer_id')
                                 ->label('Customer ID')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->maxLength(36),
                         ]),
                 ])
@@ -109,7 +129,10 @@ final class InventorySerialForm
                                 ->default(CarbonImmutable::now()),
 
                             DatePicker::make('sold_at')
-                                ->label('Sold Date'),
+                                ->label('Sold Date')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false),
                         ]),
                 ])
                 ->collapsible(),

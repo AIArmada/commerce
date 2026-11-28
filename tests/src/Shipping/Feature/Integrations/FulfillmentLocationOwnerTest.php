@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Integrations;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use Illuminate\Support\Str;
@@ -99,6 +99,25 @@ it('fails closed when the order owner no longer exists', function (): void {
     $resolved = OwnerContext::withOwner(
         $owner,
         fn (): ?object => resolveFulfillmentLocation((string) $location->getKey(), fulfillmentOrderFor($missingOwner))
+    );
+
+    expect($resolved)->toBeNull();
+});
+
+it('rejects a tenant-visible global warehouse as a forced location', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = fulfillmentLocationOwner('Tenant Location Owner');
+    $location = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::query()->create([
+        'name' => 'Global warehouse',
+        'code' => 'GLOBAL-' . Str::upper(Str::random(6)),
+        'is_active' => true,
+    ]));
+
+    $resolved = OwnerContext::withOwner(
+        $owner,
+        fn (): ?object => resolveFulfillmentLocation((string) $location->getKey(), fulfillmentOrderFor($owner))
     );
 
     expect($resolved)->toBeNull();

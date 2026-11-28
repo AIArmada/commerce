@@ -10,6 +10,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Pricing\Actions\ClearOtherDefaultPriceLists;
+use AIArmada\Pricing\Actions\DeletePriceListChildren;
+use AIArmada\Pricing\Persistence\AtomicPriceListPersistence;
+use AIArmada\Pricing\Queries\OwnerScopedPricingReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +21,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
@@ -45,6 +48,7 @@ class PriceList extends Model implements Auditable
 
     private const SEGMENT_MODEL = 'AIArmada\\Customers\\Features\\Segmentation\\Models\\Segment';
 
+    use AtomicPriceListPersistence;
     use FormatsMoney;
     use HasCommerceAudit;
     use HasOwner;
@@ -85,6 +89,7 @@ class PriceList extends Model implements Auditable
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'currency' => 'MYR',
         'priority' => 0,
         'is_default' => false,
         'is_active' => true,
@@ -125,9 +130,9 @@ class PriceList extends Model implements Auditable
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive(Builder $query, ?CarbonImmutable $now = null): Builder
     {
-        $now = CarbonImmutable::now();
+        $now ??= CarbonImmutable::now();
 
         return $query->where('is_active', true)
             ->whereNull('deactivated_at')
@@ -279,7 +284,7 @@ class PriceList extends Model implements Auditable
             }
 
             if ($priceList->is_default) {
-                self::clearOtherDefaults($priceList, $owner);
+                (new ClearOtherDefaultPriceLists)->execute($priceList);
             }
         });
 
@@ -296,21 +301,8 @@ class PriceList extends Model implements Auditable
                 }
             }
 
-            DB::transaction(function () use ($priceList): void {
-                $priceList->prices()->delete();
-                $priceList->tiers()->delete();
-            });
+            (new DeletePriceListChildren)->execute($priceList);
         });
-    }
-
-    /**
-     * Keep default-list demotion and the model write in one transaction.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        return DB::transaction(fn (): bool => parent::save($options));
     }
 
     private static function validateOwnerScopedReferences(self $priceList): void
@@ -331,32 +323,6 @@ class PriceList extends Model implements Auditable
             throw new AuthorizationException(sprintf('%s must reference an accessible owner-scoped record.', $attribute));
         }
 
-        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
-            return;
-        }
-
-        /** @var class-string<Model> $modelClass */
-        $exists = $modelClass::query()
-            ->whereKey($value)
-            ->exists();
-
-        if (! $exists) {
-            throw new AuthorizationException(sprintf('%s is not accessible in the current owner scope.', $attribute));
-        }
-    }
-
-    private static function clearOtherDefaults(self $priceList, ?Model $owner): void
-    {
-        $query = static::query();
-
-        if (config('pricing.features.owner.enabled', false)) {
-            $query = $query->forOwner($priceList->isGlobal() ? null : $owner, false);
-        }
-
-        if ($priceList->exists) {
-            $query->where($priceList->getKeyName(), '!=', $priceList->getKey());
-        }
-
-        $query->where('is_default', true)->update(['is_default' => false]);
+        OwnerScopedPricingReference::assertAccessible($modelClass, $value, $priceList->owner_type, $priceList->owner_id, $attribute);
     }
 }

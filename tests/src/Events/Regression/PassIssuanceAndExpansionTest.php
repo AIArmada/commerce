@@ -11,8 +11,8 @@ use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction
 use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Events\Features\Registrations\Actions\CreateEventComponentRegistrationsAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketTypeComponent;
 
@@ -119,7 +119,7 @@ it('expands a bundle once, preserves participant contact data and answers, and r
 it('issues passes for both the agent bundle root and its child registrations', function (): void {
     config()->set('events.features.enforce_scope_capacity_on_paid_registrations', true);
 
-    $location = InventoryLocation::getOrCreateDefault();
+    $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
     $event = Event::factory()->paid()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->getKey()]);
     $parentTicketType = createEventTicketType($occurrence, ['price' => 1500, 'status' => 'active']);
@@ -149,7 +149,7 @@ it('issues passes for both the agent bundle root and its child registrations', f
 });
 
 it('rejects agent sales when the event lifecycle is closed', function (): void {
-    $location = InventoryLocation::getOrCreateDefault();
+    $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
     $event = Event::factory()->paid()->create(['status' => 'cancelled', 'cancelled_at' => now()]);
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->getKey()]);
     $ticketType = createEventTicketType($occurrence, ['price' => 1500, 'status' => 'active']);

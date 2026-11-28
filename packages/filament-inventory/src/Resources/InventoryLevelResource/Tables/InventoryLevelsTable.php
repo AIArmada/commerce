@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Tables;
 
-use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Data\AllocationStrategy;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -58,7 +58,7 @@ final class InventoryLevelsTable
 
                 TextColumn::make('available')
                     ->label('Available')
-                    ->state(fn (InventoryLevel $record): int => $record->getAvailableQuantity())
+                    ->state(fn (InventoryLevel $record): int => $record->available)
                     ->numeric()
                     ->alignCenter()
                     ->color(fn (int $state, InventoryLevel $record): string => match (true) {

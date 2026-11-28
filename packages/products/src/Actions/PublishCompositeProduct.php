@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -14,17 +15,25 @@ use Illuminate\Support\Facades\DB;
 /**
  * Validates the complete package and moves the parent to Active.
  */
-final class PublishCompositeProduct
+final readonly class PublishCompositeProduct
 {
     public function __construct(
-        private readonly CompositePackageService $service,
+        private CompositePackageService $service,
+        private UpdateProductStatus $updateStatus,
     ) {}
 
     public function handle(Product $product): Product
     {
         return DB::transaction(function () use ($product): Product {
-            $parent = Product::query()
-                ->whereKey($product->getKey())
+            $query = Product::query();
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $parent = $query->whereKey($product->getKey())
                 ->lockForUpdate()
                 ->first();
 
@@ -36,9 +45,11 @@ final class PublishCompositeProduct
                 throw new InvalidCompositePackageException('Only composite products can be published as packages.');
             }
 
-            $this->service->assertPublishable($parent);
+            if ($parent->status === ProductStatus::Active) {
+                $this->service->assertPublishable($parent);
+            }
 
-            return app(UpdateProductStatus::class)->execute($parent, ProductStatus::Active);
+            return $this->updateStatus->execute($parent, ProductStatus::Active);
         });
     }
 

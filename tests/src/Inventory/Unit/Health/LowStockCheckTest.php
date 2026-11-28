@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Health\LowStockCheck;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\EntryPoints\Health\LowStockCheck;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Spatie\Health\Enums\Status;
 
 beforeEach(function (): void {
@@ -126,4 +126,58 @@ describe('LowStockCheck', function (): void {
 
         expect($result->status->equals(Status::ok()))->toBeTrue();
     });
+});
+
+it('checks sellable stock after reservations rather than physical stock alone', function (): void {
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 100,
+    ]);
+
+    $result = $this->check->run();
+
+    expect($result->status->equals(Status::warning()))->toBeTrue()
+        ->and($result->notificationMessage)->toContain('out of stock');
+});
+
+it('fails on low available stock when configured to fail', function (): void {
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 95,
+    ]);
+
+    $result = $this->check->failOnLowStock()->run();
+
+    expect($result->status->equals(Status::failed()))->toBeTrue()
+        ->and($result->notificationMessage)->toContain('low stock');
+});
+
+it('rejects negative stock thresholds', function (): void {
+    expect(fn () => $this->check->threshold(-1))->toThrow(InvalidArgumentException::class);
+});
+
+it('ignores stock shortages at inactive locations', function (): void {
+    $inactive = InventoryLocation::factory()->inactive()->create();
+
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $inactive->id,
+        'quantity_on_hand' => 0,
+    ]);
+
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 100,
+    ]);
+
+    expect($this->check->run()->status->equals(Status::ok()))->toBeTrue();
 });

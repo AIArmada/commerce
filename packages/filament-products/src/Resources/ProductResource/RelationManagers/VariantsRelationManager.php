@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Actions\GenerateVariants;
+use AIArmada\Products\Actions\SaveVariant;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
@@ -193,7 +194,8 @@ final class VariantsRelationManager extends RelationManager
                         }
 
                         return $data;
-                    }),
+                    })
+                    ->using(fn (array $data): Variant => app(SaveVariant::class)->create($this->catalogProduct(), $data)),
             ])
             ->actions([
                 EditAction::make()
@@ -224,8 +226,10 @@ final class VariantsRelationManager extends RelationManager
                         }
 
                         return $data;
-                    }),
-                DeleteAction::make(),
+                    })
+                    ->using(fn (Variant $record, array $data): Variant => app(SaveVariant::class)->update($this->catalogProduct(), $record, $data)),
+                DeleteAction::make()
+                    ->using(fn (Variant $record): bool => app(SaveVariant::class)->delete($this->catalogProduct(), $record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -236,7 +240,7 @@ final class VariantsRelationManager extends RelationManager
                         ->action(function (Collection $records): void {
                             /** @var Collection<int, Variant> $records */
                             $records->each(function (Variant $record): void {
-                                $record->update(['is_enabled' => true]);
+                                app(SaveVariant::class)->update($this->catalogProduct(), $record, ['is_enabled' => true]);
                             });
                         }),
                     BulkAction::make('disable')
@@ -245,10 +249,18 @@ final class VariantsRelationManager extends RelationManager
                         ->action(function (Collection $records): void {
                             /** @var Collection<int, Variant> $records */
                             $records->each(function (Variant $record): void {
-                                $record->update(['is_enabled' => false]);
+                                app(SaveVariant::class)->update($this->catalogProduct(), $record, ['is_enabled' => false]);
                             });
                         }),
                 ]),
             ]);
+    }
+
+    private function catalogProduct(): Product
+    {
+        $product = $this->getOwnerRecord();
+        abort_unless($product instanceof Product, 404);
+
+        return $product;
     }
 }

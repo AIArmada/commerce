@@ -6,12 +6,17 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Products\Actions\RebuildCollectionMembership;
+use AIArmada\Products\Actions\SaveCollection;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 describe('Collection Model', function (): void {
     beforeEach(function (): void {
@@ -31,6 +36,53 @@ describe('Collection Model', function (): void {
             {
                 return null;
             }
+        });
+    });
+
+    it('rejects foreign category rules rather than silently widening a collection', function (): void {
+        config()->set('products.features.owner.enabled', true);
+        config()->set('products.features.owner.auto_assign_on_create', true);
+
+        $ownerA = TestOwner::query()->create(['name' => 'Rule Owner A']);
+        $ownerB = TestOwner::query()->create(['name' => 'Rule Owner B']);
+
+        $category = OwnerContext::withOwner($ownerB, static fn (): Category => Category::query()->create(['name' => 'Foreign Category']));
+
+        OwnerContext::withOwner($ownerA, static function () use ($category): void {
+            $action = app(SaveCollection::class);
+
+            $collection = $action->create(['name' => 'Local Collection', 'type' => 'automatic']);
+
+            expect(fn () => $action->update($collection, [
+                'name' => 'Changed',
+                'conditions' => [['field' => 'category', 'value' => $category->getKey()]],
+            ]))->toThrow(ValidationException::class);
+
+            expect($collection->fresh()->name)->toBe('Local Collection');
+        });
+    });
+
+    it('rejects cross-owner relationship updates without detaching existing membership', function (): void {
+        config()->set('products.features.owner.enabled', true);
+        config()->set('products.features.owner.include_global', false);
+        config()->set('products.features.owner.auto_assign_on_create', true);
+
+        $ownerA = TestOwner::query()->create(['name' => 'Membership Owner A']);
+        $ownerB = TestOwner::query()->create(['name' => 'Membership Owner B']);
+
+        $foreign = OwnerContext::withOwner($ownerB, static fn (): Product => Product::query()->create(['name' => 'Foreign Membership', 'price' => 1000]));
+
+        OwnerContext::withOwner($ownerA, static function () use ($foreign): void {
+            $collection = app(SaveCollection::class)->create(['name' => 'Manual Membership']);
+            $local = Product::query()->create(['name' => 'Local Membership', 'price' => 1000]);
+            $action = app(SyncCatalogRelationships::class);
+
+            $action->syncCollectionProducts($collection, [$local->getKey()]);
+
+            expect(fn () => $action->syncCollectionProducts($collection, [$foreign->getKey()]))
+                ->toThrow(ValidationException::class);
+
+            expect($collection->products()->pluck('id')->all())->toBe([$local->getKey()]);
         });
     });
 
@@ -317,13 +369,13 @@ describe('Collection Model', function (): void {
         });
     });
 
-    describe('rebuildProductList', function (): void {
+    describe('RebuildCollectionMembership', function (): void {
         it('does nothing for manual collections', function (): void {
             $collection = Collection::create(['name' => 'Manual Rebuild', 'type' => 'manual']);
             $product = Product::create(['name' => 'Manual Rebuild Product', 'price' => 1000, 'status' => ProductStatus::Active]);
 
             $collection->products()->attach($product->id);
-            $collection->rebuildProductList();
+            app(RebuildCollectionMembership::class)->execute($collection);
 
             expect($collection->products)->toHaveCount(1);
         });
@@ -339,7 +391,7 @@ describe('Collection Model', function (): void {
 
             Product::create(['name' => 'Featured Rebuild', 'price' => 2000, 'status' => ProductStatus::Active, 'is_featured' => true]);
 
-            $collection->rebuildProductList();
+            app(RebuildCollectionMembership::class)->execute($collection);
 
             expect($collection->products()->count())->toBeGreaterThanOrEqual(1);
         });

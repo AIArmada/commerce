@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Database\Factories;
 
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,7 +23,11 @@ class InventoryAllocationFactory extends Factory
             'inventoryable_type' => 'App\\Models\\Product',
             'inventoryable_id' => $this->faker->uuid(),
             'location_id' => InventoryLocation::factory(),
-            'level_id' => InventoryLevel::factory(),
+            'level_id' => fn (array $attributes): string => InventoryLevel::query()->firstOrCreate([
+                'inventoryable_type' => $attributes['inventoryable_type'],
+                'inventoryable_id' => $attributes['inventoryable_id'],
+                'location_id' => $attributes['location_id'],
+            ], ['quantity_on_hand' => 100])->id,
             'cart_id' => $this->faker->uuid(),
             'quantity' => $this->faker->numberBetween(1, 10),
             'expires_at' => now()->addMinutes(config('inventory.allocation_ttl_minutes', 30)),

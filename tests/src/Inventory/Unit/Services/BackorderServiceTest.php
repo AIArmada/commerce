@@ -4,20 +4,38 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\BackorderService;
-use AIArmada\Inventory\States\Fulfilled;
-use AIArmada\Inventory\States\PartiallyFulfilled;
-use AIArmada\Inventory\States\Pending;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
+use AIArmada\Inventory\Features\Backorders\States\Fulfilled;
+use AIArmada\Inventory\Features\Backorders\States\PartiallyFulfilled;
+use AIArmada\Inventory\Features\Backorders\States\Pending;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 describe('BackorderService', function (): void {
     beforeEach(function (): void {
         $this->service = new BackorderService;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
+    });
+
+    it('rejects invalid backorder quantities', function (): void {
+        expect(fn () => $this->service->create($this->item, 0, $this->location->id))->toThrow(InvalidArgumentException::class);
+        $backorder = $this->service->create($this->item, 10, $this->location->id);
+        expect(fn () => $this->service->fulfill($backorder, -1))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->cancel($backorder, 0))->toThrow(InvalidArgumentException::class)
+            ->and($backorder->fresh()->quantityRemaining())->toBe(10);
+    });
+
+    it('uses current persisted quantities when fulfilling a stale backorder', function (): void {
+        $backorder = $this->service->create($this->item, 10, $this->location->id);
+        $stale = $backorder->fresh();
+
+        expect($this->service->fulfill($backorder, 8))->toBeTrue()
+            ->and($this->service->fulfill($stale, 8))->toBeTrue()
+            ->and($backorder->fresh()->quantity_fulfilled)->toBe(10);
     });
 
     it('create backorder', function (): void {
@@ -220,7 +238,7 @@ describe('BackorderService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'quantity_on_hand' => 60,
-            'quantity_reserved' => 10, // quantity_available = 50
+            'quantity_reserved' => 10, // available = 50
         ]);
 
         InventoryBackorder::factory()->create([
@@ -235,6 +253,37 @@ describe('BackorderService', function (): void {
         $fulfillable = $this->service->getFulfillableBackorders();
 
         expect($fulfillable)->toHaveCount(1);
+    });
+
+    it('does not subtract an over-reserved location from sellable stock elsewhere', function (): void {
+        $otherLocation = InventoryLocation::factory()->create(['is_active' => true]);
+
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+            'quantity_reserved' => 0,
+        ]);
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $otherLocation->id,
+            'quantity_on_hand' => 0,
+            'quantity_reserved' => 15,
+        ]);
+
+        $backorder = InventoryBackorder::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => null,
+            'quantity_requested' => 10,
+            'quantity_fulfilled' => 0,
+            'quantity_cancelled' => 0,
+            'status' => Pending::class,
+        ]);
+
+        expect($this->service->getFulfillableBackorders()->modelKeys())->toContain($backorder->getKey());
     });
 
     it('update promised date', function (): void {
@@ -272,4 +321,49 @@ describe('BackorderService', function (): void {
         // (10-2-0) + (20-5-3) = 8 + 12 = 20
         expect($total)->toBe(20);
     });
+});
+
+it('batches backorder availability by item and excludes inactive locations', function (): void {
+    config()->set('inventory.owner.enabled', false);
+
+    $service = new BackorderService;
+    $item = InventoryItem::create(['name' => 'Batched Backorder Item']);
+    $other = InventoryItem::create(['name' => 'Unstocked Backorder Item']);
+    $active = InventoryLocation::factory()->create(['is_active' => true]);
+    $inactive = InventoryLocation::factory()->create(['is_active' => false]);
+
+    foreach ([[$active, 10], [$inactive, 100]] as [$location, $quantity]) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => $quantity,
+            'quantity_reserved' => 0,
+        ]);
+    }
+
+    $expected = [];
+
+    foreach (range(1, 20) as $index) {
+        $expected[] = $service->create($item, 5, $active->id)->id;
+    }
+
+    $expected[] = $service->create($item, 10)->id;
+    $service->create($item, 11);
+    $service->create($item, 1, $inactive->id);
+    $service->create($other, 1);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $actual = $service->getFulfillableBackorders()->modelKeys();
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($actual)->toEqualCanonicalizing($expected)
+        ->and(count($queries))->toBeLessThanOrEqual(3);
 });

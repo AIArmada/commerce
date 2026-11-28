@@ -9,12 +9,16 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\ProductResource\Tables\ProductsTable;
+use AIArmada\Products\Actions\ImportCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Queries\CatalogExport;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 uses(TestCase::class);
@@ -39,14 +43,12 @@ function runProductImport(array $data): void
 {
     $method = new ReflectionMethod(ProductsTable::class, 'importProducts');
 
-    $method->invoke(null, $data);
+    $method->invoke(null, $data, static fn (?Product $product): bool => true);
 }
 
 function validateImportRow(array $record, bool $isUpdate): array
 {
-    $method = new ReflectionMethod(ProductsTable::class, 'validateImportRow');
-
-    return $method->invoke(null, $record, $isUpdate);
+    return ImportCatalogProducts::validateImportRow($record, $isUpdate);
 }
 
 function runProductExport(array $data): string
@@ -196,4 +198,85 @@ it('streams product exports row by row', function (): void {
         ->and($csv)->toContain('EXP-1')
         ->and($csv)->toContain('12.99')
         ->and($csv)->toContain('active');
+});
+
+it('enforces per-row import authorization', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        $result = app(ImportCatalogProducts::class)->execute(
+            [['name' => 'Denied Product', 'price' => '9.99']],
+            false,
+            true,
+            static fn (?Product $product): bool => false,
+        );
+
+        expect($result[0])->toBe(0)
+            ->and($result[2])->toHaveCount(1)
+            ->and(Product::query()->where('name', 'Denied Product')->exists())->toBeFalse();
+    });
+});
+
+it('rejects unapproved export columns and neutralizes spreadsheet formulas', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create([
+            'name' => '=1+1',
+            'slug' => 'formula-example',
+            'price' => 100,
+        ]);
+
+        $query = app(CatalogExport::class);
+
+        expect(fn () => $query->rows(['owner_id']))->toThrow(ValidationException::class)
+            ->and(fn () => $query->rows(['name'], 'bogus'))->toThrow(ValidationException::class)
+            ->and($query->rows(['name'])->first())->toBe(["'=1+1"]);
+    });
+});
+
+it('rejects negative and out-of-range import weights', function (): void {
+    foreach (['-0.01', '100000000', '1e999'] as $weight) {
+        expect(fn () => validateImportRow(['weight' => $weight], true))
+            ->toThrow(Exception::class, 'weight must be between 0 and 99999999.99');
+    }
+
+    expect(validateImportRow(['weight' => '0'], true))->toBe(['weight' => '0'])
+        ->and(validateImportRow(['weight' => '99999999.99'], true))->toBe(['weight' => '99999999.99']);
+});
+
+it('does not expose database error details in catalog import results', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        $action = app(ImportCatalogProducts::class);
+        $rows = [['name' => 'Database Error', 'price' => '9.99']];
+        $authorize = static fn (?Product $product): bool => throw new QueryException(
+            'sqlite',
+            'select confidential_column from confidential_table',
+            [],
+            new PDOException('private database error'),
+        );
+
+        expect($action->execute($rows, false, true, $authorize))
+            ->toBe([0, 0, ['Row 0: The product could not be saved.']])
+            ->and(fn () => $action->execute($rows, false, false, $authorize))
+            ->toThrow(RuntimeException::class, 'Row 0: The product could not be saved.');
+    });
+});
+
+it('converts catalog decimal amounts without losing integer precision', function (): void {
+    expect(validateImportRow(['price' => '90071992547409.93'], true)['price'])->toBe(9007199254740993)
+        ->and(validateImportRow(['price' => '92233720368547758.07'], true)['price'])->toBe(PHP_INT_MAX)
+        ->and(validateImportRow(['price' => '.005'], true)['price'])->toBe(1)
+        ->and(validateImportRow(['price' => '12.344'], true)['price'])->toBe(1234)
+        ->and(validateImportRow(['price' => '12.345'], true)['price'])->toBe(1235)
+        ->and(fn () => validateImportRow(['price' => '92233720368547758.08'], true))->toThrow(Exception::class)
+        ->and(fn () => validateImportRow(['price' => '92233720368547758.075'], true))->toThrow(Exception::class)
+        ->and(fn () => validateImportRow(['price' => '1e2'], true))->toThrow(Exception::class);
+});
+
+it('round trips large catalog prices through CSV decimal representations exactly', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create(['name' => 'Exact price', 'price' => 9007199254740993]);
+
+        $row = app(CatalogExport::class)->rows(['price'])->first();
+
+        expect($row)->toBe(['90071992547409.93'])
+            ->and(validateImportRow(['price' => $row[0]], true)['price'])->toBe(9007199254740993);
+    });
 });

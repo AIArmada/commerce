@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Reports\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -383,4 +384,23 @@ describe('MovementAnalysisReport', function (): void {
             expect($analysis->first()['reason'])->toBe('unknown');
         });
     });
+});
+
+it('reports actual adjustment direction and shipment velocity from stock actions', function (): void {
+    $service = app(InventoryService::class);
+    $service->receive($this->item, $this->location->id, 100);
+    $service->adjust($this->item, $this->location->id, 80, 'cycle_count');
+    $service->ship($this->item, $this->location->id, 10);
+
+    $adjustment = $this->report->getAdjustmentAnalysis()->firstWhere('reason', 'cycle_count');
+
+    expect($adjustment['total_positive'])->toBe(0)
+        ->and($adjustment['total_negative'])->toBe(20)
+        ->and($adjustment['net_adjustment'])->toBe(-20);
+
+    $end = CarbonImmutable::now()->addSecond();
+    $velocity = $this->report->getMovementVelocity($end->subDays(10), $end);
+
+    expect($velocity['shipments_per_day'])->toBe(1.0)
+        ->and($velocity['days_of_stock_at_current_rate'])->toBe(70.0);
 });

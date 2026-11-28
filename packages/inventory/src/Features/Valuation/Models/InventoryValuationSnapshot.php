@@ -1,0 +1,194 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Valuation\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Database\Factories\InventoryValuationSnapshotFactory;
+use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string|null $location_id
+ * @property CostingMethod $costing_method
+ * @property CarbonImmutable $snapshot_date
+ * @property int $total_quantity
+ * @property int $total_value_minor
+ * @property int $average_unit_cost_minor
+ * @property string $currency
+ * @property int $sku_count
+ * @property int|null $variance_from_previous_minor
+ * @property array<string, mixed>|null $breakdown
+ * @property array<string, mixed>|null $metadata
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read InventoryLocation|null $location
+ */
+final class InventoryValuationSnapshot extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
+
+    protected $fillable = [
+        'location_id',
+        'costing_method',
+        'snapshot_date',
+        'total_quantity',
+        'total_value_minor',
+        'average_unit_cost_minor',
+        'currency',
+        'sku_count',
+        'variance_from_previous_minor',
+        'breakdown',
+        'metadata',
+    ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'location_id',
+            'costing_method',
+            'snapshot_date',
+            'total_quantity',
+            'total_value_minor',
+            'average_unit_cost_minor',
+            'currency',
+            'sku_count',
+            'variance_from_previous_minor',
+            'breakdown',
+            'metadata',
+        ];
+    }
+
+    public function getTable(): string
+    {
+        return config('inventory.database.tables.valuation_snapshots', 'inventory_valuation_snapshots');
+    }
+
+    /**
+     * @return BelongsTo<InventoryLocation, $this>
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
+    }
+
+    public function scopeForLocation(Builder $query, string $locationId): Builder
+    {
+        return $query->where('location_id', $locationId);
+    }
+
+    public function scopeAllLocations(Builder $query): Builder
+    {
+        return $query->whereNull('location_id');
+    }
+
+    public function scopeUsingMethod(Builder $query, CostingMethod $method): Builder
+    {
+        return $query->where('costing_method', $method->value);
+    }
+
+    public function scopeOnDate(Builder $query, CarbonImmutable $date): Builder
+    {
+        return $query->whereDate('snapshot_date', $date);
+    }
+
+    public function scopeBetweenDates(Builder $query, CarbonImmutable $from, CarbonImmutable $to): Builder
+    {
+        return $query->whereBetween('snapshot_date', [$from, $to]);
+    }
+
+    /**
+     * Order by snapshot_date descending (most recent first).
+     */
+    public function scopeLatestBySnapshotDate(Builder $query): Builder
+    {
+        return $query->orderBy('snapshot_date', 'desc');
+    }
+
+    public function hasVariance(): bool
+    {
+        return $this->variance_from_previous_minor !== null && $this->variance_from_previous_minor !== 0;
+    }
+
+    public function variancePercentage(): ?float
+    {
+        if ($this->variance_from_previous_minor === null) {
+            return null;
+        }
+
+        $previousValue = $this->total_value_minor - $this->variance_from_previous_minor;
+        if ($previousValue === 0) {
+            return null;
+        }
+
+        return ($this->variance_from_previous_minor / $previousValue) * 100;
+    }
+
+    public function isPositiveVariance(): bool
+    {
+        return $this->variance_from_previous_minor !== null && $this->variance_from_previous_minor > 0;
+    }
+
+    public function isNegativeVariance(): bool
+    {
+        return $this->variance_from_previous_minor !== null && $this->variance_from_previous_minor < 0;
+    }
+
+    /**
+     * @return array{type: string, units: int, value: int}|null
+     */
+    public function getBreakdownByType(string $type): ?array
+    {
+        if ($this->breakdown === null) {
+            return null;
+        }
+
+        return $this->breakdown[$type] ?? null;
+    }
+
+    protected static function newFactory(): InventoryValuationSnapshotFactory
+    {
+        return InventoryValuationSnapshotFactory::new();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'costing_method' => CostingMethod::class,
+            'snapshot_date' => 'immutable_date',
+            'total_quantity' => 'integer',
+            'total_value_minor' => 'integer',
+            'average_unit_cost_minor' => 'integer',
+            'sku_count' => 'integer',
+            'variance_from_previous_minor' => 'integer',
+            'breakdown' => 'array',
+            'metadata' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'inventory';
+    }
+}

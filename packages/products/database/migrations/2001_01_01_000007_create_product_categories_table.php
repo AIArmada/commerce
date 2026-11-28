@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Support\ProductIdentityIndexes;
+use AIArmada\Products\Persistence\ProductIdentityIndexes;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Actions\TransferInventory;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -39,7 +39,7 @@ final class TransferStockAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query());
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
                                 return $query
@@ -48,7 +48,7 @@ final class TransferStockAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name'))
                             ->live()
@@ -59,7 +59,7 @@ final class TransferStockAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search, callable $get): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query())
                                     ->when($get('from_location_id'), fn ($query, $fromId) => $query->whereNot('id', $fromId));
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
@@ -69,13 +69,13 @@ final class TransferStockAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name')),
 
                         TextInput::make('quantity')
                             ->label('Quantity to Transfer')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(1)
                             ->default(1),
@@ -101,7 +101,7 @@ final class TransferStockAction
                 }
 
                 if (InventoryOwnerScope::isEnabled()) {
-                    $allowedLocationCount = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    $allowedLocationCount = InventoryOwnerScope::forMutation(InventoryLocation::query())
                         ->whereKey([$fromLocationId, $toLocationId])
                         ->count();
 
@@ -117,7 +117,7 @@ final class TransferStockAction
                 }
 
                 try {
-                    $movement = TransferInventory::run(
+                    $movement = app(InventoryService::class)->transfer(
                         model: $record,
                         fromLocationId: $fromLocationId,
                         toLocationId: $toLocationId,
@@ -126,11 +126,11 @@ final class TransferStockAction
                         userId: Auth::id(),
                     );
 
-                    $fromLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    $fromLocation = InventoryOwnerScope::forMutation(InventoryLocation::query())
                         ->whereKey($fromLocationId)
                         ->first();
 
-                    $toLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    $toLocation = InventoryOwnerScope::forMutation(InventoryLocation::query())
                         ->whereKey($toLocationId)
                         ->first();
 

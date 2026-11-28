@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Data;
 
-use Spatie\LaravelData\Data;
-
-final class ReservationOutcome extends Data
+final readonly class ReservationOutcome
 {
     public function __construct(
         public string $reference,

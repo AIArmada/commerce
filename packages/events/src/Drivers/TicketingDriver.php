@@ -8,10 +8,9 @@ use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Data\EventPassIssuanceData;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Actions\SetDefaultInventoryQuantity;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Actions\IssuePassesAction;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
@@ -48,18 +47,7 @@ final class TicketingDriver implements EventTicketingDriver
     public function syncQuota(string $ticketTypeId, int $quantity): void
     {
         $ticketType = TicketType::query()->findOrFail($ticketTypeId);
-        $location = InventoryLocation::getOrCreateDefault();
-
-        InventoryLevel::updateOrCreate(
-            [
-                'inventoryable_type' => $ticketType->getMorphClass(),
-                'inventoryable_id' => $ticketType->getKey(),
-                'location_id' => $location->getKey(),
-            ],
-            [
-                'quantity_on_hand' => $quantity,
-            ],
-        );
+        app(SetDefaultInventoryQuantity::class)->execute($ticketType, $quantity);
     }
 
     public function issuePasses(EventPassIssuanceData $issuance): array

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function (): void {
@@ -173,6 +173,13 @@ describe('HasInventory trait', function (): void {
             $this->level->update(['quantity_on_hand' => 5]);
 
             expect($this->item->isLowInventory(10))->toBeTrue();
+        });
+
+        it('excludes inactive locations from low-stock checks', function (): void {
+            $this->location->update(['is_active' => false]);
+
+            expect($this->item->isLowInventory(100))->toBeFalse()
+                ->and($this->item->getTotalAvailable())->toBe(0);
         });
 
         it('uses default threshold from config', function (): void {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialEventType;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Models\InventorySerialHistory;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;

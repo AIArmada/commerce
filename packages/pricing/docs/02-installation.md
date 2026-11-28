@@ -63,7 +63,7 @@ php artisan migrate
 | `owner_type` | string (nullable) | Owner model type for multitenancy |
 | `owner_id` | uuid (nullable) | Owner model ID |
 | `name` | string | Price list name |
-| `slug` | string | Slug identifier, unique per owner (`price_lists_owner_slug_unique`) |
+| `slug` | string | Slug identifier, unique within the owning tenant or global scope (`price_lists_owner_slug_unique` and `price_lists_global_slug_unique`) |
 | `description` | text (nullable) | Optional description |
 | `currency` | string(3) | ISO 4217 currency code |
 | `priority` | integer | Higher value = higher priority |

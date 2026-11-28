@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryCostLayer;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Models\InventoryStandardCost;
-use AIArmada\Inventory\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('inventory models are auditable and activity loggable', function (): void {

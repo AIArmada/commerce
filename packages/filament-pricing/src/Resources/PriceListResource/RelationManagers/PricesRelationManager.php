@@ -9,7 +9,10 @@ use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentPricing\Actions\DeletePricingBulkAction;
 use AIArmada\FilamentPricing\Support\CatalogReference;
+use AIArmada\Pricing\Actions\SavePrice;
+use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Actions;
@@ -209,16 +212,19 @@ final class PricesRelationManager extends RelationManager
             ])
             ->headerActions([
                 Actions\CreateAction::make()
-                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'priceable_type', 'priceable_id')),
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'priceable_type', 'priceable_id'))
+                    ->using(fn (array $data): Price => app(SavePrice::class)->create([...$data, 'price_list_id' => $this->getOwnerRecord()->getKey()])),
             ])
             ->actions([
                 Actions\EditAction::make()
-                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'priceable_type', 'priceable_id')),
-                Actions\DeleteAction::make(),
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'priceable_type', 'priceable_id'))
+                    ->using(fn (Price $record, array $data): Price => app(SavePrice::class)->update($record, [...$data, 'price_list_id' => $this->getOwnerRecord()->getKey()])),
+                Actions\DeleteAction::make()
+                    ->using(fn (Price $record): bool => app(SavePrice::class)->delete($record)),
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    DeletePricingBulkAction::make(),
                 ]),
             ]);
     }

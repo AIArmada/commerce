@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -285,8 +286,8 @@ class OptionValue extends Model implements Auditable
             }
         });
 
-        static::deleting(function (OptionValue $optionValue): void {
-            $optionValue->variants()->detach();
+        static::deleting(static function (OptionValue $optionValue): void {
+            app(CleanupCatalogRelationships::class)->beforeOptionValueDeletion($optionValue);
         });
     }
 }

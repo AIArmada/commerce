@@ -10,7 +10,7 @@ Common issues and solutions.
 
 ### Class not found errors
 
-**Problem:** `Class 'AIArmada\Inventory\Models\InventoryLocation' not found`
+**Problem:** `Class 'AIArmada\Inventory\Features\Stock\Models\InventoryLocation' not found`
 
 **Solution:** Ensure the core inventory package is installed:
 
@@ -104,7 +104,7 @@ protected function getHeaderWidgets(): array
 **Solution:** Clear the cache:
 
 ```php
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 
 app(InventoryStatsAggregator::class)->clearCache();
 ```

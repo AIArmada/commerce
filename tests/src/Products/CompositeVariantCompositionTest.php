@@ -11,6 +11,7 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Support\Str;
 
 function variantCompositeLeaf(string $name, int $price): Product
@@ -219,4 +220,81 @@ it('prevents changing variant composition mode after variants or component graph
 
     expect(fn () => $parent->update(['supports_variants' => false]))
         ->toThrow(InvalidCompositePackageException::class, 'variant mode is immutable');
+});
+
+it('rejects foreign parent variants even when pricing or supplied components bypass graph queries', function (): void {
+    $a = variantCompositeParent('First Fixed Price Graph');
+    $b = variantCompositeParent('Second Fixed Price Graph');
+    $variant = variantCompositeOption($b, 'Foreign Fixed Price', [
+        'price_mode' => 'fixed',
+        'price' => 999,
+    ]);
+    $service = app(CompositePackageService::class);
+    $components = $service->componentsFor($a);
+
+    expect(fn () => $service->priceFor($a, parentVariant: $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->priceModeFor($a, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->snapshot($a, $components, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->availability($a, $components, parentVariant: $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product')
+        ->and(fn () => $service->assertPublishable($a, $components, $variant))
+        ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product');
+});
+
+it('rejects supplied component graphs from another product or another variant', function (): void {
+    $leaf = variantCompositeLeaf('Supplied Graph Leaf', 100);
+    $parent = variantCompositeParent('Supplied Graph Parent');
+    $other = variantCompositeParent('Other Graph Parent');
+    $first = variantCompositeOption($parent, 'First Graph', ['price_mode' => 'fixed', 'price' => 500]);
+    $second = variantCompositeOption($parent, 'Second Graph');
+    $foreign = variantCompositeOption($other, 'Foreign Graph');
+    $replace = app(ReplaceProductComponents::class);
+    $ownComponents = $replace->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], $first);
+    $otherVariantComponents = $replace->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ], $second);
+    $foreignComponents = $replace->handle($other, [
+        ['component_product_id' => $leaf->id, 'quantity' => 3],
+    ], $foreign);
+    $service = app(CompositePackageService::class);
+
+    expect($service->priceFor($parent, $ownComponents, $first))->toBe(500);
+
+    foreach ([$otherVariantComponents, $foreignComponents] as $components) {
+        expect(fn () => $service->priceFor($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->snapshot($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->availability($parent, $components, parentVariant: $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner')
+            ->and(fn () => $service->assertPublishable($parent, $components, $first))
+            ->toThrow(InvalidCompositePackageException::class, 'must belong to the selected product, variant and owner');
+    }
+});
+
+it('allows a disabled tier to contain draft components but prevents premature activation', function (): void {
+    $liveLeaf = variantCompositeLeaf('Live Service', 100);
+    $draftLeaf = variantCompositeLeaf('Draft Service', 150);
+    $draftLeaf->update(['status' => ProductStatus::Draft]);
+
+    $parent = variantCompositeParent('Draft Tier Configuration');
+    $live = variantCompositeOption($parent, 'Live');
+    $draft = variantCompositeOption($parent, 'Draft', ['is_enabled' => false]);
+
+    $replace = app(ReplaceProductComponents::class);
+    $replace->handle($parent, [['component_product_id' => $liveLeaf->id, 'quantity' => 1]], $live);
+    $parent = app(PublishCompositeProduct::class)->handle($parent);
+
+    expect($replace->handle($parent, [
+        ['component_product_id' => $draftLeaf->id, 'quantity' => 1],
+    ], $draft))->toHaveCount(1);
+
+    expect(fn () => $draft->update(['is_enabled' => true]))
+        ->toThrow(InvalidCompositePackageException::class, 'must be active')
+        ->and($draft->refresh()->is_enabled)->toBeFalse();
 });

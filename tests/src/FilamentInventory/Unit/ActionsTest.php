@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentInventory\Actions\AdjustStockAction;
 use AIArmada\FilamentInventory\Actions\ApproveReorderSuggestionAction;
 use AIArmada\FilamentInventory\Actions\CycleCountAction;
@@ -15,12 +16,12 @@ use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
 use AIArmada\FilamentInventory\Actions\ShipStockAction;
 use AIArmada\FilamentInventory\Actions\TransferStockAction;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
-use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation as InventoryAllocationFacade;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
@@ -55,7 +56,7 @@ it('executes receive stock action and creates inventory', function (): void {
         'quantity' => 5,
         'purchase_order' => 'PO-1',
         'supplier' => 'ACME',
-        'received_at' => now(),
+        'received_at' => now()->toDateString(),
         'notes' => 'ok',
     ]);
 
@@ -356,4 +357,58 @@ it('does not change reorder suggestion when reject is a no-op', function (): voi
 
     $suggestion->refresh();
     expect($suggestion->status->value)->toBe('received');
+});
+
+it('rejects all stock mutations against tenant-visible global locations', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+
+    $owner = InventoryItem::create(['name' => 'Stock Operator']);
+    $item = InventoryItem::create(['name' => 'Global Stock Widget']);
+    $global = OwnerContext::withOwner(null, function () use ($item): InventoryLocation {
+        $location = InventoryLocation::factory()->create();
+        app(InventoryService::class)->receive($item, $location->id, 10);
+
+        return $location;
+    });
+
+    OwnerContext::withOwner($owner, function () use ($item, $global): void {
+        $owned = InventoryLocation::factory()->create();
+        app(InventoryService::class)->receive($item, $owned->id, 5);
+
+        $actions = [
+            [ReceiveStockAction::make(), ['location_id' => $global->id, 'quantity' => 2]],
+            [ShipStockAction::make(), ['location_id' => $global->id, 'quantity' => 2]],
+            [AdjustStockAction::make(), ['location_id' => $global->id, 'new_quantity' => 2, 'reason' => 'correction']],
+            [CycleCountAction::make(), ['location_id' => $global->id, 'counted_quantity' => 2]],
+            [TransferStockAction::make(), ['from_location_id' => $owned->id, 'to_location_id' => $global->id, 'quantity' => 2]],
+        ];
+
+        foreach ($actions as [$action, $data]) {
+            ($action->getActionFunction())($item, $data);
+        }
+
+        expect(app(InventoryService::class)->getLevel($item, $owned->id)?->quantity_on_hand)->toBe(5)
+            ->and(app(InventoryService::class)->getLevel($item, $global->id)?->quantity_on_hand)->toBe(10);
+    });
+});
+
+it('does not approve or reject tenant-visible global reorder suggestions', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+
+    $owner = InventoryItem::create(['name' => 'Reorder Operator']);
+    $suggestion = OwnerContext::withOwner(null, fn (): InventoryReorderSuggestion => InventoryReorderSuggestion::factory()->create([
+        'location_id' => null,
+        'status' => ReorderSuggestionStatus::Pending,
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($suggestion): void {
+        expect(InventoryReorderSuggestion::query()->whereKey($suggestion->id)->exists())->toBeTrue();
+
+        (ApproveReorderSuggestionAction::make()->getActionFunction())($suggestion);
+        (RejectReorderSuggestionAction::make()->getActionFunction())($suggestion);
+    });
+
+    OwnerContext::withOwner(null, function () use ($suggestion): void {
+        expect($suggestion->fresh()->status)->toBe(ReorderSuggestionStatus::Pending);
+    });
 });

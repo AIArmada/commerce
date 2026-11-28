@@ -1,0 +1,339 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Traceability\Persistence;
+
+use AIArmada\Inventory\Contracts\BatchReservationBalances;
+use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+
+final readonly class BatchAllocationService implements BatchReservationBalances
+{
+    public function __construct(
+        private BatchLookupService $batches,
+        private LocationVisibility $locations,
+    ) {}
+
+    /**
+     * Allocate quantity using FEFO (First Expired, First Out) strategy.
+     *
+     * @return array<array{batch: InventoryBatch, quantity: int}>
+     */
+    public function allocateFefo(Model $model, int $quantity, ?string $locationId = null): array
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        $batches = $this->batches->getAllocatableBatches($model, $locationId);
+
+        return $this->allocateFromBatches($batches, $quantity);
+    }
+
+    /**
+     * Allocate quantity using FIFO (First In, First Out) strategy.
+     *
+     * @return array<array{batch: InventoryBatch, quantity: int}>
+     */
+    public function allocateFifo(Model $model, int $quantity, ?string $locationId = null): array
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        return $this->allocateFromBatches($this->batches->getFifoBatches($model, $locationId), $quantity);
+    }
+
+    /**
+     * Reserve quantity across batches.
+     *
+     * @param  array<array{batch: InventoryBatch, quantity: int}>  $allocations
+     */
+    public function reserveBatches(array $allocations): void
+    {
+        DB::transaction(function () use ($allocations): void {
+            foreach ($this->lockAllocations($allocations) as $allocation) {
+                $batch = $allocation['batch'];
+                $quantity = $allocation['quantity'];
+
+                if (! $batch->canAllocate() || $quantity > $batch->available
+                    || ! $this->locations->lockWritable($batch->location_id, activeOnly: true)) {
+                    throw new InvalidArgumentException('Insufficient allocatable batch inventory');
+                }
+
+                $batch->increment('quantity_reserved', $quantity);
+            }
+        }, 3);
+    }
+
+    /**
+     * Release reserved quantity from batches.
+     *
+     * @param  array<array{batch: InventoryBatch, quantity: int}>  $allocations
+     */
+    public function releaseBatches(array $allocations): void
+    {
+        DB::transaction(function () use ($allocations): void {
+            foreach ($this->lockAllocations($allocations) as $allocation) {
+                $batch = $allocation['batch'];
+                $quantity = $allocation['quantity'];
+
+                if ($quantity > $batch->quantity_reserved) {
+                    throw new InvalidArgumentException('Cannot release more than the reserved batch quantity');
+                }
+
+                $batch->decrement('quantity_reserved', $quantity);
+            }
+        }, 3);
+    }
+
+    /**
+     * Commit allocations (deduct from on-hand after payment).
+     *
+     * @param  array<array{batch: InventoryBatch, quantity: int}>  $allocations
+     */
+    public function commitBatches(array $allocations): void
+    {
+        DB::transaction(function () use ($allocations): void {
+            foreach ($this->lockAllocations($allocations) as $allocation) {
+                $batch = $allocation['batch'];
+                $quantity = $allocation['quantity'];
+
+                if ($batch->status !== BatchStatus::Active->value || $batch->is_expired) {
+                    throw new InvalidArgumentException('Cannot commit unavailable batch inventory');
+                }
+
+                if ($quantity > $batch->quantity_reserved || $quantity > $batch->quantity_on_hand) {
+                    throw new InvalidArgumentException('Cannot commit more than the reserved or on-hand batch quantity');
+                }
+
+                $remaining = $batch->quantity_on_hand - $quantity;
+
+                $batch->update([
+                    'quantity_reserved' => $batch->quantity_reserved - $quantity,
+                    'quantity_on_hand' => $remaining,
+                    'status' => $remaining === 0 ? BatchStatus::Depleted->value : $batch->status,
+                ]);
+            }
+        }, 3);
+    }
+
+    public function release(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        $this->releaseBatches([['batch' => $this->resolveBatch($batchId, $itemType, $itemId, $locationId), 'quantity' => $quantity]]);
+    }
+
+    public function commit(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        $this->commitBatches([['batch' => $this->resolveBatch($batchId, $itemType, $itemId, $locationId), 'quantity' => $quantity]]);
+    }
+
+    public function restore(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        DB::transaction(function () use ($batchId, $itemType, $itemId, $locationId, $quantity): void {
+            $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
+                ->whereKey($batchId)
+                ->where('inventoryable_type', $itemType)
+                ->where('inventoryable_id', $itemId)
+                ->where('location_id', $locationId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($batch->is_expired || ! in_array($batch->status, [BatchStatus::Active->value, BatchStatus::Depleted->value], true)) {
+                throw new InvalidArgumentException('Cannot automatically restore non-sellable batch inventory');
+            }
+
+            if ($quantity > PHP_INT_MAX - $batch->quantity_on_hand) {
+                throw new InvalidArgumentException('Restored batch quantity exceeds the supported quantity');
+            }
+
+            $batch->update([
+                'quantity_on_hand' => $batch->quantity_on_hand + $quantity,
+                'status' => BatchStatus::Active->value,
+            ]);
+        }, 3);
+    }
+
+    private function resolveBatch(string $batchId, string $itemType, string $itemId, string $locationId): InventoryBatch
+    {
+        return InventoryOwnerScope::forMutation(InventoryBatch::query())
+            ->whereKey($batchId)
+            ->where('inventoryable_type', $itemType)
+            ->where('inventoryable_id', $itemId)
+            ->where('location_id', $locationId)
+            ->firstOrFail();
+    }
+
+    /**
+     * Check availability across batches.
+     */
+    public function checkAvailability(Model $model, int $quantity, ?string $locationId = null): bool
+    {
+        return $quantity > 0 && $this->batches->getTotalAvailable($model, $locationId) >= $quantity;
+    }
+
+    /**
+     * Get allocation plan for a quantity.
+     *
+     * @return array{
+     *     available: bool,
+     *     total_available: int,
+     *     requested: int,
+     *     allocations: array<array{batch_id: string, batch_number: string, quantity: int, expires_at: string|null}>
+     * }
+     */
+    public function getFefoAllocationPlan(Model $model, int $quantity, ?string $locationId = null): array
+    {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        $batches = $this->batches->getAllocatableBatches($model, $locationId);
+        $totalAvailable = $batches->sum(fn (InventoryBatch $b): int => $b->available);
+
+        $allocations = [];
+        $remaining = $quantity;
+
+        foreach ($batches as $batch) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = $batch->available;
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $toAllocate = min($remaining, $available);
+            $allocations[] = [
+                'batch_id' => $batch->id,
+                'batch_number' => $batch->batch_number,
+                'quantity' => $toAllocate,
+                'expires_at' => $batch->expires_at?->toDateString(),
+            ];
+
+            $remaining -= $toAllocate;
+        }
+
+        return [
+            'available' => $remaining === 0,
+            'total_available' => $totalAvailable,
+            'requested' => $quantity,
+            'allocations' => $allocations,
+        ];
+    }
+
+    /**
+     * @param  array<array{batch: InventoryBatch, quantity: int}>  $allocations
+     * @return array<array{batch: InventoryBatch, quantity: int}>
+     */
+    private function lockAllocations(array $allocations): array
+    {
+        $quantities = [];
+
+        foreach ($allocations as $allocation) {
+            $quantity = $allocation['quantity'];
+
+            if ($quantity <= 0) {
+                throw new InvalidArgumentException('Quantity must be positive');
+            }
+
+            $id = $allocation['batch']->id;
+
+            if ($quantity > PHP_INT_MAX - ($quantities[$id] ?? 0)) {
+                throw new InvalidArgumentException('Combined batch quantity exceeds the supported quantity');
+            }
+
+            $quantities[$id] = ($quantities[$id] ?? 0) + $quantity;
+        }
+
+        if ($quantities === []) {
+            return [];
+        }
+
+        $batches = InventoryOwnerScope::forMutation(InventoryBatch::query())
+            ->whereKey(array_keys($quantities))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($batches->count() !== count($quantities)) {
+            throw new InvalidArgumentException('One or more batches are not accessible for current owner');
+        }
+
+        $byId = $batches->keyBy('id');
+
+        foreach ($allocations as $allocation) {
+            $original = $allocation['batch'];
+            $current = $byId->get($original->id);
+
+            if ($current === null
+                || $current->inventoryable_type !== $original->inventoryable_type
+                || $current->inventoryable_id !== $original->inventoryable_id
+                || $current->location_id !== $original->location_id) {
+                throw new InvalidArgumentException('Batch allocation identity changed; recalculate the allocation');
+            }
+        }
+
+        $locked = [];
+
+        foreach ($batches as $batch) {
+            $locked[] = ['batch' => $batch, 'quantity' => $quantities[$batch->id]];
+        }
+
+        return $locked;
+    }
+
+    /**
+     * Allocate from a collection of batches.
+     *
+     * @param  Collection<int, InventoryBatch>  $batches
+     * @return array<array{batch: InventoryBatch, quantity: int}>
+     */
+    private function allocateFromBatches(Collection $batches, int $quantity): array
+    {
+        $allocations = [];
+        $remaining = $quantity;
+
+        foreach ($batches as $batch) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = $batch->available;
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $toAllocate = min($remaining, $available);
+            $allocations[] = [
+                'batch' => $batch,
+                'quantity' => $toAllocate,
+            ];
+
+            $remaining -= $toAllocate;
+        }
+
+        if ($remaining > 0) {
+            throw new InvalidArgumentException(
+                sprintf('Insufficient batch inventory. Requested: %d, Available: %d', $quantity, $quantity - $remaining)
+            );
+        }
+
+        return $allocations;
+    }
+}

@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
-use AIArmada\Products\Jobs\GenerateVariantsJob;
+use AIArmada\Products\Contracts\VariantGeneratorInterface;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
+use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 
@@ -141,4 +145,84 @@ it('treats a missing job product as a no-op', function (): void {
     );
 
     expect(fn () => $job->handle())->not->toThrow(Exception::class);
+});
+
+it('rejects synchronous variant generation for a product owned by another tenant', function (): void {
+    config()->set('products.features.owner.enabled', true);
+
+    $ownerA = makeOwner('regen-direct-a@example.com');
+    $ownerB = makeOwner('regen-direct-b@example.com');
+    $product = OwnerContext::withOwner($ownerB, fn (): Product => Product::create([
+        'name' => 'Private Product', 'price' => 1000,
+    ]));
+
+    OwnerContext::withOwner($ownerB, fn () => seedMatrix($product));
+
+    OwnerContext::withOwner($ownerA, function () use ($product): void {
+        expect(fn () => app(GenerateVariants::class)->execute($product))->toThrow(ModelNotFoundException::class)
+            ->and(fn () => app(GenerateVariantMatrix::class)->generateSynchronously($product))->toThrow(ModelNotFoundException::class);
+    });
+
+    expect(Variant::query()->withoutOwnerScope()->where('product_id', $product->id)->count())->toBe(0);
+});
+
+it('rejects variant identifiers returned by a custom generator for another product', function (): void {
+    $owner = makeOwner('regen-custom-owner@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $first = Product::create(['name' => 'Custom Target', 'price' => 1000]);
+        $second = Product::create(['name' => 'Custom Other', 'price' => 1000]);
+        seedMatrix($second);
+
+        $variant = app(GenerateVariantMatrix::class)->generateSynchronously($second)->firstOrFail();
+
+        app()->instance(VariantGeneratorInterface::class, new class((string) $variant->getKey()) implements VariantGeneratorInterface
+        {
+            public function __construct(private string $variantId) {}
+
+            public function generate(string $productId): array
+            {
+                return [$this->variantId];
+            }
+        });
+
+        expect(fn () => app(GenerateVariants::class)->execute($first))->toThrow(UnexpectedValueException::class);
+    });
+});
+
+it('returns no variants when any option has no values', function (): void {
+    $owner = makeOwner('regen-empty-option@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $product = Product::create(['name' => 'Incomplete Matrix', 'price' => 1000]);
+        seedMatrix($product, 'Color', ['Red', 'Blue']);
+        seedMatrix($product, 'Size', []);
+
+        expect(app(GenerateVariantMatrix::class)->generateSynchronously($product))->toBeEmpty()
+            ->and(app(GenerateVariantMatrix::class)->generate($product->id))->toBeEmpty()
+            ->and($product->variants()->count())->toBe(0);
+    });
+});
+
+it('rejects overflowing variant matrices before generating or dispatching variants', function (): void {
+    $owner = makeOwner('regen-overflow@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $product = Product::create(['name' => 'Oversized Matrix', 'price' => 1000]);
+
+        for ($index = 0; $index < 65; $index++) {
+            seedMatrix($product, 'Option ' . $index, ['A', 'B']);
+        }
+
+        expect(fn () => app(GenerateVariantMatrix::class)->generateSynchronously($product))
+            ->toThrow(VariantGenerationLimitExceeded::class)
+            ->and(fn () => app(GenerateVariantMatrix::class)->generate($product->id))
+            ->toThrow(VariantGenerationLimitExceeded::class)
+            ->and($product->variants()->count())->toBe(0);
+
+        seedMatrix($product, 'Empty option', []);
+
+        expect(app(GenerateVariantMatrix::class)->generateSynchronously($product))->toBeEmpty()
+            ->and($product->variants()->count())->toBe(0);
+    });
 });

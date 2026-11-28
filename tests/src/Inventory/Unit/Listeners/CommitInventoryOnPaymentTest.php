@@ -7,11 +7,11 @@ use AIArmada\Cashier\Events\PaymentSucceeded as CashierPaymentSucceeded;
 use AIArmada\CashierChip\Events\PaymentSucceeded as CashierChipPaymentSucceeded;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
-use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\CommitInventoryOnPayment;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);

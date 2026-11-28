@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -167,27 +167,6 @@ class AttributeSet extends Model implements Auditable
         return $query->where('is_default', true);
     }
 
-    /**
-     * Mark this set as the default, unsetting others.
-     */
-    public function setAsDefault(): void
-    {
-        DB::transaction(function (): void {
-            $query = static::query()->withoutOwnerScope();
-
-            if ($this->owner_type === null || $this->owner_id === null) {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            } else {
-                $query->where('owner_type', $this->owner_type)
-                    ->where('owner_id', $this->owner_id);
-            }
-
-            $query->update(['is_default' => false]);
-
-            $this->update(['is_default' => true]);
-        });
-    }
-
     protected static function booted(): void
     {
         static::creating(function (AttributeSet $set): void {
@@ -223,10 +202,8 @@ class AttributeSet extends Model implements Auditable
             $set->assignOwner($owner);
         });
 
-        static::deleting(function (AttributeSet $set): void {
-            // Detach from attributes and groups
-            $set->setAttributes()->detach();
-            $set->groups()->detach();
+        static::deleting(static function (AttributeSet $set): void {
+            app(CleanupCatalogRelationships::class)->beforeAttributeSetDeletion($set);
         });
     }
 }

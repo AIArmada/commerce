@@ -7,14 +7,15 @@ namespace AIArmada\Products\Services;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeAvailability;
+use AIArmada\Products\Data\CompositeCapacityRequest;
+use AIArmada\Products\Data\CompositeSnapshot;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Products\Support\CompositeAvailability;
 use AIArmada\Products\Support\CompositeBuyableRegistry;
-use AIArmada\Products\Support\CompositeSnapshot;
 use AIArmada\Products\Support\ProductShipping;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
@@ -32,10 +33,7 @@ final class CompositePackageService
     {
         $this->assertParentAccessible($product);
 
-        if ($parentVariant !== null && ((string) $parentVariant->product_id !== (string) $product->getKey()
-            || ! $product->supportsVariants())) {
-            throw new InvalidCompositePackageException('Composite parent variant must belong to the selected product.');
-        }
+        $this->assertParentVariant($product, $parentVariant);
 
         return ProductComponent::query()
             ->where('product_id', $product->getKey())
@@ -49,6 +47,8 @@ final class CompositePackageService
     public function priceFor(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): int
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
 
         return $this->recursivePrice($product, $components, [], $parentVariant);
     }
@@ -57,6 +57,8 @@ final class CompositePackageService
     public function snapshot(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): CompositeSnapshot
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant);
@@ -81,7 +83,7 @@ final class CompositePackageService
             name: (string) ($parentVariant?->name ?? $product->name),
             price: $this->recursivePrice($product, $components, [], $parentVariant),
             currency: mb_strtoupper((string) $product->currency),
-            priceMode: $this->priceModeFor($product, $parentVariant)->value,
+            priceMode: $this->resolvePriceMode($product, $parentVariant)->value,
             entries: $entries,
             discountBasisPoints: (int) ($parentVariant?->discount_basis_points ?? $product->discount_basis_points ?? 0),
         );
@@ -94,14 +96,17 @@ final class CompositePackageService
     public function availability(Product $product, ?Collection $components = null, array $context = [], ?Variant $parentVariant = null): CompositeAvailability
     {
         $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
         $components ??= $this->componentsFor($product, $parentVariant);
 
         if ($components->isEmpty()) {
             return new CompositeAvailability(0, null, null, []);
         }
 
-        $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant);
-        if ($leaves === []) {
+        $complete = true;
+        $leaves = $this->flatten($product, $components, 1, [], [], $parentVariant, complete: $complete);
+        if (! $complete || $leaves === []) {
             return new CompositeAvailability(0, null, null, []);
         }
 
@@ -109,6 +114,7 @@ final class CompositePackageService
         // Product identity. Different products may draw from one shared pool;
         // one product may draw from distinct windows or other independent scopes.
         $grouped = [];
+        $stockByIdentity = [];
 
         foreach ($leaves as $leaf) {
             $component = $leaf['component'];
@@ -124,18 +130,36 @@ final class CompositePackageService
                 ? array_replace($context, ['composition_path' => $leaf['path']])
                 : $context;
 
+            if (! array_key_exists($inventoryKey, $stockByIdentity)) {
+                $stock = $inventoryable instanceof Buyable ? $inventoryable->getBuyableStock() : null;
+                $stockByIdentity[$inventoryKey] = $stock === null ? null : max(0, $stock);
+            }
+
+            $request = new CompositeCapacityRequest(
+                parentProductId: (string) $product->getKey(),
+                componentId: (string) $component->getKey(),
+                componentProductId: $component->component_product_id,
+                variantId: $component->variant_id,
+                inventoryableType: $inventoryable->getMorphClass(),
+                inventoryableId: (string) $inventoryable->getKey(),
+                quantity: $leaf['quantity'],
+                metadata: $component->metadata ?? [],
+                context: $leafContext,
+                stockAvailable: $stockByIdentity[$inventoryKey],
+            );
+
             $resourceKey = $inventoryKey;
             $scopeKey = '';
             $required = $leaf['quantity'];
 
             if ($this->capacityResolver instanceof CompositeCapacityDemandResolverInterface) {
-                $demand = $this->capacityResolver->demandFor($product, $component, $leafContext);
+                $demand = $this->capacityResolver->demandFor($request);
                 $resourceKey = $demand->resourceKey;
                 $scopeKey = $demand->scopeKey;
                 $required = $this->safeMultiply($required, $demand->unitsPerComponent);
                 $available = $sellable ? $demand->available : 0;
             } else {
-                $available = $sellable ? $this->capacityResolver->availableFor($product, $component, $leafContext) : 0;
+                $available = $sellable ? $this->capacityResolver->availableFor($request) : 0;
                 $available = $available === null ? null : max(0, $available);
             }
 
@@ -193,6 +217,10 @@ final class CompositePackageService
     /** @param Collection<int, ProductComponent>|null $components */
     public function assertPublishable(Product $product, ?Collection $components = null, ?Variant $parentVariant = null): void
     {
+        $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+        $this->assertComponentScope($product, $components, $parentVariant);
+
         if ($product->supportsVariants() && $parentVariant === null) {
             $variants = $product->variants()->where('is_enabled', true)->get();
 
@@ -216,6 +244,14 @@ final class CompositePackageService
 
     public function priceModeFor(Product $product, ?Variant $parentVariant = null): CompositePriceMode
     {
+        $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+
+        return $this->resolvePriceMode($product, $parentVariant);
+    }
+
+    private function resolvePriceMode(Product $product, ?Variant $parentVariant): CompositePriceMode
+    {
         $value = $parentVariant?->price_mode ?? $product->getAttribute('price_mode');
 
         if ($value instanceof CompositePriceMode) {
@@ -234,6 +270,9 @@ final class CompositePackageService
     /** Shipping is the union of physical leaf components, never a parent allocation. */
     public function requiresShippingFor(Product $product, ?Variant $parentVariant = null): bool
     {
+        $this->assertParentAccessible($product);
+        $this->assertParentVariant($product, $parentVariant);
+
         if ($product->supportsVariants() && $parentVariant === null) {
             foreach ($product->variants()->where('is_enabled', true)->get() as $variant) {
                 if ($this->requiresShippingFor($product, $variant)) {
@@ -261,7 +300,7 @@ final class CompositePackageService
     {
         $this->assertNotCyclic($product, $ancestors);
 
-        $mode = $this->priceModeFor($product, $parentVariant);
+        $mode = $this->resolvePriceMode($product, $parentVariant);
         if ($mode === CompositePriceMode::Fixed) {
             return (int) ($parentVariant?->price ?? $product->price);
         }
@@ -309,11 +348,18 @@ final class CompositePackageService
      * @param  list<array{product_id: string, component_id: string, quantity: int}>  $path
      * @return list<array{product: Product|Buyable, component: ProductComponent, quantity: int, sellable: bool, path: list<array<string, mixed>>}>
      */
-    private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path, ?Variant $parentVariant = null): array
+    private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path, ?Variant $parentVariant = null, bool $ancestorsSellable = true, ?bool &$complete = null): array
     {
         $this->assertNotCyclic($product, $ancestors);
         $ancestors[] = (string) $product->getKey();
         $components ??= $this->componentsFor($product, $parentVariant);
+
+        if ($components->isEmpty()) {
+            $complete = false;
+
+            return [];
+        }
+
         $leaves = [];
 
         foreach ($components as $component) {
@@ -345,7 +391,11 @@ final class CompositePackageService
             $childPath = [...$path, $step];
 
             if ($child instanceof Product && $child->isCompositeProduct()) {
-                array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath, $component->variant));
+                $variant = $component->variant;
+                $sellable = $ancestorsSellable && $child->isPurchasable()
+                    && (! $variant instanceof Variant || $variant->is_enabled);
+
+                array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath, $variant, $sellable, $complete));
 
                 continue;
             }
@@ -354,7 +404,7 @@ final class CompositePackageService
                 'product' => $child,
                 'component' => $component,
                 'quantity' => $quantity,
-                'sellable' => $child instanceof Product ? $child->isPurchasable() : $child->canBePurchased(),
+                'sellable' => $ancestorsSellable && ($child instanceof Product ? $child->isPurchasable() : $child->canBePurchased()),
                 'path' => $childPath,
             ];
         }
@@ -476,6 +526,37 @@ final class CompositePackageService
         }
 
         return $entry;
+    }
+
+    /** @param Collection<int, ProductComponent>|null $components */
+    private function assertComponentScope(Product $product, ?Collection $components, ?Variant $parentVariant): void
+    {
+        if ($components === null) {
+            return;
+        }
+
+        foreach ($components as $component) {
+            if ((string) $component->product_id !== (string) $product->getKey()
+                || (string) $component->parent_variant_id !== (string) $parentVariant?->getKey()
+                || (string) $component->owner_type !== (string) $product->owner_type
+                || (string) $component->owner_id !== (string) $product->owner_id) {
+                throw new InvalidCompositePackageException('Composite components must belong to the selected product, variant and owner.');
+            }
+        }
+    }
+
+    private function assertParentVariant(Product $product, ?Variant $parentVariant): void
+    {
+        if ($parentVariant === null) {
+            return;
+        }
+
+        if ((string) $parentVariant->product_id !== (string) $product->getKey()
+            || ! $product->supportsVariants()
+            || (string) $parentVariant->owner_type !== (string) $product->owner_type
+            || (string) $parentVariant->owner_id !== (string) $product->owner_id) {
+            throw new InvalidCompositePackageException('Composite parent variant must belong to the selected product.');
+        }
     }
 
     private function assertParentAccessible(Product $product): void

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use AIArmada\Inventory\Contracts\InventoryableInterface;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -139,7 +139,7 @@ final class Product extends Model implements InventoryableInterface
             return;
         }
 
-        $location = InventoryLocation::getOrCreateDefault();
+        $location = app(SaveInventoryLocation::class)->getOrCreateDefault();
 
         $this->ship(
             $location->id,

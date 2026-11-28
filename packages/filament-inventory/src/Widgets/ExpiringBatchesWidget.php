@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -53,7 +53,7 @@ final class ExpiringBatchesWidget extends TableWidget
                     ->label('Location')
                     ->placeholder('No location'),
 
-                TextColumn::make('available_quantity')
+                TextColumn::make('available')
                     ->label('Available')
                     ->numeric()
                     ->alignEnd(),
@@ -68,7 +68,7 @@ final class ExpiringBatchesWidget extends TableWidget
                         default => 'gray',
                     }),
 
-                TextColumn::make('daysUntilExpiry')
+                TextColumn::make('days_until_expiry')
                     ->label('Days Left')
                     ->state(
                         fn (InventoryBatch $record): string => $record->is_expired

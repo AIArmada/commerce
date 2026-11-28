@@ -30,7 +30,7 @@ return new class extends Migration
             $table->unsignedBigInteger('discount_value')->nullable();
             $table->boolean('is_active')->default(true);
 
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
 
             $table->timestampsTz();
 

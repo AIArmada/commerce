@@ -1,0 +1,130 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Reservations\Models;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * Durable reservation-group aggregate for checkout references.
+ *
+ * Owns zero or more split allocation rows and retains terminal status
+ * after allocations are deleted. Identity is (owner_type, owner_id, reference).
+ *
+ * @property string $id
+ * @property string $reference
+ * @property string $status
+ * @property array<string, array{requested: int, reserved: int}> $line_snapshot
+ * @property string|null $owner_type
+ * @property string|int|null $owner_id
+ * @property string|null $order_id
+ * @property int $ttl_seconds
+ * @property CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, InventoryAllocation> $allocations
+ */
+final class InventoryReservation extends Model
+{
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+
+    public const string STATE_RESERVED = 'reserved';
+
+    public const string STATE_COMMITTED = 'committed';
+
+    public const string STATE_RELEASED = 'released';
+
+    public const string STATE_EXPIRED = 'expired';
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
+
+    // NOTE: owner_type/owner_id are deliberately not fillable. The owning
+    // tuple is assigned by services via forceFill and verified by the
+    // saving guard below, so caller input can never spoof ownership.
+    protected $fillable = [
+        'reference',
+        'status',
+        'line_snapshot',
+        'order_id',
+        'ttl_seconds',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'ttl_seconds' => 'integer',
+        'line_snapshot' => 'array',
+        'expires_at' => 'immutable_datetime',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (InventoryReservation $reservation): void {
+            if (! config('inventory.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+            $autoAssign = (bool) config('inventory.owner.auto_assign_on_create', true);
+
+            if ($owner === null) {
+                if ($reservation->owner_type !== null || $reservation->owner_id !== null) {
+                    throw new AuthorizationException('Cannot save an owned reservation without an owner context.');
+                }
+
+                return;
+            }
+
+            if ($reservation->owner_type === null && $reservation->owner_id === null) {
+                if ($autoAssign && ! $reservation->exists) {
+                    $reservation->owner_type = $owner->getMorphClass();
+                    $reservation->owner_id = $owner->getKey();
+                }
+
+                return;
+            }
+
+            if ($reservation->owner_type !== $owner->getMorphClass()
+                || (string) $reservation->owner_id !== (string) $owner->getKey()) {
+                throw new AuthorizationException('Reservation owner differs from the current owner context.');
+            }
+        });
+    }
+
+    public function getTable(): string
+    {
+        return config('inventory.database.tables.reservations', 'inventory_reservations');
+    }
+
+    /** @return HasMany<InventoryAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(InventoryAllocation::class, 'reservation_group_id');
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === self::STATE_RESERVED && $this->expires_at !== null && $this->expires_at->isFuture();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATE_EXPIRED
+            || ($this->status === self::STATE_RESERVED && $this->expires_at !== null && $this->expires_at->isPast());
+    }
+
+    public function isTerminal(): bool
+    {
+        return in_array($this->status, [self::STATE_COMMITTED, self::STATE_RELEASED, self::STATE_EXPIRED], true);
+    }
+}

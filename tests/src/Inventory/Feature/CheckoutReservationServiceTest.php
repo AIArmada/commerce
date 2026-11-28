@@ -7,11 +7,12 @@ use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Exceptions\ReservationReferenceConflict;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryReservation;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -31,6 +32,36 @@ describe('CheckoutReservationService', function (): void {
         ]);
 
         $this->inventoryService->receive($this->item, $this->location->id, 10);
+    });
+
+    it('does not allow an operator edit to reduce on-hand stock below reservations', function (): void {
+        $this->reservationService->reserve('ref-operator-edit', [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 4),
+        ], 900);
+
+        $level = $this->inventoryService->getLevel($this->item, $this->location->id);
+        $action = app(UpdateInventoryLevel::class);
+
+        expect(fn () => $action->execute($level, ['quantity_on_hand' => 3]))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($level->fresh()->quantity_on_hand)->toBe(10)
+            ->and($level->fresh()->quantity_reserved)->toBe(4);
+
+        $updated = $action->execute($level, ['quantity_on_hand' => 6, 'quantity_reserved' => 0]);
+
+        expect($updated->quantity_on_hand)->toBe(6)
+            ->and($updated->quantity_reserved)->toBe(4);
+    });
+
+    it('rejects invalid commit and extension inputs without changing the reservation', function (): void {
+        $this->reservationService->reserve('ref-invalid-transition', [
+            new ReservationLine(productId: (string) $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        expect(fn () => $this->reservationService->commit('ref-invalid-transition', ''))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->reservationService->extend('ref-invalid-transition', 0))->toThrow(InvalidArgumentException::class)
+            ->and($this->reservationService->find('ref-invalid-transition')->state)->toBe('reserved');
     });
 
     it('reserve creates group and allocations', function (): void {
@@ -60,6 +91,29 @@ describe('CheckoutReservationService', function (): void {
 
         expect($outcome->state)->toBe('reserved')
             ->and(InventoryAllocation::query()->where('cart_id', 'ref-polymorphic')->sum('quantity'))->toBe(3);
+    });
+
+    it('never substitutes product stock for an invalid explicit inventory identity', function (): void {
+        $id = (string) $this->item->getKey();
+
+        foreach ([
+            new ReservationLine(productId: $id, inventoryableType: InventoryItem::class, inventoryableId: '01900000-0000-7000-8000-000000000001'),
+            new ReservationLine(productId: $id, inventoryableType: InventoryItem::class),
+            new ReservationLine(productId: $id, variantId: '01900000-0000-7000-8000-000000000002'),
+        ] as $line) {
+            expect(fn () => $this->reservationService->reserve('invalid-identity', [$line], 900))
+                ->toThrow(ReservationReferenceConflict::class);
+        }
+
+        expect($this->inventoryService->getLevel($this->item, $this->location->id)?->quantity_reserved)->toBe(0)
+            ->and(InventoryReservation::query()->where('reference', 'invalid-identity')->exists())->toBeFalse();
+    });
+
+    it('rejects an empty reference and non-positive reservation TTL', function (): void {
+        $lines = [new ReservationLine(productId: (string) $this->item->getKey())];
+
+        expect(fn () => $this->reservationService->reserve('', $lines, 900))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->reservationService->reserve('invalid-ttl', $lines, 0))->toThrow(InvalidArgumentException::class);
     });
 
     it('combines product and polymorphic demand for the same stock identity', function (): void {
@@ -177,6 +231,60 @@ describe('CheckoutReservationService', function (): void {
             ->and(InventoryAllocation::query()->where('inventoryable_id', $otherItem->getKey())->where('cart_id', 'ref-isolated')->exists())->toBeTrue();
     });
 
+    it('isolates cart allocation mutations from checkout reservations sharing the same reference and item', function (): void {
+        $reference = 'shared-cart-reference';
+        $allocations = app(InventoryAllocationService::class);
+        $allocations->allocate($this->item, 3, $reference);
+        $this->reservationService->reserve($reference, [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+        $groupAllocation = InventoryAllocation::query()->where('reservation_group_id', $group->id)->firstOrFail();
+        $originalExpiry = $groupAllocation->expires_at;
+
+        expect($allocations->getAllocationsForCart($reference)->sum('quantity'))->toBe(3)
+            ->and($allocations->getAllocations($this->item, $reference)->sum('quantity'))->toBe(3)
+            ->and($allocations->extendAllocations($reference, 60))->toBe(1)
+            ->and($groupAllocation->fresh()->expires_at->eq($originalExpiry))->toBeTrue()
+            ->and($allocations->releaseAllocation($groupAllocation))->toBe(0)
+            ->and($allocations->release($this->item, $reference))->toBe(3);
+
+        $allocations->allocate($this->item, 4, $reference);
+        expect($allocations->releaseAllForCart($reference))->toBe(4);
+
+        $allocations->allocate($this->item, 1, $reference);
+        expect($allocations->commit($reference, 'CART-ORDER'))->toHaveCount(1)
+            ->and($groupAllocation->fresh())->not->toBeNull()
+            ->and($this->reservationService->find($reference)->state)->toBe('reserved');
+
+        $this->reservationService->commit($reference, 'CHECKOUT-ORDER');
+        $level = $this->inventoryService->getLevel($this->item, $this->location->id)->fresh();
+
+        expect($level->quantity_on_hand)->toBe(7)
+            ->and($level->quantity_reserved)->toBe(0);
+    });
+
+    it('leaves grouped allocations to the checkout reservation expiry lifecycle', function (): void {
+        $reference = 'group-expiry';
+        $this->reservationService->reserve($reference, [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+        InventoryAllocation::query()->where('reservation_group_id', $group->id)
+            ->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+
+        $allocations = app(InventoryAllocationService::class);
+        expect($allocations->cleanupExpired())->toBe(0)
+            ->and($allocations->cleanupExpiredGlobal())->toBe(0)
+            ->and($this->reservationService->find($reference)->state)->toBe('reserved');
+
+        $group->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+        expect($this->reservationService->cleanupExpiredReservations())->toBe(1)
+            ->and($this->inventoryService->getLevel($this->item, $this->location->id)->fresh()->quantity_reserved)->toBe(0);
+    });
+
     it('throws on invalid commit from released', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-bad-commit', $lines, 900);
@@ -198,6 +306,29 @@ describe('CheckoutReservationService', function (): void {
     it('returns not found on nonexistent reference', function (): void {
         $outcome = $this->reservationService->find('no-such-ref');
         expect($outcome->state)->toBe('not_found');
+    });
+
+    it('persists expiry cleanup even when a repeat reserve or commit is rejected', function (): void {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
+
+        foreach (['reserve', 'commit'] as $operation) {
+            $reference = 'expired-conflict-' . $operation;
+            $this->reservationService->reserve($reference, $lines, 900);
+            $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+            $group->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+
+            if ($operation === 'reserve') {
+                expect(fn () => $this->reservationService->reserve($reference, $lines, 900))
+                    ->toThrow(ReservationReferenceConflict::class);
+            } else {
+                expect(fn () => $this->reservationService->commit($reference, 'ORDER-EXPIRED'))
+                    ->toThrow(InvalidReservationTransition::class);
+            }
+
+            expect($group->fresh()->status)->toBe(InventoryReservation::STATE_EXPIRED)
+                ->and($group->allocations()->count())->toBe(0)
+                ->and($this->inventoryService->getLevel($this->item, $this->location->id)->fresh()->quantity_reserved)->toBe(0);
+        }
     });
 
     it('commit is idempotent', function (): void {

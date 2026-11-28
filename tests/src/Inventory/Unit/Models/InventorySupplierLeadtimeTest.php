@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Replenishment\Actions\UpdateSupplierLeadtime;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -308,7 +309,7 @@ describe('InventorySupplierLeadtime', function (): void {
                 'is_active' => true,
             ]);
 
-            $result = $secondary->markAsPrimary();
+            $result = app(UpdateSupplierLeadtime::class)->markAsPrimary($secondary);
 
             expect($result)->toBeTrue();
             expect($secondary->fresh()->is_primary)->toBeTrue();
@@ -331,7 +332,7 @@ describe('InventorySupplierLeadtime', function (): void {
                 'last_order_at' => null,
             ]);
 
-            $result = $leadtime->recordOrder();
+            $result = app(UpdateSupplierLeadtime::class)->recordOrder($leadtime);
 
             expect($result)->toBeTrue();
             expect($leadtime->fresh()->last_order_at)->not->toBeNull();
@@ -353,7 +354,7 @@ describe('InventorySupplierLeadtime', function (): void {
                 'last_received_at' => null,
             ]);
 
-            $result = $leadtime->recordReceipt();
+            $result = app(UpdateSupplierLeadtime::class)->recordReceipt($leadtime);
 
             expect($result)->toBeTrue();
             expect($leadtime->fresh()->last_received_at)->not->toBeNull();

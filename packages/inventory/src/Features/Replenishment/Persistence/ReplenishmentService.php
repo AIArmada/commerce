@@ -1,0 +1,357 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Replenishment\Persistence;
+
+use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
+use AIArmada\Inventory\Enums\ReorderUrgency;
+use AIArmada\Inventory\Features\Replenishment\Actions\AdvanceReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
+use AIArmada\Inventory\Features\Stock\Api\ReorderStock;
+use AIArmada\Inventory\Features\Stock\Api\ReorderStockLevel;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use RuntimeException;
+
+final class ReplenishmentService
+{
+    public function __construct(
+        private DemandForecastService $demandForecastService
+    ) {}
+
+    /**
+     * Generate reorder suggestions for all items below reorder point.
+     *
+     * @return Collection<int, InventoryReorderSuggestion>
+     */
+    public function generateSuggestions(?string $locationId = null): Collection
+    {
+        if ($locationId !== null && InventoryOwnerScope::isEnabled()) {
+            $isAllowed = app(LocationVisibility::class)->isWritable($locationId);
+
+            if (! $isAllowed) {
+                throw new InvalidArgumentException('Invalid location for current owner');
+            }
+        }
+
+        $suggestions = new Collection;
+        $stock = app(ReorderStock::class);
+
+        foreach ($stock->candidates($locationId) as $level) {
+            $class = Relation::getMorphedModel($level->inventoryableType) ?? $level->inventoryableType;
+
+            if (! is_a($class, Model::class, true)) {
+                continue;
+            }
+
+            $model = $class::query()->find($level->inventoryableId);
+
+            if (! $model instanceof Model) {
+                continue;
+            }
+
+            $suggestion = $this->createSuggestion($model, $level->id);
+            if ($suggestion !== null) {
+                $suggestions->push($suggestion);
+            }
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Create a reorder suggestion for a specific model.
+     */
+    public function createSuggestion(
+        Model $model,
+        string $levelId
+    ): ?InventoryReorderSuggestion {
+        return DB::transaction(function () use ($model, $levelId): ?InventoryReorderSuggestion {
+            $level = app(ReorderStock::class)->locked($levelId);
+
+            if ($level->inventoryableType !== $model->getMorphClass() || $level->inventoryableId !== (string) $model->getKey()) {
+                throw new InvalidArgumentException('Stock level does not belong to the requested inventory item.');
+            }
+
+            $existing = InventoryReorderSuggestion::query()->forModel($model)->where('location_id', $level->locationId)->actionable();
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $existing->forOwner(InventoryOwnerScope::resolveOwner(), false);
+            }
+
+            if ($existing->exists()) {
+                return null;
+            }
+
+            $supplier = $this->getPrimarySupplier($model);
+            $leadTimeDays = $supplier?->lead_time_days ?? $level->leadTimeDays ?? 7;
+
+            $avgDailyDemand = (int) ceil($this->demandForecastService->calculateAverageDailyDemand(
+                $model,
+                30,
+                $level->locationId
+            ));
+
+            if ($avgDailyDemand === 0) {
+                $avgDailyDemand = 1;
+            }
+
+            $currentStock = $level->available;
+            $reorderPoint = ($level->safetyStock ?? 0) + ($avgDailyDemand * $leadTimeDays);
+            $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
+            $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
+
+            $eoq = $this->calculateEOQ($model, $avgDailyDemand, $supplier);
+            $suggestedQuantity = $this->calculateSuggestedQuantity($level, $avgDailyDemand, $leadTimeDays, $eoq);
+
+            if ($supplier !== null) {
+                $suggestedQuantity = $supplier->roundToOrderMultiple($suggestedQuantity);
+            }
+
+            $urgency = ReorderUrgency::fromDaysUntilStockout($daysUntilStockout, $leadTimeDays);
+
+            $suggestion = InventoryReorderSuggestion::create([
+                'inventoryable_type' => $model->getMorphClass(),
+                'inventoryable_id' => $model->getKey(),
+                'location_id' => $level->locationId,
+                'supplier_leadtime_id' => $supplier?->id,
+                'status' => ReorderSuggestionStatus::Pending,
+                'current_stock' => $currentStock,
+                'reorder_point' => $reorderPoint,
+                'suggested_quantity' => $suggestedQuantity,
+                'economic_order_quantity' => $eoq,
+                'average_daily_demand' => $avgDailyDemand,
+                'lead_time_days' => $leadTimeDays,
+                'expected_stockout_date' => $expectedStockout,
+                'urgency' => $urgency,
+                'trigger_reason' => 'Stock below reorder point',
+                'calculation_details' => [
+                    'safety_stock' => $level->safetyStock,
+                    'max_stock' => $level->maxStock,
+                    'current_reserved' => $level->reserved,
+                    'demand_period_days' => 30,
+                ],
+            ]);
+
+            if (! $suggestion->exists) {
+                throw new RuntimeException('Reorder suggestion creation was cancelled.');
+            }
+
+            return $suggestion;
+        });
+    }
+
+    /**
+     * Calculate Economic Order Quantity (EOQ).
+     */
+    public function calculateEOQ(
+        Model $model,
+        int $annualDemand,
+        ?InventorySupplierLeadtime $supplier = null,
+        int $orderingCostMinor = 5000,
+        float $holdingCostPercentage = 0.25
+    ): int {
+        $annualDemand *= 365;
+
+        if ($annualDemand === 0) {
+            return $supplier?->minimum_order_quantity ?? 1;
+        }
+
+        $unitCost = $supplier?->unit_cost_minor ?? 1000;
+        $holdingCost = $unitCost * $holdingCostPercentage;
+
+        if ($holdingCost <= 0) {
+            $holdingCost = 1;
+        }
+
+        $eoq = (int) ceil(sqrt((2 * $annualDemand * $orderingCostMinor) / $holdingCost));
+
+        return max($eoq, $supplier?->minimum_order_quantity ?? 1);
+    }
+
+    /**
+     * Get primary supplier for a model.
+     */
+    public function getPrimarySupplier(Model $model): ?InventorySupplierLeadtime
+    {
+        return InventoryOwnerScope::forMutation(
+            InventorySupplierLeadtime::query()->forModel($model)->active()
+        )->orderByDesc('is_primary')
+            ->orderBy('lead_time_days')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Get all pending suggestions by urgency.
+     *
+     * @return Collection<int, InventoryReorderSuggestion>
+     */
+    public function getPendingSuggestions(): Collection
+    {
+        $query = InventoryReorderSuggestion::query()
+            ->pending()
+            ->byUrgency()
+            ->with(['inventoryable', 'location', 'supplierLeadtime']);
+
+        $this->applyOwnerScopeToSuggestionQuery($query);
+
+        return $query->get();
+    }
+
+    /**
+     * Get critical suggestions requiring immediate action.
+     *
+     * @return Collection<int, InventoryReorderSuggestion>
+     */
+    public function getCriticalSuggestions(): Collection
+    {
+        $query = InventoryReorderSuggestion::query()
+            ->actionable()
+            ->critical()
+            ->with(['inventoryable', 'location', 'supplierLeadtime']);
+
+        $this->applyOwnerScopeToSuggestionQuery($query);
+
+        return $query->get();
+    }
+
+    /**
+     * Approve a suggestion.
+     */
+    public function approve(InventoryReorderSuggestion $suggestion, ?string $approvedBy = null): bool
+    {
+        return app(ApproveReorderSuggestion::class)->handle($suggestion, $approvedBy);
+    }
+
+    /**
+     * Bulk approve suggestions.
+     *
+     * @param  Collection<int, InventoryReorderSuggestion>  $suggestions
+     */
+    public function bulkApprove(Collection $suggestions, ?string $approvedBy = null): int
+    {
+        $approved = 0;
+
+        foreach ($suggestions as $suggestion) {
+            if ($this->approve($suggestion, $approvedBy)) {
+                $approved++;
+            }
+        }
+
+        return $approved;
+    }
+
+    /**
+     * Expire old actionable suggestions.
+     */
+    public function expireOld(int $daysOld = 14): int
+    {
+        $cutoff = CarbonImmutable::now()->subDays($daysOld);
+
+        $oldQuery = InventoryOwnerScope::forMutation(InventoryReorderSuggestion::query())
+            ->actionable()
+            ->where('created_at', '<', $cutoff);
+
+        $old = $oldQuery->get();
+
+        $expired = 0;
+
+        foreach ($old as $suggestion) {
+            if (app(AdvanceReorderSuggestion::class)->expire($suggestion)) {
+                $expired++;
+            }
+        }
+
+        return $expired;
+    }
+
+    /**
+     * Get replenishment statistics.
+     *
+     * @return array{pending: int, approved: int, ordered: int, critical: int, total_value: int}
+     */
+    public function getStatistics(): array
+    {
+        $suggestionsQuery = InventoryReorderSuggestion::query()
+            ->actionable()
+            ->with('supplierLeadtime');
+
+        $this->applyOwnerScopeToSuggestionQuery($suggestionsQuery);
+
+        $suggestions = $suggestionsQuery->get();
+
+        $pending = $suggestions->where('status', ReorderSuggestionStatus::Pending)->count();
+        $approved = $suggestions->where('status', ReorderSuggestionStatus::Approved)->count();
+        $orderedQuery = InventoryReorderSuggestion::query()
+            ->where('status', ReorderSuggestionStatus::Ordered);
+
+        $this->applyOwnerScopeToSuggestionQuery($orderedQuery);
+
+        $ordered = $orderedQuery->count();
+        $critical = $suggestions->where('urgency', ReorderUrgency::Critical)->count();
+
+        $totalValue = $suggestions->sum(function ($s) {
+            $unitCost = $s->supplierLeadtime?->unit_cost_minor ?? 0;
+
+            return $s->suggested_quantity * $unitCost;
+        });
+
+        return [
+            'pending' => $pending,
+            'approved' => $approved,
+            'ordered' => $ordered,
+            'critical' => $critical,
+            'total_value' => (int) $totalValue,
+        ];
+    }
+
+    /**
+     * @param  Builder<InventoryReorderSuggestion>  $query
+     */
+    private function applyOwnerScopeToSuggestionQuery(Builder $query): void
+    {
+        InventoryOwnerScope::applyToLocationQuery($query);
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::resolveOwner() === null;
+
+            if (! $includeNullLocation) {
+                $query->whereNotNull('location_id');
+            }
+        }
+    }
+
+    /**
+     * Calculate suggested quantity.
+     */
+    private function calculateSuggestedQuantity(
+        ReorderStockLevel $level,
+        int $avgDailyDemand,
+        int $leadTimeDays,
+        ?int $eoq
+    ): int {
+        $safetyStock = $level->safetyStock ?? 0;
+        $maxStock = $level->maxStock ?? ($safetyStock * 4);
+        $currentStock = $level->available;
+
+        $orderUpToLevel = $maxStock;
+
+        $needed = $orderUpToLevel - $currentStock;
+
+        $reviewPeriodDemand = $avgDailyDemand * ($leadTimeDays + 7);
+        $minOrder = max($reviewPeriodDemand, $eoq ?? 1);
+
+        return max($needed, $minOrder);
+    }
+}

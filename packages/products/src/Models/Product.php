@@ -12,8 +12,9 @@ use AIArmada\CommerceSupport\Support\BuyableLineData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\HasComponents;
 use AIArmada\Products\Contracts\Inventoryable;
@@ -27,6 +28,7 @@ use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
@@ -42,7 +44,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -473,37 +474,6 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         return $this->status->isPurchasable();
     }
 
-    public function activate(): self
-    {
-        $this->status = ProductStatus::Active;
-        $this->published_at ??= CarbonImmutable::now();
-        $this->deactivated_at = null;
-        $this->archived_at = null;
-        $this->save();
-
-        return $this;
-    }
-
-    public function archive(): self
-    {
-        $this->status = ProductStatus::Archived;
-        $this->archived_at = CarbonImmutable::now();
-        $this->deactivated_at = null;
-        $this->save();
-
-        return $this;
-    }
-
-    public function disable(): self
-    {
-        $this->status = ProductStatus::Disabled;
-        $this->deactivated_at = CarbonImmutable::now();
-        $this->archived_at = null;
-        $this->save();
-
-        return $this;
-    }
-
     // =========================================================================
     // TYPE HELPERS
     // =========================================================================
@@ -915,12 +885,16 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Product $product): void {
-            if ($product->exists || ! $product->isCompositeProduct()) {
+            if (! $product->isCompositeProduct() || $product->status !== ProductStatus::Active) {
                 return;
             }
 
-            if ($product->status === ProductStatus::Active) {
+            if (! $product->exists) {
                 throw new InvalidCompositePackageException('An active composite package must contain at least one component.');
+            }
+
+            if ($product->isDirty(['status', 'type', 'currency', 'is_taxable', 'tax_class', 'sku', 'price_mode', 'discount_basis_points'])) {
+                app(CompositePackageService::class)->assertPublishable($product);
             }
         });
 
@@ -1027,46 +1001,13 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             }
         });
 
-        static::deleting(function (Product $product): void {
-            if ((bool) config('products.features.owner.enabled', false)
-                && ! Product::query()->whereKey($product->getKey())->exists()) {
-                throw new InvalidCompositePackageException('Cross-tenant write blocked: product is not accessible in the current owner context.');
-            }
-
-            if (ProductComponent::query()->withoutOwnerScope()->where('component_product_id', $product->getKey())->exists()) {
-                throw new InvalidCompositePackageException('A component product referenced by a composite package cannot be deleted.');
-            }
-
-            DB::transaction(function () use ($product): void {
-                // Delete variants individually to trigger model events (for pivot cleanup)
-                $product->variants()->chunkById(100, function ($variants): void {
-                    $variants->each(fn ($variant) => $variant->delete());
-                });
-
-                // Delete options individually so Option::deleting removes its
-                // values (and their variant pivots) instead of orphaning them.
-                $product->options()->chunkById(100, function ($options): void {
-                    $options->each(fn ($option) => $option->delete());
-                });
-
-                $product->categories()->detach();
-                $product->collections()->detach();
-
-                if ($product->isCompositeProduct()) {
-                    ProductComponent::query()->where('product_id', $product->getKey())->delete();
-                }
-            });
+        static::deleting(static function (Product $product): void {
+            app(CleanupCatalogRelationships::class)->beforeProductDeletion($product);
         });
 
-        static::updated(function (Product $product): void {
+        static::updated(static function (Product $product): void {
             if ($product->isCompositeProduct() && $product->wasChanged('requires_shipping')) {
-                ProductComponent::query()
-                    ->where('component_product_id', $product->getKey())
-                    ->with('product')
-                    ->get()
-                    ->each(static function (ProductComponent $reference): void {
-                        $reference->product?->save();
-                    });
+                app(SynchronizeCompositeShipping::class)->forParents($product);
             }
         });
 

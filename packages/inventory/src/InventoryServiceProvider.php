@@ -4,50 +4,41 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory;
 
-use AIArmada\Cart\Events\CartCleared;
-use AIArmada\Cart\Events\CartDestroyed;
-use AIArmada\Cart\Events\ItemAdded;
-use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Runtime\CartManagerInterface;
-use AIArmada\CashierChip\Events\PaymentSucceeded;
-use AIArmada\Inventory\Cart\CartManagerWithInventory;
-use AIArmada\Inventory\Cart\ValidateInventoryOnAdd;
-use AIArmada\Inventory\Console\CleanupExpiredAllocationsCommand;
-use AIArmada\Inventory\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
-use AIArmada\Inventory\Exports\ExportService;
-use AIArmada\Inventory\Integrations\FulfillmentLocationService;
-use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
-use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
-use AIArmada\Inventory\Listeners\ReleaseInventoryFromOrder;
-use AIArmada\Inventory\Listeners\ReleaseInventoryOnCartClear;
-use AIArmada\Inventory\Reports\InventoryKpiService;
-use AIArmada\Inventory\Reports\InventoryReconciliationReport;
-use AIArmada\Inventory\Reports\MovementAnalysisReport;
-use AIArmada\Inventory\Reports\StockLevelReport;
-use AIArmada\Inventory\Services\Batch\BatchService;
-use AIArmada\Inventory\Services\Costing\FifoCostService;
-use AIArmada\Inventory\Services\Costing\StandardCostService;
-use AIArmada\Inventory\Services\Costing\ValuationService;
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Serial\SerialLookupService;
-use AIArmada\Inventory\Services\Serial\SerialService;
-use AIArmada\Inventory\Services\Stock\BackorderService;
-use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
-use AIArmada\Inventory\Services\Stock\ReplenishmentService;
-use AIArmada\Inventory\Services\Stock\ScopedCapacityReservationService;
-use AIArmada\Orders\Events\InventoryDeductionRequired;
-use AIArmada\Orders\Events\InventoryReleaseRequired;
-use Illuminate\Support\Facades\Event;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
+use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
+use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
+use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
+use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
+use AIArmada\Inventory\Platform\ExtensionRegistry;
+use AIArmada\Inventory\Platform\FeatureCatalog;
+use AIArmada\Inventory\Platform\FeatureModule;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class InventoryServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -63,20 +54,14 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->registerCoreServices();
-        $this->registerBatchSerialServices();
-        $this->registerCostingServices();
-        $this->registerAllocationServices();
-        $this->registerReplenishmentServices();
-        $this->registerReportServices();
-        $this->registerIntegrationServices();
+        $this->registerFeatureModules();
     }
 
     public function packageBooted(): void
     {
-        $this->registerCartIntegration();
-        $this->registerPaymentIntegration();
-        $this->registerOrdersIntegration();
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     /**
@@ -106,200 +91,25 @@ final class InventoryServiceProvider extends PackageServiceProvider
             CheckoutReservationServiceInterface::class,
             CheckoutReservationService::class,
             ScopedCapacityReservationServiceInterface::class,
-            ScopedCapacityReservationService::class,
             'inventory',
             'inventory.allocations',
         ];
     }
 
-    /**
-     * Register core inventory services.
-     */
-    private function registerCoreServices(): void
+    private function registerFeatureModules(): void
     {
-        $this->app->singleton(InventoryService::class);
-        $this->app->alias(InventoryService::class, 'inventory');
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
-        $this->app->singleton(InventoryAllocationService::class);
-        $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
-    }
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
 
-    /**
-     * Register batch and serial number services.
-     */
-    private function registerBatchSerialServices(): void
-    {
-        $this->app->singleton(BatchService::class);
-        $this->app->singleton(SerialService::class);
-        $this->app->singleton(SerialLookupService::class);
-    }
-
-    /**
-     * Register costing and valuation services.
-     */
-    private function registerCostingServices(): void
-    {
-        $this->app->singleton(FifoCostService::class);
-        $this->app->singleton(WeightedAverageCostService::class);
-        $this->app->singleton(StandardCostService::class);
-        $this->app->singleton(ValuationService::class);
-    }
-
-    /**
-     * Register allocation and backorder services.
-     */
-    private function registerAllocationServices(): void
-    {
-        $this->app->singleton(BackorderService::class);
-    }
-
-    /**
-     * Register demand forecasting and replenishment services.
-     */
-    private function registerReplenishmentServices(): void
-    {
-        $this->app->singleton(DemandForecastService::class);
-        $this->app->singleton(ReplenishmentService::class);
-    }
-
-    /**
-     * Register reporting and analytics services.
-     */
-    private function registerReportServices(): void
-    {
-        $this->app->singleton(InventoryKpiService::class);
-        $this->app->singleton(InventoryReconciliationReport::class);
-        $this->app->singleton(MovementAnalysisReport::class);
-        $this->app->singleton(StockLevelReport::class);
-        $this->app->singleton(ExportService::class);
-    }
-
-    /**
-     * Register integration services for other packages.
-     */
-    private function registerIntegrationServices(): void
-    {
-        $this->app->singleton(FulfillmentLocationService::class);
-
-        // Checkout reservation group service
-        $this->app->singleton(CheckoutReservationService::class);
-        $this->app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
-        $this->app->bind(ScopedCapacityReservationServiceInterface::class, ScopedCapacityReservationService::class);
-    }
-
-    /**
-     * Register cart package integration if available.
-     */
-    private function registerCartIntegration(): void
-    {
-        if (! config('inventory.cart.enabled', true)) {
-            return;
-        }
-
-        // Check if cart package is installed
-        if (! interface_exists(CartManagerInterface::class)) {
-            return;
-        }
-
-        // Register cart event listeners for inventory release
-        if (class_exists(CartCleared::class)) {
-            Event::listen(
-                CartCleared::class,
-                [ReleaseInventoryOnCartClear::class, 'handleCleared']
-            );
-        }
-
-        if (class_exists(CartDestroyed::class)) {
-            Event::listen(
-                CartDestroyed::class,
-                [ReleaseInventoryOnCartClear::class, 'handleDestroyed']
-            );
-        }
-
-        // Register ItemAdded listener for validation/auto-allocation
-        if (class_exists(ItemAdded::class)) {
-            Event::listen(
-                ItemAdded::class,
-                ValidateInventoryOnAdd::class
-            );
-        }
-
-        // Extend CartManager with inventory functionality
-        $this->app->extend('cart', function ($manager, $app) {
-            if ($manager instanceof CartManagerWithInventory) {
-                return $manager;
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid inventory feature module: ' . $feature);
             }
 
-            $proxy = CartManagerWithInventory::fromCartManager($manager);
-            $proxy->setAllocationService($app->make(InventoryAllocationService::class));
-
-            // Clear cached facade instance
-            if (class_exists(Cart::class)) {
-                Cart::clearResolvedInstance('cart');
-            }
-
-            return $proxy;
-        });
-    }
-
-    /**
-     * Register payment success listeners if payment packages are available.
-     */
-    private function registerPaymentIntegration(): void
-    {
-        if (! config('inventory.payment.auto_commit', true)) {
-            return;
-        }
-
-        // CashierChip integration
-        if (class_exists(PaymentSucceeded::class)) {
-            Event::listen(
-                PaymentSucceeded::class,
-                CommitInventoryOnPayment::class
-            );
-        }
-
-        // Cashier (gateway-agnostic) integration
-        if (class_exists(\AIArmada\Cashier\Events\PaymentSucceeded::class)) {
-            Event::listen(
-                \AIArmada\Cashier\Events\PaymentSucceeded::class,
-                CommitInventoryOnPayment::class
-            );
-        }
-
-        // Generic payment success events (for custom implementations)
-        $customEvents = config('inventory.payment.events', []);
-
-        foreach ($customEvents as $eventClass) {
-            if (class_exists($eventClass)) {
-                Event::listen($eventClass, CommitInventoryOnPayment::class);
-            }
-        }
-    }
-
-    /**
-     * Register orders package integration if available.
-     */
-    private function registerOrdersIntegration(): void
-    {
-        if (! config('inventory.orders.enabled', true)) {
-            return;
-        }
-
-        // Inventory deduction on payment confirmation
-        if (class_exists(InventoryDeductionRequired::class)) {
-            Event::listen(
-                InventoryDeductionRequired::class,
-                DeductInventoryFromOrder::class
-            );
-        }
-
-        // Inventory release on order cancellation
-        if (class_exists(InventoryReleaseRequired::class)) {
-            Event::listen(
-                InventoryReleaseRequired::class,
-                ReleaseInventoryFromOrder::class
-            );
+            $module->register($this->app);
+            $this->modules[] = $module;
         }
     }
 }

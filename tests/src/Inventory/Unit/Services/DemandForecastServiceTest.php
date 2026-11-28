@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\DemandPeriodType;
-use AIArmada\Inventory\Models\InventoryDemandHistory;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
@@ -15,6 +15,12 @@ beforeEach(function (): void {
 });
 
 describe('recordDemand', function (): void {
+    it('rejects invalid demand quantities', function (): void {
+        expect(fn () => $this->service->recordDemand($this->product, -1, 0))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->recordDemand($this->product, 10, -1))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->recordDemand($this->product, 10, 11))->toThrow(InvalidArgumentException::class);
+    });
+
     it('creates new demand history record', function (): void {
         $record = $this->service->recordDemand(
             $this->product,
@@ -163,6 +169,20 @@ describe('calculateWeightedMovingAverage', function (): void {
 });
 
 describe('calculateExponentialSmoothing', function (): void {
+    it('uses the most recent periods for exponential smoothing', function (): void {
+        foreach ([2 => 10, 1 => 20, 0 => 100] as $days => $quantity) {
+            InventoryDemandHistory::factory()->create([
+                'inventoryable_type' => $this->product->getMorphClass(),
+                'inventoryable_id' => $this->product->id,
+                'period_type' => DemandPeriodType::Daily,
+                'period_date' => now()->subDays($days),
+                'quantity_demanded' => $quantity,
+            ]);
+        }
+
+        expect($this->service->calculateExponentialSmoothing($this->product, 1.0, 2))->toBe(100.0);
+    });
+
     it('calculates exponential smoothing forecast', function (): void {
         for ($i = 10; $i >= 0; $i--) {
             InventoryDemandHistory::factory()->create([

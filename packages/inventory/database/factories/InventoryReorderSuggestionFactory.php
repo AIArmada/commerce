@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -75,7 +75,7 @@ final class InventoryReorderSuggestionFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'status' => ReorderSuggestionStatus::Ordered,
-            'purchase_order_id' => $this->faker->uuid(),
+            'order_id' => $this->faker->uuid(),
             'ordered_at' => now(),
         ]);
     }

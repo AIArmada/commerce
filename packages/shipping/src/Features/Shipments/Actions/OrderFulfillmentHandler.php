@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Integrations\FulfillmentLocationService;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
@@ -425,48 +425,6 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
         return $packages;
     }
 
-    /**
-     * @return array<int, array{variant_id: string, quantity: int}>
-     */
-    private function fulfillmentItemsForOrder(Order $order): array
-    {
-        $items = [];
-
-        foreach ($order->items as $orderItem) {
-            $metadata = is_array($orderItem->metadata) ? $orderItem->metadata : [];
-            if (($metadata['requires_shipping'] ?? true) === false) {
-                continue;
-            }
-
-            $components = ComponentLines::expand(
-                ComponentLines::fromOrderItemMetadata($metadata),
-                (int) $orderItem->quantity,
-            );
-
-            if ($components !== []) {
-                foreach ($components as $component) {
-                    if (! $component['requires_shipping']) {
-                        continue;
-                    }
-
-                    $items[] = [
-                        'variant_id' => (string) ($component['inventoryable_id']),
-                        'quantity' => (int) $component['quantity'],
-                    ];
-                }
-
-                continue;
-            }
-
-            $items[] = [
-                'variant_id' => (string) $orderItem->purchasable_id,
-                'quantity' => (int) $orderItem->quantity,
-            ];
-        }
-
-        return $items;
-    }
-
     private function toShippingAddressData(Address $address, bool $includeEmail = false): AddressData
     {
         $metadata = $address->metadata;
@@ -576,25 +534,22 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
                 $fulfillmentService = app(FulfillmentLocationService::class);
 
                 if ($fulfillmentService !== null) {
-                    // Build actual sellable inventory requirements from the
-                    // frozen composition rather than the composite parent.
-                    $items = $this->fulfillmentItemsForOrder($order);
+                    $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
 
-                    if ($items !== []) {
-                        // If forced location, check it can fulfill
+                    $location = OwnerContext::withOwner($owner, function () use ($order, $forcedLocationId, $fulfillmentService): ?object {
                         if ($forcedLocationId !== null) {
                             $location = $this->getLocationById((string) $forcedLocationId, $order);
-                            if ($location !== null && $this->locationCanFulfill($fulfillmentService, $location, $items)) {
-                                return $this->locationToAddress($location);
+
+                            if ($location !== null && $fulfillmentService->canFulfillAtLocation($order, (string) $forcedLocationId)) {
+                                return $location;
                             }
                         }
 
-                        // Find best fulfillment location using the Order
-                        $location = $fulfillmentService->getBestFulfillmentLocation($order);
+                        return $fulfillmentService->getBestFulfillmentLocation($order);
+                    });
 
-                        if ($location !== null) {
-                            return $this->locationToAddress($location);
-                        }
+                    if ($location !== null) {
+                        return $this->locationToAddress($location);
                     }
                 }
             } catch (Throwable $e) {
@@ -628,42 +583,14 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
             $location = OwnerContext::withOwner(
                 $owner,
-                static fn (): ?InventoryLocation => InventoryOwnerScope::applyToLocationQuery(
+                static fn (): ?InventoryLocation => InventoryOwnerScope::forMutation(
                     InventoryLocation::query()
-                )->whereKey($locationId)->first(),
+                )->whereKey($locationId)->where('is_active', true)->first(),
             );
 
             return $location instanceof InventoryLocation ? $location : null;
         } catch (Throwable) {
             return null;
-        }
-    }
-
-    /**
-     * Check if a location can fulfill all items.
-     *
-     * @param  array<int, array{variant_id: string, quantity: int}>  $items
-     */
-    private function locationCanFulfill(object $fulfillmentService, object $location, array $items): bool
-    {
-        try {
-            $availability = $fulfillmentService->getAvailabilitySummary($items);
-
-            foreach ($availability as $item) {
-                $locations = is_array($item['locations'] ?? null) ? $item['locations'] : [];
-
-                /** @var list<array<string, mixed>> $locations */
-                $locationStock = collect($locations)
-                    ->firstWhere('location_id', $location->id);
-
-                if ($locationStock === null || ($locationStock['available'] ?? 0) < $item['quantity_needed']) {
-                    return false;
-                }
-            }
-
-            return true;
-        } catch (Throwable) {
-            return false;
         }
     }
 

@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
@@ -19,6 +20,7 @@ use AIArmada\Pricing\Support\TierResolver;
 use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 uses(EnsuresPricingSchema::class);
 
@@ -242,4 +244,119 @@ it('rejects malformed owner tuples on pricing writes', function (): void {
 
     expect(fn () => OwnerContext::withOwner(null, static fn () => $priceList->save()))
         ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects cross-owner pricing references using morph aliases', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => false,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $ownerA = User::query()->create(['name' => 'Alias Owner A', 'email' => 'pricing-alias-a@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Alias Owner B', 'email' => 'pricing-alias-b@example.com', 'password' => 'secret']);
+    bindPricingOwner($ownerB);
+
+    $target = PriceList::query()->create(['name' => 'Target B', 'slug' => 'alias-target-b', 'currency' => 'MYR']);
+
+    bindPricingOwner($ownerA);
+    $list = PriceList::query()->create(['name' => 'List A', 'slug' => 'alias-list-a', 'currency' => 'MYR']);
+    $previousMorphMap = Relation::morphMap();
+
+    try {
+        Relation::morphMap(['pricing-owner-test-list' => PriceList::class]);
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $list->id,
+            'priceable_type' => 'pricing-owner-test-list',
+            'priceable_id' => $target->id,
+            'amount' => 100,
+            'currency' => 'MYR',
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $list->id,
+            'tierable_type' => 'pricing-owner-test-list',
+            'tierable_id' => $target->id,
+            'min_quantity' => 2,
+            'amount' => 100,
+            'currency' => 'MYR',
+        ]))->toThrow(AuthorizationException::class);
+    } finally {
+        Relation::morphMap($previousMorphMap, false);
+    }
+});
+
+it('rejects tenant price and tier writes into a visible global price list', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => true,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $owner = User::query()->create(['name' => 'Pricing Child Owner', 'email' => 'pricing-child-owner@example.com', 'password' => 'secret']);
+    $global = OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create(['name' => 'Shared Retail', 'slug' => 'shared-retail']));
+
+    OwnerContext::withOwner($owner, function () use ($global, $owner): void {
+        expect(PriceList::query()->whereKey($global->id)->exists())->toBeTrue();
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $owner->getMorphClass(),
+            'priceable_id' => $owner->getKey(),
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $global->id,
+            'tierable_type' => $owner->getMorphClass(),
+            'tierable_id' => $owner->getKey(),
+            'min_quantity' => 2,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+    });
+
+    expect(Price::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0)
+        ->and(PriceTier::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0);
+});
+
+it('rejects global prices and tiers referencing tenant-owned records', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => true,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $owner = User::query()->create(['name' => 'Tenant Target', 'email' => 'pricing-global-reference@example.com', 'password' => 'secret']);
+    $owned = OwnerContext::withOwner($owner, fn (): PriceList => PriceList::query()->create([
+        'name' => 'Private Target', 'slug' => 'private-global-target', 'currency' => 'MYR',
+    ]));
+
+    OwnerContext::withOwner(null, function () use ($owned): void {
+        $global = PriceList::query()->create(['name' => 'Global List', 'slug' => 'global-reference-list', 'currency' => 'MYR']);
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $owned->getMorphClass(),
+            'priceable_id' => $owned->id,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $global->id,
+            'tierable_type' => $owned->getMorphClass(),
+            'tierable_id' => $owned->id,
+            'min_quantity' => 2,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        $price = Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $global->getMorphClass(),
+            'priceable_id' => $global->id,
+            'amount' => 100,
+        ]);
+
+        expect($price->exists)->toBeTrue();
+    });
 });

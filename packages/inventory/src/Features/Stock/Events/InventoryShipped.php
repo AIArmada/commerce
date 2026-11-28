@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Stock\Events;
+
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+final class InventoryShipped implements ShouldDispatchAfterCommit
+{
+    use Dispatchable;
+    use SerializesModels;
+
+    public function __construct(
+        public Model $inventoryable,
+        public InventoryLevel $level,
+        public InventoryMovement $movement
+    ) {}
+}

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\MaxStockExceeded;
-use AIArmada\Inventory\Events\OutOfInventory;
-use AIArmada\Inventory\Events\SafetyStockBreached;
-use AIArmada\Inventory\Events\StockRestored;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\StockThresholdService;
+use AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected;
+use AIArmada\Inventory\Features\Stock\Events\MaxStockExceeded;
+use AIArmada\Inventory\Features\Stock\Events\OutOfInventory;
+use AIArmada\Inventory\Features\Stock\Events\SafetyStockBreached;
+use AIArmada\Inventory\Features\Stock\Events\StockRestored;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Persistence\StockThresholdService;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
@@ -197,6 +197,22 @@ describe('StockThresholdService', function (): void {
             $this->service->evaluateThresholds($level);
 
             Event::assertDispatched(StockRestored::class);
+        });
+
+        it('evaluates current stock instead of stale in-memory balances', function (): void {
+            $level = InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+                'quantity_on_hand' => 50,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::None->value,
+            ]);
+
+            $level->fresh()->update(['quantity_on_hand' => 0]);
+
+            expect($this->service->evaluateThresholds($level))->toBe(AlertStatus::OutOfStock);
+            expect($level->fresh()->alert_status)->toBe(AlertStatus::OutOfStock->value);
         });
 
         it('does not dispatch event when status unchanged', function (): void {

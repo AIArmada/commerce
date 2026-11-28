@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "Traceability",
+  "owns": {
+    "table:inventory_serials": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\UpdateTraceabilityDetails",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\DeleteTraceabilityRecord"
+    ],
+    "table:inventory_serial_history": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
+    ],
+    "table:inventory_batches": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchAllocationService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\UpdateTraceabilityDetails",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\DeleteTraceabilityRecord"
+    ]
+  },
+  "extensions": {}
+}

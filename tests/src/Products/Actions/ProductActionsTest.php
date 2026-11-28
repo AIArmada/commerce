@@ -2,24 +2,67 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
+use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\CreateProduct;
+use AIArmada\Products\Actions\EnsureProductBySlug;
 use AIArmada\Products\Actions\GenerateVariants;
+use AIArmada\Products\Actions\ReplaceOptionValues;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
+use AIArmada\Products\Actions\UpdateProduct;
 use AIArmada\Products\Actions\UpdateProductStatus;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
-use AIArmada\Products\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
+
+describe('UpdateCatalogProducts Action', function (): void {
+    it('updates distinct products once using their current persisted prices', function (): void {
+        $first = Product::create(['name' => 'First bulk price', 'price' => 1000]);
+        $second = Product::create(['name' => 'Second bulk price', 'price' => 2000]);
+        Product::query()->whereKey($first->id)->update(['price' => 1500]);
+
+        app(UpdateCatalogProducts::class)->adjustPrices([$second, $first, $first], 'increase_amount', 2);
+
+        expect($first->fresh()->price)->toBe(1700)
+            ->and($second->fresh()->price)->toBe(2200);
+    });
+
+    it('rolls back bulk price changes on integer overflow', function (): void {
+        $first = Product::create(['name' => 'Ordinary price', 'price' => 1000]);
+        $second = Product::create(['name' => 'Maximum price', 'price' => PHP_INT_MAX]);
+
+        expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices([$first, $second], 'increase_amount', 1))
+            ->toThrow(ValidationException::class);
+
+        expect($first->fresh()->price)->toBe(1000)
+            ->and($second->fresh()->price)->toBe(PHP_INT_MAX);
+    });
+
+    it('rejects percentage increases that cannot fit in a signed integer', function (): void {
+        $product = Product::create(['name' => 'Large price', 'price' => intdiv(PHP_INT_MAX, 2) + 1]);
+
+        expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices([$product], 'increase_percent', 100))
+            ->toThrow(ValidationException::class);
+
+        expect($product->fresh()->price)->toBe(intdiv(PHP_INT_MAX, 2) + 1);
+    });
+});
 
 describe('CreateProduct Action', function (): void {
     it('creates a product with given attributes', function (): void {
@@ -244,7 +287,7 @@ describe('ApplyAttributeChanges Action', function (): void {
             'type' => AttributeType::Text,
         ]);
 
-        $product->setCustomAttribute('test_color', 'Red');
+        app(CustomAttributeValues::class)->set($product, 'test_color', 'Red');
 
         $result = app(ApplyAttributeChanges::class)->execute($product, ['test_color' => 'Blue']);
 
@@ -260,11 +303,145 @@ describe('ApplyAttributeChanges Action', function (): void {
             'type' => AttributeType::Text,
         ]);
 
-        $product->setCustomAttribute('test_invoke', 'Old');
+        app(CustomAttributeValues::class)->set($product, 'test_invoke', 'Old');
 
         $action = app(ApplyAttributeChanges::class);
         $result = $action($product, ['test_invoke' => 'New']);
 
         expect($result->getCustomAttribute('test_invoke'))->toBe('New');
     });
+});
+
+it('rolls back option replacement when a submitted value belongs to another option', function (): void {
+    $product = Product::create(['name' => 'Option replacement', 'supports_variants' => true]);
+    $option = $product->options()->create(['name' => 'Color']);
+    $other = $product->options()->create(['name' => 'Size']);
+    $red = $option->values()->create(['name' => 'Red']);
+    $foreign = $other->values()->create(['name' => 'Large']);
+
+    expect(fn () => app(ReplaceOptionValues::class)->execute($option, [
+        ['id' => $red->id, 'name' => 'Blue'],
+        ['id' => $foreign->id, 'name' => 'Invalid'],
+    ]))->toThrow(ValidationException::class);
+
+    expect($red->fresh()->name)->toBe('Red')
+        ->and($foreign->fresh()->name)->toBe('Large');
+});
+
+it('updates the current locked product rather than relying on stale dirty tracking', function (): void {
+    $product = Product::create(['name' => 'Stale Product', 'price' => 1000]);
+    $current = Product::query()->findOrFail($product->id);
+    $current->update(['price' => 2000]);
+
+    $updated = app(UpdateProduct::class)->execute($product, ['price' => 1000]);
+
+    expect($updated->price)->toBe(1000)
+        ->and($product->fresh()->price)->toBe(1000);
+});
+
+it('does not update tenant-visible global products through the generic action', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $global = OwnerContext::withOwner(null, fn (): Product => Product::create(['name' => 'Global Product']));
+    $owner = User::query()->create(['name' => 'Product Tenant', 'email' => 'product-tenant@example.com', 'password' => 'secret']);
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Product::query()->whereKey($global->id)->exists())->toBeTrue();
+        expect(fn () => app(UpdateProduct::class)->execute($global, ['name' => 'Changed']))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): string => $global->fresh()->name))->toBe('Global Product');
+});
+
+it('provisions a tenant product without updating a visible global product of the same slug', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $owner = User::query()->create(['name' => 'Offer Tenant', 'email' => 'offer-tenant@example.com', 'password' => 'secret']);
+    $ensure = app(EnsureProductBySlug::class);
+    $global = OwnerContext::withOwner(null, fn (): Product => $ensure->execute('shared-offer', ['name' => 'Global Offer', 'price' => 1000]));
+
+    OwnerContext::withOwner($owner, function () use ($ensure, $global, $owner): void {
+        $tenant = $ensure->execute('shared-offer', ['name' => 'Tenant Offer', 'price' => 2000]);
+        $again = $ensure->execute('shared-offer', ['name' => 'Updated Offer', 'price' => 3000, 'slug' => 'wrong-slug']);
+
+        expect($tenant->id)->not->toBe($global->id)
+            ->and($tenant->owner_id)->toBe($owner->getKey())
+            ->and($again->id)->toBe($tenant->id)
+            ->and($again->slug)->toBe('shared-offer')
+            ->and($again->price)->toBe(3000);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): int => $global->fresh()->price))->toBe(1000);
+});
+
+it('derives product and composite ownership from the active context', function (): void {
+    config()->set('products.features.owner.enabled', true);
+    config()->set('products.features.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create(['name' => 'Actual Owner', 'email' => 'actual-owner@example.com', 'password' => 'secret']);
+    $foreign = User::query()->create(['name' => 'Foreign Owner', 'email' => 'foreign-owner@example.com', 'password' => 'secret']);
+
+    OwnerContext::withOwner($owner, function () use ($owner, $foreign): void {
+        $attributes = ['owner_type' => $foreign->getMorphClass(), 'owner_id' => $foreign->getKey()];
+        $product = app(CreateProduct::class)->execute(['name' => 'Scoped Product', ...$attributes]);
+        $composite = app(CreateCompositeProduct::class)->handle(['name' => 'Scoped Composite', ...$attributes]);
+
+        expect($product->owner_id)->toBe($owner->getKey())
+            ->and($composite->owner_id)->toBe($owner->getKey());
+
+        $updated = app(UpdateProduct::class)->execute($product, ['name' => 'Updated Scoped Product', ...$attributes]);
+
+        expect($updated->owner_id)->toBe($owner->getKey())
+            ->and($updated->name)->toBe('Updated Scoped Product');
+    });
+
+    $global = OwnerContext::withOwner(null, fn (): Product => app(CreateProduct::class)->execute([
+        'name' => 'Scoped Global',
+        'owner_type' => $foreign->getMorphClass(),
+        'owner_id' => $foreign->getKey(),
+    ]));
+
+    expect($global->owner_type)->toBeNull()
+        ->and($global->owner_id)->toBeNull();
+});
+
+it('rejects cancelled catalog writes and rolls back the whole bulk operation', function (): void {
+    $first = Product::create(['name' => 'First cancellable product', 'price' => 1000, 'status' => ProductStatus::Draft]);
+    $second = Product::create(['name' => 'Second cancellable product', 'price' => 2000, 'status' => ProductStatus::Draft]);
+    $records = collect([$first, $second])->sortBy('id')->values();
+    $blocked = $records->last();
+
+    Product::updating(static fn (Product $product): bool => $product->getKey() !== $blocked->getKey());
+
+    expect(fn () => app(UpdateCatalogProducts::class)->adjustPrices($records, 'increase_amount', 1))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(UpdateProduct::class)->execute($blocked, ['price' => 100]))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(fn () => app(UpdateProductStatus::class)->execute($blocked, ProductStatus::Active))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and($first->fresh()->price)->toBe(1000)
+        ->and($second->fresh()->price)->toBe(2000)
+        ->and($blocked->fresh()->status)->toBe(ProductStatus::Draft);
+});
+
+it('rejects cancelled product creation instead of returning an unpersisted model', function (): void {
+    Product::creating(static fn (Product $product): bool => $product->name !== 'Cancelled catalog product');
+
+    expect(fn () => app(CreateProduct::class)->execute(['name' => 'Cancelled catalog product', 'price' => 1000]))
+        ->toThrow(RuntimeException::class, 'cancelled')
+        ->and(Product::query()->where('name', 'Cancelled catalog product')->exists())->toBeFalse();
+});
+
+it('rolls back option value replacement when a retained value cannot be saved', function (): void {
+    $product = Product::create(['name' => 'Option rollback product', 'price' => 1000]);
+    $option = Option::create(['product_id' => $product->id, 'name' => 'Color']);
+    $value = OptionValue::create(['option_id' => $option->id, 'name' => 'Red']);
+
+    OptionValue::updating(static fn (OptionValue $record): bool => $record->getKey() !== $value->getKey());
+
+    expect(fn () => app(ReplaceOptionValues::class)->execute($option, [
+        ['name' => 'Green'],
+        ['id' => $value->id, 'name' => 'Blue'],
+    ]))->toThrow(RuntimeException::class, 'cancelled')
+        ->and($option->values()->count())->toBe(1)
+        ->and($value->fresh()->name)->toBe('Red');
 });

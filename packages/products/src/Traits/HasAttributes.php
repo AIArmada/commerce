@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Traits;
 
-use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -42,38 +42,6 @@ trait HasAttributes
     }
 
     /**
-     * Set a custom attribute value by code.
-     */
-    public function setCustomAttribute(string $code, mixed $value, ?string $locale = null): AttributeValue
-    {
-        $attribute = Attribute::where('code', $code)->firstOrFail();
-
-        $attributeValue = $this->attributeValues()->updateOrCreate(
-            [
-                'attribute_id' => $attribute->id,
-                'locale' => $locale,
-            ],
-            [
-                'value' => $attribute->serializeValue($value),
-            ]
-        );
-
-        return $attributeValue;
-    }
-
-    /**
-     * Set multiple custom attribute values at once.
-     *
-     * @param  array<string, mixed>  $attributes
-     */
-    public function setCustomAttributes(array $attributes, ?string $locale = null): void
-    {
-        foreach ($attributes as $code => $value) {
-            $this->setCustomAttribute($code, $value, $locale);
-        }
-    }
-
-    /**
      * Get all custom attributes as an associative array.
      *
      * @return array<string, mixed>
@@ -99,28 +67,6 @@ trait HasAttributes
             ->when($locale !== null, fn ($q) => $q->where('locale', $locale))
             ->when($locale === null, fn ($q) => $q->whereNull('locale'))
             ->exists();
-    }
-
-    /**
-     * Remove a custom attribute value.
-     */
-    public function removeCustomAttribute(string $code, ?string $locale = null): bool
-    {
-        return (bool) $this->attributeValues()
-            ->whereHas('attribute', fn ($q) => $q->where('code', $code))
-            ->when($locale !== null, fn ($q) => $q->where('locale', $locale))
-            ->when($locale === null, fn ($q) => $q->whereNull('locale'))
-            ->delete();
-    }
-
-    /**
-     * Remove all custom attribute values.
-     */
-    public function clearCustomAttributes(?string $locale = null): int
-    {
-        return $this->attributeValues()
-            ->when($locale !== null, fn ($q) => $q->where('locale', $locale))
-            ->delete();
     }
 
     /**
@@ -226,7 +172,7 @@ trait HasAttributes
     protected static function bootHasAttributes(): void
     {
         static::deleting(function ($model): void {
-            $model->attributeValues()->delete();
+            app(CustomAttributeValues::class)->deleteFor($model);
         });
     }
 }

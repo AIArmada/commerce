@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Actions\AdjustInventory;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryAdjusted;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Events\InventoryAdjusted;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Support\Facades\Event;
 
 describe('AdjustInventory', function (): void {
@@ -68,6 +69,22 @@ describe('AdjustInventory', function (): void {
 
         $level = $this->item->inventoryLevels()->where('location_id', $this->location->id)->first();
         expect($level->quantity_on_hand)->toBe(5);
+    });
+
+    it('rejects adjustments below reserved quantity without recording a movement', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+            'quantity_reserved' => 10,
+        ]);
+
+        $before = InventoryMovement::query()->count();
+
+        expect(fn () => $this->action->handle($this->item, $this->location->id, 9))->toThrow(InvalidArgumentException::class)
+            ->and($level->fresh()->quantity_on_hand)->toBe(20)
+            ->and(InventoryMovement::query()->count())->toBe($before);
     });
 
     it('dispatches inventory adjusted event with correct data', function (): void {

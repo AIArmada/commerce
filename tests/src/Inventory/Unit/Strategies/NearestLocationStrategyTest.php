@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Strategies\AllocationContext;
-use AIArmada\Inventory\Strategies\AllocationStrategyInterface;
-use AIArmada\Inventory\Strategies\NearestLocationStrategy;
+use AIArmada\Inventory\Data\AllocationContext;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Queries\NearestLocationStrategy;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -15,10 +14,6 @@ beforeEach(function (): void {
 });
 
 describe('NearestLocationStrategy', function (): void {
-    it('implements AllocationStrategyInterface', function (): void {
-        expect($this->strategy)->toBeInstanceOf(AllocationStrategyInterface::class);
-    });
-
     it('allocates from single location', function (): void {
         $location = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
@@ -171,7 +166,9 @@ describe('NearestLocationStrategy', function (): void {
 
         $allocations = $this->strategy->allocate($this->item, 50, $context);
 
-        expect($allocations)->toHaveCount(2);
+        expect($allocations)->toHaveCount(2)
+            ->and($this->strategy->canFulfill($this->item, 50, $context))->toBeFalse()
+            ->and($this->strategy->canFulfill($this->item, 20, $context))->toBeTrue();
     });
 
     it('checks if can fulfill quantity', function (): void {
@@ -427,6 +424,36 @@ describe('NearestLocationStrategy', function (): void {
         expect($allocations[0]['location_id'])->toBe($locationWithCoords->id);
     });
 
+    it('honors explicit preferred location order before distance and pick sequence', function (): void {
+        $near = InventoryLocation::factory()->create([
+            'coordinate_x' => 1,
+            'coordinate_y' => 1,
+            'pick_sequence' => 1,
+        ]);
+        $far = InventoryLocation::factory()->create([
+            'coordinate_x' => 10,
+            'coordinate_y' => 10,
+            'pick_sequence' => 2,
+        ]);
+
+        foreach ([$near, $far] as $location) {
+            InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $location->id,
+                'quantity_on_hand' => 10,
+                'quantity_reserved' => 0,
+            ]);
+        }
+
+        $preferred = new AllocationContext(originX: 0, originY: 0, preferLocationIds: [$far->id, $near->id]);
+        $withoutOrigin = new AllocationContext(preferLocationIds: [$far->id]);
+
+        expect($this->strategy->allocate($this->item, 1, $preferred)[0]['location_id'])->toBe($far->id)
+            ->and($this->strategy->getRecommendedOrder($this->item, $preferred)->modelKeys())->toBe([$far->id, $near->id])
+            ->and($this->strategy->allocate($this->item, 1, $withoutOrigin)[0]['location_id'])->toBe($far->id);
+    });
+
     it('does not allow SQL injection via preferLocationIds', function (): void {
         $location = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
@@ -456,5 +483,29 @@ describe('NearestLocationStrategy', function (): void {
         $allocations = $this->strategy->allocate($this->item, 50);
 
         expect($allocations)->toBeEmpty();
+    });
+
+    it('honors explicit location, active status and all-or-nothing allocation', function (): void {
+        $selected = InventoryLocation::factory()->create();
+        $other = InventoryLocation::factory()->create();
+        $inactive = InventoryLocation::factory()->inactive()->create();
+
+        foreach ([$selected, $other, $inactive] as $location) {
+            InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $location->id,
+                'quantity_on_hand' => 10,
+                'quantity_reserved' => 2,
+            ]);
+        }
+
+        $context = new AllocationContext(locationId: $selected->id, allowPartialAllocation: false);
+
+        expect($this->strategy->canFulfill($this->item, 9, $context))->toBeFalse()
+            ->and($this->strategy->allocate($this->item, 9, $context))->toBeEmpty()
+            ->and($this->strategy->allocate($this->item, 8, $context)[0]['location_id'])->toBe($selected->id)
+            ->and($this->strategy->canFulfill($this->item, 17))->toBeFalse()
+            ->and($this->strategy->getRecommendedOrder($this->item)->modelKeys())->not->toContain($inactive->id);
     });
 });

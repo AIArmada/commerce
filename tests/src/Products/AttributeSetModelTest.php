@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Products\Actions\SetDefaultAttributeSet;
 use AIArmada\Products\Models\AttributeSet;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -33,7 +34,7 @@ describe('AttributeSet Model', function (): void {
         });
     });
 
-    it('scopes setAsDefault() updates to the same owner', function (): void {
+    it('scopes SetDefaultAttributeSet updates to the same owner', function (): void {
         $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
         $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
@@ -67,7 +68,7 @@ describe('AttributeSet Model', function (): void {
             ]);
         });
 
-        OwnerContext::withOwner($ownerA, fn () => $ownerASet2->setAsDefault());
+        OwnerContext::withOwner($ownerA, fn () => app(SetDefaultAttributeSet::class)->execute($ownerASet2));
 
         $ownerASet1 = OwnerContext::withOwner($ownerA, fn (): ?AttributeSet => $ownerASet1->refresh());
         $ownerASet2 = OwnerContext::withOwner($ownerA, fn (): ?AttributeSet => $ownerASet2->refresh());
@@ -78,7 +79,7 @@ describe('AttributeSet Model', function (): void {
             ->and($ownerBSet?->is_default)->toBeTrue();
     });
 
-    it('scopes setAsDefault() updates to global sets when owner is null', function (): void {
+    it('scopes SetDefaultAttributeSet updates to global sets when owner is null', function (): void {
         $owner = TestOwner::query()->create(['name' => 'Owned Owner']);
 
         $globalSet1 = OwnerContext::withOwner(null, static function (): AttributeSet {
@@ -107,7 +108,7 @@ describe('AttributeSet Model', function (): void {
             ]);
         });
 
-        OwnerContext::withOwner(null, fn () => $globalSet2->setAsDefault());
+        OwnerContext::withOwner(null, fn () => app(SetDefaultAttributeSet::class)->execute($globalSet2));
 
         $globalSet1 = OwnerContext::withOwner(null, fn (): ?AttributeSet => $globalSet1->refresh());
         $globalSet2 = OwnerContext::withOwner(null, fn (): ?AttributeSet => $globalSet2->refresh());

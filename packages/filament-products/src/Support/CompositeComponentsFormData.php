@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Support;
 
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
+use Illuminate\Validation\ValidationException;
 
 final class CompositeComponentsFormData
 {
@@ -65,8 +66,8 @@ final class CompositeComponentsFormData
             $payload[] = [
                 'component_product_id' => $componentProductId,
                 'variant_id' => $variantId !== '' ? $variantId : null,
-                'quantity' => max(1, (int) ($component['quantity'] ?? 1)),
-                'position' => (int) ($component['position'] ?? count($payload)),
+                'quantity' => self::integerField($component['quantity'] ?? null, 'quantity', 1),
+                'position' => self::integerField($component['position'] ?? count($payload), 'position', 0),
                 'unit_price' => $component['unit_price'] ?? null,
                 'metadata' => isset($component['metadata_json']) && mb_trim((string) $component['metadata_json']) !== ''
                     ? json_decode((string) $component['metadata_json'], true, 512, JSON_THROW_ON_ERROR)
@@ -75,5 +76,20 @@ final class CompositeComponentsFormData
         }
 
         return $payload;
+    }
+
+    private static function integerField(mixed $value, string $field, int $minimum): int
+    {
+        $number = is_int($value) || is_string($value)
+            ? filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => $minimum, 'max_range' => 2147483647]])
+            : false;
+
+        if ($number === false) {
+            throw ValidationException::withMessages([
+                'data.components' => "Component {$field} must be an integer between {$minimum} and 2147483647.",
+            ]);
+        }
+
+        return $number;
     }
 }

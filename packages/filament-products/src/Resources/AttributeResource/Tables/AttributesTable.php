@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeResource\Tables;
 
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Enums\AttributeType;
+use AIArmada\Products\Models\Attribute;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -99,11 +101,11 @@ class AttributesTable
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->using(fn (Attribute $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ])
             ->reorderable('position');

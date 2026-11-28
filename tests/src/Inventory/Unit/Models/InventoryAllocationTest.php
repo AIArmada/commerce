@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('InventoryAllocation', function (): void {
     beforeEach(function (): void {
@@ -35,6 +38,36 @@ describe('InventoryAllocation', function (): void {
         expect($allocation)->toBeInstanceOf(InventoryAllocation::class);
         expect($allocation->cart_id)->toBe('cart-123');
         expect($allocation->quantity)->toBe(10);
+    });
+
+    it('rejects an allocation referencing a different inventory identity even without tenancy', function (): void {
+        config()->set('inventory.owner.enabled', false);
+        $other = InventoryItem::create(['name' => 'Different SKU']);
+
+        expect(fn () => InventoryAllocation::factory()->create([
+            'inventoryable_type' => $other->getMorphClass(),
+            'inventoryable_id' => $other->getKey(),
+            'location_id' => $this->location->id,
+            'level_id' => $this->level->id,
+        ]))->toThrow(AuthorizationException::class, 'writable stock level');
+    });
+
+    it('rejects a batch belonging to a different item at the same location', function (): void {
+        config()->set('inventory.owner.enabled', false);
+        $other = InventoryItem::create(['name' => 'Different batch SKU']);
+        $batch = InventoryBatch::factory()->create([
+            'inventoryable_type' => $other->getMorphClass(),
+            'inventoryable_id' => $other->getKey(),
+            'location_id' => $this->location->id,
+        ]);
+
+        expect(fn () => InventoryAllocation::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'level_id' => $this->level->id,
+            'batch_id' => $batch->id,
+        ]))->toThrow(AuthorizationException::class, 'writable batch');
     });
 
     it('location relationship', function (): void {
@@ -244,7 +277,7 @@ describe('InventoryAllocation', function (): void {
             'expires_at' => CarbonImmutable::now()->addMinutes(5),
         ]);
 
-        $allocation->extend(120);
+        expect(app(InventoryAllocationService::class)->extendAllocations('cart-1', 120))->toBe(1);
 
         $allocation->refresh();
         expect($allocation->expires_at->isAfter(now()->addMinutes(110)))->toBeTrue();

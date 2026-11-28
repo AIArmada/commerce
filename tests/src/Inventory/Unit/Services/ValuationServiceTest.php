@@ -4,17 +4,52 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryCostLayer;
-use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryValuationSnapshot;
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Stock\Api\StockBalances;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Queries\StandardStockValuesQuery;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     $this->product = InventoryItem::create(['name' => 'Test Product']);
     $this->service = app(ValuationService::class);
+});
+
+it('returns each stock identity once even when requested across multiple batches', function (): void {
+    $identity = [
+        'inventoryable_type' => $this->product->getMorphClass(),
+        'inventoryable_id' => (string) $this->product->getKey(),
+        'location_id' => $this->location->id,
+    ];
+
+    InventoryLevel::factory()->create([
+        ...$identity,
+        'quantity_on_hand' => 10,
+        'quantity_reserved' => 0,
+    ]);
+    InventoryStandardCost::factory()->create([
+        'inventoryable_type' => $identity['inventoryable_type'],
+        'inventoryable_id' => $identity['inventoryable_id'],
+        'standard_cost_minor' => 250,
+        'currency' => 'MYR',
+        'effective_from' => now()->subDay(),
+        'effective_to' => null,
+    ]);
+
+    $requests = array_fill(0, 201, $identity);
+    $balances = iterator_to_array(app(StockBalances::class)->rows($requests), false);
+    $values = iterator_to_array(app(StandardStockValuesQuery::class)->rows('MYR', $requests), false);
+
+    expect($balances)->toHaveCount(1)
+        ->and($balances[0]['quantity'])->toBe(10)
+        ->and($values)->toHaveCount(1)
+        ->and($values[0]['total_value'])->toBe(2500)
+        ->and(iterator_to_array(app(StockBalances::class)->rows([]), false))->toBe([]);
 });
 
 describe('calculateValuation', function (): void {
@@ -130,6 +165,25 @@ describe('getLocationValuation', function (): void {
 });
 
 describe('getTotalValuation', function (): void {
+    it('counts unpriced standard-cost stock consistently in product and aggregate valuation', function (): void {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 0,
+        ]);
+
+        expect($this->service->calculateValuation($this->product, CostingMethod::Standard)['quantity'])->toBe(10)
+            ->and($this->service->getTotalValuation(CostingMethod::Standard))->toBe([
+                'total_quantity' => 10,
+                'total_value' => 0,
+                'sku_count' => 1,
+                'location_count' => 1,
+            ])
+            ->and($this->service->createSnapshot(CostingMethod::Standard)->total_quantity)->toBe(10);
+    });
+
     it('calculates total valuation across all locations', function (): void {
         $location2 = InventoryLocation::factory()->create(['is_active' => true]);
 
@@ -163,6 +217,40 @@ describe('getTotalValuation', function (): void {
 });
 
 describe('createSnapshot', function (): void {
+    it('uses standard costs consistently for totals and breakdowns in the configured currency', function (): void {
+        config(['inventory.defaults.currency' => 'MYR']);
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 3,
+        ]);
+        InventoryStandardCost::factory()->create([
+            'inventoryable_type' => $this->product->getMorphClass(),
+            'inventoryable_id' => $this->product->getKey(),
+            'standard_cost_minor' => 250,
+            'currency' => 'MYR',
+            'effective_from' => now()->subDay(),
+            'effective_to' => null,
+        ]);
+        InventoryValuationSnapshot::factory()->create([
+            'costing_method' => CostingMethod::Standard,
+            'location_id' => null,
+            'currency' => 'USD',
+            'snapshot_date' => now()->subDay(),
+        ]);
+
+        $snapshot = $this->service->createSnapshot(CostingMethod::Standard);
+
+        expect($snapshot->total_quantity)->toBe(10)
+            ->and($snapshot->total_value_minor)->toBe(2500)
+            ->and($snapshot->variance_from_previous_minor)->toBeNull()
+            ->and($snapshot->breakdown[$this->product->getMorphClass()])->toBe(['units' => 10, 'value' => 2500])
+            ->and($this->service->getLocationValuation($this->location->id, CostingMethod::Standard)['total_value'])->toBe(2500)
+            ->and($this->service->calculateValuation($this->product, CostingMethod::Standard, $this->location->id))->toBe(['quantity' => 10, 'value' => 2500, 'average_cost' => 250]);
+    });
+
     it('creates a valuation snapshot', function (): void {
         InventoryCostLayer::factory()->create([
             'inventoryable_type' => $this->product->getMorphClass(),

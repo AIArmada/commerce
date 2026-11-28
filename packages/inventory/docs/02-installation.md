@@ -91,7 +91,7 @@ Ensure you have bound `OwnerResolverInterface` in your service container.
 Add the `HasInventory` trait to any model that should track inventory:
 
 ```php
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 
 class Product extends Model
 {
@@ -104,7 +104,7 @@ This provides:
 - `$product->inventoryMovements()` - Movement history
 - And read helpers such as `getTotalAvailable()`, `getTotalOnHand()`, `getAvailability()`, and `hasInventory()`
 
-Serial numbers come from the separate `HasSerialNumbers` trait, and batch records via `Services\Batch\BatchService::getBatchesForModel()`.
+Serial numbers come from the separate `HasSerialNumbers` trait, and batch records via `Features\Traceability\Queries\BatchLookupService::getBatchesForModel()`.
 
 Stock mutations belong to `InventoryService`; cart allocations belong to
 `InventoryAllocationService` or the checkout reservation contract.
@@ -112,10 +112,10 @@ Stock mutations belong to `InventoryService`; cart allocations belong to
 ## Verify Installation
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 
 // Create a location
-$location = \AIArmada\Inventory\Models\InventoryLocation::create([
+$location = \AIArmada\Inventory\Features\Stock\Models\InventoryLocation::create([
     'name' => 'Main Warehouse',
     'code' => 'WH-001',
     'is_active' => true,
@@ -128,32 +128,19 @@ Inventory::receive($product, $location->id, 100);
 echo $product->getTotalAvailable(); // 100
 ```
 
-## Extending Contracts and Registries
+## Extending Contracts
 
-The package defines **6 contracts** in `Contracts/` that you can implement to extend behaviour:
+Use the package's public contracts under `Contracts/`:
 
 | Contract | Purpose |
-|----------|---------|
-| `InventoryableInterface` | Make any model inventory-trackable |
+|---|---|
+| `InventoryableInterface` | Scalar inventory availability |
 | `CheckoutReservationServiceInterface` | Checkout reservation groups |
-| `CostingMethodInterface` | Built-in costing adapter contract |
 | `ProvidesInventoryCommitContext` | Cart/order context for payment commit listeners |
-| `ExportInterface` | Custom export formats |
-| `ReportInterface` | Custom report types |
+| `ScopedCapacityReservationServiceInterface` | Scoped capacity reservation lifecycle |
+| `ExportableInterface` | Export headers, rows and filename |
 
-Export and report implementations can be registered through the **Support registries** in `Support/`:
-
-```php
-use AIArmada\Inventory\Support\ExportRegistry;
-use AIArmada\Inventory\Support\ReportRegistry;
-```
-
-Costing adapters are named services under `Services/Costing/` and are wired directly into `ValuationService`. Adding a new costing method requires updating that service's explicit method map alongside its adapter.
-
-The export and report registries provide `register()` and `get()` methods, making those surfaces extensible without modifying core code.
-
-> **warning**
-> `CostingMethodRegistry` and `AllocationStrategyRegistry` are removed. Migrate costing integrations to `ValuationService` and keep custom costing adapters in its explicit method map; allocation uses the `AllocationStrategy` enum and service match directly.
+Pass an `ExportableInterface` implementation to `Features\\Reporting\\Actions\\ExportService`. Reporting queries live under `Features/Reporting/Queries`. Costing adapters belong to `Features/Valuation/Persistence`.
 
 ## Next Steps
 

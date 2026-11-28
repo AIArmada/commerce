@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Actions\ShipInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -41,7 +41,7 @@ final class ShipStockAction
                             ->required()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search): array {
-                                $query = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
+                                $query = InventoryOwnerScope::forMutation(InventoryLocation::query());
                                 LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
 
                                 return $query
@@ -50,13 +50,13 @@ final class ShipStockAction
                                     ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => InventoryOwnerScope::forMutation(InventoryLocation::query())
                                 ->whereKey($value)
                                 ->value('name')),
 
                         TextInput::make('quantity')
                             ->label('Quantity to Ship')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(1)
                             ->default(1),
@@ -90,7 +90,7 @@ final class ShipStockAction
             ->action(function (Model $record, array $data): void {
                 $locationId = (string) $data['location_id'];
 
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                $isAllowed = InventoryOwnerScope::forMutation(InventoryLocation::query())
                     ->whereKey($locationId)
                     ->exists();
 
@@ -115,14 +115,14 @@ final class ShipStockAction
                 }
 
                 try {
-                    $movement = ShipInventory::run(
+                    app(InventoryService::class)->ship(
                         model: $record,
                         locationId: $locationId,
                         quantity: (int) $data['quantity'],
                         reason: $reason,
                         note: $data['notes'] ?? null,
                         userId: Auth::id(),
-                        occurredAt: $data['shipped_at'] ?? null,
+                        occurredAt: isset($data['shipped_at']) ? CarbonImmutable::parse($data['shipped_at']) : null,
                     );
 
                     Notification::make()

@@ -20,6 +20,8 @@ return new class extends Migration
             $table->foreignUuid('to_location_id')->nullable();
             $table->foreignUuid('batch_id')->nullable();
             $table->integer('quantity');
+            $table->unsignedInteger('quantity_before')->nullable();
+            $table->unsignedInteger('quantity_after')->nullable();
             $table->string('type');
             $table->string('reason')->nullable();
             $table->string('reference')->nullable();

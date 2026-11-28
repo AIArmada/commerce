@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Concerns;
 
+use AIArmada\Products\Data\CompositeAvailability;
+use AIArmada\Products\Data\CompositeSnapshot;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
-use AIArmada\Products\Support\CompositeAvailability;
-use AIArmada\Products\Support\CompositeSnapshot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 

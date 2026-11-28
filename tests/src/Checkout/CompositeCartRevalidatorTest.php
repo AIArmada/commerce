@@ -6,9 +6,10 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CompositeCartRevalidator;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
@@ -197,7 +198,7 @@ it('rejects a package that was archived after checkout started', function (): vo
     [$cart, $package, , $manager] = revalidatorScenario();
     $session = revalidatorSession($cart);
 
-    $package->archive();
+    $package = app(UpdateProductStatus::class)->execute($package, ProductStatus::Archived);
 
     expect((new CompositeCartRevalidator($manager))->validate($session))
         ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::CONTENTS_CHANGED]);

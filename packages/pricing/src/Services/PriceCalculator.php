@@ -14,11 +14,11 @@ use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Events\PriceCalculated;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Queries\EligiblePriceLists;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\ResolvesCurrency;
 use AIArmada\Pricing\Support\ResolvesEffectiveAt;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
@@ -35,43 +35,8 @@ final class PriceCalculator implements PriceCalculatorInterface
     ) {}
 
     /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    protected function applyPriceListActiveAt(Builder $query, CarbonImmutable $at): Builder
-    {
-        return $query->where('is_active', true)
-            ->whereNull('deactivated_at')
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
-            })
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
-            });
-    }
-
-    /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    protected function applyPriceActiveAt(Builder $query, CarbonImmutable $at): Builder
-    {
-        return $query->whereNull('deactivated_at')
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
-            })
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
-            });
-    }
-
-    /**
-     * Calculate prices for many lines at once, resolving the default price
-     * list a single time instead of once per line.
+     * Calculate prices for many lines at once, resolving the requested or
+     * default price list a single time instead of once per line.
      *
      * @param  array<int, array{item: Priceable, quantity?: int}>  $lines
      * @param  array<string, mixed>  $context
@@ -79,13 +44,20 @@ final class PriceCalculator implements PriceCalculatorInterface
      */
     public function calculateMany(array $lines, array $context = []): array
     {
-        $shareDefault = Arr::get($context, 'price_list_id') === null;
-        $defaultList = $shareDefault ? $this->resolveDefaultPriceList($context) : null;
+        if ($lines === []) {
+            return [];
+        }
+
+        $context['effective_at'] = $this->resolveEffectiveAt($context);
+        $priceListId = Arr::get($context, 'price_list_id');
+        $priceList = is_string($priceListId) && $priceListId !== ''
+            ? EligiblePriceLists::query($context, $context['effective_at'], $this->resolveCurrency($context))->whereKey($priceListId)->first()
+            : $this->resolveDefaultPriceList($context);
 
         $results = [];
 
         foreach ($lines as $index => $line) {
-            $results[$index] = $this->calculateWithList($line['item'], $line['quantity'] ?? 1, $context, $defaultList, $shareDefault);
+            $results[$index] = $this->calculateWithList($line['item'], $line['quantity'] ?? 1, $context, $priceList, true);
         }
 
         return $results;
@@ -96,9 +68,10 @@ final class PriceCalculator implements PriceCalculatorInterface
         return $this->calculateWithList($item, $quantity, $context, null, false);
     }
 
-    private function calculateWithList(Priceable $item, int $quantity, array $context, ?PriceList $defaultList, bool $shareDefault): PriceResultData
+    private function calculateWithList(Priceable $item, int $quantity, array $context, ?PriceList $resolvedList, bool $listResolved): PriceResultData
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
+        $context['effective_at'] = $effectiveAt;
 
         $quantity = max(1, $quantity);
         $basePrice = MoneyNormalizer::toCents($item->getBasePrice());
@@ -130,7 +103,18 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $tierResult = $this->tierResolver->resolve($priceableType, $priceableId, $quantity, $context);
+        if (! $listResolved) {
+            $requestedListId = Arr::get($context, 'price_list_id');
+            $resolvedList = is_string($requestedListId) && $requestedListId !== ''
+                ? EligiblePriceLists::query($context, $effectiveAt, $currency)->whereKey($requestedListId)->first()
+                : $this->resolveDefaultPriceList($context);
+            $listResolved = true;
+        }
+
+        $tierContext = $context;
+        $tierContext['price_list_id'] = $resolvedList?->id;
+
+        $tierResult = $this->tierResolver->resolve($priceableType, $priceableId, $quantity, $tierContext);
         if ($tierResult !== null) {
             $breakdown[] = ['type' => 'tier', 'price' => $tierResult->price, 'tier' => $tierResult->tier];
 
@@ -171,7 +155,7 @@ final class PriceCalculator implements PriceCalculatorInterface
             return $result;
         }
 
-        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context, $effectiveAt, $defaultList, $shareDefault);
+        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $currency, $effectiveAt, $resolvedList);
         if ($priceListResult !== null) {
             $breakdown[] = ['type' => 'price_list', 'price' => $priceListResult['price'], 'list' => $priceListResult['name']];
 
@@ -205,41 +189,28 @@ final class PriceCalculator implements PriceCalculatorInterface
         return get_class($item);
     }
 
-    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context, CarbonImmutable $effectiveAt, ?PriceList $defaultList = null, bool $shareDefault = false): ?array
+    private function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, string $currency, CarbonImmutable $effectiveAt, ?PriceList $priceList): ?array
     {
-        $currency = $this->resolveCurrency($context);
-        $priceListId = Arr::get($context, 'price_list_id');
-
-        if (is_string($priceListId) && $priceListId !== '') {
-            $priceList = $this->applyPriceListActiveAt(PriceList::query(), $effectiveAt)
-                ->where('currency', $currency)
-                ->whereKey($priceListId)
-                ->first();
-        } elseif ($shareDefault || $defaultList !== null) {
-            $priceList = $defaultList;
-        } else {
-            $priceList = $this->resolveDefaultPriceList($context);
-        }
-
         if (! $priceList) {
             return null;
         }
 
-        $price = $this->applyPriceActiveAt(Price::query(), $effectiveAt)
+        $price = Price::query()->active($effectiveAt)
             ->where('price_list_id', $priceList->id)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->where('currency', $currency)
             ->forQuantity($quantity)
             ->orderByDesc('min_quantity')
-            ->first();
+            ->orderBy('id')
+            ->value('amount');
 
-        if (! $price) {
+        if ($price === null) {
             return null;
         }
 
         return [
-            'price' => $price->amount,
+            'price' => (int) $price,
             'name' => $priceList->name,
         ];
     }
@@ -251,8 +222,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
 
-        return $this->applyPriceListActiveAt(PriceList::query(), $effectiveAt)
-            ->where('currency', $this->resolveCurrency($context))
+        return EligiblePriceLists::query($context, $effectiveAt, $this->resolveCurrency($context))
             ->default()
             ->orderByDesc('priority')
             ->orderBy('created_at')

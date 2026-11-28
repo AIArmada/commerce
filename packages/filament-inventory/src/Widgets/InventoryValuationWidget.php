@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Widgets;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

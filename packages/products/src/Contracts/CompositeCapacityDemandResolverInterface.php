@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Contracts;
 
-use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 
 /**
- * Optional richer capacity seam for scoped, shared or weighted resources.
- *
- * Implementations are also CompositeCapacityResolverInterface instances, so
- * legacy unscoped stock resolvers remain valid. The demand method is used by
- * composite availability when supplied; no allocation or hold is performed.
+ * Resolves scoped, shared or weighted capacity without allocating resources.
  */
 interface CompositeCapacityDemandResolverInterface extends CompositeCapacityResolverInterface
 {
-    /**
-     * @param  array<string, mixed>  $context  Includes composition_path for nested leaves.
-     */
-    public function demandFor(Product $parent, ProductComponent $component, array $context = []): CompositeCapacityDemand;
+    public function demandFor(CompositeCapacityRequest $request): CompositeCapacityDemand;
 }

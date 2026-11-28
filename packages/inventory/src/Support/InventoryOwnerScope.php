@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,7 +19,7 @@ final class InventoryOwnerScope
 
     public static function includeGlobal(): bool
     {
-        return (bool) config('inventory.owner.include_global', false);
+        return (bool) config('inventory.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
     }
 
     public static function resolveOwner(): ?Model
@@ -45,9 +46,14 @@ final class InventoryOwnerScope
         $owner = self::resolveOwner();
         $includeGlobal = self::includeGlobal();
 
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @phpstan-ignore-next-line dynamic scope from HasOwner trait */
-            return $query->forOwner($owner, $includeGlobal);
+        $model = $query->getModel();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner, sprintf('%s requires an owner context or explicit global context.', $model::class));
+
+        if (is_callable([$model, 'scopeForOwner']) && method_exists($model, 'scopeForOwner')) {
+            /** @var Builder<TModel> $scoped */
+            $scoped = $model->scopeForOwner($query, $owner, $includeGlobal);
+
+            return $scoped;
         }
 
         return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
@@ -72,6 +78,24 @@ final class InventoryOwnerScope
         });
     }
 
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function forMutation(Builder $query): Builder
+    {
+        if (! self::isEnabled()) {
+            return $query;
+        }
+
+        $owner = self::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, false);
+    }
+
     public static function isCurrentContextGlobalOnly(): bool
     {
         return self::isEnabled() && self::resolveOwner() === null;
@@ -84,6 +108,7 @@ final class InventoryOwnerScope
         }
 
         $owner = self::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
         $ownerKey = $owner === null
             ? 'null'

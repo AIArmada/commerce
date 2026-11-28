@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeSetResource\Tables;
 
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
+use AIArmada\Products\Actions\SetDefaultAttributeSet;
 use AIArmada\Products\Models\AttributeSet;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -64,13 +66,14 @@ class AttributeSetsTable
                     ->icon('heroicon-o-star')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(fn (AttributeSet $record) => $record->setAsDefault())
+                    ->authorize('update')
+                    ->action(fn (AttributeSet $record) => app(SetDefaultAttributeSet::class)->execute($record))
                     ->visible(fn (AttributeSet $record): bool => ! $record->is_default),
-                DeleteAction::make(),
+                DeleteAction::make()->using(fn (AttributeSet $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ]);
     }

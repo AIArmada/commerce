@@ -203,3 +203,31 @@ it('ignores an explicit price list in another currency', function (): void {
 
     expect($result->finalPrice)->toBe(10000);
 });
+
+it('keeps independent default price lists per currency', function (): void {
+    $myr = createCurrencyList('MYR');
+    $usd = createCurrencyList('USD');
+    $itemId = 'currency-item-' . uniqid();
+    $item = new CurrencyResolutionItem($itemId, 10000);
+
+    foreach ([[$myr, 800], [$usd, 500]] as [$list, $amount]) {
+        Price::create([
+            'price_list_id' => $list->id,
+            'priceable_type' => CurrencyResolutionItem::class,
+            'priceable_id' => $itemId,
+            'amount' => $amount,
+            'currency' => $list->currency,
+        ]);
+    }
+
+    expect($myr->fresh()->is_default)->toBeTrue()
+        ->and($usd->fresh()->is_default)->toBeTrue()
+        ->and($this->calculator->calculate($item, 1, ['currency' => 'MYR'])->finalPrice)->toBe(800)
+        ->and($this->calculator->calculate($item, 1, ['currency' => 'USD'])->finalPrice)->toBe(500);
+
+    $replacement = createCurrencyList('MYR');
+
+    expect($myr->fresh()->is_default)->toBeFalse()
+        ->and($replacement->fresh()->is_default)->toBeTrue()
+        ->and($usd->fresh()->is_default)->toBeTrue();
+});

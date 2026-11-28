@@ -22,6 +22,7 @@ use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Services\PromotionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 uses(EnsuresPricingSchema::class);
 
@@ -715,4 +716,84 @@ describe('TestPriceableItem', function (): void {
 
         expect($item->isOnSale())->toBeFalse();
     });
+});
+
+it('does not expose customer-specific prices through explicit or default list selection', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $customerId = (string) Str::uuid();
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Private Customer List',
+        'slug' => 'private-customer-list',
+        'customer_id' => $customerId,
+        'is_default' => true,
+        'currency' => 'MYR',
+    ]);
+    Price::create([
+        'price_list_id' => $list->id,
+        'priceable_type' => TestPriceableItem::class,
+        'priceable_id' => $item->getBuyableIdentifier(),
+        'amount' => 100,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item)->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['price_list_id' => $list->id])->finalPrice)->toBe(1000)
+        ->and($calculator->calculateMany([['item' => $item]])[0]->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['customer_id' => $customerId])->finalPrice)->toBe(100);
+});
+
+it('requires both customer and segment eligibility for a doubly targeted list', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $customerId = (string) Str::uuid();
+    $segmentId = (string) Str::uuid();
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Private Segment List',
+        'slug' => 'private-segment-list',
+        'customer_id' => $customerId,
+        'segment_id' => $segmentId,
+        'currency' => 'MYR',
+    ]);
+    Price::create([
+        'price_list_id' => $list->id,
+        'priceable_type' => TestPriceableItem::class,
+        'priceable_id' => $item->getBuyableIdentifier(),
+        'amount' => 100,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item, 1, ['customer_id' => $customerId])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['segment_ids' => [$segmentId]])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['price_list_id' => $list->id])->finalPrice)->toBe(1000)
+        ->and($calculator->calculate($item, 1, ['customer_id' => $customerId, 'segment_ids' => [$segmentId]])->finalPrice)->toBe(100);
+});
+
+it('applies eligible default list tiers consistently to single and batch calculations', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
+    $list = PriceList::create([
+        'name' => 'Default Tier List',
+        'slug' => 'default-tier-list',
+        'is_default' => true,
+        'currency' => 'MYR',
+    ]);
+
+    PriceTier::create([
+        'price_list_id' => $list->id,
+        'tierable_type' => TestPriceableItem::class,
+        'tierable_id' => $item->getBuyableIdentifier(),
+        'min_quantity' => 5,
+        'amount' => 700,
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+
+    $calculator = app(PriceCalculator::class);
+
+    expect($calculator->calculate($item, 5)->finalPrice)->toBe(700)
+        ->and($calculator->calculateMany([['item' => $item, 'quantity' => 5]])[0]->finalPrice)->toBe(700)
+        ->and($calculator->calculate($item, 1)->finalPrice)->toBe(1000);
 });

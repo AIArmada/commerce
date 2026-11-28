@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryCostLayer;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('InventoryCostLayer', function (): void {
     beforeEach(function (): void {
@@ -359,7 +362,8 @@ describe('InventoryCostLayer', function (): void {
             'layer_date' => now(),
         ]);
 
-        $consumed = $layer->consume(30);
+        config()->set('inventory.defaults.currency', 'USD');
+        $consumed = app(FifoCostService::class)->consume($this->item, 30)['consumed'];
 
         expect($consumed)->toBe(30);
         expect($layer->fresh()->remaining_quantity)->toBe(70);
@@ -378,7 +382,8 @@ describe('InventoryCostLayer', function (): void {
             'layer_date' => now(),
         ]);
 
-        $consumed = $layer->consume(50);
+        config()->set('inventory.defaults.currency', 'USD');
+        $consumed = app(FifoCostService::class)->consume($this->item, 50)['consumed'];
 
         expect($consumed)->toBe(20);
         expect($layer->fresh()->remaining_quantity)->toBe(0);
@@ -401,5 +406,30 @@ describe('InventoryCostLayer', function (): void {
         expect($layer->remaining_quantity)->toBeInt();
         expect($layer->costing_method)->toBe(CostingMethod::Fifo);
         expect($layer->layer_date)->toBeInstanceOf(CarbonImmutable::class);
+    });
+});
+
+it('rejects direct cost layer creation and updates in tenant-visible global locations', function (): void {
+    config(['inventory.owner.enabled' => true, 'inventory.owner.include_global' => true]);
+    $owner = InventoryItem::create(['name' => 'Cost Owner']);
+    $item = InventoryItem::create(['name' => 'Cost Item']);
+
+    [$location, $layer] = OwnerContext::withOwner(null, function () use ($item): array {
+        $location = InventoryLocation::factory()->create();
+
+        return [$location, app(FifoCostService::class)->addLayer($item, 10, 100, $location->id)];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($item, $location, $layer): void {
+        expect(fn () => InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $location->id,
+        ]))->toThrow(AuthorizationException::class)
+            ->and(fn () => $layer->update(['remaining_quantity' => 1]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($layer): void {
+        expect($layer->fresh()->remaining_quantity)->toBe(10);
     });
 });

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\States\Cancelled;
-use AIArmada\Inventory\States\Fulfilled;
-use AIArmada\Inventory\States\PartiallyFulfilled;
-use AIArmada\Inventory\States\Pending;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\States\Cancelled;
+use AIArmada\Inventory\Features\Backorders\States\Fulfilled;
+use AIArmada\Inventory\Features\Backorders\States\PartiallyFulfilled;
+use AIArmada\Inventory\Features\Backorders\States\Pending;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

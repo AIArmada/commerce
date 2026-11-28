@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -15,7 +20,9 @@ use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 function makeCompositeParent(array $attributes = []): Product
@@ -76,12 +83,9 @@ final class CompositePackageCompositionCapacityResolver implements CompositeCapa
     /** @var array<string, int> */
     public array $stock = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $inventoryable = $component->variant ?? $component->componentProduct;
-
-        return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
+        return $this->stock[$request->inventoryableType . ':' . $request->inventoryableId] ?? 0;
     }
 }
 
@@ -327,8 +331,13 @@ it('isolates composite package reads and writes by owner', function (): void {
     });
 
     OwnerContext::withOwner($ownerB, function () use ($parentA): void {
+        $service = app(CompositePackageService::class);
+
         expect(fn () => app(ReplaceProductComponents::class)->handle($parentA, []))
             ->toThrow(InvalidCompositePackageException::class, 'not accessible');
+        expect(fn () => $service->priceModeFor($parentA))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->requiresShippingFor($parentA))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->assertPublishable($parentA, new Collection))->toThrow(AuthorizationException::class);
     });
 });
 
@@ -498,4 +507,189 @@ it('blocks retyping or disabling products and variants referenced by a package',
         ->toThrow(InvalidCompositePackageException::class, 'cannot be disabled');
 
     expect($variant->fresh()->is_enabled)->toBeTrue();
+});
+
+it('duplicates composite membership without copying publication state', function (): void {
+    $component = makeComponentProduct();
+    $source = app(CreateCompositeProduct::class)->handle([
+        'name' => 'Original Kit',
+        'sku' => 'ORIGINAL-KIT',
+        'status' => ProductStatus::Active,
+        'price' => 2500,
+    ], [
+        ['component_product_id' => $component->id, 'quantity' => 2],
+    ]);
+
+    $copy = app(DuplicateProduct::class)->execute($source);
+    $membership = $copy->components()->sole();
+
+    expect($copy->getKey())->not->toBe($source->getKey())
+        ->and($copy->status)->toBe(ProductStatus::Draft)
+        ->and($copy->published_at)->toBeNull()
+        ->and($copy->sku)->not->toBe($source->sku)
+        ->and($membership->component_product_id)->toBe($component->id)
+        ->and($membership->quantity)->toBe(2)
+        ->and($source->fresh()->status)->toBe(ProductStatus::Active);
+});
+
+it('does not let tenant-visible global packages be modified or published by a tenant', function (): void {
+    config()->set('products.features.owner.include_global', true);
+    $owner = User::query()->create(['name' => 'Global Package Reader', 'email' => 'global-package-reader@example.com', 'password' => 'secret']);
+
+    $parent = OwnerContext::withOwner(null, function (): Product {
+        $parent = makeCompositeParent();
+        $component = makeComponentProduct(['type' => ProductType::Service, 'requires_shipping' => false, 'tracks_inventory' => false]);
+        app(ReplaceProductComponents::class)->handle($parent, [
+            ['component_product_id' => $component->id, 'quantity' => 1],
+        ]);
+
+        return $parent;
+    });
+
+    OwnerContext::withOwner($owner, function () use ($parent): void {
+        expect(Product::query()->whereKey($parent->id)->exists())->toBeTrue()
+            ->and(fn () => app(ReplaceProductComponents::class)->handle($parent, []))
+            ->toThrow(InvalidCompositePackageException::class, 'not accessible')
+            ->and(fn () => app(PublishCompositeProduct::class)->handle($parent))
+            ->toThrow(InvalidCompositePackageException::class, 'not accessible');
+    });
+
+    OwnerContext::withOwner(null, function () use ($parent): void {
+        expect($parent->fresh()->status)->toBe(ProductStatus::Draft)
+            ->and($parent->components()->count())->toBe(1);
+        expect(app(PublishCompositeProduct::class)->handle($parent)->status)->toBe(ProductStatus::Active);
+    });
+});
+
+it('enforces publishability through the generic status action and preserves the draft on failure', function (): void {
+    $parent = makeCompositeParent();
+    $action = app(UpdateProductStatus::class);
+
+    expect(fn () => $action->execute($parent, ProductStatus::Active))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one component');
+
+    expect($parent->fresh()->status)->toBe(ProductStatus::Draft)
+        ->and($parent->fresh()->published_at)->toBeNull();
+
+    $component = makeComponentProduct();
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $component->id, 'quantity' => 1],
+    ]);
+
+    $published = $action->execute($parent, ProductStatus::Active);
+
+    expect($published->status)->toBe(ProductStatus::Active)
+        ->and($published->published_at)->not->toBeNull();
+});
+
+it('blocks generic activation of a composite with an unpublished nested component', function (): void {
+    $leaf = makeComponentProduct();
+    $child = makeCompositeParent();
+    $parent = makeCompositeParent();
+    $replace = app(ReplaceProductComponents::class);
+    $replace->handle($child, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ]);
+    $replace->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+    ]);
+
+    expect(fn () => app(UpdateProductStatus::class)->execute($parent, ProductStatus::Active))
+        ->toThrow(InvalidCompositePackageException::class, 'must be active');
+
+    expect($parent->fresh()->status)->toBe(ProductStatus::Draft);
+});
+
+it('resolves frozen inventory components within the active owner scope override', function (): void {
+    config([
+        'products.features.owner.enabled' => true,
+        'products.features.owner.auto_assign_on_create' => true,
+        'products.features.owner.include_global' => true,
+    ]);
+
+    $owner = User::query()->create([
+        'name' => 'Component Owner',
+        'email' => 'component-scope-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $global = OwnerContext::withOwner(null, fn (): Product => makeComponentProduct());
+
+    $component = [
+        'product_id' => $global->id,
+        'variant_id' => null,
+        'inventoryable_type' => $global->getMorphClass(),
+        'inventoryable_id' => $global->id,
+        'quantity' => 1,
+        'sku' => $global->sku,
+        'name' => $global->name,
+        'weight' => null,
+        'dimensions' => null,
+        'requires_shipping' => true,
+        'tracks_inventory' => true,
+    ];
+
+    OwnerContext::withOwner($owner, function () use ($component, $global): void {
+        expect(CompositeComponents::resolveInventoryModel($component)?->getKey())->toBe($global->id);
+
+        OwnerScopeOverride::withoutIncludeGlobal(function () use ($component): void {
+            expect(CompositeComponents::resolveInventoryModel($component))->toBeNull();
+        });
+
+        expect(CompositeComponents::resolveInventoryModel($component)?->getKey())->toBe($global->id);
+    });
+});
+
+it('rejects malformed component quantities and positions without replacing the persisted graph', function (): void {
+    $parent = makeCompositeParent();
+    $child = makeComponentProduct();
+    $replace = app(ReplaceProductComponents::class);
+
+    $original = $replace->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 2, 'position' => 0],
+    ])->firstOrFail();
+
+    foreach ([1.5, '2.5', true, [], '2147483648', 0, -1] as $quantity) {
+        expect(fn () => $replace->handle($parent, [
+            ['component_product_id' => $child->id, 'quantity' => $quantity],
+        ]))->toThrow(InvalidCompositePackageException::class, 'quantity');
+    }
+
+    foreach ([-1, 2.5, '2147483648', true] as $position) {
+        expect(fn () => $replace->handle($parent, [
+            ['component_product_id' => $child->id, 'quantity' => 1, 'position' => $position],
+        ]))->toThrow(InvalidCompositePackageException::class, 'position');
+    }
+
+    expect($parent->components()->firstOrFail()->getKey())->toBe($original->getKey())
+        ->and($original->fresh()->quantity)->toBe(2);
+});
+
+it('defaults omitted component quantities to one', function (): void {
+    $parent = makeCompositeParent();
+    $child = makeComponentProduct();
+
+    $components = app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $child->id],
+    ]);
+
+    expect($components->sole()->quantity)->toBe(1);
+});
+
+it('rejects changes to published package currency or tax treatment that invalidate components', function (): void {
+    $parent = makeCompositeParent(['currency' => 'MYR', 'is_taxable' => true]);
+    $child = makeComponentProduct(['currency' => 'MYR', 'is_taxable' => true]);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $child->id, 'quantity' => 1],
+    ]);
+    $parent = app(PublishCompositeProduct::class)->handle($parent);
+
+    expect(fn () => $parent->update(['currency' => 'USD']))
+        ->toThrow(InvalidCompositePackageException::class, 'currency')
+        ->and($parent->refresh()->currency)->toBe('MYR');
+
+    expect(fn () => $parent->update(['is_taxable' => false]))
+        ->toThrow(InvalidCompositePackageException::class, 'tax treatment')
+        ->and($parent->refresh()->is_taxable)->toBeTrue();
 });

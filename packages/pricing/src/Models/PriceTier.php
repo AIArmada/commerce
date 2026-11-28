@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Pricing\Queries\OwnerScopedPricingReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -137,10 +138,10 @@ class PriceTier extends Model implements Auditable
             }
 
             if ($tier->price_list_id !== null) {
-                $priceListQuery = PriceList::query();
-
-                $priceListExists = $priceListQuery
+                $priceListExists = PriceList::query()
                     ->whereKey($tier->price_list_id)
+                    ->where('owner_type', $tier->owner_type)
+                    ->where('owner_id', $tier->owner_id)
                     ->exists();
 
                 if (! $priceListExists) {
@@ -148,24 +149,7 @@ class PriceTier extends Model implements Auditable
                 }
             }
 
-            $type = $tier->tierable_type;
-
-            if ($owner !== null && is_string($type) && class_exists($type) && is_a($type, Model::class, true)) {
-                $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);
-
-                if ($usesHasOwner) {
-                    /** @var Builder<Model> $query */
-                    $query = $type::query();
-
-                    $exists = $query
-                        ->whereKey($tier->tierable_id)
-                        ->exists();
-
-                    if (! $exists) {
-                        throw new AuthorizationException('Tierable entity is not accessible in the current owner scope.');
-                    }
-                }
-            }
+            OwnerScopedPricingReference::assertAccessible($tier->tierable_type, $tier->tierable_id, $tier->owner_type, $tier->owner_id, 'Tierable entity');
         });
     }
 

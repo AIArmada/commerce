@@ -8,13 +8,17 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * @return array{
@@ -75,7 +79,7 @@ function makeOwnerScopedSerialServiceFixture(): array
 
     $setOwnerContext($ownerA);
 
-    $service = new SerialService;
+    $service = app(SerialService::class);
 
     return [
         'ownerA' => $ownerA,
@@ -89,7 +93,7 @@ function makeOwnerScopedSerialServiceFixture(): array
     ];
 }
 
-it('scopes SerialService::findBySerialNumber to current owner (and global when enabled)', function (): void {
+it('scopes SerialLookupService::findBySerialNumber to current owner (and global when enabled)', function (): void {
     $fixture = makeOwnerScopedSerialServiceFixture();
     $sku = $fixture['sku'];
     $ownerA = $fixture['ownerA'];
@@ -98,7 +102,6 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
     $locationB = $fixture['locationB'];
     $locationGlobal = $fixture['locationGlobal'];
     $setOwnerContext = $fixture['setOwnerContext'];
-    $service = $fixture['service'];
 
     $setOwnerContext($ownerA);
 
@@ -135,13 +138,13 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
         ]);
     });
 
-    expect($service->findBySerialNumber('SN-A'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-A'))
         ->not->toBeNull();
 
-    expect($service->findBySerialNumber('SN-B'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-B'))
         ->toBeNull();
 
-    expect($service->findBySerialNumber('SN-G'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-G'))
         ->not->toBeNull();
 });
 
@@ -149,7 +152,6 @@ it('can exclude global serials when include_global is false', function (): void 
     $fixture = makeOwnerScopedSerialServiceFixture();
     $sku = $fixture['sku'];
     $locationGlobal = $fixture['locationGlobal'];
-    $service = $fixture['service'];
 
     OwnerContext::withOwner(null, function () use ($sku, $locationGlobal): void {
         InventorySerial::factory()->create([
@@ -164,7 +166,7 @@ it('can exclude global serials when include_global is false', function (): void 
 
     config()->set('inventory.owner.include_global', false);
 
-    expect($service->findBySerialNumber('SN-G2'))
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-G2'))
         ->toBeNull();
 });
 
@@ -219,7 +221,92 @@ it('allows finding shipped serials by serial number using history scope', functi
 
     $service->ship($serial->fresh(), 'TRACK-1');
 
-    $found = $service->findBySerialNumber('SN-SHIPPED');
+    $found = app(SerialLookupService::class)->findBySerialNumber('SN-SHIPPED');
 
     expect($found)->not->toBeNull();
+});
+
+it('does not let a tenant register a serial at a visible global location', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    expect(fn () => $fixture['service']->register($fixture['sku'], 'SN-GLOBAL-WRITE', $fixture['locationGlobal']->id))
+        ->toThrow(InvalidArgumentException::class, 'Invalid location for current owner');
+});
+
+it('does not let a tenant mutate a visible global serial', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    $serial = OwnerContext::withOwner(null, fn (): InventorySerial => $fixture['service']->register(
+        $fixture['sku'],
+        'SN-GLOBAL-RESERVE',
+        $fixture['locationGlobal']->id,
+    ));
+
+    expect(app(SerialLookupService::class)->findBySerialNumber('SN-GLOBAL-RESERVE'))->not->toBeNull();
+
+    expect(fn () => $fixture['service']->reserve($serial))
+        ->toThrow(ModelNotFoundException::class);
+
+    expect($serial->fresh()->status)->toBeInstanceOf(Available::class);
+});
+
+it('enforces serial uniqueness for explicit global records on the fresh schema', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    OwnerContext::withOwner(null, function () use ($fixture): void {
+        $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id);
+
+        expect(fn () => $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id))
+            ->toThrow(UniqueConstraintViolationException::class);
+    });
+});
+
+it('allows different owners to register the same serial identifier', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    $first = $fixture['service']->register($fixture['sku'], 'SN-SHARED', $fixture['locationA']->id);
+    ($fixture['setOwnerContext'])($fixture['ownerB']);
+    $second = $fixture['service']->register($fixture['sku'], 'SN-SHARED', $fixture['locationB']->id);
+
+    expect($second->id)->not->toBe($first->id)
+        ->and($second->owner_id)->toBe($fixture['ownerB']->getKey());
+});
+
+it('rejects direct serial creation in a tenant-visible global location', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    expect(fn () => InventorySerial::factory()->create([
+        'inventoryable_type' => $fixture['sku']->getMorphClass(),
+        'inventoryable_id' => $fixture['sku']->getKey(),
+        'location_id' => $fixture['locationGlobal']->id,
+        'serial_number' => 'DIRECT-GLOBAL-WRITE',
+    ]))->toThrow(AuthorizationException::class);
+});
+
+it('reads available serials across visible locations without mutation authorization', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+    $service = $fixture['service'];
+    $sku = $fixture['sku'];
+
+    $own = $service->register($sku, 'SN-AVAILABLE-OWN', $fixture['locationA']->id);
+
+    ($fixture['setOwnerContext'])($fixture['ownerB']);
+    $foreign = $service->register($sku, 'SN-AVAILABLE-FOREIGN', $fixture['locationB']->id);
+
+    ($fixture['setOwnerContext'])($fixture['ownerA']);
+    $global = OwnerContext::withOwner(null, fn (): InventorySerial => $service->register(
+        $sku,
+        'SN-AVAILABLE-GLOBAL',
+        $fixture['locationGlobal']->id,
+    ));
+
+    expect(app(SerialLookupService::class)->getAvailableForSale($sku)->modelKeys())
+        ->toContain($own->id, $global->id)
+        ->not->toContain($foreign->id)
+        ->and(app(SerialLookupService::class)->getAvailableForSale($sku, $fixture['locationGlobal']->id)->modelKeys())->toBe([$global->id])
+        ->and(app(SerialLookupService::class)->getAvailableForSale($sku, $fixture['locationB']->id))->toBeEmpty();
+
+    config()->set('inventory.owner.include_global', false);
+
+    expect(app(SerialLookupService::class)->getAvailableForSale($sku)->modelKeys())->toBe([$own->id]);
 });

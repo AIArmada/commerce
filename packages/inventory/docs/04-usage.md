@@ -11,7 +11,7 @@ The primary API surface is the **Action** classes. Each Action is a self-contain
 ### Receiving Inventory
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 
 // Basic receive
 ReceiveInventory::run($product, $locationId, quantity: 100);
@@ -23,7 +23,7 @@ ReceiveInventory::run($product, $locationId, quantity: 100, reason: 'PO-2024-001
 ### Shipping Inventory
 
 ```php
-use AIArmada\Inventory\Actions\ShipInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 
 ShipInventory::run($product, $locationId, quantity: 10, reference: 'ORD-2024-001');
 ```
@@ -31,7 +31,7 @@ ShipInventory::run($product, $locationId, quantity: 10, reference: 'ORD-2024-001
 ### Transferring Between Locations
 
 ```php
-use AIArmada\Inventory\Actions\TransferInventory;
+use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 
 TransferInventory::run(
     $product,
@@ -45,7 +45,7 @@ TransferInventory::run(
 ### Adjusting Inventory to a Specific Quantity
 
 ```php
-use AIArmada\Inventory\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 
 // Set stock to exact count
 AdjustInventory::run($product, $locationId, newQuantity: 50, reason: 'Stock count reconciliation');
@@ -54,9 +54,9 @@ AdjustInventory::run($product, $locationId, newQuantity: 50, reason: 'Stock coun
 ### Stock Allocation & Commitment
 
 ```php
-use AIArmada\Inventory\Actions\AllocateStock;
-use AIArmada\Inventory\Actions\CommitStock;
-use AIArmada\Inventory\Actions\ReleaseStock;
+use AIArmada\Inventory\Features\Reservations\Actions\AllocateStock;
+use AIArmada\Inventory\Features\Reservations\Actions\CommitStock;
+use AIArmada\Inventory\Features\Reservations\Actions\ReleaseStock;
 
 // Reserve stock for a cart
 AllocateStock::run($product, quantity: 5, cartId: $cartId, ttlMinutes: 30);
@@ -147,8 +147,8 @@ a read-only availability check or purchase context alone.
 ### Batch & Serial Operations
 
 ```php
-use AIArmada\Inventory\Actions\CreateBatch;
-use AIArmada\Inventory\Actions\RecordSerial;
+use AIArmada\Inventory\Features\Traceability\Actions\CreateBatch;
+use AIArmada\Inventory\Features\Traceability\Actions\RecordSerial;
 use Carbon\CarbonImmutable;
 
 // Create a batch/lot
@@ -161,8 +161,8 @@ RecordSerial::run($product, serialNumber: 'SN-001-ABC', locationId: $locationId)
 ### Backorder Management
 
 ```php
-use AIArmada\Inventory\Actions\CreateBackorder;
-use AIArmada\Inventory\Actions\ResolveBackorder;
+use AIArmada\Inventory\Features\Backorders\Actions\CreateBackorder;
+use AIArmada\Inventory\Features\Backorders\Actions\ResolveBackorder;
 
 // Create a backorder
 CreateBackorder::run($product, quantity: 20, orderId: $orderId, customerId: $customerId);
@@ -180,8 +180,8 @@ ResolveBackorder::make()->autoFulfill($product, $availableQuantity);
 ### Reorder Suggestions
 
 ```php
-use AIArmada\Inventory\Actions\ApproveReorderSuggestion;
-use AIArmada\Inventory\Actions\RejectReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\RejectReorderSuggestion;
 
 ApproveReorderSuggestion::run($suggestion, userId: auth()->id());
 
@@ -191,7 +191,7 @@ RejectReorderSuggestion::run($suggestion, reason: 'Not enough budget');
 ### Check Low Inventory
 
 ```php
-use AIArmada\Inventory\Actions\CheckLowInventory;
+use AIArmada\Inventory\Features\Stock\Actions\CheckLowInventory;
 
 // Returns true if stock is below reorder point and dispatches LowInventoryDetected event
 CheckLowInventory::run($product, $level);
@@ -200,7 +200,7 @@ CheckLowInventory::run($product, $level);
 ### Process Expired Batches
 
 ```php
-use AIArmada\Inventory\Actions\ProcessExpiredBatches;
+use AIArmada\Inventory\Features\Traceability\Actions\ProcessExpiredBatches;
 
 // Returns count of batches marked as expired
 ProcessExpiredBatches::run();
@@ -209,7 +209,7 @@ ProcessExpiredBatches::run();
 ### Valuation Snapshots
 
 ```php
-use AIArmada\Inventory\Actions\CreateValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Actions\CreateValuationSnapshot;
 use AIArmada\Inventory\Enums\CostingMethod;
 
 CreateValuationSnapshot::run(method: CostingMethod::Fifo);
@@ -222,7 +222,7 @@ CreateValuationSnapshot::run(method: CostingMethod::Fifo);
 ### Receiving Inventory
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 
 // Basic receive
 Inventory::receive($product, $location->id, 100);
@@ -299,7 +299,7 @@ $totals = Inventory::getAvailabilityForMany([$variantA, $variantB]);
 ### Cart Flow
 
 ```php
-use AIArmada\Inventory\Facades\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // 1. Allocate when adding to cart
 InventoryAllocation::allocate($product, 5, $cartId, ttlMinutes: 30);
@@ -340,7 +340,7 @@ $available = InventoryAllocation::getTotalAvailable($product);
 ### Creating Batches
 
 ```php
-use AIArmada\Inventory\Services\Batch\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
 
 $batchService = app(BatchService::class);
@@ -358,7 +358,7 @@ $batch = $batchService->createBatch(
 ### FEFO Allocation
 
 ```php
-use AIArmada\Inventory\Services\Batch\BatchAllocationService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 
 $batchAllocationService = app(BatchAllocationService::class);
 
@@ -388,7 +388,7 @@ $batchAllocationService->commitBatches($allocations);
 $batchService->quarantine($batch, 'Pending QC inspection');
 
 // Release from quarantine
-$batch->releaseFromQuarantine();
+$batchService->releaseFromQuarantine($batch);
 
 // Recall batches
 $batchService->recallBatches([$batch], 'Product recall notice #123');
@@ -399,7 +399,7 @@ $batchService->recallBatches([$batch], 'Product recall notice #123');
 ### Registering Serials
 
 ```php
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 
 $serialService = app(SerialService::class);
 
@@ -457,7 +457,7 @@ $options = SerialStatus::options();
 ### Serial Lookup
 
 ```php
-use AIArmada\Inventory\Services\Serial\SerialLookupService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 
 $lookup = app(SerialLookupService::class);
 
@@ -479,7 +479,7 @@ $expiring = $lookup->getExpiringWarranty(daysAhead: 30);
 ### FIFO Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\FifoCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 
 $fifo = app(FifoCostService::class);
 
@@ -498,7 +498,7 @@ $result = $fifo->consume($product, 20);
 ### Weighted Average Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
 
 $wac = app(WeightedAverageCostService::class);
 
@@ -513,7 +513,7 @@ $avgCost = $wac->getCurrentAverageCost($product);
 ### Standard Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\StandardCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
 use Carbon\CarbonImmutable;
 
 $stdCost = app(StandardCostService::class);
@@ -534,7 +534,7 @@ $variance = $stdCost->calculateVariance($product, actualCostMinor: 1600);
 ### Valuation Snapshots
 
 ```php
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 
 $valuationService = app(ValuationService::class);
 
@@ -548,7 +548,7 @@ $snapshots = $valuationService->getSnapshotsForRange(CostingMethod::Fifo, $from,
 ## Demand Forecasting
 
 ```php
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
 
 $forecast = app(DemandForecastService::class);
 
@@ -569,7 +569,7 @@ $trend = $forecast->calculateTrend($product); // positive = increasing, negative
 ## Replenishment
 
 ```php
-use AIArmada\Inventory\Services\Stock\ReplenishmentService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 
 $replenishment = app(ReplenishmentService::class);
 
@@ -632,7 +632,7 @@ The package dispatches events you can listen to:
 | `InventoryTransferred` | Stock moved between locations |
 | `InventoryAdjusted` | Stock count adjusted |
 | `InventoryAllocated` | Stock reserved for cart/order |
-| `InventoryReleased` | Reserved stock released |
+| `Features/Reservations/Events/InventoryReleased` | Reserved stock released |
 | `LowInventoryDetected` | Stock falls below reorder point |
 | `OutOfInventory` | Stock reaches zero |
 | `SafetyStockBreached` | Stock falls below safety stock |
@@ -647,7 +647,7 @@ The package dispatches events you can listen to:
 ```php
 // In EventServiceProvider
 protected $listen = [
-    \AIArmada\Inventory\Events\LowInventoryDetected::class => [
+    \AIArmada\Inventory\Features\Stock\Events\LowInventoryDetected::class => [
         \App\Listeners\SendLowStockAlert::class,
     ],
 ];
@@ -679,7 +679,7 @@ php artisan inventory:create-valuation-snapshot --date=2026-01-31
 ### HasInventory Trait
 
 ```php
-use AIArmada\Inventory\Traits\HasInventory;
+use AIArmada\Inventory\Features\Stock\Traits\HasInventory;
 
 class Product extends Model
 {
@@ -706,7 +706,7 @@ coordinate remain valid and sort after coordinate-aware locations.
 ### HasSerialNumbers Trait
 
 ```php
-use AIArmada\Inventory\Traits\HasSerialNumbers;
+use AIArmada\Inventory\Features\Traceability\Traits\HasSerialNumbers;
 
 class Product extends Model
 {

@@ -6,13 +6,20 @@ namespace AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource;
+use AIArmada\Products\Actions\SaveAttributeSet;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
+use AIArmada\Products\Models\AttributeSet;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateAttributeSet extends CreateRecord
 {
     protected static string $resource = AttributeSetResource::class;
+
+    protected function handleRecordCreation(array $data): AttributeSet
+    {
+        return app(SaveAttributeSet::class)->create($data);
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

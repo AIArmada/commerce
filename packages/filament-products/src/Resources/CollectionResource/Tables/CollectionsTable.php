@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CollectionResource\Tables;
 
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
+use AIArmada\Products\Actions\RebuildCollectionMembership;
+use AIArmada\Products\Models\Collection;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -83,10 +85,11 @@ class CollectionsTable
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->isAutomatic())
+                    ->visible(fn (Collection $record): bool => $record->isAutomatic())
+                    ->authorize('update')
                     ->requiresConfirmation()
-                    ->action(function ($record): void {
-                        $record->rebuildProductList();
+                    ->action(function (Collection $record): void {
+                        app(RebuildCollectionMembership::class)->execute($record);
 
                         Notification::make()
                             ->success()
@@ -97,7 +100,7 @@ class CollectionsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ]);
     }

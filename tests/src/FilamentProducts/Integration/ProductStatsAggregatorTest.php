@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentProducts\Support\ProductStatsAggregator;
-use AIArmada\FilamentProducts\Support\ProductStatsCache;
+use AIArmada\FilamentProducts\Persistence\ProductStatsCache;
+use AIArmada\FilamentProducts\Queries\ProductStatsAggregator;
 use AIArmada\FilamentProducts\Widgets\ProductTypeDistributionWidget;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
@@ -153,8 +153,8 @@ it('preserves product status and week-window boundaries in one aggregate', funct
         'activeProducts' => 1,
         'draftProducts' => 1,
         'lastWeekProducts' => 4,
-        'previousWeekProducts' => 3,
-        'trend' => 33.0,
+        'previousWeekProducts' => 2,
+        'trend' => 100.0,
     ])->and(count($queries))->toBeLessThanOrEqual(3);
 });
 

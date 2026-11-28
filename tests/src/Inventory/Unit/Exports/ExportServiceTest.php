@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Exports\ExportableInterface;
-use AIArmada\Inventory\Exports\ExportService;
+use AIArmada\Inventory\Contracts\ExportableInterface;
+use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
 
 beforeEach(function (): void {
     $this->service = new ExportService;
@@ -210,4 +210,96 @@ describe('getRowCount', function (): void {
 
         expect($this->service->getRowCount($export))->toBe(0);
     });
+});
+
+it('neutralizes spreadsheet formulas in every CSV output without altering raw arrays', function (): void {
+    $export = new class implements ExportableInterface
+    {
+        public function getHeaders(): array
+        {
+            return ['Text', 'Number'];
+        }
+
+        public function getRows(): iterable
+        {
+            yield ['=1+1', -5];
+            yield ['@SUM(A1:A2)', 2];
+            yield [' +1+1', 3];
+        }
+
+        public function getFilename(): string
+        {
+            return 'formula-export-' . bin2hex(random_bytes(8));
+        }
+    };
+
+    $csv = $this->service->toCsv($export);
+
+    expect($csv)->toContain("'=1+1,-5")
+        ->and($csv)->toContain("'@SUM(A1:A2),2")
+        ->and($csv)->toContain("' +1+1")
+        ->and($this->service->toArray($export)['rows'][0][0])->toBe('=1+1')
+        ->and(implode('', iterator_to_array($this->service->stream($export))))->toBe($csv);
+});
+
+it('does not overwrite an existing CSV destination', function (): void {
+    $export = new class implements ExportableInterface
+    {
+        public function getHeaders(): array
+        {
+            return ['ID'];
+        }
+
+        public function getRows(): iterable
+        {
+            yield [1];
+        }
+
+        public function getFilename(): string
+        {
+            return 'existing-export';
+        }
+    };
+
+    $directory = sys_get_temp_dir() . '/inventory-export-' . bin2hex(random_bytes(8));
+    mkdir($directory);
+    $path = $directory . '/existing-export.csv';
+    file_put_contents($path, 'original');
+
+    try {
+        expect(fn () => $this->service->toCsvFile($export, $directory))->toThrow(RuntimeException::class)
+            ->and(file_get_contents($path))->toBe('original');
+    } finally {
+        unlink($path);
+        rmdir($directory);
+    }
+});
+
+it('writes multilingual CSV using byte lengths rather than character counts', function (): void {
+    $export = new class implements ExportableInterface
+    {
+        public function getHeaders(): array
+        {
+            return ['Nama', '名称'];
+        }
+
+        public function getRows(): iterable
+        {
+            yield ['Kuala Lumpur', '日本語'];
+            yield ['Café', 'مرحبا'];
+        }
+
+        public function getFilename(): string
+        {
+            return 'unicode-export-' . bin2hex(random_bytes(8));
+        }
+    };
+
+    $path = $this->service->toCsvFile($export, sys_get_temp_dir());
+
+    try {
+        expect(file_get_contents($path))->toBe($this->service->toCsv($export));
+    } finally {
+        unlink($path);
+    }
 });

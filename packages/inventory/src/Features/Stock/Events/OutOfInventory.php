@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Stock\Events;
+
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+final class OutOfInventory implements ShouldDispatchAfterCommit
+{
+    use Dispatchable;
+    use SerializesModels;
+
+    public function __construct(
+        public Model $inventoryable,
+        public InventoryLevel $level
+    ) {}
+
+    /**
+     * Get the location where inventory ran out.
+     */
+    public function getLocationId(): string
+    {
+        return $this->level->location_id;
+    }
+}

@@ -51,8 +51,8 @@ final class InventoryLevelInfolist
                             ->label('Available')
                             ->weight(FontWeight::Bold)
                             ->size('lg')
-                            ->color(fn ($record): string => $record->getAvailableQuantity() <= $record->reorder_point ? 'danger' : 'success')
-                            ->state(fn ($record): int => $record->getAvailableQuantity()),
+                            ->color(fn ($record): string => $record->available <= $record->reorder_point ? 'danger' : 'success')
+                            ->state(fn ($record): int => $record->available),
 
                         TextEntry::make('reorder_point')
                             ->label('Reorder Point')
