@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Docs\Features\Delivery\Actions;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Models\DocEmail;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Throwable;
+
+final readonly class TrackDocEmail
+{
+    /**
+     * Generate a tracking pixel URL.
+     */
+    public function getTrackingPixelUrl(DocEmail $email): string
+    {
+        $token = $this->generateTrackingToken($email, 'open');
+
+        return route('docs.track.open', ['token' => $token]);
+    }
+
+    /**
+     * Generate a tracked link URL.
+     */
+    public function getTrackedLinkUrl(DocEmail $email, string $url): string
+    {
+        $token = $this->generateTrackingToken($email, 'click', $url);
+
+        return route('docs.track.click', ['token' => $token]);
+    }
+
+    /**
+     * Mark an email as opened via tracking.
+     */
+    public function trackOpen(string $token): bool
+    {
+        $data = $this->decodeTrackingToken($token);
+
+        if (! $data || $data['type'] !== 'open') {
+            return false;
+        }
+
+        return DB::transaction(function () use ($data): bool {
+            $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
+
+            if (! $email instanceof DocEmail) {
+                return false;
+            }
+
+            try {
+                $owner = OwnerContext::fromTypeAndIdOrFail($email->owner_type, $email->owner_id);
+            } catch (Throwable) {
+                return false;
+            }
+
+            OwnerContext::withOwner($owner, static fn () => $email->markAsOpened());
+
+            return true;
+        });
+    }
+
+    /**
+     * Mark an email link as clicked via tracking.
+     */
+    public function trackClick(string $token): ?string
+    {
+        $data = $this->decodeTrackingToken($token);
+
+        if (! $data || $data['type'] !== 'click') {
+            return null;
+        }
+
+        return DB::transaction(function () use ($data): ?string {
+            $email = DocEmail::query()->withoutOwnerScope()->lockForUpdate()->find($data['email_id']);
+
+            if (! $email instanceof DocEmail) {
+                return null;
+            }
+
+            try {
+                $owner = OwnerContext::fromTypeAndIdOrFail($email->owner_type, $email->owner_id);
+            } catch (Throwable) {
+                return null;
+            }
+
+            OwnerContext::withOwner($owner, static fn () => $email->markAsClicked());
+
+            return $data['url'];
+        });
+    }
+
+    /**
+     * Generate a tracking token.
+     */
+    private function generateTrackingToken(DocEmail $email, string $type, ?string $url = null): string
+    {
+        $data = [
+            'email_id' => $email->id,
+            'type' => $type,
+            'url' => $url,
+            'issued_at' => CarbonImmutable::now()->getTimestamp(),
+        ];
+
+        $payload = json_encode($data);
+
+        if ($payload === false) {
+            return '';
+        }
+
+        return Crypt::encryptString($payload);
+    }
+
+    /**
+     * Decode a tracking token.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function decodeTrackingToken(string $token): ?array
+    {
+        try {
+            $payload = Crypt::decryptString($token);
+
+            /** @var array<string, mixed>|null $decoded */
+            $decoded = json_decode($payload, true);
+
+            if (! is_array($decoded)
+                || ! is_string($decoded['email_id'] ?? null)
+                || ! Str::isUuid($decoded['email_id'])
+                || ! in_array($decoded['type'] ?? null, ['open', 'click'], true)
+                || ($decoded['type'] === 'click' && (! is_string($decoded['url'] ?? null) || $decoded['url'] === ''))) {
+                return null;
+            }
+
+            $issuedAt = $decoded['issued_at'] ?? null;
+
+            if (! is_int($issuedAt) || $issuedAt <= 0) {
+                return null;
+            }
+
+            $ttlDays = max(1, (int) config('docs.email.tracking.ttl_days', 180));
+
+            $now = CarbonImmutable::now();
+            if ($issuedAt > $now->getTimestamp() || $issuedAt < $now->subDays($ttlDays)->getTimestamp()) {
+                return null;
+            }
+
+            return $decoded;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+}

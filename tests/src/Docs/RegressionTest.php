@@ -13,6 +13,7 @@ use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\DeliverDocEmail;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
@@ -539,14 +540,14 @@ test('expired tracking tokens stop working', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $url = app(DocEmailService::class)->getTrackingPixelUrl($email);
+    $url = app(TrackDocEmail::class)->getTrackingPixelUrl($email);
     $token = basename((string) parse_url($url, PHP_URL_PATH));
 
-    expect(app(DocEmailService::class)->trackOpen($token))->toBeTrue();
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeTrue();
 
     CarbonImmutable::setTestNow(CarbonImmutable::now()->addDays(181));
 
-    expect(app(DocEmailService::class)->trackOpen($token))->toBeFalse();
+    expect(app(TrackDocEmail::class)->trackOpen($token))->toBeFalse();
 });
 
 // --- stored PDFs are removed with the doc ---
@@ -690,7 +691,7 @@ test('tracking links for deleted email records cannot redirect', function (): vo
         'body' => 'Body',
         'status' => EmailStatus::Sent,
     ]);
-    $service = app(DocEmailService::class);
+    $service = app(TrackDocEmail::class);
     $url = $service->getTrackedLinkUrl($email, 'https://example.test/');
     $token = rawurldecode(basename((string) parse_url($url, PHP_URL_PATH)));
     $email->delete();

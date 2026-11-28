@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Support\DocPdfPath;
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Attachment;
@@ -113,9 +113,9 @@ final class DocMail extends Mailable
         }
 
         try {
-            $emailService = app(DocEmailService::class);
+            $tracking = app(TrackDocEmail::class);
 
-            return $emailService->getTrackingPixelUrl($this->docEmail);
+            return $tracking->getTrackingPixelUrl($this->docEmail);
         } catch (Throwable) {
             return null;
         }

@@ -123,3 +123,22 @@ test('global owner batch does not recursively fan out', function (): void {
     Queue::assertPushed(SendDocReminderJob::class, 1);
     expect(OwnerContext::withOwner(null, fn (): int => $doc->emails()->count()))->toBe(1);
 });
+
+test('malformed customer contact data does not interrupt reminder batches', function (): void {
+    Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->addDay(),
+        'customer_data' => ['email' => ['invalid']],
+    ]);
+
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->addDays(2),
+        'customer_data' => ['email' => 'valid@example.com', 'name' => ['invalid']],
+    ]);
+
+    $job = new SendDocReminderJob;
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
+
+    expect($doc->emails()->count())->toBe(1);
+});

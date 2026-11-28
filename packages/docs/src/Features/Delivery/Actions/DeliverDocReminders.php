@@ -180,7 +180,9 @@ final readonly class DeliverDocReminders
 
         $customerData = $doc->customer_data;
 
-        return is_array($customerData) ? ($customerData['email'] ?? null) : null;
+        $value = is_array($customerData) ? ($customerData['email'] ?? null) : null;
+
+        return is_string($value) && mb_trim($value) !== '' ? mb_trim($value) : null;
     }
 
     private function getRecipientName(?Doc $doc): ?string
@@ -191,6 +193,8 @@ final readonly class DeliverDocReminders
 
         $customerData = $doc->customer_data;
 
-        return is_array($customerData) ? ($customerData['name'] ?? null) : null;
+        $value = is_array($customerData) ? ($customerData['name'] ?? null) : null;
+
+        return is_string($value) && mb_trim($value) !== '' ? mb_trim($value) : null;
     }
 }

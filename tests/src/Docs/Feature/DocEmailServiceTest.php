@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
@@ -180,7 +181,7 @@ test('it generates tracking pixel url', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $emailService = app(DocEmailService::class);
+    $emailService = app(TrackDocEmail::class);
     $url = $emailService->getTrackingPixelUrl($email);
 
     expect($url)->toBeString()->toContain('docs/track/open');
@@ -269,7 +270,7 @@ test('email tracks opened timestamp', function (): void {
 });
 
 it('rejects malformed and future email tracking tokens', function (): void {
-    $service = app(DocEmailService::class);
+    $service = app(TrackDocEmail::class);
     $token = Crypt::encryptString(json_encode([
         'email_id' => ['not-a-scalar'],
         'type' => 'open',

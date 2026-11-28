@@ -233,7 +233,7 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 ### Tracking Tokens Invalid
 
-**Symptom:** `trackOpen()` returns false.
+**Symptom:** `TrackDocEmail::trackOpen()` returns false.
 
 **Solutions:**
 

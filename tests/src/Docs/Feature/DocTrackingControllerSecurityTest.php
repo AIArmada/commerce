@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\EmailStatus;
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers\DocTrackingController;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
@@ -23,7 +23,7 @@ test('click tracking rejects non-http redirect schemes', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $service = app(DocEmailService::class);
+    $service = app(TrackDocEmail::class);
     $trackedUrl = $service->getTrackedLinkUrl($email, 'javascript:alert(1)');
 
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
@@ -49,7 +49,7 @@ test('click tracking allows safe absolute http urls', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $service = app(DocEmailService::class);
+    $service = app(TrackDocEmail::class);
     $trackedUrl = $service->getTrackedLinkUrl($email, 'https://example.test/docs/123');
 
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
@@ -70,7 +70,7 @@ test('click tracking allows safe relative paths', function (): void {
         'status' => EmailStatus::Sent,
     ]);
 
-    $service = app(DocEmailService::class);
+    $service = app(TrackDocEmail::class);
     $trackedUrl = $service->getTrackedLinkUrl($email, '/portal/invoices/abc');
 
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
@@ -98,7 +98,7 @@ test('open tracking returns a one-pixel non-cacheable response', function (): vo
         'status' => EmailStatus::Sent,
     ]);
 
-    $trackedUrl = app(DocEmailService::class)->getTrackingPixelUrl($email);
+    $trackedUrl = app(TrackDocEmail::class)->getTrackingPixelUrl($email);
     $response = app(DocTrackingController::class)->open(tokenFromTrackedUrl($trackedUrl));
     $cacheControl = (string) $response->headers->get('Cache-Control');
 
@@ -129,7 +129,7 @@ test('owner scoped tracking writes re-enter the email owner context', function (
             'status' => EmailStatus::Sent,
         ]);
 
-        return [$email, app(DocEmailService::class)->getTrackingPixelUrl($email)];
+        return [$email, app(TrackDocEmail::class)->getTrackingPixelUrl($email)];
     });
 
     $response = app(DocTrackingController::class)->open(tokenFromTrackedUrl($trackingUrl));
@@ -150,7 +150,7 @@ test('click tracking rejects backslash-based relative redirects', function (): v
         'status' => EmailStatus::Sent,
     ]);
 
-    $trackedUrl = app(DocEmailService::class)->getTrackedLinkUrl($email, '/\\external.example.test');
+    $trackedUrl = app(TrackDocEmail::class)->getTrackedLinkUrl($email, '/\\external.example.test');
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
 
     expect($response->getTargetUrl())->toBe('https://app.example.test');

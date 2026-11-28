@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers;
 
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\TrackDocEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
@@ -12,7 +12,7 @@ use Illuminate\Routing\Controller;
 final class DocTrackingController extends Controller
 {
     public function __construct(
-        private readonly DocEmailService $emailService,
+        private readonly TrackDocEmail $tracking,
     ) {}
 
     /**
