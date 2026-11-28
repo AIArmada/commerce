@@ -51,19 +51,15 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
                 continue;
             }
 
-            $voucher = $this->voucherService->find($code);
-
-            if ($voucher === null) {
-                continue;
-            }
-
             $validationResult = $this->voucherService->validate($code, $cart);
+            $snapshot = $validationResult->getDetail('voucher');
 
-            if (! $validationResult->isValid) {
+            if (! $validationResult->isValid || ! is_array($snapshot)
+                || ! is_string($snapshot['id'] ?? null) || $snapshot['id'] === '') {
                 continue;
             }
 
-            $condition = $this->createConditionFromVoucher($voucher);
+            $condition = $this->createConditionFromVoucher(VoucherData::fromArray($snapshot));
 
             if ($condition !== null) {
                 $conditions[] = $condition;

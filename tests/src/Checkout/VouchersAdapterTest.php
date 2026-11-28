@@ -67,11 +67,8 @@ it('normalizes voucher validation results', function (): void {
     /** @var Expectation $validateExpectation */
     $validateExpectation = $service->shouldReceive('validate');
     $validateExpectation->once()
-        ->andReturn(VoucherValidationResult::valid());
-    /** @var Expectation $findExpectation */
-    $findExpectation = $service->shouldReceive('find');
-    $findExpectation->once()
-        ->andReturn($voucherData);
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $voucherData->toArray()]));
+    $service->shouldNotReceive('find');
 
     app()->instance(VoucherServiceInterface::class, $service);
 

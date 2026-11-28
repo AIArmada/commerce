@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -43,13 +44,14 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             );
         }
 
-        $voucherData = Voucher::find($code);
-        if ($voucherData === null) {
+        $snapshot = $validationResult->getDetail('voucher');
+        if (! is_array($snapshot) || ! is_string($snapshot['id'] ?? null) || $snapshot['id'] === '') {
             throw new InvalidVoucherException(
                 "Voucher '{$code}' not found",
             );
         }
 
+        $voucherData = VoucherData::fromArray($snapshot);
         $voucherCondition = new VoucherCondition($voucherData, $order);
         $existingVouchers = collect($this->getAppliedVoucherConditions($cart));
 

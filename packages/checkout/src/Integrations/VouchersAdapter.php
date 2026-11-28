@@ -50,8 +50,6 @@ final class VouchersAdapter implements DiscountProvider
             // Validate voucher
             $validation = $this->normalizeValidationResult(
                 $voucherService->validate($code, $validationContext),
-                $voucherService,
-                $code,
             );
 
             if (! $validation['valid']) {
@@ -114,8 +112,6 @@ final class VouchersAdapter implements DiscountProvider
 
         return $this->normalizeValidationResult(
             $voucherService->validate($code, $this->cartResolver()->resolveVoucherValidationContext($session)),
-            $voucherService,
-            $code,
         );
     }
 
@@ -172,19 +168,17 @@ final class VouchersAdapter implements DiscountProvider
      */
     private function normalizeValidationResult(
         VoucherValidationResult $validation,
-        VoucherServiceInterface $voucherService,
-        string $code
     ): array {
         $voucher = null;
 
         if ($validation->isValid) {
-            $voucherData = $voucherService->find($code);
+            $snapshot = $validation->getDetail('voucher');
 
-            if ($voucherData === null) {
+            if (! is_array($snapshot) || ! is_string($snapshot['id'] ?? null) || $snapshot['id'] === '') {
                 return ['valid' => false, 'message' => 'Voucher not found.', 'voucher' => null];
             }
 
-            $voucher = $voucherData->toArray();
+            $voucher = VoucherData::fromArray($snapshot)->toArray();
         }
 
         return [

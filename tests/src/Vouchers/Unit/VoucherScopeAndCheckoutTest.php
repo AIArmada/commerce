@@ -380,3 +380,19 @@ it('resolves wallet code queries to the tenant voucher ahead of a matching globa
             ->and($owner->voucherWallets()->where('voucher_id', $global->id)->sole()->redeemed_at)->toBeNull();
     });
 });
+
+it('applies freshly validated voucher terms even when the lookup cache is stale', function (): void {
+    config()->set('vouchers.cache.lookup_ttl', 300);
+    config()->set('vouchers.owner.include_global', false);
+
+    $voucher = scopeVoucher(['value' => 500]);
+    $service = app(VoucherService::class);
+    expect($service->find($voucher->code)?->value)->toBe(500);
+
+    DB::table($voucher->getTable())->where('id', $voucher->id)->update(['value' => 100]);
+
+    $cart = new Cart(new InMemoryStorage, 'checkout-validated-snapshot-' . uniqid());
+    $condition = ApplyVoucherToCart::run($cart, $voucher->code);
+
+    expect($condition->getAttributes()['voucher_data']['value'])->toBe(100);
+});
