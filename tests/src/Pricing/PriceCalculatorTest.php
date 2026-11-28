@@ -22,6 +22,7 @@ use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Services\PromotionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 uses(EnsuresPricingSchema::class);
 
@@ -719,8 +720,8 @@ describe('TestPriceableItem', function (): void {
 
 it('does not expose customer-specific prices through explicit or default list selection', function (): void {
     config(['pricing.features.owner.enabled' => false]);
-    $customerId = (string) Illuminate\Support\Str::uuid();
-    $item = new TestPriceableItem((string) Illuminate\Support\Str::uuid(), 1000);
+    $customerId = (string) Str::uuid();
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
     $list = PriceList::create([
         'name' => 'Private Customer List',
         'slug' => 'private-customer-list',
@@ -745,9 +746,9 @@ it('does not expose customer-specific prices through explicit or default list se
 
 it('requires both customer and segment eligibility for a doubly targeted list', function (): void {
     config(['pricing.features.owner.enabled' => false]);
-    $customerId = (string) Illuminate\Support\Str::uuid();
-    $segmentId = (string) Illuminate\Support\Str::uuid();
-    $item = new TestPriceableItem((string) Illuminate\Support\Str::uuid(), 1000);
+    $customerId = (string) Str::uuid();
+    $segmentId = (string) Str::uuid();
+    $item = new TestPriceableItem((string) Str::uuid(), 1000);
     $list = PriceList::create([
         'name' => 'Private Segment List',
         'slug' => 'private-segment-list',

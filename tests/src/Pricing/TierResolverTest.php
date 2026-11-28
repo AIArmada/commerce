@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Support\TierResolver;
+use Illuminate\Support\Str;
 
 it('resolves one canonical active tier matrix', function (): void {
     config(['pricing.features.owner.enabled' => false]);
@@ -99,8 +100,8 @@ it('ignores tiers belonging to inactive price lists', function (): void {
 
 it('does not resolve tiers from an ineligible targeted price list', function (): void {
     config(['pricing.features.owner.enabled' => false]);
-    $segmentId = (string) Illuminate\Support\Str::uuid();
-    $itemId = (string) Illuminate\Support\Str::uuid();
+    $segmentId = (string) Str::uuid();
+    $itemId = (string) Str::uuid();
     $list = PriceList::create([
         'name' => 'Private Tier List',
         'slug' => 'private-tier-list',

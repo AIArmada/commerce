@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentPricing\Resources\PriceListResource;
@@ -95,7 +96,7 @@ it('requires explicit global context when owner resolver returns null', function
         'owner_id' => null,
     ]));
 
-    expect(fn () => PriceListResource::getEloquentQuery()->pluck('id')->all())->toThrow(\AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException::class);
+    expect(fn () => PriceListResource::getEloquentQuery()->pluck('id')->all())->toThrow(NoCurrentOwnerException::class);
 
     $scopedIds = OwnerContext::withOwner(null, fn (): array => PriceListResource::getEloquentQuery()->pluck('id')->all());
 
