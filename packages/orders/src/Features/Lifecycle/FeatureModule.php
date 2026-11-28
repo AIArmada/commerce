@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle;
 
+use AIArmada\Orders\Contracts\OrderAccountingTotals;
 use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Contracts\OrderFulfillment;
 use AIArmada\Orders\Contracts\OrderInvoiceNumber;
@@ -11,6 +12,7 @@ use AIArmada\Orders\Contracts\OrderItemFulfillmentMarker;
 use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Contracts\OrderNotes;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Features\Lifecycle\Actions\AdjustOrderAccountingTotals;
 use AIArmada\Orders\Features\Lifecycle\Actions\AssignOrderInvoiceNumber;
 use AIArmada\Orders\Features\Lifecycle\Actions\ManageItemFulfillmentMarker;
 use AIArmada\Orders\Features\Lifecycle\Actions\ManageOrderNotes;
@@ -25,6 +27,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(OrderAccountingTotals::class, AdjustOrderAccountingTotals::class);
         $app->bind(OrderInvoiceNumber::class, AssignOrderInvoiceNumber::class);
         $app->bind(OrderNotes::class, ManageOrderNotes::class);
         $app->bind(OrderAdministration::class, ManageOrders::class);

@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderAccountingTotals;
 use AIArmada\Orders\Enums\RefundStatus;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -234,7 +235,7 @@ final class OrderRefund extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($refund->order_id)->increment($column, $amount);
+            app(OrderAccountingTotals::class)->adjust($refund->order_id, $column, $amount);
         });
 
         static::updated(function (OrderRefund $refund): void {
@@ -264,20 +265,20 @@ final class OrderRefund extends Model implements Auditable
                 $delta = $newAmount - $oldAmount;
 
                 if ($delta > 0) {
-                    Order::query()->whereKey($refund->order_id)->increment($newColumn, $delta);
+                    app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, $delta);
                 } elseif ($delta < 0) {
-                    Order::query()->whereKey($refund->order_id)->decrement($newColumn, abs($delta));
+                    app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, -abs($delta));
                 }
 
                 return;
             }
 
             if ($oldColumn !== null && $oldAmount > 0) {
-                Order::query()->whereKey($refund->order_id)->decrement($oldColumn, $oldAmount);
+                app(OrderAccountingTotals::class)->adjust($refund->order_id, $oldColumn, -$oldAmount);
             }
 
             if ($newColumn !== null && $newAmount > 0) {
-                Order::query()->whereKey($refund->order_id)->increment($newColumn, $newAmount);
+                app(OrderAccountingTotals::class)->adjust($refund->order_id, $newColumn, $newAmount);
             }
         });
 
@@ -296,7 +297,7 @@ final class OrderRefund extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($refund->order_id)->decrement($column, $amount);
+            app(OrderAccountingTotals::class)->adjust($refund->order_id, $column, -$amount);
         });
 
         static::updating(function (OrderRefund $refund): void {

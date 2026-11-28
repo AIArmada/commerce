@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Contracts\OrderAccountingTotals;
 use AIArmada\Orders\Enums\PaymentStatus;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -212,7 +213,7 @@ class OrderPayment extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($payment->order_id)->increment('paid_total', (int) $payment->amount);
+            app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', (int) $payment->amount);
         });
 
         static::updated(function (OrderPayment $payment): void {
@@ -226,7 +227,7 @@ class OrderPayment extends Model implements Auditable
 
             if (! $wasCompleted && $isCompleted) {
                 if ($amount > 0 && $currencyMatches) {
-                    Order::query()->whereKey($payment->order_id)->increment('paid_total', $amount);
+                    app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', $amount);
                 }
 
                 return;
@@ -243,9 +244,9 @@ class OrderPayment extends Model implements Auditable
             $delta = $amount - (int) $payment->getRawOriginal('amount');
 
             if ($delta > 0) {
-                Order::query()->whereKey($payment->order_id)->increment('paid_total', $delta);
+                app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', $delta);
             } elseif ($delta < 0) {
-                Order::query()->whereKey($payment->order_id)->decrement('paid_total', abs($delta));
+                app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', -abs($delta));
             }
         });
 
@@ -261,7 +262,7 @@ class OrderPayment extends Model implements Auditable
                 return;
             }
 
-            Order::query()->whereKey($payment->order_id)->decrement('paid_total', (int) $payment->amount);
+            app(OrderAccountingTotals::class)->adjust($payment->order_id, 'paid_total', -(int) $payment->amount);
         });
 
         static::updating(function (OrderPayment $payment): void {
