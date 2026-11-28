@@ -15,6 +15,7 @@ use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
 use AIArmada\References\Policies\ReferencePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -118,6 +119,7 @@ test('status transitions keep one lock path and do not refresh or query the pare
         'record_kind' => ReferenceRecordKind::Edition,
         'parent_id' => $parent->getKey(),
     ]);
+    $child->title = 'Unsaved Title';
 
     DB::enableQueryLog();
     DB::flushQueryLog();
@@ -126,6 +128,7 @@ test('status transitions keep one lock path and do not refresh or query the pare
 
     expect($returned)->toBe($child)
         ->and($returned->status)->toBe(ReferenceStatus::Published)
+        ->and($returned->title)->toBe('Transition Child')
         ->and($returned->published_at)->not->toBeNull();
 
     $queries = collect(DB::getQueryLog());
@@ -133,6 +136,8 @@ test('status transitions keep one lock path and do not refresh or query the pare
     expect($queries->contains(fn (array $query): bool => in_array($parent->getKey(), $query['bindings'], true)))->toBeFalse()
         ->and($queries->filter(fn (array $query): bool => str_starts_with((string) $query['query'], 'select'))->count())->toBe(1)
         ->and($queries->last()['query'])->toStartWith('update');
+
+    expect($child->fresh()->title)->toBe('Transition Child');
 });
 
 test('unchanged hierarchy saves do not query the parent', function (): void {
@@ -152,7 +157,7 @@ test('unchanged hierarchy saves do not query the parent', function (): void {
     expect($queries->contains(fn (array $query): bool => in_array($parent->getKey(), $query['bindings'], true)))->toBeFalse();
 });
 
-test('effective contributors resolve retained records by their persisted owner', function (): void {
+test('effective contributor reads require visibility in the active owner scope', function (): void {
     $ownerA = makeDefensiveOwner('retained-owner-a@example.test');
     $ownerB = makeDefensiveOwner('retained-owner-b@example.test');
     $author = makeDefensiveOwner('retained-author@example.test');
@@ -170,8 +175,12 @@ test('effective contributors resolve retained records by their persisted owner',
         [(string) $author->getKey()],
     ));
 
-    expect(OwnerContext::withOwner($ownerB, fn (): array => $edition->effectiveContributors(ReferenceContributorRole::Author)->pluck('contributor_id')->all()))
-        ->toBe([(string) $author->getKey()]);
+    expect(OwnerContext::withOwner($ownerA, fn (): array => $edition->effectiveContributors(ReferenceContributorRole::Author)->pluck('contributor_id')->all()))
+        ->toBe([(string) $author->getKey()])
+        ->and(fn () => OwnerContext::withOwner($ownerB, fn () => $edition->effectiveContributorReference()))
+        ->toThrow(ModelNotFoundException::class)
+        ->and(fn () => OwnerContext::withOwner($ownerB, fn () => $edition->effectiveContributors(ReferenceContributorRole::Author)))
+        ->toThrow(ModelNotFoundException::class);
 });
 
 test('effective contributors respect suppressed global parent inheritance', function (): void {

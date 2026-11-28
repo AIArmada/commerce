@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\References\Models;
 
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -25,7 +22,6 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -238,7 +234,13 @@ class Reference extends ReferencePersistence implements HasMedia
      */
     public function effectiveContributorReference(): static
     {
-        $record = $this->resolvePersistedReference();
+        $key = $this->getKey();
+
+        if (! $this->exists || ! is_string($key) || ! Str::isUuid($key)) {
+            throw new InvalidArgumentException('A persisted reference UUID is required.');
+        }
+
+        $record = $this->newQuery()->findOrFail($key);
 
         if ($this->isWorkKind($record)) {
             return $record;
@@ -282,7 +284,6 @@ class Reference extends ReferencePersistence implements HasMedia
 
         /** @var Collection<int, ReferenceContributor> $contributors */
         $contributors = $reference->contributorsForRole($role)
-            ->withoutGlobalScope('referenceOwner')
             ->with('contributor')
             ->get();
 
@@ -613,86 +614,6 @@ class Reference extends ReferencePersistence implements HasMedia
         }
     }
 
-    private function resolvePersistedReference(): static
-    {
-        $key = $this->getKey();
-
-        if (! $this->exists || ! is_string($key) || ! Str::isUuid($key)) {
-            throw new InvalidArgumentException('A persisted reference UUID is required.');
-        }
-
-        $config = static::ownerScopeConfig();
-        $attributes = $this->getAttributes();
-        $hasOwnerTuple = array_key_exists($config->ownerTypeColumn, $attributes)
-            && array_key_exists($config->ownerIdColumn, $attributes);
-
-        if ($hasOwnerTuple) {
-            [$ownerType, $ownerId] = $this->ownerTuple($this);
-        } else {
-            $record = $this->newQueryWithoutScopes()->whereKey($key)->first();
-
-            if (! $record instanceof static) {
-                throw (new ModelNotFoundException)->setModel(static::class, $key);
-            }
-
-            [$ownerType, $ownerId] = $this->ownerTuple($record);
-        }
-
-        $resolved = $this->scopedRecord($key, $config, $ownerType, $ownerId);
-
-        if (! $resolved instanceof static) {
-            throw (new ModelNotFoundException)->setModel(static::class, $key);
-        }
-
-        return $resolved;
-    }
-
-    private function scopedRecord(string $key, OwnerScopeConfig $config, ?string $ownerType, string | int | null $ownerId): ?static
-    {
-        if (($ownerType === null) !== ($ownerId === null)) {
-            throw new InvalidArgumentException('Reference owner tuple is malformed: owner type and owner id must both be present or both be null.');
-        }
-
-        $query = $this->newQueryWithoutScopes()->whereKey($key);
-
-        if (! $config->enabled) {
-            /** @var static|null $record */
-            $record = $query->first();
-
-            return $record;
-        }
-
-        if ($ownerType === null) {
-            $globalAllowed = OwnerContext::isExplicitGlobal()
-                || ($config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal() && OwnerContext::resolveConfigured($config) !== null);
-
-            if (! $globalAllowed) {
-                return null;
-            }
-
-            /** @var static|null $record */
-            $record = $query
-                ->whereNull($config->ownerTypeColumn)
-                ->whereNull($config->ownerIdColumn)
-                ->first();
-
-            return $record;
-        }
-
-        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
-
-        /** @var static|null $record */
-        $record = OwnerQuery::applyToEloquentBuilder(
-            $query,
-            $owner,
-            false,
-            $config->ownerTypeColumn,
-            $config->ownerIdColumn,
-        )->first();
-
-        return $record;
-    }
-
     private function resolveRelatedRecord(string $parentId, Reference $child): ?static
     {
         if (! Str::isUuid($parentId)) {
@@ -700,7 +621,7 @@ class Reference extends ReferencePersistence implements HasMedia
         }
 
         /** @var static|null $parent */
-        $parent = $this->newQueryWithoutScopes()->whereKey($parentId)->first();
+        $parent = $this->newQuery()->find($parentId);
 
         if (! $parent instanceof static) {
             return null;
