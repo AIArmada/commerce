@@ -8,8 +8,6 @@ use AIArmada\FilamentVouchers\Actions\ManualRedeemVoucherAction;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Services\VoucherService;
-use Akaunting\Money\Money;
 use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
@@ -66,39 +64,6 @@ it('rejects unparseable and sub-minimum manual amounts', function (): void {
 });
 
 it('redeems with the parsed minor-unit amount', function (): void {
-    $redeemed = [];
-    $stub = new class($redeemed)
-    {
-        /** @var array<int, mixed> */
-        public array $calls;
-
-        public function __construct(array &$calls)
-        {
-            $this->calls = &$calls;
-        }
-
-        public function redeemManually(
-            string $code,
-            Money $discountAmount,
-            ?string $reference = null,
-            ?array $metadata = null,
-            $redeemedBy = null,
-            ?string $notes = null,
-        ): object {
-            $this->calls[] = [$code, $discountAmount];
-
-            return new class
-            {
-                public function getKey(): string
-                {
-                    return 'usage-stub';
-                }
-            };
-        }
-    };
-
-    app()->instance(VoucherService::class, $stub);
-
     $user = User::query()->create([
         'name' => 'Redeemer',
         'email' => 'redeemer-manual@example.com',
@@ -110,7 +75,11 @@ it('redeems with the parsed minor-unit amount', function (): void {
     $handler = manualRedeemHandler();
     $handler($voucher, ['discount_amount' => '12.50', 'reference' => 'POS-1', 'notes' => 'hi']);
 
-    expect($stub->calls)->toHaveCount(1)
-        ->and($stub->calls[0][0])->toBe($voucher->code)
-        ->and((int) $stub->calls[0][1]->getAmount())->toBe(1250);
+    $usage = VoucherUsage::query()->where('voucher_id', $voucher->getKey())->sole();
+
+    expect($usage->discount_amount)->toBe(1250)
+        ->and($usage->channel)->toBe('manual')
+        ->and((string) $usage->redeemed_by_id)->toBe((string) $user->getKey())
+        ->and($usage->metadata['reference'])->toBe('POS-1')
+        ->and($usage->notes)->toBe('hi');
 });
