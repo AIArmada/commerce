@@ -32,6 +32,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 final class DocVersion extends Model implements Auditable
 {
     use HasCommerceAudit;
+    /** @use HasFactory<DocVersionFactory> */
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
