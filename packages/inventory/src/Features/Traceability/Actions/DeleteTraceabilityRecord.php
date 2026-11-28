@@ -28,9 +28,7 @@ final readonly class DeleteTraceabilityRecord
                 $batch = $query->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
                 if ($batch->quantity_on_hand !== 0 || $batch->quantity_reserved !== 0
-                    || $batch->quantity_received !== 0 || $batch->allocations()->exists()
-                    || $batch->movements()->exists()
-                    || InventorySerial::query()->where('batch_id', $batch->id)->exists()) {
+                    || $batch->quantity_received !== 0 || $batch->hasTraceabilityReferences()) {
                     return false;
                 }
 
@@ -48,7 +46,7 @@ final readonly class DeleteTraceabilityRecord
             $serial = $query->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
 
             if (! $serial->status instanceof Available || $serial->order_id !== null
-                || $serial->customer_id !== null || $serial->sold_at !== null || $serial->history()->exists()) {
+                || $serial->customer_id !== null || $serial->sold_at !== null || $serial->history()->withoutGlobalScopes()->exists()) {
                 return false;
             }
 

@@ -31,6 +31,8 @@ it('preserves serial registration history and rejects deletion of sold serials',
 
     expect($action->execute($serial))->toBeFalse()
         ->and($action->execute($sold))->toBeFalse()
+        ->and($serial->delete())->toBeFalse()
+        ->and($sold->delete())->toBeFalse()
         ->and($serial->history()->count())->toBe(1);
 });
 

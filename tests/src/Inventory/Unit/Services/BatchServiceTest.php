@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Events\BatchRecalled;
@@ -11,6 +12,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
@@ -358,6 +360,28 @@ describe('BatchService', function (): void {
             ->toThrow(InvalidArgumentException::class);
 
         expect($first->fresh()->status)->toBe(BatchStatus::Recalled->value);
+    });
+
+    it('rejects merging a batch with movement history without changing either source', function (): void {
+        $first = $this->service->createBatch($this->item, 'HISTORY-A', $this->location->id, 50);
+        $second = $this->service->createBatch($this->item, 'HISTORY-B', $this->location->id, 30);
+        $movement = InventoryMovement::create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'to_location_id' => $this->location->id,
+            'batch_id' => $first->id,
+            'quantity' => 50,
+            'type' => MovementType::Receipt->value,
+            'occurred_at' => now(),
+        ]);
+
+        expect(fn () => $this->service->mergeBatches(new Collection([$first, $second]), 'HISTORY-MERGED'))
+            ->toThrow(InvalidArgumentException::class)
+            ->and($first->fresh()->quantity_on_hand)->toBe(50)
+            ->and($second->fresh()->quantity_on_hand)->toBe(30)
+            ->and($movement->fresh()->batch_id)->toBe($first->id)
+            ->and(InventoryBatch::query()->where('batch_number', 'HISTORY-MERGED')->exists())->toBeFalse();
+        expect($first->delete())->toBeFalse();
     });
 
     it('merge batches throws for single batch', function (): void {

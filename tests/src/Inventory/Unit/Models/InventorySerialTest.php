@@ -316,7 +316,7 @@ describe('InventorySerial', function (): void {
         expect($expiringSoon)->toHaveCount(1);
     });
 
-    it('deleting serial cascades to history', function (): void {
+    it('rejects direct serial deletion when history exists', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
@@ -329,9 +329,9 @@ describe('InventorySerial', function (): void {
         ]);
         $historyId = $history->id;
 
-        $serial->delete();
-
-        expect(InventorySerialHistory::find($historyId))->toBeNull();
+        expect($serial->delete())->toBeFalse()
+            ->and(InventorySerialHistory::find($historyId))->not->toBeNull()
+            ->and($serial->fresh())->not->toBeNull();
     });
 
     it('casts are correct', function (): void {

@@ -161,6 +161,13 @@ final class InventoryBatch extends Model implements Auditable
         return $this->hasMany(InventoryAllocation::class, 'batch_id');
     }
 
+    public function hasTraceabilityReferences(): bool
+    {
+        return $this->allocations()->withoutGlobalScopes()->exists()
+            || $this->movements()->withoutGlobalScopes()->exists()
+            || InventorySerial::query()->withoutGlobalScopes()->where('batch_id', $this->getKey())->exists();
+    }
+
     /**
      * Get available quantity.
      */
@@ -365,8 +372,11 @@ final class InventoryBatch extends Model implements Auditable
             $batch->owner_id = $location->owner_id;
         });
 
-        self::deleting(function (InventoryBatch $batch): void {
-            $batch->allocations()->delete();
+        self::deleting(function (InventoryBatch $batch): bool {
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($batch->getKey())->firstOrFail();
+
+            return $record->quantity_reserved === 0
+                && ! $record->hasTraceabilityReferences();
         });
     }
 

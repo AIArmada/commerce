@@ -475,8 +475,14 @@ final class InventorySerial extends Model implements Auditable
             $serial->owner_id = $resolvedOwnerId;
         });
 
-        self::deleting(function (InventorySerial $serial): void {
-            $serial->history()->delete();
+        self::deleting(function (InventorySerial $serial): bool {
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($serial->getKey())->firstOrFail();
+
+            return $record->status instanceof Available
+                && $record->order_id === null
+                && $record->customer_id === null
+                && $record->sold_at === null
+                && ! $record->history()->withoutGlobalScopes()->exists();
         });
     }
 

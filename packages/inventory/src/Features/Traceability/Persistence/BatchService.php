@@ -380,8 +380,8 @@ final class BatchService
             }
 
             foreach ($batches as $batch) {
-                if ($batch->quantity_reserved > 0 || $batch->allocations()->exists()) {
-                    throw new InvalidArgumentException('Cannot merge batches with reserved quantities');
+                if ($batch->quantity_reserved > 0 || $batch->hasTraceabilityReferences()) {
+                    throw new InvalidArgumentException('Cannot merge batches with reservations or existing traceability references');
                 }
 
                 if ($batch->status !== BatchStatus::Active->value || $batch->is_expired) {
@@ -411,9 +411,11 @@ final class BatchService
                 ],
             ]);
 
-            // Delete old batches
+            // Only unused source identities may be removed. A veto must roll back the merge.
             foreach ($batches as $batch) {
-                $batch->delete();
+                if (! $batch->delete()) {
+                    throw new InvalidArgumentException('Cannot remove a referenced source batch');
+                }
             }
 
             return $mergedBatch;
