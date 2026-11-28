@@ -12,31 +12,10 @@ use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 final class PromotionPerformanceInsights
 {
-    /**
-     * @var array{
-     *     total_orders: int,
-     *     influenced_orders: int,
-     *     code_influenced_orders: int,
-     *     automatic_influenced_orders: int,
-     *     influenced_revenue_minor: int,
-     *     attributed_discount_minor: int,
-     *     reporting_currency: string|null,
-     *     currency_count: int,
-     *     influenced_order_rate: float,
-     * }|null
-     */
-    private ?array $orderOverviewCache = null;
-
-    /**
-     * @var Collection<int, array{label: string, order_count: int, influenced_revenue_minor: int, attributed_discount_minor: int}>|null
-     */
-    private ?Collection $topPromotionsByOrdersCache = null;
-
     /**
      * @return array{
      *     total_promotions: int,
@@ -102,9 +81,7 @@ final class PromotionPerformanceInsights
      */
     public function topPromotionsByOrders(int $limit = 5): Collection
     {
-        $this->loadOrderPerformance();
-
-        return ($this->topPromotionsByOrdersCache ?? collect())
+        return $this->loadOrderPerformance()['top']
             ->take($limit)
             ->values();
     }
@@ -180,33 +157,26 @@ final class PromotionPerformanceInsights
      */
     private function orderOverview(): array
     {
-        $this->loadOrderPerformance();
-
-        return $this->orderOverviewCache ?? $this->emptyOrderOverview();
+        return $this->loadOrderPerformance()['overview'];
     }
 
-    private function loadOrderPerformance(): void
+    /**
+     * @return array{
+     *     overview: array{total_orders: int, influenced_orders: int, code_influenced_orders: int, automatic_influenced_orders: int, influenced_revenue_minor: int, attributed_discount_minor: int, reporting_currency: string|null, currency_count: int, influenced_order_rate: float},
+     *     top: Collection<int, array{label: string, order_count: int, influenced_revenue_minor: int, attributed_discount_minor: int}>
+     * }
+     */
+    private function loadOrderPerformance(): array
     {
-        if ($this->orderOverviewCache !== null && $this->topPromotionsByOrdersCache !== null) {
-            return;
-        }
-
         if (! $this->ordersAvailable()) {
-            $this->orderOverviewCache = $this->emptyOrderOverview();
-            $this->topPromotionsByOrdersCache = collect();
-
-            return;
+            return ['overview' => $this->emptyOrderOverview(), 'top' => collect()];
         }
 
-        $orderQuery = Order::query()->forOwner();
-
-        $totalOrders = (clone $orderQuery)->count();
-
-        // Stream instead of hydrating every order: the aggregate loop below
-        // only needs a narrow column set.
-        $orders = (clone $orderQuery)
+        $orders = Order::query()->forOwner()
             ->select(['id', 'grand_total', 'currency', 'metadata'])
-            ->cursor();
+            ->lazyById(500);
+
+        $totalOrders = 0;
 
         $influencedOrders = 0;
         $codeInfluencedOrders = 0;
@@ -217,6 +187,7 @@ final class PromotionPerformanceInsights
         $promotionPerformance = [];
 
         foreach ($orders as $order) {
+            $totalOrders++;
             $appliedPromotions = data_get($order->metadata, 'discount_data.promotions');
 
             if (! is_array($appliedPromotions) || $appliedPromotions === []) {
@@ -285,7 +256,7 @@ final class PromotionPerformanceInsights
         $currencyCount = count($currencies);
         $reportingCurrency = $currencyCount === 1 ? array_key_first($currencies) : null;
 
-        $this->orderOverviewCache = [
+        $overview = [
             'total_orders' => $totalOrders,
             'influenced_orders' => $influencedOrders,
             'code_influenced_orders' => $codeInfluencedOrders,
@@ -299,7 +270,7 @@ final class PromotionPerformanceInsights
                 : 0.0,
         ];
 
-        $this->topPromotionsByOrdersCache = collect(array_values($promotionPerformance))
+        $top = collect(array_values($promotionPerformance))
             ->sort(function (array $left, array $right): int {
                 return $right['order_count'] <=> $left['order_count']
                     ?: $right['attributed_discount_minor'] <=> $left['attributed_discount_minor']
@@ -312,6 +283,8 @@ final class PromotionPerformanceInsights
                 'attributed_discount_minor' => (int) $promotion['attributed_discount_minor'],
             ])
             ->values();
+
+        return ['overview' => $overview, 'top' => $top];
     }
 
     /**
@@ -361,7 +334,9 @@ final class PromotionPerformanceInsights
         }
 
         try {
-            return Schema::hasTable((new Order)->getTable());
+            $order = new Order;
+
+            return $order->getConnection()->getSchemaBuilder()->hasTable($order->getTable());
         } catch (Throwable) {
             return false;
         }
