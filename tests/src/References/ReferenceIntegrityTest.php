@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\References\Actions\TransitionReferenceStatus;
 use AIArmada\References\Enums\ReferencePartType;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Policies\ReferencePolicy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -205,11 +207,11 @@ test('status transitions keep the publish timestamp in sync', function (): void 
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Lifecycle',
     ]);
 
-    $reference->transitionStatus(ReferenceStatus::Published);
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Published);
 
     expect($reference->fresh()->published_at)->not->toBeNull();
 
-    $reference->transitionStatus(ReferenceStatus::Draft);
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Draft);
 
     expect($reference->fresh()->published_at)->toBeNull()
         ->and($reference->fresh()->status)->toBe(ReferenceStatus::Draft);
@@ -290,3 +292,102 @@ test('rejects invalid ISBN checksums and prefixes', function (string $isbn): voi
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Bad ISBN', 'isbn' => $isbn,
     ]))->toThrow(ValidationException::class);
 })->with(['9783161484101', '0306406153', '1234567890128', '978-3-16-148410-0!']);
+
+test('global references are visible but not writable by a tenant', function (): void {
+    config()->set('references.owner.include_global', true);
+    $owner = makeReferenceOwner('ref-global-policy@example.test');
+    $global = OwnerContext::withOwner(null, fn (): Reference => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Global policy',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global): void {
+        $policy = new ReferencePolicy;
+
+        expect($policy->view($owner, $global))->toBeTrue()
+            ->and($policy->update($owner, $global))->toBeFalse()
+            ->and($policy->delete($owner, $global))->toBeFalse();
+
+        expect(fn () => (new TransitionReferenceStatus)->handle($global, ReferenceStatus::Published))
+            ->toThrow(AuthorizationException::class);
+        expect(fn () => $global->delete())->toThrow(AuthorizationException::class);
+    });
+
+    expect(OwnerContext::withOwner(null, fn (): bool => (new ReferencePolicy)->update($owner, $global)))->toBeTrue();
+});
+
+test('rejects malformed or duplicate reference parts', function (array $parts): void {
+    expect(fn () => Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Draft,
+        'title' => 'Invalid structured parts',
+        'reference_parts' => $parts,
+    ]))->toThrow(ValidationException::class, 'reference_parts');
+})->with([
+    'invalid shape' => [['chapter']],
+    'unknown type' => [[['type' => 'unknown', 'value' => '1']]],
+    'non-string value' => [[['type' => 'page', 'value' => 1]]],
+    'duplicate types' => [[['type' => 'page', 'value' => '1'], ['type' => 'page', 'value' => '2']]],
+]);
+
+test('rejects saves based on stale hierarchy state', function (): void {
+    $work = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Original work']);
+    $parent = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'New parent']);
+    $stale = $work->fresh();
+
+    $work->update([
+        'record_kind' => ReferenceRecordKind::Edition,
+        'parent_id' => $parent->getKey(),
+    ]);
+
+    expect(fn () => $stale->update(['title' => 'Stale title']))->toThrow(ValidationException::class, 'The reference hierarchy has changed');
+
+    expect($work->fresh()->title)->toBe('Original work')
+        ->and($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Edition);
+});
+
+test('direct draft saves clear the publication timestamp', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Published,
+        'title' => 'Direct draft',
+    ]);
+
+    expect($reference->published_at)->not->toBeNull();
+
+    $reference->update(['status' => ReferenceStatus::Draft]);
+
+    expect($reference->fresh()->status)->toBe(ReferenceStatus::Draft)
+        ->and($reference->fresh()->published_at)->toBeNull();
+});
+
+test('rejects stale saves after a concurrent publication transition', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'title' => 'Concurrent publication',
+    ]);
+    $stale = $reference->fresh();
+
+    (new TransitionReferenceStatus)->handle($reference, ReferenceStatus::Published);
+
+    expect(fn () => $stale->update(['title' => 'Stale title']))
+        ->toThrow(ValidationException::class, 'The reference publication state has changed');
+
+    expect($reference->fresh()->title)->toBe('Concurrent publication')
+        ->and($reference->fresh()->status)->toBe(ReferenceStatus::Published)
+        ->and($reference->fresh()->published_at)->not->toBeNull();
+});
+
+test('allows unchanged publication timestamps across model hydration', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Published,
+        'title' => 'Published before editing',
+    ]);
+    $publishedAt = $reference->fresh()->published_at;
+
+    expect($reference->update(['title' => 'Published after editing']))->toBeTrue()
+        ->and($reference->fresh()->title)->toBe('Published after editing')
+        ->and($reference->fresh()->published_at?->format('U.u'))->toBe($publishedAt?->format('U.u'));
+});
