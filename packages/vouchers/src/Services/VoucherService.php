@@ -22,6 +22,7 @@ use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
+use AIArmada\Vouchers\Runtime\VoucherUsageHistory;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
@@ -169,21 +170,7 @@ class VoucherService implements VoucherServiceInterface
      */
     public function getUsageHistory(string $code, int $limit = 100): EloquentCollection
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return new EloquentCollection;
-        }
-
-        /** @var EloquentCollection<int, VoucherUsage> $result */
-        $result = $voucher->usages()
-            ->latest('used_at')
-            ->limit(max(1, $limit))
-            ->get();
-
-        return $result;
+        return app(VoucherUsageHistory::class)->handle($code, $limit);
     }
 
     /**

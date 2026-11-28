@@ -18,6 +18,7 @@ use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistr
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\ReadVoucherUsageHistory;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Vouchers\Runtime\VoucherAvailability;
 use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
@@ -27,6 +28,7 @@ use AIArmada\Vouchers\Runtime\VoucherDepletion;
 use AIArmada\Vouchers\Runtime\VoucherExpiry;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
+use AIArmada\Vouchers\Runtime\VoucherUsageHistory;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
@@ -40,6 +42,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(AffiliateIntegrationRegistrar::class);
         $app->singleton(VoucherLookup::class, VoucherLookupCache::class);
         $app->singleton(VoucherCatalog::class, ReadVoucherCatalog::class);
+        $app->bind(VoucherUsageHistory::class, ReadVoucherUsageHistory::class);
         $app->bind(VoucherBatchIssuer::class, GenerateVoucherBatch::class);
         $app->bind(VoucherAvailability::class, ChangeVoucherAvailability::class);
         $app->bind(VoucherExpiry::class, ExpireVoucher::class);
