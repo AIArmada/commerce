@@ -138,10 +138,10 @@ class PriceTier extends Model implements Auditable
             }
 
             if ($tier->price_list_id !== null) {
-                $priceListQuery = PriceList::query();
-
-                $priceListExists = $priceListQuery
+                $priceListExists = PriceList::query()
                     ->whereKey($tier->price_list_id)
+                    ->where('owner_type', $tier->owner_type)
+                    ->where('owner_id', $tier->owner_id)
                     ->exists();
 
                 if (! $priceListExists) {

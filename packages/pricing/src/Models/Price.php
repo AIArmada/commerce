@@ -141,10 +141,10 @@ class Price extends Model implements Auditable
                 }
             }
 
-            $priceListQuery = PriceList::query();
-
-            $priceListExists = $priceListQuery
+            $priceListExists = PriceList::query()
                 ->whereKey($price->price_list_id)
+                ->where('owner_type', $price->owner_type)
+                ->where('owner_id', $price->owner_id)
                 ->exists();
 
             if (! $priceListExists) {

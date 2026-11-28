@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Pricing\Actions\EnsurePriceListBySlug;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
@@ -151,5 +152,36 @@ it('enforces unique global slugs while allowing a tenant to reuse them', functio
         ])))->toThrow(UniqueConstraintViolationException::class);
     } finally {
         Schema::dropIfExists('global_slug_price_lists');
+    }
+});
+
+it('ensures lists within the exact owner even when global lists are visible', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.features.owner.include_global', true);
+    config()->set('pricing.database.tables.price_lists', 'ensure_scoped_price_lists');
+
+    Schema::dropIfExists('ensure_scoped_price_lists');
+    $migration = require __DIR__ . '/../../../packages/pricing/database/migrations/2000_12_01_000001_create_price_lists_table.php';
+    $migration->up();
+
+    try {
+        $owner = createSlugPricingOwner('Scoped Ensure Owner', 'scoped-ensure-owner@example.com');
+        $action = app(EnsurePriceListBySlug::class);
+        $global = OwnerContext::withOwner(null, fn (): PriceList => $action->execute('retail', ['name' => 'Global Retail']));
+
+        OwnerContext::withOwner($owner, function () use ($action, $global, $owner): void {
+            $tenant = $action->execute('retail', ['name' => 'Tenant Retail']);
+            $updated = $action->execute('retail', ['name' => 'Updated Retail', 'slug' => 'different']);
+
+            expect($tenant->id)->not->toBe($global->id)
+                ->and($tenant->owner_id)->toBe($owner->getKey())
+                ->and($updated->id)->toBe($tenant->id)
+                ->and($updated->slug)->toBe('retail')
+                ->and($updated->name)->toBe('Updated Retail');
+        });
+
+        expect(OwnerContext::withOwner(null, fn (): string => $global->fresh()->name))->toBe('Global Retail');
+    } finally {
+        Schema::dropIfExists('ensure_scoped_price_lists');
     }
 });

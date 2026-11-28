@@ -286,3 +286,36 @@ it('rejects cross-owner pricing references using morph aliases', function (): vo
         Relation::morphMap($previousMorphMap, false);
     }
 });
+
+it('rejects tenant price and tier writes into a visible global price list', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => true,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $owner = User::query()->create(['name' => 'Pricing Child Owner', 'email' => 'pricing-child-owner@example.com', 'password' => 'secret']);
+    $global = OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create(['name' => 'Shared Retail', 'slug' => 'shared-retail']));
+
+    OwnerContext::withOwner($owner, function () use ($global, $owner): void {
+        expect(PriceList::query()->whereKey($global->id)->exists())->toBeTrue();
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $global->id,
+            'priceable_type' => $owner->getMorphClass(),
+            'priceable_id' => $owner->getKey(),
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $global->id,
+            'tierable_type' => $owner->getMorphClass(),
+            'tierable_id' => $owner->getKey(),
+            'min_quantity' => 2,
+            'amount' => 100,
+        ]))->toThrow(AuthorizationException::class);
+    });
+
+    expect(Price::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0)
+        ->and(PriceTier::query()->withoutOwnerScope()->where('price_list_id', $global->id)->count())->toBe(0);
+});
