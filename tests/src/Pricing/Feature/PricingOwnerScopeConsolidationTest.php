@@ -10,6 +10,7 @@ use AIArmada\Pricing\Actions\EnsureListPrice;
 use AIArmada\Pricing\Actions\SavePrice;
 use AIArmada\Pricing\Actions\SavePriceTier;
 use AIArmada\Pricing\Actions\UpdatePriceList;
+use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -108,6 +109,16 @@ it('assigns the active pricing owner when automatic assignment is disabled', fun
     OwnerContext::withOwner($owner, static function () use ($owner): void {
         $list = app(CreatePriceList::class)->execute(['name' => 'Explicit List', 'slug' => 'explicit-list', 'currency' => 'MYR']);
 
-        expect($list->owner_id)->toBe($owner->getKey());
+        $product = Product::query()->create(['name' => 'Explicit Priceable', 'price' => 1000]);
+        $ensure = app(EnsureListPrice::class);
+        $price = $ensure->execute($list, $product->getMorphClass(), $product->id, 900, 1000, 'MYR');
+        $updated = $ensure->execute($list, $product->getMorphClass(), $product->id, 800, null, 'MYR');
+
+        expect($list->owner_id)->toBe($owner->getKey())
+            ->and($price->owner_id)->toBe($owner->getKey())
+            ->and($updated->id)->toBe($price->id)
+            ->and($updated->amount)->toBe(800)
+            ->and($updated->compare_amount)->toBeNull()
+            ->and(Price::query()->forOwner()->where('price_list_id', $list->id)->count())->toBe(1);
     });
 });
