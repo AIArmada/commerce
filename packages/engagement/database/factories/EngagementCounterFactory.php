@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
-use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

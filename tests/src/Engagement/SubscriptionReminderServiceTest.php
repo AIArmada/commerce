@@ -2,19 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
-use AIArmada\Engagement\Models\Subscription;
-use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
-use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 
 beforeEach(function (): void {
-    $this->manager = app(EngagementManager::class);
-    $this->subscriptionManager = app(SubscriptionManager::class);
-    $this->actor = new EngagementActor;
-    $this->subject = new EngagementSubject;
+    $this->manager = app(ManageRemindersAction::class);
+    $this->subscriptionManager = app(ManageSubscriptionsAction::class);
+    $this->actor = engagementActor();
+    $this->subject = engagementSubject();
 });
 
 it('creates a subscription', function (): void {
@@ -30,9 +28,8 @@ it('unsubscribes via status change', function (): void {
     expect(Subscription::query()->where('status', 'unsubscribed')->count())->toBe(1);
 });
 
-it('creates a reminder via engagement manager', function (): void {
-    $reminder = $this->manager->remind($this->actor, $this->subject, [
-        'reminder_type' => 'event',
+it('creates a reminder through the owning reminder action', function (): void {
+    $reminder = $this->manager->setReminder($this->actor, $this->subject, 'event', [
         'remind_at' => now()->addHours(1),
     ]);
 
@@ -46,4 +43,24 @@ it('unmutes a subscription through the domain manager', function (): void {
 
     expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Active)
         ->and($subscription->fresh()->muted_at)->toBeNull();
+});
+
+it('cancels muted subscriptions without allowing unmute to resurrect them', function (): void {
+    $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    $this->subscriptionManager->muteSubscription($subscription);
+    $this->subscriptionManager->unsubscribe($this->actor, $this->subject);
+    $this->subscriptionManager->unmuteSubscription($subscription);
+
+    expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Unsubscribed);
+});
+
+it('excludes expired subscriptions and renews them on an explicit subscribe', function (): void {
+    $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    $subscription->update(['expires_at' => now()->subMinute()]);
+
+    expect(iterator_to_array($this->subscriptionManager->matchingSubscriptions($this->subject, 'updated')))->toBe([]);
+
+    $renewed = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    expect($renewed->id)->toBe($subscription->id)
+        ->and($renewed->expires_at)->toBeNull();
 });

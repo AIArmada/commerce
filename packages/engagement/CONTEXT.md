@@ -44,7 +44,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Bookmark`, `BookmarkCollection`, `BookmarkCollectionItem`, `EngagementCounter`, `Follow`, `Reaction`, `Reminder`, `Response`, `Share`, `Subscription`
-- Actions/Services: `Services/DefaultEngagementCounterService`, `Services/DefaultEngagementManager`, `Services/DefaultEngagementPolicyResolver`, `Services/DefaultEngagementStateResolver`, `Services/DefaultReminderManager`, `Services/DefaultShareUrlGenerator`, `Services/DefaultSubscriptionManager`, `Support/ModelResolver`
+- Actions/Services: `Features/Counters/Actions/UpdateEngagementCountersAction`, `Features/Interactions/Actions/ManageInteractionsAction`, `Services/DefaultEngagementPolicyResolver`, `Features/Interactions/Queries/ReadInteractionStateQuery`, `Features/Subscriptions/Queries/ReadSubscriptionStateQuery`, `Features/Reminders/Queries/ReadReminderStateQuery`, `Features/Reminders/Actions/ManageRemindersAction`, `Services/DefaultShareUrlGenerator`, `Features/Subscriptions/Actions/ManageSubscriptionsAction`, `Support/EngagementModelGuard`
 - Config `engagement.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `follows`, `bookmarks`, `bookmark_collections`, `bookmark_collection_items`, `responses`, `reactions`
 
 ## Docs map

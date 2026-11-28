@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Analytics",
+  "owns": {
+    "table:feedback_form_analytics": [
+      "AIArmada\\Feedback\\Features\\Analytics\\Actions\\RecalculateFeedbackFormAnalyticsAction",
+      "AIArmada\\Feedback\\Features\\Analytics\\Actions\\DeleteFormAnalyticsAction"
+    ]
+  },
+  "extensions": {}
+}

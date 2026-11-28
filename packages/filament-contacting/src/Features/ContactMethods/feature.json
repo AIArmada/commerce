@@ -1,0 +1,10 @@
+{
+    "schema": 1,
+    "name": "ContactMethods",
+    "owns": {},
+    "extensions": {
+        "admin.panel.contributions": [
+            "AIArmada\\FilamentContacting\\Features\\ContactMethods\\Extensions\\AdminPanelContribution"
+        ]
+    }
+}

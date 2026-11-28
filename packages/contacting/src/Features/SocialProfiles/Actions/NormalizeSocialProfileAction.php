@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
+
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
+use AIArmada\Contacting\Support\NormalizesSocialHandle;
+use AIArmada\Contacting\Support\NormalizesUrl;
+use AIArmada\Contacting\Support\SocialProfileConfig;
+
+final readonly class NormalizeSocialProfileAction implements SocialProfileNormalizer
+{
+    public function __construct(
+        private SocialProfileConfig $profileConfig,
+        private NormalizesSocialHandle $handleNormalizer,
+        private NormalizesUrl $urlNormalizer,
+    ) {}
+
+    /**
+     * @return array{normalized_url: string|null, handle: string|null}
+     */
+    public function normalize(string $platform, ?string $handle, ?string $url): array
+    {
+        $normalizedHandle = $this->handleNormalizer->normalize($handle);
+        $normalizedUrl = $this->urlNormalizer->normalize($url);
+
+        if ($normalizedHandle !== null && $normalizedUrl === null) {
+            $builtUrl = $this->profileConfig->buildUrl($platform, $normalizedHandle);
+
+            if ($builtUrl !== null) {
+                $normalizedUrl = $builtUrl;
+            }
+        }
+
+        if ($normalizedHandle === null && $normalizedUrl !== null) {
+            $extractedHandle = $this->profileConfig->extractHandle($platform, $normalizedUrl);
+
+            if ($extractedHandle !== null) {
+                $normalizedHandle = $this->handleNormalizer->normalize($extractedHandle);
+            }
+        }
+
+        return [
+            'normalized_url' => $normalizedUrl,
+            'handle' => $normalizedHandle,
+        ];
+    }
+}

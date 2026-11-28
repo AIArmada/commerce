@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Events;
 
-use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Foundation\Events\Dispatchable;
 
-final class FeedbackResponseReviewed
+final readonly class FeedbackResponseReviewed
 {
     use Dispatchable;
 
     public function __construct(
-        public FeedbackResponse $response,
+        public string $responseId,
+        public string $formId,
+        public ?string $ownerType,
+        public ?string $ownerId,
     ) {}
 }

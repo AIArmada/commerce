@@ -10,7 +10,7 @@ Check that the resource is enabled in `config/filament-engagement.php` under `re
 
 ### Follow/bookmark/reaction actions not working
 
-Reusable actions call the core `EngagementManager` contract. Ensure:
+Reusable actions call the core `ManageInteractionsAction`. Check the actor and subject configuration.
 - The authenticated user model uses the appropriate trait (`CanFollow`, `CanBookmark`, `CanReact`, etc.)
 - The target model uses the matching trait (`HasFollowers`, `HasBookmarks`, `HasReactions`, etc.)
 

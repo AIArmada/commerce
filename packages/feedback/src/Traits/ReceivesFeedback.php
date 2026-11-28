@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Forms\Api\CreatesFormsFromTemplates;
+use AIArmada\Feedback\Features\Forms\Api\ReadsSubjectForms;
+use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectFeedbackMetrics;
+use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectResponses;
+use AIArmada\Feedback\Features\Testimonials\Api\ReadsSubjectTestimonials;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @template TModel of Model
@@ -20,93 +18,49 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 trait ReceivesFeedback
 {
-    public function feedbackForms(): MorphMany
+    /** @return list<string> */
+    public function feedbackFormIds(): array
     {
-        return $this->morphMany(FeedbackForm::class, 'subject');
+        return app(ReadsSubjectForms::class)->ids($this->getMorphClass(), (string) $this->getKey());
     }
 
-    public function feedbackResponses(): MorphMany
+    /** @return list<string> */
+    public function feedbackResponseIds(): array
     {
-        return $this->morphMany(FeedbackResponse::class, 'subject');
+        return app(ReadsSubjectResponses::class)->subjectIds($this->getMorphClass(), (string) $this->getKey());
     }
 
-    public function feedbackTestimonials(): MorphMany
+    /** @return list<array{id: string, quote: string, display_name: ?string, display_title: ?string, display_organization: ?string, rating: ?float}> */
+    public function publishedFeedbackTestimonials(): array
     {
-        return $this->morphMany(FeedbackTestimonial::class, 'subject');
+        return app(ReadsSubjectTestimonials::class)->published($this->getMorphClass(), (string) $this->getKey());
     }
 
-    public function publishedFeedbackTestimonials(): MorphMany
+    public function createFeedbackFormFromTemplate(string $templateSlug, array $overrides = []): string
     {
-        return $this->feedbackTestimonials()->published();
-    }
-
-    public function createFeedbackFormFromTemplate(string | FeedbackTemplate $template, array $overrides = []): FeedbackForm
-    {
-        if (is_string($template)) {
-            $template = FeedbackTemplate::where('slug', $template)->firstOrFail();
-        }
-
-        return app(CreateFeedbackFormFromTemplateAction::class)->execute(
-            $template,
-            array_merge($overrides, [
-                'subject_type' => $this->getMorphClass(),
-                'subject_id' => $this->getKey(),
-            ]),
+        return app(CreatesFormsFromTemplates::class)->createForSubject(
+            $templateSlug,
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $overrides,
         );
     }
 
     public function averageFeedbackScore(?string $questionKey = null): ?float
     {
-        if ($questionKey !== null) {
-            $avg = FeedbackAnswer::query()
-                ->whereHas('response', function ($q): void {
-                    $q->where('subject_type', $this->getMorphClass())
-                        ->where('subject_id', $this->getKey())
-                        ->where('status', 'submitted');
-                })
-                ->whereHas('question', function ($q) use ($questionKey): void {
-                    $q->where('key', $questionKey);
-                })
-                ->whereNotNull('score')
-                ->avg('score');
-
-            return $avg !== null ? (float) $avg : null;
-        }
-
-        $avg = $this->feedbackResponses()
-            ->where('status', 'submitted')
-            ->whereNotNull('score')
-            ->avg('score');
-
-        return $avg !== null ? (float) $avg : null;
+        return app(ReadsSubjectFeedbackMetrics::class)->average(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $questionKey,
+        );
     }
 
-    public function npsScore(?FeedbackForm $form = null): ?int
+    public function npsScore(?string $formId = null): ?int
     {
-        $query = $this->feedbackResponses()
-            ->where('status', 'submitted')
-            ->whereNotNull('score');
-
-        if ($form !== null) {
-            $query->where('feedback_form_id', $form->id);
-        }
-
-        $counts = (clone $query)
-            ->selectRaw('
-                COUNT(CASE WHEN score >= 9 THEN 1 END) as promoters,
-                COUNT(CASE WHEN score BETWEEN 7 AND 8 THEN 1 END) as passives,
-                COUNT(CASE WHEN score <= 6 THEN 1 END) as detractors,
-                COUNT(*) as total
-            ')
-            ->first();
-
-        if (! $counts || $counts->total === 0) {
-            return null;
-        }
-
-        $promoterPct = ($counts->promoters / $counts->total) * 100;
-        $detractorPct = ($counts->detractors / $counts->total) * 100;
-
-        return (int) round($promoterPct - $detractorPct);
+        return app(ReadsSubjectFeedbackMetrics::class)->nps(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $formId,
+        );
     }
 }

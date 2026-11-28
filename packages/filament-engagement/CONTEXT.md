@@ -15,7 +15,7 @@ keywords:
 - Composer: `aiarmada/filament-engagement`
 - Role: Filament admin for follows/bookmarks/RSVPs/reactions/subs/reminders + actions.
 - Triggers: filament, engagement-ui
-- Search first: `src/Resources, src/Actions, config, docs`
+- Search first: `src/Features/*/EntryPoints/Filament, src/Features/*/feature.json, config, docs`
 - Related: `engagement`, `commerce-support`
 - Paired: `engagement` (core domain owner)
 
@@ -40,7 +40,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `BookmarkCollectionResource`, `BookmarkResource`, `FollowResource`, `ReactionResource`, `ReminderResource`, `ResponseResource`, `SubscriptionResource`
-- Actions/Services: `Actions/BookmarkAction`, `Actions/FollowAction`, `Actions/ReactAction`, `Actions/RemoveBookmarkAction`, `Actions/RespondAction`, `Actions/SetReminderAction`, `Actions/SubscribeAction`, `Actions/UnfollowAction`
+- Actions/Services: `Features/Interactions/EntryPoints/Filament/Actions`, `Features/Reminders/EntryPoints/Filament/Actions`, `Features/Subscriptions/EntryPoints/Filament/Actions`, `Support/ActionRecordResolver`, `Support/BulkRecordProcessor`
 - Config `filament-engagement.php`: `navigation`, `group`, `resources`, `enabled`, `follow`, `bookmark`, `collection`, `response`, `reaction`, `subscription`, `reminder`, `navigation_sort`
 
 ## Docs map

@@ -39,7 +39,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Block`, `ModerationAction`
-- Actions/Services: `Actions/BlockEntityAction`, `Actions/RecordModerationAction`, `Contracts/BlocksEntity`, `Contracts/RecordsModerationAction`, `Traits/HasBlocks`, `Traits/HasModerationActions`
+- Actions/Services: `Actions/BlockEntityAction`, `Actions/RecordModerationAction`, `Actions/ExpireDeletedEntityBlocksAction`, `Traits/HasBlocks`, `Traits/HasModerationActions`
 - Config `moderation.php`: `database` (`table_prefix`, `json_column_type`, `tables.blocks`, `tables.moderation_actions`), `owner` (`enabled`, `include_global`, `auto_assign_on_create`), `defaults.block_duration_days`, `actors.allowed_types`
 
 ## Docs map

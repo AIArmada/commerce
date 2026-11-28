@@ -4,47 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement;
 
-use AIArmada\Communications\CommunicationsServiceProvider;
-use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
-use AIArmada\Engagement\Console\Commands\ReconcileEngagementCountersCommand;
-use AIArmada\Engagement\Console\Commands\SendDueRemindersCommand;
-use AIArmada\Engagement\Contracts\EngagementCounterService;
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
-use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Events\BookmarkArchived;
-use AIArmada\Engagement\Events\BookmarkCreated;
-use AIArmada\Engagement\Events\BookmarkRemoved;
-use AIArmada\Engagement\Events\FollowCreated;
-use AIArmada\Engagement\Events\FollowMuted;
-use AIArmada\Engagement\Events\FollowRemoved;
-use AIArmada\Engagement\Events\FollowUnmuted;
-use AIArmada\Engagement\Events\ReactionCreated;
-use AIArmada\Engagement\Events\ReactionRemoved;
-use AIArmada\Engagement\Events\ReminderDue;
-use AIArmada\Engagement\Events\ResponseCancelled;
-use AIArmada\Engagement\Events\ResponseChanged;
-use AIArmada\Engagement\Events\ResponseCreated;
+use AIArmada\Engagement\Features\Counters\EntryPoints\Commands\ReconcileEngagementCountersCommand;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Reminders\EntryPoints\Commands\SendDueRemindersCommand;
+use AIArmada\Engagement\Features\Subscriptions\EntryPoints\Commands\MatchSubscriptionsCommand;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
-use AIArmada\Engagement\Listeners\DispatchReminderThroughCommunications;
-use AIArmada\Engagement\Services\DefaultEngagementCounterService;
-use AIArmada\Engagement\Services\DefaultEngagementManager;
+use AIArmada\Engagement\Platform\ExtensionRegistry;
+use AIArmada\Engagement\Platform\FeatureCatalog;
+use AIArmada\Engagement\Platform\FeatureModule;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
-use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
-use AIArmada\Engagement\Services\DefaultReminderManager;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
-use AIArmada\Engagement\Services\DefaultSubscriptionManager;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\EventsServiceProvider;
-use Illuminate\Contracts\Events\Dispatcher;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class EngagementServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule> */
+    private array $featureModules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -61,19 +43,34 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->singleton('engagement', fn ($app): EngagementManager => $app->make(EngagementManager::class));
+        $this->app->singleton('engagement', fn ($app): ManageInteractionsAction => $app->make(ManageInteractionsAction::class));
 
-        $this->app->bind(EngagementManager::class, DefaultEngagementManager::class);
-        $this->app->bind(SubscriptionManager::class, DefaultSubscriptionManager::class);
-        $this->app->bind(ReminderManager::class, DefaultReminderManager::class);
-        $this->app->bind(EngagementStateResolver::class, DefaultEngagementStateResolver::class);
-        $this->app->bind(EngagementCounterService::class, DefaultEngagementCounterService::class);
         $this->app->bind(EngagementPolicyResolver::class, DefaultEngagementPolicyResolver::class);
         $this->app->bind(ShareUrlGenerator::class, DefaultShareUrlGenerator::class);
 
         $this->registerEventsIntegration();
-        $this->registerReminderDeliveryListener();
-        $this->registerCounterListeners();
+
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+            $module = $this->app->make($class);
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException("Invalid engagement feature module [{$class}].");
+            }
+
+            $this->featureModules[$feature] = $module;
+            $module->register($this->app);
+        }
+    }
+
+    public function bootingPackage(): void
+    {
+        foreach ($this->featureModules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     private function registerEventsIntegration(): void
@@ -90,38 +87,5 @@ final class EngagementServiceProvider extends PackageServiceProvider
             EventEngagementManager::class,
             EngagementEventEngagementManager::class,
         );
-    }
-
-    private function registerReminderDeliveryListener(): void
-    {
-        if (! class_exists(CommunicationsServiceProvider::class)) {
-            return;
-        }
-
-        $dispatcher = $this->app->make(Dispatcher::class);
-
-        $dispatcher->listen(
-            ReminderDue::class,
-            DispatchReminderThroughCommunications::class,
-        );
-    }
-
-    private function registerCounterListeners(): void
-    {
-        $service = $this->app->make(EngagementCounterService::class);
-        $dispatcher = $this->app->make(Dispatcher::class);
-
-        $dispatcher->listen(FollowCreated::class, $service->onFollowCreated(...));
-        $dispatcher->listen(FollowRemoved::class, $service->onFollowRemoved(...));
-        $dispatcher->listen(FollowMuted::class, $service->onFollowMuted(...));
-        $dispatcher->listen(FollowUnmuted::class, $service->onFollowUnmuted(...));
-        $dispatcher->listen(BookmarkCreated::class, $service->onBookmarkCreated(...));
-        $dispatcher->listen(BookmarkRemoved::class, $service->onBookmarkRemoved(...));
-        $dispatcher->listen(BookmarkArchived::class, $service->onBookmarkArchived(...));
-        $dispatcher->listen(ReactionCreated::class, $service->onReactionCreated(...));
-        $dispatcher->listen(ReactionRemoved::class, $service->onReactionRemoved(...));
-        $dispatcher->listen(ResponseCreated::class, $service->onResponseCreated(...));
-        $dispatcher->listen(ResponseChanged::class, $service->onResponseChanged(...));
-        $dispatcher->listen(ResponseCancelled::class, $service->onResponseCancelled(...));
     }
 }

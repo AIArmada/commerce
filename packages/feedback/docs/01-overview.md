@@ -35,7 +35,7 @@ title: Feedback Package Overview
 - `FeedbackFormAnalytics` — per-form rollup of scores, NPS/CSAT, completion rate, and comment counts
 
 Public testimonial consumers must use `FeedbackTestimonial::published()` or the
-`publishedFeedbackTestimonials()` relation. Both require the Published status,
+`publishedFeedbackTestimonials()` read API. Both require the Published status,
 the publication timestamp, and no hidden timestamp; pending and merely approved
 records are never public.
 
