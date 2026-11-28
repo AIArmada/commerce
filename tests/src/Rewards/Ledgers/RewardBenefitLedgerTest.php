@@ -493,8 +493,8 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
 it('rejects a stock movement replay against a different catalog item', function (): void {
     [$program] = benefitLedgerProgram('ben-stock-key');
     $staff = RewardLedgerFixtures::staffId();
-    $first = CreateRewardBenefitItemAction::run($program, 'first-item', 'First', [], 100, 'pts', false, 5, 'user', $staff, 'staff');
-    $second = CreateRewardBenefitItemAction::run($program, 'second-item', 'Second', [], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $first = CreateRewardBenefitItemAction::run($program, 'first-item', 'First', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $second = CreateRewardBenefitItemAction::run($program, 'second-item', 'Second', ['Good standing'], 100, 'pts', false, 5, 'user', $staff, 'staff');
     $at = CarbonImmutable::now();
 
     $movement = RewardBenefitStockLedger::append(
