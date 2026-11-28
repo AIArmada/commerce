@@ -13,6 +13,7 @@ use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
+use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -63,6 +64,75 @@ final class DocEmailService implements DocumentEmailSender
         array $metadata = [],
         ?string $trigger = null,
     ): DocEmail {
+        $email = $this->createEmail($doc, $recipientEmail, $recipientName, $template, $variables, $subjectOverride, $bodyOverride, $metadata, $trigger);
+        $this->queueEmail($email, (string) $doc->getKey());
+
+        return $email;
+    }
+
+    /**
+     * Reserve one scheduled reminder under the document lock. The eligibility
+     * query is repeated after locking, so a stale batch cannot send twice or
+     * use an outdated recipient.
+     */
+    public function sendScheduledReminder(string $docId, int $days, bool $overdue, DueDocReminders $queries): ?DocEmail
+    {
+        $email = (new Doc)->getConnection()->transaction(function () use ($docId, $days, $overdue, $queries): ?DocEmail {
+            $doc = $queries->forCurrentOwner(false)->lockForUpdate()->find($docId);
+            if (! $doc instanceof Doc) {
+                return null;
+            }
+
+            $eligible = $overdue
+                ? $queries->overdueQuery($days, false)
+                : $queries->dueSoonQuery($days, false);
+
+            if (! $eligible->whereKey($docId)->exists()) {
+                return null;
+            }
+
+            $recipient = $doc->customer_data['email'] ?? null;
+            if (! is_string($recipient) || filter_var(mb_trim($recipient), FILTER_VALIDATE_EMAIL) === false) {
+                return null;
+            }
+
+            $name = $doc->customer_data['name'] ?? null;
+            $name = ! $overdue && is_string($name) && mb_trim($name) !== '' ? $name : null;
+            $variables = $overdue
+                ? ['days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false)]
+                : ['days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false)];
+
+            return $this->createEmail(
+                doc: $doc,
+                recipientEmail: $recipient,
+                recipientName: $name,
+                variables: $variables,
+                metadata: ['reminder_type' => $overdue ? 'overdue' : 'due_soon'],
+                trigger: $overdue ? 'reminder' : 'due_soon',
+            );
+        });
+
+        if ($email !== null) {
+            $this->queueEmail($email, $docId);
+        }
+
+        return $email;
+    }
+
+    /** @param array<string, mixed> $variables
+     * @param array<string, mixed> $metadata
+     */
+    private function createEmail(
+        Doc $doc,
+        string $recipientEmail,
+        ?string $recipientName = null,
+        ?DocEmailTemplate $template = null,
+        array $variables = [],
+        ?string $subjectOverride = null,
+        ?string $bodyOverride = null,
+        array $metadata = [],
+        ?string $trigger = null,
+    ): DocEmail {
         $recipientEmail = mb_trim($recipientEmail);
         $recipientName = $recipientName === null ? null : mb_trim($recipientName);
         $this->assertValidRecipient($recipientEmail, $recipientName);
@@ -95,7 +165,7 @@ final class DocEmailService implements DocumentEmailSender
         }
 
         // Create email record
-        $email = OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocEmail => $doc->emails()->create([
+        return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn (): DocEmail => $doc->emails()->create([
             'doc_email_template_id' => $template?->id,
             'recipient_email' => $recipientEmail,
             'recipient_name' => $recipientName,
@@ -104,11 +174,6 @@ final class DocEmailService implements DocumentEmailSender
             'status' => EmailStatus::Queued,
             'metadata' => $metadata,
         ]));
-
-        // Queue the email
-        $this->queueEmail($email, $doc);
-
-        return $email;
     }
 
     /**
@@ -228,19 +293,19 @@ final class DocEmailService implements DocumentEmailSender
     /**
      * Queue an email for sending.
      */
-    private function queueEmail(DocEmail $email, Doc $doc): void
+    private function queueEmail(DocEmail $email, string $docId): void
     {
         if (config('docs.email.queue_enabled', true)) {
             SendDocEmailJob::dispatch(
                 docEmailId: (string) $email->getKey(),
-                docId: (string) $doc->getKey(),
+                docId: $docId,
                 attachPdf: (bool) config('docs.email.attach_pdf', true),
             )->onQueue((string) config('docs.email.queue', 'default'));
 
             return;
         }
 
-        app(DeliverDocEmail::class)->execute((string) $email->getKey(), (string) $doc->getKey(), (bool) config('docs.email.attach_pdf', true));
+        app(DeliverDocEmail::class)->execute((string) $email->getKey(), $docId, (bool) config('docs.email.attach_pdf', true));
         $email->refresh();
     }
 

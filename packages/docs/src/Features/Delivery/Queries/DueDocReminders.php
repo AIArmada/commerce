@@ -27,6 +27,16 @@ final class DueDocReminders
      */
     public function dueSoon(int $daysBeforeDue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
+        return $this->dueSoonQuery($daysBeforeDue, $includeGlobal)
+            ->orderBy('due_date')
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /** @return Builder<Doc> */
+    public function dueSoonQuery(int $daysBeforeDue, ?bool $includeGlobal = null): Builder
+    {
         $today = CarbonImmutable::today();
         $endExclusive = $today->addDays($daysBeforeDue)->addDay();
 
@@ -38,17 +48,23 @@ final class DueDocReminders
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'due_soon');
             })
-            ->whereJsonContainsKey('customer_data->email')
-            ->orderBy('due_date')
-            ->orderBy('id')
-            ->limit(max(1, $limit))
-            ->get();
+            ->whereJsonContainsKey('customer_data->email');
     }
 
     /**
      * @return EloquentCollection<int, Doc>
      */
     public function overdue(int $daysAfterOverdue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
+    {
+        return $this->overdueQuery($daysAfterOverdue, $includeGlobal)
+            ->orderBy('due_date')
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /** @return Builder<Doc> */
+    public function overdueQuery(int $daysAfterOverdue, ?bool $includeGlobal = null): Builder
     {
         $endExclusive = CarbonImmutable::today()->subDays($daysAfterOverdue)->addDay();
 
@@ -59,11 +75,7 @@ final class DueDocReminders
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'overdue');
             })
-            ->whereJsonContainsKey('customer_data->email')
-            ->orderBy('due_date')
-            ->orderBy('id')
-            ->limit(max(1, $limit))
-            ->get();
+            ->whereJsonContainsKey('customer_data->email');
     }
 
     /**

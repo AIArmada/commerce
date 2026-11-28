@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Features\Delivery\Actions\DeliverDocReminders;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocReminderJob;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
@@ -176,4 +177,35 @@ test('scheduled reminders never substitute an ordinary send template for a missi
         expect($email->doc_email_template_id)->toBeNull()
             ->and($email->subject)->not->toBe('Ordinary send subject');
     }
+});
+
+test('scheduled reminder reservation rechecks eligibility and does not duplicate email records', function (): void {
+    Queue::fake();
+    config()->set('docs.email.queue_enabled', true);
+
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->addDay(),
+        'customer_data' => ['email' => 'original@example.com'],
+    ]);
+    $queries = app(DueDocReminders::class);
+    $service = app(DocEmailService::class);
+    $id = (string) $doc->getKey();
+
+    expect($queries->dueSoon(3)->modelKeys())->toContain($id);
+    $doc->update(['customer_data' => ['email' => 'changed@example.com']]);
+
+    expect($service->sendScheduledReminder($id, 3, false, $queries)?->recipient_email)->toBe('changed@example.com')
+        ->and($service->sendScheduledReminder($id, 3, false, $queries))->toBeNull()
+        ->and($doc->emails()->count())->toBe(1);
+
+    $paid = Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->addDay(),
+        'customer_data' => ['email' => 'paid@example.com'],
+    ]);
+    $paid->update(['status' => Paid::class]);
+
+    expect($service->sendScheduledReminder((string) $paid->getKey(), 3, false, $queries))->toBeNull()
+        ->and($paid->emails()->count())->toBe(0);
 });

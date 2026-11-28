@@ -6,13 +6,11 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -35,8 +33,8 @@ final readonly class DeliverDocReminders
                 return;
             }
 
-            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue);
-            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue);
+            $this->sendRemindersForUpcomingDue($daysBeforeDue);
+            $this->sendRemindersForOverdue($daysAfterOverdue);
         });
     }
 
@@ -82,86 +80,31 @@ final readonly class DeliverDocReminders
         }
     }
 
-    private function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysBeforeDue): void
+    private function sendRemindersForUpcomingDue(int $daysBeforeDue): void
     {
-        $docs = $dueDocReminders->dueSoon($daysBeforeDue, includeGlobal: false);
-
-        /** @var array<string, ?DocEmailTemplate> $templates */
-        $templates = [];
-
-        foreach ($docs as $doc) {
-            $recipientEmail = $this->getRecipientEmail($doc);
-            $recipientName = $this->getRecipientName($doc);
-
-            if (! $recipientEmail || filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
-                continue;
-            }
-
-            $templateKey = json_encode([$doc->owner_type, $doc->owner_id, $doc->doc_type], JSON_THROW_ON_ERROR);
-            if (! array_key_exists($templateKey, $templates)) {
-                $templates[$templateKey] = $emailService->findTemplate($doc, 'due_soon');
-            }
-
-            try {
-                $emailService->send(
-                    doc: $doc,
-                    recipientEmail: $recipientEmail,
-                    recipientName: $recipientName,
-                    template: $templates[$templateKey],
-                    variables: [
-                        'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
-                    ],
-                    metadata: ['reminder_type' => 'due_soon'],
-                    trigger: 'due_soon',
-                );
-
-                Log::info('docs.reminder: Due soon reminder sent', [
-                    'doc_id' => $doc->id,
-                    'doc_number' => $doc->doc_number,
-                    'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
-                ]);
-            } catch (Throwable $e) {
-                Log::error('docs.reminder: Failed to send due soon reminder', [
-                    'doc_id' => $doc->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        foreach ($this->dueDocReminders->dueSoon($daysBeforeDue, includeGlobal: false) as $doc) {
+            $this->sendScheduledReminder($doc, $daysBeforeDue, false);
         }
     }
 
-    private function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysAfterOverdue): void
+    private function sendRemindersForOverdue(int $daysAfterOverdue): void
     {
-        $docs = $dueDocReminders->overdue($daysAfterOverdue, includeGlobal: false);
+        foreach ($this->dueDocReminders->overdue($daysAfterOverdue, includeGlobal: false) as $doc) {
+            $this->sendScheduledReminder($doc, $daysAfterOverdue, true);
+        }
+    }
 
-        /** @var array<string, ?DocEmailTemplate> $templates */
-        $templates = [];
-
-        foreach ($docs as $doc) {
-            $recipientEmail = $this->getRecipientEmail($doc);
-
-            if (! $recipientEmail || filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
-                continue;
+    private function sendScheduledReminder(Doc $doc, int $days, bool $overdue): void
+    {
+        try {
+            if ($this->emailService->sendScheduledReminder((string) $doc->getKey(), $days, $overdue, $this->dueDocReminders) !== null) {
+                Log::info('docs.reminder: Scheduled reminder sent', ['doc_id' => $doc->id]);
             }
-
-            $templateKey = json_encode([$doc->owner_type, $doc->owner_id, $doc->doc_type], JSON_THROW_ON_ERROR);
-            if (! array_key_exists($templateKey, $templates)) {
-                $templates[$templateKey] = $emailService->findTemplate($doc, 'reminder');
-            }
-
-            try {
-                $emailService->sendReminder($doc, $recipientEmail, [], $templates[$templateKey]);
-
-                Log::info('docs.reminder: Overdue reminder sent', [
-                    'doc_id' => $doc->id,
-                    'doc_number' => $doc->doc_number,
-                    'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false),
-                ]);
-            } catch (Throwable $e) {
-                Log::error('docs.reminder: Failed to send overdue reminder', [
-                    'doc_id' => $doc->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        } catch (Throwable $exception) {
+            Log::error('docs.reminder: Failed to send scheduled reminder', [
+                'doc_id' => $doc->id,
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 
@@ -186,16 +129,4 @@ final readonly class DeliverDocReminders
         return is_string($value) && mb_trim($value) !== '' ? mb_trim($value) : null;
     }
 
-    private function getRecipientName(?Doc $doc): ?string
-    {
-        if (! $doc) {
-            return null;
-        }
-
-        $customerData = $doc->customer_data;
-
-        $value = is_array($customerData) ? ($customerData['name'] ?? null) : null;
-
-        return is_string($value) && mb_trim($value) !== '' ? mb_trim($value) : null;
-    }
 }
