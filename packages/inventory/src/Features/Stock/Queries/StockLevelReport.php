@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Features\Reporting\Queries;
+namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Generates stock level and availability reports.
  */
-final class StockLevelReport
+final readonly class StockLevelReport
 {
     /**
      * Get the summary used by inventory dashboards.
@@ -68,7 +68,7 @@ final class StockLevelReport
 
         return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->whereRaw('(quantity_on_hand - quantity_reserved) <= ?', [$threshold])
-            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             ->count();
     }
 
@@ -79,7 +79,7 @@ final class StockLevelReport
     {
         return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->whereRaw('(quantity_on_hand - quantity_reserved) <= 0')
-            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             ->count();
     }
 
@@ -91,7 +91,7 @@ final class StockLevelReport
         return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
             ->where('reorder_point', '>', 0)
-            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             ->count();
     }
 
@@ -104,7 +104,7 @@ final class StockLevelReport
     {
         return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->with('location')
-            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
             ->where('reorder_point', '>', 0)
             ->select('*')
@@ -137,7 +137,7 @@ final class StockLevelReport
                     DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved > 0 AND reorder_point > 0 AND quantity_on_hand - quantity_reserved <= reorder_point THEN 1 END) as low_stock_count'),
                     DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved <= 0 THEN 1 END) as out_of_stock_count'),
                 ])
-                ->with('location:id,name')
+                ->with(['location' => fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->select('id', 'name')])
                 ->groupBy('location_id')
         );
 
@@ -275,14 +275,16 @@ final class StockLevelReport
                 ->groupBy('inventoryable_type', 'inventoryable_id')
                 ->havingRaw('COUNT(DISTINCT location_id) > ?', [1])
                 ->orderByDesc('total_quantity')
-                ->limit($limit)
+                ->orderBy('inventoryable_type')
+                ->orderBy('inventoryable_id')
+                ->limit(max(0, $limit))
         );
 
-        return $query->get()
+        return $query->toBase()->get()
             ->map(fn ($row): array => [
                 'inventoryable_type' => (string) $row->inventoryable_type,
                 'inventoryable_id' => (string) $row->inventoryable_id,
-                'location_count' => (int) $row->getAttribute('location_count'),
+                'location_count' => (int) $row->location_count,
                 'total_quantity' => (int) $row->total_quantity,
                 'max_location_quantity' => (int) $row->max_quantity,
                 'min_location_quantity' => (int) $row->min_quantity,
@@ -306,27 +308,36 @@ final class StockLevelReport
      */
     public function getDeadStock(int $daysThreshold = 90, int $limit = 50, CostingMethod $method = CostingMethod::Fifo): Collection
     {
-        $cutoffDate = CarbonImmutable::now()->subDays($daysThreshold);
-        $tableName = config('inventory.database.tables.levels', 'inventory_levels');
+        if ($limit <= 0) {
+            return collect();
+        }
+
+        $now = CarbonImmutable::now();
+        $cutoffDate = $now->subDays($daysThreshold);
 
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()
                 ->select([
-                    "{$tableName}.inventoryable_type",
-                    "{$tableName}.inventoryable_id",
-                    "{$tableName}.quantity_on_hand as quantity",
-                    "{$tableName}.location_id",
-                    "{$tableName}.updated_at",
+                    'inventoryable_type',
+                    'inventoryable_id',
+                    'quantity_on_hand as quantity',
+                    'location_id',
+                    'updated_at',
                 ])
-                ->where("{$tableName}.quantity_on_hand", '>', 0)
-                ->where("{$tableName}.updated_at", '<', $cutoffDate)
-                ->orderBy("{$tableName}.updated_at")
-                ->orderBy("{$tableName}.id")
-                ->limit(max(1, $limit))
+                ->where('quantity_on_hand', '>', 0)
+                ->where('updated_at', '<', $cutoffDate)
+                ->orderBy('updated_at')
+                ->orderBy('id')
+                ->limit($limit)
         );
 
-        $rows = $query->get();
-        $items = $rows->map(static fn (InventoryLevel $row): array => [
+        $rows = $query->toBase()->get();
+
+        if ($rows->isEmpty()) {
+            return collect();
+        }
+
+        $items = $rows->map(static fn ($row): array => [
             'inventoryable_type' => (string) $row->inventoryable_type,
             'inventoryable_id' => (string) $row->inventoryable_id,
             'location_id' => (string) $row->location_id,
@@ -346,7 +357,7 @@ final class StockLevelReport
                 'quantity' => (int) $row->quantity,
                 'value' => $values[$row->inventoryable_type][$row->inventoryable_id][$row->location_id] ?? null,
                 'location_id' => (string) $row->location_id,
-                'days_stagnant' => (int) CarbonImmutable::parse($row->updated_at)->diffInDays(CarbonImmutable::now()),
+                'days_stagnant' => (int) CarbonImmutable::parse($row->updated_at)->diffInDays($now),
             ]);
 
         return $deadStock;

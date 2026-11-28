@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
+use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
@@ -728,4 +728,30 @@ it('hydrates low stock levels and orders their deficit for the dashboard', funct
         ->and($rows->first()->available)->toBe(2)
         ->and((int) $rows->first()->getAttribute('deficit'))->toBe(8)
         ->and((int) $rows->last()->getAttribute('deficit'))->toBe(4);
+});
+
+it('returns no stock analysis rows for a zero limit even when stock exists', function (): void {
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 100,
+        'updated_at' => now()->subDays(120),
+    ]);
+
+    InventoryCostLayer::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'costing_method' => CostingMethod::Fifo,
+        'remaining_quantity' => 10,
+        'unit_cost_minor' => 100,
+        'currency' => config('inventory.defaults.currency', 'MYR'),
+    ]);
+
+    expect($this->report->getDeadStock())->not->toBeEmpty()
+        ->and($this->report->getAbcAnalysis())->not->toBeEmpty()
+        ->and($this->report->getDeadStock(limit: 0))->toBeEmpty()
+        ->and($this->report->getAbcAnalysis(0))->toBeEmpty()
+        ->and($this->report->getAbcAnalysis(0, CostingMethod::Standard))->toBeEmpty();
 });

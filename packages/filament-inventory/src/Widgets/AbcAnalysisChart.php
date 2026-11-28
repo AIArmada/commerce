@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
+use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
 use Filament\Widgets\ChartWidget;
 
 final class AbcAnalysisChart extends ChartWidget

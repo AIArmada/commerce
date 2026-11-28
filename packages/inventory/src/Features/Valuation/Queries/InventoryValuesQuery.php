@@ -58,6 +58,10 @@ final readonly class InventoryValuesQuery implements InventoryValues
 
     public function rankedItems(CostingMethod $method, string $currency, int $limit): array
     {
+        if ($limit <= 0) {
+            return [];
+        }
+
         if ($method === CostingMethod::Standard) {
             return $this->rankStandardItems($currency, $limit);
         }
@@ -72,7 +76,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
             ->orderByDesc('total_value')
             ->orderBy('inventoryable_type')
             ->orderBy('inventoryable_id')
-            ->limit(max(1, $limit))
+            ->limit($limit)
             ->get()
             ->map(static fn ($row): array => [
                 'inventoryable_type' => (string) $row->inventoryable_type,
@@ -157,7 +161,7 @@ final readonly class InventoryValuesQuery implements InventoryValues
             ?: ($a['inventoryable_type'] <=> $b['inventoryable_type'])
             ?: ($a['inventoryable_id'] <=> $b['inventoryable_id']));
 
-        return array_slice($items, 0, max(1, $limit));
+        return array_slice($items, 0, $limit);
     }
 
     /** @return Builder<InventoryCostLayer> */

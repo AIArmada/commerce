@@ -35,6 +35,7 @@ use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockIdentityQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockKpiMetricsQuery;
+use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Contracts\Foundation\Application;
@@ -48,6 +49,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(InventoryStockQuery::class);
         $app->singleton(FulfillmentLocationService::class);
         $app->singleton(MovementAnalysisReport::class);
+        $app->singleton(StockLevelReport::class);
         $app->singleton(AllocationCandidates::class, AllocationCandidatesQuery::class);
         $app->singleton(DeductionCandidates::class, DeductionCandidatesQuery::class);
         $app->singleton(LocationOwnerBatch::class, LocationOwnerBatchQuery::class);
