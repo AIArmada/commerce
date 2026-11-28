@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Queries;
 
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Features\Stock\Api\AllocationCandidates;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

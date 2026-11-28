@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Traits;
 
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Queries\InventoryStockQuery;

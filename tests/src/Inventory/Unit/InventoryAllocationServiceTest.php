@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;

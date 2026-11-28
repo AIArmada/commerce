@@ -41,3 +41,5 @@ Use `AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService` for ba
 Composite cart and order stock demand belongs to `AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver`. The feature resolves frozen component snapshots and aggregates demand by actual inventory identity before allocating or deducting stock.
 
 The Stock feature owns the public inventory service registration. Model read helpers call `InventoryStockQuery` directly. Default-location receipt and shipment use `Features/Stock/Actions/ReceiveAtDefault` and `ShipFromDefault` so location initialization and stock changes are atomic.
+
+Use the pure `AIArmada\Inventory\Data\AllocationStrategy` enum when selecting allocation strategies across the stock and reservation boundaries.

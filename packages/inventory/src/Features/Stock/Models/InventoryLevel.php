@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
-use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

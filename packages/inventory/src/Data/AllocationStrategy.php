@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Enums;
+namespace AIArmada\Inventory\Data;
 
 enum AllocationStrategy: string
 {
