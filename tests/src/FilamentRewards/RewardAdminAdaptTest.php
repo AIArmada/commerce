@@ -757,12 +757,18 @@ it('scopes admin queries to programs visible in the current owner context', func
     // Livewire test calls swap the request, which drops the withOwner()
     // override; rebind the resolver so each request resolves its owner.
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+    OwnerContext::withOwner($owner, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
-    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertCanSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertStatus(200)->assertCanSeeTableRecords([$award]);
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
+    OwnerContext::withOwner($other, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
-    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
+    Livewire::actingAs($this->staff)->test(ListRewardAwards::class)->assertStatus(200)->assertCanNotSeeTableRecords([$award]);
 
     $history = app(RewardDecisionHistoryApi::class);
 
@@ -812,6 +818,9 @@ it('refuses settling a foreign recovery from the admin table', function (): void
     // action-side guard in SettleRewardRecoveryAction remains the handler-level
     // boundary for any other caller (see RewardOwnerScopingTest).
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
+    OwnerContext::withOwner($other, fn () => $this->staff->assignRole(Role::findOrCreate('admin', 'web')));
+    $this->staff->unsetRelation('roles');
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
     expect(fn () => Livewire::actingAs($this->staff)
         ->test(ListRewardRecoveries::class)

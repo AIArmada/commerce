@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Rewards;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
@@ -854,6 +856,9 @@ it('expires only the current owner lots in a scoped sweep and all owners in syst
 
     expect(OwnerContext::withOwner($owner, static fn (): array => $sweep->handle($expiry))['movements'])->toBe(1)
         ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(1);
+
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
 
     expect($sweep->handle($expiry)['movements'])->toBe(1)
         ->and(RewardPointLot::query()->whereNotNull('expired_at')->count())->toBe(2)

@@ -76,6 +76,7 @@ it('restores the previous team after assignment fails', function (): void {
     });
 
     $this->app->instance(RoleAdministrationApi::class, $api);
+    $this->app->forgetInstance(SyncMembershipRolesAction::class);
     $this->service = app(SyncMembershipRolesAction::class);
 
     expect(fn () => $this->service->assignToUser(
@@ -98,6 +99,7 @@ it('restores the previous team after revocation fails', function (): void {
     });
 
     $this->app->instance(RoleAdministrationApi::class, $api);
+    $this->app->forgetInstance(SyncMembershipRolesAction::class);
     $this->service = app(SyncMembershipRolesAction::class);
 
     expect(fn () => $this->service->revokeFromUser(
