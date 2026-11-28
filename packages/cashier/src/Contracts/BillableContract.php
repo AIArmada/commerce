@@ -11,10 +11,8 @@ use Illuminate\Support\Collection;
  *
  * The methods below describe the stable, package-owned bridge API exposed by
  * the Billable concern and its supporting concern. Gateway
- * adapters may still call gateway-native hooks (for example Stripe- or
- * CHIP-specific customer methods), but those are grouped separately below so
- * the contract reflects the package's real responsibilities instead of an
- * idealized merged Cashier API.
+ * adapters own their provider-specific hooks. A billable model only
+ * needs the native integration for the gateway it actually supports.
  */
 interface BillableContract
 {
@@ -212,84 +210,4 @@ interface BillableContract
      * Determine if the billable is on a generic trial stored on the model.
      */
     public function onGenericTrial(): bool;
-
-    /**
-     * Gateway-native bridge hooks required by the Stripe adapter.
-     */
-
-    /**
-     * Stripe: Get the Stripe customer ID.
-     */
-    public function stripeId(): ?string;
-
-    /**
-     * Stripe: Get the Stripe customer.
-     */
-    public function asStripeCustomer(array $expand = []): mixed;
-
-    /**
-     * Stripe: Create or get the Stripe customer.
-     *
-     * @param  array<string, mixed>  $options
-     * @param  array<string, mixed>  $requestOptions
-     */
-    public function createOrGetStripeCustomer(array $options = [], array $requestOptions = []): mixed;
-
-    /**
-     * Stripe: Update the Stripe customer.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function updateStripeCustomer(array $options = []): mixed;
-
-    /**
-     * Stripe: Sync the Stripe customer details.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function syncStripeCustomerDetails(array $options = []): mixed;
-
-    /**
-     * Stripe: Create a setup intent.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function createSetupIntent(array $options = []): mixed;
-
-    /**
-     * Stripe: Get the Stripe billing portal URL.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function billingPortalUrl(?string $returnUrl = null, array $options = []): string;
-
-    /**
-     * Gateway-native bridge hooks required by the CHIP adapter.
-     */
-
-    /**
-     * CHIP: Create or get the CHIP customer.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function createOrGetChipCustomer(array $options = []): mixed;
-
-    /**
-     * CHIP: Update the CHIP customer.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function updateChipCustomer(array $options = []): mixed;
-
-    /**
-     * CHIP: Sync the CHIP customer details.
-     */
-    public function syncChipCustomerDetails(): mixed;
-
-    /**
-     * CHIP: Create a setup purchase.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function createSetupPurchase(array $options = []): mixed;
 }

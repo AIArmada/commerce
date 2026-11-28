@@ -213,8 +213,8 @@ class StripeCheckoutBuilder implements CheckoutBuilderContract
             'cancel_url' => $this->cancel ?? url('/'),
         ];
 
-        if ($this->billable && $this->billable->stripeId()) {
-            $options['customer'] = $this->billable->stripeId();
+        if ($this->billable && $this->billable->gatewayId('stripe')) {
+            $options['customer'] = $this->billable->gatewayId('stripe');
         }
 
         if ($this->couponCode) {

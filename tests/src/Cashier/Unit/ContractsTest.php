@@ -61,7 +61,7 @@ describe('Contracts', function (): void {
                 ->and($methods)->toContain('allSubscriptions')
                 ->and($methods)->toContain('onGenericTrial')
                 ->and($methods)->toContain('asStripeCustomer')
-                ->and($methods)->toContain('createOrGetChipCustomer');
+                ->and($methods)->not->toContain('createOrGetChipCustomer', 'stripeId');
         });
     });
 

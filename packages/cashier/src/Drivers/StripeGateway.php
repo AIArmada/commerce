@@ -605,7 +605,7 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
     public function createBillingPortalSession(BillableContract $billable, string $returnUrl, array $options = []): mixed
     {
         return $this->client()->billingPortal->sessions->create(array_merge([
-            'customer' => $this->callBillableMethod($billable, 'stripeId'),
+            'customer' => $billable->gatewayId('stripe'),
             'return_url' => $returnUrl,
         ], $options));
     }
