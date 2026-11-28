@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherStatus;
 use AIArmada\Vouchers\Data\VoucherType;
+use Carbon\Carbon;
 
 it('rejects floats for every integer monetary or limit field at the DTO boundary', function (): void {
     foreach ([
@@ -43,7 +44,7 @@ it('rejects noncanonical aliases at the DTO boundary', function (): void {
 });
 
 it('round trips a voucher snapshot without leaking model state or mutable dates', function (): void {
-    $date = new DateTimeImmutable('2026-12-01T10:00:00+08:00');
+    $date = Carbon::parse('2026-12-01T10:00:00+08:00');
     $snapshot = VoucherData::fromArray([
         'code' => 'SNAPSHOT',
         'type' => 'fixed',
@@ -53,8 +54,10 @@ it('round trips a voucher snapshot without leaking model state or mutable dates'
         'usage_limit' => 0,
     ]);
 
-    $date->modify('+1 day');
-    expect($snapshot->startsAt?->format('Y-m-d'))->toBe('2026-12-01')
+    $date->addDay();
+
+    expect($date->format('Y-m-d'))->toBe('2026-12-02')
+        ->and($snapshot->startsAt?->format('Y-m-d'))->toBe('2026-12-01')
         ->and($snapshot->status)->toBe(VoucherStatus::Paused)
         ->and(VoucherData::fromArray($snapshot->toArray())->toArray())->toBe($snapshot->toArray())
         ->and((new ReflectionClass(VoucherData::class))->isReadOnly())->toBeTrue();

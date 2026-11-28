@@ -9,6 +9,7 @@ use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 it('cascades voucher deletion to usage and wallet rows with foreign keys enforced', function (bool $throughService): void {
     $customer = User::factory()->create();
@@ -27,8 +28,11 @@ it('cascades voucher deletion to usage and wallet rows with foreign keys enforce
     ]);
 
     DB::setDefaultConnection($connection);
+    Schema::clearResolvedInstance('db.schema');
 
     try {
+        expect((int) DB::selectOne('PRAGMA foreign_keys')->foreign_keys)->toBe(1);
+
         $migrationDirectory = dirname(__DIR__, 4) . '/packages/vouchers/database/migrations';
 
         foreach (glob($migrationDirectory . '/*.php') as $file) {
@@ -54,6 +58,7 @@ it('cascades voucher deletion to usage and wallet rows with foreign keys enforce
             ->and(VoucherWallet::query()->whereKey($wallet->getKey())->exists())->toBeFalse();
     } finally {
         DB::setDefaultConnection($originalConnection);
+        Schema::clearResolvedInstance('db.schema');
         DB::purge($connection);
     }
 })->with([
