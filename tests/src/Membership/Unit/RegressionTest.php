@@ -359,6 +359,47 @@ it('caches the pivot id column probe until flushed', function (): void {
     expect(DB::table('test_subject_members')->where('user_id', $second->getKey())->value('id'))->toBeUuid();
 });
 
+it('publishes membership hooks only after the outer transaction commits', function (): void {
+    $hook = new RecordingMembershipHook;
+    app()->instance(MembershipHook::class, $hook);
+
+    $user = User::query()->create(['name' => 'Transactional Member', 'email' => 'transactional-member@app.com', 'password' => 'secret']);
+
+    DB::beginTransaction();
+
+    try {
+        AddMemberAction::run($this->subject, $user, MemberRole::Viewer);
+        ChangeMemberRoleAction::run($this->subject, $user, MemberRole::Admin);
+        RemoveMemberAction::run($this->subject, $user);
+
+        expect($hook->added)->toBeEmpty()
+            ->and($hook->roleChanged)->toBeEmpty()
+            ->and($hook->removed)->toBeEmpty();
+    } finally {
+        DB::rollBack();
+    }
+
+    expect($hook->added)->toBeEmpty()
+        ->and($hook->roleChanged)->toBeEmpty()
+        ->and($hook->removed)->toBeEmpty()
+        ->and($this->subject->members()->count())->toBe(0);
+
+    DB::transaction(function () use ($user, $hook): void {
+        $user->unsetRelation('roles');
+        AddMemberAction::run($this->subject, $user, MemberRole::Viewer);
+        ChangeMemberRoleAction::run($this->subject, $user, MemberRole::Admin);
+        RemoveMemberAction::run($this->subject, $user);
+
+        expect($hook->added)->toBeEmpty()
+            ->and($hook->roleChanged)->toBeEmpty()
+            ->and($hook->removed)->toBeEmpty();
+    });
+
+    expect($hook->added)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Viewer->value]])
+        ->and($hook->roleChanged)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Viewer->value, MemberRole::Admin->value]])
+        ->and($hook->removed)->toBe([[(string) $this->subject->getKey(), (string) $user->getKey(), MemberRole::Admin->value]]);
+});
+
 final class RecordingMembershipHook implements MembershipHook
 {
     /** @var list<array{string, string, string}> */
@@ -367,6 +408,9 @@ final class RecordingMembershipHook implements MembershipHook
     /** @var list<array{string, string, string, string}> */
     public array $roleChanged = [];
 
+    /** @var list<array{string, string, string|null}> */
+    public array $removed = [];
+
     public function onMemberAdded(MembershipIdentity $subject, MembershipIdentity $user, string $role): void
     {
         $this->added[] = [$subject->id, $user->id, $role];
@@ -374,7 +418,7 @@ final class RecordingMembershipHook implements MembershipHook
 
     public function onMemberRemoved(MembershipIdentity $subject, MembershipIdentity $user, ?string $previousRole): void
     {
-        //
+        $this->removed[] = [$subject->id, $user->id, $previousRole];
     }
 
     public function onMemberRoleChanged(MembershipIdentity $subject, MembershipIdentity $user, string $oldRole, string $newRole): void

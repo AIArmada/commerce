@@ -50,12 +50,17 @@ final class ChangeMemberRoleAction
         });
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberRoleChanged(
-                MembershipIdentityMapper::fromModel($subject),
-                MembershipIdentityMapper::fromModel($user),
-                $oldRole->value,
-                $role->value,
-            );
+            $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+            $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+            DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $oldRole, $role): void {
+                app(MembershipHook::class)->onMemberRoleChanged(
+                    $subjectIdentity,
+                    $userIdentity,
+                    $oldRole->value,
+                    $role->value,
+                );
+            });
         }
     }
 }

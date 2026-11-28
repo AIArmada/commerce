@@ -50,7 +50,7 @@ final class AddMemberAction
         });
 
         if (app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role->value);
+            $this->notifyAdded($subject, $user, $role);
         }
     }
 
@@ -117,8 +117,18 @@ final class AddMemberAction
         }
 
         if ($notifyAdded && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberAdded(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role->value);
+            $this->notifyAdded($subject, $user, $role);
         }
+    }
+
+    private function notifyAdded(Model $subject, Model $user, MemberRole $role): void
+    {
+        $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+        $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+        DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $role): void {
+            app(MembershipHook::class)->onMemberAdded($subjectIdentity, $userIdentity, $role->value);
+        });
     }
 
     private function pivotHasIdColumn(Model $subject, string $membershipTable): bool

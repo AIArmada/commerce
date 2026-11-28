@@ -54,7 +54,12 @@ final class RemoveMemberAction
         });
 
         if ($removed && app()->bound(MembershipHook::class)) {
-            app(MembershipHook::class)->onMemberRemoved(MembershipIdentityMapper::fromModel($subject), MembershipIdentityMapper::fromModel($user), $role?->value);
+            $subjectIdentity = MembershipIdentityMapper::fromModel($subject);
+            $userIdentity = MembershipIdentityMapper::fromModel($user);
+
+            DB::afterCommit(static function () use ($subjectIdentity, $userIdentity, $role): void {
+                app(MembershipHook::class)->onMemberRemoved($subjectIdentity, $userIdentity, $role?->value);
+            });
         }
     }
 }
