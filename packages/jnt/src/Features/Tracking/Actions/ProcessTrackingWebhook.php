@@ -19,9 +19,11 @@ use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
 use DomainException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Spatie\WebhookClient\Models\WebhookCall;
 use Throwable;
 
@@ -95,12 +97,12 @@ final class ProcessTrackingWebhook
             return;
         }
 
-        $owner = OwnerContext::fromTypeAndId(
-            $shipment->ownerType,
-            $shipment->ownerId,
-        );
-
-        if (($shipment->ownerType !== null || $shipment->ownerId !== null) && $owner === null) {
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail(
+                $shipment->ownerType,
+                $shipment->ownerId,
+            );
+        } catch (InvalidArgumentException | ModelNotFoundException) {
             $this->markWebhookLogAsFailed('The shipment owner cannot be resolved.');
 
             return;

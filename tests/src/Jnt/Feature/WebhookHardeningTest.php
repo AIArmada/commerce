@@ -13,6 +13,7 @@ use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('webhook payload hardening', function (): void {
@@ -281,6 +282,52 @@ describe('webhook payload hardening', function (): void {
             ->and($events->first()->scan_type_code)->toBe('602');
 
         Mockery::close();
+    });
+
+    it('rejects tracking updates for an orphaned order owner', function (): void {
+        config()->set('jnt.owner.enabled', true);
+        config()->set('jnt.owner.include_global', false);
+        config()->set('jnt.owner.auto_assign_on_create', true);
+        Event::fake([TrackingUpdatedEvent::class]);
+
+        $owner = User::query()->create([
+            'name' => 'Orphaned Webhook Owner',
+            'email' => 'orphan-webhook@example.test',
+            'password' => 'secret',
+        ]);
+
+        $order = OwnerContext::withOwner($owner, fn () => JntOrder::query()->create([
+            'order_id' => 'ORDER-ORPHAN',
+            'tracking_number' => 'JNTORPHAN',
+            'customer_code' => 'CUST',
+            'status' => 'pending',
+        ]));
+
+        DB::table($order->getTable())->where('id', $order->getKey())->update([
+            'owner_id' => (string) Str::uuid(),
+        ]);
+
+        $call = Mockery::mock(WebhookCall::class)->makePartial();
+        $call->id = 4002;
+        $processor = new ProcessJntWebhook($call);
+
+        (new ReflectionMethod($processor, 'processEvent'))->invoke($processor, 'PICKUP', [
+            'bizContent' => json_encode([
+                'billCode' => 'JNTORPHAN',
+                'details' => [[
+                    'scanTime' => '2024-01-15 09:00:00',
+                    'scanTypeCode' => '301',
+                    'scanTypeName' => 'Collection',
+                    'desc' => 'Package collected',
+                    'scanType' => 'PICKUP',
+                ]],
+            ]),
+        ]);
+
+        expect(JntTrackingEvent::query()->withoutOwnerScope()->where('order_id', $order->id)->count())->toBe(0)
+            ->and(JntOrder::query()->withoutOwnerScope()->findOrFail($order->id)->status)->toBe('pending');
+
+        Event::assertNotDispatched(TrackingUpdatedEvent::class);
     });
 
     it('syncs webhook events under the shipment owner', function (): void {
