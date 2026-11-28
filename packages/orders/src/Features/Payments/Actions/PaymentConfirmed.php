@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Payments\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Contracts\OrderPaymentLifecycle;
 use AIArmada\Orders\Enums\PaymentStatus;
@@ -147,7 +148,8 @@ final class PaymentConfirmed extends Transition
                 // The payment really happened: its non-replayable event
                 // fires per accepted payment with the actual amount, so
                 // revenue recognition records every receipt exactly once.
-                event(new OrderPaid($order, $transactionId, $gateway, $amount));
+                $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
+                OwnerContext::withOwner($owner, static fn () => event(new OrderPaid($order, $transactionId, $gateway, $amount)));
 
                 if ($outboxIds === []) {
                     return;

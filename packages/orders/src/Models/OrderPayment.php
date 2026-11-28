@@ -168,9 +168,7 @@ class OrderPayment extends Model implements Auditable
             if (! (bool) config('orders.owner.enabled', false)) {
                 $order = Order::query()->withoutOwnerScope()->findOrFail($payment->order_id);
             } else {
-                $owner = OwnerContext::resolve();
-                $includeGlobal = (bool) config('orders.owner.include_global', false);
-                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $payment->order_id, $owner, $includeGlobal);
+                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $payment->order_id);
             }
 
             if ($order->owner_type !== null && $order->owner_id !== null) {

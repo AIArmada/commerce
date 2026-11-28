@@ -176,9 +176,7 @@ final class OrderRefund extends Model implements Auditable
             if (! (bool) config('orders.owner.enabled', false)) {
                 $order = Order::query()->withoutOwnerScope()->findOrFail($refund->order_id);
             } else {
-                $owner = OwnerContext::resolve();
-                $includeGlobal = (bool) config('orders.owner.include_global', false);
-                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $refund->order_id, $owner, $includeGlobal);
+                $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $refund->order_id);
             }
 
             if ($order->owner_type !== null && $order->owner_id !== null) {
@@ -341,9 +339,7 @@ final class OrderRefund extends Model implements Auditable
         if (! (bool) config('orders.owner.enabled', false)) {
             $payment = OrderPayment::query()->withoutOwnerScope()->findOrFail($refund->payment_id);
         } else {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('orders.owner.include_global', false);
-            $payment = OwnerWriteGuard::findOrFailForOwner(OrderPayment::class, $refund->payment_id, $owner, $includeGlobal);
+            $payment = OwnerWriteGuard::findOrFailForOwner(OrderPayment::class, $refund->payment_id);
         }
 
         if ($payment->order_id !== $refund->order_id) {
