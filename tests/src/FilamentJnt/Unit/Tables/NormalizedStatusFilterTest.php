@@ -84,5 +84,5 @@ it('treats delivery-like tracking events as delivered even when the raw code is 
 
     expect($query->pluck('id')->all())->toContain($deliveredEvent->id)
         ->and($deliveredEvent->getNormalizedStatus())->toBe(TrackingStatus::Delivered)
-        ->and((new ReflectionClass(JntOrderTable::class))->getMethod('getNormalizedStatus')->invoke(null, $order))->toBe(TrackingStatus::Delivered);
+        ->and($order->getNormalizedStatus())->toBe(TrackingStatus::Delivered);
 });
