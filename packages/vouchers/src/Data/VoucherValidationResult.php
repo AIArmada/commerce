@@ -78,6 +78,14 @@ final readonly class VoucherValidationResult implements JsonSerializable
         return $this->details[$key] ?? $default;
     }
 
+    public function matchesVoucher(string $voucherId): bool
+    {
+        $snapshot = $this->getDetail('voucher');
+
+        return $this->isValid && $voucherId !== '' && is_array($snapshot)
+            && ($snapshot['id'] ?? null) === $voucherId;
+    }
+
     /** @return array{is_valid: bool, reason: ?string, details: ?array} */
     public function toArray(): array
     {

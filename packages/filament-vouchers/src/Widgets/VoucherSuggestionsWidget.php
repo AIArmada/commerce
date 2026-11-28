@@ -171,7 +171,7 @@ final class VoucherSuggestionsWidget extends Widget
 
             $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($this->record->toSnapshotData());
 
-            app(CartVoucherApplicator::class)->handle($cartInstance, $voucher->code);
+            app(CartVoucherApplicator::class)->handle($cartInstance, $voucher->code, expectedVoucherId: (string) $voucher->getKey());
 
             Notification::make()
                 ->success()

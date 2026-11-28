@@ -21,14 +21,19 @@ final class VoucherRulesFactory implements RulesFactoryInterface
         if ($key === self::FACTORY_KEY) {
             $context = $this->resolveContext($metadata);
             $code = $context['voucher_code'] ?? null;
+            $voucherId = $context['voucher_id'] ?? null;
 
             if (! is_string($code) || $code === '') {
                 throw new InvalidArgumentException('Voucher rule requires a voucher_code metadata value.');
             }
 
+            if (! is_string($voucherId) || $voucherId === '') {
+                throw new InvalidArgumentException('Voucher rule requires a voucher_id metadata value.');
+            }
+
             return [
-                static function (Cart $cart, ?CartItem $item = null) use ($code): bool {
-                    return Voucher::validate($code, $cart)->isValid;
+                static function (Cart $cart, ?CartItem $item = null) use ($code, $voucherId): bool {
+                    return Voucher::validate($code, $cart)->matchesVoucher($voucherId);
                 },
             ];
         }

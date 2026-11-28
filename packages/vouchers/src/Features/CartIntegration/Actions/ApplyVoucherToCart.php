@@ -28,6 +28,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
         string $code,
         ?StackingPolicyInterface $policy = null,
         int $order = 100,
+        ?string $expectedVoucherId = null,
     ): VoucherCondition {
         $code = $this->normalizeCode($code);
 
@@ -49,6 +50,10 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             throw new InvalidVoucherException(
                 "Voucher '{$code}' not found",
             );
+        }
+
+        if ($expectedVoucherId !== null && ! $validationResult->matchesVoucher($expectedVoucherId)) {
+            throw new InvalidVoucherException("Voucher '{$code}' no longer matches the selected voucher.");
         }
 
         $voucherData = VoucherData::fromArray($snapshot);

@@ -56,7 +56,7 @@ it('applies suggestions by record key, resolving the code server-side', function
     app()->instance(CartInstanceManager::class, $manager);
 
     $applicator = Mockery::mock(CartVoucherApplicator::class);
-    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code)
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code, null, 100, (string) $voucher->getKey())
         ->andReturn(new VoucherCondition(VoucherSnapshot::fromModel($voucher)));
     app()->instance(CartVoucherApplicator::class, $applicator);
 

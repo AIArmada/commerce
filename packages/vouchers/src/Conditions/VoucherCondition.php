@@ -144,7 +144,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
         // Re-validate the voucher against current cart state
         $validationResult = Voucher::validate($this->voucher->code, $cart);
 
-        return $validationResult->isValid;
+        return $validationResult->matchesVoucher($this->voucher->id);
     }
 
     /**

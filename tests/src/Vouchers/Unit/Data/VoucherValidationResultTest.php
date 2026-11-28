@@ -205,3 +205,13 @@ describe('VoucherValidationResult', function (): void {
         ]);
     });
 });
+
+it('requires a valid result and exact voucher identity', function (): void {
+    $details = ['voucher' => ['id' => 'selected']];
+
+    expect(VoucherValidationResult::valid($details)->matchesVoucher('selected'))->toBeTrue()
+        ->and(VoucherValidationResult::valid($details)->matchesVoucher('replacement'))->toBeFalse()
+        ->and(VoucherValidationResult::valid()->matchesVoucher('selected'))->toBeFalse()
+        ->and(VoucherValidationResult::invalid('Invalid', $details)->matchesVoucher('selected'))->toBeFalse()
+        ->and(VoucherValidationResult::valid(['voucher' => ['id' => '']])->matchesVoucher(''))->toBeFalse();
+});

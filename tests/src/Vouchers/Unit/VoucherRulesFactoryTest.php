@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 
 test('voucher rules factory creates rules for voucher key', function (): void {
     $factory = new VoucherRulesFactory;
 
-    $rules = $factory->createRules('voucher', ['voucher_code' => 'TEST']);
+    $rules = $factory->createRules('voucher', ['voucher_code' => 'TEST', 'voucher_id' => 'voucher-test']);
 
     expect($rules)->toBeArray()
         ->and(count($rules))->toBe(1);
@@ -66,4 +70,25 @@ test('voucher rules factory with fallback', function (): void {
         ->and($factory->canCreateRules('fallback'))->toBeTrue()
         ->and($factory->createRules('fallback'))->toBe([['fallback', 'rule']])
         ->and($factory->getAvailableKeys())->toContain('voucher');
+});
+
+test('voucher rule refuses missing identity metadata', function (): void {
+    $factory = new VoucherRulesFactory;
+
+    expect(fn () => $factory->createRules('voucher', ['voucher_code' => 'TEST']))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('voucher rule refuses a different voucher with the same code', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'voucher-rule-identity');
+    $factory = new VoucherRulesFactory;
+    $rule = $factory->createRules('voucher', ['voucher_code' => 'TEST', 'voucher_id' => 'selected'])[0];
+
+    Voucher::shouldReceive('validate')->with('TEST', $cart)->twice()->andReturn(
+        VoucherValidationResult::valid(['voucher' => ['id' => 'replacement']]),
+        VoucherValidationResult::valid(['voucher' => ['id' => 'selected']]),
+    );
+
+    expect($rule($cart))->toBeFalse()
+        ->and($rule($cart))->toBeTrue();
 });
