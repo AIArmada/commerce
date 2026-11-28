@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,10 +37,6 @@ use Illuminate\Support\Collection;
  */
 final class FulfillmentLocationService
 {
-    public function __construct(
-        private readonly InventoryService $inventoryService,
-    ) {}
-
     /**
      * Get the best fulfillment location for an order.
      *
@@ -105,9 +100,17 @@ final class FulfillmentLocationService
     public function getFulfillmentPlan(Order $order): Collection
     {
         $itemRequirements = $this->getItemRequirements($order);
-        $locations = $this->getActiveLocations()->sortByDesc('priority');
+        $locations = $this->getActiveLocations();
         $plan = new Collection;
         $availability = $this->getAvailabilityByLocation($itemRequirements);
+        foreach ($locations as $location) {
+            if ($this->locationCanFulfillAll($location, $itemRequirements, $availability)) {
+                $locations = new Collection([$location]);
+
+                break;
+            }
+        }
+
         $remaining = $itemRequirements->mapWithKeys(fn ($item) => [
             $item['key'] => $item['quantity'],
         ]);
@@ -163,7 +166,13 @@ final class FulfillmentLocationService
         $totalAvailable = 0;
         $fullyAvailable = true;
         $byItem = [];
-        $totals = $this->inventoryService->getAvailabilityForMany($itemRequirements->pluck('model'));
+        $totals = [];
+
+        foreach ($this->getAvailabilityByLocation($itemRequirements) as $locationAvailability) {
+            foreach ($locationAvailability as $key => $quantity) {
+                $totals[$key] = ($totals[$key] ?? 0) + $quantity;
+            }
+        }
 
         foreach ($itemRequirements as $item) {
             $required = $item['quantity'];
@@ -237,6 +246,7 @@ final class FulfillmentLocationService
             InventoryLocation::query()
                 ->where('is_active', true)
                 ->orderByDesc('priority')
+                ->orderBy('id')
         )->get();
     }
 
@@ -298,7 +308,7 @@ final class FulfillmentLocationService
         }
 
         $levels = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
             ->where(function (Builder $query) use ($byType): void {
                 foreach ($byType as $type => $ids) {
                     $query->orWhere(fn (Builder $group): Builder => $group

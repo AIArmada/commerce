@@ -47,6 +47,12 @@ jobs:
               - 'packages/filament-cashier-chip/**'
               - 'packages/cart/**'
               - 'packages/filament-cart/**'
+              - 'packages/products/**'
+              - 'packages/pricing/**'
+              - 'packages/inventory/**'
+              - 'packages/filament-products/**'
+              - 'packages/filament-pricing/**'
+              - 'packages/filament-inventory/**'
               - '.github/workflows/ci.yml'
             tests:
               - '**/*.php'
