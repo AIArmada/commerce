@@ -7,12 +7,13 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\FilamentShipping\Support\ShippingStatsAggregator;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\ExceptionStatus;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
+use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\ExceptionStatus;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ describe('Shipping stats aggregation', function (): void {
         DB::enableQueryLog();
 
         try {
-            $stats = app(ShippingStatsAggregator::class)->getAllStats();
+            $stats = app(DashboardStats::class)->getAllStats();
             $queries = DB::getQueryLog();
         } finally {
             DB::disableQueryLog();
@@ -83,7 +84,7 @@ describe('Shipping stats aggregation', function (): void {
             ->and($stats['deliveredToday'])->toBe(1)
             ->and($stats['exceptions'])->toBe(1)
             ->and($stats['total'])->toBe(4)
-            ->and($queries)->toHaveCount(5);
+            ->and($queries)->toHaveCount(3);
     });
 });
 
@@ -170,4 +171,27 @@ describe('Bulk label failures', function (): void {
         expect($bodies)->toContain('label generation failed')
             ->and($bodies)->not->toContain('no-such-driver');
     });
+});
+
+it('marks a shipped record picked up exactly once and rejects unshipped records', function (): void {
+    $shipment = Shipment::query()->create([
+        'reference' => 'PICKUP-IDEMPOTENT',
+        'carrier_code' => 'jnt',
+        'status' => Shipped::class,
+        'origin_address' => ['country' => 'MY'],
+        'destination_address' => ['country' => 'MY'],
+    ]);
+    $pending = Shipment::query()->create([
+        'reference' => 'PICKUP-PENDING',
+        'carrier_code' => 'jnt',
+        'status' => Pending::class,
+        'origin_address' => ['country' => 'MY'],
+        'destination_address' => ['country' => 'MY'],
+    ]);
+    $action = app(MarkShipmentPickedUp::class);
+
+    expect($action->execute($shipment->id))->toBeTrue()
+        ->and($action->execute($shipment->id))->toBeFalse()
+        ->and($action->execute($pending->id))->toBeFalse()
+        ->and($shipment->refresh()->metadata['picked_up'])->toBeTrue();
 });

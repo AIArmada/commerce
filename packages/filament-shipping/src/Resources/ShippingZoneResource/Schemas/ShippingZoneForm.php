@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;

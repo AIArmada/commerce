@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Policies;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 final class JntOrderPolicy

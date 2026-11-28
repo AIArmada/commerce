@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Services\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
 
 describe('FreeShippingResult', function (): void {
     it('can create free shipping result with required fields', function (): void {

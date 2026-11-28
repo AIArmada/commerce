@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
 
 // ============================================
 // FlatRateShippingDriver Tests
@@ -82,8 +82,8 @@ it('applies custom flat rate from configuration', function (): void {
 
     $rates = $customDriver->getRates($origin, $destination, $packages);
 
-    expect($rates->first()->rate)->toBe(1500);
-    expect($rates->first()->estimatedDays)->toBe(7);
+    expect($rates[0]->rate)->toBe(1500);
+    expect($rates[0]->estimatedDays)->toBe(7);
 });
 
 it('creates shipment with generated tracking number', function (): void {
@@ -140,8 +140,8 @@ it('tracks shipment with awaiting pickup status', function (): void {
     expect($trackingData->status)->toBe(TrackingStatus::AwaitingPickup);
     expect($trackingData->carrier)->toBe('flat_rate');
     expect($trackingData->events)->toHaveCount(1);
-    expect($trackingData->events->first()->code)->toBe('FLAT');
-    expect($trackingData->events->first()->description)->toBe('Flat rate shipment - tracking not available');
+    expect($trackingData->events[0]->code)->toBe('FLAT');
+    expect($trackingData->events[0]->description)->toBe('Flat rate shipment - tracking not available');
 });
 
 it('validates address always returns valid', function (): void {
@@ -198,9 +198,9 @@ it('returns configured methods', function (): void {
     $methods = $customDriver->getAvailableMethods();
 
     expect($methods)->toHaveCount(2);
-    expect($methods->first()->code)->toBe('standard');
-    expect($methods->first()->name)->toBe('Standard Shipping');
-    expect($methods->last()->code)->toBe('express');
+    expect($methods[0]->code)->toBe('standard');
+    expect($methods[0]->name)->toBe('Standard Shipping');
+    expect($methods[array_key_last($methods)]->code)->toBe('express');
 });
 
 it('returns multiple configured rates', function (): void {
@@ -239,6 +239,6 @@ it('returns multiple configured rates', function (): void {
     $rates = $customDriver->getRates($origin, $destination, $packages);
 
     expect($rates)->toHaveCount(2);
-    expect($rates->first()->currency)->toBe('USD');
-    expect($rates->first()->calculatedLocally)->toBeTrue();
+    expect($rates[0]->currency)->toBe('USD');
+    expect($rates[0]->calculatedLocally)->toBeTrue();
 });

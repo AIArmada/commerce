@@ -92,7 +92,6 @@ return [
     */
     'cart' => [
         'register_manager_proxy' => env('JNT_CART_REGISTER_PROXY', true),
-        'quote_ttl_minutes' => env('JNT_QUOTE_TTL', 30),
     ],
 
     /*

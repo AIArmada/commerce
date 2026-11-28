@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
+use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
@@ -34,6 +36,7 @@ beforeEach(function (): void {
     ];
 
     $this->service = new JntExpressService(
+        app(CarrierTransportFactory::class),
         $this->config['customer_code'],
         $this->config['password'],
         $this->config
@@ -375,4 +378,57 @@ test('uses builder pattern', function (): void {
     //     return $body['txlogisticId'] === 'TXN-BUILDER'
     //         && $body['sender']['name'] === 'Builder Sender';
     // });
+});
+
+test('rejects scalar JSON responses from the carrier', function (): void {
+    Http::fake([
+        '*/api/order/getOrders' => Http::response('true', 200, ['Content-Type' => 'application/json']),
+    ]);
+
+    $this->service->queryOrder('TXN-001');
+})->throws(JntApiException::class, 'Invalid API response format');
+
+test('rejects malformed data envelopes for order operations', function (string $endpoint, string $operation): void {
+    Http::fake([
+        '*/api/order/' . $endpoint => Http::response(['code' => '1', 'data' => 'invalid'], 200),
+    ]);
+
+    expect(fn () => match ($operation) {
+        'query' => $this->service->queryOrder('TXN-MALFORMED'),
+        'cancel' => $this->service->cancelOrder('TXN-MALFORMED', 'Cancelled'),
+        'print' => $this->service->printOrder('TXN-MALFORMED'),
+    })->toThrow(JntApiException::class);
+})->with([
+    ['getOrders', 'query'],
+    ['cancelOrder', 'cancel'],
+    ['printOrder', 'print'],
+]);
+
+test('rejects mismatched tracking responses without caching them', function (): void {
+    Http::fake([
+        '*/api/logistics/trace' => Http::sequence()
+            ->push(['code' => '1', 'data' => ['billCode' => 'OTHER-TRACK', 'txlogisticId' => 'OTHER-ORDER']])
+            ->push(['code' => '1', 'data' => ['billCode' => 'TRACK-BOUNDARY', 'txlogisticId' => 'ORDER-BOUNDARY']]),
+    ]);
+
+    expect(fn () => $this->service->trackParcel('ORDER-BOUNDARY', 'TRACK-BOUNDARY'))
+        ->toThrow(JntApiException::class);
+
+    expect($this->service->trackParcel('ORDER-BOUNDARY', 'TRACK-BOUNDARY')->trackingNumber)
+        ->toBe('TRACK-BOUNDARY');
+
+    Http::assertSentCount(2);
+});
+
+test('isolates order and tracking number cache identities', function (): void {
+    Http::fake([
+        '*/api/logistics/trace' => Http::sequence()
+            ->push(['code' => '1', 'data' => ['billCode' => 'TRACK-A', 'txlogisticId' => 'SHARED-ID']])
+            ->push(['code' => '1', 'data' => ['billCode' => 'SHARED-ID', 'txlogisticId' => 'ORDER-B']]),
+    ]);
+
+    expect($this->service->trackParcel(orderId: 'SHARED-ID')->trackingNumber)->toBe('TRACK-A')
+        ->and($this->service->trackParcel(trackingNumber: 'SHARED-ID')->orderId)->toBe('ORDER-B');
+
+    Http::assertSentCount(2);
 });

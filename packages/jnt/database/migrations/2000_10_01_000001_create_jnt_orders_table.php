@@ -46,6 +46,7 @@ return new class extends Migration
             $table->timestampTz('last_synced_at')->nullable();
             $table->timestampTz('last_tracked_at')->nullable();
             $table->timestampTz('delivered_at')->nullable()->index();
+            $table->timestampTz('cancellation_started_at')->nullable();
             $table->timestampTz('cancelled_at')->nullable()->index();
             $table->string('cancellation_reason', 255)->nullable();
             $table->string('last_status_code', 32)->nullable()->index();
