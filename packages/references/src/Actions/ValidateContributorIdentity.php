@@ -13,6 +13,8 @@ use Throwable;
 
 final readonly class ValidateContributorIdentity
 {
+    private const int CHUNK_SIZE = 500;
+
     public function type(string $type): string
     {
         $type = mb_trim($type);
@@ -59,7 +61,7 @@ final readonly class ValidateContributorIdentity
      * @param  list<string>  $ids
      * @return array{type: string, ids: list<string>}
      */
-    public function canonicalizeTargets(string $type, array $ids): array
+    public function canonicalizeTargets(string $type, array $ids, ?string $connection = null): array
     {
         $type = $this->type($type);
         $normalized = [];
@@ -84,16 +86,22 @@ final readonly class ValidateContributorIdentity
             throw new InvalidArgumentException('Reference contributor type must identify a constructible Eloquent model.', previous: $exception);
         }
 
-        $found = $model->newQuery()
-            ->whereKey($normalized)
-            ->pluck($model->getKeyName())
-            ->map(static fn (mixed $key): string => mb_strtolower((string) $key))
-            ->all();
+        if ($model->getConnectionName() === null && $connection !== null) {
+            $model->setConnection($connection);
+        }
 
-        $missing = array_values(array_diff($normalized, $found));
+        $found = [];
 
-        if ($missing !== []) {
-            throw new InvalidArgumentException('Reference contributor target is missing or outside the current owner scope: ' . $missing[0]);
+        foreach (array_chunk($normalized, self::CHUNK_SIZE) as $chunk) {
+            foreach ($model->newQuery()->whereKey($chunk)->pluck($model->getKeyName())->all() as $key) {
+                $found[mb_strtolower((string) $key)] = true;
+            }
+        }
+
+        foreach ($normalized as $id) {
+            if (! isset($found[$id])) {
+                throw new InvalidArgumentException('Reference contributor target is missing or outside the current owner scope: ' . $id);
+            }
         }
 
         return ['type' => $type, 'ids' => $normalized];

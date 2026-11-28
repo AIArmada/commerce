@@ -14,7 +14,10 @@ use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class ReferenceConstructorTrap extends Model
@@ -23,6 +26,19 @@ final class ReferenceConstructorTrap extends Model
     {
         throw new RuntimeException('Contributor type canonicalization executed the model constructor.');
     }
+}
+
+final class SecondaryConnectionContributor extends Model
+{
+    protected $connection = 'references_secondary';
+
+    protected $table = 'secondary_contributors';
+
+    protected $guarded = [];
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
 }
 
 beforeEach(function (): void {
@@ -423,4 +439,108 @@ test('rejects malformed contributor reference ids before querying references', f
     expect(collect(DB::getQueryLog())->contains(
         fn (array $query): bool => in_array('not-a-uuid', $query['bindings'], true),
     ))->toBeFalse();
+});
+
+test('resolves contributor target connections like morph relations', function (): void {
+    config()->set('database.connections.references_secondary', [
+        'driver' => 'sqlite',
+        'database' => ':memory:',
+        'prefix' => '',
+    ]);
+    DB::purge('references_secondary');
+
+    Schema::connection('references_secondary')->create('secondary_contributors', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $owner = makeContributorUser('contributor-connection-owner@example.test');
+    $inherited = makeContributorUser('contributor-connection-inherited@example.test');
+
+    $explicit = new SecondaryConnectionContributor;
+    $explicit->forceFill([
+        'id' => (string) Str::uuid(),
+        'name' => 'Explicit Secondary Contributor',
+    ])->save();
+
+    $work = OwnerContext::withOwner($owner, fn (): Reference => makeWork('Connection Contributor Work'));
+    $work->setConnection('testing');
+
+    $originalDefault = (string) config('database.default');
+    $action = new SyncReferenceContributors;
+
+    config()->set('database.default', 'references_secondary');
+
+    try {
+        OwnerContext::withOwner($owner, function () use ($action, $work, $inherited, $explicit): void {
+            $action->handle(
+                $work,
+                ReferenceContributorRole::Editor,
+                $inherited->getMorphClass(),
+                [(string) $inherited->getKey()],
+            );
+
+            $action->handle(
+                $work,
+                ReferenceContributorRole::Translator,
+                SecondaryConnectionContributor::class,
+                [(string) $explicit->getKey()],
+            );
+        });
+    } finally {
+        config()->set('database.default', $originalDefault);
+    }
+
+    expect(OwnerContext::withOwner($owner, fn (): array => $work->contributorsForRole(ReferenceContributorRole::Editor)->pluck('contributor_id')->all()))
+        ->toBe([(string) $inherited->getKey()])
+        ->and(OwnerContext::withOwner($owner, fn (): array => $work->contributorsForRole(ReferenceContributorRole::Translator)->pluck('contributor_id')->all()))
+        ->toBe([(string) $explicit->getKey()]);
+});
+
+test('chunks large contributor validation, inserts, and deletes', function (): void {
+    $ids = [];
+    $rows = [];
+
+    foreach (range(1, 501) as $index) {
+        $id = (string) Str::uuid();
+        $ids[] = $id;
+        $rows[] = [
+            'id' => $id,
+            'name' => 'Bulk Contributor ' . $index,
+            'email' => 'bulk-contributor-' . $index . '@example.test',
+            'password' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    foreach (array_chunk($rows, 100) as $chunk) {
+        User::query()->insert($chunk);
+    }
+
+    $work = makeWork('Bulk Contributor Work');
+    $action = new SyncReferenceContributors;
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $action->handle($work, ReferenceContributorRole::Editor, User::class, $ids);
+
+    $queries = collect(DB::getQueryLog());
+    $inserts = $queries->filter(fn (array $query): bool => str_starts_with((string) $query['query'], 'insert into "reference_contributors"'));
+    $validations = $queries->filter(fn (array $query): bool => str_starts_with((string) $query['query'], 'select') && str_contains((string) $query['query'], 'from "users"'));
+
+    expect($inserts)->toHaveCount(2)
+        ->and($validations)->toHaveCount(2)
+        ->and($work->contributorsForRole(ReferenceContributorRole::Editor)->count())->toBe(501);
+
+    DB::flushQueryLog();
+
+    $action->handle($work, ReferenceContributorRole::Editor, User::class, []);
+
+    $deletes = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_starts_with((string) $query['query'], 'delete from "reference_contributors"'));
+
+    expect($deletes)->toHaveCount(2)
+        ->and($work->contributorsForRole(ReferenceContributorRole::Editor)->count())->toBe(0);
 });

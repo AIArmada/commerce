@@ -13,6 +13,8 @@ use RuntimeException;
 
 final readonly class ReferenceContributorLinks
 {
+    private const int CHUNK_SIZE = 500;
+
     /**
      * @param  list<string>  $ids
      */
@@ -23,10 +25,14 @@ final readonly class ReferenceContributorLinks
         }
 
         $model = $this->model($reference);
-        $deleted = $model->newQueryWithoutScopes()
-            ->where('reference_id', $reference->getKey())
-            ->whereKey($ids)
-            ->delete();
+        $deleted = 0;
+
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            $deleted += $model->newQueryWithoutScopes()
+                ->where('reference_id', $reference->getKey())
+                ->whereKey($chunk)
+                ->delete();
+        }
 
         if ($deleted !== count($ids)) {
             throw new RuntimeException('Contributor deletion did not remove the expected rows.');
@@ -44,24 +50,28 @@ final readonly class ReferenceContributorLinks
 
         $model = $this->model($reference);
         $now = CarbonImmutable::now();
-        $rows = [];
+        $referenceId = (string) $reference->getKey();
 
-        foreach ($ids as $id) {
-            $rows[] = [
-                'id' => (string) Str::uuid(),
-                'reference_id' => (string) $reference->getKey(),
-                'contributor_type' => $type,
-                'contributor_id' => $id,
-                'role' => $role->value,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            $rows = [];
 
-        $inserted = $model->newQueryWithoutScopes()->toBase()->insert($rows);
+            foreach ($chunk as $id) {
+                $rows[] = [
+                    'id' => (string) Str::uuid(),
+                    'reference_id' => $referenceId,
+                    'contributor_type' => $type,
+                    'contributor_id' => $id,
+                    'role' => $role->value,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
 
-        if ($inserted !== true) {
-            throw new RuntimeException('Contributor creation did not insert the expected rows.');
+            $inserted = $model->newQueryWithoutScopes()->toBase()->insert($rows);
+
+            if ($inserted !== true) {
+                throw new RuntimeException('Contributor creation did not insert the expected rows.');
+            }
         }
     }
 

@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Models\Reference;
 use AIArmada\References\Models\ReferenceContributor;
 use Closure;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -20,6 +21,8 @@ use Throwable;
 
 final readonly class DeleteReference
 {
+    private const int CHUNK_SIZE = 500;
+
     public function __construct(
         private LockReferenceForWrite $lock = new LockReferenceForWrite,
         private LockReferenceTree $tree = new LockReferenceTree,
@@ -27,42 +30,43 @@ final readonly class DeleteReference
 
     /**
      * @param  Closure(Reference): bool  $deleting
-     * @param  Closure(Reference): mixed  $deleted
+     * @param  Closure(Reference): mixed|null  $deleted
      */
-    public function handle(Reference $reference, Closure $deleting, Closure $deleted): ?bool
+    public function handle(Reference $reference, Closure $deleting, ?Closure $deleted): ?bool
     {
         if (! $reference->exists) {
             return null;
         }
 
+        $preserveMedia = $reference->shouldDeletePreservingMedia();
         $connection = $reference->getConnection();
 
         try {
-            return $connection->transaction(function () use ($reference, $deleting, $deleted, $connection): bool {
+            return $connection->transaction(function () use ($reference, $deleting, $deleted, $preserveMedia, $connection): bool {
                 $lockedRoots = $this->tree->lockTreeForParent($reference, $this->persistedParentId($reference));
                 $locked = $this->lock->handle($reference);
                 $this->tree->assertRootLocked($locked, $this->parentId($locked), $lockedRoots);
                 $reference->setRawAttributes($locked->getAttributes(), true);
-                $reference->prepareForCascadeDeletion();
 
-                if (! $deleting($reference)) {
+                if (! $reference->withoutMediaCascadeDeletion(fn (): bool => $deleting($reference))) {
                     return false;
                 }
 
                 $descendants = $this->lockDescendants($reference);
                 $config = Reference::ownerScopeConfig();
+                $active = $this->activeOwnerContext($config);
                 $contexts = [];
                 $owners = [];
-                $activeKey = $this->activeOwnerKey($config);
+
+                $contexts[(string) $reference->getKey()] = $this->ownerContext($reference, $config, $active, $owners);
 
                 foreach ($descendants as $descendant) {
-                    $descendant->prepareForCascadeDeletion();
-                    $contexts[(string) $descendant->getKey()] = $this->ownerContext($descendant, $config, $activeKey, $owners);
+                    $contexts[(string) $descendant->getKey()] = $this->ownerContext($descendant, $config, $active, $owners);
                 }
 
                 foreach (array_reverse($descendants) as $descendant) {
-                    $this->runInOwnerContext($contexts[(string) $descendant->getKey()], $activeKey, function () use ($descendant, $deleting): void {
-                        if (! $deleting($descendant)) {
+                    $this->runInOwnerContext($contexts[(string) $descendant->getKey()], $active['key'], function () use ($descendant, $deleting): void {
+                        if (! $descendant->withoutMediaCascadeDeletion(fn (): bool => $deleting($descendant))) {
                             throw new RuntimeException('Reference descendant deletion was cancelled.');
                         }
                     });
@@ -70,15 +74,16 @@ final readonly class DeleteReference
 
                 $records = [...$descendants, $reference];
                 $ids = array_map(static fn (Reference $record): string => (string) $record->getKey(), $records);
-                $media = $this->mediaFor($reference, $ids);
+                $media = [];
+                $mediaModel = $preserveMedia ? null : $this->mediaModel($reference);
 
-                $this->deleteMedia($reference, $media);
-                $this->deleteContributors($reference, $ids);
-                $deletedRows = $reference->newQueryWithoutScopes()->whereKey($ids)->delete();
-
-                if ($deletedRows !== count($ids)) {
-                    throw new RuntimeException('Reference deletion did not remove the expected rows.');
+                if ($mediaModel !== null) {
+                    $media = $this->mediaFor($reference, $mediaModel, $ids);
+                    $this->deleteMedia($mediaModel, $media);
                 }
+
+                $this->deleteContributors($reference, $ids);
+                $this->deleteReferenceRows($reference, $ids);
 
                 foreach ($records as $record) {
                     $record->exists = false;
@@ -86,22 +91,35 @@ final readonly class DeleteReference
 
                 $ordered = [...array_reverse($descendants), $reference];
 
-                $this->afterCommit($connection, function () use ($media, $ordered, $contexts, $config, $deleted): void {
-                    $this->removeMediaFiles($media);
-                    $activeKey = $this->activeOwnerKey($config);
+                if ($deleted !== null || $media !== []) {
+                    $this->afterCommit($connection, function () use ($media, $ordered, $contexts, $config, $deleted): void {
+                        if ($deleted !== null) {
+                            $activeKey = '';
 
-                    foreach ($ordered as $record) {
-                        $key = (string) $record->getKey();
+                            try {
+                                $activeKey = $this->activeOwnerKey($config);
+                            } catch (Throwable $exception) {
+                                report($exception);
+                            }
 
-                        if (! isset($contexts[$key])) {
-                            $deleted($record);
+                            foreach ($ordered as $record) {
+                                $context = $contexts[(string) $record->getKey()] ?? ['key' => '', 'owner' => null];
 
-                            continue;
+                                try {
+                                    $this->runInOwnerContext($context, $activeKey, static fn (): mixed => $deleted($record));
+                                } catch (Throwable $exception) {
+                                    report($exception);
+                                }
+                            }
                         }
 
-                        $this->runInOwnerContext($contexts[$key], $activeKey, fn (): mixed => $deleted($record));
-                    }
-                });
+                        try {
+                            $this->removeMediaFiles($media);
+                        } catch (Throwable $exception) {
+                            report($exception);
+                        }
+                    });
+                }
 
                 return true;
             });
@@ -132,7 +150,7 @@ final readonly class DeleteReference
         while ($frontier !== []) {
             $next = [];
 
-            foreach (array_chunk($frontier, 500) as $ids) {
+            foreach (array_chunk($frontier, self::CHUNK_SIZE) as $ids) {
                 $children = $this->query($reference)
                     ->whereIn('parent_id', $ids)
                     ->orderBy('id')
@@ -161,7 +179,7 @@ final readonly class DeleteReference
     /**
      * @param  array{key: string, owner: Model|null}  $context
      */
-    private function runInOwnerContext(array $context, ?string &$activeKey, Closure $callback): mixed
+    private function runInOwnerContext(array $context, ?string $activeKey, Closure $callback): mixed
     {
         if ($context['key'] === '') {
             return $callback();
@@ -171,21 +189,33 @@ final readonly class DeleteReference
             return $callback();
         }
 
-        $previous = $activeKey;
-        $activeKey = $context['key'];
-
-        try {
-            return OwnerContext::withOwner($context['owner'], $callback);
-        } finally {
-            $activeKey = $previous;
-        }
+        return OwnerContext::withOwner($context['owner'], $callback);
     }
 
     /**
+     * @return array{key: string, owner: Model|null}
+     */
+    private function activeOwnerContext(OwnerScopeConfig $config): array
+    {
+        if (! $config->enabled) {
+            return ['key' => '', 'owner' => null];
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+
+        if ($owner instanceof Model) {
+            return ['key' => $owner->getMorphClass() . ':' . (string) $owner->getKey(), 'owner' => $owner];
+        }
+
+        return ['key' => OwnerContext::isExplicitGlobal() ? 'global' : '', 'owner' => null];
+    }
+
+    /**
+     * @param  array{key: string, owner: Model|null}  $active
      * @param  array<string, Model>  $owners
      * @return array{key: string, owner: Model|null}
      */
-    private function ownerContext(Reference $reference, OwnerScopeConfig $config, ?string $activeKey, array &$owners): array
+    private function ownerContext(Reference $reference, OwnerScopeConfig $config, array $active, array &$owners): array
     {
         if (! $config->enabled) {
             return ['key' => '', 'owner' => null];
@@ -204,8 +234,8 @@ final readonly class DeleteReference
 
         $key = (string) $ownerType . ':' . (string) $ownerId;
 
-        if ($key === $activeKey) {
-            return ['key' => $key, 'owner' => null];
+        if ($key === $active['key']) {
+            return ['key' => $key, 'owner' => $active['owner']];
         }
 
         if (isset($owners[$key])) {
@@ -233,51 +263,36 @@ final readonly class DeleteReference
             return null;
         }
 
-        $owner = OwnerContext::resolveConfigured($config);
-
-        if ($owner !== null) {
-            return $owner->getMorphClass() . ':' . (string) $owner->getKey();
-        }
-
-        return OwnerContext::isExplicitGlobal() ? 'global' : '';
+        return $this->activeOwnerContext($config)['key'];
     }
 
-    private function afterCommit(object $connection, Closure $callback): void
+    private function afterCommit(Connection $connection, Closure $callback): void
     {
-        if (method_exists($connection, 'getName')
-            && $connection->getName() === DB::getDefaultConnection()) {
+        if ($connection->getName() === DB::getDefaultConnection()) {
             DB::afterCommit($callback);
 
             return;
         }
 
-        if (method_exists($connection, 'afterCommit')) {
-            $connection->afterCommit($callback);
-
-            return;
-        }
-
-        DB::afterCommit($callback);
+        $connection->afterCommit($callback);
     }
 
     /**
      * @param  list<string>  $ids
      * @return list<Media>
      */
-    private function mediaFor(Reference $reference, array $ids): array
+    private function mediaFor(Reference $reference, Media $mediaModel, array $ids): array
     {
-        if ($ids === []) {
-            return [];
+        $media = [];
+
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            foreach ($mediaModel->newQuery()
+                ->where('model_type', $reference->getMorphClass())
+                ->whereIn('model_id', $chunk)
+                ->get() as $item) {
+                $media[] = $item;
+            }
         }
-
-        $model = $this->mediaModel($reference);
-
-        /** @var list<Media> $media */
-        $media = $model->newQuery()
-            ->where('model_type', $reference->getMorphClass())
-            ->whereIn('model_id', $ids)
-            ->get()
-            ->all();
 
         return $media;
     }
@@ -285,14 +300,18 @@ final readonly class DeleteReference
     /**
      * @param  list<Media>  $media
      */
-    private function deleteMedia(Reference $reference, array $media): void
+    private function deleteMedia(Media $mediaModel, array $media): void
     {
         if ($media === []) {
             return;
         }
 
         $ids = array_map(static fn (Media $item): mixed => $item->getKey(), $media);
-        $deleted = $this->mediaModel($reference)->newQuery()->whereKey($ids)->delete();
+        $deleted = 0;
+
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            $deleted += $mediaModel->newQuery()->whereKey($chunk)->delete();
+        }
 
         if ($deleted !== count($media)) {
             throw new RuntimeException('Reference media deletion did not remove the expected rows.');
@@ -301,9 +320,9 @@ final readonly class DeleteReference
 
     private function mediaModel(Reference $reference): Media
     {
-        $class = config('media-library.media_model', Media::class);
+        $class = $reference->getMediaModel();
 
-        if (! is_string($class) || ! is_a($class, Media::class, true)) {
+        if (! is_a($class, Media::class, true)) {
             throw new RuntimeException('The configured media model must extend ' . Media::class . '.');
         }
 
@@ -312,6 +331,10 @@ final readonly class DeleteReference
 
         if ($model->getConnectionName() === null) {
             $model->setConnection($reference->getConnectionName());
+        }
+
+        if ($model->getConnection()->getName() !== $reference->getConnection()->getName()) {
+            throw new RuntimeException('Reference media rows must use the same database connection as the reference; cross-connection cascade deletion is not supported.');
         }
 
         return $model;
@@ -325,9 +348,27 @@ final readonly class DeleteReference
         $contributor = new ReferenceContributor;
         $contributor->setConnection($reference->getConnectionName());
 
-        $contributor->newQueryWithoutScopes()
-            ->whereIn('reference_id', $ids)
-            ->delete();
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            $contributor->newQueryWithoutScopes()
+                ->whereIn('reference_id', $chunk)
+                ->delete();
+        }
+    }
+
+    /**
+     * @param  list<string>  $ids
+     */
+    private function deleteReferenceRows(Reference $reference, array $ids): void
+    {
+        $deleted = 0;
+
+        foreach (array_chunk($ids, self::CHUNK_SIZE) as $chunk) {
+            $deleted += $reference->newQueryWithoutScopes()->whereKey($chunk)->delete();
+        }
+
+        if ($deleted !== count($ids)) {
+            throw new RuntimeException('Reference deletion did not remove the expected rows.');
+        }
     }
 
     /**

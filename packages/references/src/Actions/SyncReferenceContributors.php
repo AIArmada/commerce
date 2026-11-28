@@ -43,6 +43,7 @@ final readonly class SyncReferenceContributors
             $targets = $this->identity->canonicalizeTargets(
                 $contributorType,
                 array_values(array_filter($contributorIds, static fn (string $id): bool => mb_trim($id) !== '')),
+                $locked->getConnection()->getName(),
             );
             $wanted = array_fill_keys($targets['ids'], true);
             $existing = $locked->contributorsForRole($role)->get();

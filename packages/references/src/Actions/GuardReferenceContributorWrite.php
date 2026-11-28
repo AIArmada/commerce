@@ -41,6 +41,7 @@ final readonly class GuardReferenceContributorWrite
         $targets = $this->identity->canonicalizeTargets(
             $contributor->contributor_type,
             [$contributor->contributor_id],
+            $contributor->getConnection()->getName(),
         );
 
         $contributor->contributor_type = $targets['type'];

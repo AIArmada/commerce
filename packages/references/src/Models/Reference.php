@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Events\NullDispatcher;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -103,18 +104,31 @@ class Reference extends ReferencePersistence implements HasMedia
 
     public function delete(): ?bool
     {
+        $dispatcher = static::getEventDispatcher();
+        $eventsEnabled = $dispatcher !== null && ! $dispatcher instanceof NullDispatcher;
+
         return (new DeleteReference)->handle(
             $this,
-            fn (Reference $record): bool => $record->fireModelEvent('deleting') !== false,
-            fn (Reference $record): mixed => $record->fireModelEvent('deleted', false),
+            $eventsEnabled
+                ? fn (Reference $record): bool => $record->fireModelEvent('deleting') !== false
+                : static fn (): bool => true,
+            $eventsEnabled ? fn (Reference $record): mixed => $record->fireModelEvent('deleted', false) : null,
         );
     }
 
-    public function prepareForCascadeDeletion(): static
+    /**
+     * @param  Closure(): mixed  $callback
+     */
+    public function withoutMediaCascadeDeletion(Closure $callback): mixed
     {
+        $preserveMedia = $this->deletePreservingMedia;
         $this->deletePreservingMedia = true;
 
-        return $this;
+        try {
+            return $callback();
+        } finally {
+            $this->deletePreservingMedia = $preserveMedia;
+        }
     }
 
     public function getTable(): string
