@@ -714,5 +714,18 @@ it('creates and clones occurrences and sessions through configured models', func
     $occurrenceId = $service->cloneOccurrence((string) $occurrence->getKey(), ['clone_sessions' => false]);
     $sessionId = $service->cloneSession((string) $session->getKey(), ['clone_children' => false]);
 
-    expect($created)->toBe([$occurrenceId, $sessionId]);
+    expect($created)->toBe([$occurrenceId, $sessionId])
+        ->and($event->occurrences()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class)
+        ->and($event->primaryOccurrence()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class)
+        ->and($event->sessions()->getRelated())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($occurrence->sessions()->getRelated())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($session->occurrence()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class);
+
+    $nestedOccurrenceId = $service->cloneOccurrence((string) $occurrence->getKey());
+    $nestedOccurrence = CloneConfiguredOccurrence::query()->findOrFail($nestedOccurrenceId);
+    $nestedSessions = $nestedOccurrence->sessions()->get();
+
+    expect($nestedSessions)->toHaveCount(2)
+        ->and($nestedSessions->first())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($created)->toContain($nestedOccurrenceId, ...$nestedSessions->modelKeys());
 });

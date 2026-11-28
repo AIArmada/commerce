@@ -206,7 +206,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function occurrences(): HasMany
     {
-        return $this->hasMany(EventOccurrence::class, 'event_id');
+        /** @var class-string<EventOccurrence> $model */
+        $model = ModelResolver::occurrenceClass();
+
+        return $this->hasMany($model, 'event_id');
     }
 
     /**
@@ -214,7 +217,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function primaryOccurrence(): HasOne
     {
-        return $this->hasOne(EventOccurrence::class, 'event_id')
+        /** @var class-string<EventOccurrence> $model */
+        $model = ModelResolver::occurrenceClass();
+
+        return $this->hasOne($model, 'event_id')
             ->orderBy('starts_at')
             ->orderBy('created_at')
             ->orderBy('id');
@@ -225,7 +231,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(EventSession::class, 'event_id');
+        /** @var class-string<EventSession> $model */
+        $model = ModelResolver::sessionClass();
+
+        return $this->hasMany($model, 'event_id');
     }
 
     /**
