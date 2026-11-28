@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating\Data;
 
-use Spatie\LaravelData\Data;
-
-class SeatMapLayout extends Data
+final readonly class SeatMapLayout
 {
     public function __construct(
         public string $id,

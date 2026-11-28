@@ -71,3 +71,18 @@ it('does not release revoked allocations', function (): void {
 
     expect($count)->toBe(0);
 });
+
+it('records the release reason without overwriting existing metadata', function (): void {
+    SeatAllocation::query()->firstOrFail()->update(['metadata' => ['source' => 'checkout']]);
+
+    app(ReleaseAllocationsAction::class)->handle(
+        allocToType: $this->allocToType,
+        allocToId: $this->allocToId,
+        reason: 'Order cancelled',
+    );
+
+    expect(SeatAllocation::query()->firstOrFail()->metadata)->toBe([
+        'source' => 'checkout',
+        'release_reason' => 'Order cancelled',
+    ]);
+});

@@ -42,7 +42,7 @@ use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Enums\SeatingMode;
 
 $results = app(SeatAllocatorInterface::class)->allocate(
-    map: $map,
+    mapId: $map->id,
     quantity: 2,
     mode: SeatingMode::Assigned,
     heldByType: 'cart',
@@ -54,7 +54,7 @@ $results = app(SeatAllocatorInterface::class)->allocate(
 
 Each result is an `AllocationResult` DTO with `seatId`, `sectionCode`, `rowLabel`, `seatLabel`, and `category`.
 
-`DefaultSeatAllocator` delegates all hold creation to `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty collection. The Livewire picker checks availability and the requested section.
+`DefaultSeatAllocator` delegates all hold creation to `EnsureSeatHoldAction`. The action excludes blocked seats, active allocations and unconverted unexpired holds, locks candidates, rechecks availability, and batch-inserts the holds. Shortfalls roll back without partial holds. `None` and `GeneralAdmission` return an empty list. The Livewire picker checks availability and the requested section.
 
 ## Livewire Component
 

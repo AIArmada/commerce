@@ -13,7 +13,8 @@ arch('seating contracts')
 
 arch('seating data')
     ->expect('AIArmada\Seating\Data')
-    ->toExtend('Spatie\LaravelData\Data');
+    ->toBeFinal()
+    ->toBeReadonly();
 
 arch('seating allocators')
     ->expect('AIArmada\Seating\Services\DefaultSeatAllocator')

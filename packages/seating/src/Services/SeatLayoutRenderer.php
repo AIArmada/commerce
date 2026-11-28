@@ -7,10 +7,11 @@ namespace AIArmada\Seating\Services;
 use AIArmada\Seating\Contracts\SeatLayoutInterface;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
 
-final class SeatLayoutRenderer implements SeatLayoutInterface
+final readonly class SeatLayoutRenderer implements SeatLayoutInterface
 {
-    public function describe(SeatMap $map, ?string $sectionId = null): array
+    public function describe(string $mapId, ?string $sectionId = null): array
     {
+        $map = SeatMap::query()->findOrFail($mapId);
         $sections = [];
         $seats = [];
         $maxRows = 0;
@@ -44,7 +45,9 @@ final class SeatLayoutRenderer implements SeatLayoutInterface
                 ];
             }
 
-            $seats = array_merge($seats, $sectionSeats);
+            foreach ($sectionSeats as $seat) {
+                $seats[] = $seat;
+            }
             $sections[] = [
                 'id' => $section->id,
                 'code' => $section->code,

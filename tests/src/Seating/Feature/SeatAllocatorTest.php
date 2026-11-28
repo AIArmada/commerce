@@ -37,17 +37,17 @@ beforeEach(function (): void {
 
 it('allocates requested quantity of seats', function (): void {
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 3,
     );
 
     expect($results)->toHaveCount(3);
-    expect($results->pluck('sectionCode')->all())->each->toBe('A');
+    expect(collect($results)->pluck('sectionCode')->all())->each->toBe('A');
 });
 
 it('throws when insufficient seats', function (): void {
     expect(fn (): mixed => app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 20,
     ))->toThrow(InsufficientSeatsException::class);
 
@@ -56,7 +56,7 @@ it('throws when insufficient seats', function (): void {
 
 it('does not create holds for general admission mode', function (): void {
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 3,
         mode: SeatingMode::GeneralAdmission,
     );
@@ -67,7 +67,7 @@ it('does not create holds for general admission mode', function (): void {
 
 it('creates holds for allocated seats', function (): void {
     app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 2,
     );
 
@@ -82,13 +82,13 @@ it('stores the held by morph relation', function (): void {
     ]);
 
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         heldByType: $holder->getMorphClass(),
         heldById: $holder->id,
     );
 
-    $hold = SeatHold::query()->findOrFail($results->first()->holdId);
+    $hold = SeatHold::query()->findOrFail($results[0]->holdId);
 
     expect($hold->heldBy?->is($holder))->toBeTrue();
 });
@@ -100,12 +100,12 @@ it('skips held seats', function (): void {
     SeatHold::factory()->create(['seat_id' => $seat->id]);
 
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 10,
     );
 
     expect($results)->toHaveCount(10);
-    expect($results->pluck('seatId'))->not->toContain($seat->id);
+    expect(collect($results)->pluck('seatId'))->not->toContain($seat->id);
 });
 
 it('skips blocked seats', function (): void {
@@ -114,12 +114,12 @@ it('skips blocked seats', function (): void {
     $seat->update(['status' => SeatStatus::Blocked]);
 
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 10,
     );
 
     expect($results)->toHaveCount(10);
-    expect($results->pluck('seatId'))->not->toContain($seat->id);
+    expect(collect($results)->pluck('seatId'))->not->toContain($seat->id);
 });
 
 it('respects category preferences', function (): void {
@@ -135,18 +135,18 @@ it('respects category preferences', function (): void {
     ]);
 
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         categoryPreferences: ['vip'],
     );
 
     expect($results)->toHaveCount(1);
-    expect($results->first()->category)->toBe('vip');
+    expect($results[0]->category)->toBe('vip');
 });
 
-it('returns empty collection for zero quantity', function (): void {
+it('returns an empty list for zero quantity', function (): void {
     $results = app(SeatAllocatorInterface::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 0,
     );
 
@@ -157,18 +157,18 @@ it('never holds a seat with an active allocation even when the seat status is av
     $seat = Seat::query()->orderBy('row_number')->firstOrFail();
     SeatAllocation::factory()->create(['seat_id' => $seat->id, 'status' => 'active']);
 
-    $results = app(SeatAllocatorInterface::class)->allocate(map: $this->map, quantity: 14);
+    $results = app(SeatAllocatorInterface::class)->allocate(mapId: $this->map->id, quantity: 14);
 
     expect($results)->toHaveCount(14)
-        ->and($results->pluck('seatId')->all())->not->toContain($seat->id);
+        ->and(collect($results)->pluck('seatId')->all())->not->toContain($seat->id);
 });
 
 it('can hold a seat again after its converted allocation has been released', function (): void {
     $seat = Seat::query()->orderBy('row_number')->firstOrFail();
     SeatHold::factory()->converted()->create(['seat_id' => $seat->id]);
 
-    $results = app(SeatAllocatorInterface::class)->allocate(map: $this->map, quantity: 15);
+    $results = app(SeatAllocatorInterface::class)->allocate(mapId: $this->map->id, quantity: 15);
 
     expect($results)->toHaveCount(15)
-        ->and($results->pluck('seatId')->all())->toContain($seat->id);
+        ->and(collect($results)->pluck('seatId')->all())->toContain($seat->id);
 });

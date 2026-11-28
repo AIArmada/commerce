@@ -74,7 +74,7 @@ it('renders the layout with a single eager load per level', function (): void {
 
     DB::enableQueryLog();
 
-    $layout = app(SeatLayoutRenderer::class)->describe($map);
+    $layout = app(SeatLayoutRenderer::class)->describe($map->id);
 
     $queries = DB::getQueryLog();
     DB::disableQueryLog();

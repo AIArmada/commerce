@@ -15,7 +15,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class EnsureSeatHoldAction
@@ -43,8 +42,9 @@ final readonly class EnsureSeatHoldAction
 
         $this->assertOwnerContextForHoldCreation();
 
-        return DB::transaction(function () use ($map, $quantity, $heldByType, $heldById, $reference, $categoryPreferences): Collection {
-            $ttlMinutes = (int) config('seating.holds.ttl_minutes', 15);
+        return $map->getConnection()->transaction(function () use ($map, $quantity, $heldByType, $heldById, $reference, $categoryPreferences): Collection {
+            $map = SeatMap::query()->whereKey($map->getKey())->active()->firstOrFail();
+            $ttlMinutes = max(1, (int) config('seating.holds.ttl_minutes', 15));
             $expiresAt = CarbonImmutable::now()->addMinutes($ttlMinutes);
             $seats = $this->selectSeats($map, $quantity, $categoryPreferences);
 

@@ -10,23 +10,22 @@ use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
 use AIArmada\Seating\Features\Maps\Models\SeatMap;
-use Illuminate\Support\Collection;
 
 final readonly class DefaultSeatAllocator implements SeatAllocatorInterface
 {
     public function __construct(private EnsureSeatHoldAction $ensureHold) {}
 
     public function allocate(
-        SeatMap $map,
+        string $mapId,
         int $quantity,
         SeatingMode $mode = SeatingMode::Assigned,
         ?string $heldByType = null,
         ?string $heldById = null,
         ?string $reference = null,
         array $categoryPreferences = [],
-    ): Collection {
+    ): array {
         return $this->ensureHold->handle(
-            $map,
+            SeatMap::query()->findOrFail($mapId),
             $quantity,
             $mode,
             $heldByType,
@@ -44,6 +43,6 @@ final readonly class DefaultSeatAllocator implements SeatAllocatorInterface
                 category: $seat->category,
                 holdId: $hold->id,
             );
-        });
+        })->values()->all();
     }
 }

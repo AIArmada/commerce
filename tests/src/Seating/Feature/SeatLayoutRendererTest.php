@@ -30,7 +30,7 @@ it('describes seat map bounds from rendered seats', function (): void {
         'seat_label' => '3',
     ]);
 
-    $layout = app(SeatLayoutRenderer::class)->describe($map);
+    $layout = app(SeatLayoutRenderer::class)->describe($map->id);
 
     expect($layout['bounds'])->toBe(['rows' => 2, 'cols' => 3])
         ->and($layout['seats'])->toHaveCount(2);

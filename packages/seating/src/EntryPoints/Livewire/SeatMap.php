@@ -7,7 +7,7 @@ namespace AIArmada\Seating\EntryPoints\Livewire;
 use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Features\Maps\Models\Seat;
 use AIArmada\Seating\Features\Maps\Models\SeatMap as SeatMapModel;
-use AIArmada\Seating\Services\SeatLayoutRenderer;
+use AIArmada\Seating\Contracts\SeatLayoutInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -140,7 +140,7 @@ class SeatMap extends Component
         return Cache::remember(
             "seating:layout:{$map->getKey()}:v{$map->version}:section:{$sectionKey}",
             60,
-            fn (): array => app(SeatLayoutRenderer::class)->describe($map, $this->sectionId),
+            fn (): array => app(SeatLayoutInterface::class)->describe((string) $map->getKey(), $this->sectionId),
         );
     }
 

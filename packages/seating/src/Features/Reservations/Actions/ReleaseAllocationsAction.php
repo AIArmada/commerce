@@ -7,7 +7,6 @@ namespace AIArmada\Seating\Features\Reservations\Actions;
 use AIArmada\Seating\Events\SeatAllocationReleased;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 final readonly class ReleaseAllocationsAction
 {
@@ -20,7 +19,7 @@ final readonly class ReleaseAllocationsAction
         ?Model $actor = null,
         ?string $reason = null,
     ): int {
-        return DB::transaction(function () use ($allocToType, $allocToId, $actor): int {
+        return (new SeatAllocation)->getConnection()->transaction(function () use ($allocToType, $allocToId, $actor, $reason): int {
             $allocations = SeatAllocation::query()
                 ->where('allocated_to_type', $allocToType)
                 ->where('allocated_to_id', $allocToId)
@@ -32,10 +31,14 @@ final readonly class ReleaseAllocationsAction
             foreach ($allocations as $allocation) {
                 $allocation->release(
                     releasedByType: $actor !== null ? $actor->getMorphClass() : null,
-                    releasedById: $actor !== null ? $actor->getKey() : null,
+                    releasedById: $actor !== null ? (string) $actor->getKey() : null,
                 );
 
-                DB::afterCommit(fn () => event(new SeatAllocationReleased($allocation)));
+                if ($reason !== null) {
+                    $allocation->update(['metadata' => [...($allocation->metadata ?? []), 'release_reason' => $reason]]);
+                }
+
+                $allocation->getConnection()->afterCommit(fn () => event(new SeatAllocationReleased($allocation)));
             }
 
             return $allocations->count();

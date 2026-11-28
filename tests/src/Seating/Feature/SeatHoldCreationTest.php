@@ -67,13 +67,13 @@ it('keeps category preference order identical between the action and the allocat
     SeatHold::query()->delete();
 
     $results = app(DefaultSeatAllocator::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 2,
         categoryPreferences: ['vip'],
     );
 
-    expect($results->pluck('seatId')->all())->toBe($actionSeatIds)
-        ->and($results->pluck('category')->all())->toBe(['vip', 'vip']);
+    expect(collect($results)->pluck('seatId')->all())->toBe($actionSeatIds)
+        ->and(collect($results)->pluck('category')->all())->toBe(['vip', 'vip']);
 });
 
 it('never returns seats that gained an active hold', function (): void {
@@ -100,7 +100,7 @@ it('rejects a half-specified holder instead of storing it', function (): void {
     ))->toThrow(InvalidArgumentException::class, 'Held-by type and id');
 
     expect(fn (): mixed => app(DefaultSeatAllocator::class)->allocate(
-        map: $this->map,
+        mapId: $this->map->id,
         quantity: 1,
         heldByType: null,
         heldById: 'some-id',

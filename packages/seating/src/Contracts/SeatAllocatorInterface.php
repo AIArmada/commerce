@@ -7,24 +7,22 @@ namespace AIArmada\Seating\Contracts;
 use AIArmada\Seating\Data\AllocationResult;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
-use AIArmada\Seating\Features\Maps\Models\SeatMap;
-use Illuminate\Support\Collection;
 
 interface SeatAllocatorInterface
 {
     /**
      * @param  array<int, string>  $categoryPreferences
-     * @return Collection<int, AllocationResult>
+     * @return list<AllocationResult>
      *
      * @throws InsufficientSeatsException
      */
     public function allocate(
-        SeatMap $map,
+        string $mapId,
         int $quantity,
         SeatingMode $mode = SeatingMode::Assigned,
         ?string $heldByType = null,
         ?string $heldById = null,
         ?string $reference = null,
         array $categoryPreferences = [],
-    ): Collection;
+    ): array;
 }
