@@ -161,3 +161,23 @@ it('fails on low available stock when configured to fail', function (): void {
 it('rejects negative stock thresholds', function (): void {
     expect(fn () => $this->check->threshold(-1))->toThrow(InvalidArgumentException::class);
 });
+
+it('ignores stock shortages at inactive locations', function (): void {
+    $inactive = InventoryLocation::factory()->inactive()->create();
+
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $inactive->id,
+        'quantity_on_hand' => 0,
+    ]);
+
+    InventoryLevel::factory()->create([
+        'inventoryable_type' => $this->item->getMorphClass(),
+        'inventoryable_id' => $this->item->getKey(),
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 100,
+    ]);
+
+    expect($this->check->run()->status->equals(Status::ok()))->toBeTrue();
+});
