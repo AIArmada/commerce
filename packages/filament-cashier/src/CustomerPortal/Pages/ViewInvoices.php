@@ -64,28 +64,10 @@ final class ViewInvoices extends Page
             return collect();
         }
 
-        $invoices = app(CustomerInvoicesQuery::class)->getForUser($user);
-
         $limit = min(max(1, $this->limit), self::MAX_LIMIT);
-        $sorted = $invoices->sortByDesc('sort_timestamp')->values();
-        $this->hasMoreInvoices = $sorted->count() > $limit;
+        $invoices = app(CustomerInvoicesQuery::class)->getForUser($user, $limit + 1);
+        $this->hasMoreInvoices = $limit < self::MAX_LIMIT && $invoices->count() > $limit;
 
-        /** @var Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
-        $result = $sorted
-            ->take($limit)
-            ->map(function (array $invoice): array {
-                return [
-                    'id' => (string) $invoice['id'],
-                    'gateway' => (string) $invoice['gateway'],
-                    'number' => (string) $invoice['number'],
-                    'amount' => (string) $invoice['amount'],
-                    'date' => (string) $invoice['date'],
-                    'status' => (string) $invoice['status'],
-                    'download_url' => is_string($invoice['download_url'] ?? null) ? $invoice['download_url'] : null,
-                ];
-            })
-            ->values();
-
-        return $result;
+        return $invoices->take($limit)->values();
     }
 }

@@ -329,9 +329,9 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function invoices(bool | array $parameters = false): Collection
+    public function invoices(?int $limit = 25): Collection
     {
-        return collect($this->nativeChipInvoices());
+        return collect($this->nativeChipInvoices($limit ?? 201));
     }
 
     public function findInvoice(string $invoiceId): ?InvoiceContract

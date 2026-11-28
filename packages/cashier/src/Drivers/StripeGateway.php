@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Drivers;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
@@ -427,8 +428,12 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
      */
     public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
     {
+        ActionGuard::assertBillableInScope($billable);
         $includePending = is_bool($parameters) ? $parameters : (bool) ($parameters['include_pending'] ?? false);
         $invoiceParameters = is_array($parameters) ? $parameters : [];
+        $limit = min(201, max(1, (int) ($invoiceParameters['limit'] ?? self::DEFAULT_LIST_LIMIT)));
+        unset($invoiceParameters['include_pending']);
+        $invoiceParameters['limit'] = min(100, $limit);
 
         $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending, $invoiceParameters]);
 
@@ -438,6 +443,7 @@ class StripeGateway extends AbstractGateway implements WebhookEventSource
 
         /** @var iterable<int, mixed> $rawInvoices */
         $invoices = collect($rawInvoices)
+            ->take($limit)
             ->map(fn ($invoice) => new StripeInvoice($invoice instanceof CashierInvoice ? $invoice : $invoice->asStripeInvoice()))
             ->values();
 

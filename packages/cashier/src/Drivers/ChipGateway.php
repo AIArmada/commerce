@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Drivers;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
@@ -401,13 +402,25 @@ class ChipGateway extends AbstractGateway
      */
     public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
     {
-        $rawInvoices = $this->callBillableMethod($billable, 'invoices');
+        ActionGuard::assertBillableInScope($billable);
+        $limit = min(201, max(1, (int) (is_array($parameters) ? ($parameters['limit'] ?? self::DEFAULT_LIST_LIMIT) : self::DEFAULT_LIST_LIMIT)));
+        $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$limit]);
 
         if (! is_iterable($rawInvoices)) {
             return collect();
         }
 
         /** @var iterable<int, mixed> $rawInvoices */
+        $invoices = collect($rawInvoices)
+            ->take($limit)
+            ->map(fn ($invoice) => new Chip\ChipInvoice($invoice instanceof \AIArmada\CashierChip\Invoice\Invoice ? $invoice->asChipPurchase() : $invoice))
+            ->values();
+
+        /** @var Collection<int, InvoiceContract> $invoices */
+        return $invoices;
+    }
+
+    /** @var iterable<int, mixed> $rawInvoices */
         $invoices = collect($rawInvoices)
             ->take(self::DEFAULT_LIST_LIMIT)
             ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))

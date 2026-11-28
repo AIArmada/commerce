@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Queries;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\InvoiceContract;
+use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Cashier\Support\UnifiedInvoice;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -15,69 +17,47 @@ use Throwable;
 
 final class CustomerInvoicesQuery
 {
-    /** @return Collection<int, array<string, mixed>> */
-    public function getForUser(Model $user): Collection
+    /** @return Collection<int, InvoiceContract> */
+    public function records(Model $user, int $limit = 50): Collection
     {
-        if (! $user->exists) {
+        if (! $user instanceof BillableContract || ! $user->exists) {
             return collect();
         }
 
-        if ($user instanceof BillableContract) {
-            ActionGuard::assertBillableInScope($user);
-        }
-
+        ActionGuard::assertBillableInScope($user);
+        $limit = min(201, max(1, $limit));
         $invoices = collect();
-        $detector = app(GatewayDetector::class);
 
-        // Get Stripe invoices
-        if ($detector->isAvailable('stripe') && method_exists($user, 'invoices')) {
+        foreach (app(GatewayDetector::class)->availableGateways() as $gateway) {
             try {
-                $stripeInvoices = $user->invoices();
-
-                foreach ($stripeInvoices as $invoice) {
-                    $invoiceDate = $invoice->date();
-
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'stripe',
-                        'number' => $invoice->number ?? $invoice->id,
-                        'amount' => $invoice->total(),
-                        'date' => $invoiceDate->format('M d, Y'),
-                        'status' => $invoice->paid ? 'paid' : 'open',
-                        'download_url' => $invoice->invoicePdf(),
-                        'sort_timestamp' => $invoiceDate->timestamp,
-                    ]);
-                }
+                $records = Cashier::gateway($gateway)->invoices($user, ['limit' => $limit]);
+                $invoices = $invoices->merge($records->take($limit));
             } catch (Throwable $e) {
-                Log::debug('Failed to retrieve Stripe invoices', ['exception' => $e::class]);
+                Log::debug('Failed to retrieve customer invoices.', ['gateway' => $gateway, 'exception' => $e::class]);
             }
         }
 
-        // Get CHIP invoices
-        if ($detector->isAvailable('chip') && method_exists($user, 'chipInvoices')) {
-            try {
-                $chipInvoices = $user->chipInvoices();
+        return $invoices->sortByDesc(fn (InvoiceContract $invoice): int => $invoice->date()->getTimestamp())->values();
+    }
 
-                foreach ($chipInvoices as $invoice) {
-                    $createdAt = $invoice->created_at;
-                    $currency = (string) ($invoice->currency ?? config('cashier.currency', 'MYR'));
+    /** @return Collection<int, UnifiedInvoice> */
+    public function unified(Model $user, int $limit = 50): Collection
+    {
+        return $this->records($user, $limit)
+            ->map(fn (InvoiceContract $invoice): UnifiedInvoice => UnifiedInvoice::fromGateway($invoice, (string) $user->getKey()));
+    }
 
-                    $invoices->push([
-                        'id' => $invoice->id,
-                        'gateway' => 'chip',
-                        'number' => $invoice->number ?? $invoice->id,
-                        'amount' => MoneyFormatter::formatMinor((int) ($invoice->amount ?? 0), $currency),
-                        'date' => $createdAt?->format('M d, Y') ?? 'N/A',
-                        'status' => $invoice->status ?? 'unknown',
-                        'download_url' => $invoice->pdf_url ?? null,
-                        'sort_timestamp' => $createdAt?->timestamp ?? 0,
-                    ]);
-                }
-            } catch (Throwable $e) {
-                Log::debug('Failed to retrieve CHIP invoices', ['exception' => $e::class]);
-            }
-        }
-
-        return $invoices;
+    /** @return Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> */
+    public function getForUser(Model $user, int $limit = 50): Collection
+    {
+        return $this->records($user, $limit)->map(fn (InvoiceContract $invoice): array => [
+            'id' => $invoice->id(),
+            'gateway' => $invoice->gateway(),
+            'number' => $invoice->number() ?? $invoice->id(),
+            'amount' => $invoice->total(),
+            'date' => $invoice->date()->format('M d, Y'),
+            'status' => $invoice->status(),
+            'download_url' => $invoice->pdfUrl() ?? $invoice->hostedUrl(),
+        ]);
     }
 }
