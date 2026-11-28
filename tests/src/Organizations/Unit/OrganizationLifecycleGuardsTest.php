@@ -17,9 +17,11 @@ use AIArmada\Organizations\Actions\RemoveOrganizationMemberAction;
 use AIArmada\Organizations\Actions\RestoreOrganizationAction;
 use AIArmada\Organizations\Actions\SuspendOrganizationAction;
 use AIArmada\Organizations\Actions\TransferOrganizationOwnershipAction;
+use AIArmada\Organizations\Actions\UpdateOrganizationAction;
 use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
@@ -216,4 +218,57 @@ it('rejects membership mutations using an unrelated model with the same key', fu
         ->toThrow(InvalidArgumentException::class);
 
     expect($organization->members()->whereKey($member->getKey())->exists())->toBeTrue();
+});
+
+it('rejects organization creation by an unrelated model with a matching member key', function (): void {
+    $creator = User::factory()->create();
+    $unrelated = new Organization;
+    $unrelated->setAttribute('id', $creator->getKey());
+
+    expect(fn () => CreateOrganizationAction::make()->handle($unrelated, ['name' => 'Forged Creator']))
+        ->toThrow(InvalidArgumentException::class, 'creator must use the organization member model');
+
+    expect(Organization::query()->where('name', 'Forged Creator')->exists())->toBeFalse();
+});
+
+it('does not create membership or invoke a lifecycle hook when organization creation is cancelled', function (): void {
+    $creator = User::factory()->create();
+    $hook = Mockery::mock(OrganizationLifecycleHook::class);
+    $hook->shouldNotReceive('created');
+    app()->instance(OrganizationLifecycleHook::class, $hook);
+
+    Organization::creating(fn (): bool => false);
+
+    expect(fn () => CreateOrganizationAction::make()->handle($creator, ['name' => 'Cancelled Circle']))
+        ->toThrow(RuntimeException::class, 'Organization save was cancelled.');
+
+    expect(Organization::query()->where('name', 'Cancelled Circle')->exists())->toBeFalse();
+});
+
+it('does not invoke publication hooks when a visibility transition is cancelled', function (): void {
+    $creator = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Private Circle']);
+    $hook = Mockery::mock(OrganizationLifecycleHook::class);
+    $hook->shouldNotReceive('visibilityChanged');
+    app()->instance(OrganizationLifecycleHook::class, $hook);
+
+    Organization::saving(fn (Organization $record): ?bool => $record->is($organization) ? false : null);
+
+    expect(fn () => MakeOrganizationPublicAction::make()->handle($organization, $creator))
+        ->toThrow(RuntimeException::class, 'Organization save was cancelled.');
+
+    expect($organization->fresh()->visibility)->toBe(OrganizationVisibility::Private)
+        ->and($organization->fresh()->published_at)->toBeNull();
+});
+
+it('rejects a cancelled organization update instead of reporting success', function (): void {
+    $creator = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Original Circle']);
+
+    Organization::saving(fn (Organization $record): ?bool => $record->is($organization) ? false : null);
+
+    expect(fn () => app(UpdateOrganizationAction::class)->handle($organization, $creator, ['name' => 'Changed Circle']))
+        ->toThrow(RuntimeException::class, 'Organization save was cancelled.');
+
+    expect($organization->fresh()->name)->toBe('Original Circle');
 });

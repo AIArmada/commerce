@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class MakeOrganizationPublicAction
 {
@@ -42,7 +43,9 @@ final class MakeOrganizationPublicAction
                     OrganizationVisibility::Public,
                     CarbonImmutable::now(),
                 );
-                $organization->save();
+                if (! $organization->save()) {
+                    throw new RuntimeException('Organization save was cancelled.');
+                }
                 $this->lifecycleHook->visibilityChanged($organization, $from, OrganizationVisibility::Public, $actor);
             }
 

@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class SuspendOrganizationAction
 {
@@ -36,7 +37,9 @@ final class SuspendOrganizationAction
                     OrganizationStatus::Suspended,
                     CarbonImmutable::now(),
                 );
-                $organization->save();
+                if (! $organization->save()) {
+                    throw new RuntimeException('Organization save was cancelled.');
+                }
                 $this->lifecycleHook->statusChanged($organization, $from, OrganizationStatus::Suspended, $actor);
             }
 

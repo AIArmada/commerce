@@ -65,8 +65,10 @@ final class TransferOrganizationOwnershipAction
             }
 
             $members = $organization->members();
-            $members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]);
-            $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]);
+            if ($members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]) !== 1
+                || $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]) !== 1) {
+                throw new RuntimeException('Organization ownership transfer did not update both membership records.');
+            }
 
             $this->roleSync->revokeFromUser($organization, $currentOwner, MemberRole::Owner);
             $this->roleSync->assignToUser($organization, $currentOwner, MemberRole::Admin);

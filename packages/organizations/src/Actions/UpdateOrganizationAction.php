@@ -9,6 +9,7 @@ use AIArmada\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class UpdateOrganizationAction
 {
@@ -45,7 +46,9 @@ final readonly class UpdateOrganizationAction
             }
 
             $locked->fill($attributes);
-            $locked->save();
+            if (! $locked->save()) {
+                throw new RuntimeException('Organization save was cancelled.');
+            }
 
             return $locked;
         });

@@ -12,6 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class MakeOrganizationPrivateAction
 {
@@ -36,7 +37,9 @@ final class MakeOrganizationPrivateAction
                     OrganizationVisibility::Private,
                     CarbonImmutable::now(),
                 );
-                $organization->save();
+                if (! $organization->save()) {
+                    throw new RuntimeException('Organization save was cancelled.');
+                }
                 $this->lifecycleHook->visibilityChanged($organization, $from, OrganizationVisibility::Private, $actor);
             }
 

@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class CreateOrganizationAction
 {
@@ -33,6 +34,12 @@ final class CreateOrganizationAction
      */
     public function handle(Model $creator, array $attributes = []): Organization
     {
+        $member = (new Organization)->members()->getRelated()->newQuery()->whereKey($creator->getKey())->first();
+
+        if ($member === null || ! $member->is($creator)) {
+            throw new InvalidArgumentException('The creator must use the organization member model and be persisted.');
+        }
+
         $name = $attributes['name'] ?? null;
 
         if (! is_string($name) || mb_trim($name) === '') {
@@ -78,7 +85,9 @@ final class CreateOrganizationAction
                         'created_by' => (string) $creator->getKey(),
                         'last_state_change_at' => $now,
                     ]);
-                    $organization->save();
+                    if (! $organization->save()) {
+                        throw new RuntimeException('Organization save was cancelled.');
+                    }
 
                     $this->addMember->handle($organization, $creator, MemberRole::Owner);
                     $this->lifecycleHook->created($organization, $creator);
