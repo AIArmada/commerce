@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
-use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -196,12 +195,6 @@ final class TaxExemptionForm
                     ->schema([
                         Section::make('Status')
                             ->schema([
-                                Select::make('status')
-                                    ->label('Status')
-                                    ->options(fn (): array => TaxExemptionState::options())
-                                    ->default('pending')
-                                    ->required(),
-
                                 Placeholder::make('status_info')
                                     ->label('Status Info')
                                     ->content(function (?TaxExemption $record): string {
@@ -238,14 +231,6 @@ final class TaxExemptionForm
                                         return $record->verified_at->format('d M Y H:i');
                                     }),
                             ]),
-
-                        Section::make('Internal Notes')
-                            ->schema([
-                                Textarea::make('rejection_reason')
-                                    ->label('Rejection Reason / Notes')
-                                    ->rows(4)
-                                    ->helperText('Required if rejecting the exemption'),
-                            ]),
                     ])
                     ->columnSpan(['lg' => 1]),
             ])
@@ -255,7 +240,7 @@ final class TaxExemptionForm
     /**
      * @return array<string, string>
      */
-    private static function getExemptableTypes(): array
+    public static function getExemptableTypes(): array
     {
         $types = [];
 
