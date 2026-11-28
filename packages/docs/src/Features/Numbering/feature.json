@@ -3,13 +3,15 @@
   "name": "Numbering",
   "owns": {
     "table:docs_sequences": [
-      "AIArmada\\Docs\\Features\\Numbering\\Actions\\SequenceManager"
+      "AIArmada\\Docs\\Features\\Numbering\\Actions\\SequenceManager",
+      "AIArmada\\Docs\\Features\\Numbering\\Actions\\ManageDocSequences"
     ],
     "table:docs_sequence_numbers": [
       "AIArmada\\Docs\\Features\\Numbering\\Actions\\SequenceManager"
     ],
     "store:docs.sequence-first-use": [
-      "AIArmada\\Docs\\Features\\Numbering\\Actions\\SequenceManager"
+      "AIArmada\\Docs\\Features\\Numbering\\Actions\\SequenceManager",
+      "AIArmada\\Docs\\Features\\Numbering\\Actions\\ManageDocSequences"
     ]
   },
   "extensions": {}

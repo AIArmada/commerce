@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Docs\Contracts\DocumentSequenceSettings;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
@@ -213,11 +214,10 @@ final class DocSequenceResource extends Resource
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->authorize(fn (): bool => DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'delete'))
                         ->action(function (Collection $records): void {
-                            /** @var Collection<int|string, DocSequence> $records */
-                            $records->each(function (DocSequence $record): void {
-                                $record->delete();
-                            });
+                            abort_unless(DocPermissions::allows(DocPermissions::DOCUMENT_SEQUENCE, 'delete'), 403);
+                            app(DocumentSequenceSettings::class)->remove(array_map('strval', $records->modelKeys()));
                         }),
                 ]),
             ]);

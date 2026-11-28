@@ -9,6 +9,7 @@ use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Features\Numbering\Support\SequenceWriteLock;
 use AIArmada\Docs\Support\DocTypeKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -41,7 +42,7 @@ final readonly class SequenceManager implements DocumentSequence
         return OwnerContext::withOwner($owner, function () use ($type, $owner): string {
             // Serialize first-use creation: the unique index cannot cover
             // owner-less rows on all drivers, so the lock closes the race.
-            return Cache::lock($this->firstUseLockKey($type, $owner), 10)->block(5, function () use ($type, $owner): string {
+            return Cache::lock(SequenceWriteLock::key($owner), 60)->block(5, function () use ($type, $owner): string {
                 return DB::transaction(function () use ($type, $owner): string {
                     $sequence = $this->getActiveSequence($type, $owner);
 
@@ -142,7 +143,7 @@ final readonly class SequenceManager implements DocumentSequence
         $type = $docType instanceof DocType ? $docType->value : $docType;
 
         return OwnerContext::withOwner($owner, function () use ($type, $number, $owner): bool {
-            return Cache::lock($this->firstUseLockKey($type, $owner), 10)->block(5, function () use ($type, $number, $owner): bool {
+            return Cache::lock(SequenceWriteLock::key($owner), 60)->block(5, function () use ($type, $number, $owner): bool {
                 return DB::transaction(function () use ($type, $number, $owner): bool {
                     $sequence = $this->getActiveSequence($type, $owner);
 
@@ -190,15 +191,6 @@ final readonly class SequenceManager implements DocumentSequence
 
             return $sequence;
         }
-    }
-
-    private function firstUseLockKey(string $docType, ?Model $owner): string
-    {
-        $ownerKey = $owner === null
-            ? 'global'
-            : $owner->getMorphClass() . ':' . (string) $owner->getKey();
-
-        return "docs.sequence-first-use.{$docType}.{$ownerKey}";
     }
 
     private function advance(DocSequence $sequence): string
