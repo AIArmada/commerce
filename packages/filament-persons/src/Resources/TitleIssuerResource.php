@@ -9,7 +9,8 @@ use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\CreateTitleIssu
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\EditTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\ListTitleIssuers;
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\ViewTitleIssuer;
-use AIArmada\Persons\Models\TitleIssuer;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -22,6 +23,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use UnitEnum;
 
 class TitleIssuerResource extends Resource
@@ -138,7 +142,18 @@ class TitleIssuerResource extends Resource
             ])
             ->toolbarActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    Actions\DeleteBulkAction::make()->using(static function (Actions\DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof TitleIssuer || ! self::canDelete($record) || ! app(DeleteTitleIssuer::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

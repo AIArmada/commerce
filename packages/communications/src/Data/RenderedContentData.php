@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
-
-final class RenderedContentData extends Data
+final readonly class RenderedContentData
 {
     public function __construct(
-        public readonly string $channel,
-        public readonly string | null | Optional $locale = null,
-        public readonly string | null | Optional $subject = null,
-        public readonly string | null | Optional $contentText = null,
-        public readonly string | null | Optional $contentHtml = null,
-        public readonly array $payload = [],
-        public readonly string | null | Optional $checksum = null,
-        public readonly string | null | Optional $templateId = null,
-        public readonly string | null | Optional $templateVersionId = null,
+        public string $channel,
+        public ?string $locale = null,
+        public ?string $subject = null,
+        public ?string $contentText = null,
+        public ?string $contentHtml = null,
+        public array $payload = [],
+        public ?string $checksum = null,
+        public ?string $templateId = null,
+        public ?string $templateVersionId = null,
     ) {}
 }

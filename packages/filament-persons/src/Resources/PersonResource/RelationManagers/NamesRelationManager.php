@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
-use AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\FilamentPersons\Queries\LanguageOptions;
+use AIArmada\Persons\Enums\PersonNameType;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
+use AIArmada\Persons\Models\Person;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -16,7 +20,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Cache;
+use InvalidArgumentException;
 
 final class NamesRelationManager extends RelationManager
 {
@@ -33,15 +37,7 @@ final class NamesRelationManager extends RelationManager
      */
     public static function getLanguageOptions(): array
     {
-        /** @var array<string, string> $options */
-        $options = Cache::remember('filament-persons.languages', 3600, static function (): array {
-            /** @var array<string, string> $languages */
-            $languages = app(ReferenceDataApi::class)->languageOptions();
-
-            return $languages;
-        });
-
-        return $options;
+        return app(LanguageOptions::class)->get();
     }
 
     public function form(Schema $schema): Schema
@@ -49,14 +45,7 @@ final class NamesRelationManager extends RelationManager
         return $schema
             ->schema([
                 Select::make('name_type')
-                    ->options([
-                        'legal' => 'Legal',
-                        'display' => 'Display',
-                        'birth' => 'Birth',
-                        'religious' => 'Religious',
-                        'professional' => 'Professional',
-                        'previous' => 'Previous',
-                    ])
+                    ->options(PersonNameType::class)
                     ->required(),
                 TextInput::make('full_name')
                     ->required()
@@ -86,11 +75,25 @@ final class NamesRelationManager extends RelationManager
                     ->boolean(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->using(fn (array $data): PersonName => app(SavePersonName::class)->create($this->person(), $data)),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->using(fn (PersonName $record, array $data): PersonName => app(SavePersonName::class)->update($this->person(), $record, $data)),
+                DeleteAction::make()
+                    ->using(fn (PersonName $record): bool => app(SavePersonName::class)->delete($this->person(), $record)),
             ]);
+    }
+
+    private function person(): Person
+    {
+        $record = $this->getOwnerRecord();
+
+        if (! $record instanceof Person) {
+            throw new InvalidArgumentException('Invalid person record.');
+        }
+
+        return $record;
     }
 }

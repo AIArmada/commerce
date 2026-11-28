@@ -1,0 +1,192 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Customers\Features\Segmentation\Models;
+
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
+use AIArmada\Customers\Models\Customer;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $name
+ * @property string|null $description
+ * @property int|null $spending_limit
+ * @property bool $is_active
+ * @property bool $requires_approval
+ * @property array<string, mixed>|null $settings
+ * @property array<string, mixed>|null $metadata
+ * @property CarbonImmutable|null $deactivated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Model|null $owner
+ * @property-read Collection<int, Customer> $members
+ * @property-read Collection<int, Customer> $admins
+ */
+class CustomerGroup extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
+
+    protected $fillable = [
+        'name',
+        'description',
+        'spending_limit',
+        'is_active',
+        'requires_approval',
+        'deactivated_at',
+        'settings',
+        'metadata',
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'spending_limit' => 'integer',
+        'is_active' => 'boolean',
+        'requires_approval' => 'boolean',
+        'deactivated_at' => 'immutable_datetime',
+        'settings' => 'array',
+        'metadata' => 'array',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'requires_approval' => true,
+    ];
+
+    public function getTable(): string
+    {
+        $tables = config('customers.database.tables', []);
+        $prefix = config('customers.database.table_prefix', 'customer_');
+
+        return $tables['groups'] ?? $prefix . 'groups';
+    }
+
+    // =========================================================================
+    // RELATIONSHIPS
+    // =========================================================================
+
+    /**
+     * Get the group members.
+     *
+     * @return BelongsToMany<Customer, $this>
+     */
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Customer::class,
+            config('customers.database.tables.group_members', 'customer_group_members'),
+            'group_id',
+            'customer_id'
+        )->withPivot(['role', 'joined_at'])->withTimestamps();
+    }
+
+    /**
+     * Get group admins.
+     *
+     * @return BelongsToMany<Customer, $this>
+     */
+    public function admins(): BelongsToMany
+    {
+        return $this->members()->wherePivot('role', 'admin');
+    }
+
+    // =========================================================================
+    // MEMBER MANAGEMENT
+    // =========================================================================
+
+    /**
+     * Check if customer is a member.
+     */
+    public function hasMember(Customer $customer): bool
+    {
+        return $this->members()->whereKey($customer->id)->exists();
+    }
+
+    /**
+     * Check if customer is an admin.
+     */
+    public function isAdmin(Customer $customer): bool
+    {
+        return $this->admins()->whereKey($customer->id)->exists();
+    }
+
+    // =========================================================================
+    // SPENDING LIMIT
+    // =========================================================================
+
+    /**
+     * Get the remaining spending limit for this group.
+     * (Would need to integrate with orders package)
+     */
+    public function getRemainingSpendingLimit(): ?int
+    {
+        if ($this->spending_limit === null) {
+            return null; // Unlimited
+        }
+
+        // This would calculate based on current month spending
+        // For now, return the full limit
+        return $this->spending_limit;
+    }
+
+    // =========================================================================
+    // SCOPES
+    // =========================================================================
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    // =========================================================================
+    // BOOT
+    // =========================================================================
+
+    protected static function booted(): void
+    {
+        static::saving(function (CustomerGroup $group): void {
+            if ($group->isDirty('is_active')) {
+                if ($group->is_active === false) {
+                    $group->deactivated_at ??= CarbonImmutable::now();
+                } else {
+                    $group->deactivated_at = null;
+                }
+            }
+        });
+
+        static::deleting(function (CustomerGroup $group): void {
+            app(DetachDeletedCustomerGroupMemberships::class)->forGroup($group);
+        });
+    }
+}

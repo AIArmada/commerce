@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "Affiliations",
+  "owns": {
+    "table:affiliations": [
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\SaveAffiliation",
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\DeletePersonAffiliations"
+    ],
+    "table:affiliation_roles": [
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\DeleteAffiliationRoles"
+    ]
+  },
+  "extensions": {}
+}

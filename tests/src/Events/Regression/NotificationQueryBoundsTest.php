@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Communications\Contracts\CommunicationManager;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Data\EventChangeNoticeNotificationData;
@@ -51,7 +50,7 @@ it('delivers to explicit and resolved audience recipients once each', function (
     foreach ([$explicitUser, $audienceUser] as $user) {
         $manager->shouldReceive('notify')->once()
             ->withArgs(static fn (Model $notifiable): bool => $notifiable->is($user))
-            ->andReturn(new Communication);
+            ->andReturn('communication-id');
     }
 
     new EventChangeNoticeNotificationDriver($manager, $resolver)->dispatch(new EventChangeNoticeNotificationData(
@@ -82,7 +81,7 @@ it('bulk-loads registration recipients without per-recipient query growth', func
     }
 
     $manager = mock(CommunicationManager::class);
-    $manager->shouldReceive('notify')->times(40)->andReturn(new Communication);
+    $manager->shouldReceive('notify')->times(40)->andReturn('communication-id');
     app()->instance(CommunicationManager::class, $manager);
 
     $dispatcher = new EventChangeNoticeNotificationDriver(
@@ -124,7 +123,7 @@ it('bounds registration recipient memory by processing chunks without loading ev
     }
 
     $manager = mock(CommunicationManager::class);
-    $manager->shouldReceive('notify')->times(520)->andReturn(new Communication);
+    $manager->shouldReceive('notify')->times(520)->andReturn('communication-id');
     app()->instance(CommunicationManager::class, $manager);
 
     $dispatcher = new EventChangeNoticeNotificationDriver(
@@ -163,7 +162,7 @@ it('accepts valid integer notifiable keys', function (): void {
         ->once()
         ->withArgs(static fn (mixed $notifiable): bool => $notifiable instanceof IntegerKeyNotificationRecipient
             && (string) $notifiable->getKey() === '900001')
-        ->andReturn(new Communication);
+        ->andReturn('communication-id');
     app()->instance(CommunicationManager::class, $manager);
 
     $dispatcher = new EventChangeNoticeNotificationDriver(

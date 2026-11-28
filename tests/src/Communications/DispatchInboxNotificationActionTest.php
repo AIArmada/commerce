@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Communications\Actions\DispatchInboxNotificationAction;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
@@ -11,8 +10,9 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
+use AIArmada\Communications\Features\Inbox\Actions\DispatchInboxNotificationAction;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\NotificationInbox;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -121,4 +121,19 @@ test('passes data and scheduledAt through the action', function (): void {
 
     expect($inbox->data)->toBe($data);
     expect($inbox->scheduled_at)->not->toBeNull();
+});
+
+test('rolls back the communication when the inbox recipient is not persisted', function (): void {
+    $before = Communication::query()->count();
+
+    expect(fn () => $this->action->handle(
+        recipient: new User,
+        title: 'Invalid recipient',
+        body: 'Must not be persisted',
+        family: NotificationFamily::EventReminder,
+        priority: NotificationPriority::Normal,
+        trigger: NotificationTrigger::EventPublished,
+    ))->toThrow(InvalidArgumentException::class);
+
+    expect(Communication::query()->count())->toBe($before);
 });

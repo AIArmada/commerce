@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -57,10 +57,11 @@ test('attaching an event reference is idempotent and merges metadata', function 
     ]);
     $communication->save();
 
-    $action = app(AttachCommunicationReferenceAction::class);
+    $action = app(CommunicationReferenceWriter::class);
     $first = $action->handle(
         communicationId: $communication->id,
-        referenceType: ['event_type' => 'events', 'event_id' => 'event-123'],
+        referenceType: 'events',
+        referenceId: 'event-123',
         role: 'event',
         metadata: ['batch_id' => 'batch-1'],
     );
@@ -72,15 +73,15 @@ test('attaching an event reference is idempotent and merges metadata', function 
         metadata: ['delivery_id' => 'delivery-1'],
     );
 
-    expect($second->id)->toBe($first->id)
+    expect($second)->toBe($first)
         ->and(CommunicationReference::query()->where('communication_id', $communication->id)->count())->toBe(1)
-        ->and($second->fresh()->metadata)->toBe([
+        ->and(CommunicationReference::query()->findOrFail($second)->metadata)->toBe([
             'batch_id' => 'batch-1',
             'delivery_id' => 'delivery-1',
         ]);
 });
 
-test('manager accepts an event model as context and attaches its reference', function (): void {
+test('manager accepts explicit event identity as context and attaches its reference', function (): void {
     $notifiable = new class
     {
         use Notifiable;
@@ -112,14 +113,15 @@ test('manager accepts an event model as context and attaches its reference', fun
         }
     };
 
-    $communication = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManager::class)->notify(
         $notifiable,
         $notification,
-        $event,
+        new CommunicationContextData(purpose: 'event', subjectType: $event->getMorphClass(), subjectId: (string) $event->getKey()),
     );
 
+    $communication = Communication::query()->findOrFail($communicationId);
     $reference = CommunicationReference::query()
-        ->where('communication_id', $communication->id)
+        ->where('communication_id', $communicationId)
         ->sole();
 
     expect($communication->subject_type)->toBe($event->getMorphClass())
@@ -148,7 +150,7 @@ test('manager accepts event context data and attaches its reference', function (
         }
     };
 
-    $communication = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManager::class)->notify(
         $notifiable,
         $notification,
         CommunicationContextData::from([
@@ -159,7 +161,7 @@ test('manager accepts event context data and attaches its reference', function (
     );
 
     $reference = CommunicationReference::query()
-        ->where('communication_id', $communication->id)
+        ->where('communication_id', $communicationId)
         ->sole();
 
     expect($reference->reference_type)->toBe('events')

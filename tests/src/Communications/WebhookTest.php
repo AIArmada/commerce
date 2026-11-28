@@ -2,26 +2,27 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
+use AIArmada\Communications\Drivers\Audit\NullCommunicationAuditRecorder;
+use AIArmada\Communications\Drivers\Webhooks\NullProviderEventNormalizer;
+use AIArmada\Communications\Drivers\Webhooks\ProviderWebhookRegistrarService;
+use AIArmada\Communications\EntryPoints\Http\Controllers\WebhookController;
+use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Communications\EntryPoints\Jobs\ProcessWebhookEventJob;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Http\Controllers\WebhookController;
-use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Communications\Jobs\ProcessWebhookEventJob;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationEvent;
-use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
-use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
-use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -90,6 +91,22 @@ test('route uses configurable middleware', function (): void {
     expect($middleware)->toContain('api', 'throttle:communications-webhooks', VerifyWebhookSignature::class);
 });
 
+test('webhook route name honors the configured prefix', function (): void {
+    $routes = app('router')->getRoutes();
+    $routes->refreshNameLookups();
+
+    expect($routes->getByName('communications.webhooks.handle'))->not->toBeNull();
+});
+
+test('provider webhook registrar does not resolve nested configuration as a provider', function (): void {
+    Config::set('communications.webhooks.providers.sendgrid.nested', ['secret' => 'nested-secret']);
+
+    $registrar = new ProviderWebhookRegistrarService;
+
+    expect($registrar->supports('sendgrid.nested'))->toBeFalse()
+        ->and($registrar->getSecret('sendgrid.nested'))->toBeNull();
+});
+
 test('provider webhook registrar reads the configured provider secret', function (): void {
     Config::set('communications.webhooks.providers.sendgrid.secret', 'test-secret');
 
@@ -118,6 +135,22 @@ test('signature middleware rejects stale webhook timestamps', function (): void 
     );
 
     $response->assertStatus(401);
+});
+
+test('signature middleware rejects a replay with a replaced timestamp', function (): void {
+    Queue::fake();
+
+    $timestamp = CarbonImmutable::now()->timestamp;
+    $body = json_encode(['event' => 'delivery.delivered'], JSON_THROW_ON_ERROR);
+    $signature = hash_hmac('sha256', ($timestamp - 600) . '.' . $body, 'test-secret');
+
+    $this->call('POST', 'communications/webhooks/sendgrid', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+        'HTTP_X_WEBHOOK_TIMESTAMP' => (string) $timestamp,
+    ], $body)->assertUnauthorized();
+
+    Queue::assertNothingPushed();
 });
 
 test('signature middleware aborts on missing signature when secret is set', function (): void {
@@ -180,7 +213,8 @@ test('signature middleware accepts valid signature', function (): void {
 
     $payload = ['event' => 'delivery.delivered', 'delivery_id' => 'test-id'];
     $body = json_encode($payload);
-    $signature = hash_hmac('sha256', $body, $secret);
+    $timestamp = (string) CarbonImmutable::now()->timestamp;
+    $signature = hash_hmac('sha256', $timestamp . '.' . $body, $secret);
 
     $request = Request::create(
         'communications/webhooks/sendgrid',
@@ -191,7 +225,7 @@ test('signature middleware accepts valid signature', function (): void {
         [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_Webhook_Signature' => $signature,
-            'HTTP_X_Webhook_Timestamp' => (string) CarbonImmutable::now()->timestamp,
+            'HTTP_X_Webhook_Timestamp' => $timestamp,
         ],
         $body
     );
@@ -265,9 +299,9 @@ test('webhook owner context comes from the configured resolver', function (): vo
             private readonly Model $owner,
         ) {}
 
-        public function resolve(string $provider, array $payload): ?Model
+        public function resolve(string $provider, array $payload): ?RecordReference
         {
-            return $this->owner;
+            return new RecordReference($this->owner->getMorphClass(), (string) $this->owner->getKey());
         }
     });
 
@@ -396,7 +430,7 @@ function postSignedCommunicationsWebhook(
 ) {
     $timestamp ??= CarbonImmutable::now()->timestamp;
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
-    $signature = hash_hmac('sha256', $body, 'test-secret');
+    $signature = hash_hmac('sha256', $timestamp . '.' . $body, 'test-secret');
 
     return $testCase->call(
         'POST',

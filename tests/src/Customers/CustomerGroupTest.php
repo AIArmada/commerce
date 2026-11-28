@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveCustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -68,13 +73,58 @@ describe('CustomerGroup Model', function (): void {
     });
 
     describe('Database Operations', function (): void {
+        it('rejects unpersisted group membership references', function (): void {
+            $group = new CustomerGroup;
+            $customer = new Customer;
+
+            expect(fn () => app(ManageCustomerGroupMembership::class)->add($group, $customer))
+                ->toThrow(InvalidArgumentException::class);
+        });
+
+        it('rejects membership changes using models from another owner', function (): void {
+            config(['customers.features.owner.enabled' => true, 'customers.features.owner.include_global' => false]);
+
+            $ownerA = User::query()->create([
+                'name' => 'Group Owner A',
+                'email' => 'group-owner-a-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $ownerB = User::query()->create([
+                'name' => 'Group Owner B',
+                'email' => 'group-owner-b-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+
+            [$group, $customer] = OwnerContext::withOwner($ownerB, static fn (): array => [
+                CustomerGroup::create(['name' => 'Tenant B group']),
+                Customer::create(['first_name' => 'Tenant', 'last_name' => 'B']),
+            ]);
+
+            expect(fn () => OwnerContext::withOwner($ownerA, fn () => app(ManageCustomerGroupMembership::class)->add($group, $customer)))
+                ->toThrow(AuthorizationException::class);
+
+            expect(OwnerContext::withOwner($ownerB, fn (): bool => $group->hasMember($customer)))->toBeFalse();
+        });
+
         it('can create a group', function (): void {
-            $group = CustomerGroup::create([
+            $group = app(SaveCustomerGroup::class)->create([
                 'name' => 'Test Group ' . uniqid(),
             ]);
 
             expect($group)->toBeInstanceOf(CustomerGroup::class)
                 ->and($group->id)->not->toBeEmpty();
+        });
+
+        it('updates and deletes groups through the lifecycle action', function (): void {
+            $action = app(SaveCustomerGroup::class);
+            $group = $action->create(['name' => 'Original']);
+
+            $updated = $action->update($group, ['name' => 'Updated', 'is_active' => false]);
+
+            expect($updated->name)->toBe('Updated')
+                ->and($updated->deactivated_at)->not->toBeNull()
+                ->and($action->delete($updated))->toBeTrue()
+                ->and($group->fresh())->toBeNull();
         });
 
         it('can have members', function (): void {
@@ -106,7 +156,7 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer);
 
             expect($group->hasMember($customer))->toBeTrue();
         });
@@ -121,8 +171,8 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer);
-            $group->removeMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer);
+            app(ManageCustomerGroupMembership::class)->remove($group, $customer);
 
             expect($group->hasMember($customer))->toBeFalse();
         });
@@ -137,8 +187,8 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer, 'member');
-            $group->promoteToAdmin($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer, 'member');
+            app(ManageCustomerGroupMembership::class)->promote($group, $customer);
 
             expect($group->isAdmin($customer))->toBeTrue();
         });
@@ -153,11 +203,25 @@ describe('CustomerGroup Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $group->addMember($customer, 'admin');
-            $group->demoteToMember($customer);
+            app(ManageCustomerGroupMembership::class)->add($group, $customer, 'admin');
+            app(ManageCustomerGroupMembership::class)->demote($group, $customer);
 
             expect($group->isAdmin($customer))->toBeFalse()
                 ->and($group->hasMember($customer))->toBeTrue();
         });
     });
+});
+
+it('preserves group memberships if deletion is cancelled', function (): void {
+    $group = app(SaveCustomerGroup::class)->create(['name' => 'Deletion veto']);
+    $customer = Customer::create(['first_name' => 'Group', 'last_name' => 'Veto']);
+    app(ManageCustomerGroupMembership::class)->add($group, $customer);
+
+    CustomerGroup::deleting(static fn (CustomerGroup $record): bool => $record->getKey() !== $group->getKey());
+
+    expect(fn () => app(SaveCustomerGroup::class)->delete($group))
+        ->toThrow(RuntimeException::class, 'Customer group deletion was cancelled.');
+
+    expect(CustomerGroup::query()->whereKey($group->getKey())->exists())->toBeTrue()
+        ->and($group->members()->whereKey($customer->getKey())->exists())->toBeTrue();
 });

@@ -1,0 +1,86 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Communications\EntryPoints\Commands;
+
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\Features\Delivery\Api\DeliveryRetention;
+use Carbon\CarbonImmutable;
+use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
+use Throwable;
+
+final class PruneCommunicationDataCommand extends Command
+{
+    protected $signature = 'communications:prune
+        {--owner= : Owner morph class and ID (e.g., "App\Models\Team:1")}
+        {--before= : Prune data older than this date (default: config retention)}
+        {--dry-run : Report what would be pruned without deleting}';
+
+    protected $description = 'Prune old communication data according to retention policy';
+
+    public function handle(): int
+    {
+        try {
+            return OwnerContext::withOwner(
+                owner: $this->resolveOwner(),
+                callback: fn (): int => $this->process(),
+            );
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+    }
+
+    private function resolveOwner(): ?Model
+    {
+        $owner = $this->option('owner');
+
+        if ($owner === null) {
+            return null;
+        }
+
+        if (str_contains($owner, ':')) {
+            [$type, $id] = explode(':', $owner, 2);
+
+            return OwnerContext::fromTypeAndId($type, $id);
+        }
+
+        throw new InvalidArgumentException('Invalid --owner format. Use "TypeClass:id" (e.g. "App\Models\Team:1").');
+    }
+
+    private function process(): int
+    {
+        $retentionDays = config('communications.logging.payload_retention_days', 90);
+
+        try {
+            $before = $this->option('before')
+                ? CarbonImmutable::parse($this->option('before'))
+                : CarbonImmutable::now()->subDays($retentionDays);
+        } catch (Throwable) {
+            $this->error('Invalid --before date. Use a parseable date such as "2026-01-01".');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Pruning data before: {$before->toDateTimeString()}");
+
+        $dryRun = (bool) $this->option('dry-run');
+        $counts = app(DeliveryRetention::class)->prune($before, $dryRun);
+        $attemptCount = $counts['attempts'];
+        $eventCount = $counts['events'];
+
+        if ($dryRun) {
+            $this->info("Would prune {$attemptCount} attempts and {$eventCount} events.");
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Pruned {$attemptCount} attempts and {$eventCount} events.");
+
+        return self::SUCCESS;
+    }
+}

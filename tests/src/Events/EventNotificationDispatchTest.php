@@ -6,7 +6,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Changes\Actions\DispatchEventChangeChainAction;
@@ -61,7 +60,7 @@ it('dispatches an event change notice through communications with event context'
                 && $notifiable->is($registration)
                 && $notification instanceof EventChangeNoticeNotification;
         })
-        ->andReturn(new Communication);
+        ->andReturn('communication-id');
     app()->instance(CommunicationManager::class, $manager);
 
     OwnerContext::withOwner(null, function () use ($changeLog): void {

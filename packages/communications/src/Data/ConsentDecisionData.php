@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
-
-final class ConsentDecisionData extends Data
+final readonly class ConsentDecisionData
 {
     public function __construct(
-        public readonly bool $consented,
-        public readonly string | null | Optional $reason = null,
-        public readonly array $metadata = [],
+        public bool $consented,
+        public ?string $reason = null,
+        public array $metadata = [],
     ) {}
 }

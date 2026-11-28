@@ -341,7 +341,7 @@ test('rejects saves based on stale hierarchy state', function (): void {
         'parent_id' => $parent->getKey(),
     ]);
 
-    expect(fn () => $stale->update(['title' => 'Stale title']))->toThrow(ValidationException::class, 'record_kind');
+    expect(fn () => $stale->update(['title' => 'Stale title']))->toThrow(ValidationException::class, 'The reference hierarchy has changed');
 
     expect($work->fresh()->title)->toBe('Original work')
         ->and($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Edition);

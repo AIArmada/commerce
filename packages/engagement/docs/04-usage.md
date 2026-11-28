@@ -261,7 +261,7 @@ app(ReminderManager::class)->cancelReminder($user, $occurrence, 'before_start');
 $due = app(ReminderManager::class)->dueReminders();
 ```
 
-Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
+Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `CommunicationManager` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
 Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
 so overlapping command runs skip reminders already claimed or completed. Direct

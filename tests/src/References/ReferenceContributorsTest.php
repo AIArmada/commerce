@@ -254,7 +254,7 @@ test('a work cannot change kind while it owns authors', function (): void {
     expect(fn () => $work->update([
         'record_kind' => ReferenceRecordKind::Edition,
         'parent_id' => $parent->getKey(),
-    ]))->toThrow(ValidationException::class, 'record_kind');
+    ]))->toThrow(ValidationException::class, 'Remove authorship');
 
     expect($work->fresh()->record_kind)->toBe(ReferenceRecordKind::Work)
         ->and($work->contributors()->count())->toBe(1);

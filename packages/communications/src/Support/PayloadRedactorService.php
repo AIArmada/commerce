@@ -16,17 +16,17 @@ class PayloadRedactorService implements PayloadRedactor
 
     public function redact(array $payload): array
     {
-        return $this->redactRecursive($payload);
+        return $this->redactRecursive($payload, array_fill_keys($this->configuredExactKeys(), true), $this->configuredSensitiveSubstrings());
     }
 
     public function redactRequest(array $request): array
     {
-        return $this->redactRecursive($request);
+        return $this->redact($request);
     }
 
     public function redactResponse(array $response): array
     {
-        return $this->redactRecursive($response);
+        return $this->redact($response);
     }
 
     public function redactText(?string $text): ?string
@@ -58,21 +58,23 @@ class PayloadRedactorService implements PayloadRedactor
 
     /**
      * @param  array<int|string, mixed>  $data
+     * @param  array<string, true>  $exactKeys
+     * @param  list<string>  $sensitiveSubstrings
      * @return array<int|string, mixed>
      */
-    private function redactRecursive(array $data): array
+    private function redactRecursive(array $data, array $exactKeys, array $sensitiveSubstrings): array
     {
         $result = [];
 
         foreach ($data as $key => $value) {
-            if (is_string($key) && $this->isSensitive($key)) {
+            if (is_string($key) && $this->isSensitive($key, $exactKeys, $sensitiveSubstrings)) {
                 $result[$key] = '**[REDACTED]**';
 
                 continue;
             }
 
             if (is_array($value)) {
-                $result[$key] = $this->redactRecursive($value);
+                $result[$key] = $this->redactRecursive($value, $exactKeys, $sensitiveSubstrings);
 
                 continue;
             }
@@ -83,14 +85,16 @@ class PayloadRedactorService implements PayloadRedactor
         return $result;
     }
 
-    private function isSensitive(string $key): bool
+    /**
+     * @param  array<string, true>  $exactKeys
+     * @param  list<string>  $sensitiveSubstrings
+     */
+    private function isSensitive(string $key, array $exactKeys, array $sensitiveSubstrings): bool
     {
         $lower = mb_strtolower($key);
 
-        foreach ($this->configuredExactKeys() as $exactKey) {
-            if ($lower === $exactKey) {
-                return true;
-            }
+        if (isset($exactKeys[$lower])) {
+            return true;
         }
 
         foreach (self::SENSITIVE_KEYS as $sensitive) {
@@ -99,7 +103,7 @@ class PayloadRedactorService implements PayloadRedactor
             }
         }
 
-        foreach ($this->configuredSensitiveSubstrings() as $sensitive) {
+        foreach ($sensitiveSubstrings as $sensitive) {
             if (str_contains($lower, $sensitive)) {
                 return true;
             }

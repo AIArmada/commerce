@@ -8,12 +8,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\References\Actions\DeleteReference;
-use AIArmada\References\Actions\SaveReference;
 use AIArmada\References\Enums\ReferenceContributorRole;
 use AIArmada\References\Enums\ReferencePartType;
 use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
+use AIArmada\References\Persistence\SavesReferenceAtomically;
 use AIArmada\References\Rules\Isbn;
 use AIArmada\References\Traits\HasReferenceParts;
 use Carbon\CarbonImmutable;
@@ -65,6 +65,7 @@ class Reference extends Model implements HasMedia
     use HasReferenceParts;
     use HasSlugWithUuids;
     use InteractsWithMedia;
+    use SavesReferenceAtomically;
 
     protected $table = 'references';
 
@@ -103,11 +104,6 @@ class Reference extends Model implements HasMedia
             $reference->validateParentHierarchy();
             $reference->stampPublishedAt();
         });
-    }
-
-    public function save(array $options = []): bool
-    {
-        return (new SaveReference)->handle($this, fn (): bool => parent::save($options));
     }
 
     public function delete(): ?bool
