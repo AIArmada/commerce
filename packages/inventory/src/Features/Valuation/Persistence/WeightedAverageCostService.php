@@ -149,7 +149,7 @@ final class WeightedAverageCostService
                     break;
                 }
 
-                $consumed = $layer->consume($remaining);
+                $consumed = (new CostLayerStore)->consumeLocked($layer, $remaining);
                 $remaining -= $consumed;
             }
 

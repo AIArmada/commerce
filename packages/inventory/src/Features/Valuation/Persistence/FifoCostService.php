@@ -127,7 +127,7 @@ final class FifoCostService
                 }
 
                 $neededQuantity = $quantity - $totalConsumed;
-                $consumed = $layer->consume($neededQuantity);
+                $consumed = (new CostLayerStore)->consumeLocked($layer, $neededQuantity);
 
                 $totalConsumed += $consumed;
                 $totalCost += $consumed * $layer->unit_cost_minor;

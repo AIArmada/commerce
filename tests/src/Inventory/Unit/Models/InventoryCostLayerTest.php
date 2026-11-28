@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use Carbon\CarbonImmutable;
 
 describe('InventoryCostLayer', function (): void {
@@ -359,7 +360,8 @@ describe('InventoryCostLayer', function (): void {
             'layer_date' => now(),
         ]);
 
-        $consumed = $layer->consume(30);
+        config()->set('inventory.defaults.currency', 'USD');
+        $consumed = app(FifoCostService::class)->consume($this->item, 30)['consumed'];
 
         expect($consumed)->toBe(30);
         expect($layer->fresh()->remaining_quantity)->toBe(70);
@@ -378,7 +380,8 @@ describe('InventoryCostLayer', function (): void {
             'layer_date' => now(),
         ]);
 
-        $consumed = $layer->consume(50);
+        config()->set('inventory.defaults.currency', 'USD');
+        $consumed = app(FifoCostService::class)->consume($this->item, 50)['consumed'];
 
         expect($consumed)->toBe(20);
         expect($layer->fresh()->remaining_quantity)->toBe(0);

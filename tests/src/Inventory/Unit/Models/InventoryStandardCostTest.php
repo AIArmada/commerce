@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
 use Carbon\CarbonImmutable;
 
 describe('InventoryStandardCost', function (): void {
@@ -166,12 +167,15 @@ describe('InventoryStandardCost', function (): void {
     });
 
     it('expire', function (): void {
+        config()->set('inventory.defaults.currency', 'MYR');
         $cost = InventoryStandardCost::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
             'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
 
-        $result = $cost->expire();
+        $result = app(StandardCostService::class)->expireCurrentCost($this->item);
 
         expect($result)->toBeTrue();
         expect($cost->fresh()->effective_to)->not->toBeNull();

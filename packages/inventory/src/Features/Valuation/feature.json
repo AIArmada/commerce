@@ -3,6 +3,7 @@
   "name": "Valuation",
   "owns": {
     "table:inventory_cost_layers": [
+      "AIArmada\\Inventory\\Features\\Valuation\\Persistence\\CostLayerStore",
       "AIArmada\\Inventory\\Features\\Valuation\\Persistence\\FifoCostService",
       "AIArmada\\Inventory\\Features\\Valuation\\Persistence\\WeightedAverageCostService"
     ],

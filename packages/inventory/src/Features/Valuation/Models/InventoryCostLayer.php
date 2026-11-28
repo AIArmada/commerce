@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -240,26 +239,6 @@ final class InventoryCostLayer extends Model implements Auditable
     public function consumedValue(): int
     {
         return $this->consumedQuantity() * $this->unit_cost_minor;
-    }
-
-    /**
-     * Consume quantity from this layer.
-     *
-     * @return int The quantity actually consumed
-     */
-    public function consume(int $quantity): int
-    {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Consumption quantity must be positive.');
-        }
-
-        $consumed = min($quantity, $this->remaining_quantity);
-
-        $this->update([
-            'remaining_quantity' => $this->remaining_quantity - $consumed,
-        ]);
-
-        return $consumed;
     }
 
     protected static function newFactory(): InventoryCostLayerFactory

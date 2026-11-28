@@ -198,7 +198,7 @@ final readonly class StandardCostService
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
             $currentCost = $this->mutationQuery($model)->current()->orderByDesc('effective_from')->lockForUpdate()->first();
 
-            return $currentCost?->expire() ?? false;
+            return $currentCost?->update(['effective_to' => CarbonImmutable::now()]) ?? false;
         }, 3);
     }
 

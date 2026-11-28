@@ -154,11 +154,6 @@ final class InventoryStandardCost extends Model implements Auditable
         return $this->effective_to !== null && $this->effective_to <= CarbonImmutable::now();
     }
 
-    public function expire(): bool
-    {
-        return $this->update(['effective_to' => CarbonImmutable::now()]);
-    }
-
     protected static function newFactory(): InventoryStandardCostFactory
     {
         return InventoryStandardCostFactory::new();
