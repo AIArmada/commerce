@@ -9,13 +9,13 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final readonly class GenerateDocPdfs
 {
-    public function __construct(private DocumentRecords $docService) {}
+    public function __construct(private DocServiceInterface $docService) {}
 
     /**
      * @param  array<int, string>  $docIds
@@ -51,7 +51,7 @@ final readonly class GenerateDocPdfs
             }
 
             try {
-                $this->docService->generatePdf($doc, save: true);
+                $this->docService->generatePdf((string) $doc->getKey(), save: true);
                 $generated++;
             } catch (Throwable $exception) {
                 report($exception);

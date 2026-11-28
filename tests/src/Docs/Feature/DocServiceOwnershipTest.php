@@ -174,3 +174,16 @@ test('payment recording and document deletion reject mismatched financial eviden
             ->and($doc->payments()->withoutOwnerScope()->count())->toBe(1);
     });
 });
+
+test('raw PDF rendering rejects a document from another owner even with a loaded model', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create());
+
+    OwnerContext::withOwner($other, function () use ($doc): void {
+        expect(fn () => app(DocumentRecords::class)->generatePdf($doc, save: false))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => app(\AIArmada\Docs\Contracts\DocServiceInterface::class)->generatePdf((string) $doc->getKey(), save: false))
+            ->toThrow(AuthorizationException::class);
+    });
+});

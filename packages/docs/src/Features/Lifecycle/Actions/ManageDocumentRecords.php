@@ -466,9 +466,26 @@ final readonly class ManageDocumentRecords implements DocumentRecords
      */
     public function generatePdf(Doc $doc, bool $save = true): string
     {
-        return $save
-            ? app(DocumentPdfPublisher::class)->execute((string) $doc->getKey())
-            : app(DocRenderService::class)->renderPdf($doc);
+        $id = (string) $doc->getKey();
+
+        if ($save) {
+            return app(DocumentPdfPublisher::class)->execute($id);
+        }
+
+        if (! config('docs.owner.enabled', false)) {
+            return app(DocRenderService::class)->renderPdf(Doc::query()->findOrFail($id));
+        }
+
+        $record = OwnerWriteGuard::findOrFailForOwner(
+            Doc::class,
+            $id,
+            includeGlobal: (bool) config('docs.owner.include_global', false),
+        );
+
+        return OwnerContext::withOwner(
+            OwnerContext::fromTypeAndIdOrFail($record->owner_type, $record->owner_id),
+            fn (): string => app(DocRenderService::class)->renderPdf($record),
+        );
     }
 
     /**

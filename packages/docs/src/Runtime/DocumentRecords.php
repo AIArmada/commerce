@@ -18,8 +18,10 @@ interface DocumentRecords
 
     public function create(DocData $data): Doc;
 
+    /** @param array<string, mixed> $data */
     public function createFromType(DocType $type, array $data, ?Model $owner = null): Doc;
 
+    /** @param array<string, mixed> $data */
     public function update(Doc $doc, array $data, string $summary = 'Document updated'): Doc;
 
     public function convert(Doc $source, DocType $targetType, ?Model $owner = null): Doc;
@@ -34,5 +36,9 @@ interface DocumentRecords
 
     public function updateStatus(Doc $doc, DocStatus | string $status, ?string $notes = null): void;
 
+    /**
+     * @param array<int, array<string, mixed>> $items
+     * @return array{subtotal_minor: int, tax_amount_minor: int, total_minor: int}
+     */
     public function calculateTotals(array $items, int $discountAmountMinor = 0, ?string $currency = null): array;
 }

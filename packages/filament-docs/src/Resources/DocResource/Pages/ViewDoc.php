@@ -9,7 +9,7 @@ use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Contracts\DocumentSharing;
-use AIArmada\Docs\Runtime\DocumentRecords;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -47,8 +47,8 @@ final class ViewDoc extends ViewRecord
                 ->modalHeading('Generate PDF')
                 ->modalDescription('This will generate a new PDF for this document. Any existing PDF will be overwritten.')
                 ->action(function (Doc $record): void {
-                    $docService = app(DocumentRecords::class);
-                    $docService->generatePdf($record, save: true);
+                    $docService = app(DocServiceInterface::class);
+                    $docService->generatePdf((string) $record->getKey(), save: true);
 
                     Notification::make()
                         ->title('PDF Generated')
