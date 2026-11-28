@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\FilamentJnt\Support\NavigationBadgeHelper;
 use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +34,13 @@ abstract class BaseJntResource extends Resource
 
     final public static function getNavigationBadge(): ?string
     {
-        return NavigationBadgeHelper::getNavigationBadge(static::class, static::getEloquentQuery());
+        if (Filament::auth()?->user() === null) {
+            return null;
+        }
+
+        $count = static::getEloquentQuery()->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     final public static function getNavigationBadgeColor(): ?string

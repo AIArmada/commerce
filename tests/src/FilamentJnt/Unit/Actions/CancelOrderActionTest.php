@@ -7,7 +7,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\CancelOrderAction;
 use AIArmada\Jnt\Enums\CancellationReason;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 
 uses(FilamentJntTestCase::class);
@@ -68,9 +69,11 @@ it('cancels an order and updates the record when authenticated', function (): vo
              */
             public function __construct(private array &$captured) {}
 
-            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
+            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): array
             {
                 $this->captured = compact('orderId', 'reason', 'trackingNumber');
+
+                return ['code' => '1'];
             }
         };
     });
@@ -326,4 +329,20 @@ it('blocks cancelling global rows without explicit global context', function ():
 
     $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
+});
+
+it('rejects cancellation of a delivered order at the domain boundary', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-DOMAIN-TERMINAL',
+        'customer_code' => 'CUST',
+        'status' => 'delivered',
+    ]);
+
+    $service = Mockery::mock(JntExpressService::class);
+    $service->shouldNotReceive('cancelOrder');
+    app()->instance(JntExpressService::class, $service);
+
+    expect(fn () => app(CancelStoredOrder::class)->execute($order->id, 'Customer request'))
+        ->toThrow(DomainException::class);
+    expect($order->refresh()->status)->toBe('delivered');
 });

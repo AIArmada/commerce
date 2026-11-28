@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntOrderParcel;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderParcel;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,22 +87,6 @@ describe('JntOrder model', function (): void {
 
         expect($relation)->toBeInstanceOf(HasMany::class);
         expect($relation->getRelated())->toBeInstanceOf(JntOrderParcel::class);
-    });
-
-    it('defines trackingEvents relationship', function (): void {
-        $order = new JntOrder;
-        $relation = $order->trackingEvents();
-
-        expect($relation)->toBeInstanceOf(HasMany::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntTrackingEvent::class);
-    });
-
-    it('defines webhookLogs relationship', function (): void {
-        $order = new JntOrder;
-        $relation = $order->webhookLogs();
-
-        expect($relation)->toBeInstanceOf(HasMany::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntWebhookLog::class);
     });
 
     it('applies owner scope when disabled', function (): void {
@@ -326,13 +310,6 @@ describe('JntTrackingEvent model', function (): void {
         expect($event->getLocation())->toBe('City B, Country D');
     });
 
-    it('defines order relationship', function (): void {
-        $event = new JntTrackingEvent;
-        $relation = $event->order();
-
-        expect($relation)->toBeInstanceOf(BelongsTo::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntOrder::class);
-    });
 });
 
 describe('JntWebhookLog model', function (): void {
@@ -397,11 +374,4 @@ describe('JntWebhookLog model', function (): void {
         expect(JntWebhookLog::STATUS_FAILED)->toBe('failed');
     });
 
-    it('defines order relationship', function (): void {
-        $log = new JntWebhookLog;
-        $relation = $log->order();
-
-        expect($relation)->toBeInstanceOf(BelongsTo::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntOrder::class);
-    });
 });

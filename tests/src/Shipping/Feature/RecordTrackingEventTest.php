@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Shipping\Feature;
 
-use AIArmada\Shipping\Actions\CreateShipment;
-use AIArmada\Shipping\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Data\TrackingStatus;
+use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\RecordTrackingEvent;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Carbon\CarbonImmutable;
 
 describe('RecordTrackingEvent', function (): void {
@@ -64,6 +65,29 @@ describe('RecordTrackingEvent', function (): void {
 
         expect($duplicate)->toBeNull();
         expect($shipment->fresh()->events)->toHaveCount(1);
+    });
+
+    it('records late tracking events without regressing a delivered shipment', function (): void {
+        $shipment = createShipment();
+        $shipment->forceFill(['status' => Delivered::class])->saveQuietly();
+
+        $shipment->events()->create([
+            'carrier_event_code' => 'delivered',
+            'normalized_status' => TrackingStatus::Delivered,
+            'description' => 'Delivered',
+            'occurred_at' => CarbonImmutable::now(),
+        ]);
+
+        $event = RecordTrackingEvent::run($shipment, new TrackingEventData(
+            code: 'late-transit',
+            description: 'Late transit event',
+            timestamp: CarbonImmutable::now()->subDay(),
+            normalizedStatus: TrackingStatus::InTransit,
+        ));
+
+        expect($event)->not->toBeNull()
+            ->and($shipment->fresh()->status->equals(Delivered::class))->toBeTrue()
+            ->and($shipment->events()->count())->toBe(2);
     });
 
     it('updates shipment status based on tracking event', function (): void {

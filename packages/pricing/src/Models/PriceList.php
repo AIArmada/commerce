@@ -45,7 +45,7 @@ class PriceList extends Model implements Auditable
 {
     private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
 
-    private const SEGMENT_MODEL = 'AIArmada\\Customers\\Models\\Segment';
+    private const SEGMENT_MODEL = 'AIArmada\\Customers\\Features\\Segmentation\\Models\\Segment';
 
     use AtomicPriceListPersistence;
     use FormatsMoney;

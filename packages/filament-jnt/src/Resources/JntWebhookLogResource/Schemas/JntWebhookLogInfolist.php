@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Schemas;
 
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -98,7 +99,8 @@ final class JntWebhookLogInfolist
 
             Section::make('Related Order')
                 ->schema([
-                    TextEntry::make('order.order_id')
+                    TextEntry::make('related_order_reference')
+                        ->state(fn (JntWebhookLog $record): ?string => JntOrder::query()->whereKey($record->order_id)->where('owner_type', $record->owner_type)->where('owner_id', $record->owner_id)->first()?->order_id)
                         ->label('Order ID')
                         ->icon(Heroicon::OutlinedShoppingBag)
                         ->url(fn (JntWebhookLog $record): ?string => $record->order_id

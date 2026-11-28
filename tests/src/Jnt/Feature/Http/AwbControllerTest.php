@@ -38,7 +38,7 @@ it('serves a signed cached awb when token, user, and owner payload match', funct
         routeName: 'jnt.awb.show',
         routeParameters: ['orderId' => 'ORD-AWB-1'],
         payload: [
-            'content' => 'PDF-CONTENT',
+            'content' => '%PDF-1.4 awb content',
             'format' => 'pdf',
             'order_id' => 'ORD-AWB-1',
         ],
@@ -50,7 +50,7 @@ it('serves a signed cached awb when token, user, and owner payload match', funct
     $this->get($url)
         ->assertOk()
         ->assertHeader('Content-Type', 'application/pdf')
-        ->assertContent('PDF-CONTENT');
+        ->assertContent('%PDF-1.4 awb content');
 });
 
 it('rejects a signed awb request when cache payload user does not match authenticated user', function (): void {
@@ -73,7 +73,7 @@ it('rejects a signed awb request when cache payload user does not match authenti
         routeName: 'jnt.awb.show',
         routeParameters: ['orderId' => 'ORD-AWB-2'],
         payload: [
-            'content' => 'PDF-CONTENT',
+            'content' => '%PDF-1.4 awb content',
             'format' => 'pdf',
             'order_id' => 'ORD-AWB-2',
         ],
@@ -123,7 +123,7 @@ it('rejects a signed awb request when owner payload does not match current owner
         routeName: 'jnt.awb.show',
         routeParameters: ['orderId' => 'ORD-AWB-3'],
         payload: [
-            'content' => 'PDF-CONTENT',
+            'content' => '%PDF-1.4 awb content',
             'format' => 'pdf',
             'order_id' => 'ORD-AWB-3',
         ],
@@ -133,4 +133,31 @@ it('rejects a signed awb request when owner payload does not match current owner
     );
 
     $this->get($url)->assertForbidden();
+});
+
+it('rejects signed awb payloads without a valid pdf signature', function (): void {
+    $user = User::query()->create([
+        'name' => 'Invalid AWB User',
+        'email' => 'invalid-awb-user@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+    $owner = OwnerContext::resolve();
+
+    $url = app(SignedDownloadApi::class)->issueUrl(
+        cachePrefix: 'jnt_awb',
+        routeName: 'jnt.awb.show',
+        routeParameters: ['orderId' => 'ORD-AWB-INVALID'],
+        payload: [
+            'content' => '<html>not a pdf</html>',
+            'format' => 'pdf',
+            'order_id' => 'ORD-AWB-INVALID',
+        ],
+        ttl: 300,
+        owner: EloquentRecordReference::fromModel($owner),
+        userId: $user->getAuthIdentifier(),
+    );
+
+    $this->get($url)->assertNotFound();
 });

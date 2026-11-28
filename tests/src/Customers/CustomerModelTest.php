@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -90,11 +92,11 @@ describe('Customer Model', function (): void {
                 'accepts_marketing' => false,
             ]);
 
-            $customer->optInMarketing();
+            $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
             expect($customer->accepts_marketing)->toBeTrue();
 
-            $customer->optOutMarketing();
+            $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
             expect($customer->accepts_marketing)->toBeFalse();
         });
@@ -113,7 +115,6 @@ describe('Customer Model', function (): void {
                 'name' => 'Scope Segment ' . uniqid(),
                 'slug' => 'scope-segment-' . uniqid(),
                 'is_automatic' => false,
-                'is_active' => true,
             ]);
 
             $inSegment = Customer::create([
@@ -130,9 +131,9 @@ describe('Customer Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($inSegment);
+            app(AssignCustomerToSegment::class)->execute($inSegment, $segment);
 
-            $matchedIds = Customer::query()->inSegment($segment)->pluck('id')->all();
+            $matchedIds = Customer::query()->inSegment($segment->id)->pluck('id')->all();
 
             expect($matchedIds)
                 ->toContain($inSegment->id)

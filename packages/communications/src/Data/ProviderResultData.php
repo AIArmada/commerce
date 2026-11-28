@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
-
-final class ProviderResultData extends Data
+final readonly class ProviderResultData
 {
     public function __construct(
-        public readonly bool $success,
-        public readonly string | null | Optional $providerMessageId = null,
-        public readonly string | null | Optional $status = null,
-        public readonly array $response = [],
-        public readonly int | null | Optional $durationMs = null,
-        public readonly int | null | Optional $costMinor = null,
-        public readonly string | null | Optional $costCurrency = null,
-        public readonly string | null | Optional $failureCode = null,
-        public readonly string | null | Optional $failureMessage = null,
-        public readonly bool | null | Optional $retryable = null,
+        public bool $success,
+        public ?string $providerMessageId = null,
+        public ?string $status = null,
+        public array $response = [],
+        public ?int $durationMs = null,
+        public ?int $costMinor = null,
+        public ?string $costCurrency = null,
+        public ?string $failureCode = null,
+        public ?string $failureMessage = null,
+        public ?bool $retryable = null,
     ) {}
 }

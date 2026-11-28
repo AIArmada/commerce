@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
 
 // ============================================
 // ManualShippingDriver Tests
@@ -32,8 +32,8 @@ it('returns standard shipping method', function (): void {
     $methods = $this->driver->getAvailableMethods();
 
     expect($methods)->toHaveCount(1);
-    expect($methods->first()->code)->toBe('standard');
-    expect($methods->first()->name)->toBe('Standard Shipping');
+    expect($methods[0]->code)->toBe('standard');
+    expect($methods[0]->name)->toBe('Standard Shipping');
 });
 
 it('calculates rates based on weight', function (): void {
@@ -56,10 +56,10 @@ it('calculates rates based on weight', function (): void {
     $rates = $this->driver->getRates($origin, $destination, $packages);
 
     expect($rates)->toHaveCount(1);
-    expect($rates->first())->toBeInstanceOf(RateQuoteData::class);
-    expect($rates->first()->carrier)->toBe('manual');
-    expect($rates->first()->service)->toBe('standard');
-    expect($rates->first()->rate)->toBe(0); // Default rate is 0
+    expect($rates[0])->toBeInstanceOf(RateQuoteData::class);
+    expect($rates[0]->carrier)->toBe('manual');
+    expect($rates[0]->service)->toBe('standard');
+    expect($rates[0]->rate)->toBe(0); // Default rate is 0
 });
 
 it('applies custom configuration for rates', function (): void {
@@ -86,7 +86,7 @@ it('applies custom configuration for rates', function (): void {
     $rates = $customDriver->getRates($origin, $destination, $packages);
 
     // Manual driver uses flat default_rate
-    expect($rates->first()->rate)->toBe(1000);
+    expect($rates[0]->rate)->toBe(1000);
 });
 
 it('creates shipment with manual tracking number', function (): void {
@@ -161,8 +161,8 @@ it('tracks shipment with awaiting pickup status', function (): void {
     expect($trackingData->status)->toBe(TrackingStatus::AwaitingPickup);
     expect($trackingData->carrier)->toBe('manual');
     expect($trackingData->events)->toHaveCount(1);
-    expect($trackingData->events->first()->code)->toBe('MANUAL');
-    expect($trackingData->events->first()->description)->toBe('Manual shipment - tracking not available');
+    expect($trackingData->events[0]->code)->toBe('MANUAL');
+    expect($trackingData->events[0]->description)->toBe('Manual shipment - tracking not available');
 });
 
 it('cancels shipment always returns true', function (): void {
@@ -194,8 +194,8 @@ it('uses custom estimated days from config', function (): void {
 
     $methods = $customDriver->getAvailableMethods();
 
-    expect($methods->first()->minDays)->toBe(7);
-    expect($methods->first()->maxDays)->toBe(9);
+    expect($methods[0]->minDays)->toBe(7);
+    expect($methods[0]->maxDays)->toBe(9);
 });
 
 it('applies free shipping when cart total meets threshold', function (): void {
@@ -223,7 +223,7 @@ it('applies free shipping when cart total meets threshold', function (): void {
     // Cart total above threshold
     $rates = $customDriver->getRates($origin, $destination, $packages, ['cart_total' => 15000]);
 
-    expect($rates->first()->rate)->toBe(0); // Free shipping
+    expect($rates[0]->rate)->toBe(0); // Free shipping
 });
 
 it('does not apply free shipping when cart total below threshold', function (): void {
@@ -251,7 +251,7 @@ it('does not apply free shipping when cart total below threshold', function (): 
     // Cart total below threshold
     $rates = $customDriver->getRates($origin, $destination, $packages, ['cart_total' => 5000]);
 
-    expect($rates->first()->rate)->toBe(1500); // Default rate
+    expect($rates[0]->rate)->toBe(1500); // Default rate
 });
 
 it('uses custom currency from config', function (): void {
@@ -278,5 +278,5 @@ it('uses custom currency from config', function (): void {
 
     $rates = $customDriver->getRates($origin, $destination, $packages);
 
-    expect($rates->first()->currency)->toBe('USD');
+    expect($rates[0]->currency)->toBe('USD');
 });

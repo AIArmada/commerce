@@ -3,17 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\DeliverySending;
-use AIArmada\Communications\Jobs\DispatchCommunicationDeliveriesJob;
-use AIArmada\Communications\Jobs\DispatchManagedNotificationJob;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
@@ -174,6 +174,13 @@ test('due communications queue eligible deliveries in creation order', function 
 
     Queue::assertPushed(DispatchCommunicationDeliveriesJob::class, fn (DispatchCommunicationDeliveriesJob $job): bool => $job->communicationId === $communication->id);
 
+    $repeatExitCode = Artisan::call('communications:dispatch-due', [
+        '--owner' => $owner->getMorphClass() . ':' . $owner->getKey(),
+    ]);
+
+    expect($repeatExitCode)->toBe(0);
+    Queue::assertPushed(DispatchCommunicationDeliveriesJob::class, 1);
+
     expect($exitCode)->toBe(0)
         ->and($first->fresh()->status)->toBe(DeliveryStatus::Queued)
         ->and($second->fresh()->status)->toBe(DeliveryStatus::Queued)
@@ -211,6 +218,12 @@ test('delivery dispatch transitions queued deliveries in their queue order', fun
         'queued_at' => now(),
     ]);
     $second->save();
+
+    (new DispatchCommunicationDeliveriesJob(
+        communicationId: $communication->id,
+        ownerType: $communication->owner_type,
+        ownerId: $communication->owner_id,
+    ))->handle();
 
     (new DispatchCommunicationDeliveriesJob(
         communicationId: $communication->id,
