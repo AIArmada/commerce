@@ -9,8 +9,10 @@ use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use LogicException;
 
@@ -18,30 +20,33 @@ final readonly class UpdateSubscriptionDiscount
 {
     public function applyCoupon(Subscription $subscription, string $couponId): void
     {
-        $this->validateCouponForApplication($couponId);
+        $subscription->getConnection()->transaction(function () use ($subscription, $couponId): void {
+            $locked = $subscription->newQuery()->forOwner(includeGlobal: false)->whereKey($subscription->getKey())->lockForUpdate()->firstOrFail();
+            $coupon = $this->validateCouponForApplication($couponId);
 
-        $coupon = $this->retrieveCoupon($couponId);
+            if ($locked->hasUnknownPrices()) {
+                throw new InvalidArgumentException('Cannot apply a coupon to a subscription with unknown item prices. Provide unit_amount for every item.');
+            }
 
-        if (! $coupon) {
-            throw InvalidCoupon::notFound($couponId);
-        }
+            $discount = $coupon->calculateDiscount($locked->calculateSubscriptionAmount());
 
-        if ($subscription->hasUnknownPrices()) {
-            throw new InvalidArgumentException('Cannot apply a coupon to a subscription with unknown item prices. Provide unit_amount for every item.');
-        }
+            if ($discount > 0) {
+                if (app(VoucherCatalog::class)->connectionName() !== $locked->getConnection()->getName()) {
+                    throw new LogicException('Subscription coupon application requires a shared database connection.');
+                }
 
-        $totalAmount = $subscription->calculateSubscriptionAmount();
-        $discount = $coupon->calculateDiscount($totalAmount);
+                $this->recordCouponUsage($locked, $coupon, $discount);
+            }
 
-        $subscription->fill([
-            'coupon_id' => $couponId,
-            'coupon_discount' => $discount,
-            'coupon_duration' => $coupon->duration(),
-            'coupon_applied_at' => CarbonImmutable::now(),
-        ])->save();
+            $locked->fill([
+                'coupon_id' => $coupon->id(),
+                'coupon_discount' => $discount,
+                'coupon_duration' => $coupon->duration(),
+                'coupon_applied_at' => CarbonImmutable::now(),
+            ])->saveOrFail();
+        });
 
-        // Record coupon usage
-        $this->recordCouponUsage($subscription, $couponId, $discount);
+        $subscription->refresh();
     }
 
     public function removeDiscount(Subscription $subscription): void
@@ -54,7 +59,7 @@ final readonly class UpdateSubscriptionDiscount
         ])->save();
     }
 
-    private function validateCouponForApplication(string $couponId): void
+    private function validateCouponForApplication(string $couponId): Coupon
     {
         $coupon = $this->retrieveCoupon($couponId);
 
@@ -69,6 +74,8 @@ final readonly class UpdateSubscriptionDiscount
         if ($coupon->isForeverAmountOff()) {
             throw InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
         }
+
+        return $coupon;
     }
 
     public function retrieveCoupon(string $couponId): ?Coupon
@@ -84,25 +91,26 @@ final readonly class UpdateSubscriptionDiscount
         return new Coupon($voucherData);
     }
 
-    private function recordCouponUsage(Subscription $subscription, string $couponId, int $discountAmount): void
+    private function recordCouponUsage(Subscription $subscription, Coupon $coupon, int $discountAmount): void
     {
         $service = VoucherIntegration::service();
 
         $subscription->loadMissing('billable');
         $billable = $subscription->getRelation('billable');
 
-        if (! $billable instanceof BillableModel) {
+        if (! $billable instanceof Model || ! $billable instanceof BillableModel) {
             throw new LogicException('A billable model is required to record coupon usage.');
         }
 
         $currency = $billable->preferredCurrency();
 
         $service->recordUsage(
-            code: $couponId,
+            code: $coupon->id(),
             discountAmount: Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: ['subscription_id' => $subscription->id],
             redeemedBy: $billable,
+            voucherId: $coupon->asVoucherData()->id,
         );
     }
 }

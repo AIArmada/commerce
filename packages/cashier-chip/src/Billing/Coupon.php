@@ -6,8 +6,8 @@ namespace AIArmada\CashierChip\Billing;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -165,7 +165,7 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
     public function isValid(): bool
     {
         // Check status
-        if (! ($this->voucher->status instanceof Active)) {
+        if (! ($this->voucher->status === VoucherStatus::Active)) {
             return false;
         }
 
@@ -187,7 +187,7 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
      */
     public function isActive(): bool
     {
-        return $this->voucher->status instanceof Active;
+        return $this->voucher->status === VoucherStatus::Active;
     }
 
     /**

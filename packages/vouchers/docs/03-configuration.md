@@ -205,7 +205,7 @@ directly — the transition goes through the voucher state machine, and `Expired
 is terminal, so it is irreversible:
 
 ```php
-use AIArmada\Vouchers\Actions\ExpireVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 
 Voucher::query()
     ->live()

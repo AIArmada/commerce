@@ -7,9 +7,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 uses(TestCase::class);
 
@@ -30,7 +29,7 @@ it('forces owner columns on create when owner mode enabled', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -54,7 +53,7 @@ it('keeps global rows global on update when owner mode enabled', function (): vo
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]));
@@ -92,7 +91,7 @@ it('prevents changing ownership on update when owner mode enabled', function ():
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

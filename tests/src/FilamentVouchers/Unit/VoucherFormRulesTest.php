@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherForm;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 uses(TestCase::class);
 

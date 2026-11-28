@@ -11,7 +11,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
@@ -99,9 +99,9 @@ it('rejects affiliate program ids outside the current owner scope on create', fu
     });
 
     $page = app(CreateVoucher::class);
-    $mutate = new ReflectionMethod(CreateVoucher::class, 'mutateFormDataBeforeCreate');
+    $mutate = new ReflectionMethod(CreateVoucher::class, 'handleRecordCreation');
 
-    expect(fn (): array => OwnerContext::withOwner($ownerA, function () use ($page, $mutate, $foreignProgram): array {
+    expect(fn () => OwnerContext::withOwner($ownerA, function () use ($page, $mutate, $foreignProgram) {
         return $mutate->invoke($page, [
             'code' => 'PAGE-FOREIGN-PROGRAM',
             'type' => VoucherType::Fixed->value,

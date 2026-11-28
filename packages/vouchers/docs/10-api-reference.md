@@ -70,7 +70,7 @@ Voucher::create(array $data): VoucherData
 - `starts_at` - Start datetime
 - `expires_at` - Expiry datetime
 - `allows_manual_redemption` - Allow manual redemption
-- `status` - Spatie state class, e.g. `AIArmada\Vouchers\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Enums\VoucherStatus` enum is **not** accepted here.
+- `status` - Spatie state class, e.g. `AIArmada\Vouchers\Features\Lifecycle\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Data\VoucherStatus` enum is **not** accepted here.
 - `metadata` - Additional data array
 - `target_definition` - Targeting rules array
 
@@ -80,7 +80,7 @@ Voucher::create(array $data): VoucherData
 > derived accessor instead:
 >
 > ```php
-> $voucher->effective_status; // AIArmada\Vouchers\States\VoucherStatus
+> $voucher->effective_status; // AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus
 > ```
 >
 > `effective_status` returns `Expired` when `isExpired()` is true and the stored state is not
@@ -185,7 +185,7 @@ Throws `ManualRedemptionNotAllowedException` if not allowed.
 Redeem a voucher after successful order completion (checkout path).
 
 ```php
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 
 app(VoucherServiceInterface::class)->redeem(
     code: $code,
@@ -207,10 +207,10 @@ their face value.
 Get usage history for a voucher.
 
 ```php
-Voucher::getUsageHistory(string $code): Collection
+Voucher::getUsageHistory(string $code, int $limit = 100): array
 ```
 
-Returns `Collection<VoucherUsage>`.
+Returns `list<VoucherUsageData>`, newest first (default 100, maximum 1,000 records).
 
 ---
 
@@ -225,7 +225,7 @@ Voucher::addToWallet(
     string $code,
     Model $owner,
     ?array $metadata = null
-): VoucherWallet
+): WalletClaimData
 ```
 
 ---
@@ -320,7 +320,7 @@ Cart::validateAppliedVouchers(): array<string>
 ### VoucherData
 
 ```php
-class VoucherData
+final readonly class VoucherData
 {
     public string $id;
     public string $code;
@@ -339,9 +339,9 @@ class VoucherData
     public bool $allowsManualRedemption;
     public int|string|null $ownerId;
     public ?string $ownerType;
-    public ?DateTimeInterface $startsAt;
-    public ?DateTimeInterface $expiresAt;
-    public States\VoucherStatus $status;
+    public ?DateTimeImmutable $startsAt;
+    public ?DateTimeImmutable $expiresAt;
+    public VoucherStatus $status;
     public ?array $targetDefinition;
     public ?array $metadata;
 }
@@ -355,7 +355,7 @@ class VoucherData
 ### VoucherValidationResult
 
 ```php
-class VoucherValidationResult
+final readonly class VoucherValidationResult
 {
     public bool $isValid;
     public ?string $reason;
@@ -389,14 +389,12 @@ enum VoucherType: string
 
 Two distinct types share this name:
 
-- `AIArmada\Vouchers\Enums\VoucherStatus` — the plain backed enum used for labels, filters,
-  and option lists.
-- `AIArmada\Vouchers\States\VoucherStatus` — the abstract Spatie model-state that the `status`
-  cast on `Voucher` and `VoucherData::$status` actually resolves to. This is the type you
-  pass to `create()` and receive from reads.
+- `AIArmada\Vouchers\Data\VoucherStatus` — the backed enum used for immutable voucher snapshots, labels, filters and option lists.
+- `AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus` — the abstract Spatie model-state that the `status`
+  cast on the Eloquent `Voucher` resolves to. Model writes use this state; snapshot reads return the backed enum.
 
 ```php
-// AIArmada\Vouchers\Enums\VoucherStatus
+// AIArmada\Vouchers\Data\VoucherStatus
 enum VoucherStatus: string
 {
     case Active = 'active';
@@ -416,7 +414,7 @@ enum VoucherStatus: string
 | `VoucherNotFoundException` | Voucher code not found |
 | `VoucherExpiredException` | Voucher has expired |
 | `InvalidVoucherException` | Voucher is invalid |
-| `InvalidVoucherDataException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
+| `InvalidArgumentException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
 | `VoucherUsageLimitException` | Usage limit exceeded |
 | `VoucherValidationException` | Voucher validation failed during checkout |
 | `VoucherStackingException` | Stacking policy violation |

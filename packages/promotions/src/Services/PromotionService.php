@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -256,29 +256,23 @@ final class PromotionService implements PromotionServiceInterface
     {
         $customerId = $context->metadata['customer_id'] ?? $context->user?->getKey();
 
-        if ($customerId === null || $customerId === '') {
+        if ((! is_string($customerId) && ! is_int($customerId)) || (string) $customerId === '') {
             Log::debug('Promotion per-customer limit denied: no customer identifier.');
 
             return null;
         }
 
-        /** @phpstan-var class-string<Order> $orderClass */
-        $orderClass = 'AIArmada\\Orders\\Models\\Order';
-
-        if (! class_exists($orderClass)) {
+        if (! class_exists(Order::class)) {
             Log::debug('Promotion per-customer limit denied: orders package is unavailable.');
 
             return null;
         }
 
         try {
-            $orders = $orderClass::query()
+            $orders = Order::query()
+                ->forOwner(OwnerContext::resolve(), false)
                 ->where('customer_id', $customerId)
                 ->select(['id', 'metadata']);
-
-            if (method_exists($orderClass, 'scopeForOwner')) {
-                $orders->forOwner(OwnerContext::resolve(), false);
-            }
 
             if ($asOf !== null) {
                 $orders->where('created_at', '<=', $asOf);
@@ -313,9 +307,7 @@ final class PromotionService implements PromotionServiceInterface
             return [];
         }
 
-        $allocations = $metadata['discount_data']['allocations']
-            ?? $metadata['allocations']
-            ?? [];
+        $allocations = $metadata['discount_data']['allocations'] ?? [];
 
         if (! is_array($allocations)) {
             return [];
@@ -324,17 +316,24 @@ final class PromotionService implements PromotionServiceInterface
         $promotionIds = [];
 
         foreach ($allocations as $allocation) {
-            if (($allocation['provider_key'] ?? null) !== 'promotions') {
+            if (! is_array($allocation) || ($allocation['provider_key'] ?? null) !== 'promotions') {
                 continue;
             }
 
-            $promotionId = (string) ($allocation['meta']['promotion_id'] ?? '');
+            $amount = $allocation['requested_amount'] ?? null;
 
-            if ($promotionId !== '') {
-                $promotionIds[] = $promotionId;
+            if (! is_int($amount) || $amount <= 0) {
+                continue;
+            }
+
+            $meta = $allocation['meta'] ?? null;
+            $promotionId = is_array($meta) ? ($meta['promotion_id'] ?? null) : null;
+
+            if (is_string($promotionId) && $promotionId !== '') {
+                $promotionIds[$promotionId] = $promotionId;
             }
         }
 
-        return $promotionIds;
+        return array_values($promotionIds);
     }
 }

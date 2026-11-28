@@ -10,12 +10,13 @@ use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use Throwable;
 
 final class VouchersAdapter implements DiscountProvider
@@ -43,6 +44,7 @@ final class VouchersAdapter implements DiscountProvider
         $codes = $this->mergeUnifiedVoucherCodes($session, $codes);
 
         $applied = [];
+        $seenVoucherIds = [];
         $totalDiscount = 0;
         $allowMultiple = config('checkout.integrations.vouchers.allow_multiple', false);
 
@@ -50,8 +52,6 @@ final class VouchersAdapter implements DiscountProvider
             // Validate voucher
             $validation = $this->normalizeValidationResult(
                 $voucherService->validate($code, $validationContext),
-                $voucherService,
-                $code,
             );
 
             if (! $validation['valid']) {
@@ -61,16 +61,18 @@ final class VouchersAdapter implements DiscountProvider
             // Calculate discount
             $voucher = $validation['voucher'];
 
-            if (! is_array($voucher)) {
+            if (! is_array($voucher) || isset($seenVoucherIds[$voucher['id']])) {
                 continue;
             }
 
+            $seenVoucherIds[$voucher['id']] = true;
+            $code = (string) $voucher['code'];
             $discount = $this->calculateVoucherDiscount($voucher, (int) $session->subtotal, $liveCart);
 
             if ($discount > 0) {
                 // Reserve the voucher
                 if ($reserve) {
-                    $voucherService->reserve($code, $session->id);
+                    $voucherService->reserve($code, $session->id, (string) $voucher['id']);
                 }
 
                 // Dispatch only for an actual cart application. Discount evaluation must stay
@@ -114,8 +116,6 @@ final class VouchersAdapter implements DiscountProvider
 
         return $this->normalizeValidationResult(
             $voucherService->validate($code, $this->cartResolver()->resolveVoucherValidationContext($session)),
-            $voucherService,
-            $code,
         );
     }
 
@@ -124,14 +124,14 @@ final class VouchersAdapter implements DiscountProvider
      *
      * @param  string|null  $sessionId  When provided, only releases that session's reservation
      */
-    public function releaseVoucher(string $code, ?string $sessionId = null): void
+    public function releaseVoucher(string $code, ?string $sessionId = null, ?string $voucherId = null): void
     {
         if (! interface_exists(VoucherServiceInterface::class)) {
             return;
         }
 
         $voucherService = app(VoucherServiceInterface::class);
-        $voucherService->release($code, $sessionId);
+        $voucherService->release($code, $sessionId, $voucherId);
     }
 
     /**
@@ -168,28 +168,21 @@ final class VouchersAdapter implements DiscountProvider
     }
 
     /**
-     * @param  array{valid: bool, message: string|null, voucher: array<string, mixed>|null}|VoucherValidationResult  $validation
      * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
      */
     private function normalizeValidationResult(
-        array | VoucherValidationResult $validation,
-        VoucherServiceInterface $voucherService,
-        string $code
+        VoucherValidationResult $validation,
     ): array {
-        if (is_array($validation)) {
-            return $validation;
-        }
-
         $voucher = null;
 
         if ($validation->isValid) {
-            $voucherData = $voucherService->find($code);
+            $snapshot = $validation->getDetail('voucher');
 
-            if ($voucherData === null) {
+            if (! is_array($snapshot) || ! is_string($snapshot['id'] ?? null) || $snapshot['id'] === '') {
                 return ['valid' => false, 'message' => 'Voucher not found.', 'voucher' => null];
             }
 
-            $voucher = $voucherData->toArray();
+            $voucher = VoucherData::fromArray($snapshot)->toArray();
         }
 
         return [
@@ -257,31 +250,35 @@ final class VouchersAdapter implements DiscountProvider
 
     public function commit(CheckoutSession $session, array $accepted): array
     {
-        $codes = [];
+        $vouchers = [];
 
         foreach ($accepted as $proposal) {
-            if ($proposal->code !== null) {
-                $codes[] = $proposal->code;
+            $voucherId = $proposal->meta['voucher_id'] ?? null;
+
+            if ($proposal->code === null || ! is_string($voucherId) || $voucherId === '') {
+                throw new InvalidArgumentException('Voucher commitments require an exact voucher identity.');
             }
+
+            $vouchers[$voucherId] = $proposal->code;
         }
 
-        if ($codes === []) {
+        if ($vouchers === []) {
             return [];
         }
 
         $sessionId = (string) $session->getKey();
-        $reservedCodes = [];
+        $reservedVouchers = [];
 
         try {
-            foreach (array_values(array_unique($codes)) as $code) {
-                $this->voucherService()->reserve($code, $sessionId);
-                $reservedCodes[] = $code;
+            foreach ($vouchers as $voucherId => $code) {
+                $this->voucherService()->reserve($code, $sessionId, (string) $voucherId);
+                $reservedVouchers[$voucherId] = $code;
             }
 
-            $this->dispatchVoucherAppliedEvents($session, $codes);
+            $this->dispatchVoucherAppliedEvents($session, $vouchers);
         } catch (Throwable $exception) {
-            foreach ($reservedCodes as $reservedCode) {
-                $this->releaseVoucher($reservedCode, $sessionId);
+            foreach ($reservedVouchers as $voucherId => $code) {
+                $this->releaseVoucher($code, $sessionId, (string) $voucherId);
             }
 
             throw $exception;
@@ -305,9 +302,9 @@ final class VouchersAdapter implements DiscountProvider
     /**
      * Dispatch cart-application events after a checkout commitment is reserved.
      *
-     * @param  array<string>  $codes
+     * @param  array<string, string>  $vouchers
      */
-    private function dispatchVoucherAppliedEvents(CheckoutSession $session, array $codes): void
+    private function dispatchVoucherAppliedEvents(CheckoutSession $session, array $vouchers): void
     {
         if (! class_exists(VoucherApplied::class)) {
             return;
@@ -321,8 +318,8 @@ final class VouchersAdapter implements DiscountProvider
 
         $voucherService = $this->voucherService();
 
-        foreach (array_values(array_unique($codes)) as $code) {
-            $voucher = $voucherService->find($code);
+        foreach ($vouchers as $voucherId => $code) {
+            $voucher = $voucherService->find($code, $voucherId);
 
             if ($voucher instanceof VoucherData) {
                 Event::dispatch(new VoucherApplied($cart, $voucher));
@@ -344,9 +341,13 @@ final class VouchersAdapter implements DiscountProvider
         foreach ($commitments as $commitment) {
             $code = $commitment->reservationToken;
 
-            if ($code !== '') {
-                $this->releaseVoucher($code, $sessionId);
+            $voucherId = $commitment->meta['voucher_id'] ?? null;
+
+            if ($code === '' || ! is_string($voucherId) || $voucherId === '') {
+                throw new InvalidArgumentException('Voucher commitments require an exact voucher identity.');
             }
+
+            $this->releaseVoucher($code, $sessionId, $voucherId);
         }
     }
 }

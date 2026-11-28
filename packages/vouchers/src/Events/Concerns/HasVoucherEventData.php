@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Events\Concerns;
 
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use DateTimeImmutable;
 use Illuminate\Support\Str;
 

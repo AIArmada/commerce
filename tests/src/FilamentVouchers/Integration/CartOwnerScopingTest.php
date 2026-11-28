@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -113,28 +114,8 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
         test()->markTestSkipped('Filament cart integration is not available in this environment.');
     }
 
-    $manager = new class
-    {
-        public int $calls = 0;
-
-        public function resolve(string $instance, string $identifier): object
-        {
-            $this->calls++;
-
-            return new class
-            {
-                public function getAppliedVouchers(): array
-                {
-                    return [];
-                }
-
-                public function applyVoucher(string $code): void {}
-
-                public function removeVoucher(string $code): void {}
-            };
-        }
-    };
-
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldNotReceive('resolveForSnapshot');
     app()->instance(CartInstanceManager::class, $manager);
 
     expect($bridge->getCartInstance($cartOwnedByB))->toBeNull();
@@ -147,5 +128,32 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
     expect(fn () => $bridge->removeVoucher($cartOwnedByB, 'SAVE10'))
         ->toThrow(VoucherException::class, 'not authorized');
 
-    expect($manager->calls)->toBe(0);
+});
+
+it('blocks global and foreign cart access even when voucher ownership is disabled', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('vouchers.owner.enabled', false);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $attributes = ['instance' => 'default', 'identifier' => 'owner-collision', 'currency' => 'USD'];
+    $global = OwnerContext::withOwner(null, fn () => Cart::query()->create($attributes));
+    $foreign = OwnerContext::withOwner($other, fn () => Cart::query()->create($attributes));
+    $owned = OwnerContext::withOwner($owner, fn () => Cart::query()->create($attributes));
+
+    OwnerContext::withOwner($owner, function () use ($global, $foreign, $owned): void {
+        expect(CartSnapshotAccess::allows($global))->toBeFalse()
+            ->and(CartSnapshotAccess::allows($foreign))->toBeFalse()
+            ->and(CartSnapshotAccess::allows($owned))->toBeTrue();
+
+        $manager = Mockery::mock(CartInstanceManager::class);
+        $manager->shouldNotReceive('resolveForSnapshot');
+        app()->instance(CartInstanceManager::class, $manager);
+
+        $bridge = new FilamentCartBridge;
+        expect(fn () => $bridge->applyVoucher($global, 'SAVE10'))->toThrow(VoucherException::class)
+            ->and(fn () => $bridge->removeVoucher($foreign, 'SAVE10'))->toThrow(VoucherException::class);
+    });
 });

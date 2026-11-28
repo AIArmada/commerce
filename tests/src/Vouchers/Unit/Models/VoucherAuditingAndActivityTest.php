@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('voucher model is auditable and activity loggable', function (): void {

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,7 +14,9 @@ return new class extends Migration
     {
         $jsonColumnType = commerce_json_column_type('promotions', 'jsonb');
 
-        Schema::create((string) config('promotions.database.tables.promotions', 'promotions'), function (Blueprint $table) use ($jsonColumnType): void {
+        $promotionTable = (string) config('promotions.database.tables.promotions', 'promotions');
+
+        Schema::create($promotionTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('name');
@@ -46,8 +50,12 @@ return new class extends Migration
             $table->unique(['owner_type', 'owner_id', 'code'], 'promotions_owner_code_unique');
         });
 
-        Schema::create((string) config('promotions.database.tables.promotionables', 'promotionables'), function (Blueprint $table): void {
-            $table->foreignUuid('promotion_id');
+        if (in_array(ConnectionDriver::name(Schema::getConnection()), ['pgsql', 'sqlite'], true)) {
+            DB::statement("CREATE UNIQUE INDEX promotions_global_code_unique ON \"{$promotionTable}\" (code) WHERE owner_type IS NULL AND owner_id IS NULL AND code IS NOT NULL");
+        }
+
+        Schema::create((string) config('promotions.database.tables.promotionables', 'promotionables'), function (Blueprint $table) use ($promotionTable): void {
+            $table->foreignUuid('promotion_id')->constrained($promotionTable)->cascadeOnDelete();
             $table->uuidMorphs('promotionable');
 
             $table->primary(['promotion_id', 'promotionable_id', 'promotionable_type']);

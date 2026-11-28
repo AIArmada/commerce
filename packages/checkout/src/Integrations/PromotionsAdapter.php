@@ -8,9 +8,10 @@ use AIArmada\Checkout\Contracts\DiscountProvider;
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\PromotionTargetingCart;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use Illuminate\Support\Collection;
 
 final class PromotionsAdapter implements DiscountProvider
@@ -56,16 +57,8 @@ final class PromotionsAdapter implements DiscountProvider
 
     private function makeContext(CheckoutSession $session): TargetingContext
     {
-        $cartSnapshot = $session->cart_snapshot ?? [];
-        $items = $cartSnapshot['items'] ?? [];
-
         return new TargetingContext(
-            cart: (object) [
-                'items' => $items,
-                'subtotal' => $session->subtotal,
-                'total' => $session->grand_total,
-                'quantity' => count($items),
-            ],
+            cart: PromotionTargetingCart::fromSession($session),
             user: null,
             request: null,
             metadata: [
@@ -164,13 +157,13 @@ final class PromotionsAdapter implements DiscountProvider
         foreach ($result['applied'] as $applied) {
             $proposals[] = new DiscountProposal(
                 providerKey: 'promotions',
-                candidateKey: 'promotion:' . ($applied['id'] ?? $applied['promotion_id'] ?? ''),
+                candidateKey: 'promotion:' . $applied['promotion_id'],
                 requestedAmount: $applied['discount'] ?? 0,
                 label: $applied['name'] ?? null,
                 code: $applied['code'] ?? null,
                 priority: 60,
                 meta: [
-                    'promotion_id' => $applied['id'] ?? $applied['promotion_id'] ?? null,
+                    'promotion_id' => $applied['promotion_id'],
                     'promotion_code' => $applied['code'] ?? null,
                 ],
             );

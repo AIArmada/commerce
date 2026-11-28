@@ -4,57 +4,40 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
-use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Actions\AddVoucherToWallet;
-use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\UpdateVoucher;
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\Support\VoucherLookupCache;
-use Akaunting\Money\Currency;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherRedemption;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use Akaunting\Money\Money;
-use Carbon\CarbonImmutable;
-use Closure;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 
 class VoucherService implements VoucherServiceInterface
 {
-    use QueriesVouchers;
+    use NormalizesVoucherCodes;
 
     public function __construct(
-        protected VoucherValidator $validator,
-        private readonly VoucherLookupCache $lookupCache,
+        protected VoucherValidation $validator,
+        private readonly VoucherCatalog $catalog,
     ) {}
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
-        $normalizedCode = $this->normalizeCode($code);
-
-        return $this->lookupCache->remember(
-            $normalizedCode,
-            $this->resolveOwner(),
-            $this->shouldIncludeGlobal(),
-            function () use ($normalizedCode): ?VoucherData {
-                $voucher = $this->voucherQuery()
-                    ->where('code', $normalizedCode)
-                    ->first();
-
-                return $voucher ? VoucherData::fromModel($voucher) : null;
-            },
-        );
+        return $this->catalog->find($code, $voucherId);
     }
 
     public function findOrFail(string $code): VoucherData
@@ -70,7 +53,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function invalidate(string $code): void
     {
-        $this->lookupCache->forget($this->normalizeCode($code), $this->resolveOwner());
+        $this->catalog->invalidate($code);
     }
 
     /**
@@ -82,15 +65,9 @@ class VoucherService implements VoucherServiceInterface
             $data['code'] = $this->normalizeCode($data['code']);
         }
 
-        $data['status'] ??= Active::class;
+        $data['status'] ??= 'active';
 
-        // Owner auto-assignment is handled inside CreateVoucher Action.
-        // Do NOT duplicate it here to keep a single source of truth.
-
-        /** @var VoucherModel $voucher */
-        $voucher = CreateVoucher::run($data);
-
-        return VoucherData::fromModel($voucher);
+        return app(VoucherCreator::class)->handle($data);
     }
 
     /**
@@ -98,18 +75,20 @@ class VoucherService implements VoucherServiceInterface
      */
     public function update(string $code, array $data): VoucherData
     {
-        $voucher = UpdateVoucher::run($this->normalizeCode($code), $data);
+        $voucherId = $this->catalog->resolveId($code);
 
-        return VoucherData::fromModel($voucher);
+        if ($voucherId === null) {
+            throw VoucherNotFoundException::withCode($code);
+        }
+
+        return app(VoucherUpdater::class)->handle($voucherId, $data);
     }
 
     public function delete(string $code): bool
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
+        $voucherId = $this->catalog->resolveId($code);
 
-        return $voucher !== null && $voucher->delete();
+        return $voucherId !== null && app(VoucherDeletion::class)->handle($voucherId);
     }
 
     public function validate(string $code, mixed $cart): VoucherValidationResult
@@ -119,15 +98,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function getRemainingUses(string $code): int
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return 0;
-        }
-
-        return $voucher->getRemainingUses() ?? PHP_INT_MAX;
+        return $this->catalog->getRemainingUses($code);
     }
 
     /**
@@ -140,16 +111,16 @@ class VoucherService implements VoucherServiceInterface
         ?array $metadata = null,
         ?Model $redeemedBy = null,
         ?string $notes = null,
-        ?VoucherModel $voucherModel = null
+        ?string $voucherId = null
     ): void {
-        RecordVoucherUsage::run(
+        app(VoucherUsageRecorder::class)->handle(
             code: $code,
             discountAmount: $discountAmount,
             channel: $channel,
             metadata: $metadata,
-            redeemedBy: $redeemedBy,
+            redeemedBy: EloquentRecordReference::fromModel($redeemedBy),
             notes: $notes,
-            voucherModel: $voucherModel,
+            voucherId: $voucherId,
         );
     }
 
@@ -164,52 +135,15 @@ class VoucherService implements VoucherServiceInterface
         ?Model $redeemedBy = null,
         ?string $notes = null
     ): void {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        if (
-            config('vouchers.redemption.manual_requires_flag', true)
-            && ! $voucher->allowsManualRedemption()
-        ) {
-            throw ManualRedemptionNotAllowedException::forVoucher($voucher->code);
-        }
-
-        /** @var string $channel */
-        $channel = config('vouchers.redemption.manual_channel', 'manual');
-
-        $this->recordUsage(
-            code: $code,
-            discountAmount: $discountAmount,
-            channel: $channel,
-            metadata: array_merge($metadata ?? [], ['reference' => $reference]),
-            redeemedBy: $redeemedBy,
-            notes: $notes,
-            voucherModel: $voucher
-        );
+        app(VoucherRedemption::class)->redeemManually($code, $discountAmount, $reference, $metadata, EloquentRecordReference::fromModel($redeemedBy), $notes);
     }
 
     /**
-     * @return EloquentCollection<int, VoucherUsage>
+     * @return list<VoucherUsageData>
      */
-    public function getUsageHistory(string $code, int $limit = 100): EloquentCollection
+    public function getUsageHistory(string $code, int $limit = 100): array
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return new EloquentCollection;
-        }
-
-        /** @var EloquentCollection<int, VoucherUsage> $result */
-        $result = $voucher->usages()
-            ->latest('used_at')
-            ->limit(max(1, $limit))
-            ->get();
-
-        return $result;
+        return app(VoucherUsageHistory::class)->handle($code, $limit);
     }
 
     /**
@@ -217,9 +151,9 @@ class VoucherService implements VoucherServiceInterface
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function addToWallet(string $code, Model $holder, ?array $metadata = null): VoucherWallet
+    public function addToWallet(string $code, Model $holder, ?array $metadata = null): WalletClaimData
     {
-        return AddVoucherToWallet::run($code, $holder, $metadata);
+        return app(WalletClaim::class)->handle($code, EloquentRecordReference::fromModel($holder), $metadata);
     }
 
     /**
@@ -227,253 +161,36 @@ class VoucherService implements VoucherServiceInterface
      */
     public function removeFromWallet(string $code, Model $holder): bool
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        return VoucherWallet::where('voucher_id', $voucher->id)
-            ->where('holder_type', $holder->getMorphClass())
-            ->where('holder_id', $holder->getKey())
-            ->whereNull('redeemed_at')
-            ->delete() > 0;
+        return app(WalletRemoval::class)->handle(
+            $code,
+            $holder->getMorphClass(),
+            $holder->exists ? (string) $holder->getKey() : '',
+        );
     }
 
     /**
      * Reserve a voucher for a checkout session.
      *
-     * Reservations prevent the voucher from being used elsewhere
-     * during the checkout process.
+     * Reservations track checkout intent; the locked redemption operation
+     * enforces usage limits and records committed usage.
      */
-    public function reserve(string $code, string $sessionId): void
+    public function reserve(string $code, string $sessionId, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        $cacheKey = $this->reservationCacheKey((string) $voucher->id, $sessionId);
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
-        $ttl = config('vouchers.reservation.ttl', 900); // 15 minutes default
-
-        Cache::put($cacheKey, [
-            'voucher_id' => $voucher->id,
-            'session_id' => $sessionId,
-            'reserved_at' => CarbonImmutable::now()->toIso8601String(),
-        ], $ttl);
-
-        // Guard the shared session index with a lock so concurrent
-        // checkouts cannot lose each other's entries.
-        $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl): void {
-            $sessionIds = Cache::get($sessionsKey, []);
-
-            if (! is_array($sessionIds)) {
-                $sessionIds = [];
-            }
-
-            if (! in_array($sessionId, $sessionIds, true)) {
-                $sessionIds[] = $sessionId;
-            }
-
-            Cache::put($sessionsKey, array_values($sessionIds), $ttl);
-        });
+        app(VoucherReservations::class)->reserve($code, $sessionId, $voucherId);
     }
 
-    /**
-     * Release a voucher reservation.
-     *
-     * @param  string|null  $sessionId  When provided, only releases that session's reservation
-     */
-    public function release(string $code, ?string $sessionId = null): void
+    public function release(string $code, ?string $sessionId = null, ?string $voucherId = null): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return;
-        }
-
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
-
-        if ($sessionId !== null) {
-            Cache::forget($this->reservationCacheKey((string) $voucher->id, $sessionId));
-
-            $ttl = config('vouchers.reservation.ttl', 900);
-
-            $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl): void {
-                $sessionIds = Cache::get($sessionsKey, []);
-
-                if (! is_array($sessionIds)) {
-                    return;
-                }
-
-                $sessionIds = array_values(array_filter(
-                    $sessionIds,
-                    fn (mixed $sid): bool => ! (is_string($sid) && $sid === $sessionId),
-                ));
-
-                if ($sessionIds === []) {
-                    Cache::forget($sessionsKey);
-                } else {
-                    Cache::put($sessionsKey, $sessionIds, $ttl);
-                }
-            });
-
-            return;
-        }
-
-        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $voucher): void {
-            $sessionIds = Cache::get($sessionsKey, []);
-
-            if (is_array($sessionIds)) {
-                foreach ($sessionIds as $sid) {
-                    if (is_string($sid) && $sid !== '') {
-                        Cache::forget($this->reservationCacheKey((string) $voucher->id, $sid));
-                    }
-                }
-            }
-
-            Cache::forget($sessionsKey);
-        });
+        app(VoucherReservations::class)->release($code, $sessionId, $voucherId);
     }
 
-    /**
-     * Redeem a voucher after successful order completion.
-     */
     public function redeem(
         string $code,
         string $orderId,
         ?int $discountAmount = null,
         ?string $currency = null,
+        ?string $voucherId = null,
     ): void {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        $currency = $this->resolveMoneyCurrency($currency, $voucher);
-
-        $voucherType = $voucher->type instanceof VoucherType
-            ? $voucher->type
-            : VoucherType::tryFrom((string) $voucher->type);
-
-        $redeemedBy = $this->resolveRedeemedByOrder($orderId);
-
-        // Calculate the discount amount based on voucher type
-        $discount = $discountAmount ?? match ($voucherType) {
-            VoucherType::Percentage => $this->percentageRedeemDiscount($voucher, $redeemedBy),
-            VoucherType::Fixed => (int) ($voucher->value ?? 0),
-            default => 0,
-        };
-        $money = Money::{$currency}(max(0, $discount));
-        $metadata = [
-            'order_id' => $orderId,
-        ];
-
-        if ($redeemedBy instanceof Model) {
-            $orderNumber = $redeemedBy->getAttribute('order_number');
-
-            if (is_string($orderNumber) && mb_trim($orderNumber) !== '') {
-                $metadata['order_number'] = mb_trim($orderNumber);
-            }
-
-            foreach (['subtotal', 'discount_total', 'grand_total'] as $attribute) {
-                $value = $redeemedBy->getAttribute($attribute);
-
-                if (is_numeric($value)) {
-                    $metadata[$attribute] = (int) $value;
-                }
-            }
-        }
-
-        $this->recordUsage(
-            code: $code,
-            discountAmount: $money,
-            channel: 'checkout',
-            metadata: $metadata,
-            redeemedBy: $redeemedBy,
-            voucherModel: $voucher
-        );
-    }
-
-    private function resolveMoneyCurrency(?string $currency, VoucherModel $voucher): string
-    {
-        $currencies = Currency::getCurrencies();
-
-        foreach ([$currency, $voucher->currency, config('vouchers.default_currency', 'MYR'), 'MYR'] as $candidate) {
-            if (! is_string($candidate) || $candidate === '') {
-                continue;
-            }
-
-            $normalized = mb_strtoupper($candidate);
-
-            if (preg_match('/^[A-Z]{3}$/', $normalized) && array_key_exists($normalized, $currencies)) {
-                return $normalized;
-            }
-        }
-
-        $firstAvailable = array_key_first($currencies);
-
-        return is_string($firstAvailable) && $firstAvailable !== '' ? $firstAvailable : 'MYR';
-    }
-
-    /**
-     * Recompute a percentage discount from the order subtotal when the
-     * caller did not supply the allocated checkout amount, so the usage
-     * row records the real discount instead of zero.
-     */
-    private function percentageRedeemDiscount(VoucherModel $voucher, ?Model $redeemedBy): int
-    {
-        $subtotal = $redeemedBy?->getAttribute('subtotal');
-
-        if (! is_numeric($subtotal) || (int) $subtotal <= 0) {
-            return 0;
-        }
-
-        return app(VoucherDiscountCalculator::class)->calculate(VoucherData::fromModel($voucher), (int) $subtotal);
-    }
-
-    private function resolveRedeemedByOrder(string $orderId): ?Model
-    {
-        if (! class_exists(Order::class) || ! Schema::hasTable((new Order)->getTable())) {
-            return null;
-        }
-
-        return Order::query()
-            ->select(['id', 'order_number', 'subtotal', 'discount_total', 'grand_total'])
-            ->find($orderId);
-    }
-
-    /**
-     * @param  Closure(): void  $callback
-     */
-    private function guardSessionIndex(string $sessionsKey, Closure $callback): void
-    {
-        $lock = Cache::lock($sessionsKey . ':lock', 10);
-
-        if (! $lock->get()) {
-            // The index is advisory and TTL-bound: under lock contention
-            // prefer availability (last-writer-wins) over failing checkout.
-            $callback();
-
-            return;
-        }
-
-        try {
-            $callback();
-        } finally {
-            $lock->release();
-        }
-    }
-
-    private function reservationCacheKey(string $voucherId, string $sessionId): string
-    {
-        return "voucher_reservation:{$voucherId}:{$sessionId}";
-    }
-
-    private function reservationSessionsCacheKey(string $voucherId): string
-    {
-        return "voucher_reservation_sessions:{$voucherId}";
+        app(VoucherRedemption::class)->redeem($code, $orderId, $discountAmount, $currency, $voucherId);
     }
 }

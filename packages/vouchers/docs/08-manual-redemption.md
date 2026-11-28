@@ -116,17 +116,17 @@ $history = Voucher::getUsageHistory('GIFTCARD');
 
 foreach ($history as $usage) {
     echo $usage->channel;           // 'manual'
-    echo $usage->discount_amount;   // 5000 (cents)
+    echo $usage->discountAmount;   // 5000 (cents)
     echo $usage->currency;          // 'MYR'
-    echo $usage->used_at;           // Carbon datetime
+    echo $usage->usedAt;           // immutable datetime
     echo $usage->notes;             // 'In-store purchase'
     
     // Reference is stored in metadata
     echo $usage->metadata['reference']; // 'POS-12345'
     
     // Staff who processed it
-    if ($usage->redeemedBy) {
-        echo $usage->redeemedBy->name;
+    if ($usage->redeemedById !== null) {
+        echo $usage->redeemedById;
     }
 }
 ```
@@ -223,7 +223,7 @@ class AdminVoucherController extends Controller
 Use the `ValidateVoucherCode` action for checkout-aware programmatic validation that returns a structured result:
 
 ```php
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Cart\Facades\Cart;
 
 $result = ValidateVoucherCode::run('SUMMER2024', Cart::getCartInstance('default', $cartIdentifier));

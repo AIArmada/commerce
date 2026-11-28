@@ -21,6 +21,7 @@ final class OwnerWriteGuard
         Model | string | null $owner = OwnerContext::CURRENT,
         bool $includeGlobal = false,
         ?string $message = null,
+        bool $lockForUpdate = false,
     ): Model {
         /** @var TModel $model */
         $model = ResolveOwnedModelOrFailAction::run(
@@ -29,6 +30,7 @@ final class OwnerWriteGuard
             owner: $owner,
             includeGlobal: $includeGlobal,
             message: $message,
+            lockForUpdate: $lockForUpdate,
         );
 
         return $model;

@@ -7,9 +7,10 @@ namespace AIArmada\FilamentVouchers\Widgets;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -105,39 +106,18 @@ final class AppliedVouchersWidget extends BaseWidget
             return collect([]);
         }
 
-        if (config('vouchers.owner.enabled', false)) {
-            $isVisible = OwnerQuery::applyToEloquentBuilder(
-                Cart::query(),
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            )
-                ->whereKey($this->record->getKey())
-                ->exists();
-
-            if (! $isVisible) {
-                return collect([]);
-            }
+        if (! CartSnapshotAccess::allows($this->record)) {
+            return collect([]);
         }
 
         try {
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $this->record->instance,
-                $this->record->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($this->record->toSnapshotData());
 
-            /** @phpstan-ignore-next-line - getAppliedVouchers method is added dynamically via proxy */
-            $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-            $appliedVoucherItems = [];
-            if (is_iterable($appliedVouchers)) {
-                foreach ($appliedVouchers as $appliedVoucher) {
-                    $appliedVoucherItems[] = $appliedVoucher;
-                }
-            }
+            $appliedVouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             // Transform vouchers into a collection for the table
             /** @var Collection<int|string, mixed> $voucherCollection */
-            $voucherCollection = collect($appliedVoucherItems);
+            $voucherCollection = collect($appliedVouchers);
 
             return $voucherCollection->map(function ($voucher) {
                 return [

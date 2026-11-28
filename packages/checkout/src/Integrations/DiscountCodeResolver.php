@@ -8,9 +8,8 @@ use AIArmada\Checkout\Data\ResolvedDiscountCode;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 
 final class DiscountCodeResolver
 {
@@ -59,21 +58,15 @@ final class DiscountCodeResolver
         $validationContext = $this->cartResolver()->resolveVoucherValidationContext($session);
         $validation = $voucherService->validate($code, $validationContext);
 
-        if (is_array($validation)) {
-            $voucher = $validation['voucher'] ?? null;
-
-            return ($validation['valid'] ?? false) && is_array($voucher)
-                ? $voucher
-                : null;
-        }
-
-        if (! $validation instanceof VoucherValidationResult || ! $validation->isValid) {
+        if (! $validation->isValid) {
             return null;
         }
 
-        $voucherData = $voucherService->find($code);
+        $snapshot = $validation->getDetail('voucher');
 
-        return $voucherData?->toArray();
+        return is_array($snapshot) && is_string($snapshot['id'] ?? null) && $snapshot['id'] !== ''
+            ? $snapshot
+            : null;
     }
 
     private function resolvePromoCode(CheckoutSession $session): ?string

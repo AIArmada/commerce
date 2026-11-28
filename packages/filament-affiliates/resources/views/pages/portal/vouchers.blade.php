@@ -63,7 +63,7 @@
                                     <span>{{ $voucher->name }}</span>
                                 </td>
                                 <td>
-                                    <x-filament::badge :color="\AIArmada\Vouchers\Enums\VoucherType::from($voucher->type->value)->color()" size="sm">
+                                    <x-filament::badge :color="\AIArmada\Vouchers\Data\VoucherType::from($voucher->type->value)->color()" size="sm">
                                         {{ $voucher->type->label() }}
                                     </x-filament::badge>
                                 </td>
@@ -93,10 +93,10 @@
                                 <td class="fia-portal-status">
                                     @php
                                         $statusColor = match (true) {
-                                            $voucher->status instanceof \AIArmada\Vouchers\States\Active => 'success',
-                                            $voucher->status instanceof \AIArmada\Vouchers\States\Paused => 'warning',
-                                            $voucher->status instanceof \AIArmada\Vouchers\States\Expired => 'danger',
-                                            $voucher->status instanceof \AIArmada\Vouchers\States\Depleted => 'gray',
+                                            $voucher->status instanceof \AIArmada\Vouchers\Features\Lifecycle\States\Active => 'success',
+                                            $voucher->status instanceof \AIArmada\Vouchers\Features\Lifecycle\States\Paused => 'warning',
+                                            $voucher->status instanceof \AIArmada\Vouchers\Features\Lifecycle\States\Expired => 'danger',
+                                            $voucher->status instanceof \AIArmada\Vouchers\Features\Lifecycle\States\Depleted => 'gray',
                                             default => 'gray',
                                         };
                                     @endphp

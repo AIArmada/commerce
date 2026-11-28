@@ -8,14 +8,13 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 
 uses(TestCase::class);
 
-it('uses voucher code when adding to wallet via service fallback', function (): void {
+it('claims the exact voucher with notes through the wallet action', function (): void {
     $user = User::query()->create([
         'name' => 'Wallet Action User',
         'email' => 'wallet-action-user@example.com',
@@ -30,32 +29,10 @@ it('uses voucher code when adding to wallet via service fallback', function (): 
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
-
-    $fakeService = new class
-    {
-        public ?string $code = null;
-
-        public mixed $holder = null;
-
-        /** @var array<string, mixed>|null */
-        public ?array $metadata = null;
-
-        /**
-         * @param  array<string, mixed>|null  $metadata
-         */
-        public function addToWallet(string $code, mixed $holder, ?array $metadata = null): void
-        {
-            $this->code = $code;
-            $this->holder = $holder;
-            $this->metadata = $metadata;
-        }
-    };
-
-    app()->instance(VoucherService::class, $fakeService);
 
     $action = AddToMyWalletAction::make();
     $handler = $action->record($voucher)->getActionFunction();
@@ -66,9 +43,16 @@ it('uses voucher code when adding to wallet via service fallback', function (): 
         'notes' => 'Remember for checkout',
     ], $voucher);
 
-    expect($fakeService->code)->toBe('WALLET-ACTION-CODE')
-        ->and((string) $fakeService->holder?->getKey())->toBe((string) $user->getKey())
-        ->and($fakeService->metadata)->toBe(['notes' => 'Remember for checkout']);
+    $entry = VoucherWallet::query()->where('voucher_id', $voucher->getKey())->sole();
+
+    expect((string) $entry->holder_id)->toBe((string) $user->getKey())
+        ->and($entry->holder_type)->toBe($user->getMorphClass())
+        ->and($entry->metadata)->toBe(['notes' => 'Remember for checkout']);
+
+    $handler(['notes' => 'Do not overwrite'], $voucher);
+
+    expect(VoucherWallet::query()->where('voucher_id', $voucher->getKey())->count())->toBe(1)
+        ->and($entry->fresh()->metadata)->toBe(['notes' => 'Remember for checkout']);
 });
 
 it('does not add cross-owner voucher to wallet when owner scoping is enabled', function (): void {
@@ -101,7 +85,7 @@ it('does not add cross-owner voucher to wallet when owner scoping is enabled', f
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
         'owner_type' => $ownerB->getMorphClass(),
@@ -109,28 +93,6 @@ it('does not add cross-owner voucher to wallet when owner scoping is enabled', f
     ]));
 
     test()->actingAs($user);
-
-    $fakeService = new class
-    {
-        public ?string $code = null;
-
-        public mixed $holder = null;
-
-        /** @var array<string, mixed>|null */
-        public ?array $metadata = null;
-
-        /**
-         * @param  array<string, mixed>|null  $metadata
-         */
-        public function addToWallet(string $code, mixed $holder, ?array $metadata = null): void
-        {
-            $this->code = $code;
-            $this->holder = $holder;
-            $this->metadata = $metadata;
-        }
-    };
-
-    app()->instance(VoucherService::class, $fakeService);
 
     $action = AddToMyWalletAction::make();
     $handler = $action->record($voucherOwnedByB)->getActionFunction();
@@ -141,5 +103,41 @@ it('does not add cross-owner voucher to wallet when owner scoping is enabled', f
         'notes' => 'Should be blocked',
     ], $voucherOwnedByB);
 
-    expect($fakeService->code)->toBeNull();
+    expect(VoucherWallet::withoutGlobalScopes()->where('voucher_id', $voucherOwnedByB->getKey())->exists())->toBeFalse();
+});
+
+it('claims the selected global voucher rather than a tenant voucher with the same code', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Wallet Collision Owner',
+        'email' => 'wallet-collision-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $attributes = [
+        'code' => 'SHARED-WALLET-CODE',
+        'name' => 'Shared Wallet Code',
+        'type' => VoucherType::Fixed,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => 'active',
+    ];
+
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => Voucher::query()->create($attributes));
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => Voucher::query()->create($attributes));
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+    test()->actingAs($owner);
+
+    $handler = AddToMyWalletAction::make()->record($global)->getActionFunction();
+
+    OwnerContext::withOwner($owner, static function () use ($handler, $global, $owned): void {
+        $handler(['notes' => 'Selected global voucher'], $global);
+
+        expect(VoucherWallet::query()->where('voucher_id', $global->getKey())->sole()->metadata)
+            ->toBe(['notes' => 'Selected global voucher'])
+            ->and(VoucherWallet::query()->where('voucher_id', $owned->getKey())->exists())->toBeFalse();
+    });
 });

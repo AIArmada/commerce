@@ -14,13 +14,13 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active as ActiveVoucher;
-use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active as ActiveVoucher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 

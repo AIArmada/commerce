@@ -5,6 +5,13 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 
 describe('VoucherValidationResult', function (): void {
+    it('is an immutable framework-independent result', function (): void {
+        $reflection = new ReflectionClass(VoucherValidationResult::class);
+        expect($reflection->isReadOnly())->toBeTrue()
+            ->and($reflection->isFinal())->toBeTrue()
+            ->and($reflection->getParentClass())->toBeFalse();
+    });
+
     describe('construction', function (): void {
         it('can be constructed with all parameters', function (): void {
             $result = new VoucherValidationResult(
@@ -197,4 +204,14 @@ describe('VoucherValidationResult', function (): void {
             'user limit exceeded' => ['User usage limit exceeded', ['user_limit' => 1, 'user_uses' => 1, 'user_id' => 'user-123']],
         ]);
     });
+});
+
+it('requires a valid result and exact voucher identity', function (): void {
+    $details = ['voucher' => ['id' => 'selected']];
+
+    expect(VoucherValidationResult::valid($details)->matchesVoucher('selected'))->toBeTrue()
+        ->and(VoucherValidationResult::valid($details)->matchesVoucher('replacement'))->toBeFalse()
+        ->and(VoucherValidationResult::valid()->matchesVoucher('selected'))->toBeFalse()
+        ->and(VoucherValidationResult::invalid('Invalid', $details)->matchesVoucher('selected'))->toBeFalse()
+        ->and(VoucherValidationResult::valid(['voucher' => ['id' => '']])->matchesVoucher(''))->toBeFalse();
 });

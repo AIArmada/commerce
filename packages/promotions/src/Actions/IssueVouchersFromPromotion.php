@@ -6,12 +6,14 @@ namespace AIArmada\Promotions\Actions;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\States\Active;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -29,20 +31,27 @@ final class IssueVouchersFromPromotion
         ?string $codePrefix = null,
         array $overrides = [],
     ): Collection {
-        if ($count < 1) {
-            throw new InvalidArgumentException('Voucher issue count must be at least 1.');
+        if ($count < 1 || $count > 100) {
+            throw new InvalidArgumentException('Voucher issue count must be between 1 and 100.');
         }
 
         $voucherService = $this->resolveVoucherService();
-        $owner = OwnerContext::fromTypeAndId($promotion->owner_type, $promotion->owner_id);
+        $this->assertSharedConnection($promotion);
 
-        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-            throw new NoCurrentOwnerException(
-                'Issuing vouchers from a global promotion requires explicit global context. Use OwnerContext::withOwner(null, ...) before calling this action.'
-            );
-        }
+        return $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
+            $promotion = Promotion::query()->withoutGlobalScope(OwnerScope::class)->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
+            $owner = OwnerContext::resolve();
 
-        return OwnerContext::withOwner($owner, function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
+            if ($promotion->owner_type === null && $promotion->owner_id === null) {
+                if (! OwnerContext::isExplicitGlobal()) {
+                    throw new NoCurrentOwnerException('Issuing vouchers from a global promotion requires explicit global context.');
+                }
+            } elseif ($owner === null
+                || $owner->getMorphClass() !== $promotion->owner_type
+                || (string) $owner->getKey() !== (string) $promotion->owner_id) {
+                throw new AuthorizationException('Promotion is not accessible in the current owner scope.');
+            }
+
             $issued = collect();
 
             for ($sequence = 1; $sequence <= $count; $sequence++) {
@@ -51,11 +60,37 @@ final class IssueVouchersFromPromotion
                     $overrides,
                 );
 
-                $issued->push($voucherService->create($payload));
+                $payload['usage_limit'] = 1;
+                $payload['promotion_id'] = $promotion->id;
+                $payload['owner_type'] = $promotion->owner_type;
+                $payload['owner_id'] = $promotion->owner_id;
+
+                $voucher = $voucherService->create($payload);
+
+                if ($voucher->ownerType !== $promotion->owner_type
+                    || ($voucher->ownerId === null) !== ($promotion->owner_id === null)
+                    || (string) $voucher->ownerId !== (string) $promotion->owner_id) {
+                    throw new AuthorizationException('The issued voucher must belong to the promotion owner.');
+                }
+
+                $issued->push($voucher);
             }
 
             return $issued;
         });
+    }
+
+    private function assertSharedConnection(Promotion $promotion): void
+    {
+        $catalog = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCatalog';
+
+        if (! interface_exists($catalog)) {
+            throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');
+        }
+
+        if (app($catalog)->connectionName() !== $promotion->getConnection()->getName()) {
+            throw new LogicException('Promotion voucher issuance requires a shared database connection.');
+        }
     }
 
     /**
@@ -63,7 +98,7 @@ final class IssueVouchersFromPromotion
      */
     private function resolveVoucherService(): object
     {
-        $contract = 'AIArmada\\Vouchers\\Contracts\\VoucherServiceInterface';
+        $contract = 'AIArmada\\Vouchers\\Runtime\\VoucherServiceInterface';
 
         if (! interface_exists($contract)) {
             throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');
@@ -94,7 +129,7 @@ final class IssueVouchersFromPromotion
             'usage_limit' => 1,
             'starts_at' => $promotion->starts_at,
             'expires_at' => $promotion->ends_at,
-            'status' => Active::class,
+            'status' => 'active',
             'owner_type' => $promotion->owner_type,
             'owner_id' => $promotion->owner_id,
             'target_definition' => $this->buildTargetDefinition($promotion),

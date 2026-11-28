@@ -10,9 +10,11 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Promotions\Actions\IncrementPromotionUsage;
 use AIArmada\Promotions\Database\Factories\PromotionFactory;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,8 +24,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -212,8 +212,10 @@ class Promotion extends Model implements Auditable
             $voucher = new $voucherModelClass;
             $table = $voucher->getTable();
 
-            return Schema::hasTable($table)
-                && Schema::hasColumn($table, 'promotion_id');
+            $schema = $voucher->getConnection()->getSchemaBuilder();
+
+            return $schema->hasTable($table)
+                && $schema->hasColumn($table, 'promotion_id');
         } catch (Throwable) {
             return false;
         }
@@ -224,17 +226,7 @@ class Promotion extends Model implements Auditable
      */
     private static function issuedVoucherModelClass(): ?string
     {
-        foreach ([
-            '\\AIArmada\\Vouchers\\Models\\Voucher',
-        ] as $voucherModelClass) {
-            if (class_exists($voucherModelClass)) {
-                /** @var class-string<Model> $voucherModelClass */
-
-                return $voucherModelClass;
-            }
-        }
-
-        return null;
+        return class_exists(Voucher::class) ? Voucher::class : null;
     }
 
     // =========================================================================
@@ -327,7 +319,7 @@ class Promotion extends Model implements Auditable
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = true): Builder
     {
         if (! config('promotions.features.owner.enabled', false)) {
             return $query;
@@ -335,14 +327,8 @@ class Promotion extends Model implements Auditable
 
         $includeGlobal = $includeGlobal && config('promotions.features.owner.include_global', false);
 
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
         /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
         return $scoped;
     }
@@ -434,24 +420,7 @@ class Promotion extends Model implements Auditable
 
     public function tryIncrementUsage(): bool
     {
-        $query = static::query()
-            ->whereKey($this->getKey())
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('usage_limit')
-                    ->orWhereColumn('usage_count', '<', 'usage_limit');
-            });
-
-        if (config('promotions.features.owner.enabled', false)) {
-            $query->forOwner($this->owner, false);
-        }
-
-        $updated = $query->increment('usage_count');
-
-        if ($updated === 1) {
-            $this->usage_count = (int) $this->usage_count + 1;
-        }
-
-        return $updated === 1;
+        return app(IncrementPromotionUsage::class)->handle($this);
     }
 
     public function hasRemainingUsage(): bool
@@ -583,24 +552,6 @@ class Promotion extends Model implements Auditable
             ) {
                 throw new AuthorizationException('Cannot write promotions outside the current owner scope.');
             }
-        });
-
-        static::deleting(function (Promotion $promotion): void {
-            if (config('promotions.features.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-
-                if ($owner === null) {
-                    if ($promotion->owner_type !== null || $promotion->owner_id !== null) {
-                        throw new AuthorizationException('Cannot delete owned promotions without an owner context.');
-                    }
-                } elseif (! $promotion->belongsToOwner($owner)) {
-                    throw new AuthorizationException('Cannot delete promotions outside the current owner scope.');
-                }
-            }
-
-            DB::table((string) config('promotions.database.tables.promotionables', 'promotionables'))
-                ->where('promotion_id', $promotion->id)
-                ->delete();
         });
     }
 }

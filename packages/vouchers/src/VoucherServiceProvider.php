@@ -4,33 +4,31 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers;
 
-use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
-use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
-use AIArmada\Vouchers\Cart\VoucherConditionProvider;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
+use AIArmada\Vouchers\Platform\ExtensionRegistry;
+use AIArmada\Vouchers\Platform\FeatureCatalog;
+use AIArmada\Vouchers\Platform\FeatureModule;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
-use AIArmada\Vouchers\Support\CartManagerWithVouchers;
-use AIArmada\Vouchers\Support\VoucherAffiliateRemovalGuard;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
-use Illuminate\Support\Facades\Event;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class VoucherServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -42,25 +40,17 @@ final class VoucherServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->registerFeatures();
+
         $this->app->singleton(VoucherService::class);
-        $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(Services\VoucherDiscountCalculator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
-        $this->app->singleton(AffiliateIntegrationRegistrar::class);
-
-        if (interface_exists(AffiliateRemovalGuard::class)) {
-            $this->app->tag([VoucherAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
-        }
 
         // Bind interface for checkout package integration
         $this->app->bind(VoucherServiceInterface::class, VoucherService::class);
         $this->app->bind(StackingPolicyInterface::class, static fn (): StackingPolicy => StackingPolicy::fromConfig(
             (array) config('vouchers.stacking', [])
         ));
-
-        if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->singleton(VoucherConditionProvider::class);
-        }
 
         $this->app->resolving(CartConditionResolver::class, function (CartConditionResolver $resolver): void {
             $resolver->register(function (mixed $payload) {
@@ -108,19 +98,8 @@ final class VoucherServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        Event::listen(VoucherApplied::class, IncrementVoucherAppliedCount::class);
-
-        $checkoutStartedEvent = 'AIArmada\\Checkout\\Events\\CheckoutStarted';
-
-        if (class_exists($checkoutStartedEvent)) {
-            Event::listen($checkoutStartedEvent, ValidateVoucherOnCheckout::class);
-        }
-
-        $this->app->make(AffiliateIntegrationRegistrar::class)->register();
-
-        if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->make(ConditionProviderRegistry::class)
-                ->register(VoucherConditionProvider::class);
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
         }
 
         $this->app->extend('cart', function (CartManagerInterface $manager): CartManagerInterface {
@@ -136,6 +115,23 @@ final class VoucherServiceProvider extends PackageServiceProvider
         });
     }
 
+    private function registerFeatures(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid voucher feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+    }
+
     /**
      * @return array<string>
      */
@@ -144,11 +140,10 @@ final class VoucherServiceProvider extends PackageServiceProvider
         return [
             VoucherService::class,
             VoucherServiceInterface::class,
-            VoucherValidator::class,
+            VoucherValidation::class,
             StackingPolicyInterface::class,
             Services\VoucherDiscountCalculator::class,
             VoucherRulesFactory::class,
-            AffiliateIntegrationRegistrar::class,
             'voucher',
         ];
     }

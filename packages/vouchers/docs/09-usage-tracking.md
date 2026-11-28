@@ -24,7 +24,7 @@ This allows tracking how many times a voucher was *applied to a cart* vs actuall
 ## Voucher Statistics
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 $voucher = Voucher::query()->withCount('usages')->where('code', 'SUMMER2024')->first();
 
@@ -69,14 +69,14 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 $history = Voucher::getUsageHistory('SUMMER2024');
 
 foreach ($history as $usage) {
-    echo "Date: " . $usage->used_at->format('d M Y H:i');
-    // discount_amount is integer minor units for $usage->currency
-    echo "Amount: " . MoneyFormatter::formatMinor($usage->discount_amount, $usage->currency);
+    echo "Date: " . $usage->usedAt->format('d M Y H:i');
+    // discountAmount is integer minor units for $usage->currency
+    echo "Amount: " . MoneyFormatter::formatMinor($usage->discountAmount, $usage->currency);
     echo "Currency: " . $usage->currency;
     echo "Channel: " . $usage->channel;
     
-    if ($usage->redeemedBy) {
-        echo "User: " . $usage->redeemedBy->name;
+    if ($usage->redeemedById !== null) {
+        echo $usage->redeemedById;
     }
     
     if ($usage->notes) {
@@ -103,7 +103,7 @@ This extra metadata is what powers downstream Filament exports, affiliate-aware 
 ## VoucherUsage Model
 
 ```php
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 
 // Query usage records
 $usages = VoucherUsage::query()
@@ -248,15 +248,16 @@ class VoucherDashboardController extends Controller
 }
 ```
 
-## RecordVoucherUsage Action
+## VoucherUsageRecorder API
 
-The `RecordVoucherUsage` action is the canonical way to persist a voucher redemption. It handles limit checking, state transitions (marks voucher as `Depleted` when the global limit is reached), and dispatches `VoucherUsageRecorded`.
+The `VoucherUsageRecorder` feature API is the canonical way to persist a voucher redemption. It handles limit checking, state transitions (marks voucher as `Depleted` when the global limit is reached), and dispatches `VoucherUsageRecorded`.
 
 ```php
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use Akaunting\Money\Money;
 
-$usage = RecordVoucherUsage::run(
+$usage = app(VoucherUsageRecorder::class)->handle(
     code: 'SUMMER2024',
     discountAmount: Money::MYR(2500),
     channel: 'web',
@@ -264,7 +265,7 @@ $usage = RecordVoucherUsage::run(
         'order_id' => $order->id,
         'order_number' => $order->number,
     ],
-    redeemedBy: $order,
+    redeemedBy: EloquentRecordReference::fromModel($order),
     notes: 'Checkout redemption',
 );
 ```
@@ -278,18 +279,18 @@ voucher as the public readonly `$voucher` property (a `VoucherData` DTO).
 
 ### VoucherUsageRecorded
 
-Dispatched by `RecordVoucherUsage::run()` after a usage record is persisted.
+Dispatched by `app(VoucherUsageRecorder::class)->handle()` after a usage record is persisted.
 
 ```php
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 
 Event::listen(VoucherUsageRecorded::class, function ($event) {
     $voucherData = $event->voucher;    // VoucherData DTO
-    $usage = $event->usage;            // VoucherUsage model
+    $usage = $event->usage;            // VoucherUsageData immutable snapshot
 
     Analytics::track('voucher_redeemed', [
         'voucher_code' => $voucherData->code,
-        'discount' => $usage->discount_amount,
+        'discount' => $usage->discountAmount,
         'currency' => $usage->currency,
         'channel' => $usage->channel,
     ]);

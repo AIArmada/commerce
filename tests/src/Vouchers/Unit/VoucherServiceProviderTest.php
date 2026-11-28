@@ -3,19 +3,22 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Platform\ExtensionRegistry;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Services\VoucherValidator;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,6 +42,11 @@ describe('VoucherServiceProvider', function (): void {
 
             expect($validator1)->toBeInstanceOf(VoucherValidator::class)
                 ->and($validator1)->toBe($validator2);
+        });
+
+        it('registers the lifecycle voucher catalog as singleton', function (): void {
+            expect(app(VoucherCatalog::class))->toBeInstanceOf(VoucherCatalog::class)
+                ->and(app(VoucherCatalog::class))->toBe(app(VoucherCatalog::class));
         });
 
         it('registers VoucherRulesFactory as singleton', function (): void {
@@ -76,9 +84,15 @@ describe('VoucherServiceProvider', function (): void {
             expect($provides)->toContain(VoucherService::class)
                 ->and($provides)->toContain(VoucherValidator::class)
                 ->and($provides)->toContain(VoucherRulesFactory::class)
-                ->and($provides)->toContain(AffiliateIntegrationRegistrar::class)
                 ->and($provides)->toContain('voucher');
         });
+    });
+
+    it('registers cart condition providers from feature manifests', function (): void {
+        expect(app(ExtensionRegistry::class)->classesFor('cart.conditions'))
+            ->toBe([VoucherConditionProvider::class])
+            ->and(app(ConditionProviderRegistry::class)->providerKeys())
+            ->toContain(VoucherConditionProvider::class);
     });
 
     describe('CartConditionResolver registration', function (): void {
@@ -92,7 +106,7 @@ describe('VoucherServiceProvider', function (): void {
                 'type' => VoucherType::Fixed->value,
                 'value' => 50,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $voucherCondition = new VoucherCondition($voucherData, order: 90, dynamic: false);
@@ -112,7 +126,7 @@ describe('VoucherServiceProvider', function (): void {
                 'type' => VoucherType::Percentage->value,
                 'value' => 10,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $result = $resolver->resolve($voucherData);

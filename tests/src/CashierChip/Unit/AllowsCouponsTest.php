@@ -7,11 +7,8 @@ use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
@@ -74,7 +71,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -110,7 +107,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Paused::class,
+            'status' => 'paused',
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -127,7 +124,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -144,7 +141,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -177,7 +174,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -257,8 +254,18 @@ final class FakeVoucherService extends VoucherService
         $this->vouchersByCode = $vouchersByCode;
     }
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
+        if ($voucherId !== null) {
+            foreach ($this->vouchersByCode as $voucher) {
+                if ($voucher->id === $voucherId) {
+                    return $voucher;
+                }
+            }
+
+            return null;
+        }
+
         return $this->vouchersByCode[$code] ?? null;
     }
 
@@ -270,7 +277,7 @@ final class FakeVoucherService extends VoucherService
         ?array $metadata = null,
         ?Model $redeemedBy = null,
         ?string $notes = null,
-        ?VoucherModel $voucherModel = null,
+        ?string $voucherId = null,
     ): void {
         $this->recordUsageCalls[] = [
             'code' => $code,

@@ -5,9 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
-use AIArmada\Vouchers\States\Active;
 
 it('calculates percentage discounts using basis points', function (): void {
     $calculator = app(VoucherDiscountCalculator::class);
@@ -18,7 +17,7 @@ it('calculates percentage discounts using basis points', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 1250,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     expect($calculator->calculate($voucher, 10000))->toBe(1250);
@@ -34,7 +33,7 @@ it('applies max discount caps for simple vouchers', function (): void {
         'value' => 5000,
         'max_discount' => 1200,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     expect($calculator->calculate($voucher, 10000))->toBe(1200);
@@ -65,7 +64,7 @@ it('calculates buy x get y discounts against the cart', function (): void {
             ],
         ],
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     expect($calculator->calculate($voucher, 6000, $cart))->toBe(2000);

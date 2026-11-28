@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Stacking\Rules\CampaignExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\CategoryExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\MaxDiscountPercentageRule;
@@ -17,7 +17,6 @@ use AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule;
 use AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule;
 use AIArmada\Vouchers\Stacking\Rules\ValueThresholdRule;
-use AIArmada\Vouchers\States\Active;
 
 function createStackingTestCart(int $subtotalCents = 10000): Cart
 {
@@ -65,7 +64,7 @@ function createVoucherCondition(
         'owner_type' => null,
         'starts_at' => null,
         'expires_at' => null,
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => null,
         'metadata' => $metadata,
     ]);

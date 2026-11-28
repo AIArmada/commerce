@@ -8,7 +8,7 @@ use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \AIArmada\Vouchers\Data\VoucherData|null find(string $code)
+ * @method static \AIArmada\Vouchers\Data\VoucherData|null find(string $code, ?string $voucherId = null)
  * @method static \AIArmada\Vouchers\Data\VoucherData findOrFail(string $code)
  * @method static void invalidate(string $code)
  * @method static \AIArmada\Vouchers\Data\VoucherData create(array<string, mixed> $data)
@@ -16,10 +16,10 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool delete(string $code)
  * @method static \AIArmada\Vouchers\Data\VoucherValidationResult validate(string $code, mixed $cart)
  * @method static int getRemainingUses(string $code)
- * @method static void recordUsage(string $code, \Akaunting\Money\Money $discountAmount, ?string $channel = null, ?array<string, mixed> $metadata = null, ?\Illuminate\Database\Eloquent\Model $redeemedBy = null, ?string $notes = null, ?\AIArmada\Vouchers\Models\Voucher $voucherModel = null)
+ * @method static void recordUsage(string $code, \Akaunting\Money\Money $discountAmount, ?string $channel = null, ?array<string, mixed> $metadata = null, ?\Illuminate\Database\Eloquent\Model $redeemedBy = null, ?string $notes = null, ?string $voucherId = null)
  * @method static void redeemManually(string $code, \Akaunting\Money\Money $discountAmount, ?string $reference = null, ?array<string, mixed> $metadata = null, ?\Illuminate\Database\Eloquent\Model $redeemedBy = null, ?string $notes = null)
- * @method static \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Vouchers\Models\VoucherUsage> getUsageHistory(string $code)
- * @method static \AIArmada\Vouchers\Models\VoucherWallet addToWallet(string $code, \Illuminate\Database\Eloquent\Model $owner, ?array<string, mixed> $metadata = null)
+ * @method static list<\AIArmada\Vouchers\Data\VoucherUsageData> getUsageHistory(string $code, int $limit = 100)
+ * @method static \AIArmada\Vouchers\Data\WalletClaimData addToWallet(string $code, \Illuminate\Database\Eloquent\Model $owner, ?array<string, mixed> $metadata = null)
  * @method static bool removeFromWallet(string $code, \Illuminate\Database\Eloquent\Model $owner)
  *
  * @see VoucherService

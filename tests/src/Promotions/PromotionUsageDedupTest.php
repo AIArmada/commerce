@@ -7,13 +7,14 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
+use AIArmada\Promotions\Actions\RecordPromotionFulfillmentUsage;
+use AIArmada\Promotions\EntryPoints\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Str;
 
-function persistedOrderWithPromotion(User $owner, Promotion $promotion): Order
+function persistedOrderWithPromotion(User $owner, Promotion $promotion, mixed $amount = 1000): Order
 {
-    return OwnerContext::withOwner($owner, function () use ($owner, $promotion): Order {
+    return OwnerContext::withOwner($owner, function () use ($owner, $promotion, $amount): Order {
         $session = new CheckoutSession;
         $session->forceFill([
             'id' => (string) Str::uuid(),
@@ -29,7 +30,7 @@ function persistedOrderWithPromotion(User $owner, Promotion $promotion): Order
                     [
                         'provider_key' => 'promotions',
                         'candidate_key' => 'promotion:' . $promotion->id,
-                        'requested_amount' => 1000,
+                        'requested_amount' => $amount,
                         'meta' => ['promotion_id' => $promotion->id],
                     ],
                 ],
@@ -47,6 +48,8 @@ function persistedOrderWithPromotion(User $owner, Promotion $promotion): Order
             'metadata' => ['checkout_session_id' => $session->id],
         ]);
         $order->save();
+        $session->order_id = (string) $order->getKey();
+        $session->save();
 
         return $order;
     });
@@ -63,7 +66,7 @@ it('counts each order only once when payment events are redelivered', function (
     $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
 
     $order = persistedOrderWithPromotion($owner, $promotion);
-    $listener = new MarkPromotionAsUsedOnFulfillment;
+    $listener = app(MarkPromotionAsUsedOnFulfillment::class);
 
     $listener->handle(new OrderFulfillmentRequired(order: $order, transactionId: 'txn_1', gateway: 'chip'));
     $listener->handle(new OrderFulfillmentRequired(order: $order->fresh(), transactionId: 'txn_1', gateway: 'chip'));
@@ -71,24 +74,84 @@ it('counts each order only once when payment events are redelivered', function (
     expect($promotion->fresh()->usage_count)->toBe(1);
 });
 
-test('stamp persistence failure aborts instead of being swallowed', function (): void {
+test('stamp persistence failure rolls back the promotion usage increment', function (): void {
     $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
 
-    $order = new class extends Order
-    {
-        public function saveQuietly(array $options = []): bool
-        {
+    Order::updating(static function (Order $updating): void {
+        if (array_key_exists('promotions_usage_counted', $updating->metadata ?? [])) {
             throw new RuntimeException('disk on fire');
         }
-    };
-    $order->forceFill([
-        'id' => (string) Str::uuid(),
-        'metadata' => [],
-    ]);
-    $order->exists = true;
+    });
 
-    $method = new ReflectionMethod(MarkPromotionAsUsedOnFulfillment::class, 'persistCountedPromotionIds');
+    expect(fn () => app(RecordPromotionFulfillmentUsage::class)->handle(
+        $order,
+        $owner->getMorphClass(),
+        $owner->getKey(),
+    ))->toThrow(RuntimeException::class, 'disk on fire');
 
-    expect(fn (): mixed => $method->invoke(new MarkPromotionAsUsedOnFulfillment, $order, $owner, ['promo-1']))
-        ->toThrow(RuntimeException::class, 'disk on fire');
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+});
+
+it('counts a global promotion when global promotions are enabled for the order owner', function (): void {
+    config()->set('promotions.features.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner(null, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(1)
+        ->and($order->fresh()->metadata['promotions_usage_counted'])->toBe([$promotion->id]);
+});
+
+it('does not count another tenant promotion when promotion owner scoping is disabled', function (): void {
+    $owner = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($otherOwner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
+
+    config()->set('promotions.features.owner.enabled', false);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+});
+
+it('does not consume promotion usage for an invalid allocated amount', function (mixed $amount): void {
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion, $amount);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+})->with([0, -1, '1000', null, 1.5, true]);
+
+it('rejects checkout allocations from another order belonging to the same owner', function (): void {
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $original = persistedOrderWithPromotion($owner, $promotion);
+    $other = persistedOrderWithPromotion($owner, $promotion);
+
+    OwnerContext::withOwner($owner, function () use ($other, $original): void {
+        $other->metadata = ['checkout_session_id' => $original->metadata['checkout_session_id']];
+        $other->save();
+    });
+
+    $action = app(RecordPromotionFulfillmentUsage::class);
+    $action->handle($other, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($other->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+
+    $action->handle($original, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(1)
+        ->and($original->fresh()->metadata['promotions_usage_counted'])->toBe([$promotion->id]);
 });

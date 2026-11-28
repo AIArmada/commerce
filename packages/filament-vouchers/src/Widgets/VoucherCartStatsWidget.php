@@ -8,9 +8,8 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -93,15 +92,7 @@ final class VoucherCartStatsWidget extends BaseWidget
             $driver = ConnectionDriver::name($connection);
             $escapeClause = LikeSearch::escapeClause($connection);
 
-            $cartQuery = $cartModel::query();
-
-            if (config('vouchers.owner.enabled', false)) {
-                $cartQuery = OwnerQuery::applyToEloquentBuilder(
-                    $cartQuery,
-                    OwnerContext::resolve(),
-                    (bool) config('vouchers.owner.include_global', false),
-                );
-            }
+            $cartQuery = CartSnapshotAccess::scope($cartModel::query());
 
             return $cartQuery
                 ->whereNotNull('conditions')

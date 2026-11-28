@@ -6,36 +6,16 @@ namespace AIArmada\Promotions\Support;
 
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 final class PromotionPerformanceInsights
 {
-    /**
-     * @var array{
-     *     total_orders: int,
-     *     influenced_orders: int,
-     *     code_influenced_orders: int,
-     *     automatic_influenced_orders: int,
-     *     influenced_revenue_minor: int,
-     *     attributed_discount_minor: int,
-     *     reporting_currency: string|null,
-     *     currency_count: int,
-     *     influenced_order_rate: float,
-     * }|null
-     */
-    private ?array $orderOverviewCache = null;
-
-    /**
-     * @var Collection<int, array{label: string, order_count: int, influenced_revenue_minor: int, attributed_discount_minor: int}>|null
-     */
-    private ?Collection $topPromotionsByOrdersCache = null;
-
     /**
      * @return array{
      *     total_promotions: int,
@@ -101,9 +81,7 @@ final class PromotionPerformanceInsights
      */
     public function topPromotionsByOrders(int $limit = 5): Collection
     {
-        $this->loadOrderPerformance();
-
-        return ($this->topPromotionsByOrdersCache ?? collect())
+        return $this->loadOrderPerformance()['top']
             ->take($limit)
             ->values();
     }
@@ -179,33 +157,26 @@ final class PromotionPerformanceInsights
      */
     private function orderOverview(): array
     {
-        $this->loadOrderPerformance();
-
-        return $this->orderOverviewCache ?? $this->emptyOrderOverview();
+        return $this->loadOrderPerformance()['overview'];
     }
 
-    private function loadOrderPerformance(): void
+    /**
+     * @return array{
+     *     overview: array{total_orders: int, influenced_orders: int, code_influenced_orders: int, automatic_influenced_orders: int, influenced_revenue_minor: int, attributed_discount_minor: int, reporting_currency: string|null, currency_count: int, influenced_order_rate: float},
+     *     top: Collection<int, array{label: string, order_count: int, influenced_revenue_minor: int, attributed_discount_minor: int}>
+     * }
+     */
+    private function loadOrderPerformance(): array
     {
-        if ($this->orderOverviewCache !== null && $this->topPromotionsByOrdersCache !== null) {
-            return;
-        }
-
         if (! $this->ordersAvailable()) {
-            $this->orderOverviewCache = $this->emptyOrderOverview();
-            $this->topPromotionsByOrdersCache = collect();
-
-            return;
+            return ['overview' => $this->emptyOrderOverview(), 'top' => collect()];
         }
 
-        $orderQuery = Order::query()->forOwner();
-
-        $totalOrders = (clone $orderQuery)->count();
-
-        // Stream instead of hydrating every order: the aggregate loop below
-        // only needs a narrow column set.
-        $orders = (clone $orderQuery)
+        $orders = Order::query()->forOwner()
             ->select(['id', 'grand_total', 'currency', 'metadata'])
-            ->cursor();
+            ->lazyById(500);
+
+        $totalOrders = 0;
 
         $influencedOrders = 0;
         $codeInfluencedOrders = 0;
@@ -216,9 +187,10 @@ final class PromotionPerformanceInsights
         $promotionPerformance = [];
 
         foreach ($orders as $order) {
-            $appliedPromotions = data_get($order->metadata, 'discount_data.promotions');
+            $totalOrders++;
+            $appliedPromotions = $this->promotionAllocations($order->metadata);
 
-            if (! is_array($appliedPromotions) || $appliedPromotions === []) {
+            if ($appliedPromotions === []) {
                 continue;
             }
 
@@ -237,14 +209,10 @@ final class PromotionPerformanceInsights
             $countedPromotionsForOrder = [];
 
             foreach ($appliedPromotions as $promotionPayload) {
-                if (! is_array($promotionPayload)) {
-                    continue;
-                }
-
                 $label = $this->labelFromPromotionPayload($promotionPayload);
-                $promotionKey = $this->promotionMetricKey($promotionPayload, $label);
-                $promotionCode = $this->normalizeString($promotionPayload['code'] ?? null);
-                $discountMinor = max(0, (int) ($promotionPayload['discount'] ?? 0));
+                $promotionKey = $promotionPayload['promotion_id'];
+                $promotionCode = $promotionPayload['code'];
+                $discountMinor = $promotionPayload['discount'];
 
                 $attributedDiscountMinor += $discountMinor;
 
@@ -284,7 +252,7 @@ final class PromotionPerformanceInsights
         $currencyCount = count($currencies);
         $reportingCurrency = $currencyCount === 1 ? array_key_first($currencies) : null;
 
-        $this->orderOverviewCache = [
+        $overview = [
             'total_orders' => $totalOrders,
             'influenced_orders' => $influencedOrders,
             'code_influenced_orders' => $codeInfluencedOrders,
@@ -298,7 +266,7 @@ final class PromotionPerformanceInsights
                 : 0.0,
         ];
 
-        $this->topPromotionsByOrdersCache = collect(array_values($promotionPerformance))
+        $top = collect(array_values($promotionPerformance))
             ->sort(function (array $left, array $right): int {
                 return $right['order_count'] <=> $left['order_count']
                     ?: $right['attributed_discount_minor'] <=> $left['attributed_discount_minor']
@@ -311,6 +279,8 @@ final class PromotionPerformanceInsights
                 'attributed_discount_minor' => (int) $promotion['attributed_discount_minor'],
             ])
             ->values();
+
+        return ['overview' => $overview, 'top' => $top];
     }
 
     /**
@@ -360,7 +330,9 @@ final class PromotionPerformanceInsights
         }
 
         try {
-            return Schema::hasTable((new Order)->getTable());
+            $order = new Order;
+
+            return $order->getConnection()->getSchemaBuilder()->hasTable($order->getTable());
         } catch (Throwable) {
             return false;
         }
@@ -376,32 +348,51 @@ final class PromotionPerformanceInsights
     }
 
     /**
-     * @param  array<string, mixed>  $promotionPayload
+     * @return list<array{promotion_id: string, name: string, code: string|null, discount: int}>
      */
-    private function labelFromPromotionPayload(array $promotionPayload): string
+    private function promotionAllocations(mixed $metadata): array
     {
-        $name = $this->normalizeString($promotionPayload['name'] ?? null) ?? 'Promotion';
-        $code = $this->normalizeString($promotionPayload['code'] ?? null);
+        $allocations = data_get($metadata, 'discount_data.allocations');
 
-        return $code !== null ? "{$name} ({$code})" : $name;
+        if (! is_array($allocations)) {
+            return [];
+        }
+
+        $promotions = [];
+
+        foreach ($allocations as $allocation) {
+            if (! is_array($allocation) || ($allocation['provider_key'] ?? null) !== 'promotions') {
+                continue;
+            }
+
+            $meta = $allocation['meta'] ?? null;
+            $promotionId = is_array($meta) ? $this->normalizeString($meta['promotion_id'] ?? null) : null;
+            $amount = $allocation['requested_amount'] ?? null;
+
+            if ($promotionId === null || ! is_int($amount) || $amount <= 0) {
+                continue;
+            }
+
+            $promotions[] = [
+                'promotion_id' => $promotionId,
+                'name' => $this->normalizeString($allocation['label'] ?? null) ?? 'Promotion',
+                'code' => $this->normalizeString($allocation['code'] ?? null),
+                'discount' => $amount,
+            ];
+        }
+
+        return $promotions;
     }
 
     /**
-     * @param  array<string, mixed>  $promotionPayload
+     * @param  array{promotion_id: string, name: string, code: string|null, discount: int}  $promotionPayload
      */
-    private function promotionMetricKey(array $promotionPayload, string $label): string
+    private function labelFromPromotionPayload(array $promotionPayload): string
     {
-        $promotionId = $promotionPayload['promotion_id'] ?? null;
+        $name = $promotionPayload['name'];
+        $code = $promotionPayload['code'];
 
-        if (is_scalar($promotionId)) {
-            $normalizedId = $this->normalizeString((string) $promotionId);
-
-            if ($normalizedId !== null) {
-                return 'promotion:' . $normalizedId;
-            }
-        }
-
-        return 'label:' . mb_strtolower($label);
+        return $code !== null ? "{$name} ({$code})" : $name;
     }
 
     private function normalizeString(mixed $value): ?string
@@ -420,16 +411,6 @@ final class PromotionPerformanceInsights
      */
     private function issuedVoucherModelClass(): ?string
     {
-        foreach ([
-            '\\AIArmada\\Vouchers\\Models\\Voucher',
-        ] as $voucherModelClass) {
-            if (class_exists($voucherModelClass)) {
-                /** @var class-string<Model> $voucherModelClass */
-
-                return $voucherModelClass;
-            }
-        }
-
-        return null;
+        return class_exists(Voucher::class) ? Voucher::class : null;
     }
 }

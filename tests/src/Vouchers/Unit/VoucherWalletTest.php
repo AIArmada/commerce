@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Data\WalletClaimData;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Traits\HasVouchers;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
@@ -41,9 +45,57 @@ test('can add voucher to wallet using trait', function (): void {
 
     expect($walletEntry)->toBeInstanceOf(VoucherWallet::class)
         ->and($walletEntry->voucher_id)->toBe($voucher->id)
-        ->and($walletEntry->holder_id)->toBe($user->id)
+        ->and($walletEntry->holder_id)->toBe((string) $user->id)
         ->and($walletEntry->holder_type)->toBe($user->getMorphClass())
         ->and($walletEntry->claimed_at)->not->toBeNull();
+});
+
+test('rejects wallet writes for an unpersisted holder', function (): void {
+    $user = new TestWalletUser(['name' => 'Unsaved', 'email' => 'unsaved@example.com']);
+
+    Voucher::create([
+        'code' => 'UNSAVED-HOLDER',
+        'name' => 'Unsaved Holder Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    expect(fn () => $user->addVoucherToWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $user->removeVoucherFromWallet('UNSAVED-HOLDER'))->toThrow(InvalidArgumentException::class)
+        ->and(VoucherWallet::query()->count())->toBe(0);
+});
+
+test('wallet mutation APIs deduplicate identifiers and keep bulk deletion atomic', function (): void {
+    config(['vouchers.owner.enabled' => false]);
+
+    $user = TestWalletUser::create(['name' => 'Bulk User', 'email' => 'bulk@example.com']);
+
+    $voucher = Voucher::create([
+        'code' => 'BULK-WALLET',
+        'name' => 'Bulk Wallet',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $wallet = $user->addVoucherToWallet($voucher->code);
+    $id = (string) $wallet->getKey();
+
+    app(WalletTimestampTransition::class)->handleMany([$id, $id], true);
+
+    expect($wallet->fresh()->redeemed_at)->not->toBeNull();
+
+    expect(fn () => app(WalletEntryDeletion::class)->handleMany([$id, 'ffffffff-ffff-ffff-ffff-ffffffffffff']))
+        ->toThrow(RuntimeException::class);
+
+    expect($wallet->fresh())->not->toBeNull();
+
+    app(WalletEntryDeletion::class)->handleMany([$id, $id]);
+
+    expect($wallet->fresh())->toBeNull();
 });
 
 test('can check if voucher exists in wallet', function (): void {
@@ -273,6 +325,44 @@ test('can get available vouchers from wallet', function (): void {
     expect($availableVouchers)->toHaveCount(2);
 });
 
+test('exhausted vouchers cannot be used and do not consume the available wallet limit', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $exhausted = Voucher::create([
+        'code' => 'EXHAUSTED',
+        'name' => 'Exhausted Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit' => 1,
+    ]);
+
+    $wallet = $user->addVoucherToWallet('EXHAUSTED');
+
+    VoucherUsage::create([
+        'voucher_id' => $exhausted->id,
+        'discount_amount' => 100,
+        'currency' => 'MYR',
+        'channel' => 'web',
+        'used_at' => now(),
+    ]);
+
+    Voucher::create([
+        'code' => 'STILL-USABLE',
+        'name' => 'Still Usable Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $available = $user->addVoucherToWallet('STILL-USABLE');
+
+    expect($wallet->fresh()->canBeUsed())->toBeFalse()
+        ->and($user->getAvailableVouchers(1)->pluck('id')->all())->toBe([$available->id]);
+});
+
 test('can get redeemed vouchers from wallet', function (): void {
     $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
 
@@ -392,7 +482,7 @@ test('voucher service can add to wallet', function (): void {
 
     $walletEntry = $service->addToWallet('SERVICE1', $user, ['source' => 'test']);
 
-    expect($walletEntry)->toBeInstanceOf(VoucherWallet::class)
+    expect($walletEntry)->toBeInstanceOf(WalletClaimData::class)
         ->and($walletEntry->metadata)->toHaveKey('source')
         ->and($walletEntry->metadata['source'])->toBe('test');
 });
@@ -458,7 +548,7 @@ test('wallet entry knows if voucher can be used', function (): void {
 
 final class TestWalletUser extends Model
 {
-    use HasVouchers;
+    use HasVoucherWallet;
 
     protected $table = 'test_wallet_users';
 

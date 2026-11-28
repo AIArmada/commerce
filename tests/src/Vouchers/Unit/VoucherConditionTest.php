@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Facades\Voucher;
 
 it('converts voucher condition to cart condition and back', function (): void {
     $voucherData = VoucherData::fromArray([
@@ -16,7 +19,7 @@ it('converts voucher condition to cart condition and back', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $voucherCondition = new VoucherCondition($voucherData, order: 75, dynamic: false);
@@ -47,7 +50,7 @@ it('exposes structured target definitions for vouchers', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 1500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
     ]);
 
@@ -76,7 +79,7 @@ it('supports overriding the target definition via voucher metadata', function ()
         'type' => VoucherType::Percentage->value,
         'value' => 5,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
     ]);
 
@@ -97,7 +100,7 @@ it('uses the default condition target when target definition only contains eligi
         'type' => VoucherType::Percentage->value,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'targeting' => [
                 'mode' => 'all',
@@ -115,4 +118,18 @@ it('uses the default condition target when target definition only contains eligi
     expect($target->scope->value)->toBe('cart')
         ->and($target->phase->value)->toBe('cart_subtotal')
         ->and($target->application->value)->toBe('aggregate');
+});
+
+it('rejects a dynamic voucher condition after its terms change', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'voucher-term-validation');
+    $voucher = VoucherData::fromArray(['id' => 'selected', 'code' => 'TEST', 'value' => 100]);
+    $condition = new VoucherCondition($voucher);
+
+    Voucher::shouldReceive('validate')->with('TEST', $cart)->twice()->andReturn(
+        VoucherValidationResult::valid(['voucher' => [...$voucher->toArray(), 'value' => 50]]),
+        VoucherValidationResult::valid(['voucher' => $voucher->toArray()]),
+    );
+
+    expect($condition->validateVoucher($cart))->toBeFalse()
+        ->and($condition->validateVoucher($cart))->toBeTrue();
 });

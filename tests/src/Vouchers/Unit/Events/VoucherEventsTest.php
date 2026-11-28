@@ -7,10 +7,11 @@ use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 
 describe('VoucherApplied event', function (): void {
     beforeEach(function (): void {
@@ -31,7 +32,7 @@ describe('VoucherApplied event', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 
@@ -96,7 +97,7 @@ describe('VoucherRemoved event', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 
@@ -152,7 +153,7 @@ describe('VoucherApplied and VoucherRemoved difference', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 
@@ -164,4 +165,34 @@ describe('VoucherApplied and VoucherRemoved difference', function (): void {
             ->and($removed->voucher)->toBe($this->voucherData)
             ->and($applied->getVoucherCode())->toBe($removed->getVoucherCode());
     });
+});
+
+it('records the actual allocated discount in the immutable usage event', function (): void {
+    $voucher = VoucherData::fromArray([
+        'id' => 'voucher-1',
+        'code' => 'EVENT',
+        'name' => 'Event voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $usage = new VoucherUsageData(
+        id: 'usage-1',
+        voucherId: $voucher->id,
+        discountAmount: 250,
+        currency: 'MYR',
+        channel: 'checkout',
+        redeemedByType: 'customer',
+        redeemedById: 'customer-1',
+        usedAt: new DateTimeImmutable,
+        metadata: ['order_id' => 'order-1'],
+        notes: null,
+    );
+
+    $event = new VoucherUsageRecorded($voucher, $usage);
+
+    expect($event->usage)->toBe($usage)
+        ->and($event->getDiscountAmountCents())->toBe(250)
+        ->and($event->toEventPayload()['discount_cents'])->toBe(250);
 });

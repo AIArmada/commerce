@@ -44,7 +44,7 @@ php artisan migrate
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = Voucher::create([
     'code' => 'SUMMER2024',
@@ -116,13 +116,15 @@ Cart::clearVouchers();
 Allow users to save vouchers for later use:
 
 ```php
-use AIArmada\Vouchers\Traits\HasVouchers;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
 
 class User extends Model
 {
-    use HasVouchers;
+    use HasVoucherWallet;
 }
 ```
+
+For redemption history on a model, use the independent `AIArmada\\Vouchers\\Features\\Lifecycle\\EntryPoints\\Traits\\HasVoucherUsage` trait.
 
 ```php
 // Add voucher to wallet
@@ -207,7 +209,7 @@ class CurrentMerchantResolver implements OwnerResolverInterface
 Track voucher performance:
 
 ```php
-$voucher = \AIArmada\Vouchers\Models\Voucher::find($id);
+$voucher = \AIArmada\Vouchers\Features\Lifecycle\Models\Voucher::find($id);
 
 // Get conversion rate (redeemed vs applied)
 $conversionRate = $voucher->getConversionRate(); // e.g., 45.5%
@@ -315,7 +317,7 @@ Voucher::getRemainingUses(string $code): int
 // Usage
 Voucher::recordUsage(string $code, Money $discountAmount, ...): void
 Voucher::redeemManually(string $code, Money $discountAmount, ...): void
-Voucher::getUsageHistory(string $code): Collection
+Voucher::getUsageHistory(string $code, int $limit = 100): array
 
 // Wallet
 Voucher::addToWallet(string $code, Model $owner, ?array $metadata = null): VoucherWallet
@@ -348,7 +350,7 @@ Cart::validateAppliedVouchers(): array
 | `VoucherNotFoundException` | Voucher code does not exist |
 | `VoucherExpiredException` | Voucher has expired |
 | `InvalidVoucherException` | Voucher is invalid (inactive, not started, min cart value not met) |
-| `InvalidVoucherDataException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
+| `InvalidArgumentException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
 | `VoucherUsageLimitException` | Usage limit exceeded |
 | `VoucherValidationException` | Voucher validation failed during checkout |
 | `VoucherStackingException` | Stacking policy violation |

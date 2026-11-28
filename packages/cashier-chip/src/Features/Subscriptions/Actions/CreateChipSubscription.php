@@ -18,14 +18,15 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 
 final class CreateChipSubscription implements CreateSubscription
 {
@@ -49,6 +50,7 @@ final class CreateChipSubscription implements CreateSubscription
         $couponId = $draft->couponId;
         $couponDiscount = 0;
         $couponDuration = null;
+        $voucherId = null;
 
         if ($couponId !== null) {
             $voucher = VoucherIntegration::service()->find($couponId);
@@ -73,6 +75,12 @@ final class CreateChipSubscription implements CreateSubscription
 
             $couponDiscount = $coupon->calculateDiscount($totalAmount);
             $couponDuration = $coupon->duration();
+            $voucherId = $voucher->id;
+            $couponId = $voucher->code;
+
+            if ($couponDiscount > 0 && app(VoucherCatalog::class)->connectionName() !== (new $model)->getConnection()->getName()) {
+                throw new LogicException('Subscription coupon application requires a shared database connection.');
+            }
         }
 
         if (! $owner->hasChipId()) {
@@ -92,7 +100,7 @@ final class CreateChipSubscription implements CreateSubscription
         $firstItem = Arr::first($items);
         $isSinglePrice = count($items) === 1;
 
-        return DB::transaction(function () use ($draft, $owner, $ownerAttributes, $model, $effectiveRecurringToken, $status, $trialEndsAt, $nextBillingAt, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): RecordReference {
+        return (new $model)->getConnection()->transaction(function () use ($draft, $owner, $ownerAttributes, $model, $effectiveRecurringToken, $status, $trialEndsAt, $nextBillingAt, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration, $voucherId): RecordReference {
             $subscription = new $model;
             $subscription->forceFill([
                 ...$ownerAttributes,
@@ -134,8 +142,8 @@ final class CreateChipSubscription implements CreateSubscription
                 $subscriptionItem->save();
             }
 
-            if ($couponId && $couponDiscount > 0) {
-                $this->recordCouponUsage($couponId, $couponDiscount, $owner);
+            if ($couponId !== null && $voucherId !== null && $couponDiscount > 0) {
+                $this->recordCouponUsage($subscription, $couponId, $voucherId, $couponDiscount, $owner);
             }
 
             $reference = new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey());
@@ -169,17 +177,18 @@ final class CreateChipSubscription implements CreateSubscription
         ];
     }
 
-    private function recordCouponUsage(string $couponId, int $discountAmount, mixed $redeemedBy = null): void
+    private function recordCouponUsage(Subscription $subscription, string $couponId, string $voucherId, int $discountAmount, Model & BillableModel $redeemedBy): void
     {
         $service = VoucherIntegration::service();
-        $currency = config('cashier-chip.currency', 'MYR');
+        $currency = $redeemedBy->preferredCurrency();
 
         $service->recordUsage(
             code: $couponId,
             discountAmount: Money::$currency($discountAmount),
             channel: 'subscription',
-            metadata: null,
+            metadata: ['subscription_id' => $subscription->id],
             redeemedBy: $redeemedBy,
+            voucherId: $voucherId,
         );
     }
 }

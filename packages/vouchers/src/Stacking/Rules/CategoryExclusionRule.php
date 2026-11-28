@@ -73,7 +73,7 @@ final class CategoryExclusionRule implements StackingRuleInterface
 
         $categories = $voucherData->metadata['target_categories'] ?? [];
 
-        return is_array($categories) ? $categories : [];
+        return is_array($categories) ? array_values(array_filter($categories, 'is_string')) : [];
     }
 
     /**

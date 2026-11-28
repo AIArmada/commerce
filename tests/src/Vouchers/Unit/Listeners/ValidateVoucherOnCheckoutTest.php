@@ -9,10 +9,10 @@ use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use Mockery;
 
 /**
@@ -70,15 +70,11 @@ function createEventWithInvalidCart(): object
  */
 function mockValidateVoucherCode(): Mockery\MockInterface
 {
-    $mock = Mockery::mock(ValidateVoucherCode::class);
-    app()->instance(ValidateVoucherCode::class, $mock);
+    $mock = Mockery::mock(VoucherValidation::class);
+    app()->instance(VoucherValidation::class, $mock);
 
     return $mock;
 }
-
-beforeEach(function (): void {
-    $this->listener = new ValidateVoucherOnCheckout;
-});
 
 afterEach(function (): void {
     Mockery::close();
@@ -88,7 +84,7 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
     it('does nothing when event has no cart', function (): void {
         $event = createEventWithoutCart();
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect(true)->toBeTrue(); // Listener completes without error
     });
@@ -96,7 +92,7 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
     it('does nothing when cart property is not Cart instance', function (): void {
         $event = createEventWithInvalidCart();
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect(true)->toBeTrue();
     });
@@ -105,7 +101,7 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $cart = createCartForListenerTest();
         $event = createCheckoutEvent($cart);
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBeNull();
     });
@@ -114,7 +110,7 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $cart = createCartForListenerTest(['voucher_codes' => []]);
         $event = createCheckoutEvent($cart);
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe([]);
     });
@@ -124,16 +120,16 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID1', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID2', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['VALID1', 'VALID2']);
     });
@@ -143,20 +139,20 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Voucher has expired'));
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('INVALID', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Usage limit reached'));
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['VALID']);
     });
@@ -166,16 +162,16 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED1', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Expired'));
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED2', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Expired'));
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe([]);
     });
@@ -187,13 +183,13 @@ describe('ValidateVoucherOnCheckout Handle', function (): void {
         $result = new VoucherValidationResult(isValid: false, reason: null);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('NOMSGINVALID', $cart)
             ->once()
             ->andReturn($result);
 
         // Should not throw by default
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe([]);
     });
@@ -211,12 +207,12 @@ it('resolves the cart from a checkout session event', function (): void {
     app()->instance(CartManagerInterface::class, $cartManager);
 
     $mock = mockValidateVoucherCode();
-    $mock->shouldReceive('handle')
+    $mock->shouldReceive('validate')
         ->with('VALID', $cart)
         ->once()
         ->andReturn(VoucherValidationResult::valid());
 
-    $this->listener->handle($event);
+    app(ValidateVoucherOnCheckout::class)->handle($event);
 
     expect($cart->getMetadata('voucher_codes'))->toBe(['VALID']);
 });
@@ -235,12 +231,12 @@ describe('ValidateVoucherOnCheckout Block Mode', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Voucher has expired'));
 
-        expect(fn () => $this->listener->handle($event))
+        expect(fn () => app(ValidateVoucherOnCheckout::class)->handle($event))
             ->toThrow(VoucherValidationException::class);
     });
 
@@ -249,13 +245,13 @@ describe('ValidateVoucherOnCheckout Block Mode', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
 
         // Should not throw
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['VALID']);
     });
@@ -265,21 +261,21 @@ describe('ValidateVoucherOnCheckout Block Mode', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED1', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('First expired'));
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED2', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Second expired'));
 
         try {
-            $this->listener->handle($event);
+            app(ValidateVoucherOnCheckout::class)->handle($event);
             $this->fail('Expected VoucherValidationException');
         } catch (VoucherValidationException $e) {
             expect($e)->toBeInstanceOf(VoucherValidationException::class);
@@ -297,17 +293,17 @@ describe('ValidateVoucherOnCheckout Non-Block Mode', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('VALID', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('EXPIRED', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Expired'));
 
         // Should not throw
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['VALID']);
     });
@@ -319,12 +315,12 @@ describe('ValidateVoucherOnCheckout Edge Cases', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('SINGLE', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['SINGLE']);
     });
@@ -336,13 +332,13 @@ describe('ValidateVoucherOnCheckout Edge Cases', function (): void {
 
         $mock = mockValidateVoucherCode();
         foreach ($codes as $code) {
-            $mock->shouldReceive('handle')
+            $mock->shouldReceive('validate')
                 ->with($code, $cart)
                 ->once()
                 ->andReturn(VoucherValidationResult::valid());
         }
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe($codes);
     });
@@ -352,24 +348,24 @@ describe('ValidateVoucherOnCheckout Edge Cases', function (): void {
         $event = createCheckoutEvent($cart);
 
         $mock = mockValidateVoucherCode();
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('A', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('B', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Invalid'));
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('C', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::valid());
-        $mock->shouldReceive('handle')
+        $mock->shouldReceive('validate')
             ->with('D', $cart)
             ->once()
             ->andReturn(VoucherValidationResult::invalid('Invalid'));
 
-        $this->listener->handle($event);
+        app(ValidateVoucherOnCheckout::class)->handle($event);
 
         expect($cart->getMetadata('voucher_codes'))->toBe(['A', 'C']);
     });

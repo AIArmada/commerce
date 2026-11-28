@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Exceptions\InvalidVoucherDataException;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use Carbon\Carbon;
 
 it('rejects floats for every integer monetary or limit field at the DTO boundary', function (): void {
     foreach ([
@@ -24,13 +24,13 @@ it('rejects floats for every integer monetary or limit field at the DTO boundary
             'type' => VoucherType::Fixed->value,
             'value' => $field === 'value' ? 100.5 : 100,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             $field => 100.5,
-        ]))->toThrow(InvalidVoucherDataException::class);
+        ]))->toThrow(InvalidArgumentException::class);
     }
 });
 
-it('rejects float aliases at the DTO boundary as well', function (): void {
+it('rejects noncanonical aliases at the DTO boundary', function (): void {
     expect(fn () => VoucherData::fromArray([
         'id' => 'voucher-id',
         'code' => 'FLOAT-ALIAS',
@@ -38,7 +38,27 @@ it('rejects float aliases at the DTO boundary as well', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 100,
         'currency' => 'MYR',
-        'status' => Active::class,
-        'minCartValue' => 100.5,
-    ]))->toThrow(InvalidVoucherDataException::class);
+        'status' => 'active',
+        'minCartValue' => 100,
+    ]))->toThrow(InvalidArgumentException::class);
+});
+
+it('round trips a voucher snapshot without leaking model state or mutable dates', function (): void {
+    $date = Carbon::parse('2026-12-01T10:00:00+08:00');
+    $snapshot = VoucherData::fromArray([
+        'code' => 'SNAPSHOT',
+        'type' => 'fixed',
+        'value' => 100,
+        'status' => 'paused',
+        'starts_at' => $date,
+        'usage_limit' => 0,
+    ]);
+
+    $date->addDay();
+
+    expect($date->format('Y-m-d'))->toBe('2026-12-02')
+        ->and($snapshot->startsAt?->format('Y-m-d'))->toBe('2026-12-01')
+        ->and($snapshot->status)->toBe(VoucherStatus::Paused)
+        ->and(VoucherData::fromArray($snapshot->toArray())->toArray())->toBe($snapshot->toArray())
+        ->and((new ReflectionClass(VoucherData::class))->isReadOnly())->toBeTrue();
 });

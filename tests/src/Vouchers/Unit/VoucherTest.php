@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\DB;
 
 test('voucher has relations', function (): void {
     $voucher = Voucher::create([
@@ -20,7 +23,6 @@ test('voucher has relations', function (): void {
     ]);
 
     expect($voucher->usages())->toBeInstanceOf(HasMany::class)
-        ->and($voucher->walletEntries())->toBeInstanceOf(HasMany::class)
         ->and($voucher->owner())->toBeInstanceOf(MorphTo::class);
 });
 
@@ -88,7 +90,9 @@ test('voucher has uses left', function (): void {
     expect($voucher->hasUsageLimitRemaining())->toBeFalse();
 });
 
-test('voucher wallet count accessors prefer preloaded counts', function (): void {
+test('wallet statistics verify voucher visibility before aggregating wallet entries', function (): void {
+    config()->set('vouchers.owner.enabled', false);
+
     $voucher = Voucher::create([
         'code' => 'WALLETCOUNTS',
         'name' => 'Wallet Counts Voucher',
@@ -98,13 +102,28 @@ test('voucher wallet count accessors prefer preloaded counts', function (): void
         'status' => 'active',
     ]);
 
-    $voucher->setAttribute('wallet_entries_count', 10);
-    $voucher->setAttribute('wallet_claimed_count', 7);
-    $voucher->setAttribute('wallet_redeemed_count', 4);
-    $voucher->setAttribute('wallet_available_count', 6);
+    foreach ([
+        ['claimed_at' => null, 'redeemed_at' => null],
+        ['claimed_at' => now(), 'redeemed_at' => null],
+        ['claimed_at' => now(), 'redeemed_at' => now()],
+    ] as $timestamps) {
+        VoucherWallet::create([
+            'voucher_id' => $voucher->id,
+            ...$timestamps,
+        ]);
+    }
 
-    expect($voucher->wallet_entries_count)->toBe(10)
-        ->and($voucher->wallet_claimed_count)->toBe(7)
-        ->and($voucher->wallet_redeemed_count)->toBe(4)
-        ->and($voucher->wallet_available_count)->toBe(6);
+    $statistics = app(WalletStatistics::class);
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $counts = $statistics->forVoucher($voucher->id);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($counts)->toBe(['total' => 3, 'claimed' => 2, 'redeemed' => 1, 'available' => 1])
+        ->and($queries)->toHaveCount(2);
 });

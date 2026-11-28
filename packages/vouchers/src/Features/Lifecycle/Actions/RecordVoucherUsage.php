@@ -1,0 +1,229 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
+
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Vouchers\Data\VoucherUsageData;
+use AIArmada\Vouchers\Events\VoucherUsageRecorded;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
+use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherUsageSnapshot;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
+use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+/**
+ * Record usage of a voucher.
+ */
+final class RecordVoucherUsage implements VoucherUsageRecorder
+{
+    use AsAction;
+    use QueriesVouchers;
+    use ResolvesVoucherAssignee;
+
+    /**
+     * Record a voucher usage.
+     *
+     * @param  array<string, mixed>|null  $metadata
+     */
+    public function handle(
+        string $code,
+        Money $discountAmount,
+        ?string $channel = null,
+        ?array $metadata = null,
+        ?RecordReference $redeemedBy = null,
+        ?string $notes = null,
+        ?string $voucherId = null
+    ): VoucherUsageData {
+        return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherId): VoucherUsageData {
+            $query = $this->voucherQuery()->where('code', $this->normalizeCode($code));
+
+            if ($voucherId !== null) {
+                $query->whereKey($voucherId);
+            }
+
+            $lockedVoucher = $query->lockForUpdate()->first();
+
+            if (! $lockedVoucher) {
+                throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
+            }
+            if (config('vouchers.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $lockedVoucher->getKey(), includeGlobal: (bool) config('vouchers.owner.include_global', false));
+            }
+
+            $assignee = $this->resolveAssignee($lockedVoucher);
+
+            if ($assignee !== null
+                && ($redeemedBy === null
+                    || $redeemedBy->type !== $assignee['type']
+                    || $redeemedBy->id !== $assignee['id'])
+            ) {
+                throw InvalidVoucherException::assignedToAnother($lockedVoucher->code);
+            }
+
+            $idempotencyKey = $this->resolveIdempotencyKey($metadata);
+
+            if ($idempotencyKey !== null) {
+                $existingUsage = VoucherUsage::query()
+                    ->where('voucher_id', $lockedVoucher->id)
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->first();
+
+                if ($existingUsage instanceof VoucherUsage) {
+                    $sameRedeemer = $existingUsage->redeemed_by_type === $redeemedBy?->type
+                        && (string) $existingUsage->redeemed_by_id === (string) $redeemedBy?->id;
+                    $sameAmount = (string) $existingUsage->discount_amount === (string) $discountAmount->getAmount();
+                    $sameCurrency = mb_strtoupper($existingUsage->currency) === mb_strtoupper($discountAmount->getCurrency()->getCurrency());
+
+                    $sameChannel = $existingUsage->channel === ($channel ?? 'web');
+
+                    if (! $sameRedeemer || ! $sameAmount || ! $sameCurrency || ! $sameChannel) {
+                        throw ValidationException::withMessages([
+                            'idempotency_key' => 'The idempotency key was already used for a different voucher redemption.',
+                        ]);
+                    }
+
+                    return VoucherUsageSnapshot::fromModel($existingUsage);
+                }
+            }
+            if ($lockedVoucher->isExpired() || $lockedVoucher->status instanceof Expired) {
+                throw VoucherExpiredException::withCode($lockedVoucher->code);
+            }
+
+            if (! $lockedVoucher->hasStarted()) {
+                throw InvalidVoucherException::notStarted($lockedVoucher->code);
+            }
+
+            if ($lockedVoucher->status instanceof Depleted) {
+                throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
+            }
+
+            if (! $lockedVoucher->status->canBeUsed()) {
+                throw InvalidVoucherException::notActive($lockedVoucher->code);
+            }
+
+            if ($channel === config('vouchers.redemption.manual_channel', 'manual')
+                && config('vouchers.redemption.manual_requires_flag', true)
+                && ! $lockedVoucher->allowsManualRedemption()) {
+                throw ManualRedemptionNotAllowedException::forVoucher($lockedVoucher->code);
+            }
+
+            $this->assertCurrencyMatches($lockedVoucher, $discountAmount);
+
+            if ((int) $discountAmount->getAmount() < 0) {
+                throw ValidationException::withMessages(['discount_amount' => 'Voucher discount cannot be negative.']);
+            }
+            $currentUses = $lockedVoucher->usage_limit === null
+                ? 0
+                : VoucherUsage::query()->where('voucher_id', $lockedVoucher->id)->count();
+
+            if ($lockedVoucher->usage_limit !== null) {
+                if ($currentUses >= $lockedVoucher->usage_limit) {
+                    throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
+                }
+            }
+            if ($lockedVoucher->usage_limit_per_user === 0 || ($lockedVoucher->usage_limit_per_user !== null && $redeemedBy === null)) {
+                throw VoucherUsageLimitException::userLimit($lockedVoucher->code);
+            }
+
+            if ($redeemedBy !== null && $lockedVoucher->usage_limit_per_user !== null) {
+                $currentUserUses = VoucherUsage::where('voucher_id', $lockedVoucher->id)
+                    ->where('redeemed_by_type', $redeemedBy->type)
+                    ->where('redeemed_by_id', $redeemedBy->id)
+                    ->count();
+
+                if ($currentUserUses >= $lockedVoucher->usage_limit_per_user) {
+                    throw VoucherUsageLimitException::userLimit($lockedVoucher->code);
+                }
+            }
+
+            $usageAttributes = [
+                'voucher_id' => $lockedVoucher->id,
+                'idempotency_key' => $idempotencyKey,
+                'discount_amount' => $discountAmount->getAmount(),
+                'currency' => $discountAmount->getCurrency()->getCurrency(),
+                'channel' => $channel ?? 'web',
+                'metadata' => $metadata,
+                'target_definition' => $lockedVoucher->target_definition,
+                'redeemed_by_type' => $redeemedBy?->type,
+                'redeemed_by_id' => $redeemedBy === null ? null : $redeemedBy->id,
+                'notes' => $notes,
+                'used_at' => CarbonImmutable::now(),
+            ];
+
+            $usage = $idempotencyKey === null
+                ? VoucherUsage::create($usageAttributes)
+                : VoucherUsage::query()->createOrFirst(
+                    [
+                        'voucher_id' => $lockedVoucher->id,
+                        'idempotency_key' => $idempotencyKey,
+                    ],
+                    $usageAttributes,
+                );
+
+            if (! $usage->wasRecentlyCreated) {
+                return VoucherUsageSnapshot::fromModel($usage);
+            }
+            if ($lockedVoucher->usage_limit !== null) {
+                $newUsageCount = $currentUses + 1;
+                if ($newUsageCount >= $lockedVoucher->usage_limit) {
+                    $lockedVoucher->status->transitionTo(Depleted::class);
+                    $lockedVoucher->save();
+                }
+            }
+
+            $snapshot = VoucherUsageSnapshot::fromModel($usage);
+            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), $snapshot));
+
+            return $snapshot;
+        });
+    }
+
+    private function assertCurrencyMatches(VoucherModel $voucher, Money $discountAmount): void
+    {
+        $voucherCurrency = $voucher->currency;
+
+        if (! is_string($voucherCurrency) || $voucherCurrency === '') {
+            return;
+        }
+
+        $usageCurrency = $discountAmount->getCurrency()->getCurrency();
+
+        if (mb_strtoupper($usageCurrency) !== mb_strtoupper($voucherCurrency)) {
+            throw ValidationException::withMessages([
+                'currency' => "The usage currency ({$usageCurrency}) does not match the voucher currency ({$voucherCurrency}).",
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metadata
+     */
+    private function resolveIdempotencyKey(?array $metadata): ?string
+    {
+        foreach (['idempotency_key', 'order_id', 'reference'] as $key) {
+            $value = data_get($metadata, $key);
+
+            if (is_scalar($value) && mb_trim((string) $value) !== '') {
+                return hash('sha256', (string) $value);
+            }
+        }
+
+        return null;
+    }
+}

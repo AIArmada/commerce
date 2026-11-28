@@ -8,8 +8,10 @@ use AIArmada\Promotions\Actions\IssueVouchersFromPromotion;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 it('issues one-time vouchers linked to the source promotion', function (): void {
@@ -43,7 +45,7 @@ it('issues one-time vouchers linked to the source promotion', function (): void 
         return $promotion;
     });
 
-    $issued = IssueVouchersFromPromotion::run($promotion, count: 2);
+    $issued = OwnerContext::withOwner($owner, fn () => IssueVouchersFromPromotion::run($promotion, count: 2));
 
     expect($issued)->toHaveCount(2)
         ->and($issued->first())->toBeInstanceOf(VoucherData::class);
@@ -91,4 +93,51 @@ it('requires explicit global context before issuing vouchers from a global promo
     expect($voucher->promotionId)->toBe($promotion->id)
         ->and($storedVoucher->owner_type)->toBeNull()
         ->and($storedVoucher->owner_id)->toBeNull();
+});
+
+it('rejects unbounded promotion voucher issuance before any writes', function (): void {
+    expect(fn () => IssueVouchersFromPromotion::run(new Promotion, count: 101))
+        ->toThrow(InvalidArgumentException::class, 'between 1 and 100');
+});
+
+it('does not impersonate another promotion owner when promotion scoping is disabled', function (): void {
+    config()->set('promotions.features.owner.enabled', false);
+    config()->set('vouchers.owner.enabled', true);
+
+    $owner = new class extends Model {};
+    $owner->setAttribute('id', 'issuer-a');
+    $other = new class extends Model {};
+    $other->setAttribute('id', 'issuer-b');
+
+    $promotion = OwnerContext::withOwner($owner, function () use ($owner): Promotion {
+        $promotion = new Promotion([
+            'name' => 'Owned issuance',
+            'type' => PromotionType::Fixed,
+            'discount_value' => 100,
+        ]);
+        $promotion->assignOwner($owner);
+        $promotion->save();
+
+        return $promotion;
+    });
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => IssueVouchersFromPromotion::run($promotion)))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('rejects voucher issuance across database connections before writing', function (): void {
+    $promotion = OwnerContext::withOwner(null, fn (): Promotion => Promotion::create([
+        'name' => 'Connection mismatch',
+        'type' => PromotionType::Fixed,
+        'discount_value' => 100,
+    ]));
+
+    $catalog = Mockery::mock(VoucherCatalog::class);
+    $catalog->shouldReceive('connectionName')->once()->andReturn('different-connection');
+    app()->instance(VoucherCatalog::class, $catalog);
+
+    expect(fn () => OwnerContext::withOwner(null, fn () => IssueVouchersFromPromotion::run($promotion)))
+        ->toThrow(LogicException::class, 'shared database connection');
+
+    expect(Voucher::query()->where('promotion_id', $promotion->id)->exists())->toBeFalse();
 });

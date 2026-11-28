@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Stacking\Enums;
 
+use AIArmada\Vouchers\Stacking\Contracts\StackingRuleInterface;
 use AIArmada\Vouchers\Stacking\Rules\CampaignExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\CategoryExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\MaxDiscountPercentageRule;
@@ -102,6 +103,8 @@ enum StackingRuleType: string
 
     /**
      * Get the rule class name.
+     *
+     * @return class-string<StackingRuleInterface>
      */
     public function getRuleClass(): string
     {

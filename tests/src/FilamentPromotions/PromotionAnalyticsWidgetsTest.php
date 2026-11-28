@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -11,10 +12,9 @@ use AIArmada\FilamentPromotions\Widgets\PromotionStatsWidget;
 use AIArmada\FilamentPromotions\Widgets\TopPromotionsUsageChart;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 
@@ -46,26 +46,25 @@ function filamentPromotions_createPromotion(string $name, int $usageCount, ?stri
     return $promotion->fresh();
 }
 
-/**
- * @return array{promotion_id: string, name: string, code: string|null, type: string, discount: int}
- */
-function filamentPromotions_payload(Promotion $promotion, int $discount): array
+function filamentPromotions_payload(Promotion $promotion, int $discount): DiscountProposal
 {
-    return [
-        'promotion_id' => (string) $promotion->id,
-        'name' => $promotion->name,
-        'code' => $promotion->code,
-        'type' => $promotion->type->value,
-        'discount' => $discount,
-    ];
+    return new DiscountProposal(
+        providerKey: 'promotions',
+        candidateKey: 'promotion:' . $promotion->id,
+        requestedAmount: $discount,
+        label: $promotion->name,
+        code: $promotion->code,
+        priority: 60,
+        meta: ['promotion_id' => $promotion->id, 'promotion_code' => $promotion->code],
+    );
 }
 
 /**
- * @param  array<int, array{promotion_id: string, name: string, code: string|null, type: string, discount: int}>  $promotions
+ * @param  array<int, DiscountProposal>  $promotions
  */
 function filamentPromotions_createOrderWithPromotions(array $promotions, int $grandTotal, string $currency = 'MYR'): Order
 {
-    $discountTotal = collect($promotions)->sum(static fn (array $promotion): int => (int) $promotion['discount']);
+    $discountTotal = collect($promotions)->sum(static fn (DiscountProposal $promotion): int => $promotion->requestedAmount);
 
     return Order::factory()->create([
         'subtotal' => $grandTotal + $discountTotal,
@@ -76,7 +75,7 @@ function filamentPromotions_createOrderWithPromotions(array $promotions, int $gr
         'currency' => $currency,
         'metadata' => [
             'discount_data' => [
-                'promotions' => $promotions,
+                'allocations' => array_map(static fn (DiscountProposal $proposal): array => $proposal->toArray(), $promotions),
             ],
         ],
     ]);
@@ -91,7 +90,7 @@ function filamentPromotions_createIssuedVoucher(Promotion $promotion, string $co
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit' => 1,
         'applied_count' => $redeemed ? 1 : 0,
         'starts_at' => now()->subDay(),

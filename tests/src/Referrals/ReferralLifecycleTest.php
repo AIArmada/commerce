@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Referrals\Actions\AcceptReferralInvite;
@@ -25,6 +26,7 @@ use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralRewardContext;
+use AIArmada\Referrals\Drivers\VouchersReferralFulfillment;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -35,6 +37,7 @@ use AIArmada\Referrals\Exceptions\ReferralProgramAttributeException;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
 use AIArmada\Referrals\Support\ReferralAffiliateAwardPolicy;
 use AIArmada\Referrals\Support\ReferralContactNormalizer;
 use AIArmada\Referrals\Support\ReferralProgramAttributeNormalizer;
@@ -59,11 +62,11 @@ use AIArmada\Rewards\Models\RewardPointReservationSubmission;
 use AIArmada\Rewards\Support\RewardPointLedger;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -936,7 +939,7 @@ it('issues single-use beneficiary-bound vouchers and refuses foreign redemption'
 
     expect(ValidateVoucherCode::run($code, ['total' => 100000])->isValid)->toBeFalse();
 
-    expect(fn () => RecordVoucherUsage::run($code, Money::MYR(2500), null, null, $other))
+    expect(fn () => RecordVoucherUsage::run($code, Money::MYR(2500), redeemedBy: EloquentRecordReference::fromModel($other)))
         ->toThrow(InvalidVoucherException::class);
 });
 
@@ -1679,6 +1682,13 @@ it('keeps voucher replay and reversal inside the reward owner when include-globa
             'assignee' => ['type' => $referrer->getMorphClass(), 'id' => (string) $referrer->getKey()],
         ],
     ]));
+
+    $context = OwnerContext::withOwner($owner, fn (): ReferralRewardContext => ReferralRewardContextMapper::map($reward, $qualified->invite->qualification_business_key));
+    $otherOwner = $this->newOwner();
+    $issued = OwnerContext::withOwner($otherOwner, fn (): ReferralFulfillmentResult => app(VouchersReferralFulfillment::class)->fulfill($context));
+
+    expect($issued->success)->toBeTrue()
+        ->and(Voucher::query()->withoutOwnerScope()->where('code', $code)->where('owner_id', $otherOwner->getKey())->exists())->toBeFalse();
 
     $fulfilled = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward));
 

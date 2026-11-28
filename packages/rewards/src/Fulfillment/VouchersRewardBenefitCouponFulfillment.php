@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Fulfillment;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Rewards\Contracts\RewardBenefitCouponFulfillment;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
@@ -19,10 +21,10 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 {
     public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
     {
-        $createActionClass = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
-        $addToWalletClass = 'AIArmada\\Vouchers\\Actions\\AddVoucherToWallet';
+        $createActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCreator';
+        $addToWalletClass = 'AIArmada\\Vouchers\\Features\\Wallet\\Api\\WalletClaim';
 
-        if (! class_exists($createActionClass) || ! class_exists($addToWalletClass)) {
+        if (! interface_exists($createActionClass) || ! interface_exists($addToWalletClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
         }
 
@@ -40,7 +42,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
         $code = 'RB-' . mb_strtoupper(mb_substr(hash('sha256', (string) $grant->grant_key), 0, 12));
 
-        app($createActionClass)->handle([
+        $voucher = app($createActionClass)->handle([
             'code' => $code,
             'name' => mb_substr((string) $item->title, 0, 120),
             'type' => 'fixed',
@@ -60,18 +62,18 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             ],
         ]);
 
-        app($addToWalletClass)->handle($code, $holder, [
+        app($addToWalletClass)->handle($voucher->code, EloquentRecordReference::fromModel($holder), [
             'grant_key' => (string) $grant->grant_key,
             'benefit_key' => (string) $item->benefit_key,
-        ]);
+        ], $voucher->id);
 
-        return $code;
+        return $voucher->code;
     }
 
     public function assertCanonicalUsage(RewardBenefitGrant $grant, array $useEvidence): void
     {
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
-        $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
+        $usageClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\VoucherUsage';
 
         if (! class_exists($voucherClass) || ! class_exists($usageClass)) {
             throw new InvalidArgumentException('The vouchers package models are unavailable.');
@@ -79,6 +81,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
         /** @var Model|null $voucher */
         $voucher = $voucherClass::query()
+            ->forOwner(includeGlobal: false)
             ->where('code', (string) $grant->external_ref)
             ->lockForUpdate()
             ->first();
@@ -86,6 +89,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
         if (! $voucher instanceof Model) {
             throw new InvalidArgumentException('Issued coupon is missing; refusing consumption.');
         }
+
+        $this->assertGrantIdentity($voucher, $grant);
 
         $usageId = $useEvidence['voucher_usage_id'] ?? null;
 
@@ -130,16 +135,17 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 
     public function revoke(RewardBenefitGrant $grant): void
     {
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
-        $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
-        $expireActionClass = 'AIArmada\\Vouchers\\Actions\\ExpireVoucher';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
+        $usageClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\VoucherUsage';
+        $expireActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherExpiry';
 
-        if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! class_exists($expireActionClass)) {
+        if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! interface_exists($expireActionClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
         }
 
         /** @var Model|null $voucher */
         $voucher = $voucherClass::query()
+            ->forOwner(includeGlobal: false)
             ->where('code', (string) $grant->external_ref)
             ->lockForUpdate()
             ->first();
@@ -147,6 +153,8 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
         if (! $voucher instanceof Model) {
             throw new InvalidArgumentException('Issued coupon is missing; refusing revocation.');
         }
+
+        $this->assertGrantIdentity($voucher, $grant);
 
         $used = $usageClass::query()
             ->where('voucher_id', $voucher->getKey())
@@ -157,7 +165,23 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
             throw new InvalidArgumentException('Coupon was used; revocation is closed — open a recovery case instead.');
         }
 
-        app($expireActionClass)->handle((string) $grant->external_ref);
+        OwnerScopeOverride::withoutIncludeGlobal(fn () => app($expireActionClass)->handle((string) $grant->external_ref));
+    }
+
+    private function assertGrantIdentity(Model $voucher, RewardBenefitGrant $grant): void
+    {
+        $metadata = $voucher->getAttribute('metadata');
+        $assignee = is_array($metadata) ? ($metadata['assignee'] ?? null) : null;
+
+        if (! is_array($metadata)
+            || ($metadata['grant_key'] ?? null) !== $grant->grant_key
+            || ! is_array($assignee)
+            || ($assignee['type'] ?? null) !== $grant->recipient_type
+            || ($assignee['id'] ?? null) !== $grant->recipient_id
+            || $voucher->getAttribute('usage_limit') !== 1
+            || $voucher->getAttribute('usage_limit_per_user') !== 1) {
+            throw new InvalidArgumentException('Issued coupon does not belong to this benefit grant.');
+        }
     }
 
     private function resolveRecipientModel(string $recipientType, string $recipientId): ?Model

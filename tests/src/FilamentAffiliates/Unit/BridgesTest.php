@@ -14,9 +14,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -227,7 +226,7 @@ test('voucher bridge resolves urls for vouchers when enabled', function (): void
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $url = app(VoucherBridge::class)->resolveUrl('BRIDGE-VOUCHER');
@@ -286,7 +285,7 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
@@ -309,7 +308,7 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'type' => VoucherType::Fixed,
         'value' => 700,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);

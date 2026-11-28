@@ -12,8 +12,9 @@ use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonException;
 
@@ -27,7 +28,7 @@ use JsonException;
  */
 class VoucherCondition implements Arrayable, CartConditionConvertible
 {
-    public const RULE_FACTORY_KEY = 'voucher';
+    public const RULE_FACTORY_KEY = VoucherRulesFactory::FACTORY_KEY;
 
     private string $name;
 
@@ -144,7 +145,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
         // Re-validate the voucher against current cart state
         $validationResult = Voucher::validate($this->voucher->code, $cart);
 
-        return $validationResult->isValid;
+        return $validationResult->matchesTerms($this->voucher->toArray());
     }
 
     /**
@@ -184,6 +185,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
         return [
             'voucher_code' => $this->voucher->code,
             'voucher_id' => $this->voucher->id,
+            'voucher_data' => $this->voucher->toArray(),
         ];
     }
 

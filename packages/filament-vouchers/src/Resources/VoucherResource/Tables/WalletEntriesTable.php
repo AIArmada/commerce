@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletEntryDeletion;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletTimestampTransition;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
@@ -132,11 +136,13 @@ final class WalletEntriesTable
             ->filters([
                 SelectFilter::make('holder_type')
                     ->label('Holder Type')
-                    ->options([
-                        'App\\Models\\User' => 'User',
-                        'App\\Models\\Store' => 'Store',
-                        'App\\Models\\Team' => 'Team',
-                    ])
+                    ->options(static fn (): array => VoucherWalletResource::getEloquentQuery()
+                        ->whereNotNull('holder_type')
+                        ->distinct()
+                        ->orderBy('holder_type')
+                        ->pluck('holder_type')
+                        ->mapWithKeys(static fn (string $type): array => [$type => class_basename($type)])
+                        ->all())
                     ->native(false),
 
                 TernaryFilter::make('claimed_at')
@@ -164,6 +170,7 @@ final class WalletEntriesTable
             ->actions([
                 Action::make('markAsRedeemed')
                     ->label('Mark Redeemed')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.update'))
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
@@ -177,8 +184,9 @@ final class WalletEntriesTable
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
                     ->action(function (VoucherWallet $record): void {
-                        $record->delete();
+                        app(WalletEntryDeletion::class)->handle((string) $record->getKey());
                     }),
 
                 Action::make('viewMetadata')
@@ -196,18 +204,20 @@ final class WalletEntriesTable
             ->bulkActions([
                 BulkAction::make('markAsRedeemed')
                     ->label('Mark as Redeemed')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.update'))
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
-                        /** @var Collection<int, VoucherWallet> $records */
-                        $records->each(function (VoucherWallet $record): void {
-                            $record->markAsRedeemed();
-                        });
+                        app(WalletTimestampTransition::class)->handleMany($records->map(static fn (VoucherWallet $record): string => (string) $record->getKey())->values()->all(), true);
                     }),
 
                 DeleteBulkAction::make()
-                    ->label('Remove from Wallets'),
+                    ->label('Remove from Wallets')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
+                    ->action(function (Collection $records): void {
+                        app(WalletEntryDeletion::class)->handleMany($records->map(static fn (VoucherWallet $record): string => (string) $record->getKey())->values()->all());
+                    }),
             ])
             ->recordUrl(null);
     }

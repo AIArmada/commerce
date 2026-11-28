@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Services\VoucherValidator;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+
+beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+});
 
 test('validates valid voucher', function (): void {
     $voucher = Voucher::create([
@@ -21,7 +23,7 @@ test('validates valid voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -49,7 +51,7 @@ test('validates inactive voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Paused::class,
+        'status' => 'paused',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -68,7 +70,7 @@ test('validates voucher not started', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->addDay(),
     ]);
 
@@ -88,7 +90,7 @@ test('validates expired voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'expires_at' => now()->subDay(),
     ]);
 
@@ -110,7 +112,7 @@ test('validates voucher with usage limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit' => 1,
     ]);
 
@@ -156,7 +158,7 @@ test('validates voucher with per-user limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit_per_user' => 1,
     ]);
 
@@ -187,7 +189,7 @@ test('validates voucher with minimum cart value not met', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'min_cart_value' => 20000, // 20000 cents = $200.00
     ]);
 
@@ -207,7 +209,7 @@ test('validates with object cart', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'min_cart_value' => 5000, // 5000 cents = $50.00
     ]);
 
@@ -235,7 +237,7 @@ test('validates voucher with cart condition target definition as no eligibility 
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
     ]);
 
@@ -256,7 +258,7 @@ test('fails closed for targeted vouchers without a live cart', function (): void
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'type' => 'category',
             'categories' => ['electronics'],
@@ -281,7 +283,7 @@ test('fails closed for unknown non-empty target definition payloads', function (
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'type' => 'category',
             'categories' => ['electronics'],
@@ -306,7 +308,7 @@ test('fails closed for invalid cart condition target definition payloads', funct
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'scope' => 'not-a-scope',
             'phase' => 'cart_subtotal',
@@ -338,7 +340,7 @@ test('fails closed for malformed targeting payloads', function (array $targetDef
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => $targetDefinition,
     ]);
 
@@ -351,6 +353,8 @@ test('fails closed for malformed targeting payloads', function (array $targetDef
         ->and($result->details)->toBe(['targeting_failed' => true]);
 })->with([
     'non-array targeting' => [['targeting' => 'cart_quantity >= 1']],
+    'empty explicit targeting' => [['targeting' => []]],
+    'null explicit targeting' => [['targeting' => null]],
     'invalid targeting mode' => [[
         'targeting' => [
             'mode' => 'sometimes',
@@ -378,7 +382,7 @@ test('normalizes code with uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -398,7 +402,7 @@ test('normalizes code without uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -407,4 +411,50 @@ test('normalizes code without uppercase', function (): void {
     $result = $validator->validate('lowercase', $cart);
 
     expect($result->isValid)->toBeTrue();
+});
+
+test('rejects customer-limited vouchers for an unidentified guest', function (): void {
+    Auth::shouldReceive('user')->andReturn(null);
+
+    $voucher = Voucher::create([
+        'code' => 'GUESTLIMIT',
+        'name' => 'Customer only',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit_per_user' => 1,
+    ]);
+
+    $result = app(VoucherValidator::class)->validate($voucher->code, ['total' => 1000]);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->reason)->toBe('Sign in to use this voucher.');
+});
+
+test('rejects a voucher in a different currency from the live cart', function (): void {
+    Config::set('cart.money.default_currency', 'USD');
+
+    Voucher::create([
+        'code' => 'CURRENCY',
+        'name' => 'Currency restricted voucher',
+        'type' => VoucherType::Fixed->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $cart = new BaseCart(new InMemoryStorage, 'currency-validator', events: null, eventsEnabled: false);
+    $validator = app(VoucherValidator::class);
+
+    $result = $validator->validate('CURRENCY', $cart);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->reason)->toBe('Voucher currency does not match the cart currency.');
+
+    Config::set('cart.money.default_currency', 'MYR');
+
+    expect($validator->validate('CURRENCY', $cart)->isValid)->toBeTrue()
+        ->and($validator->validate('CURRENCY', ['total' => 1000, 'currency' => 'USD'])->isValid)->toBeFalse()
+        ->and($validator->validate('CURRENCY', ['total' => 1000, 'currency' => 'MYR'])->isValid)->toBeTrue();
 });

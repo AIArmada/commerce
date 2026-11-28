@@ -1,0 +1,130 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Vouchers\Features\Lifecycle\Persistence;
+
+use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
+use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+
+/**
+ * Caches owner-scoped voucher lookups without caching negative results.
+ *
+ * Eloquent model writes invalidate the key through Voucher model events.
+ * Integrations that write outside Eloquent must call VoucherService::invalidate()
+ * after their write; until then, a cached lookup remains stale by contract.
+ */
+final class VoucherLookupCache implements VoucherLookupInvalidation
+{
+    use NormalizesVoucherCodes;
+
+    /**
+     * @param  Closure(): ?VoucherData  $resolver
+     */
+    public function remember(
+        string $code,
+        Model | OwnerScopeIdentifiable | null $owner,
+        bool $includeGlobal,
+        Closure $resolver,
+    ): ?VoucherData {
+        if ($includeGlobal) {
+            // Deliberately uncached: a global voucher saved later can only
+            // invalidate its own owner key, never every tenant key that may
+            // have cached it alongside owner rows. Correctness over hits.
+            return $resolver();
+        }
+
+        $ttl = (int) config('vouchers.cache.lookup_ttl', 300);
+
+        if ($ttl <= 0) {
+            return $resolver();
+        }
+
+        $logicalKey = $this->logicalKey($code);
+        $cached = OwnerCache::get($owner, $logicalKey);
+
+        if ($cached instanceof VoucherData) {
+            return $cached;
+        }
+
+        $voucher = $resolver();
+
+        if ($voucher instanceof VoucherData) {
+            OwnerCache::put($owner, $logicalKey, $voucher, $ttl);
+        }
+
+        return $voucher;
+    }
+
+    public function forget(string $code, Model | OwnerScopeIdentifiable | null $owner): void
+    {
+        OwnerCache::forget($owner, $this->logicalKey($code));
+    }
+
+    public function forgetIdentity(string $code, ?string $ownerType, ?string $ownerId, string $connectionName): void
+    {
+        if ($code === '') {
+            return;
+        }
+
+        $owner = $this->ownerFromIdentity($ownerType, $ownerId);
+        $key = $this->logicalKey($code);
+        OwnerCache::forget($owner, $key);
+
+        $connection = DB::connection($connectionName);
+
+        if ($connection->transactionLevel() > 0) {
+            $connection->afterCommit(static fn () => OwnerCache::forget($owner, $key));
+        }
+    }
+
+    private function logicalKey(string $code): string
+    {
+        return 'vouchers.lookup.' . hash('sha256', $this->normalizeCode($code));
+    }
+
+    private function ownerFromIdentity(?string $ownerType, ?string $ownerId): ?OwnerScopeIdentifiable
+    {
+        if (! config('vouchers.owner.enabled', false)) {
+            return null;
+        }
+
+        if ($ownerType === null && $ownerId === null) {
+            return null;
+        }
+
+        if (
+            $ownerType === null
+            || $ownerId === null
+            || $ownerType === ''
+            || $ownerId === ''
+        ) {
+            throw new InvalidArgumentException('Voucher owner type and owner id must be either both null or both non-empty.');
+        }
+
+        return new class($ownerType, $ownerId) implements OwnerScopeIdentifiable
+        {
+            public function __construct(
+                private readonly string $type,
+                private readonly string | int $id,
+            ) {}
+
+            public function getMorphClass(): string
+            {
+                return $this->type;
+            }
+
+            public function getKey(): string | int
+            {
+                return $this->id;
+            }
+        };
+    }
+}

@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralRewardContext;
+use AIArmada\Vouchers\Data\VoucherData;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,10 +22,10 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 {
     public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
-        $createAction = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
+        $createAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherCreator';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
 
-        if (! class_exists($createAction) || ! class_exists($voucherClass)) {
+        if (! interface_exists($createAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('The vouchers package public API is unavailable.');
         }
 
@@ -84,9 +85,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $data['currency'] = $currency;
         $data['value'] = $value;
         $data['usage_limit'] = 1;
-        unset($data['max_uses']);
         $data['usage_limit_per_user'] = 1;
-        unset($data['max_uses_per_user']);
 
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
         $metadata[$marker] = $reward->idempotencyKey;
@@ -103,10 +102,12 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
                 return ReferralFulfillmentResult::failed('The vouchers create action does not expose its public handle method.');
             }
 
-            $voucher = $action->handle($data);
+            $voucher = config('vouchers.owner.enabled', false)
+                ? OwnerContext::withOwner($this->owner($reward), fn () => $action->handle($data))
+                : $action->handle($data);
 
-            if (! $voucher instanceof Model) {
-                return ReferralFulfillmentResult::failed('The vouchers create action did not return a voucher model.');
+            if (! $voucher instanceof VoucherData) {
+                return ReferralFulfillmentResult::failed('The voucher creator did not return voucher data.');
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -114,16 +115,16 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('Voucher issuance failed.');
         }
 
-        return ReferralFulfillmentResult::fulfilled((string) $voucher->getAttribute('code'));
+        return ReferralFulfillmentResult::fulfilled($voucher->code);
     }
 
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
     {
-        $expireAction = 'AIArmada\\Vouchers\\Actions\\ExpireVoucher';
-        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
+        $expireAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Api\\VoucherExpiry';
+        $voucherClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Models\\Voucher';
         $code = $reward->externalReference;
 
-        if (! is_string($code) || $code === '' || ! class_exists($expireAction) || ! class_exists($voucherClass)) {
+        if (! is_string($code) || $code === '' || ! interface_exists($expireAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('Voucher reversal requires an issued voucher code and the vouchers package.');
         }
 

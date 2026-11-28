@@ -7,7 +7,7 @@ namespace Tests\Vouchers\Unit\Events;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\Concerns\HasVoucherEventData;
 use DateTimeImmutable;
 use Mockery;

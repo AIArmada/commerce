@@ -17,11 +17,13 @@ return new class extends Migration
         $prefix = (string) config('vouchers.database.table_prefix', '');
         $tableName = $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        $voucherTable = $tables['vouchers'] ?? $prefix . 'vouchers';
+
+        Schema::create($tableName, function (Blueprint $table) use ($voucherTable): void {
             $jsonType = commerce_json_column_type('vouchers', 'jsonb');
 
             $table->uuid('id')->primary();
-            $table->foreignUuid('voucher_id');
+            $table->foreignUuid('voucher_id')->constrained($voucherTable)->cascadeOnDelete();
             $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('holder');
             $table->timestampTz('claimed_at')->nullable();
@@ -38,11 +40,11 @@ return new class extends Migration
             $table->index(['voucher_id', 'claimed_at', 'redeemed_at'], 'voucher_wallets_available_idx');
         });
 
-        // Partial unique indexes are supported by PostgreSQL and SQLite only.
-        // On SQLite the one-active-entry rule is enforced application-side by
-        // AddVoucherToWallet (voucher-row lock plus unique-violation rescue).
+        // A globally available voucher may be claimed separately in each owner wallet.
+        // PostgreSQL and SQLite require separate partial indexes for NULL owner tuples.
         if (in_array(ConnectionDriver::name(Schema::getConnection()), ['pgsql', 'sqlite'], true)) {
-            DB::statement("CREATE UNIQUE INDEX voucher_wallets_one_active_per_holder ON {$tableName} (voucher_id, holder_type, holder_id) WHERE redeemed_at IS NULL");
+            DB::statement("CREATE UNIQUE INDEX voucher_wallets_one_active_per_owner_holder ON \"{$tableName}\" (owner_type, owner_id, voucher_id, holder_type, holder_id) WHERE redeemed_at IS NULL AND owner_type IS NOT NULL AND owner_id IS NOT NULL");
+            DB::statement("CREATE UNIQUE INDEX voucher_wallets_one_active_per_global_holder ON \"{$tableName}\" (voucher_id, holder_type, holder_id) WHERE redeemed_at IS NULL AND owner_type IS NULL AND owner_id IS NULL");
         }
     }
 };

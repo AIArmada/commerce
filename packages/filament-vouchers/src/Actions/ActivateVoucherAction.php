@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -17,6 +17,8 @@ final class ActivateVoucherAction extends Action
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->authorize(static fn (): bool => FilamentPermission::hasAbility('voucher.update'));
 
         $this->label('Activate');
         $this->icon(Heroicon::OutlinedPlay);
@@ -28,13 +30,8 @@ final class ActivateVoucherAction extends Action
         $this->visible(fn (Voucher $record): bool => $record->status instanceof Paused && ! $record->isExpired());
 
         $this->action(function (Voucher $record): void {
-            if (config('vouchers.owner.enabled', false)) {
-                /** @var Voucher $record */
-                $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
-            }
-
-            $record->status->transitionTo(Active::class);
-            $record->save();
+            app(VoucherAvailability::class)->handle((string) $record->getKey(), true);
+            $record->refresh();
 
             Notification::make()
                 ->title('Voucher activated')

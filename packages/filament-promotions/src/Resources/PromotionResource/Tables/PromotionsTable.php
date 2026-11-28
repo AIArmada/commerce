@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
+use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Actions\BulkActionGroup;
@@ -124,39 +124,17 @@ final class PromotionsTable
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()
-                    ->before(function (Promotion $record): void {
-                        if (! config('promotions.features.owner.enabled', false)) {
-                            return;
-                        }
-
-                        OwnerWriteGuard::findOrFailForOwner(
-                            Promotion::class,
-                            (string) $record->getKey(),
-                            OwnerContext::resolve(),
-                            includeGlobal: false,
-                            message: 'Promotion is not accessible in the current owner scope.',
-                        );
-                    }),
+                    ->using(fn (Promotion $record): bool => app(DeletePromotion::class)->handle($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->before(function (Collection $records): void {
-                            if (! config('promotions.features.owner.enabled', false)) {
-                                return;
-                            }
-
-                            $owner = OwnerContext::resolve();
-
+                        ->action(function (Collection $records): void {
                             foreach ($records as $record) {
-                                OwnerWriteGuard::findOrFailForOwner(
-                                    Promotion::class,
-                                    (string) $record->getKey(),
-                                    $owner,
-                                    includeGlobal: false,
-                                    message: 'Promotion is not accessible in the current owner scope.',
-                                );
+                                abort_unless(PromotionResource::canDelete($record), 403);
                             }
+
+                            app(DeletePromotion::class)->handleMany($records);
                         }),
                 ]),
             ]);
@@ -181,7 +159,7 @@ final class PromotionsTable
                         $query
                             ->where('is_active', true)
                             ->whereNotNull('ends_at')
-                            ->where('ends_at', '<=', now());
+                            ->where('ends_at', '<', now());
                     });
             }),
             default => $query,

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Akaunting\Money\Money;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -68,9 +69,6 @@ final class ManualRedeemVoucherAction extends Action
                 ]);
             }
 
-            /** @var VoucherService $service */
-            $service = app(VoucherService::class);
-
             $discountCents = MoneyHelper::displayToCents((string) ($data['discount_amount'] ?? ''));
 
             if ($discountCents === null || $discountCents < 1) {
@@ -83,13 +81,14 @@ final class ManualRedeemVoucherAction extends Action
 
             $user = Auth::user();
 
-            $service->redeemManually(
+            app(VoucherUsageRecorder::class)->handle(
                 code: $record->code,
                 discountAmount: $discount,
-                reference: $data['reference'] ?? null,
-                metadata: ['manual_by' => $user?->id],
-                redeemedBy: $user,
-                notes: $data['notes'] ?? null
+                channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
+                metadata: ['manual_by' => $user?->id, 'reference' => $data['reference'] ?? null],
+                redeemedBy: EloquentRecordReference::fromModel($user),
+                notes: $data['notes'] ?? null,
+                voucherId: $record->id,
             );
 
             Notification::make()

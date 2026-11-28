@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -20,7 +19,7 @@ function createVoucherForScopesTest(array $attributes = []): Voucher
         'name' => 'Test Voucher',
         'type' => VoucherType::Percentage,
         'value' => 1000,
-        'status' => Active::class,
+        'status' => 'active',
         'stacking_priority' => 100,
     ], $attributes));
 }
@@ -37,6 +36,22 @@ describe('Voucher Model Scopes', function (): void {
         $affiliateVouchers->each(fn ($v) => expect($v->affiliate_id)->toBe('affiliate-123'));
     });
 
+    it('uses the same inclusive start and expiry boundaries for model and live query', function (): void {
+        $now = CarbonImmutable::parse('2026-01-01 12:00:00');
+        CarbonImmutable::setTestNow($now);
+
+        try {
+            $starting = createVoucherForScopesTest(['starts_at' => $now]);
+            $expiring = createVoucherForScopesTest(['expires_at' => $now]);
+
+            expect($starting->canBeRedeemed())->toBeTrue()
+                ->and($expiring->canBeRedeemed())->toBeTrue()
+                ->and(Voucher::query()->live()->pluck('id')->all())->toContain($starting->id, $expiring->id);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    });
+
     it('filters live vouchers by state, wall-clock window, and usage limit', function (): void {
         $live = createVoucherForScopesTest([
             'starts_at' => Carbon::now()->subHour(),
@@ -45,8 +60,8 @@ describe('Voucher Model Scopes', function (): void {
         ]);
         $upcoming = createVoucherForScopesTest(['starts_at' => Carbon::now()->addHour()]);
         $expired = createVoucherForScopesTest(['expires_at' => Carbon::now()->subHour()]);
-        $paused = createVoucherForScopesTest(['status' => Paused::class]);
-        $depleted = createVoucherForScopesTest(['status' => Depleted::class]);
+        $paused = createVoucherForScopesTest(['status' => 'paused']);
+        $depleted = createVoucherForScopesTest(['status' => 'depleted']);
         $limitReached = createVoucherForScopesTest(['usage_limit' => 1]);
 
         VoucherUsage::create([
@@ -131,19 +146,19 @@ describe('Voucher Model Methods', function (): void {
 
     it('checks canBeRedeemed correctly', function (): void {
         $validVoucher = createVoucherForScopesTest([
-            'status' => Active::class,
+            'status' => 'active',
             'starts_at' => Carbon::now()->subDay(),
             'expires_at' => Carbon::now()->addDay(),
             'usage_limit' => 10,
         ]);
 
         $expiredVoucher = createVoucherForScopesTest([
-            'status' => Active::class,
+            'status' => 'active',
             'expires_at' => Carbon::now()->subHour(),
         ]);
 
         $pausedVoucher = createVoucherForScopesTest([
-            'status' => Paused::class,
+            'status' => 'paused',
         ]);
 
         expect($validVoucher->canBeRedeemed())->toBeTrue()
@@ -180,7 +195,42 @@ describe('Voucher Model Methods', function (): void {
             ->and($limited->usageProgress)->toBe(30.0);
     });
 
-    /* Conversion/abandoned/statistics removed; covered by Integration/VoucherAppliedCountTest. */
+    it('calculates statistics from a single redemption count', function (): void {
+        $voucher = createVoucherForScopesTest([
+            'applied_count' => 4,
+            'usage_limit' => 5,
+        ]);
+
+        VoucherUsage::create([
+            'voucher_id' => $voucher->id,
+            'discount_amount' => 100,
+            'currency' => 'MYR',
+            'channel' => 'web',
+            'used_at' => now(),
+        ]);
+
+        $connection = $voucher->getConnection();
+        $wasLogging = $connection->logging();
+        $connection->enableQueryLog();
+        $before = count($connection->getQueryLog());
+
+        try {
+            $statistics = $voucher->getStatistics();
+            $queryCount = count($connection->getQueryLog()) - $before;
+        } finally {
+            if (! $wasLogging) {
+                $connection->disableQueryLog();
+            }
+        }
+
+        expect($statistics)->toBe([
+            'applied_count' => 4,
+            'redeemed_count' => 1,
+            'abandoned_count' => 3,
+            'conversion_rate' => 25.0,
+            'remaining_uses' => 4,
+        ])->and($queryCount)->toBe(1);
+    });
 });
 
 describe('Voucher Stacking Methods', function (): void {

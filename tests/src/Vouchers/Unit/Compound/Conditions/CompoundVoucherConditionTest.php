@@ -13,7 +13,10 @@ use AIArmada\Vouchers\Compound\Conditions\CashbackVoucherCondition;
 use AIArmada\Vouchers\Compound\Conditions\CompoundVoucherCondition;
 use AIArmada\Vouchers\Compound\Conditions\TieredVoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Support\VoucherRulesFactory;
 
 /**
  * Create a cart for compound voucher testing.
@@ -167,7 +170,7 @@ describe('CompoundVoucherCondition', function (): void {
             $voucher = createCompoundVoucherData(VoucherType::BuyXGetY);
             $condition = CompoundVoucherCondition::create($voucher);
 
-            expect($condition->getRuleFactoryKey())->toBe('compound_voucher');
+            expect($condition->getRuleFactoryKey())->toBe(VoucherRulesFactory::FACTORY_KEY);
         });
 
         it('returns rule factory context', function (): void {
@@ -179,6 +182,7 @@ describe('CompoundVoucherCondition', function (): void {
             expect($context)->toHaveKey('voucher_code', $voucher->code);
             expect($context)->toHaveKey('voucher_id', $voucher->id);
             expect($context)->toHaveKey('voucher_type', VoucherType::BuyXGetY->value);
+            expect($context)->toHaveKey('voucher_data', $voucher->toArray());
         });
 
         it('returns name with voucher code prefix', function (): void {
@@ -233,3 +237,23 @@ describe('CompoundVoucherCondition', function (): void {
 });
 
 /* BOGO/Tiered/Bundle/Cashback behavior sections removed; superseded by dedicated condition test files. */
+
+it('rehydrates compound voucher rules with the canonical factory and rejects changed configuration', function (): void {
+    $cart = createCompoundTestCart();
+    $voucher = createCompoundVoucherData(VoucherType::BuyXGetY, [
+        'buy' => ['quantity' => 2],
+        'get' => ['quantity' => 1, 'discount' => '100%'],
+    ]);
+    $condition = CompoundVoucherCondition::create($voucher);
+    $rule = (new VoucherRulesFactory)->createRules($condition->getRuleFactoryKey(), $condition->getRuleFactoryContext())[0];
+
+    Voucher::shouldReceive('validate')->with($voucher->code, $cart)->times(3)->andReturn(
+        VoucherValidationResult::valid(['voucher' => [...$voucher->toArray(), 'id' => 'replacement']]),
+        VoucherValidationResult::valid(['voucher' => [...$voucher->toArray(), 'value_config' => ['buy' => ['quantity' => 5]]]]),
+        VoucherValidationResult::valid(['voucher' => $voucher->toArray()]),
+    );
+
+    expect($rule($cart))->toBeFalse()
+        ->and($rule($cart))->toBeFalse()
+        ->and($rule($cart))->toBeTrue();
+});

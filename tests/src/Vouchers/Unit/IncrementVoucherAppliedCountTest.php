@@ -5,25 +5,26 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-it('does not increment malformed owner tuple rows when handling global voucher applications', function (): void {
+it('tracks applications only for the exact voucher and valid owner tuple', function (?string $rowOwnerType, bool $matchingIdentity, ?string $eventOwnerType, int $expectedCount): void {
     config()->set('vouchers.tracking.track_applications', true);
 
     $table = (new Voucher)->getTable();
 
+    $voucherId = (string) Str::uuid();
+
     DB::table($table)->insert([
-        'id' => (string) Str::uuid(),
-        'owner_type' => 'broken-owner-type',
+        'id' => $voucherId,
+        'owner_type' => $rowOwnerType,
         'owner_id' => null,
         'code' => 'MALFORMED-GLOBAL',
         'name' => 'Malformed Global Voucher Row',
@@ -42,7 +43,7 @@ it('does not increment malformed owner tuple rows when handling global voucher a
         'allows_manual_redemption' => false,
         'starts_at' => null,
         'expires_at' => null,
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => null,
         'metadata' => null,
         'stacking_rules' => null,
@@ -56,23 +57,28 @@ it('does not increment malformed owner tuple rows when handling global voucher a
     $event = new VoucherApplied(
         new Cart(new InMemoryStorage, 'listener-cart-' . Str::uuid()->toString()),
         VoucherData::fromArray([
-            'id' => (string) Str::uuid(),
+            'id' => $matchingIdentity ? $voucherId : (string) Str::uuid(),
             'code' => 'MALFORMED-GLOBAL',
             'name' => 'Global Voucher Event',
             'type' => VoucherType::Fixed,
             'value' => 100,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'owner_id' => null,
-            'owner_type' => null,
+            'owner_type' => $eventOwnerType,
         ])
     );
 
-    (new IncrementVoucherAppliedCount)->handle($event);
+    (app(IncrementVoucherAppliedCount::class))->handle($event);
 
     $appliedCount = DB::table($table)
         ->where('code', 'MALFORMED-GLOBAL')
         ->value('applied_count');
 
-    expect((int) $appliedCount)->toBe(0);
-});
+    expect((int) $appliedCount)->toBe($expectedCount);
+})->with([
+    'malformed persisted owner tuple' => ['broken-owner-type', true, null, 0],
+    'reused code with different voucher id' => [null, false, null, 0],
+    'malformed event owner tuple' => [null, true, 'broken-owner-type', 0],
+    'exact global voucher' => [null, true, null, 1],
+]);

@@ -9,16 +9,18 @@ declare(strict_types=1);
 // unused revocation cannot be followed by a late use.
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
-use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Actions\ExpireVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -26,13 +28,10 @@ use Illuminate\Validation\ValidationException;
 
 function assigneeUser(): FixtureUser
 {
-    $user = new FixtureUser(['name' => 'Assignee', 'email' => 'assignee-' . Str::random(8) . '@example.test']);
-    $user->forceFill(['id' => (string) Str::uuid()]);
-
-    return $user;
+    return FixtureUser::factory()->create(['name' => 'Assignee', 'email' => 'assignee-' . Str::random(8) . '@example.test']);
 }
 
-function assigneeVoucher(FixtureUser $assignee, array $attributes = []): Voucher
+function assigneeVoucher(FixtureUser $assignee, array $attributes = []): VoucherData
 {
     return CreateVoucher::run(array_merge([
         'code' => 'ASSIGN-' . mb_strtoupper(Str::random(8)),
@@ -73,7 +72,7 @@ it('rejects present but malformed assignee markers', function (mixed $assignee):
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => ['assignee' => $assignee],
     ]);
 
@@ -103,7 +102,7 @@ it('leaves unmarked commercial vouchers untouched by the assignee check', functi
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     Auth::setUser($user);
@@ -115,7 +114,7 @@ it('leaves unmarked commercial vouchers untouched by the assignee check', functi
     // Unattributed usage on an unmarked voucher still records.
     $usage = RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: ['idempotency_key' => 'open-1']);
 
-    expect($usage->redeemed_by_id)->toBeNull();
+    expect($usage->redeemedById)->toBeNull();
 });
 
 it('records usage on assigned vouchers only for the assignee', function (): void {
@@ -127,7 +126,7 @@ it('records usage on assigned vouchers only for the assignee', function (): void
         $voucher->code,
         Money::MYR(100),
         metadata: ['idempotency_key' => 'forbid-1'],
-        redeemedBy: $stranger,
+        redeemedBy: EloquentRecordReference::fromModel($stranger),
     ))->toThrow(InvalidVoucherException::class, 'another account');
 
     expect(fn () => RecordVoucherUsage::run(
@@ -142,10 +141,10 @@ it('records usage on assigned vouchers only for the assignee', function (): void
         $voucher->code,
         Money::MYR(100),
         metadata: ['idempotency_key' => 'allow-1'],
-        redeemedBy: $assignee,
+        redeemedBy: EloquentRecordReference::fromModel($assignee),
     );
 
-    expect((string) $usage->redeemed_by_id)->toBe((string) $assignee->getKey());
+    expect((string) $usage->redeemedById)->toBe((string) $assignee->getKey());
 });
 
 it('refuses usage on expired and revoked vouchers', function (): void {
@@ -155,7 +154,7 @@ it('refuses usage on expired and revoked vouchers', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'expires_at' => now()->subDay(),
     ]);
 
@@ -171,7 +170,7 @@ it('refuses usage on expired and revoked vouchers', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     ExpireVoucher::run($revoked->code);
@@ -192,7 +191,7 @@ it('replays an existing idempotent usage after the voucher expires', function ()
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
     $metadata = ['idempotency_key' => 'replay-after-expiry'];
 
@@ -213,18 +212,27 @@ it('rejects an idempotency key replayed for a different redeemer', function (): 
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
     $firstRedeemer = assigneeUser();
     $secondRedeemer = assigneeUser();
     $metadata = ['idempotency_key' => 'same-redemption-key'];
 
-    RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: $metadata, redeemedBy: $firstRedeemer);
+    RecordVoucherUsage::run($voucher->code, Money::MYR(100), metadata: $metadata, redeemedBy: EloquentRecordReference::fromModel($firstRedeemer));
 
     expect(fn () => RecordVoucherUsage::run(
         $voucher->code,
         Money::MYR(100),
         metadata: $metadata,
-        redeemedBy: $secondRedeemer,
+        redeemedBy: EloquentRecordReference::fromModel($secondRedeemer),
     ))->toThrow(ValidationException::class);
+});
+
+it('prevents a foreign account from claiming an assigned voucher into its wallet', function (): void {
+    $assignee = assigneeUser();
+    $stranger = assigneeUser();
+    $voucher = assigneeVoucher($assignee);
+
+    expect(fn () => app(WalletClaim::class)->handle($voucher->code, EloquentRecordReference::fromModel($stranger)))
+        ->toThrow(InvalidVoucherException::class, 'another account');
 });

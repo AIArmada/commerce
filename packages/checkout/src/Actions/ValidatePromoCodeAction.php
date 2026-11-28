@@ -8,12 +8,12 @@ use AIArmada\Cart\Cart;
 use AIArmada\Checkout\Data\PromoCodeValidationResult;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 
 final class ValidatePromoCodeAction
@@ -130,33 +130,11 @@ final class ValidatePromoCodeAction
     }
 
     private function resolveVoucherData(
-        VoucherValidationResult | array $validation,
+        VoucherValidationResult $validation,
         string $code,
         VoucherServiceInterface $voucherService,
     ): ?VoucherData {
-        if ($validation instanceof VoucherValidationResult) {
-            if (! $validation->isValid) {
-                return null;
-            }
-
-            return $voucherService->find($code);
-        }
-
-        if (is_array($validation)) {
-            if (! ($validation['valid'] ?? false)) {
-                return null;
-            }
-
-            $voucherArray = $validation['voucher'] ?? null;
-
-            if (! is_array($voucherArray)) {
-                return null;
-            }
-
-            return VoucherData::fromArray($voucherArray);
-        }
-
-        return null;
+        return $validation->isValid ? $voucherService->find($code) : null;
     }
 
     private function calculateDiscount(VoucherData $voucherData, int $subtotal, array | Cart $context): int

@@ -23,8 +23,8 @@ use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -196,6 +196,7 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
 });
 
 it('refreshes voucher-driven affiliate overrides before creating order metadata', function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
     config()->set('checkout.integrations.vouchers.enabled', true);
     config()->set('checkout.create_order.confirm_payment', false);
 

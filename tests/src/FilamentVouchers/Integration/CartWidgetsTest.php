@@ -2,19 +2,29 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart as LiveCart;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Queries\VoucherSnapshot;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -36,31 +46,22 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         'total' => 10000,
     ]);
 
-    // Stub cart instance integration.
-    app()->instance(CartInstanceManager::class, new class
-    {
-        public function resolve(string $instance, string $identifier): object
-        {
-            return new class
-            {
-                public function getAppliedVouchers(): array
-                {
-                    $voucher = new stdClass;
-                    $voucher->code = 'APPLIED';
-                    $voucher->type = VoucherType::Fixed;
-                    $voucher->value = 500;
-                    $voucher->currency = 'USD';
-                    $voucher->description = 'Applied voucher';
+    $live = new LiveCart(new InMemoryStorage, $cart->identifier);
+    new CartWithVouchers($live);
+    $applied = new VoucherCondition(VoucherData::fromArray([
+        'id' => 'applied',
+        'code' => 'APPLIED',
+        'name' => 'Applied voucher',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'USD',
+        'status' => 'active',
+    ]));
+    $live->registerDynamicCondition($applied->toCartCondition(), null, $applied->getRuleFactoryKey(), $applied->getRuleFactoryContext());
 
-                    return [$voucher];
-                }
-
-                public function applyVoucher(string $code): void {}
-
-                public function removeVoucher(string $code): void {}
-            };
-        }
-    });
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldReceive('resolveForSnapshot')->andReturn($live);
+    app()->instance(CartInstanceManager::class, $manager);
 
     $voucher = Voucher::query()->create([
         'code' => 'SAVE10',
@@ -68,7 +69,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         'type' => VoucherType::Percentage,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -84,7 +85,8 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $queryMethod = new ReflectionMethod(AppliedVouchersWidget::class, 'getAppliedVouchersQuery');
     $collection = $queryMethod->invoke($tableWidget);
 
-    expect($collection)->toBeIterable();
+    expect($collection)->toBeIterable()
+        ->and($collection->pluck('code')->all())->toContain('APPLIED');
 
     $quick = app(QuickApplyVoucherWidget::class);
     $quick->voucherCode = 'CODE';
@@ -96,19 +98,9 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $quick->applyVoucher();
 
     // Cart branch (VoucherException)
-    app()->instance(CartInstanceManager::class, new class
-    {
-        public function resolve(string $instance, string $identifier): object
-        {
-            return new class
-            {
-                public function applyVoucher(string $code): void
-                {
-                    throw new VoucherException('Cannot apply');
-                }
-            };
-        }
-    });
+    $applicator = Mockery::mock(CartVoucherApplicator::class);
+    $applicator->shouldReceive('handle')->once()->with($live, 'FAIL')->andThrow(new VoucherException('Cannot apply'));
+    app()->instance(CartVoucherApplicator::class, $applicator);
 
     $quick->record = $cart;
     $quick->voucherCode = 'FAIL';
@@ -117,7 +109,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     // Cart branch (Throwable)
     app()->instance(CartInstanceManager::class, new class
     {
-        public function resolve(string $instance, string $identifier): object
+        public function resolveForSnapshot(CartSnapshotData $snapshot): object
         {
             throw new RuntimeException('Boom');
         }
@@ -127,16 +119,12 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $quick->applyVoucher();
 
     // Cart branch (success)
-    app()->instance(CartInstanceManager::class, new class
-    {
-        public function resolve(string $instance, string $identifier): object
-        {
-            return new class
-            {
-                public function applyVoucher(string $code): void {}
-            };
-        }
-    });
+    app()->instance(CartInstanceManager::class, $manager);
+    $applicator = Mockery::mock(CartVoucherApplicator::class);
+    $condition = new VoucherCondition(VoucherSnapshot::fromModel($voucher));
+    $applicator->shouldReceive('handle')->once()->with($live, 'OK')->andReturn($condition);
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code, 100, (string) $voucher->getKey())->andReturn($condition);
+    app()->instance(CartVoucherApplicator::class, $applicator);
 
     $quick->voucherCode = 'OK';
     $quick->applyVoucher();
@@ -184,7 +172,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 100,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
         'usage_limit' => 5,
@@ -194,19 +182,9 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
 
     $suggestions->applySuggestion((string) $voucher->getKey());
 
-    app()->instance(CartInstanceManager::class, new class
-    {
-        public function resolve(string $instance, string $identifier): object
-        {
-            return new class
-            {
-                public function applyVoucher(string $code): void
-                {
-                    throw new RuntimeException('Boom');
-                }
-            };
-        }
-    });
+    $applicator = Mockery::mock(CartVoucherApplicator::class);
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code, 100, (string) $voucher->getKey())->andThrow(new RuntimeException('Boom'));
+    app()->instance(CartVoucherApplicator::class, $applicator);
 
     $suggestions->applySuggestion((string) $voucher->getKey());
 });
@@ -229,15 +207,16 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
-    $cartOwnedByB = Cart::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
+    $cartOwnedByB = Cart::make([
         'instance' => 'default',
         'identifier' => 'cart-owned-by-b',
         'currency' => 'USD',
         'subtotal' => 10000,
         'total' => 10000,
     ]);
+    OwnerContext::withOwner($ownerB, fn () => $cartOwnedByB->assignOwner($ownerB)->save());
+
+    expect($cartOwnedByB->owner_id)->toBe((string) $ownerB->getKey());
 
     $voucher = Voucher::query()->create([
         'code' => 'OWNER-A-ONLY',
@@ -245,32 +224,14 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
     $voucher->assignOwner($ownerA)->save();
 
-    $manager = new class
-    {
-        public int $calls = 0;
-
-        public function resolve(string $instance, string $identifier): object
-        {
-            $this->calls++;
-
-            return new class
-            {
-                public function getAppliedVouchers(): array
-                {
-                    return [];
-                }
-
-                public function applyVoucher(string $code): void {}
-            };
-        }
-    };
-
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldNotReceive('resolveForSnapshot');
     app()->instance(CartInstanceManager::class, $manager);
 
     $suggestions = app(VoucherSuggestionsWidget::class);
@@ -279,5 +240,55 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
     expect($suggestions->getEligibleVouchers())->toBeEmpty();
     $suggestions->applySuggestion((string) $voucher->getKey());
 
-    expect($manager->calls)->toBe(0);
+});
+
+it('honors the exact owner scope when global voucher suggestions are suppressed', function (): void {
+    config()->set('cart.owner.enabled', false);
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Exact Owner',
+        'email' => 'exact-owner-voucher-suggestions@example.com',
+        'password' => 'secret',
+    ]);
+
+    $global = OwnerContext::withOwner(null, fn () => Voucher::query()->create([
+        'code' => 'GLOBAL-SUGGESTION',
+        'name' => 'Global Voucher',
+        'type' => VoucherType::Fixed,
+        'value' => 500,
+        'currency' => 'USD',
+        'status' => 'active',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global): void {
+        $cart = Cart::make([
+            'instance' => 'default',
+            'identifier' => 'exact-owner-suggestion',
+            'currency' => 'USD',
+            'subtotal' => 10000,
+            'total' => 10000,
+        ]);
+        $cart->assignOwner($owner)->save();
+
+        expect(CartSnapshotAccess::allows($cart))->toBeTrue();
+
+        $manager = Mockery::mock(CartInstanceManager::class);
+        $manager->shouldReceive('resolveForSnapshot')->once()
+            ->andReturn(new LiveCart(new InMemoryStorage, $cart->identifier));
+        app()->instance(CartInstanceManager::class, $manager);
+
+        $applicator = Mockery::mock(CartVoucherApplicator::class);
+        $applicator->shouldNotReceive('handle');
+        app()->instance(CartVoucherApplicator::class, $applicator);
+
+        $widget = app(VoucherSuggestionsWidget::class);
+        $widget->record = $cart;
+
+        OwnerScopeOverride::withoutIncludeGlobal(function () use ($widget, $global): void {
+            expect($widget->getEligibleVouchers())->toBeEmpty();
+            $widget->applySuggestion((string) $global->getKey());
+        });
+    });
 });

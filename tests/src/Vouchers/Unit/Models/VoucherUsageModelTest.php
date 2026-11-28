@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -291,6 +291,16 @@ describe('VoucherUsage Model', function (): void {
             $usage = new VoucherUsage;
             $usage->redeemed_by_type = 'order';
             $usage->setRelation('redeemedBy', new class extends Model {});
+
+            expect($usage->isOrderRedemption())->toBeTrue();
+        });
+
+        it('recognizes checkout redemption from the order metadata with a customer redeemer', function (): void {
+            $usage = new VoucherUsage([
+                'redeemed_by_type' => 'customer',
+                'redeemed_by_id' => 'customer-1',
+                'metadata' => ['order_id' => 'order-1'],
+            ]);
 
             expect($usage->isOrderRedemption())->toBeTrue();
         });

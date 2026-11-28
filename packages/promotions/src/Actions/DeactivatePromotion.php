@@ -9,24 +9,27 @@ use AIArmada\Promotions\Events\PromotionDeactivated;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 
-final class DeactivatePromotion
+final readonly class DeactivatePromotion
 {
     public function handle(Promotion $promotion): Promotion
     {
-        if (config('promotions.features.owner.enabled', false)) {
-            /** @var Promotion $promotion */
-            $promotion = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
-        }
+        return $promotion->getConnection()->transaction(function () use ($promotion): Promotion {
+            $locked = config('promotions.features.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey(), lockForUpdate: true)
+                : Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
 
-        $promotion->update([
-            'is_active' => false,
-            'deactivated_at' => CarbonImmutable::now(),
-        ]);
+            if (! $locked->is_active) {
+                return $locked;
+            }
 
-        $resolved = $promotion->fresh() ?? $promotion;
+            $locked->update([
+                'is_active' => false,
+                'deactivated_at' => CarbonImmutable::now(),
+            ]);
 
-        PromotionDeactivated::dispatch($resolved);
+            PromotionDeactivated::dispatch($locked);
 
-        return $resolved;
+            return $locked;
+        });
     }
 }

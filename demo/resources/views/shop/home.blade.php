@@ -244,11 +244,11 @@
                     <p class="text-white/80 text-sm mb-1">Use code:</p>
                     <p class="text-2xl font-bold font-mono mb-2">{{ $voucher->code }}</p>
                     <p class="text-lg">
-                        @if($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::Percentage)
+                        @if($voucher->type === \AIArmada\Vouchers\Data\VoucherType::Percentage)
                             {{ rtrim(rtrim(number_format($voucher->value / 100, 2), '0'), '.') }}% OFF
-                        @elseif($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::Fixed)
+                        @elseif($voucher->type === \AIArmada\Vouchers\Data\VoucherType::Fixed)
                             RM {{ number_format($voucher->value / 100, 2) }} OFF
-                        @elseif($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::FreeShipping)
+                        @elseif($voucher->type === \AIArmada\Vouchers\Data\VoucherType::FreeShipping)
                             Free Shipping
                         @else
                             {{ $voucher->type->label() }}

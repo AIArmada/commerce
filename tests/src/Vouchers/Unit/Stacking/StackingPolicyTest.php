@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
@@ -40,8 +40,7 @@ function createPolicyVoucherCondition(string $code, VoucherType $type = VoucherT
         'type' => $type->value,
         'value' => $value,
         'usage_limit' => 100,
-        'usage_count' => 0,
-        'is_active' => true,
+        'status' => 'active',
         'expires_at' => null,
         'starts_at' => null,
         'metadata' => $metadata,
@@ -296,4 +295,34 @@ describe('StackingPolicy', function (): void {
             expect($result->first()->getVoucherCode())->toBe('DEFAULT');
         });
     });
+});
+
+it('enforces configured monetary, type, campaign and exclusion constraints', function (): void {
+    $cart = createPolicyTestCart();
+    $first = createPolicyVoucherCondition('FIRST', VoucherType::Fixed, 500, ['campaign_id' => 'campaign', 'exclusion_groups' => ['flash']]);
+    $second = createPolicyVoucherCondition('SECOND', VoucherType::Fixed, 500, ['campaign_id' => 'campaign', 'exclusion_groups' => ['flash']]);
+
+    foreach ([
+        ['type' => 'max_discount', 'value' => 750],
+        ['type' => 'max_discount_percentage', 'value' => 4],
+        ['type' => 'type_restriction', 'max_per_type' => ['fixed' => 1]],
+        ['type' => 'campaign_exclusion', 'max_per_campaign' => 1],
+        ['type' => 'mutual_exclusion', 'groups' => ['flash']],
+    ] as $rule) {
+        $policy = new StackingPolicy(rules: [$rule]);
+        expect($policy->canAdd($second, collect([$first]), $cart)->isDenied())->toBeTrue()
+            ->and($policy->resolveConflict(collect([$first, $second]), $cart)->count())->toBe(1);
+    }
+});
+
+it('resolves no-stacking mode to a single valid voucher and fails closed on unknown rules', function (): void {
+    $cart = createPolicyTestCart();
+    $first = createPolicyVoucherCondition('FIRST', VoucherType::Fixed, 500);
+    $second = createPolicyVoucherCondition('SECOND', VoucherType::Fixed, 1000);
+
+    $policy = new StackingPolicy(mode: StackingMode::None, autoOptimize: true);
+    expect($policy->resolveConflict(collect([$first, $second]), $cart)->all())->toBe([$second]);
+
+    $policy = new StackingPolicy(rules: [['type' => 'unknown']]);
+    expect($policy->canAdd($first, collect(), $cart)->isDenied())->toBeTrue();
 });

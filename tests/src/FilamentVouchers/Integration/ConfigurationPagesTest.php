@@ -9,34 +9,19 @@ use Filament\Schemas\Schema;
 
 uses(TestCase::class);
 
-it('builds configuration pages forms and actions', function (): void {
-    foreach ([
-        StackingConfigurationPage::class,
-        TargetingConfigurationPage::class,
-    ] as $pageClass) {
-        $page = app($pageClass);
+it('shows read-only configuration without claiming to persist changes', function (): void {
+    config()->set('vouchers.stacking.mode', 'parallel');
+    config()->set('vouchers.validation.check_targeting', false);
 
+    $stacking = app(StackingConfigurationPage::class);
+    $targeting = app(TargetingConfigurationPage::class);
+
+    foreach ([$stacking, $targeting] as $page) {
         expect($page->form(Schema::make($page)))->toBeInstanceOf(Schema::class);
-
-        $actions = new ReflectionMethod($pageClass, 'getFormActions');
-
-        expect($actions->invoke($page))->toBeArray();
-
+        expect(method_exists($page, 'save'))->toBeFalse();
         $page->mount();
-
-        if (method_exists($page, 'testDetection')) {
-            $page->testDetection();
-        }
-
-        if (method_exists($page, 'save')) {
-            $page->save();
-        }
     }
 
-    $operators = new ReflectionMethod(TargetingConfigurationPage::class, 'getOperatorsForType');
-
-    expect($operators->invoke(null, 'cart_value'))->toHaveKey('between');
-    expect($operators->invoke(null, 'user_segment'))->toHaveKey('any');
-    expect($operators->invoke(null, 'first_purchase'))->toHaveKey('=');
-    expect($operators->invoke(null, null))->toHaveKey('not_in');
+    expect($stacking->data['mode'])->toBe('parallel')
+        ->and($targeting->data['check_targeting'])->toBeFalse();
 });

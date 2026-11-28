@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -73,10 +73,7 @@ return new class extends Migration
             // Indexes
             $table->index('status');
             $table->index(['starts_at', 'expires_at']);
-            // Codes are unique per owner so tenants can reuse names like
-            // `WELCOME10`. NULL owner tuples stay mutually distinct on most
-            // drivers; global rows are privileged writes guarded by scoped
-            // form rules in addition to this constraint.
+            // Codes are unique per owner so tenants can reuse names like WELCOME10.
             $table->unique(['owner_type', 'owner_id', 'code'], 'vouchers_owner_code_unique');
             // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
             $table->index('type'); // For filtering by voucher type
@@ -91,6 +88,11 @@ return new class extends Migration
             $table->index('depleted_at');
             $table->index('last_activated_at');
         });
+
+        // Enforce uniqueness for global codes as well as owned codes.
+        if (in_array(ConnectionDriver::name(Schema::getConnection()), ['pgsql', 'sqlite'], true)) {
+            DB::statement("CREATE UNIQUE INDEX vouchers_global_code_unique ON \"{$tableName}\" (code) WHERE owner_type IS NULL AND owner_id IS NULL");
+        }
 
         // Optional: create GIN indexes when using jsonb on PostgreSQL
         $jsonColumnType = commerce_json_column_type('vouchers', 'jsonb');

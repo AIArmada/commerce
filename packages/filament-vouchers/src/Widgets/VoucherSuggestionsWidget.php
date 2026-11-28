@@ -8,12 +8,18 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherWalletReader;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -53,18 +59,8 @@ final class VoucherSuggestionsWidget extends Widget
             return collect();
         }
 
-        if (config('vouchers.owner.enabled', false)) {
-            $isVisible = OwnerQuery::applyToEloquentBuilder(
-                Cart::query(),
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            )
-                ->whereKey($this->record->getKey())
-                ->exists();
-
-            if (! $isVisible) {
-                return collect();
-            }
+        if (! CartSnapshotAccess::allows($this->record)) {
+            return collect();
         }
 
         try {
@@ -72,15 +68,7 @@ final class VoucherSuggestionsWidget extends Widget
             $cartCurrency = $this->record->currency;
 
             // Get active vouchers
-            $voucherQuery = Voucher::query();
-
-            if (config('vouchers.owner.enabled', false)) {
-                $voucherQuery = OwnerQuery::applyToEloquentBuilder(
-                    $voucherQuery,
-                    OwnerContext::resolve(),
-                    (bool) config('vouchers.owner.include_global', false),
-                );
-            }
+            $voucherQuery = $this->suggestionQuery();
 
             /** @var Builder<Voucher> $voucherQuery */
             $vouchers = $voucherQuery
@@ -94,6 +82,7 @@ final class VoucherSuggestionsWidget extends Widget
             // Resolve the cart and its applied codes once instead of once
             // per candidate voucher.
             $appliedCodes = $this->appliedVoucherCodes();
+            $snapshots = app(VoucherWalletReader::class)->readMany($vouchers->modelKeys());
 
             // Filter and calculate potential savings
             $suggestions = $vouchers
@@ -110,8 +99,11 @@ final class VoucherSuggestionsWidget extends Widget
 
                     return true;
                 })
-                ->map(function (Voucher $voucher) use ($cartTotal, $cartCurrency) {
-                    $potentialSavings = $this->calculatePotentialSavings($voucher, $cartTotal);
+                ->map(function (Voucher $voucher) use ($cartTotal, $cartCurrency, $snapshots) {
+                    $snapshot = $snapshots[$voucher->id] ?? null;
+                    $potentialSavings = $snapshot !== null && $snapshot->redeemable
+                        ? $this->calculatePotentialSavings($voucher, $cartTotal, $snapshot->voucher)
+                        : 0;
                     $savingsText = MoneyHelper::formatMoney($potentialSavings, $cartCurrency);
 
                     $recommendation = $this->generateRecommendation($voucher, $cartTotal, $potentialSavings);
@@ -151,25 +143,15 @@ final class VoucherSuggestionsWidget extends Widget
             return;
         }
 
-        if (config('vouchers.owner.enabled', false)) {
-            $isVisible = OwnerQuery::applyToEloquentBuilder(
-                Cart::query(),
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            )
-                ->whereKey($this->record->getKey())
-                ->exists();
+        if (! CartSnapshotAccess::allows($this->record)) {
+            Notification::make()
+                ->warning()
+                ->title('Not Authorized')
+                ->body('You cannot modify this cart.')
+                ->icon(Heroicon::OutlinedExclamationCircle)
+                ->send();
 
-            if (! $isVisible) {
-                Notification::make()
-                    ->warning()
-                    ->title('Not Authorized')
-                    ->body('You cannot modify this cart.')
-                    ->icon(Heroicon::OutlinedExclamationCircle)
-                    ->send();
-
-                return;
-            }
+            return;
         }
 
         try {
@@ -185,13 +167,9 @@ final class VoucherSuggestionsWidget extends Widget
                 return;
             }
 
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $this->record->instance,
-                $this->record->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($this->record->toSnapshotData());
 
-            /** @phpstan-ignore-next-line */
-            $cartInstance->applyVoucher($voucher->code);
+            app(CartVoucherApplicator::class)->handle($cartInstance, $voucher->code, expectedVoucherId: (string) $voucher->getKey());
 
             Notification::make()
                 ->success()
@@ -232,17 +210,9 @@ final class VoucherSuggestionsWidget extends Widget
         try {
             /** @var Cart $cartRecord */
             $cartRecord = $this->record;
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $cartRecord->instance,
-                $cartRecord->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($cartRecord->toSnapshotData());
 
-            /** @phpstan-ignore-next-line */
-            $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-            if (! is_iterable($appliedVouchers)) {
-                return [];
-            }
+            $appliedVouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             return collect($appliedVouchers)->pluck('code')->filter()->values()->all();
         } catch (Throwable) {
@@ -251,17 +221,25 @@ final class VoucherSuggestionsWidget extends Widget
         }
     }
 
+    /** @return Builder<Voucher> */
+    private function suggestionQuery(): Builder
+    {
+        $query = Voucher::query();
+
+        if (! config('vouchers.owner.enabled', false)) {
+            return $query;
+        }
+
+        $scope = Voucher::ownerScopeConfig();
+        $owner = OwnerContext::resolveConfigured($scope);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return $query->forOwner($owner, $scope->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal());
+    }
+
     private function resolveVoucherForSuggestion(string $voucherId): ?Voucher
     {
-        $voucherQuery = Voucher::query();
-
-        if (config('vouchers.owner.enabled', false)) {
-            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
-                $voucherQuery,
-                OwnerContext::resolve(),
-                (bool) config('vouchers.owner.include_global', false),
-            );
-        }
+        $voucherQuery = $this->suggestionQuery();
 
         /** @var Voucher|null $voucher */
         $voucher = $voucherQuery->whereKey($voucherId)->first();
@@ -276,12 +254,12 @@ final class VoucherSuggestionsWidget extends Widget
      * cannot drift from suggestions; unpersisted models fall back to the
      * local simple-type estimate.
      */
-    protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal): int
+    protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal, ?VoucherData $snapshot = null): int
     {
-        try {
-            $savings = app(VoucherDiscountCalculator::class)
-                ->calculate(VoucherData::fromModel($voucher), $cartTotal);
-        } catch (Throwable) {
+        if ($voucher->exists) {
+            $snapshot ??= app(VoucherCatalog::class)->find($voucher->code, $voucher->id);
+            $savings = $snapshot === null ? 0 : app(VoucherDiscountCalculator::class)->calculate($snapshot, $cartTotal);
+        } else {
             $savings = $this->simpleTypeEstimate($voucher, $cartTotal);
         }
 

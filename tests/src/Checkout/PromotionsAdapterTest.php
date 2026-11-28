@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
+use AIArmada\Promotions\Services\PromotionService;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
@@ -101,18 +102,16 @@ it('does not resolve a code promotion when the code belongs to a valid voucher',
     $voucherService = mock(VoucherServiceInterface::class);
     $voucherService->shouldReceive('validate')
         ->once()
-        ->andReturn(VoucherValidationResult::valid());
-    $voucherService->shouldReceive('find')
-        ->once()
-        ->andReturn(VoucherData::fromArray([
+        ->andReturn(VoucherValidationResult::valid(['voucher' => VoucherData::fromArray([
             'id' => 'voucher-save10',
             'code' => 'SAVE10',
             'name' => 'Save 10',
             'type' => VoucherType::Fixed->value,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => Active::class,
-        ]));
+            'status' => 'active',
+        ])->toArray()]));
+    $voucherService->shouldNotReceive('find');
 
     app()->instance(VoucherServiceInterface::class, $voucherService);
 
@@ -173,4 +172,82 @@ it('resolves applicable code promotions through the promotion service', function
             'code' => 'LAUNCH10',
             'discount' => 1000,
         ]);
+});
+
+it('evaluates minimum purchase and total unit quantity against the checkout snapshot', function (): void {
+    app()->bind(PromotionServiceInterface::class, PromotionService::class);
+
+    $session = new CheckoutSession;
+    $session->id = 'session-promotions-targeting';
+    $session->subtotal = 10000;
+    $session->grand_total = 10000;
+    $session->currency = 'MYR';
+    $session->billing_data = [];
+    $session->cart_snapshot = [
+        'items' => [[
+            'id' => 'line-1',
+            'name' => 'Target Product',
+            'quantity' => 3,
+            'price' => 3000,
+            'attributes' => ['sku' => 'TARGET-SKU', 'category' => 'target-category'],
+        ]],
+        'metadata' => ['channel' => 'web'],
+    ];
+
+    $eligible = Promotion::query()->create([
+        'name' => 'Eligible',
+        'type' => PromotionType::Fixed,
+        'discount_value' => 1000,
+        'min_purchase_amount' => 9000,
+        'min_quantity' => 3,
+        'is_active' => true,
+    ]);
+
+    Promotion::query()->create([
+        'name' => 'Ineligible',
+        'type' => PromotionType::Fixed,
+        'discount_value' => 2000,
+        'min_quantity' => 4,
+        'is_active' => true,
+    ]);
+
+    $result = (new PromotionsAdapter)->applyEligiblePromotions($session);
+
+    expect($result['discount'])->toBe(1000)
+        ->and($result['applied'])->toHaveCount(1)
+        ->and($result['applied'][0]['promotion_id'])->toBe($eligible->id);
+});
+
+it('exposes frozen snapshot product identifiers, quantities and categories to targeting', function (): void {
+    $session = new CheckoutSession;
+    $session->id = 'session-promotions-target-products';
+    $session->subtotal = 10000;
+    $session->grand_total = 10000;
+    $session->currency = 'MYR';
+    $session->billing_data = [];
+    $session->cart_snapshot = ['items' => [[
+        'id' => 'line-1',
+        'name' => 'Target Product',
+        'quantity' => 3,
+        'price' => 3000,
+        'attributes' => ['sku' => 'TARGET-SKU', 'category' => 'target-category'],
+    ]]];
+
+    $service = mock(PromotionServiceInterface::class);
+    $service->shouldReceive('getApplicablePromotions')
+        ->once()
+        ->withArgs(function (TargetingContext $context): bool {
+            expect($context->getCartValue())->toBe(10000)
+                ->and($context->getCartQuantity())->toBe(3)
+                ->and($context->getProductIdentifiers())->toBe(['TARGET-SKU'])
+                ->and($context->getProductCategories())->toBe(['target-category'])
+                ->and($context->getProductQuantity('TARGET-SKU'))->toBe(3);
+
+            return true;
+        })
+        ->andReturn(collect());
+
+    app()->instance(PromotionServiceInterface::class, $service);
+
+    expect((new PromotionsAdapter)->applyEligiblePromotions($session)['discount'])->toBe(0);
 });

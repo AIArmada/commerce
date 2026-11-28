@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 describe('VoucherType Enum', function (): void {
     describe('basic types', function (): void {

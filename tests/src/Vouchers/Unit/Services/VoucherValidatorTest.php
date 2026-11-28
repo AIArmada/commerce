@@ -5,10 +5,11 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerModelLookup;
-use AIArmada\Vouchers\Services\VoucherValidator;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherEligibility;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 
 describe('VoucherValidator', function (): void {
     beforeEach(function (): void {
@@ -67,11 +68,11 @@ describe('VoucherValidator', function (): void {
         });
     });
 
-    describe('resolveOwner method', function (): void {
+    describe('lifecycle owner resolution', function (): void {
         it('returns null when owner is disabled', function (): void {
             config(['vouchers.owner.enabled' => false]);
 
-            $validator = makeVoucherValidator();
+            $validator = app(VoucherEligibility::class);
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
@@ -101,7 +102,7 @@ describe('VoucherValidator', function (): void {
 
             app()->instance(OwnerResolverInterface::class, $ownerResolver);
 
-            $validator = makeVoucherValidator();
+            $validator = app(VoucherEligibility::class);
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
@@ -256,34 +257,32 @@ describe('VoucherValidator', function (): void {
         });
     });
 
-    describe('getUserIdentifier method', function (): void {
-        it('returns user id when authenticated', function (): void {
-            config(['vouchers.owner.enabled' => false]);
-            Auth::shouldReceive('id')->andReturn(123);
+    describe('eligibility actor identity', function (): void {
+        it('passes the authenticated morph identity to lifecycle eligibility', function (): void {
+            $user = Mockery::mock(Model::class);
+            $user->shouldReceive('getMorphClass')->once()->andReturn('user');
+            $user->shouldReceive('getKey')->once()->andReturn(123);
+            Auth::shouldReceive('user')->andReturn($user);
 
-            $validator = makeVoucherValidator();
+            $eligibility = Mockery::mock(VoucherEligibility::class);
+            $eligibility->shouldReceive('validate')->once()->with('CODE', 'MYR', 'user', '123')
+                ->andReturn(VoucherValidationResult::invalid('Not eligible'));
+            app()->instance(VoucherEligibility::class, $eligibility);
+            app()->forgetInstance(VoucherValidator::class);
 
-            $reflection = new ReflectionClass($validator);
-            $method = $reflection->getMethod('getUserIdentifier');
-
-            $result = $method->invoke($validator);
-
-            expect($result)->toBe('123');
+            expect(makeVoucherValidator()->validate('CODE', ['currency' => 'MYR'])->isValid)->toBeFalse();
         });
 
-        it('returns session id when not authenticated', function (): void {
-            config(['vouchers.owner.enabled' => false]);
-            Auth::shouldReceive('id')->andReturn(null);
-            Session::shouldReceive('getId')->andReturn('session-abc123');
+        it('passes no actor identity for a guest', function (): void {
+            Auth::shouldReceive('user')->andReturn(null);
 
-            $validator = makeVoucherValidator();
+            $eligibility = Mockery::mock(VoucherEligibility::class);
+            $eligibility->shouldReceive('validate')->once()->with('CODE', 'MYR', null, null)
+                ->andReturn(VoucherValidationResult::invalid('Sign in to use this voucher.'));
+            app()->instance(VoucherEligibility::class, $eligibility);
+            app()->forgetInstance(VoucherValidator::class);
 
-            $reflection = new ReflectionClass($validator);
-            $method = $reflection->getMethod('getUserIdentifier');
-
-            $result = $method->invoke($validator);
-
-            expect($result)->toBe('session-abc123');
+            expect(makeVoucherValidator()->validate('CODE', ['currency' => 'MYR'])->isValid)->toBeFalse();
         });
     });
 

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentVouchers\Pages;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -14,7 +13,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -130,29 +128,7 @@ final class StackingConfigurationPage extends Page implements HasForms
                     ->cloneable()
                     ->defaultItems(0),
             ])
-            ->statePath('data');
-    }
-
-    public function save(): void
-    {
-        $data = $this->form->getState();
-
-        // In a real implementation, this would persist to database or config file
-        // For now, we show a success message
-        Notification::make()
-            ->title('Configuration saved')
-            ->body('Stacking configuration has been updated. Note: For persistent changes, update your vouchers.php config file.')
-            ->warning()
-            ->send();
-    }
-
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('save')
-                ->label('Save Configuration')
-                ->action('save')
-                ->color('primary'),
-        ];
+            ->statePath('data')
+            ->disabled();
     }
 }

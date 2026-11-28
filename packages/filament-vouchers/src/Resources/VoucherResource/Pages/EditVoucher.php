@@ -8,19 +8,33 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class EditVoucher extends EditRecord
 {
     protected static string $resource = VoucherResource::class;
 
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        if (! $record instanceof Voucher) {
+            throw new InvalidArgumentException('Expected a voucher record.');
+        }
+
+        app(VoucherUpdater::class)->handle((string) $record->getKey(), $data);
+
+        return $record->refresh();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Voucher $record): bool => app(VoucherDeletion::class)->handle((string) $record->getKey())),
         ];
     }
 
@@ -40,10 +54,6 @@ final class EditVoucher extends EditRecord
     {
         $data = parent::mutateFormDataBeforeSave($data);
 
-        $record = $this->getRecord();
-        $data = $this->enforceOwnerOnUpdate($record, $data);
-        $data = VoucherAffiliateOwnershipGuard::sanitize($data);
-
         return $this->persistConditionTargetDefinition($data);
     }
 
@@ -55,7 +65,7 @@ final class EditVoucher extends EditRecord
     {
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
         $definition = ConditionTargetDisplay::definition(
-            $data['target_definition'] ?? $metadata['target_definition'] ?? null
+            $data['target_definition'] ?? null
         );
 
         $dsl = ConditionTargetDisplay::dsl($definition);
@@ -76,31 +86,5 @@ final class EditVoucher extends EditRecord
     private function persistConditionTargetDefinition(array $data): array
     {
         return ConditionTargetFormData::persist($data);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function enforceOwnerOnUpdate(Model $record, array $data): array
-    {
-        if (! config('vouchers.owner.enabled', false)) {
-            return $data;
-        }
-
-        $existingOwnerType = $record->getAttribute('owner_type');
-        $existingOwnerId = $record->getAttribute('owner_id');
-
-        if ($existingOwnerType === null || $existingOwnerId === null) {
-            $data['owner_type'] = null;
-            $data['owner_id'] = null;
-
-            return $data;
-        }
-
-        $data['owner_type'] = (string) $existingOwnerType;
-        $data['owner_id'] = (string) $existingOwnerId;
-
-        return $data;
     }
 }

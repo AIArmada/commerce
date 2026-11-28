@@ -2,19 +2,23 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherLookupInvalidation;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Support\VoucherLookupCache;
-use Illuminate\Database\Eloquent\Collection;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 test('voucher service can find voucher', function (): void {
     $voucher = Voucher::create([
@@ -128,6 +132,17 @@ test('voucher lookup cache keeps owner and global scopes separate', function ():
         ->and($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
         ->toBe('Owner A')
         ->and($cache->remember('SHARED-CODE', null, false, fn (): VoucherData => $globalVoucher)?->name)
+        ->toBe('Global');
+
+    config()->set('vouchers.owner.enabled', true);
+
+    app(VoucherLookupInvalidation::class)->forgetIdentity('SHARED-CODE', 'test-owner', 'owner-a', DB::connection()->getName());
+
+    expect($cache->remember('SHARED-CODE', $ownerA, false, fn (): VoucherData => $otherOwnerVoucher)?->name)
+        ->toBe('Owner B')
+        ->and($cache->remember('SHARED-CODE', $ownerB, false, fn (): VoucherData => $ownerVoucher)?->name)
+        ->toBe('Owner B')
+        ->and($cache->remember('SHARED-CODE', null, false, fn (): VoucherData => $ownerVoucher)?->name)
         ->toBe('Global');
 });
 
@@ -334,7 +349,7 @@ test('voucher service redeem records fixed discount amount', function (): void {
         ->and($usage?->discount_amount)->toBe(500)
         ->and($usage?->currency)->toBe('MYR')
         ->and($usage?->channel)->toBe('checkout')
-        ->and($usage?->redeemed_by_id)->toBe((string) $order->id)
+        ->and($usage?->redeemed_by_id)->toBe($order->customer_id)
         ->and($usage?->metadata)->toMatchArray([
             'order_id' => (string) $order->id,
             'order_number' => 'ORD-REDEEM-123',
@@ -342,7 +357,7 @@ test('voucher service redeem records fixed discount amount', function (): void {
             'discount_total' => 500,
             'grand_total' => 9500,
         ])
-        ->and($usage?->redeemedBy?->is($order))->toBeTrue();
+        ->and($usage?->redeemed_by_type)->toBe($order->customer_type);
 });
 
 test('voucher service redeem records the allocated checkout discount and voucher currency', function (): void {
@@ -462,9 +477,15 @@ test('voucher service get usage history', function (): void {
 
     $service = app(VoucherService::class);
 
+    $service->recordUsage($voucher->code, Money::MYR(250), metadata: ['idempotency_key' => 'history-1']);
+
     $history = $service->getUsageHistory('history');
 
-    expect($history)->toBeInstanceOf(Collection::class);
+    expect($history)->toHaveCount(1)
+        ->and($history[0])->toBeInstanceOf(VoucherUsageData::class)
+        ->and($history[0]->voucherId)->toBe($voucher->id)
+        ->and($history[0]->discountAmount)->toBe(250)
+        ->and($history[0]->currency)->toBe('MYR');
 });
 
 test('voucher service get usage history returns empty for non-existent', function (): void {
@@ -472,8 +493,7 @@ test('voucher service get usage history returns empty for non-existent', functio
 
     $history = $service->getUsageHistory('nonexistent');
 
-    expect($history)->toBeInstanceOf(Collection::class)
-        ->and($history->isEmpty())->toBeTrue();
+    expect($history)->toBe([]);
 });
 
 test('voucher service normalize code with uppercase', function (): void {
@@ -585,4 +605,107 @@ test('it creates only one usage on duplicate commit', function (): void {
     }
 
     expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1);
+});
+
+test('checkout enforces a voucher limit against the customer rather than individual orders', function (): void {
+    $customer = User::create([
+        'name' => 'Voucher customer',
+        'email' => 'voucher-customer@example.test',
+        'password' => 'secret',
+    ]);
+    $voucher = Voucher::create([
+        'code' => 'CUSTOMERLIMIT',
+        'name' => 'Customer limit',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit_per_user' => 1,
+    ]);
+
+    $orders = Order::factory()->count(2)->create([
+        'customer_type' => $customer->getMorphClass(),
+        'customer_id' => $customer->getKey(),
+        'currency' => 'MYR',
+    ]);
+
+    $service = app(VoucherService::class);
+    $service->redeem($voucher->code, (string) $orders[0]->getKey(), 100, 'MYR');
+
+    expect(fn () => $service->redeem($voucher->code, (string) $orders[1]->getKey(), 100, 'MYR'))
+        ->toThrow(VoucherUsageLimitException::class);
+
+    expect($voucher->usages()->sole()->redeemed_by_id)->toBe((string) $customer->getKey());
+});
+
+test('checkout rejects negative discounts and unknown currencies instead of silently coercing them', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'STRICTREDEEM',
+        'name' => 'Strict redemption',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $order = Order::factory()->create(['currency' => 'MYR']);
+    $service = app(VoucherService::class);
+
+    expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), -1, 'MYR'))
+        ->toThrow(ValidationException::class);
+    expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), 100, 'ZZZ'))
+        ->toThrow(ValidationException::class);
+    expect($voucher->usages()->count())->toBe(0);
+});
+
+test('voucher reservations resolve the current identity without using the lookup cache', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'RESERVE-FRESH',
+        'name' => 'Reservation identity',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+    expect($service->find($voucher->code)?->id)->toBe($voucher->id);
+
+    DB::table($voucher->getTable())->where('id', $voucher->id)->update(['code' => 'RESERVE-RENAMED']);
+
+    expect(fn () => $service->reserve('RESERVE-FRESH', 'session-old'))
+        ->toThrow(VoucherNotFoundException::class);
+
+    $service->reserve('RESERVE-RENAMED', 'session-current');
+
+    expect(Cache::get("voucher_reservation:{$voucher->id}:session-old"))->toBeNull()
+        ->and(Cache::get("voucher_reservation:{$voucher->id}:session-current"))->toBeArray();
+});
+
+test('voucher catalog lookup does not aggregate unrelated usage rows', function (): void {
+    config(['vouchers.cache.lookup_ttl' => 0]);
+
+    $voucher = Voucher::create([
+        'code' => 'CATALOG-QUERY',
+        'name' => 'Catalog query',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit' => 5,
+    ]);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $found = app(VoucherService::class)->find($voucher->code);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($found?->id)->toBe($voucher->id)
+        ->and($queries)->toHaveCount(1)
+        ->and(mb_strtolower($queries[0]['query']))->not->toContain('usages_count');
 });

@@ -6,40 +6,24 @@ namespace AIArmada\FilamentVouchers\Extensions;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\VoucherException;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartWithVouchers;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Throwable;
 
 final class CartVoucherActions
 {
-    private static function isOwnerEnabled(): bool
-    {
-        return (bool) config('vouchers.owner.enabled', false);
-    }
-
-    private static function scopeForOwner(Builder $query): Builder
-    {
-        if (! self::isOwnerEnabled()) {
-            return $query;
-        }
-
-        return OwnerQuery::applyToEloquentBuilder(
-            $query,
-            OwnerContext::resolve(),
-            (bool) config('vouchers.owner.include_global', false),
-        );
-    }
-
     public static function applyVoucher(): Action
     {
         return Action::make('apply_voucher')
@@ -63,21 +47,15 @@ final class CartVoucherActions
             ->action(function (array $data, Cart $record): void {
                 $code = mb_trim($data['voucher_code'] ?? '');
 
-                if (self::isOwnerEnabled()) {
-                    $isVisible = self::scopeForOwner(Cart::query())
-                        ->whereKey($record->getKey())
-                        ->exists();
+                if (! CartSnapshotAccess::allows($record)) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Not Authorized')
+                        ->body('You cannot modify this cart.')
+                        ->icon(Heroicon::OutlinedExclamationCircle)
+                        ->send();
 
-                    if (! $isVisible) {
-                        Notification::make()
-                            ->warning()
-                            ->title('Not Authorized')
-                            ->body('You cannot modify this cart.')
-                            ->icon(Heroicon::OutlinedExclamationCircle)
-                            ->send();
-
-                        return;
-                    }
+                    return;
                 }
 
                 if ($code === '') {
@@ -91,13 +69,9 @@ final class CartVoucherActions
                 }
 
                 try {
-                    $cartInstance = app(CartInstanceManager::class)->resolve(
-                        $record->instance,
-                        $record->identifier
-                    );
+                    $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($record->toSnapshotData());
 
-                    /** @phpstan-ignore-next-line */
-                    $cartInstance->applyVoucher($code);
+                    app(CartVoucherApplicator::class)->handle($cartInstance, $code);
 
                     Notification::make()
                         ->success()
@@ -165,31 +139,21 @@ final class CartVoucherActions
             ->modalHeading('Remove Voucher')
             ->modalDescription("Are you sure you want to remove the voucher '{$voucherCode}'?")
             ->action(function (Cart $record) use ($voucherCode): void {
-                if (self::isOwnerEnabled()) {
-                    $isVisible = self::scopeForOwner(Cart::query())
-                        ->whereKey($record->getKey())
-                        ->exists();
+                if (! CartSnapshotAccess::allows($record)) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Not Authorized')
+                        ->body('You cannot modify this cart.')
+                        ->icon(Heroicon::OutlinedExclamationCircle)
+                        ->send();
 
-                    if (! $isVisible) {
-                        Notification::make()
-                            ->warning()
-                            ->title('Not Authorized')
-                            ->body('You cannot modify this cart.')
-                            ->icon(Heroicon::OutlinedExclamationCircle)
-                            ->send();
-
-                        return;
-                    }
+                    return;
                 }
 
                 try {
-                    $cartInstance = app(CartInstanceManager::class)->resolve(
-                        $record->instance,
-                        $record->identifier
-                    );
+                    $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($record->toSnapshotData());
 
-                    /** @phpstan-ignore-next-line */
-                    $cartInstance->removeVoucher($voucherCode);
+                    app(CartVoucherRemoval::class)->handle($cartInstance, $voucherCode);
 
                     Notification::make()
                         ->success()
@@ -218,27 +182,17 @@ final class CartVoucherActions
      */
     private static function getAppliedVouchersInfolist(Cart $record): array
     {
-        if (self::isOwnerEnabled()) {
-            $isVisible = self::scopeForOwner(Cart::query())
-                ->whereKey($record->getKey())
-                ->exists();
-
-            if (! $isVisible) {
-                return [
-                    Placeholder::make('not_authorized')
-                        ->content('You are not authorized to view vouchers for this cart.'),
-                ];
-            }
+        if (! CartSnapshotAccess::allows($record)) {
+            return [
+                Placeholder::make('not_authorized')
+                    ->content('You are not authorized to view vouchers for this cart.'),
+            ];
         }
 
         try {
-            $cartInstance = app(CartInstanceManager::class)->resolve(
-                $record->instance,
-                $record->identifier
-            );
+            $cartInstance = app(CartInstanceManager::class)->resolveForSnapshot($record->toSnapshotData());
 
-            /** @phpstan-ignore-next-line */
-            $vouchers = $cartInstance->getAppliedVouchers();
+            $vouchers = array_map(static fn (VoucherCondition $condition) => $condition->getVoucher(), (new CartWithVouchers($cartInstance))->getAppliedVouchers());
 
             if (empty($vouchers)) {
                 return [

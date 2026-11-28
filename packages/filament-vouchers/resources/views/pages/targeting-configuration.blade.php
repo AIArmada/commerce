@@ -4,18 +4,10 @@
             Targeting Configuration
         </x-slot>
         <x-slot name="description">
-            Configure voucher targeting rules and presets for precise discount targeting.
+            Current targeting validation configuration. Change config/vouchers.php to update this setting.
         </x-slot>
 
-        <form wire:submit="save">
-            {{ $this->form }}
-
-            <div class="mt-6 flex justify-end gap-3">
-                @foreach ($this->getFormActions() as $action)
-                    {{ $action }}
-                @endforeach
-            </div>
-        </form>
+        {{ $this->form }}
     </x-filament::section>
 
     <x-filament::section class="mt-6">

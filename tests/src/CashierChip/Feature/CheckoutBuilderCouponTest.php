@@ -5,10 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,9 +16,11 @@ final class CheckoutBuilderCouponVoucherService extends VoucherService
 {
     public function __construct(private readonly VoucherData $voucher) {}
 
-    public function find(string $code): ?VoucherData
+    public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
-        return $code === $this->voucher->code ? $this->voucher : null;
+        return ($voucherId !== null ? $voucherId === $this->voucher->id : $code === $this->voucher->code)
+            ? $this->voucher
+            : null;
     }
 
     public function recordUsage(
@@ -30,7 +30,7 @@ final class CheckoutBuilderCouponVoucherService extends VoucherService
         ?array $metadata = null,
         ?Model $redeemedBy = null,
         ?string $notes = null,
-        ?VoucherModel $voucherModel = null,
+        ?string $voucherId = null,
     ): void {}
 }
 
@@ -42,7 +42,7 @@ it('distributes a checkout coupon across product lines and does not mutate the b
         'type' => VoucherType::Fixed->value,
         'value' => 1500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => [],
     ]);
 

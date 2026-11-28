@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\Support\CartManagerWithVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Database\Eloquent\Model;
 

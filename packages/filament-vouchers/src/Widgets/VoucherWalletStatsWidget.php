@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -33,7 +33,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
                     'total' => (clone $wallets)->count(),
                     'claimed' => (clone $wallets)->whereNotNull('claimed_at')->count(),
                     'redeemed' => (clone $wallets)->whereNotNull('redeemed_at')->count(),
-                    'available' => (clone $wallets)->whereNull('redeemed_at')->count(),
+                    'available' => (clone $wallets)->whereNotNull('claimed_at')->whereNull('redeemed_at')->count(),
                     'unique_vouchers' => (clone $wallets)->distinct('voucher_id')->count('voucher_id'),
                     'unique_holders' => $this->distinctHolderCount(clone $wallets),
                 ];
@@ -160,6 +160,6 @@ final class VoucherWalletStatsWidget extends BaseWidget
             (bool) config('vouchers.owner.include_global', false),
         );
 
-        return $query->whereIn('voucher_id', $voucherQuery);
+        return $query->forOwner(includeGlobal: false)->whereIn('voucher_id', $voucherQuery);
     }
 }

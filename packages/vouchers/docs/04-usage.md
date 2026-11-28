@@ -6,18 +6,18 @@ title: Usage
 
 ## Canonical API: Actions
 
-The package exposes domain actions built with `lorisleiva/laravel-actions`. Each action is a self-contained unit with a `run()` static entrypoint.
+The package exposes domain actions built with `lorisleiva/laravel-actions`. Use feature APIs for lifecycle creation and updates; they return immutable voucher snapshots. Other actions are self-contained units with a `run()` static entrypoint.
 
 ## Recipient-bound vouchers
 
 Set an `assignee` marker in voucher metadata to restrict validation and redemption to one model. The `type` must be the model's morph class and `id` its key:
 
 ```php
-use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
+use AIArmada\Vouchers\Data\VoucherType;
 
 // Assume $customer is the intended recipient model.
-$voucher = CreateVoucher::run([
+$voucher = app(VoucherCreator::class)->handle([
     'code' => 'WELCOME-ALICE',
     'name' => 'Welcome offer',
     'type' => VoucherType::Fixed,
@@ -32,15 +32,15 @@ $voucher = CreateVoucher::run([
 ]);
 ```
 
-Validation uses the authenticated model. `RecordVoucherUsage` also requires that model as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, and currency match.
+Validation uses the authenticated model. `RecordVoucherUsage` also requires that model's `RecordReference` as `redeemedBy`; missing or different redeemers are rejected. Expired vouchers cannot record new usage. A repeated idempotency key returns the earlier usage only when its redeemer, amount, currency and channel match.
 
 ### CreateVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCreator;
+use AIArmada\Vouchers\Data\VoucherType;
 
-$voucher = CreateVoucher::run([
+$voucher = app(VoucherCreator::class)->handle([
     'code' => 'SUMMER2024',
     'name' => 'Summer Sale 2024',
     'type' => VoucherType::Percentage,
@@ -54,9 +54,9 @@ $voucher = CreateVoucher::run([
 ### UpdateVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\UpdateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 
-$voucher = UpdateVoucher::run('SUMMER2024', [
+$voucher = app(VoucherUpdater::class)->handle($voucher->id, [
     'name' => 'Updated Summer Sale',
     'value' => 2500,
     'expires_at' => now()->addMonths(6),
@@ -66,7 +66,7 @@ $voucher = UpdateVoucher::run('SUMMER2024', [
 ### ExpireVoucher
 
 ```php
-use AIArmada\Vouchers\Actions\ExpireVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 
 ExpireVoucher::run('SUMMER2024');
 ```
@@ -74,7 +74,7 @@ ExpireVoucher::run('SUMMER2024');
 ### ApplyVoucherToCart
 
 ```php
-use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Cart\Facades\Cart;
 
 $condition = ApplyVoucherToCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMMER2024');
@@ -83,7 +83,7 @@ $condition = ApplyVoucherToCart::run(Cart::getCartInstance('default', $sessionKe
 ### RemoveVoucherFromCart
 
 ```php
-use AIArmada\Vouchers\Actions\RemoveVoucherFromCart;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\RemoveVoucherFromCart;
 use AIArmada\Cart\Facades\Cart;
 
 RemoveVoucherFromCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMMER2024');
@@ -92,22 +92,23 @@ RemoveVoucherFromCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMME
 ### RecordVoucherUsage
 
 ```php
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageRecorder;
 use Akaunting\Money\Money;
 
-$usage = RecordVoucherUsage::run(
+$usage = app(VoucherUsageRecorder::class)->handle(
     code: 'SUMMER2024',
     discountAmount: Money::MYR(2500),
     channel: 'web',
     metadata: ['order_id' => $order->id],
-    redeemedBy: auth()->user(),
+    redeemedBy: EloquentRecordReference::fromModel(auth()->user()),
 );
 ```
 
 ### ValidateVoucherCode
 
 ```php
-use AIArmada\Vouchers\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 
 $result = ValidateVoucherCode::run('SUMMER2024', $cart);
 
@@ -118,7 +119,7 @@ if ($result->isValid) {
 }
 ```
 
-`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidVoucherDataException::floatNotAllowed` — pass integer minor units only.
+`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidArgumentException` — pass integer minor units only.
 
 Validation fails closed on anything it cannot evaluate:
 
@@ -138,8 +139,8 @@ Use the `Voucher` facade to create vouchers:
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherStatus;
 
 $voucher = Voucher::create([
     'code' => 'SUMMER2024',
@@ -364,9 +365,9 @@ Voucher::create([
 Set initial status:
 
 ```php
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
 
 Voucher::create([
     'code' => 'DRAFT',
@@ -379,7 +380,7 @@ Voucher::create([
 ```
 
 `status` is a `spatie/laravel-model-states` state class name. `CreateVoucher` defaults it to
-`AIArmada\Vouchers\States\Active::class`. `AIArmada\Vouchers\Enums\VoucherStatus` is the plain
+`AIArmada\Vouchers\Features\Lifecycle\States\Active::class`. `AIArmada\Vouchers\Data\VoucherStatus` is the plain
 string enum used for display and for `UpdateVoucher`'s string form — passing it to `create()`
 will not resolve to a state.
 
@@ -408,7 +409,7 @@ Use `target_definition` to control the cart condition target, meaning the portio
 
 ```php
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 
 Voucher::create([
@@ -424,7 +425,7 @@ Voucher::create([
 Eligibility targeting rules belong under the `targeting` key:
 
 ```php
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 
 Voucher::create([
@@ -464,7 +465,7 @@ $deleted = Voucher::delete('SUMMER2024'); // Returns true/false
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = Voucher::create([
     // Required

@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
+use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Lifecycle\States\Paused;
+use AIArmada\Vouchers\Features\Lifecycle\States\VoucherStatus;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -28,6 +30,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use WeakMap;
 
@@ -101,22 +104,8 @@ final class VouchersTable
 
                 TextColumn::make('condition_target_display')
                     ->label('Target')
-                    ->state(static function (Voucher $record): string {
-                        $metadata = $record->metadata ?? [];
-
-                        return ConditionTargetDisplay::presetLabel(
-                            $record->target_definition
-                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
-                        );
-                    })
-                    ->tooltip(static function (Voucher $record): ?string {
-                        $metadata = $record->metadata ?? [];
-
-                        return ConditionTargetDisplay::dsl(
-                            $record->target_definition
-                                ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null)
-                        );
-                    })
+                    ->state(static fn (Voucher $record): string => ConditionTargetDisplay::presetLabel($record->target_definition))
+                    ->tooltip(static fn (Voucher $record): ?string => ConditionTargetDisplay::dsl($record->target_definition))
                     ->badge()
                     ->color('info')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -290,12 +279,20 @@ final class VouchersTable
                     ->icon(Heroicon::OutlinedPencil),
 
                 DeleteAction::make()
+                    ->using(fn (Voucher $record): bool => app(VoucherDeletion::class)->handle((string) $record->getKey()))
                     ->icon(Heroicon::OutlinedTrash)
                     ->requiresConfirmation(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
+                        ->action(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                abort_unless(VoucherResource::canDelete($record), 403);
+                            }
+
+                            app(VoucherDeletion::class)->handleMany($records->map(static fn (Voucher $record): string => (string) $record->getKey())->values()->all());
+                        })
                         ->label('Delete selected')
                         ->icon(Heroicon::OutlinedTrash)
                         ->requiresConfirmation(),

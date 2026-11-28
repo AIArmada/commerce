@@ -4,26 +4,42 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Depleted;
-use AIArmada\Vouchers\States\Expired;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
+use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\States\Active;
+use AIArmada\Vouchers\Features\Lifecycle\States\Depleted;
+use AIArmada\Vouchers\Features\Lifecycle\States\Expired;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletClaim;
+use AIArmada\Vouchers\Features\Wallet\Api\WalletStatistics;
+use AIArmada\Vouchers\Features\Wallet\EntryPoints\Traits\HasVoucherWallet;
+use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
-use AIArmada\Vouchers\Traits\HasVouchers;
+use Akaunting\Money\Money;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
+beforeEach(function (): void {
+    config()->set('cart.money.default_currency', 'MYR');
+});
+
 final class ScopeWalletUser extends Model
 {
     use HasUuids;
-    use HasVouchers;
+    use HasVoucherWallet;
 
     protected $table = 'users';
 
@@ -47,7 +63,7 @@ function scopeVoucher(array $attributes = []): Voucher
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ], $attributes));
 }
 
@@ -97,7 +113,7 @@ describe('wallet helper queries', function (): void {
             ->and($expiredWallets->pluck('voucher_id')->all())->toBe([$expired->id]);
     });
 
-    it('preloads usage counts with wallet vouchers', function (): void {
+    it('reads wallet voucher states in batches without exposing persistence models', function (): void {
         $user = scopeWalletUser('wallet-count');
 
         $voucher = scopeVoucher();
@@ -106,7 +122,7 @@ describe('wallet helper queries', function (): void {
         $available = $user->getAvailableVouchers();
 
         expect($available)->toHaveCount(1)
-            ->and(array_key_exists('usages_count', $available->first()->voucher->getAttributes()))->toBeTrue();
+            ->and($available->first()->voucherSnapshot()?->id)->toBe($voucher->id);
     });
 
     it('honors the wallet listing limit', function (): void {
@@ -125,9 +141,8 @@ describe('checkout voucher validation', function (): void {
         $voucher = scopeVoucher();
 
         $cart = new Cart(new InMemoryStorage, 'checkout-stale-' . uniqid());
-        $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
-
         ApplyVoucherToCart::run($cart, $voucher->code);
+        $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
 
         expect($cart->getDynamicConditions())->not->toBeEmpty();
 
@@ -143,6 +158,25 @@ describe('checkout voucher validation', function (): void {
         expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
             ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue();
     });
+});
+
+it('revalidates directly registered vouchers without voucher-code metadata', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-direct-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    expect($cart->getDynamicConditions())->not->toBeEmpty();
+
+    $voucher->update(['expires_at' => now()->subMinute()]);
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
 });
 
 describe('voucher expiry is derived from the date', function (): void {
@@ -238,4 +272,225 @@ describe('voucher code uniqueness', function (): void {
             Voucher::clearBootedModels();
         }
     });
+});
+
+it('removes a voucher from metadata and all cart condition stores together', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-remove-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
+
+    app(CartVoucherRemoval::class)->handle($cart, $voucher->code);
+
+    expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
+        ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});
+
+it('prefers the exact owner voucher when a global voucher shares its code', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+    Voucher::clearBootedModels();
+
+    try {
+        $owner = scopeWalletUser('voucher-owner-priority');
+        $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'OWNERFIRST', 'value' => 100]));
+        $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'OWNERFIRST', 'value' => 500]));
+
+        OwnerContext::withOwner($owner, function () use ($owned): void {
+            $service = app(VoucherService::class);
+
+            expect($service->find('OWNERFIRST')?->id)->toBe($owned->id);
+
+            $service->recordUsage('OWNERFIRST', Money::MYR(500));
+        });
+
+        expect($owned->usages()->count())->toBe(1)
+            ->and($global->usages()->count())->toBe(0);
+    } finally {
+        Voucher::clearBootedModels();
+    }
+});
+
+it('removes directly registered discounts when the voucher value changes before checkout', function (): void {
+    $voucher = scopeVoucher(['value' => 500]);
+    $cart = new Cart(new InMemoryStorage, 'checkout-changed-value-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
+
+    $voucher->update(['value' => 100]);
+
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
+        ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});
+
+it('keeps an unchanged directly registered voucher at checkout', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-unchanged-value-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getDynamicConditions())->not->toBeEmpty();
+});
+
+it('rejects unresolved owners before global voucher lookups or wallet claims', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', false);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
+
+    $holder = scopeWalletUser('unresolved-owner');
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'EXPLICIT-GLOBAL']));
+    $service = app(VoucherService::class);
+
+    OwnerContext::withOwner(null, function () use ($service, $global): void {
+        expect($service->find('EXPLICIT-GLOBAL')?->id)->toBe($global->id);
+    });
+
+    expect(fn () => $service->find('EXPLICIT-GLOBAL'))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => $service->addToWallet('EXPLICIT-GLOBAL', $holder))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => $holder->hasVoucherInWallet('EXPLICIT-GLOBAL'))->toThrow(NoCurrentOwnerException::class)
+        ->and(fn () => Voucher::query()->forOwner()->exists())->toThrow(NoCurrentOwnerException::class);
+});
+
+it('resolves wallet code queries to the tenant voucher ahead of a matching global voucher', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = scopeWalletUser('wallet-code-priority');
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'WALLET-PRIORITY']));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $global, $owned): void {
+        app(WalletClaim::class)->handle($global->code, EloquentRecordReference::fromModel($owner), voucherId: $global->id);
+        expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeFalse();
+
+        $owner->addVoucherToWallet('WALLET-PRIORITY');
+        expect($owner->hasVoucherInWallet('WALLET-PRIORITY'))->toBeTrue();
+
+        $owner->markVoucherAsRedeemed('WALLET-PRIORITY');
+        expect($owner->voucherWallets()->where('voucher_id', $owned->id)->sole()->redeemed_at)->not->toBeNull()
+            ->and($owner->voucherWallets()->where('voucher_id', $global->id)->sole()->redeemed_at)->toBeNull();
+    });
+});
+
+it('applies freshly validated voucher terms even when the lookup cache is stale', function (): void {
+    config()->set('vouchers.cache.lookup_ttl', 300);
+    config()->set('vouchers.owner.include_global', false);
+
+    $voucher = scopeVoucher(['value' => 500]);
+    $service = app(VoucherService::class);
+    expect($service->find($voucher->code)?->value)->toBe(500);
+
+    DB::table($voucher->getTable())->where('id', $voucher->id)->update(['value' => 100]);
+
+    $cart = new Cart(new InMemoryStorage, 'checkout-validated-snapshot-' . uniqid());
+    $condition = ApplyVoucherToCart::run($cart, $voucher->code);
+
+    expect($condition->getAttributes()['voucher_data']['value'])->toBe(100);
+});
+
+it('isolates claims of the same global voucher to each exact wallet owner', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $holder = scopeWalletUser('shared-wallet-holder');
+    $ownerA = scopeWalletUser('shared-wallet-owner-a');
+    $ownerB = scopeWalletUser('shared-wallet-owner-b');
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'GLOBAL-WALLET-ISOLATION']));
+
+    $globalEntry = OwnerContext::withOwner(null, fn () => $holder->addVoucherToWallet($global->code));
+
+    $entryA = OwnerContext::withOwner($ownerA, function () use ($holder, $global, $ownerA) {
+        expect($holder->hasVoucherInWallet($global->code))->toBeFalse()
+            ->and($holder->removeVoucherFromWallet($global->code))->toBeFalse();
+
+        $entry = $holder->addVoucherToWallet($global->code);
+
+        expect((string) $entry->owner_id)->toBe((string) $ownerA->getKey())
+            ->and($holder->addVoucherToWallet($global->code)->id)->toBe($entry->id);
+
+        return $entry;
+    });
+
+    $entryB = OwnerContext::withOwner($ownerB, fn () => $holder->addVoucherToWallet($global->code));
+
+    expect($entryA->id)->not->toBe($entryB->id)
+        ->and($entryA->id)->not->toBe($globalEntry->id);
+
+    foreach ([$ownerA, $ownerB, null] as $walletOwner) {
+        OwnerContext::withOwner($walletOwner, function () use ($global): void {
+            expect(app(WalletStatistics::class)->forVoucher($global->id))->toBe([
+                'total' => 1,
+                'claimed' => 1,
+                'redeemed' => 0,
+                'available' => 1,
+            ]);
+        });
+    }
+
+    OwnerContext::withOwner($ownerA, function () use ($holder, $global): void {
+        expect($holder->removeVoucherFromWallet($global->code))->toBeTrue()
+            ->and($holder->hasVoucherInWallet($global->code))->toBeFalse();
+    });
+
+    OwnerContext::withOwner($ownerB, fn () => expect($holder->hasVoucherInWallet($global->code))->toBeTrue());
+    OwnerContext::withOwner(null, fn () => expect($holder->hasVoucherInWallet($global->code))->toBeTrue());
+});
+
+it('enforces global voucher code uniqueness in the database', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+
+    OwnerContext::withOwner(null, function (): void {
+        scopeVoucher(['code' => 'UNIQUE-GLOBAL-CODE']);
+
+        expect(fn () => scopeVoucher(['code' => 'UNIQUE-GLOBAL-CODE']))->toThrow(QueryException::class);
+    });
+});
+
+it('rolls back voucher batch deletion when a selected record is not writable by the owner', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+
+    $owner = scopeWalletUser('batch-delete-owner');
+    $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-OWNED']));
+    $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'BATCH-GLOBAL']));
+
+    OwnerContext::withOwner($owner, function () use ($owned, $global): void {
+        expect(fn () => app(VoucherDeletion::class)->handleMany([$owned->id, $global->id]))
+            ->toThrow(AuthorizationException::class);
+
+        expect(Voucher::query()->whereKey($owned->id)->exists())->toBeTrue();
+    });
+
+    expect(OwnerContext::withOwner(null, fn () => Voucher::query()->whereKey($global->id)->exists()))->toBeTrue();
+});
+
+it('refuses to claim a wallet voucher using a code that belongs to a different voucher', function (): void {
+    $holder = scopeWalletUser('mismatched-wallet-identity');
+    $first = scopeVoucher();
+    $second = scopeVoucher();
+
+    expect(fn () => app(WalletClaim::class)->handle(
+        $first->code,
+        EloquentRecordReference::fromModel($holder),
+        voucherId: $second->id,
+    ))->toThrow(VoucherNotFoundException::class)
+        ->and($holder->voucherWallets()->count())->toBe(0);
 });

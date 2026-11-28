@@ -184,16 +184,16 @@ $validation = Voucher::validate('MERCHANT10', $cart);
 | include_global | Owner Resolved | Vouchers Returned |
 |----------------|----------------|-------------------|
 | `true` | Yes | Owner's + Global |
-| `true` | No | Global only |
 | `false` | Yes | Owner's only |
-| `false` | No | None (no owner = no vouchers) |
+| Either | Explicit global context | Global only |
+| Either | Missing owner context | `NoCurrentOwnerException` |
 
 ## Model Scope
 
 Use the scope directly on the model:
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 // Get all vouchers for a specific owner
 $merchantVouchers = Voucher::query()
@@ -202,9 +202,7 @@ $merchantVouchers = Voucher::query()
     ->get();
 
 // Get only global vouchers
-$globalVouchers = Voucher::query()
-    ->forOwner(null, includeGlobal: true)
-    ->get();
+$globalVouchers = OwnerContext::withOwner(null, fn () => Voucher::query()->get());
 ```
 
 ## Owner Display
@@ -310,7 +308,7 @@ public function applyVoucher(Request $request, Vendor $vendor)
 If you need to query vouchers for a different owner:
 
 ```php
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
 
 // Bypass the resolver and query directly
 $otherMerchantVouchers = Voucher::query()

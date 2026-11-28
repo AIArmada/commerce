@@ -13,14 +13,15 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Actions\AddVoucherToWallet;
-use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherUsageData;
+use AIArmada\Vouchers\Data\WalletClaimData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
+use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +31,7 @@ uses(RefreshDatabase::class);
 
 describe('CreateVoucher Action', function (): void {
     it('creates a voucher with provided data', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'TEST20',
@@ -39,14 +40,15 @@ describe('CreateVoucher Action', function (): void {
             'description' => 'Test voucher',
         ]);
 
-        expect($voucher)->toBeInstanceOf(Voucher::class)
+        expect($voucher)->toBeInstanceOf(VoucherData::class)
             ->and($voucher->code)->toBe('TEST20')
             ->and($voucher->type)->toBe(VoucherType::Percentage)
-            ->and($voucher->value)->toBe(20);
+            ->and($voucher->value)->toBe(20)
+            ->and(Voucher::query()->findOrFail($voucher->id)->code)->toBe('TEST20');
     });
 
     it('generates a code if not provided', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'type' => VoucherType::Fixed,
@@ -58,7 +60,7 @@ describe('CreateVoucher Action', function (): void {
     });
 
     it('normalizes the code to uppercase', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'lowercase-code',
@@ -70,7 +72,7 @@ describe('CreateVoucher Action', function (): void {
     });
 
     it('creates voucher with all optional fields', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'FULL-VOUCHER',
@@ -78,20 +80,20 @@ describe('CreateVoucher Action', function (): void {
             'value' => 15,
             'currency' => 'USD',
             'description' => 'Full featured voucher',
-            'max_uses' => 100,
-            'max_uses_per_user' => 1,
-            'min_order_value' => 5000,
-            'max_discount_value' => 2000,
+            'usage_limit' => 100,
+            'usage_limit_per_user' => 1,
+            'min_cart_value' => 5000,
+            'max_discount' => 2000,
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
             'metadata' => ['campaign' => 'summer'],
         ]);
 
         expect($voucher->currency)->toBe('USD')
-            ->and($voucher->usage_limit)->toBe(100)
-            ->and($voucher->usage_limit_per_user)->toBe(1)
-            ->and($voucher->min_cart_value)->toBe(5000)
-            ->and($voucher->max_discount)->toBe(2000)
+            ->and($voucher->usageLimit)->toBe(100)
+            ->and($voucher->usageLimitPerUser)->toBe(1)
+            ->and($voucher->minCartValue)->toBe(5000)
+            ->and($voucher->maxDiscount)->toBe(2000)
             ->and($voucher->metadata)->toBe(['campaign' => 'summer']);
     });
 
@@ -102,7 +104,7 @@ describe('CreateVoucher Action', function (): void {
             'value' => 100,
         ]);
 
-        expect($voucher)->toBeInstanceOf(Voucher::class)
+        expect($voucher)->toBeInstanceOf(VoucherData::class)
             ->and($voucher->code)->toBe('ACTION-TEST');
     });
 
@@ -118,8 +120,8 @@ describe('CreateVoucher Action', function (): void {
             ],
         ]);
 
-        expect($voucher->promotion_id)->toBe('promotion-trace-1')
-            ->and($voucher->value_config)->toBe([
+        expect($voucher->promotionId)->toBe('promotion-trace-1')
+            ->and($voucher->valueConfig)->toBe([
                 'buy' => ['quantity' => 2],
                 'get' => ['quantity' => 1, 'discount' => '100%'],
             ]);
@@ -158,11 +160,11 @@ describe('CreateVoucher Action', function (): void {
             ],
         ]);
 
-        expect($voucher->affiliate_id)->toBe($affiliate->id)
-            ->and($voucher->affiliate_program_id)->toBe($program->id)
-            ->and($voucher->affiliate_commission_type)->toBe(CommissionType::Fixed)
-            ->and($voucher->affiliate_commission_value)->toBe(2500)
-            ->and($voucher->affiliate_upline_levels)->toBe([
+        expect($voucher->affiliateId)->toBe($affiliate->id)
+            ->and($voucher->affiliateProgramId)->toBe($program->id)
+            ->and($voucher->affiliateCommissionType)->toBe(CommissionType::Fixed->value)
+            ->and($voucher->affiliateCommissionValue)->toBe(2500)
+            ->and($voucher->affiliateUplineLevels)->toBe([
                 ['level' => 1, 'share' => 0.05],
             ]);
     });
@@ -171,7 +173,7 @@ describe('CreateVoucher Action', function (): void {
         config()->set('affiliates.owner.enabled', false);
 
         foreach (['affiliate_id', 'affiliate_program_id'] as $field) {
-            expect(fn (): Voucher => CreateVoucher::run([
+            expect(fn (): VoucherData => CreateVoucher::run([
                 'code' => 'ACTION-INVALID-REFERENCE-' . $field,
                 'type' => VoucherType::Fixed,
                 'value' => 100,
@@ -208,7 +210,7 @@ describe('CreateVoucher Action', function (): void {
             ]);
         });
 
-        expect(fn (): Voucher => OwnerContext::withOwner($ownerA, function () use ($foreignProgram): Voucher {
+        expect(fn (): VoucherData => OwnerContext::withOwner($ownerA, function () use ($foreignProgram): VoucherData {
             return CreateVoucher::run([
                 'code' => 'ACTION-FOREIGN-PROGRAM',
                 'type' => VoucherType::Fixed,
@@ -242,8 +244,8 @@ describe('CreateVoucher Action', function (): void {
             'owner_id' => 'forged-owner-id',
         ]);
 
-        expect($voucher->owner_type)->toBe($resolvedOwner->getMorphClass())
-            ->and((string) $voucher->owner_id)->toBe((string) $resolvedOwner->getKey());
+        expect($voucher->ownerType)->toBe($resolvedOwner->getMorphClass())
+            ->and((string) $voucher->ownerId)->toBe((string) $resolvedOwner->getKey());
     });
 });
 
@@ -274,13 +276,13 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
-        $wallet = $action->handle('WALLET-TEST', $owner);
+        $action = app(AddVoucherToWallet::class);
+        $wallet = $action->handle('WALLET-TEST', EloquentRecordReference::fromModel($owner));
 
-        expect($wallet)->toBeInstanceOf(VoucherWallet::class)
-            ->and($wallet->voucher_id)->toBe($voucher->id)
-            ->and($wallet->holder_type)->toBe('user')
-            ->and($wallet->holder_id)->toBe('user-123');
+        expect($wallet)->toBeInstanceOf(WalletClaimData::class)
+            ->and($wallet->voucherId)->toBe($voucher->id)
+            ->and($wallet->holderType)->toBe('user')
+            ->and($wallet->holderId)->toBe('user-123');
     });
 
     it('throws exception for non-existent voucher', function (): void {
@@ -301,8 +303,8 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
-        $action->handle('NON-EXISTENT', $owner);
+        $action = app(AddVoucherToWallet::class);
+        $action->handle('NON-EXISTENT', EloquentRecordReference::fromModel($owner));
     })->throws(VoucherNotFoundException::class);
 
     it('adds wallet entry with metadata', function (): void {
@@ -331,8 +333,8 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
-        $wallet = $action->handle('META-TEST', $owner, ['source' => 'signup']);
+        $action = app(AddVoucherToWallet::class);
+        $wallet = $action->handle('META-TEST', EloquentRecordReference::fromModel($owner), ['source' => 'signup']);
 
         expect($wallet->metadata)->toBe(['source' => 'signup']);
     });
@@ -363,10 +365,10 @@ describe('AddVoucherToWallet Action', function (): void {
             }
         };
 
-        $action = new AddVoucherToWallet;
-        $wallet = $action->handle('  normalize-test  ', $owner);
+        $action = app(AddVoucherToWallet::class);
+        $wallet = $action->handle('  normalize-test  ', EloquentRecordReference::fromModel($owner));
 
-        expect($wallet->voucher_id)->toBe($voucher->id);
+        expect($wallet->voucherId)->toBe($voucher->id);
     });
 });
 
@@ -386,9 +388,9 @@ describe('RecordVoucherUsage Action', function (): void {
             Money::MYR(500)
         );
 
-        expect($usage)->toBeInstanceOf(VoucherUsage::class)
-            ->and($usage->voucher_id)->toBe($voucher->id)
-            ->and($usage->discount_amount)->toBe(500)
+        expect($usage)->toBeInstanceOf(VoucherUsageData::class)
+            ->and($usage->voucherId)->toBe($voucher->id)
+            ->and($usage->discountAmount)->toBe(500)
             ->and($usage->currency)->toBe('MYR');
 
         $voucher->refresh();
@@ -427,14 +429,14 @@ describe('RecordVoucherUsage Action', function (): void {
             Money::MYR(1000),
             'mobile_app',
             ['order_id' => 'order-123'],
-            $user,
+            EloquentRecordReference::fromModel($user),
             'Applied during checkout'
         );
 
         expect($usage->channel)->toBe('mobile_app')
             ->and($usage->metadata)->toBe(['order_id' => 'order-123'])
-            ->and($usage->redeemed_by_type)->toBe('user')
-            ->and($usage->redeemed_by_id)->toBe('redeemer-123')
+            ->and($usage->redeemedByType)->toBe('user')
+            ->and($usage->redeemedById)->toBe('redeemer-123')
             ->and($usage->notes)->toBe('Applied during checkout');
     });
 
@@ -443,7 +445,7 @@ describe('RecordVoucherUsage Action', function (): void {
         $action->handle('NON-EXISTENT-USAGE', Money::MYR(100));
     })->throws(VoucherNotFoundException::class);
 
-    it('accepts pre-loaded voucher model', function (): void {
+    it('accepts exact voucher identifier', function (): void {
         $voucher = Voucher::create([
             'code' => 'PRELOAD-USAGE',
             'name' => 'Preload Usage Voucher',
@@ -461,10 +463,10 @@ describe('RecordVoucherUsage Action', function (): void {
             null,
             null,
             null,
-            $voucher
+            $voucher->id
         );
 
-        expect($usage->voucher_id)->toBe($voucher->id);
+        expect($usage->voucherId)->toBe($voucher->id);
 
         $voucher->refresh();
         expect($voucher->applied_count)->toBe(5);

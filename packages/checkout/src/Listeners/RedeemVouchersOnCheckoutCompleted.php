@@ -6,7 +6,8 @@ namespace AIArmada\Checkout\Listeners;
 
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Events\CheckoutCompleted;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
+use InvalidArgumentException;
 
 /**
  * Redeems voucher commitments only after checkout has created its order.
@@ -29,8 +30,14 @@ final class RedeemVouchersOnCheckoutCompleted
         $voucherService = app(VoucherServiceInterface::class);
 
         foreach ($commitments as $commitment) {
-            if ($commitment->providerKey !== 'vouchers' || $commitment->reservationToken === '') {
+            if ($commitment->providerKey !== 'vouchers') {
                 continue;
+            }
+
+            $voucherId = $commitment->meta['voucher_id'] ?? null;
+
+            if ($commitment->reservationToken === '' || ! is_string($voucherId) || $voucherId === '') {
+                throw new InvalidArgumentException('Voucher commitments require an exact voucher identity.');
             }
 
             try {
@@ -44,10 +51,11 @@ final class RedeemVouchersOnCheckoutCompleted
                         orderId: $orderId,
                         discountAmount: $commitment->appliedAmount,
                         currency: $currency,
+                        voucherId: $voucherId,
                     );
                 }
             } finally {
-                $voucherService->release($commitment->reservationToken, (string) $session->getKey());
+                $voucherService->release($commitment->reservationToken, (string) $session->getKey(), $voucherId);
             }
         }
     }

@@ -11,8 +11,6 @@ use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Models\VoucherUsage;
 use Illuminate\Support\Facades\Log;
 
 final class HandleChipPaymentSuccess
@@ -85,7 +83,6 @@ final class HandleChipPaymentSuccess
 
         // Process post-payment actions
         $this->trackAffiliateConversion($order, $event);
-        $this->updateVoucherUsage($order);
     }
 
     /**
@@ -146,55 +143,6 @@ final class HandleChipPaymentSuccess
             'order_id' => $order->id,
             'affiliate_code' => $affiliateCode,
             'commission' => $affiliate->calculateCommission($order->subtotal),
-        ]);
-    }
-
-    /**
-     * Update voucher usage if applicable.
-     */
-    private function updateVoucherUsage(Order $order): void
-    {
-        $voucherCode = $order->metadata['voucher_code'] ?? null;
-
-        if (! is_string($voucherCode) || $voucherCode === '') {
-            return;
-        }
-
-        $voucher = Voucher::where('code', $voucherCode)->first();
-
-        if (! $voucher) {
-            Log::warning('Voucher not found for usage tracking', [
-                'order_id' => $order->id,
-                'voucher_code' => $voucherCode,
-            ]);
-
-            return;
-        }
-
-        // Create a VoucherUsage record for redemption tracking
-        VoucherUsage::create([
-            'voucher_id' => $voucher->id,
-            'discount_amount' => $order->discount_total,
-            'currency' => $order->currency ?? 'MYR',
-            'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
-            'notes' => null,
-            'metadata' => [
-                'customer_id' => $order->customer_id,
-                'customer_type' => $order->customer_type,
-                'subtotal' => $order->subtotal,
-                'grand_total' => $order->grand_total,
-            ],
-            'redeemed_by_type' => 'order',
-            'redeemed_by_id' => $order->id,
-            'used_at' => now(),
-        ]);
-
-        Log::info('Voucher usage recorded', [
-            'order_id' => $order->id,
-            'voucher_code' => $voucherCode,
-            'voucher_id' => $voucher->id,
-            'discount_amount' => $order->discount_total,
-            'new_applied_count' => $voucher->applied_count,
         ]);
     }
 
