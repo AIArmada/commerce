@@ -693,3 +693,46 @@ it('classifies state rejections from the exception rather than its copy of the r
         ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.reason'))->toBe('order_state_not_confirmable')
         ->and($freshSession?->error_message)->toBe('The order cannot be confirmed for processing in its current state.');
 });
+
+it('creates orders with exact frozen line taxes and excludes shipping tax from item tax', function (): void {
+    config()->set('checkout.create_order.confirm_payment', false);
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'frozen-line-tax-order',
+        'cart_snapshot' => ['items' => [
+            ['id' => 'first', 'name' => 'First', 'quantity' => 1, 'price' => 1000],
+            ['id' => 'second', 'name' => 'Second', 'quantity' => 1, 'price' => 1000],
+        ]],
+        'subtotal' => 2000,
+        'shipping_total' => 200,
+        'discount_total' => 100,
+        'tax_total' => 72,
+        'grand_total' => 2172,
+        'tax_data' => [
+            'lines' => [
+                'first' => ['discount' => 50, 'additional_tax' => 60, 'included_tax' => 0],
+                'second' => ['discount' => 50, 'additional_tax' => 0, 'included_tax' => 30],
+            ],
+            'shipping_additional_tax' => 12,
+            'included_total' => 30,
+        ],
+        'payment_data' => ['status' => PaymentStatus::Completed->value],
+    ]);
+
+    $order = new Order;
+    $order->forceFill(['id' => (string) Str::uuid(), 'order_number' => 'ORD-FROZEN-TAX']);
+    $service = mock(OrderServiceInterface::class);
+    $service->shouldReceive('createFromCart')->never();
+    $service->shouldReceive('createOrder')->once()->andReturnUsing(function (array $orderData, array $items) use ($order): Order {
+        expect(array_column($items, 'tax_amount'))->toBe([60, 0])
+            ->and(array_column($items, 'discount_amount'))->toBe([50, 50])
+            ->and($items[1]['metadata']['included_tax_minor'])->toBe(30)
+            ->and($orderData['tax_total'])->toBe(72)
+            ->and($orderData['grand_total'])->toBe(2172);
+
+        return $order;
+    });
+    app()->instance(OrderServiceInterface::class, $service);
+
+    expect(app(CreateOrderStep::class)->handle($session)->isSuccessful())->toBeTrue();
+});

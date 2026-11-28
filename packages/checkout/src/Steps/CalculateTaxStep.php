@@ -54,6 +54,8 @@ final class CalculateTaxStep extends AbstractCheckoutStep
             'total' => $taxResult['total'],
             'included_total' => $taxResult['included_total'],
             'additional_total' => $taxResult['additional_total'],
+            'lines' => $taxResult['lines'],
+            'shipping_additional_tax' => $taxResult['shipping_additional_tax'],
             'tax_rate' => $taxResult['rate'] ?? 0,
             'taxable_amount' => $taxResult['taxable_amount'] ?? 0,
             'tax_exempt' => $taxResult['exempt'] ?? false,

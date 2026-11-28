@@ -109,7 +109,9 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
     expect($result->isSuccessful())->toBeTrue()
         ->and($session->tax_total)->toBe(66)
         ->and($session->tax_data['taxable_amount'])->toBe(1100)
-        ->and($session->tax_data['breakdown'])->toHaveCount(2);
+        ->and($session->tax_data['breakdown'])->toHaveCount(2)
+        ->and($session->tax_data['lines']['line-1'])->toBe(['discount' => 100, 'additional_tax' => 54, 'included_tax' => 0])
+        ->and($session->tax_data['shipping_additional_tax'])->toBe(12);
 });
 
 it('does not calculate item tax for a non-taxable cart snapshot line', function (): void {
@@ -121,7 +123,7 @@ it('does not calculate item tax for a non-taxable cart snapshot line', function 
         'cart_id' => 'non-taxable-snapshot-cart',
         'subtotal' => 1000,
         'cart_snapshot' => [
-            'items' => [['quantity' => 1, 'price' => 1000, 'is_taxable' => false]],
+            'items' => [['id' => 'exempt-line', 'quantity' => 1, 'price' => 1000, 'is_taxable' => false]],
         ],
     ]);
 
@@ -193,5 +195,7 @@ it('does not add already included tax to the checkout payable total', function (
         ->and($session->tax_data['total'])->toBe(120)
         ->and($session->tax_data['included_total'])->toBe(100)
         ->and($session->tax_data['additional_total'])->toBe(20)
+        ->and($session->tax_data['lines']['line-1']['included_tax'])->toBe(100)
+        ->and($session->tax_data['shipping_additional_tax'])->toBe(20)
         ->and($session->grand_total)->toBe(1320);
 });

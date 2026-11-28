@@ -413,7 +413,8 @@ class Order extends Model implements Auditable
     public function recalculateTotals(): self
     {
         $subtotal = (int) $this->items()->sum(DB::raw('quantity * unit_price'));
-        $taxTotal = (int) $this->items()->sum('tax_amount');
+        $taxTotal = (int) $this->items()->sum('tax_amount')
+            + (int) data_get($this->metadata, 'tax_data.shipping_additional_tax', 0);
 
         $this->subtotal = $subtotal;
         $this->tax_total = $taxTotal;
