@@ -10,7 +10,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Api\DeductionCandidates;
 use AIArmada\Inventory\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -20,7 +20,6 @@ use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -100,7 +99,7 @@ final class DeductOrderInventory
         }
 
         DB::transaction(function () use ($order, $operation): void {
-            $operation = InventoryOwnerScope::applyToLocationQuery(
+            $operation = InventoryOwnerScope::forMutation(
                 InventoryOperation::query()
                     ->whereKey($operation->id)
                     ->lockForUpdate()
@@ -158,7 +157,7 @@ final class DeductOrderInventory
 
     private function resolveOrCreateOperation(Order $order, string $kind): InventoryOperation
     {
-        $existing = InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
+        $existing = InventoryOwnerScope::forMutation(InventoryOperation::query())
             ->where('order_id', $order->id)
             ->where('kind', $kind)
             ->first();
@@ -178,7 +177,7 @@ final class DeductOrderInventory
                 throw $e;
             }
 
-            return InventoryOwnerScope::applyToLocationQuery(InventoryOperation::query())
+            return InventoryOwnerScope::forMutation(InventoryOperation::query())
                 ->where('order_id', $order->id)
                 ->where('kind', $kind)
                 ->firstOrFail();
@@ -261,57 +260,61 @@ final class DeductOrderInventory
             $order->loadMissing('items.purchasable');
 
             $demand = InventoryDemandResolver::forOrder($order->items);
-            $hasComposite = $order->items->contains(static fn ($item): bool => array_key_exists('components', $item->metadata ?? []));
 
-            /** @var list<array{0: Model, 1: int}> $deductibles */
-            $deductibles = [];
+            $identities = [];
 
-            foreach ($demand as $entry) {
-                $deductibles[] = [$entry['model'], $entry['quantity']];
+            foreach ($demand as $key => $entry) {
+                $identities[$key] = [
+                    'inventoryable_type' => $entry['model']->getMorphClass(),
+                    'inventoryable_id' => (string) $entry['model']->getKey(),
+                ];
             }
 
-            // One query for every level the order may touch, instead of a
-            // location search per line. Composite parent lines are absent
-            // from the demand and their frozen components carry the quantity.
-            $availability = $this->preloadLevelAvailability($deductibles);
+            $availability = app(DeductionCandidates::class)->locked(array_values($identities));
+            $preferredLocation = $order->metadata['fulfillment_location_id'] ?? null;
+            $plan = [];
 
-            foreach ($deductibles as [$purchasable, $quantity]) {
-                $key = $purchasable->getMorphClass() . ':' . $purchasable->getKey();
-                $locationId = $this->pickDeductionLocation($key, $quantity, $order, $availability);
+            foreach ($demand as $key => $entry) {
+                $slots = $availability[$key] ?? [];
+                $quantity = $entry['quantity'];
+                $locationId = null;
 
-                if ($locationId === null) {
-                    if ($hasComposite) {
-                        throw new RuntimeException('Insufficient inventory to deduct the complete composite order.');
+                if (is_string($preferredLocation)) {
+                    foreach ($slots as $slot) {
+                        if ($slot['location_id'] === $preferredLocation && $slot['available'] >= $quantity) {
+                            $locationId = $slot['location_id'];
+
+                            break;
+                        }
                     }
-
-                    Log::warning('No inventory location found for deduction', [
-                        'order_id' => $order->id,
-                        'model_type' => $purchasable->getMorphClass(),
-                        'model_id' => $purchasable->getKey(),
-                        'quantity' => $quantity,
-                    ]);
-
-                    continue;
                 }
 
+                if ($locationId === null) {
+                    foreach ($slots as $slot) {
+                        if ($slot['available'] >= $quantity) {
+                            $locationId = $slot['location_id'];
+
+                            break;
+                        }
+                    }
+                }
+
+                if ($locationId === null) {
+                    throw new RuntimeException('Insufficient inventory to deduct the complete order.');
+                }
+
+                $plan[] = ['model' => $entry['model'], 'location_id' => $locationId, 'quantity' => $quantity];
+            }
+
+            foreach ($plan as $shipment) {
                 $this->inventoryService->ship(
-                    model: $purchasable,
-                    locationId: $locationId,
-                    quantity: $quantity,
+                    model: $shipment['model'],
+                    locationId: $shipment['location_id'],
+                    quantity: $shipment['quantity'],
                     reason: 'order',
                     reference: $order->order_number,
                     note: sprintf('Order #%s', $order->order_number),
                 );
-
-                foreach ($availability[$key] as &$slot) {
-                    if ($slot['location_id'] === $locationId) {
-                        $slot['available'] -= $quantity;
-
-                        break;
-                    }
-                }
-
-                unset($slot);
             }
         });
 
@@ -320,103 +323,5 @@ final class DeductOrderInventory
             'order_number' => $order->order_number,
             'item_count' => $order->items->count(),
         ]);
-    }
-
-    /**
-     * Preload every candidate level for the deducted models.
-     *
-     * @param  list<array{0: Model, 1: int}>  $deductibles
-     * @return array<string, list<array{location_id: string, available: int, priority: int, active: bool}>>
-     */
-    private function preloadLevelAvailability(array $deductibles): array
-    {
-        /** @var array<string, array{0: string, 1: mixed}> $pairs */
-        $pairs = [];
-
-        foreach ($deductibles as [$model]) {
-            $pairs[$model->getMorphClass() . ':' . $model->getKey()] = [
-                $model->getMorphClass(),
-                $model->getKey(),
-            ];
-        }
-
-        $availability = [];
-
-        foreach ($pairs as $key => $_) {
-            $availability[$key] = [];
-        }
-
-        if ($pairs === []) {
-            return $availability;
-        }
-
-        $levels = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->whereIn('inventoryable_type', array_unique(array_column($pairs, 0)))
-                ->whereIn('inventoryable_id', array_unique(array_column($pairs, 1)))
-                ->with('location')
-        )->get();
-
-        foreach ($levels as $level) {
-            $key = $level->inventoryable_type . ':' . $level->inventoryable_id;
-
-            if (! array_key_exists($key, $availability)) {
-                continue;
-            }
-
-            $availability[$key][] = [
-                'location_id' => (string) $level->location_id,
-                'available' => $level->quantity_on_hand - $level->quantity_reserved,
-                'priority' => (int) ($level->location?->priority ?? 0),
-                'active' => (bool) ($level->location?->is_active ?? false),
-            ];
-        }
-
-        foreach ($availability as &$slots) {
-            usort($slots, static fn (array $a, array $b): int => $b['priority'] <=> $a['priority']);
-        }
-
-        unset($slots);
-
-        return $availability;
-    }
-
-    /**
-     * Pick a deduction location from preloaded availability.
-     *
-     * Mirrors the previous per-line search exactly: the order's preferred
-     * fulfillment location first (regardless of active flag), then the
-     * highest-priority active location with sufficient raw stock.
-     *
-     * @param  array<string, list<array{location_id: string, available: int, priority: int, active: bool}>>  $availability
-     */
-    private function pickDeductionLocation(string $key, int $quantity, Order $order, array $availability): ?string
-    {
-        $slots = $availability[$key] ?? [];
-
-        // Check if order has a specific fulfillment location
-        $metadata = $order->metadata ?? [];
-        $preferredLocation = $metadata['fulfillment_location_id'] ?? null;
-
-        if ($preferredLocation !== null) {
-            foreach ($slots as $slot) {
-                if ($slot['location_id'] === (string) $preferredLocation && max(0, $slot['available']) >= $quantity) {
-                    return $slot['location_id'];
-                }
-            }
-        }
-
-        // Find location with sufficient stock (priority-based)
-        foreach ($slots as $slot) {
-            if (! $slot['active']) {
-                continue;
-            }
-
-            if ($slot['available'] >= $quantity) {
-                return $slot['location_id'];
-            }
-        }
-
-        return null;
     }
 }

@@ -189,3 +189,56 @@ describe('composite direct order inventory', function (): void {
             ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(0);
     });
 });
+
+it('keeps an ordinary order pending when any tracked item is unavailable and retries atomically', function (): void {
+    $order = createCompositeInventoryOrder('ORD-RETRY-' . uniqid());
+
+    foreach ([[$this->mouse, 2], [$this->cable, 11]] as [$item, $quantity]) {
+        $order->items()->create([
+            'name' => $item->name,
+            'quantity' => $quantity,
+            'unit_price' => 100,
+            'currency' => 'MYR',
+            'purchasable_type' => $item->getMorphClass(),
+            'purchasable_id' => $item->getKey(),
+        ]);
+    }
+
+    $listener = app(DeductInventoryFromOrder::class);
+    $event = new InventoryDeductionRequired($order);
+
+    expect(fn () => $listener->handle($event))->toThrow(RuntimeException::class, 'Insufficient inventory')
+        ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10)
+        ->and($this->inventoryService->getLevel($this->cable, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10)
+        ->and(InventoryOperation::query()->where('order_id', $order->id)->firstOrFail()->status)->toBe(InventoryOperation::STATUS_PENDING)
+        ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(0);
+
+    $this->inventoryService->receive($this->cable, $this->location->id, 1);
+    $listener->handle($event);
+    $listener->handle($event);
+
+    expect($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8)
+        ->and($this->inventoryService->getLevel($this->cable, $this->location->id)?->fresh()->quantity_on_hand)->toBe(0)
+        ->and(InventoryOperation::query()->where('order_id', $order->id)->firstOrFail()->status)->toBe(InventoryOperation::STATUS_COMPLETED)
+        ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(2);
+});
+
+it('does not deduct from an inactive preferred fulfillment location', function (): void {
+    $inactive = InventoryLocation::factory()->create(['is_active' => false, 'priority' => 200]);
+    $this->inventoryService->receive($this->mouse, $inactive->id, 50);
+
+    $order = createCompositeInventoryOrder('ORD-INACTIVE-' . uniqid(), ['fulfillment_location_id' => $inactive->id]);
+    $order->items()->create([
+        'name' => 'Mouse',
+        'quantity' => 2,
+        'unit_price' => 100,
+        'currency' => 'MYR',
+        'purchasable_type' => $this->mouse->getMorphClass(),
+        'purchasable_id' => $this->mouse->getKey(),
+    ]);
+
+    app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order));
+
+    expect($this->inventoryService->getLevel($this->mouse, $inactive->id)?->fresh()->quantity_on_hand)->toBe(50)
+        ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8);
+});
