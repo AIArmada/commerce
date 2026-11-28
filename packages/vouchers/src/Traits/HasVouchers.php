@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Traits;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
-use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\WalletClaim;
@@ -69,14 +68,14 @@ trait HasVouchers
      */
     public function hasVoucherInWallet(string $voucherCode): bool
     {
-        $voucher = $this->voucherQueryByCode($voucherCode)->first();
+        $voucherId = app(VoucherCatalog::class)->resolveId($voucherCode);
 
-        if (! $voucher) {
+        if ($voucherId === null) {
             return false;
         }
 
         return $this->voucherWallets()
-            ->where('voucher_id', $voucher->id)
+            ->where('voucher_id', $voucherId)
             ->exists();
     }
 
@@ -160,52 +159,20 @@ trait HasVouchers
      */
     public function markVoucherAsRedeemed(string $voucherCode): void
     {
-        $voucher = $this->voucherQueryByCode($voucherCode)->firstOrFail();
+        $voucherId = app(VoucherCatalog::class)->resolveId($voucherCode);
+
+        if ($voucherId === null) {
+            throw VoucherNotFoundException::withCode($voucherCode);
+        }
 
         /** @var VoucherWallet|null $walletEntry */
         $walletEntry = $this->voucherWallets()
-            ->where('voucher_id', $voucher->id)
+            ->where('voucher_id', $voucherId)
             ->whereNull('redeemed_at')
             ->first();
 
         if ($walletEntry) {
             $walletEntry->markAsRedeemed();
         }
-    }
-
-    /**
-     * @return Builder<Voucher>
-     */
-    protected function voucherQueryByCode(string $voucherCode): Builder
-    {
-        $query = Voucher::query()->where('code', $this->normalizeVoucherCode($voucherCode));
-
-        if (! config('vouchers.owner.enabled', false)) {
-            return $query;
-        }
-
-        $owner = OwnerContext::resolveConfigured(Voucher::ownerScopeConfig());
-        OwnerContext::assertResolvedOrExplicitGlobal($owner);
-        $includeGlobal = ! OwnerScopeOverride::suppressIncludeGlobal()
-            && (bool) config('vouchers.owner.include_global', false);
-
-        $query->forOwner($owner, $includeGlobal);
-
-        if ($owner !== null && $includeGlobal) {
-            $query->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END');
-        }
-
-        return $query;
-    }
-
-    protected function normalizeVoucherCode(string $voucherCode): string
-    {
-        $normalized = mb_trim($voucherCode);
-
-        if (config('vouchers.code.auto_uppercase', true)) {
-            return mb_strtoupper($normalized);
-        }
-
-        return $normalized;
     }
 }
