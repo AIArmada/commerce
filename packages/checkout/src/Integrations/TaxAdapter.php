@@ -111,6 +111,7 @@ final class TaxAdapter
         $preferredAddress = $shippingAddress !== [] ? $shippingAddress : $billingAddress;
 
         return [
+            'currency' => $session->currency,
             'address' => $preferredAddress,
             'shipping_address' => $shippingAddress,
             'billing_address' => $billingAddress,

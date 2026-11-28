@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Services\ZoneResolver;
 
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,9 +50,13 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             return null;
         }
 
-        $address = $context[$this->getAddressPriority() . '_address'] ?? $context['address'] ?? null;
+        $address = $context[$this->getAddressPriority() . '_address'] ?? null;
 
-        if ($address === null) {
+        if (! is_array($address) || $address === []) {
+            $address = $context['address'] ?? null;
+        }
+
+        if (! is_array($address) || $address === []) {
             return null;
         }
 

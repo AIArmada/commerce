@@ -58,13 +58,12 @@ final class OrganizationResource extends Resource
     {
         $user = Filament::auth()->user();
 
-        if (! $user instanceof Model) {
+        if (! $user instanceof Model || $user->getMorphClass() !== (new Organization)->members()->getRelated()->getMorphClass()) {
             return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
 
         return parent::getEloquentQuery()
-            ->whereHas('members', fn (Builder $query): Builder => $query->whereKey($user->getKey()))
-            ->withCount('members');
+            ->whereHas('members', fn (Builder $query): Builder => $query->whereKey($user->getKey()));
     }
 
     public static function form(Schema $schema): Schema

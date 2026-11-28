@@ -22,6 +22,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
             expect($amount)->toBe(900)
                 ->and($taxClass)->toBe('standard')
                 ->and($zoneId)->toBeNull()
+                ->and($context['currency'])->toBe('MYR')
                 ->and($context['shipping_address']['country'])->toBe('MY')
                 ->and($context['billing_address']['country'])->toBe('MY');
 
@@ -45,6 +46,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
         ->withArgs(function (int $amount, ?string $zoneId, array $context): bool {
             expect($amount)->toBe(200)
                 ->and($zoneId)->toBeNull()
+                ->and($context['currency'])->toBe('MYR')
                 ->and($context['shipping_address']['country'])->toBe('MY');
 
             return true;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Organizations\Resolvers;
 
-use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +18,7 @@ final readonly class RequestCurrentOrganizationResolver implements CurrentOrgani
     {
         $actor = Auth::user();
 
-        if (! $actor instanceof Model) {
+        if (! $actor instanceof Model || $actor->getMorphClass() !== (new Organization)->members()->getRelated()->getMorphClass()) {
             return null;
         }
 

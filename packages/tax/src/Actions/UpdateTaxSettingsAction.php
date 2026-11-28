@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Settings\TaxSettings;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
@@ -20,6 +22,10 @@ final readonly class UpdateTaxSettingsAction
     public function execute(?Authenticatable $actor, array $state): void
     {
         Gate::forUser($actor)->authorize('tax.settings.manage');
+
+        if (config('tax.features.owner.enabled', false) && (OwnerContext::resolve() !== null || ! OwnerContext::isExplicitGlobal())) {
+            throw new AuthorizationException('Global tax settings require an explicit global owner context.');
+        }
 
         $rate = Arr::get($state, 'defaultTaxRate', 0.0);
 
