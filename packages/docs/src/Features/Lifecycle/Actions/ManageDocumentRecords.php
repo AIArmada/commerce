@@ -198,11 +198,33 @@ final readonly class ManageDocumentRecords implements DocumentRecords
 
                 $this->assertNoMajorUnitKeys($data);
 
-                $docData = array_merge($data, [
+                $attributes = array_intersect_key($data, array_flip([
+                    'doc_template_id',
+                    'template_slug',
+                    'docable_type',
+                    'docable_id',
+                    'issue_date',
+                    'due_date',
+                    'subtotal_minor',
+                    'tax_amount_minor',
+                    'discount_amount_minor',
+                    'total_minor',
+                    'currency',
+                    'body',
+                    'notes',
+                    'terms',
+                    'customer_data',
+                    'company_data',
+                    'items',
+                    'metadata',
+                ]));
+
+                $docData = array_merge($attributes, [
                     'doc_number' => $docNumber,
                     'doc_type' => $type->value,
                     'status' => Draft::class,
                     'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
+                    'currency' => $this->normalizeCurrency($data['currency'] ?? $this->resolveDefault($type->value, 'currency', 'MYR')),
                 ]);
 
                 // A copy preserves the persisted financial snapshot, including
@@ -229,15 +251,11 @@ final readonly class ManageDocumentRecords implements DocumentRecords
                     $totals = $this->calculateTotals(
                         $data['items'],
                         $discountAmountMinor,
-                        isset($data['currency']) ? (string) $data['currency'] : null
+                        $docData['currency']
                     );
                     $docData = array_merge($docData, $totals);
                 } else {
                     $this->assertValidStoredTotals($docData);
-                }
-
-                if (isset($docData['currency'])) {
-                    $docData['currency'] = $this->normalizeCurrency($docData['currency']);
                 }
 
                 $template = $this->resolveTemplateSelection(
@@ -254,6 +272,8 @@ final readonly class ManageDocumentRecords implements DocumentRecords
                         isset($docData['items']) && is_array($docData['items']) ? $docData['items'] : [],
                     );
                 }
+
+                unset($docData['template_slug']);
 
                 try {
                     $doc = new Doc($docData);

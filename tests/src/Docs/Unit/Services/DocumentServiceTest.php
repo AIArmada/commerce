@@ -234,3 +234,36 @@ test('cloning and converting itemless documents preserve their financial snapsho
             ->and($copy->status->equals(Draft::class))->toBeTrue();
     }
 });
+
+test('typed creation validates line currencies against the resolved document default', function (): void {
+    config()->set('docs.types.invoice.defaults.currency', 'JPY');
+
+    expect(fn () => $this->service->createFromType(DocType::Invoice, [
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'MYR']],
+    ]))->toThrow(InvalidArgumentException::class, 'currency does not match');
+
+    $doc = $this->service->createFromType(DocType::Invoice, [
+        'items' => [['quantity' => 1, 'unit_price_minor' => 100, 'currency' => 'JPY']],
+    ]);
+
+    expect($doc->currency)->toBe('JPY')
+        ->and($doc->total_minor)->toBe(100);
+});
+
+test('typed draft creation cannot inject lifecycle timestamps', function (): void {
+    $doc = $this->service->createFromType(DocType::Invoice, [
+        'status' => Paid::class,
+        'paid_at' => now(),
+        'sent_at' => now(),
+        'cancelled_at' => now(),
+        'refunded_at' => now(),
+        'overdue_at' => now(),
+    ]);
+
+    expect($doc->fresh()->status)->toBeInstanceOf(Draft::class)
+        ->and($doc->paid_at)->toBeNull()
+        ->and($doc->sent_at)->toBeNull()
+        ->and($doc->cancelled_at)->toBeNull()
+        ->and($doc->refunded_at)->toBeNull()
+        ->and($doc->overdue_at)->toBeNull();
+});
