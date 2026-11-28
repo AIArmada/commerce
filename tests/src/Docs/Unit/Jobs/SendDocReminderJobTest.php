@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Features\Delivery\Actions\DeliverDocReminders;
 use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocReminderJob;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
+use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
@@ -141,4 +142,38 @@ test('malformed customer contact data does not interrupt reminder batches', func
     $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 
     expect($doc->emails()->count())->toBe(1);
+});
+
+test('scheduled reminders never substitute an ordinary send template for a missing reminder template', function (): void {
+    DocEmailTemplate::query()->create([
+        'name' => 'Ordinary send',
+        'slug' => 'ordinary-send',
+        'doc_type' => 'invoice',
+        'trigger' => 'send',
+        'subject' => 'Ordinary send subject',
+        'body' => 'Ordinary send body',
+        'is_active' => true,
+    ]);
+
+    $upcoming = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'status' => Sent::class,
+        'due_date' => now()->addDay(),
+        'customer_data' => ['email' => 'upcoming@example.com'],
+    ]);
+    $overdue = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'status' => Overdue::class,
+        'due_date' => now()->subDays(2),
+        'customer_data' => ['email' => 'overdue@example.com'],
+    ]);
+
+    (new SendDocReminderJob)->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
+
+    foreach ([$upcoming, $overdue] as $doc) {
+        $email = $doc->emails()->sole();
+
+        expect($email->doc_email_template_id)->toBeNull()
+            ->and($email->subject)->not->toBe('Ordinary send subject');
+    }
 });

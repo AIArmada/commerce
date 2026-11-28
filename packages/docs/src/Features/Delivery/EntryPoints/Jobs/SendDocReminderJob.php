@@ -46,7 +46,6 @@ final class SendDocReminderJob implements ShouldQueue
             $this->daysAfterOverdue,
             $this->ownerType,
             $this->ownerId,
-            $this->ownerBatch,
         );
     }
 

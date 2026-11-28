@@ -61,6 +61,7 @@ final class DocEmailService implements DocumentEmailSender
         ?string $subjectOverride = null,
         ?string $bodyOverride = null,
         array $metadata = [],
+        ?string $trigger = null,
     ): DocEmail {
         $recipientEmail = mb_trim($recipientEmail);
         $recipientName = $recipientName === null ? null : mb_trim($recipientName);
@@ -75,12 +76,8 @@ final class DocEmailService implements DocumentEmailSender
             $doc = $doc->newQuery()->findOrFail($doc->getKey());
         }
 
-        if ($template !== null) {
-            $template = $this->resolveTemplate($doc, (string) $template->getKey(), $template->trigger);
-        }
-
-        // Find template if not provided
-        $template ??= $this->findTemplate($doc, 'send');
+        $trigger ??= $template?->trigger ?? 'send';
+        $template = $this->resolveTemplate($doc, $template === null ? null : (string) $template->getKey(), $trigger);
 
         // Build variables for template
         $templateVars = $this->buildVariables($doc, $variables);
@@ -129,6 +126,7 @@ final class DocEmailService implements DocumentEmailSender
                 'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false),
             ],
             metadata: array_merge(['reminder_type' => 'overdue'], $metadata),
+            trigger: 'reminder',
         );
     }
 

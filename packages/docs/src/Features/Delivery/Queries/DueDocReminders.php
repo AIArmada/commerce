@@ -33,8 +33,8 @@ final class DueDocReminders
         return $this->forCurrentOwner($includeGlobal)
             ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
-            ->whereDate('due_date', '>=', $today->toDateString())
-            ->whereDate('due_date', '<=', $dueDate->toDateString())
+            ->where('due_date', '>=', $today->toDateString())
+            ->where('due_date', '<=', $dueDate->toDateString())
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'due_soon');
             })
@@ -55,7 +55,7 @@ final class DueDocReminders
         return $this->forCurrentOwner($includeGlobal)
             ->where('status', Overdue::value())
             ->whereNotNull('due_date')
-            ->whereDate('due_date', '<=', $overdueDate->toDateString())
+            ->where('due_date', '<=', $overdueDate->toDateString())
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'overdue');
             })

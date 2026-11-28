@@ -14,6 +14,7 @@ use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 final readonly class DeliverDocReminders
@@ -23,26 +24,25 @@ final readonly class DeliverDocReminders
         private DueDocReminders $dueDocReminders,
     ) {}
 
-    public function execute(?string $docId, int $daysBeforeDue, int $daysAfterOverdue, ?string $ownerType, string | int | null $ownerId, bool $ownerBatch): void
+    public function execute(?string $docId, int $daysBeforeDue, int $daysAfterOverdue, ?string $ownerType, string | int | null $ownerId): void
     {
         $owner = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
 
-        OwnerContext::withOwner($owner, function () use ($docId, $daysBeforeDue, $daysAfterOverdue, $ownerBatch): void {
+        OwnerContext::withOwner($owner, function () use ($docId, $daysBeforeDue, $daysAfterOverdue): void {
             if ($docId !== null) {
                 $this->sendReminderForDoc($this->emailService, $this->dueDocReminders, $docId);
 
                 return;
             }
 
-            $includeGlobal = ! $ownerBatch && (bool) config('docs.owner.include_global', false);
-            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue, $includeGlobal);
-            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue, $includeGlobal);
+            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue, false);
+            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue, false);
         });
     }
 
     private function sendReminderForDoc(DocEmailService $emailService, DueDocReminders $dueDocReminders, string $docId): void
     {
-        $doc = $dueDocReminders->forCurrentOwner()->find($docId);
+        $doc = Str::isUuid($docId) ? $dueDocReminders->forCurrentOwner(false)->find($docId) : null;
         $recipientEmail = $this->getRecipientEmail($doc);
 
         if (! $doc || ! $recipientEmail) {
@@ -112,6 +112,7 @@ final readonly class DeliverDocReminders
                         'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                     ],
                     metadata: ['reminder_type' => 'due_soon'],
+                    trigger: 'due_soon',
                 );
 
                 Log::info('docs.reminder: Due soon reminder sent', [
