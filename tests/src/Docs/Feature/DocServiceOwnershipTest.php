@@ -84,3 +84,37 @@ test('global document visibility does not grant tenant write access', function (
         expect(app(DocumentPaymentRecorder::class)->record($docId, $payment))->not->toBeEmpty();
     });
 });
+
+test('copies documents only inside the source owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $service = app(DocService::class);
+
+    $source = OwnerContext::withOwner($owner, fn (): Doc => $service->createFromType(
+        DocType::Quotation,
+        [
+            'currency' => 'MYR',
+            'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 1000]],
+            'discount_amount_minor' => 100,
+        ],
+        $owner,
+    ));
+
+    OwnerContext::withOwner($other, function () use ($service, $source, $other): void {
+        expect(fn () => $service->clone($source, $other))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->convert($source, DocType::Invoice, $other))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($service, $source, $owner, $other): void {
+        expect(fn () => $service->clone($source, $other))->toThrow(AuthorizationException::class);
+        expect(fn () => $service->convert($source, DocType::Invoice, $other))->toThrow(AuthorizationException::class);
+
+        $clone = $service->clone($source);
+        $converted = $service->convert($source, DocType::Invoice);
+
+        expect((string) $clone->owner_id)->toBe((string) $owner->getKey())
+            ->and((string) $converted->owner_id)->toBe((string) $owner->getKey())
+            ->and($clone->discount_amount_minor)->toBe(100)
+            ->and($converted->discount_amount_minor)->toBe(100);
+    });
+});

@@ -25,6 +25,7 @@ use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocTypeKey;
 use AIArmada\Docs\Support\DocPdfPath;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -373,6 +374,8 @@ final class DocService
      */
     public function convert(Doc $source, DocType $targetType, ?Model $owner = null): Doc
     {
+        [$source, $owner] = $this->resolveCopySource($source, $owner);
+
         $sourceType = $source->doc_type instanceof DocType
             ? $source->doc_type
             : DocType::tryFrom($source->doc_type);
@@ -385,11 +388,10 @@ final class DocService
             );
         }
 
-        // Create new document from source
+        // Resolve a template for the target document type, not the source type.
         return $this->createFromType($targetType, [
             'docable_type' => $source->docable_type,
             'docable_id' => $source->docable_id,
-            'doc_template_id' => $source->doc_template_id,
             'due_date' => $source->due_date,
             'currency' => $source->currency,
             'body' => $source->body,
@@ -398,6 +400,7 @@ final class DocService
             'customer_data' => $source->customer_data,
             'company_data' => $source->company_data,
             'items' => $source->items,
+            'discount_amount_minor' => $source->discount_amount_minor,
             'metadata' => array_merge($source->metadata ?? [], [
                 'converted_from' => [
                     'doc_id' => $source->id,
@@ -425,6 +428,8 @@ final class DocService
      */
     public function clone(Doc $source, ?Model $owner = null): Doc
     {
+        [$source, $owner] = $this->resolveCopySource($source, $owner);
+
         $val = $source->doc_type;
         $type = ($val instanceof DocType ? $val : DocType::tryFrom($val)) ?? DocType::Invoice;
 
@@ -440,10 +445,30 @@ final class DocService
             'customer_data' => $source->customer_data,
             'company_data' => $source->company_data,
             'items' => $source->items,
+            'discount_amount_minor' => $source->discount_amount_minor,
             'metadata' => array_merge($source->metadata ?? [], [
                 'cloned_from' => $source->id,
             ]),
         ], $owner);
+    }
+
+    /**
+     * @return array{Doc, Model|null}
+     */
+    private function resolveCopySource(Doc $source, ?Model $owner): array
+    {
+        if (! config('docs.owner.enabled', false)) {
+            return [$source, $owner];
+        }
+
+        $source = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $source->getKey());
+        $sourceOwner = OwnerContext::fromTypeAndIdOrFail($source->owner_type, $source->owner_id);
+
+        if ($owner !== null && ($sourceOwner === null || ! $owner->is($sourceOwner))) {
+            throw new AuthorizationException('Documents cannot be copied to a different owner.');
+        }
+
+        return [$source, $sourceOwner];
     }
 
     /**
