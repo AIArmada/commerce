@@ -6,54 +6,30 @@ namespace AIArmada\Communications\Testing;
 
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
-use AIArmada\Communications\Models\Communication;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Assert;
 
 final class FakeCommunicationManager implements CommunicationManager
 {
-    /** @var array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|Model|array|null, communication: Communication}> */
+    /** @var array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|null, communicationId: string}> */
     private array $sent = [];
-
-    /** @var array<int, array{notifiable: mixed, notification: Notification, channel: string, communication: ?Communication}> */
-    private array $recordedNative = [];
 
     public function notify(
         mixed $notifiable,
         Notification $notification,
-        CommunicationContextData | Model | array | null $context = null,
-    ): Communication {
-        $communication = new Communication;
-        $communication->id = (string) Str::uuid();
+        ?CommunicationContextData $context = null,
+    ): string {
+        $communicationId = (string) Str::uuid();
 
         $this->sent[] = [
             'notifiable' => $notifiable,
             'notification' => $notification,
             'context' => $context,
-            'communication' => $communication,
+            'communicationId' => $communicationId,
         ];
 
-        return $communication;
-    }
-
-    public function recordNative(
-        mixed $notifiable,
-        Notification $notification,
-        string $channel,
-    ): ?Communication {
-        $communication = new Communication;
-        $communication->id = (string) Str::uuid();
-
-        $this->recordedNative[] = [
-            'notifiable' => $notifiable,
-            'notification' => $notification,
-            'channel' => $channel,
-            'communication' => $communication,
-        ];
-
-        return $communication;
+        return $communicationId;
     }
 
     public function assertSent(?callable $callback = null, ?int $count = null): void
@@ -98,10 +74,9 @@ final class FakeCommunicationManager implements CommunicationManager
     public function reset(): void
     {
         $this->sent = [];
-        $this->recordedNative = [];
     }
 
-    /** @return array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|Model|array|null, communication: Communication}> */
+    /** @return array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|null, communicationId: string}> */
     public function sentNotifications(): array
     {
         return $this->sent;

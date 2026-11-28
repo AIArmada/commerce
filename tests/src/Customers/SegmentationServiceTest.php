@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Services\SegmentationService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -50,7 +51,6 @@ describe('SegmentationService', function (): void {
             Segment::create([
                 'name' => 'Rebuild All ' . uniqid(),
                 'slug' => 'rebuild-all-' . uniqid(),
-                'is_active' => true,
                 'is_automatic' => true,
                 'conditions' => [],
             ]);
@@ -100,13 +100,12 @@ describe('SegmentationService', function (): void {
 
     describe('evaluateCustomer', function (): void {
         it('evaluates customer for all automatic segments', function (): void {
-            Event::fake();
+            Event::fake([CustomerSegmentChanged::class]);
 
             $segment = Segment::create([
                 'name' => 'Evaluate ' . uniqid(),
                 'slug' => 'evaluate-' . uniqid(),
                 'is_automatic' => true,
-                'is_active' => true,
                 'conditions' => [
                     ['field' => 'accepts_marketing', 'value' => true],
                 ],
@@ -262,7 +261,7 @@ describe('SegmentationService', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
             $this->service->removeFromSegment($customer, $segment);
 
             expect($customer->fresh()->segments->pluck('id'))->not->toContain($segment->id);
@@ -292,8 +291,8 @@ describe('SegmentationService', function (): void {
                 'accepts_marketing' => false,
             ]);
 
-            $segment->addCustomer($customer1);
-            $segment->addCustomer($customer2);
+            app(AssignCustomerToSegment::class)->execute($customer1, $segment);
+            app(AssignCustomerToSegment::class)->execute($customer2, $segment);
 
             $stats = $this->service->getSegmentStats($segment);
 
@@ -314,4 +313,20 @@ describe('SegmentationService', function (): void {
                 ->and($stats['marketing_opted_in'])->toBe(0);
         });
     });
+});
+
+it('rejects membership writes for a segment deleted after it was loaded', function (): void {
+    config()->set('customers.features.owner.enabled', false);
+    $customer = Customer::create(['first_name' => 'Stale', 'last_name' => 'Segment']);
+    $segment = Segment::create(['name' => 'Deleted Segment', 'slug' => 'deleted-segment']);
+    Segment::query()->whereKey($segment->id)->delete();
+
+    Event::fake([CustomerSegmentChanged::class]);
+
+    expect(fn () => app(AssignCustomerToSegment::class)->execute($customer, $segment))
+        ->toThrow(ModelNotFoundException::class);
+    expect(fn () => app(RemoveCustomerFromSegment::class)->execute($customer, $segment))
+        ->toThrow(ModelNotFoundException::class);
+
+    Event::assertNotDispatched(CustomerSegmentChanged::class);
 });

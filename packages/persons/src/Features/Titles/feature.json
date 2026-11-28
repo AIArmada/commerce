@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "name": "Titles",
+  "owns": {
+    "table:title_categories": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitleCategory"
+    ],
+    "table:titles": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\ReorderTitleAction",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitle",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitleCategory"
+    ],
+    "table:title_assignments": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\AssignTitleAction",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeletePersonTitles",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitle",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitleCategory",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitleIssuer"
+    ],
+    "table:title_issuers": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\SaveTitleIssuer",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeleteTitleIssuer"
+    ]
+  },
+  "extensions": {}
+}

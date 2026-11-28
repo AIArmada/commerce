@@ -21,5 +21,9 @@ return [
             'credential_definition' => 12,
         ],
         'person_relation_managers' => [],
+        'institution' => [
+            'label_column' => 'name',
+            'search_columns' => null,
+        ],
     ],
 ];

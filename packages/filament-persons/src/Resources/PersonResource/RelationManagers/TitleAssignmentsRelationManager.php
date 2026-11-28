@@ -6,8 +6,10 @@ namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Models\Person;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -19,6 +21,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final class TitleAssignmentsRelationManager extends RelationManager
 {
@@ -82,6 +85,12 @@ final class TitleAssignmentsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->using(function (array $data): TitleAssignment {
+                        $id = (string) $data['title_id'];
+                        unset($data['title_id']);
+
+                        return app(AssignTitleAction::class)->execute($this->person(), $id, $data);
+                    })
                     ->mutateFormDataUsing(function (array $data): array {
                         Title::query()->findOrFail($data['title_id']);
 
@@ -92,6 +101,7 @@ final class TitleAssignmentsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->using(fn (TitleAssignment $record, array $data): TitleAssignment => app(AssignTitleAction::class)->update($this->person(), $record, $data))
                     ->mutateFormDataUsing(function (array $data, ?Model $record): array {
                         if (isset($data['title_id'])) {
                             Title::query()->findOrFail($data['title_id']);
@@ -101,8 +111,20 @@ final class TitleAssignmentsRelationManager extends RelationManager
 
                         return $data;
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->using(fn (TitleAssignment $record): bool => app(AssignTitleAction::class)->delete($this->person(), $record)),
             ]);
+    }
+
+    private function person(): Person
+    {
+        $record = $this->getOwnerRecord();
+
+        if (! $record instanceof Person) {
+            throw new InvalidArgumentException('Invalid person record.');
+        }
+
+        return $record;
     }
 
     /**

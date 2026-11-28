@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
@@ -11,17 +10,22 @@ use AIArmada\Persons\Enums\IssuerType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
-use AIArmada\Persons\Models\Affiliation;
-use AIArmada\Persons\Models\AffiliationRole;
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
+use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
+use AIArmada\Persons\Features\Credentials\Actions\SaveCredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\SaveTitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Models\PersonName;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
-use AIArmada\Persons\Models\TitleCategory;
-use AIArmada\Persons\Models\TitleIssuer;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     persons_register_morph_map('person');
@@ -64,23 +68,20 @@ describe('person identity models', function (): void {
     it('creates a person with multi-context names', function (): void {
         $person = Person::factory()->create();
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Ahmad Rahman',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Religious,
             'full_name' => 'أحمد بن عبد الرحمن',
             'language_code' => 'ar',
         ]);
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Nickname,
             'full_name' => 'Mat',
             'language_code' => 'ms',
@@ -91,19 +92,45 @@ describe('person identity models', function (): void {
         expect($person->names->last()->name_type)->toBe(PersonNameType::Nickname);
     });
 
+    it('updates searchable names and rejects changes to names owned by another person', function (): void {
+        $person = Person::factory()->create(['name' => 'Original']);
+        $other = Person::factory()->create();
+        $action = app(SavePersonName::class);
+
+        $name = $action->create($person, [
+            'name_type' => PersonNameType::Display,
+            'full_name' => 'Distinct Alias',
+            'language_code' => 'en',
+            'is_primary' => true,
+            'person_id' => $other->id,
+        ]);
+
+        expect($name->person_id)->toBe($person->id)
+            ->and($person->fresh()->searchable_name)->toContain('distinct alias');
+
+        expect(fn () => $action->update($other, $name, ['full_name' => 'Forged']))
+            ->toThrow(AuthorizationException::class);
+
+        $action->update($person, $name, ['full_name' => 'Updated Alias']);
+
+        expect($person->fresh()->searchable_name)->toContain('updated alias')
+            ->not->toContain('distinct alias');
+
+        expect($action->delete($person, $name))->toBeTrue()
+            ->and($person->fresh()->searchable_name)->not->toContain('updated alias');
+    });
+
     it('keeps only one primary name per person and name scope', function (): void {
         $person = Person::factory()->create();
 
-        $first = PersonName::create([
-            'person_id' => $person->id,
+        $first = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'First Name',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        $second = PersonName::create([
-            'person_id' => $person->id,
+        $second = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Second Name',
             'language_code' => 'en',
@@ -117,16 +144,14 @@ describe('person identity models', function (): void {
     it('allows one primary name for each name type and language scope', function (): void {
         $person = Person::factory()->create();
 
-        $display = PersonName::create([
-            'person_id' => $person->id,
+        $display = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Display Name',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        $nickname = PersonName::create([
-            'person_id' => $person->id,
+        $nickname = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Nickname,
             'full_name' => 'Nickname',
             'language_code' => 'en',
@@ -140,16 +165,12 @@ describe('person identity models', function (): void {
     it('keeps only one primary affiliation per affiliatable model', function (): void {
         $person = Person::factory()->create();
 
-        $first = Affiliation::create([
-            'affiliatable_type' => $person->getMorphClass(),
-            'affiliatable_id' => $person->getKey(),
+        $first = app(SaveAffiliation::class)->create($person, [
             'affiliation_type' => AffiliationType::Member,
             'is_primary' => true,
         ]);
 
-        $second = Affiliation::create([
-            'affiliatable_type' => $person->getMorphClass(),
-            'affiliatable_id' => $person->getKey(),
+        $second = app(SaveAffiliation::class)->create($person, [
             'affiliation_type' => AffiliationType::Employee,
             'is_primary' => true,
         ]);
@@ -197,6 +218,46 @@ describe('person identity models', function (): void {
 
         expect($second->fresh()->sort_order)->toBe(1)
             ->and($first->fresh()->sort_order)->toBe(2);
+    });
+
+    it('keeps the same title position when editing without reordering', function (): void {
+        $category = TitleCategory::create(['code' => 'stable-order', 'name' => 'Stable Order']);
+        $action = app(ReorderTitleAction::class);
+
+        $first = $action->create([
+            'category_id' => $category->id,
+            'name' => 'First',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $second = $action->create([
+            'category_id' => $category->id,
+            'name' => 'Second',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 2,
+        ]);
+
+        $action->update($first, ['name' => 'Edited']);
+
+        expect($first->fresh()->name)->toBe('Edited')
+            ->and($first->fresh()->sort_order)->toBe(1)
+            ->and($second->fresh()->sort_order)->toBe(2);
+    });
+
+    it('inserts a new title into an occupied ordering scope', function (): void {
+        $category = TitleCategory::create(['code' => 'insert-order', 'name' => 'Insert Order']);
+        $action = app(ReorderTitleAction::class);
+        $attributes = [
+            'category_id' => $category->id,
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ];
+
+        $first = $action->create([...$attributes, 'name' => 'First']);
+        $second = $action->create([...$attributes, 'name' => 'Second']);
+
+        expect($first->fresh()->sort_order)->toBe(2)
+            ->and($second->fresh()->sort_order)->toBe(1);
     });
 
     it('keeps sort orders independent between categories and usage positions', function (): void {
@@ -272,9 +333,7 @@ describe('person identity models', function (): void {
     it('creates affiliation with roles for a person', function (): void {
         $person = Person::factory()->create();
 
-        $affiliation = Affiliation::create([
-            'affiliatable_type' => 'person',
-            'affiliatable_id' => $person->id,
+        $affiliation = app(SaveAffiliation::class)->create($person, [
             'institution_id' => null,
             'affiliation_type' => AffiliationType::Employee,
             'is_primary' => true,
@@ -466,4 +525,101 @@ describe('person identity models', function (): void {
         }
     });
 
+});
+
+it('rejects cross-person affiliation changes and preserves existing primary on invalid replacement', function (): void {
+    $person = Person::factory()->create();
+    $other = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $record = $action->create($person, ['affiliation_type' => AffiliationType::Member, 'is_primary' => true]);
+
+    expect(fn () => $action->update($other, $record, ['position' => 'Forged']))
+        ->toThrow(AuthorizationException::class);
+    expect(fn () => $action->delete($other, $record))->toThrow(AuthorizationException::class);
+    expect($record->fresh()->is_primary)->toBeTrue();
+});
+
+it('preserves the existing primary affiliation when a replacement is vetoed', function (): void {
+    $person = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $first = $action->create($person, ['affiliation_type' => AffiliationType::Member, 'is_primary' => true]);
+
+    Affiliation::saving(static fn (Affiliation $record): bool => $record->affiliation_type !== AffiliationType::Employee);
+
+    expect(fn () => $action->create($person, ['affiliation_type' => AffiliationType::Employee, 'is_primary' => true]))
+        ->toThrow(RuntimeException::class, 'Affiliation persistence was cancelled.');
+
+    expect($first->fresh()->is_primary)->toBeTrue()
+        ->and($person->affiliations()->count())->toBe(1);
+});
+
+it('preserves affiliation roles when deletion is vetoed', function (): void {
+    $person = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $record = $action->create($person, ['affiliation_type' => AffiliationType::Member]);
+    $role = AffiliationRole::create(['affiliation_id' => $record->id, 'role_name' => 'Member', 'is_current' => true]);
+
+    Affiliation::deleting(static fn (Affiliation $item): bool => $item->id !== $record->id);
+
+    expect(fn () => $action->delete($person, $record))
+        ->toThrow(RuntimeException::class, 'Affiliation deletion was cancelled.');
+
+    expect(Affiliation::query()->whereKey($record->id)->exists())->toBeTrue()
+        ->and(AffiliationRole::query()->whereKey($role->id)->exists())->toBeTrue();
+});
+
+it('rolls back title ordering when a title save is vetoed', function (): void {
+    $category = TitleCategory::create(['code' => 'veto-order', 'name' => 'Veto Order']);
+    $action = app(ReorderTitleAction::class);
+    $first = $action->create([
+        'category_id' => $category->id,
+        'name' => 'First',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $second = $action->create([
+        'category_id' => $category->id,
+        'name' => 'Second',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 2,
+    ]);
+
+    Title::saving(static fn (Title $record): bool => $record->name !== 'Veto');
+
+    expect(fn () => $action->create([
+        'category_id' => $category->id,
+        'name' => 'Veto',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]))->toThrow(RuntimeException::class, 'Title persistence was cancelled.');
+
+    expect(fn () => $action->update($second, ['name' => 'Veto', 'sort_order' => 1]))
+        ->toThrow(RuntimeException::class, 'Title persistence was cancelled.');
+
+    expect($first->fresh()->sort_order)->toBe(1)
+        ->and($second->fresh()->sort_order)->toBe(2)
+        ->and($second->fresh()->name)->toBe('Second')
+        ->and($category->titles()->count())->toBe(2);
+});
+
+it('rejects vetoed title issuer and credential definition persistence', function (): void {
+    $issuer = app(SaveTitleIssuer::class);
+    $definition = app(SaveCredentialDefinition::class);
+    $savedIssuer = $issuer->create(['issuer_name' => 'Board', 'issuer_type' => IssuerType::ProfessionalBoard]);
+    $savedDefinition = $definition->create(['name' => 'CPA', 'credential_type' => CredentialType::ProfessionalLicense]);
+
+    TitleIssuer::saving(static fn (TitleIssuer $record): bool => $record->issuer_name !== 'Veto');
+    CredentialDefinition::saving(static fn (CredentialDefinition $record): bool => $record->name !== 'Veto');
+
+    expect(fn () => $issuer->create(['issuer_name' => 'Veto', 'issuer_type' => IssuerType::ProfessionalBoard]))
+        ->toThrow(RuntimeException::class, 'Title issuer persistence was cancelled.');
+    expect(fn () => $issuer->update($savedIssuer, ['issuer_name' => 'Veto']))
+        ->toThrow(RuntimeException::class, 'Title issuer persistence was cancelled.');
+    expect(fn () => $definition->create(['name' => 'Veto', 'credential_type' => CredentialType::ProfessionalLicense]))
+        ->toThrow(RuntimeException::class, 'Credential definition persistence was cancelled.');
+    expect(fn () => $definition->update($savedDefinition, ['name' => 'Veto']))
+        ->toThrow(RuntimeException::class, 'Credential definition persistence was cancelled.');
+
+    expect($savedIssuer->fresh()->issuer_name)->toBe('Board')
+        ->and($savedDefinition->fresh()->name)->toBe('CPA');
 });

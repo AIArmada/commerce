@@ -1,0 +1,185 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Customers\Features\Identity\Services;
+
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectDriverInterface;
+use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerModelLookup;
+use AIArmada\Customers\Models\Customer;
+
+final readonly class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterface
+{
+    public function __construct(
+        private CustomerResolver $customerResolver,
+    ) {}
+
+    public function getIdentifier(): string
+    {
+        return 'customers';
+    }
+
+    public function getPriority(): int
+    {
+        return 100;
+    }
+
+    public function supports(PaymentSubjectContext $context): bool
+    {
+        return $this->isCustomerReference($context->subject)
+            || $this->isCustomerReference($context->sessionCustomer)
+            || $context->actor !== null
+            || $this->resolveEmail($context) !== null;
+    }
+
+    public function resolve(PaymentSubjectContext $context): ?ResolvedPaymentSubject
+    {
+        $owner = $context->owner !== null ? app(OwnerModelLookup::class)->resolve($context->owner) : null;
+
+        $customer = OwnerContext::withOwner($owner, function () use ($context, $owner): ?Customer {
+            $reference = $this->isCustomerReference($context->subject)
+                ? $context->subject
+                : $context->sessionCustomer;
+            $sessionCustomer = $this->isCustomerReference($reference)
+                ? EloquentRecordReference::resolve($reference)
+                : null;
+            $actor = EloquentRecordReference::resolve($context->actor?->reference);
+
+            return $this->shouldResolveWithoutPersistence($context)
+                ? $this->customerResolver->resolveExisting(
+                    user: $actor,
+                    sessionCustomer: $sessionCustomer instanceof Customer ? $sessionCustomer : null,
+                    billingData: $context->billingData,
+                    shippingData: $context->shippingData,
+                    owner: $owner,
+                )
+                : $this->customerResolver->resolve(
+                    user: $actor,
+                    sessionCustomer: $sessionCustomer instanceof Customer ? $sessionCustomer : null,
+                    billingData: $context->billingData,
+                    shippingData: $context->shippingData,
+                    owner: $owner,
+                );
+        });
+
+        if ($customer === null) {
+            return null;
+        }
+
+        return new ResolvedPaymentSubject(
+            subject: EloquentRecordReference::fromModel($customer),
+            paymentCustomer: OwnerContext::withOwner($owner, fn (): PaymentCustomerData => $this->toPaymentCustomer($customer, $context)),
+            isGuest: $customer->isGuest(),
+            resolvedBy: $this->getIdentifier(),
+            metadata: $context->metadata,
+        );
+    }
+
+    private function isCustomerReference(?RecordReference $reference): bool
+    {
+        return $reference !== null && $reference->type === (new Customer)->getMorphClass();
+    }
+
+    private function shouldResolveWithoutPersistence(PaymentSubjectContext $context): bool
+    {
+        if ($context->source !== 'checkout.resolve_customer') {
+            return false;
+        }
+
+        return ! $this->requiresPersistedCustomerBeforePayment($context);
+    }
+
+    private function requiresPersistedCustomerBeforePayment(PaymentSubjectContext $context): bool
+    {
+        return $context->gateway === 'cashier';
+    }
+
+    private function toPaymentCustomer(Customer $customer, PaymentSubjectContext $context): PaymentCustomerData
+    {
+        $billingAddress = $this->resolveAddress(
+            $context->billingData,
+            $customer->primaryAddress('billing'),
+        );
+        $shippingAddress = $this->resolveAddress(
+            $context->shippingData,
+            $customer->primaryAddress('shipping'),
+        );
+        $billingCountry = $billingAddress['country_code'] ?? $billingAddress['country'] ?? null;
+        $shippingCountry = $shippingAddress['country_code'] ?? $shippingAddress['country'] ?? null;
+
+        return new PaymentCustomerData(
+            email: $this->resolveEmail($context) ?? $this->resolveCustomerEmail($customer),
+            name: $customer->full_name,
+            phone: $this->cleanString($context->billingData['phone'] ?? null)
+                ?? $this->cleanString($context->shippingData['phone'] ?? null)
+                ?? $this->resolveCustomerPhone($customer),
+            country: $billingCountry ?? $shippingCountry ?? 'MY',
+            billingStreetAddress: $billingAddress['line1'] ?? null,
+            billingCity: $billingAddress['city'] ?? null,
+            billingState: $billingAddress['state'] ?? null,
+            billingPostalCode: $billingAddress['postcode'] ?? null,
+            billingCountry: $billingCountry,
+            shippingStreetAddress: $shippingAddress['line1'] ?? null,
+            shippingCity: $shippingAddress['city'] ?? null,
+            shippingState: $shippingAddress['state'] ?? null,
+            shippingPostalCode: $shippingAddress['postcode'] ?? null,
+            shippingCountry: $shippingCountry,
+            metadata: array_filter([
+                ...$context->metadata,
+                'customer_id' => $customer->id,
+            ], static fn (mixed $value): bool => $value !== null),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, string|null>
+     */
+    private function resolveAddress(array $payload, ?Address $defaultAddress): array
+    {
+        return [
+            'line1' => $this->cleanString($payload['line1'] ?? null) ?? $defaultAddress?->line1,
+            'city' => $this->cleanString($payload['city'] ?? null) ?? $defaultAddress?->city,
+            'state' => $this->cleanString($payload['state'] ?? null) ?? $defaultAddress?->state,
+            'postcode' => $this->cleanString($payload['postcode'] ?? null) ?? $defaultAddress?->postcode,
+            'country_code' => $this->cleanString($payload['country_code'] ?? $payload['country'] ?? null)
+                ?? $defaultAddress?->country_code
+                ?? $defaultAddress?->country,
+        ];
+    }
+
+    private function resolveEmail(PaymentSubjectContext $context): ?string
+    {
+        return $this->cleanString($context->billingData['email'] ?? null)
+            ?? $this->cleanString($context->shippingData['email'] ?? null)
+            ?? $this->cleanString($context->actor?->email);
+    }
+
+    private function resolveCustomerEmail(Customer $customer): ?string
+    {
+        return $customer->resolveEmail();
+    }
+
+    private function resolveCustomerPhone(Customer $customer): ?string
+    {
+        return $customer->resolvePhone();
+    }
+
+    private function cleanString(mixed $value): ?string
+    {
+        if ($value === null || ! is_scalar($value)) {
+            return null;
+        }
+
+        $cleaned = mb_trim((string) $value);
+
+        return $cleaned === '' ? null : $cleaned;
+    }
+}

@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Events\CustomerAddedToSegment;
 use AIArmada\Customers\Events\CustomerCreated;
-use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerAddedToSegment;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 
 describe('Customer Events', function (): void {
     describe('CustomerCreated', function (): void {

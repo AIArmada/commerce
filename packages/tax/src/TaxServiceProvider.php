@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax;
 
+use AIArmada\CommerceSupport\Support\SettingsMigrationPath;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
-use AIArmada\Tax\Services\RateApplier\StandardRateApplier;
 use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\RateApplier\StandardRateApplier;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Services\ZoneResolver\CompositeZoneResolver;
-use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -46,18 +47,6 @@ final class TaxServiceProvider extends PackageServiceProvider
 
     private function registerSettingsMigrationPath(): void
     {
-        $packagePath = __DIR__ . '/../database/settings';
-
-        if (! is_dir($packagePath)) {
-            return;
-        }
-
-        $paths = config('settings.migrations_paths', []);
-
-        if (! in_array($packagePath, $paths, true)) {
-            $paths[] = $packagePath;
-
-            config(['settings.migrations_paths' => $paths]);
-        }
+        SettingsMigrationPath::register($this->app, __DIR__ . '/../database/settings');
     }
 }

@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('CustomerNote Model', function (): void {
     beforeEach(function (): void {
@@ -14,6 +16,43 @@ describe('CustomerNote Model', function (): void {
             'email' => 'note-' . uniqid() . '@example.com',
             'status' => CustomerStatus::Active,
         ]);
+    });
+
+    it('rejects note updates through a different customer and ignores forged author and customer IDs', function (): void {
+        $other = Customer::create(['first_name' => 'Other', 'last_name' => 'Customer']);
+        $action = app(ManageCustomerNote::class);
+
+        $note = $action->create($this->customer, [
+            'content' => 'Protected note',
+            'customer_id' => $other->id,
+            'created_by' => 'forged',
+        ]);
+
+        expect($note->customer_id)->toBe($this->customer->id)
+            ->and($note->created_by)->toBeNull();
+
+        expect(fn () => $action->update($other, $note, ['is_pinned' => true]))
+            ->toThrow(AuthorizationException::class);
+
+        expect($note->fresh()->is_pinned)->toBeFalse();
+    });
+
+    it('rejects cancelled note creation, update and deletion', function (): void {
+        $action = app(ManageCustomerNote::class);
+        $note = $action->create($this->customer, ['content' => 'Original']);
+
+        CustomerNote::saving(static fn (CustomerNote $record): bool => $record->content !== 'Veto');
+        CustomerNote::deleting(static fn (CustomerNote $record): bool => $record->id !== $note->id);
+
+        expect(fn () => $action->create($this->customer, ['content' => 'Veto']))
+            ->toThrow(RuntimeException::class, 'Customer note creation was cancelled.');
+        expect(fn () => $action->update($this->customer, $note, ['content' => 'Veto']))
+            ->toThrow(RuntimeException::class, 'Customer note update was cancelled.');
+        expect(fn () => $action->delete($this->customer, $note))
+            ->toThrow(RuntimeException::class, 'Customer note deletion was cancelled.');
+
+        expect($note->fresh()->content)->toBe('Original')
+            ->and($this->customer->notes()->count())->toBe(1);
     });
 
     describe('Creation', function (): void {
@@ -100,7 +139,7 @@ describe('CustomerNote Model', function (): void {
                 'content' => 'Pin me',
             ]);
 
-            $note->pin();
+            app(ManageCustomerNote::class)->update($this->customer, $note, ['is_pinned' => true]);
 
             expect($note->fresh()->is_pinned)->toBeTrue();
         });
@@ -112,7 +151,7 @@ describe('CustomerNote Model', function (): void {
                 'is_pinned' => true,
             ]);
 
-            $note->unpin();
+            app(ManageCustomerNote::class)->update($this->customer, $note, ['is_pinned' => false]);
 
             expect($note->fresh()->is_pinned)->toBeFalse();
         });
