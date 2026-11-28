@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocDownloadController;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use Illuminate\Support\Facades\Storage;
@@ -69,8 +70,11 @@ it('downloads a document pdf with a safe filename', function (): void {
         'doc_type' => 'invoice',
         'doc_number' => "INV/2025\n0001",
     ]);
-    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
-    Storage::disk('local')->put('docs/' . $doc->id . '.pdf', 'pdf-bytes');
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    app(DocRenderService::class)->storePdf($doc);
 
     $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
 

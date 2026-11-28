@@ -9,7 +9,9 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -59,10 +61,12 @@ it('allows same-tenant document routes and blocks cross-tenant document routes',
         'doc_number' => 'INV/2025 0002',
     ]));
 
-    OwnerContext::withOwner($ownerA, fn () => $docA->forceFill(['pdf_path' => 'docs/' . $docA->id . '.pdf'])->save());
-    OwnerContext::withOwner($ownerB, fn () => $docB->forceFill(['pdf_path' => 'docs/' . $docB->id . '.pdf'])->save());
-    Storage::disk('local')->put('docs/' . $docA->id . '.pdf', 'pdf-bytes');
-    Storage::disk('local')->put('docs/' . $docB->id . '.pdf', 'pdf-bytes');
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->twice()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    OwnerContext::withOwner($ownerA, fn () => app(DocRenderService::class)->storePdf($docA));
+    OwnerContext::withOwner($ownerB, fn () => app(DocRenderService::class)->storePdf($docB));
 
     $this->actingAs($ownerA);
 

@@ -17,6 +17,7 @@ use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
@@ -451,8 +452,11 @@ test('mail attachments reuse an existing stored pdf', function (): void {
     Storage::fake('local');
 
     $doc = Doc::factory()->create(['doc_type' => 'invoice', 'doc_number' => 'INV-REUSE-1']);
-    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
-    Storage::disk('local')->put('docs/' . $doc->id . '.pdf', 'pdf-bytes');
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    app(DocRenderService::class)->storePdf($doc);
 
     $docEmail = DocEmail::query()->create([
         'doc_id' => $doc->id,
@@ -461,8 +465,6 @@ test('mail attachments reuse an existing stored pdf', function (): void {
         'body' => 'Body',
         'status' => EmailStatus::Queued,
     ]);
-
-    Pdf::shouldReceive('html')->never();
 
     $attachments = (new DocMail($docEmail, $doc, attachPdf: true))->attachments();
 

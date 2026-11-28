@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Payments\Actions\RecordDocPayment;
+use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\DocTotals;
@@ -91,12 +93,11 @@ test('downloadPdf returns existing path if exists', function (): void {
         'doc_type' => 'invoice',
         'doc_number' => 'INV-001',
     ]);
-    $doc->forceFill(['pdf_path' => 'docs/' . $doc->id . '.pdf'])->save();
-
-    Storage::disk('docs')->put('docs/' . $doc->id . '.pdf', 'dummy content');
-
-    // Should NOT call generatePdf (Pdf facade)
-    Pdf::shouldReceive('html')->never();
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->once()->andReturn('pdf-bytes');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    app(DocRenderService::class)->storePdf($doc);
 
     $path = $this->service->downloadPdf($doc);
     expect($path)->toBe('docs/' . $doc->id . '.pdf');
