@@ -23,7 +23,6 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\DocTypeKey;
-use AIArmada\Docs\Support\DocPdfPath;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +30,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -502,16 +500,6 @@ final class DocService
      */
     public function downloadPdf(Doc $doc): string
     {
-        if (config('docs.owner.enabled', false)) {
-            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
-        }
-
-        $docType = $doc->doc_type ?? 'invoice';
-
-        if ($doc->pdf_path === DocPdfPath::forDocument($docType, (string) $doc->getKey()) && Storage::disk($this->resolveStorageDisk($docType))->exists($doc->pdf_path)) {
-            return $doc->pdf_path;
-        }
-
         return $this->generatePdf($doc);
     }
 

@@ -65,6 +65,7 @@ use Throwable;
  * @property array<int, array<string, mixed>>|null $items
  * @property array<string, mixed>|null $metadata
  * @property string|null $pdf_path
+ * @property string|null $pdf_fingerprint
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read DocTemplate|null $template

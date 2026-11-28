@@ -16,6 +16,7 @@ use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -184,4 +185,36 @@ it('delegates PDF generation to a replaceable driver with normalized options', f
     app()->forgetInstance(DocRenderService::class);
 
     expect(app(DocRenderService::class)->renderPdf($doc))->toBe('custom PDF');
+});
+
+it('reuses identical PDF inputs and regenerates changed document and template content', function (): void {
+    config()->set('docs.storage.disk', 'local');
+    Storage::fake('local');
+    $template = DocTemplate::factory()->create([
+        'doc_type' => 'invoice',
+        'layout' => [['type' => DocTemplateBlockType::NotesTerms->value, 'data' => []]],
+    ]);
+    $doc = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'doc_template_id' => $template->id,
+        'notes' => 'Original notes',
+    ]);
+
+    $driver = Mockery::mock(PdfRenderer::class);
+    $driver->shouldReceive('render')->times(3)->andReturn('original', 'edited', 'template changed');
+    app()->instance(PdfRenderer::class, $driver);
+    app()->forgetInstance(DocRenderService::class);
+    $renderer = app(DocRenderService::class);
+
+    $path = $renderer->storePdf($doc);
+    expect($renderer->storePdf($doc))->toBe($path);
+    expect(Storage::disk('local')->get($path))->toBe('original');
+
+    $doc->update(['notes' => 'Edited notes']);
+    expect($renderer->storePdf($doc))->toBe($path);
+    expect(Storage::disk('local')->get($path))->toBe('edited');
+
+    $template->update(['layout' => [['type' => DocTemplateBlockType::DocumentHeader->value, 'data' => []]]]);
+    expect($renderer->storePdf($doc))->toBe($path);
+    expect(Storage::disk('local')->get($path))->toBe('template changed');
 });

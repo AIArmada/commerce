@@ -33,7 +33,7 @@ return response($pdfContent)
 ## Download PDF
 
 ```php
-// Generates the PDF if it does not exist, then returns the relative path
+// Reuses the PDF only when its rendered input fingerprint matches.
 $pdfPath = $docService->downloadPdf($document);
 ```
 

@@ -81,12 +81,11 @@ final class DocMail extends Mailable
             $docService = app(DocServiceInterface::class);
             $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
 
-            $pdfPath = $this->doc->pdf_path;
+            $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
+            $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));
 
             if ($pdfPath !== DocPdfPath::forDocument($this->doc->doc_type, (string) $this->doc->getKey()) || ! Storage::disk($disk)->exists($pdfPath)) {
-                $owner = OwnerContext::fromTypeAndIdOrFail($this->doc->owner_type, $this->doc->owner_id);
-
-                $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf((string) $this->doc->getKey(), save: true));
+                throw new \RuntimeException('Document PDF is unavailable.');
             }
 
             $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));

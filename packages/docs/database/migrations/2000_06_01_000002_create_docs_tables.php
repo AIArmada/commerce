@@ -67,6 +67,7 @@ return new class extends Migration
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->string('pdf_path')->nullable();
+            $table->char('pdf_fingerprint', 64)->nullable();
             $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'doc_number'], $docsTable . '_owner_doc_number_unique');

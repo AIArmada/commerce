@@ -68,20 +68,67 @@ final class DocRenderService
 
     public function storePdf(Doc $doc): string
     {
+        $id = (string) $doc->getKey();
+
         if (config('docs.owner.enabled', false)) {
-            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
+            OwnerWriteGuard::findOrFailForOwner(Doc::class, $id);
         }
 
-        $path = DocPdfPath::forDocument($doc->doc_type, (string) $doc->getKey());
-        $disk = $this->resolveStorageDisk($doc->doc_type ?? 'invoice');
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $snapshot = Doc::query()->forOwner()->findOrFail($id);
+            [$html, $options, $fingerprint] = $this->pdfInput($snapshot);
+            $path = DocPdfPath::forDocument($snapshot->doc_type, $id);
+            $disk = $this->resolveStorageDisk($snapshot->doc_type);
+            $storage = Storage::disk($disk);
 
-        if (! Storage::disk($disk)->put($path, $this->renderPdf($doc))) {
-            throw new RuntimeException('Document PDF could not be stored.');
+            if ($snapshot->pdf_path === $path && $snapshot->pdf_fingerprint === $fingerprint && $storage->exists($path)) {
+                return $path;
+            }
+
+            // Keep the expensive PDF driver outside the database transaction.
+            $bytes = $this->pdfRenderer->render($html, $options);
+
+            $published = $snapshot->getConnection()->transaction(function () use ($id, $fingerprint, $path, $disk, $bytes): bool {
+                $locked = Doc::query()->forOwner()->lockForUpdate()->findOrFail($id);
+                [, , $currentFingerprint] = $this->pdfInput($locked);
+
+                if ($currentFingerprint !== $fingerprint
+                    || DocPdfPath::forDocument($locked->doc_type, $id) !== $path
+                    || $this->resolveStorageDisk($locked->doc_type) !== $disk) {
+                    return false;
+                }
+
+                $storage = Storage::disk($disk);
+
+                if ($locked->pdf_path === $path && $locked->pdf_fingerprint === $fingerprint && $storage->exists($path)) {
+                    return true;
+                }
+
+                if (! $storage->put($path, $bytes)) {
+                    throw new RuntimeException('Document PDF could not be stored.');
+                }
+
+                $locked->forceFill(['pdf_path' => $path, 'pdf_fingerprint' => $fingerprint])->save();
+
+                return true;
+            });
+
+            if ($published) {
+                return $path;
+            }
         }
 
-        $doc->forceFill(['pdf_path' => $path])->save();
+        throw new RuntimeException('Document changed during PDF generation. Retry the request.');
+    }
 
-        return $path;
+    /** @return array{string, PdfRenderOptions, string} */
+    private function pdfInput(Doc $doc): array
+    {
+        $html = $this->renderHtml($doc, RenderAudience::Pdf)->toHtml();
+        $options = $this->resolvePdfOptions($doc);
+        $fingerprint = hash('sha256', json_encode([$html, $options, $this->pdfRenderer::class], JSON_THROW_ON_ERROR));
+
+        return [$html, $options, $fingerprint];
     }
 
     public function createShareLink(Doc $doc, ShareLinkData $data): DocShareLink
