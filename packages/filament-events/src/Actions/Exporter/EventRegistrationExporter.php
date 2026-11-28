@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Exporter;
 
-use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Platform\ModelResolver;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 final class EventRegistrationExporter extends Exporter
 {
-    protected static ?string $model = EventRegistration::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::registrationClass();
+    }
 
     public static function getColumns(): array
     {
