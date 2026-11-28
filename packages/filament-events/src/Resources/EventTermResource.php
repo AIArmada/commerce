@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
 use AIArmada\FilamentEvents\Contracts\TermFormExtension;
+use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\CreateEventTerm;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\EditEventTerm;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\ListEventTerms;
@@ -164,25 +165,7 @@ final class EventTermResource extends Resource
      */
     private static function configuredTermFormExtensions(): array
     {
-        $configuredExtensions = config('filament-events.resources.term_form_extensions', []);
-
-        if (! is_array($configuredExtensions)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach ($configuredExtensions as $extensionClass) {
-            if (! is_string($extensionClass) || ! is_a($extensionClass, TermFormExtension::class, true)) {
-                continue;
-            }
-
-            /** @var TermFormExtension $extension */
-            $extension = app($extensionClass);
-            $components = [...$components, ...$extension->components()];
-        }
-
-        return $components;
+        return ConfiguredFormExtensions::components('filament-events.resources.term_form_extensions', TermFormExtension::class);
     }
 
     public static function getPages(): array

@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -42,6 +43,9 @@ final readonly class ImportEventSessionAction
         if (! is_string($data['status'] ?? null) || ! array_key_exists($data['status'], OccurrenceStatus::options())) {
             throw ValidationException::withMessages(['status' => 'Invalid session status.']);
         }
+
+        Gate::forUser($actor)->authorize('create', ModelResolver::sessionClass());
+        Gate::forUser($actor)->authorize('update', $occurrence);
 
         try {
             return $this->create->handle($occurrence, Arr::only($data, [

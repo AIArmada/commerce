@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\States\EventStatus\Scheduled;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ModelResolver;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Arr;
@@ -69,6 +70,7 @@ final readonly class ManageEventAction
 
             if ($eventId === null) {
                 $event->status = Event::DRAFT;
+                $event->last_state_change_at = CarbonImmutable::now();
             }
 
             $event->save();

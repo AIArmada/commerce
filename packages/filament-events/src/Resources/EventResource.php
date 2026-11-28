@@ -14,6 +14,7 @@ use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
+use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -349,25 +350,7 @@ class EventResource extends Resource
      */
     protected static function configuredFormExtensions(): array
     {
-        $configuredExtensions = config('filament-events.resources.event_form_extensions', []);
-
-        if (! is_array($configuredExtensions)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach ($configuredExtensions as $extensionClass) {
-            if (! is_string($extensionClass) || ! is_a($extensionClass, EventFormExtension::class, true)) {
-                continue;
-            }
-
-            /** @var EventFormExtension $extension */
-            $extension = app($extensionClass);
-            $components = [...$components, ...$extension->components()];
-        }
-
-        return $components;
+        return ConfiguredFormExtensions::components('filament-events.resources.event_form_extensions', EventFormExtension::class);
     }
 
     /**

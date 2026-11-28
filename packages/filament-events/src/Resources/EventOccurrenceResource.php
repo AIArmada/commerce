@@ -13,6 +13,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
+use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -318,25 +319,7 @@ final class EventOccurrenceResource extends Resource
      */
     private static function configuredFormExtensions(): array
     {
-        $configuredExtensions = config('filament-events.resources.occurrence_form_extensions', []);
-
-        if (! is_array($configuredExtensions)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach ($configuredExtensions as $extensionClass) {
-            if (! is_string($extensionClass) || ! is_a($extensionClass, EventOccurrenceFormExtension::class, true)) {
-                continue;
-            }
-
-            /** @var EventOccurrenceFormExtension $extension */
-            $extension = app($extensionClass);
-            $components = [...$components, ...$extension->components()];
-        }
-
-        return $components;
+        return ConfiguredFormExtensions::components('filament-events.resources.occurrence_form_extensions', EventOccurrenceFormExtension::class);
     }
 
     public static function getPages(): array

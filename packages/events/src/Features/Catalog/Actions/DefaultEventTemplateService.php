@@ -67,7 +67,11 @@ final class DefaultEventTemplateService implements EventTemplateService
     private function searchPublishedEventTemplates(string $search): array
     {
         $query = $this->publishedEventQuery();
-        LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+        $pattern = LikeSearch::contains($search);
+        $query->where(static function (Builder $nested) use ($pattern): void {
+            LikeSearch::whereLike($nested, 'name', $pattern);
+            LikeSearch::orWhereLike($nested, 'code', $pattern);
+        });
 
         return $query->orderBy('name')->orderBy('id')->limit(50)
             ->get(['id', 'name', 'code'])

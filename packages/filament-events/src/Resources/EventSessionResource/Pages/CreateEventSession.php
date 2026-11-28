@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSessionResource\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
-use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Resources\EventSessionResource;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Gate;
+use LogicException;
 
 final class CreateEventSession extends CreateRecord
 {
@@ -21,21 +24,19 @@ final class CreateEventSession extends CreateRecord
      */
     protected function handleRecordCreation(array $data): EventSession
     {
-        $occurrence = EventOccurrence::query()
-            ->with('event')
+        $occurrence = ModelResolver::occurrenceClass()::query()
             ->findOrFail($data['event_occurrence_id']);
 
-        $this->resolveEventForWrite($occurrence->event_id);
+        if (! $occurrence instanceof EventOccurrence) {
+            throw new LogicException('Configured occurrence model must extend EventOccurrence.');
+        }
+
+        $event = EventWriteGuard::findOrFail($occurrence->event_id);
+        Gate::forUser(Filament::auth()->user())->authorize('create', EventSessionResource::getModel());
+        Gate::forUser(Filament::auth()->user())->authorize('update', $event);
+        Gate::forUser(Filament::auth()->user())->authorize('update', $occurrence);
 
         return app(CreateEventSessionAction::class)->handle($occurrence, $data);
     }
 
-    private function resolveEventForWrite(int | string $eventId): Event
-    {
-        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-            return Event::query()->findOrFail($eventId);
-        }
-
-        return OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
-    }
 }
