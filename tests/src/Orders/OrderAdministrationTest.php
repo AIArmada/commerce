@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Contracts\OrderAdministration;
-use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
@@ -38,14 +38,7 @@ it('protects partially paid orders from administrative deletion', function (): v
         'subtotal' => 10000,
         'grand_total' => 10000,
     ]);
-    $order->payments()->create([
-        'gateway' => 'manual',
-        'transaction_id' => 'partial-' . $order->getKey(),
-        'amount' => 5000,
-        'currency' => 'MYR',
-        'status' => PaymentStatus::Completed,
-        'paid_at' => now(),
-    ]);
+    app(RegisterOrderPayment::class)->execute($order, 'partial-' . $order->getKey(), 'manual', 5000);
 
     expect(fn () => app(OrderAdministration::class)->deleteDrafts([(string) $order->getKey()]))
         ->toThrow(LogicException::class);

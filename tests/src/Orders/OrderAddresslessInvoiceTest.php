@@ -14,14 +14,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-beforeEach(function (): void {
-    if (! Schema::hasColumn('orders', 'invoice_number')) {
-        Schema::table('orders', function (Blueprint $table): void {
-            $table->string('invoice_number')->nullable()->unique();
-        });
-    }
-});
-
 it('keeps a digital order addressless through persistence snapshot and invoice rendering', function (): void {
     config()->set('orders.owner.enabled', false);
     config()->set('docs.owner.enabled', false);

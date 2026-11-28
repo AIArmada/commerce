@@ -6,16 +6,6 @@ use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-beforeEach(function (): void {
-    if (! Schema::hasColumn('orders', 'invoice_number')) {
-        Schema::table('orders', function (Blueprint $table): void {
-            $table->string('invoice_number')->nullable()->unique();
-        });
-    }
-});
 
 it('mints an invoice number once and reuses it on later downloads', function (): void {
     $order = Order::create([

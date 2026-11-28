@@ -41,7 +41,7 @@ final class OrdersServiceProvider extends PackageServiceProvider
             ->discoversMigrations();
     }
 
-    public function registeringPackage(): void
+    public function packageRegistered(): void
     {
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));

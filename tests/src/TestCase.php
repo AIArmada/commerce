@@ -51,6 +51,8 @@ use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Moderation\ModerationServiceProvider;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Orders\Platform\FeatureCatalog as OrdersFeatureCatalog;
+use AIArmada\Orders\Platform\FeatureModule as OrdersFeatureModule;
 use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\References\ReferencesServiceProvider;
 use AIArmada\Rewards\RewardsServiceProvider;
@@ -131,6 +133,18 @@ abstract class TestCase extends Orchestra
         $this->setUpDatabase();
 
         $this->bindDefaultOwnerResolver();
+
+        // Most unit tests intentionally do not boot Orders event integrations.
+        // Register the same feature modules as the production provider so
+        // domain contracts are available without enabling those listeners.
+        $catalog = OrdersFeatureCatalog::load(__DIR__ . '/../../packages/orders', 'AIArmada\\Orders');
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make('AIArmada\\Orders\\Features\\' . $feature . '\\FeatureModule');
+            if (! $module instanceof OrdersFeatureModule) {
+                throw new \LogicException('Invalid Orders feature module: ' . $feature);
+            }
+            $module->register($this->app);
+        }
 
         // Enforce deterministic CHIP owner-scoping defaults for tests.
         // Some environments may have CHIP_OWNER_* env vars set, which would otherwise change behavior.
@@ -1325,6 +1339,7 @@ abstract class TestCase extends Orchestra
         Schema::create('orders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('order_number')->unique();
+            $table->string('invoice_number')->nullable()->unique();
             $table->string('intake_source')->nullable();
             $table->string('intake_id')->nullable();
             $table->unique(['owner_type', 'owner_id', 'intake_source', 'intake_id'], 'orders_intake_unique');
