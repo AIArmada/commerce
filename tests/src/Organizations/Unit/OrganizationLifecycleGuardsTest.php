@@ -23,6 +23,7 @@ use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 uses(OrganizationsTestCase::class);
 
@@ -177,4 +178,42 @@ it('authorizes ordinary organization member writes against current membership', 
         ->toThrow(AuthorizationException::class);
 
     expect($organization->members()->whereKey($target->getKey())->exists())->toBeTrue();
+});
+
+it('authorizes member email lookup before resolving the target', function (): void {
+    $creator = User::factory()->create();
+    $viewer = User::factory()->create();
+    $target = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Private Member Lookup']);
+    $action = app(AddOrganizationMemberAction::class);
+    $action->handle($organization, $creator, $viewer, MemberRole::Viewer);
+
+    expect(fn () => $action->handle($organization, $viewer, $target->email, MemberRole::Viewer))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $action->handle($organization, $viewer, 'missing@example.test', MemberRole::Viewer))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $action->handle($organization, $creator, 'missing@example.test', MemberRole::Viewer))
+        ->toThrow(ValidationException::class);
+
+    $action->handle($organization, $creator, mb_strtoupper($target->email), MemberRole::Viewer);
+
+    expect($organization->members()->whereKey($target->getKey())->exists())->toBeTrue();
+});
+
+it('rejects membership mutations using an unrelated model with the same key', function (): void {
+    $creator = User::factory()->create();
+    $member = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Member Model Guard']);
+    app(AddOrganizationMemberAction::class)->handle($organization, $creator, $member, MemberRole::Viewer);
+    $unrelated = new Organization;
+    $unrelated->setAttribute('id', $member->getKey());
+
+    expect(fn () => app(AddOrganizationMemberAction::class)->handle($organization, $creator, $unrelated, MemberRole::Admin))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(ChangeOrganizationMemberRoleAction::class)->handle($organization, $creator, $unrelated, MemberRole::Admin))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(RemoveOrganizationMemberAction::class)->handle($organization, $creator, $unrelated))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($organization->members()->whereKey($member->getKey())->exists())->toBeTrue();
 });

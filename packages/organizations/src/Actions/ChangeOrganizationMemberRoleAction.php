@@ -11,6 +11,7 @@ use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final readonly class ChangeOrganizationMemberRoleAction
 {
@@ -29,7 +30,13 @@ final readonly class ChangeOrganizationMemberRoleAction
                 throw new AuthorizationException('Use the ownership transfer workflow to assign an owner.');
             }
 
-            $this->action->handle($organization, $member, $role);
+            $resolved = $organization->members()->whereKey($member->getKey())->first();
+
+            if ($resolved === null || ! $resolved->is($member)) {
+                throw new InvalidArgumentException('The member must use the organization member model.');
+            }
+
+            $this->action->handle($organization, $resolved, $role);
         });
     }
 }

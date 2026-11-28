@@ -11,6 +11,8 @@ use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final readonly class AddOrganizationMemberAction
 {
@@ -19,7 +21,7 @@ final readonly class AddOrganizationMemberAction
         private AddMemberAction $action,
     ) {}
 
-    public function handle(Organization $organization, Model $actor, Model $member, MemberRole $role): void
+    public function handle(Organization $organization, Model $actor, Model | string $member, MemberRole $role): void
     {
         DB::transaction(function () use ($organization, $actor, $member, $role): void {
             $organization = $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
@@ -29,7 +31,20 @@ final readonly class AddOrganizationMemberAction
                 throw new AuthorizationException('Use the ownership transfer workflow to assign an owner.');
             }
 
-            $this->action->handle($organization, $member, $role);
+            $query = $organization->members()->getRelated()->newQuery();
+            $resolved = is_string($member)
+                ? $query->whereRaw('LOWER(email) = ?', [mb_strtolower(mb_trim($member))])->first()
+                : $query->whereKey($member->getKey())->first();
+
+            if ($member instanceof Model && ($resolved === null || ! $resolved->is($member))) {
+                throw new InvalidArgumentException('The member must use the organization member model.');
+            }
+
+            if ($resolved === null) {
+                throw ValidationException::withMessages(['email' => 'Unable to add this member.']);
+            }
+
+            $this->action->handle($organization, $resolved, $role);
         });
     }
 }

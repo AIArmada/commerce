@@ -44,15 +44,12 @@ final class MembersRelationManager extends RelationManager
                         $organization = self::ownerOrganization($livewire);
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
-                        // Normalized lookup with a generic failure so the
-                        // response never reveals whether an email exists.
-                        $email = mb_strtolower(mb_trim((string) ($data['email'] ?? '')));
-                        $member = $organization->members()->getModel()->newQuery()
-                            ->whereRaw('LOWER(email) = ?', [$email])
-                            ->first();
-
-                        abort_unless($member instanceof Model, 422, 'Unable to add this member.');
-                        app(AddOrganizationMemberAction::class)->handle($organization, $actor, $member, MemberRole::from($data['role']));
+                        app(AddOrganizationMemberAction::class)->handle(
+                            $organization,
+                            $actor,
+                            (string) $data['email'],
+                            MemberRole::from($data['role']),
+                        );
                     }),
             ])
             ->actions([
