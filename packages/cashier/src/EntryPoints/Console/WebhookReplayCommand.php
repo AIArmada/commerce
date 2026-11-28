@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cashier\Console\Commands;
+namespace AIArmada\Cashier\EntryPoints\Console;
 
 use AIArmada\Cashier\Actions\SyncWebhook;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;

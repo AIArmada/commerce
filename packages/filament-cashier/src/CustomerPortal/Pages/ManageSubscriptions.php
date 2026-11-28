@@ -9,7 +9,7 @@ use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
-use AIArmada\FilamentCashier\Support\CustomerSubscriptionsQuery;
+use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;

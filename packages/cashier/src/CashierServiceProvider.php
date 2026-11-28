@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
-use AIArmada\Cashier\Console\Commands\WebhookReplayCommand;
+use AIArmada\Cashier\EntryPoints\Console\WebhookReplayCommand;
 use AIArmada\Cashier\Facades\Cashier as CashierFacade;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
 use AIArmada\Cashier\Support\GatewayDetector;

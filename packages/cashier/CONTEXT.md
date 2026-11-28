@@ -42,6 +42,7 @@ keywords:
 - Owner/security: No HasOwner models; OwnerScopedQuery helper only.
 
 ## Key surfaces
+- Queries: `Queries/CustomerSubscriptionsQuery` supplies the customer portal.
 - Support DTOs: `UnifiedInvoice`, `UnifiedSubscription`
 - Actions/Services: `Actions/CancelSubscription`, `Actions/CreatePayment`, `Actions/CreateSubscription`, `Actions/RefundPayment`, `Actions/SyncWebhook`, `Support/CartIntegrationRegistrar`, `Support/CartManagerWithPayment`, `Support/GatewayDetector`
 - Config `cashier.php`: `models`, `billable`, `default`, `currency`, `locale`, `gateways`, and cart metadata/integration switches

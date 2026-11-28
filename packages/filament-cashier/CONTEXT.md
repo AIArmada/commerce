@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `UnifiedInvoiceResource`, `UnifiedSubscriptionResource`
-- Actions/Services: `Support/CustomerSubscriptionsQuery`
+- Actions/Services: `cashier/src/Queries/CustomerSubscriptionsQuery`
 - Config `filament-cashier.php`: `navigation`, `group`, `sort`, `tables`, `polling_interval`, `date_format`, `features`, `dashboard`, `subscriptions`, `invoices`
 
 ## Docs map
