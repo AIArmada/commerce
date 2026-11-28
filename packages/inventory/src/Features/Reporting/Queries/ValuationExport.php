@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
-use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Valuation\Api\ValuationExportRows;
 use Carbon\CarbonImmutable;
 
 /**
  * Export valuation snapshots for financial reporting.
  */
-final class ValuationExport implements ExportableInterface
+final readonly class ValuationExport implements ExportableInterface
 {
+    private CarbonImmutable $startDate;
+
+    private CarbonImmutable $endDate;
+
     public function __construct(
-        private ?CarbonImmutable $startDate = null,
-        private ?CarbonImmutable $endDate = null,
+        ?CarbonImmutable $startDate = null,
+        ?CarbonImmutable $endDate = null,
     ) {
-        $this->startDate ??= CarbonImmutable::now()->subMonths(12);
-        $this->endDate ??= CarbonImmutable::now();
+        $this->endDate = $endDate ?? CarbonImmutable::now();
+        $this->startDate = $startDate ?? $this->endDate->subMonths(12);
     }
 
     public function getHeaders(): array
@@ -40,35 +43,7 @@ final class ValuationExport implements ExportableInterface
 
     public function getRows(): iterable
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryValuationSnapshot::query()
-                ->with('location:id,name')
-                ->whereBetween('snapshot_date', [$this->startDate, $this->endDate])
-                ->orderBy('snapshot_date', 'desc')
-        );
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $query->whereNotNull('location_id');
-            }
-        }
-
-        foreach ($query->orderBy('id')->lazy(500) as $snapshot) {
-            yield [
-                $snapshot->snapshot_date->format('Y-m-d'),
-                $snapshot->costing_method->label(),
-                $snapshot->location->name ?? 'All Locations',
-                $snapshot->sku_count,
-                $snapshot->total_quantity,
-                $snapshot->total_value_minor / 100,
-                $snapshot->average_unit_cost_minor / 100,
-                $snapshot->currency,
-                $snapshot->variance_from_previous_minor !== null ? $snapshot->variance_from_previous_minor / 100 : null,
-                $snapshot->created_at->format('Y-m-d H:i:s'),
-            ];
-        }
+        return app(ValuationExportRows::class)->rows($this->startDate, $this->endDate);
     }
 
     public function getFilename(): string

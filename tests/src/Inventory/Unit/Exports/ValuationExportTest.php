@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\ExportableInterface;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Reporting\Queries\ValuationExport;
@@ -203,5 +205,50 @@ describe('ValuationExport', function (): void {
         expect($rows[0][3])->toBe(10); // Most recent first (5 days ago)
         expect($rows[1][3])->toBe(5); // 10 days ago
         expect($rows[2][3])->toBe(3); // 15 days ago
+    });
+});
+
+it('includes both boundary dates regardless of the supplied time of day', function (): void {
+    $start = CarbonImmutable::parse('2025-03-01 15:00:00');
+    $end = CarbonImmutable::parse('2025-03-02 01:00:00');
+
+    foreach (['2025-02-28', '2025-03-01', '2025-03-02', '2025-03-03'] as $date) {
+        InventoryValuationSnapshot::factory()->create([
+            'location_id' => $this->location->id,
+            'costing_method' => CostingMethod::Fifo,
+            'snapshot_date' => CarbonImmutable::parse($date),
+        ]);
+    }
+
+    $rows = iterator_to_array((new ValuationExport($start, $end))->getRows());
+
+    expect(array_column($rows, 0))->toBe(['2025-03-02', '2025-03-01']);
+});
+
+it('exports the current owner all-location snapshot without exposing other owners', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', false);
+
+    $ownerA = InventoryItem::create(['name' => 'Valuation owner A']);
+    $ownerB = InventoryItem::create(['name' => 'Valuation owner B']);
+
+    foreach ([[$ownerA, 11], [$ownerB, 22], [null, 33]] as [$owner, $skuCount]) {
+        OwnerContext::withOwner($owner, function () use ($owner, $skuCount): void {
+            InventoryValuationSnapshot::factory()->create([
+                'owner_type' => $owner?->getMorphClass(),
+                'owner_id' => $owner?->getKey(),
+                'location_id' => null,
+                'snapshot_date' => CarbonImmutable::now(),
+                'sku_count' => $skuCount,
+            ]);
+        });
+    }
+
+    OwnerContext::withOwner($ownerA, function (): void {
+        $rows = iterator_to_array((new ValuationExport)->getRows());
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0][2])->toBe('All Locations')
+            ->and($rows[0][3])->toBe(11);
     });
 });
