@@ -8,6 +8,7 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -89,7 +90,7 @@ final class ApplyForMembershipAction
         MembershipApplicationSubmitted::dispatch($application);
 
         if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifySubmitted($application);
+            app(MembershipApplicationNotifier::class)->notifySubmitted(MembershipApplicationMapper::snapshot($application));
         }
 
         return $application;

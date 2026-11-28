@@ -10,6 +10,7 @@ use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipApplicationApproved;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -71,7 +72,7 @@ final class ApproveMembershipApplicationAction
         MembershipApplicationApproved::dispatch($approvedApplication);
 
         if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyApproved($approvedApplication);
+            app(MembershipApplicationNotifier::class)->notifyApproved(MembershipApplicationMapper::snapshot($approvedApplication));
         }
     }
 

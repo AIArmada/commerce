@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Contracts;
 
-use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Data\MembershipApplicationData;
 
 interface MembershipApplicationNotifier
 {
-    public function notifySubmitted(MembershipApplication $application): void;
+    public function notifySubmitted(MembershipApplicationData $application): void;
 
-    public function notifyApproved(MembershipApplication $application): void;
+    public function notifyApproved(MembershipApplicationData $application): void;
 
-    public function notifyRejected(MembershipApplication $application): void;
+    public function notifyRejected(MembershipApplicationData $application): void;
 }

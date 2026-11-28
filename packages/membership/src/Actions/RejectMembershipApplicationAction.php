@@ -9,6 +9,7 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationRejected;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,7 @@ final class RejectMembershipApplicationAction
         MembershipApplicationRejected::dispatch($rejectedApplication);
 
         if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyRejected($rejectedApplication);
+            app(MembershipApplicationNotifier::class)->notifyRejected(MembershipApplicationMapper::snapshot($rejectedApplication));
         }
     }
 
