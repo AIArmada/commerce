@@ -237,7 +237,7 @@ describe('BackorderService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'quantity_on_hand' => 60,
-            'quantity_reserved' => 10, // quantity_available = 50
+            'quantity_reserved' => 10, // available = 50
         ]);
 
         InventoryBackorder::factory()->create([
@@ -252,6 +252,37 @@ describe('BackorderService', function (): void {
         $fulfillable = $this->service->getFulfillableBackorders();
 
         expect($fulfillable)->toHaveCount(1);
+    });
+
+    it('does not subtract an over-reserved location from sellable stock elsewhere', function (): void {
+        $otherLocation = InventoryLocation::factory()->create(['is_active' => true]);
+
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+            'quantity_reserved' => 0,
+        ]);
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $otherLocation->id,
+            'quantity_on_hand' => 0,
+            'quantity_reserved' => 15,
+        ]);
+
+        $backorder = InventoryBackorder::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => null,
+            'quantity_requested' => 10,
+            'quantity_fulfilled' => 0,
+            'quantity_cancelled' => 0,
+            'status' => Pending::class,
+        ]);
+
+        expect($this->service->getFulfillableBackorders()->modelKeys())->toContain($backorder->getKey());
     });
 
     it('update promised date', function (): void {

@@ -222,7 +222,7 @@ final class NearestLocationStrategy
                 break;
             }
 
-            $available = $level->quantity_available;
+            $available = $level->available;
             $allocate = min($available, $remaining);
 
             if ($allocate > 0) {

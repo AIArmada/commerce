@@ -51,7 +51,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read int $available
  * @property-read int $current_quantity
  * @property-read int $quantity
- * @property-read int $quantity_available
  * @property-read int $sku_count
  * @property-read int $total_quantity
  * @property-read int $max_quantity
@@ -155,22 +154,6 @@ final class InventoryLevel extends Model implements Auditable
     public function getAvailableAttribute(): int
     {
         return max(0, $this->quantity_on_hand - $this->quantity_reserved);
-    }
-
-    /**
-     * Alias for available (for compatibility).
-     */
-    public function getQuantityAvailableAttribute(): int
-    {
-        return $this->available;
-    }
-
-    /**
-     * Get the available quantity (explicit method for Filament compatibility).
-     */
-    public function getAvailableQuantity(): int
-    {
-        return $this->available;
     }
 
     /**

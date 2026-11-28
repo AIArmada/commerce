@@ -321,8 +321,8 @@ final class BackorderService
                 $query->where('location_id', $backorder->location_id);
             }
 
-            // quantity_available is computed as (quantity_on_hand - quantity_reserved)
-            $available = (int) $query->sum(DB::raw('quantity_on_hand - quantity_reserved'));
+            // Sum sellable units per location; a deficit elsewhere cannot consume this stock.
+            $available = (int) $query->sum(DB::raw('CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END'));
 
             return $available >= $backorder->quantityRemaining();
         });

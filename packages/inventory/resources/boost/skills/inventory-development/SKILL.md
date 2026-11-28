@@ -16,3 +16,5 @@ A located serial must match its batch's inventory identity and location. Batch t
 Composite cart and order stock demand belongs to `AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver`. The feature resolves frozen component snapshots and aggregates demand by actual inventory identity before allocating or deducting stock.
 
 Use the pure `AIArmada\Inventory\Data\AllocationStrategy` enum when selecting allocation strategies across the stock and reservation boundaries.
+
+Read per-location sellable quantity through the canonical `InventoryLevel::$available` attribute. Aggregate availability by clamping each location's on-hand minus reserved quantity to zero before summing.

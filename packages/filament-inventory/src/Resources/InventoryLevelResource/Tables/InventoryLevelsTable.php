@@ -58,7 +58,7 @@ final class InventoryLevelsTable
 
                 TextColumn::make('available')
                     ->label('Available')
-                    ->state(fn (InventoryLevel $record): int => $record->getAvailableQuantity())
+                    ->state(fn (InventoryLevel $record): int => $record->available)
                     ->numeric()
                     ->alignCenter()
                     ->color(fn (int $state, InventoryLevel $record): string => match (true) {

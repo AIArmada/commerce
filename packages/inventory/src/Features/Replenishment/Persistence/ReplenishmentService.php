@@ -113,7 +113,7 @@ final class ReplenishmentService
                 $avgDailyDemand = 1;
             }
 
-            $currentStock = $level->quantity_available;
+            $currentStock = $level->available;
             $reorderPoint = ($level->safety_stock ?? 0) + ($avgDailyDemand * $leadTimeDays);
             $daysUntilStockout = $avgDailyDemand > 0 ? (int) floor($currentStock / $avgDailyDemand) : null;
             $expectedStockout = $daysUntilStockout !== null ? today()->addDays($daysUntilStockout) : null;
@@ -344,7 +344,7 @@ final class ReplenishmentService
     ): int {
         $safetyStock = $level->safety_stock ?? 0;
         $maxStock = $level->max_stock ?? ($safetyStock * 4);
-        $currentStock = $level->quantity_available;
+        $currentStock = $level->available;
 
         $orderUpToLevel = $maxStock;
 

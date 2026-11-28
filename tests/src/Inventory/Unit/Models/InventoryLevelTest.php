@@ -54,15 +54,6 @@ describe('InventoryLevel', function (): void {
         expect($level->available)->toBe(0);
     });
 
-    it('get available quantity method', function (): void {
-        $level = InventoryLevel::factory()->create([
-            'quantity_on_hand' => 50,
-            'quantity_reserved' => 10,
-        ]);
-
-        expect($level->getAvailableQuantity())->toBe(40);
-    });
-
     it('is low stock returns true when below threshold', function (): void {
         $level = InventoryLevel::factory()->create([
             'quantity_on_hand' => 5,
