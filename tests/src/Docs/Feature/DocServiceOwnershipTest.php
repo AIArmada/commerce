@@ -9,7 +9,10 @@ use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -133,5 +136,34 @@ test('orphaned document owners cannot be silently treated as global', function (
     OwnerContext::withOwner($owner, function () use ($doc): void {
         expect(fn () => app(DocumentVersions::class)->capture((string) $doc->getKey()))
             ->toThrow(ModelNotFoundException::class);
+    });
+});
+
+test('payment recording and document deletion reject mismatched financial evidence', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($other): void {
+        $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100, 'currency' => 'MYR']);
+        $docId = (string) $doc->getKey();
+        $recorder = app(DocumentPaymentRecorder::class);
+        $payment = ['amount_minor' => 25, 'payment_method' => 'cash', 'transaction_id' => 'owner-boundary-test'];
+        $paymentId = $recorder->record($docId, $payment);
+
+        $model = new DocPayment;
+        $model->getConnection()->table($model->getTable())->where('id', $paymentId)->update([
+            'owner_type' => $other->getMorphClass(),
+            'owner_id' => $other->getKey(),
+        ]);
+
+        expect(fn () => $recorder->record($docId, $payment))
+            ->toThrow(LogicException::class, 'ownership is inconsistent')
+            ->and(fn () => $recorder->record($docId, ['amount_minor' => 75, 'payment_method' => 'cash']))
+            ->toThrow(LogicException::class, 'ownership is inconsistent')
+            ->and(fn () => app(DocumentLifecycle::class)->delete([$docId]))
+            ->toThrow(LogicException::class, 'payment or e-invoice evidence');
+
+        expect($doc->refresh()->status->equals(PartiallyPaid::class))->toBeTrue()
+            ->and($doc->payments()->withoutOwnerScope()->count())->toBe(1);
     });
 });

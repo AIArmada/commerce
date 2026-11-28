@@ -13,8 +13,10 @@ use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
+use LogicException;
 use Throwable;
 
 final readonly class RecordDocPayment implements DocumentPaymentRecorder
@@ -59,6 +61,8 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 if (! is_string($paymentMethod) || ! array_key_exists($paymentMethod, config('docs.payment_methods', []))) {
                     throw new InvalidArgumentException('Payment payment_method is not supported.');
                 }
+
+                $this->assertPaymentOwners($lockedDoc);
 
                 $transactionId = $paymentData['transaction_id'] ?? null;
 
@@ -134,6 +138,24 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 return (string) $payment->getKey();
             });
         });
+    }
+
+    private function assertPaymentOwners(Doc $doc): void
+    {
+        $mismatched = $doc->payments()->withoutOwnerScope()
+            ->where(function (Builder $query) use ($doc): void {
+                foreach (['owner_type' => $doc->owner_type, 'owner_id' => $doc->owner_id] as $column => $value) {
+                    if ($value === null) {
+                        $query->orWhereNotNull($column);
+                    } else {
+                        $query->orWhereNull($column)->orWhere($column, '<>', $value);
+                    }
+                }
+            })->exists();
+
+        if ($mismatched) {
+            throw new LogicException('Document payment ownership is inconsistent.');
+        }
     }
 
     private static function resolvePaidAt(mixed $value): CarbonImmutable

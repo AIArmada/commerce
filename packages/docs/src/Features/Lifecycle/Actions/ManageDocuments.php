@@ -43,7 +43,7 @@ final readonly class ManageDocuments implements DocumentLifecycle
             foreach ($docIds as $docId) {
                 $doc = $this->lockDocument($docId);
                 OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc): void {
-                    if ($doc->isPaid() || $doc->paid_at !== null || $doc->payments()->exists() || $doc->eInvoiceSubmission()->exists()) {
+                    if ($doc->isPaid() || $doc->paid_at !== null || $doc->payments()->withoutOwnerScope()->exists() || $doc->eInvoiceSubmission()->withoutOwnerScope()->exists()) {
                         throw new LogicException('Documents with payment or e-invoice evidence cannot be deleted.');
                     }
 
