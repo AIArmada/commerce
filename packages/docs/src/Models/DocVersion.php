@@ -101,10 +101,7 @@ final class DocVersion extends Model implements Auditable
             );
         }
 
-        $restored = app(DocService::class)->update($doc, $this->snapshot ?? []);
-
-        $restored->versions()->latest('version_number')->first()
-            ?->update(['change_summary' => $summary ?? "Restored version {$this->version_number}"]);
+        app(DocService::class)->update($doc, $this->snapshot ?? [], $summary ?? "Restored version {$this->version_number}");
     }
 
     /**

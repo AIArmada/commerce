@@ -260,7 +260,7 @@ final class DocService implements DocServiceInterface
      *
      * @param  array<string, mixed>  $data
      */
-    public function update(Doc $doc, array $data): Doc
+    public function update(Doc $doc, array $data, string $summary = 'Document updated'): Doc
     {
         if (config('docs.owner.enabled', false)) {
             OwnerWriteGuard::findOrFailForOwner(
@@ -272,7 +272,7 @@ final class DocService implements DocServiceInterface
             );
         }
 
-        return $doc->getConnection()->transaction(function () use ($doc, $data): Doc {
+        return $doc->getConnection()->transaction(function () use ($doc, $data, $summary): Doc {
             $doc = $doc->newQuery()
                 ->forOwner(OwnerContext::resolve(), (bool) config('docs.owner.include_global', false))
                 ->lockForUpdate()
@@ -359,7 +359,7 @@ final class DocService implements DocServiceInterface
             }
 
             // Create version snapshot
-            $this->createVersion($doc, 'Document updated');
+            $this->createVersion($doc, $summary);
 
             return $doc->fresh() ?? $doc;
         });

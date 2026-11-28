@@ -39,7 +39,7 @@ interface DocServiceInterface
      *
      * @param  array<string, mixed>  $data
      */
-    public function update(Doc $doc, array $data): Doc;
+    public function update(Doc $doc, array $data, string $summary = 'Document updated'): Doc;
 
     /**
      * Convert a document to another type.

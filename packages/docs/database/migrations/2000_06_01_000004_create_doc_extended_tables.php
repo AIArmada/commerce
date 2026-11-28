@@ -33,6 +33,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
+            $table->unique(['doc_id', 'transaction_id'], $paymentsTable . '_doc_transaction_unique');
             $table->index('doc_id', $paymentsTable . '_doc_id_index');
             $table->index('paid_at', $paymentsTable . '_paid_at_index');
         });

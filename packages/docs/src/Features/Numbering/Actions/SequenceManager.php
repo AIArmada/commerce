@@ -182,11 +182,10 @@ final readonly class SequenceManager implements DocumentSequence
         try {
             return DB::transaction(fn (): DocSequence => $this->createDefaultSequence($docType, $owner));
         } catch (UniqueConstraintViolationException $exception) {
-
             $sequence = $this->getActiveSequence($docType, $owner);
 
             if (! $sequence instanceof DocSequence) {
-                throw new RuntimeException("Unable to resolve a document sequence for type [{$docType}].");
+                throw new RuntimeException("Unable to resolve a document sequence for type [{$docType}].", previous: $exception);
             }
 
             return $sequence;
