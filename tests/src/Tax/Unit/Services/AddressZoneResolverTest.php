@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Support\Facades\DB;
 

@@ -161,9 +161,7 @@ packages/tax/
     │       └── RejectExemptionAction.php
     ├── Contracts/
     │   ├── TaxCalculatorInterface.php
-    │   ├── TaxRateApplierInterface.php
     │   ├── TaxZoneResolverCacheInterface.php
-    │   └── TaxZoneResolverInterface.php
     ├── Data/
     │   └── TaxResultData.php        # Result DTO
     ├── Enums/
@@ -186,6 +184,7 @@ packages/tax/
     ├── Services/
     │   ├── TaxCalculator.php        # Main calculation engine
     │   ├── RateApplier/
+    │   │   ├── TaxRateApplierInterface.php
     │   │   └── StandardRateApplier.php
     │   └── ZoneResolver/
     │       ├── AddressZoneResolver.php

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Contracts;
+namespace AIArmada\Tax\Services\ZoneResolver;
 
 use AIArmada\Tax\Models\TaxZone;
 

@@ -6,8 +6,8 @@ namespace AIArmada\Tax\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
-use AIArmada\Tax\Contracts\TaxRateApplierInterface;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Events\TaxCalculated;
 use AIArmada\Tax\Events\TaxExemptionApplied;

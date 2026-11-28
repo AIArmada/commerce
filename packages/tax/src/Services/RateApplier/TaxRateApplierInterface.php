@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Contracts;
+namespace AIArmada\Tax\Services\RateApplier;
 
 use AIArmada\Tax\Models\TaxRate;
 use Illuminate\Database\Eloquent\Collection;

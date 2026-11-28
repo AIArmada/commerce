@@ -403,7 +403,7 @@ public function getActivitylogOptions(): LogOptions
 Responsible for applying one or more tax rates to an amount and computing the total tax with a breakdown.
 
 ```php
-use AIArmada\Tax\Contracts\TaxRateApplierInterface;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
 use AIArmada\Tax\Models\TaxRate;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -467,7 +467,7 @@ It handles:
 Responsible for resolving a `TaxZone` from a zone ID and/or address context.
 
 ```php
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 
 class CheckoutService
 {

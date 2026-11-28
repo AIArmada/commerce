@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Database\Factories\TaxZoneFactory;
 use AIArmada\Tax\Enums\ZoneType;
 use Illuminate\Auth\Access\AuthorizationException;

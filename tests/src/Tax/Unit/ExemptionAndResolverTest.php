@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Tax\Actions\Exemption\RequestTaxExemption;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
