@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherAvailability;
 use AIArmada\Vouchers\States\Paused;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -30,7 +30,8 @@ final class ActivateVoucherAction extends Action
         $this->visible(fn (Voucher $record): bool => $record->status instanceof Paused && ! $record->isExpired());
 
         $this->action(function (Voucher $record): void {
-            app(VoucherAvailability::class)->handle($record, true);
+            app(VoucherAvailability::class)->handle((string) $record->getKey(), true);
+            $record->refresh();
 
             Notification::make()
                 ->title('Voucher activated')

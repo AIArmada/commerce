@@ -5,16 +5,21 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherAvailability;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -247,4 +252,36 @@ it('enforces the manual redemption flag at the usage write boundary', function (
         channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
     ))->toThrow(ManualRedemptionNotAllowedException::class);
     expect($voucher->usages()->count())->toBe(0);
+});
+
+it('changes availability only for the exact owned voucher identity', function (): void {
+    config(['vouchers.owner.enabled' => true]);
+
+    $owner = TestOwner::create(['name' => 'Availability Owner']);
+    $other = TestOwner::create(['name' => 'Other Availability Owner']);
+
+    $data = [
+        'code' => 'AVAILABILITY',
+        'name' => 'Availability Voucher',
+        'type' => VoucherType::Fixed,
+        'value' => 100,
+        'currency' => 'USD',
+        'status' => 'active',
+    ];
+
+    $voucher = OwnerContext::withOwner($owner, fn (): Voucher => Voucher::create($data));
+    $foreign = OwnerContext::withOwner($other, fn (): Voucher => Voucher::create($data));
+
+    OwnerContext::withOwner($owner, function () use ($voucher, $foreign): void {
+        $availability = app(VoucherAvailability::class);
+        expect(fn () => $availability->handle($foreign->id, false))->toThrow(AuthorizationException::class);
+
+        $availability->handle($voucher->id, false);
+        expect($voucher->refresh()->status)->toBeInstanceOf(Paused::class);
+
+        $availability->handle($voucher->id, true);
+        expect($voucher->refresh()->status)->toBeInstanceOf(Active::class);
+    });
+
+    OwnerContext::withOwner($other, fn () => expect($foreign->refresh()->status)->toBeInstanceOf(Active::class));
 });

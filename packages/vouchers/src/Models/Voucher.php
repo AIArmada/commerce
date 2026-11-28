@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Runtime\VoucherDepletion;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDepletion;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
@@ -318,7 +318,8 @@ class Voucher extends Model implements Auditable
      */
     public function checkIfDepleted(): void
     {
-        app(VoucherDepletion::class)->handle($this);
+        app(VoucherDepletion::class)->handle((string) $this->getKey());
+        $this->refresh();
     }
 
     /**
