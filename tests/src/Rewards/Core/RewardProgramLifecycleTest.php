@@ -7,11 +7,13 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use AIArmada\Rewards\Features\Programs\Queries\RewardVersionResolver;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 it('creates disabled draft programs with explicit ownership scope', function (): void {
@@ -140,4 +142,48 @@ it('freezes published versions and blocks program deletion', function (): void {
     expect(fn () => $version->delete())->toThrow(LogicException::class);
     expect(fn () => $version->program->delete())->toThrow(LogicException::class);
     expect(fn () => $version->program->forceFill(['mode' => RewardProgramMode::Cash])->save())->toThrow(LogicException::class);
+});
+
+it('enumerates effective policies in batches without loading future or inactive versions', function (): void {
+    $early = CarbonImmutable::parse('2026-06-01T00:00:00Z');
+    $future = $early->addMonth();
+    $programs = [];
+    $expected = [];
+
+    foreach (['batch-a', 'batch-b', 'batch-c'] as $family) {
+        $program = RewardProgram::factory()->withStatus(RewardProgramStatus::Active)->create(['family_key' => $family]);
+        $version = RewardProgramVersion::factory()->create([
+            'program_id' => $program->getKey(),
+            'version' => 1,
+            'effective_from' => $early,
+        ]);
+        RewardProgramVersion::factory()->create([
+            'program_id' => $program->getKey(),
+            'version' => 2,
+            'effective_from' => $future,
+        ]);
+        $programs[] = (string) $program->getKey();
+        $expected[] = (string) $version->getKey();
+    }
+
+    $inactive = RewardProgram::factory()->create(['family_key' => 'batch-draft']);
+    RewardProgramVersion::factory()->create(['program_id' => $inactive->getKey(), 'effective_from' => $early]);
+    $futureOnly = RewardProgram::factory()->withStatus(RewardProgramStatus::Active)->create(['family_key' => 'batch-future']);
+    RewardProgramVersion::factory()->create(['program_id' => $futureOnly->getKey(), 'effective_from' => $future]);
+
+    $connection = DB::connection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $policies = app(RewardProgramLockApi::class)->activePolicies($early->addDay()->toIso8601String());
+        $versionQueries = array_filter($connection->getQueryLog(), static fn (array $entry): bool => str_contains($entry['query'], (new RewardProgramVersion)->getTable()));
+
+        expect(array_map(static fn (array $row): string => $row['program']->id, $policies))->toBe($programs)
+            ->and(array_map(static fn (array $row): string => $row['policy']->id, $policies))->toBe($expected)
+            ->and($versionQueries)->toHaveCount(2);
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
 });

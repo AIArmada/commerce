@@ -93,21 +93,37 @@ final readonly class RewardProgramLockQuery implements RewardProgramLockApi
             $query->withoutGlobalScopes();
         }
 
+        $programKey = $query->getModel()->qualifyColumn('id');
+        $effectiveVersion = RewardProgramVersion::query()
+            ->select('id')
+            ->whereColumn('program_id', $programKey)
+            ->where('effective_from', '<=', $decision)
+            ->orderByDesc('effective_from')
+            ->orderByDesc('version')
+            ->limit(1);
+
         $programs = $query->where('status', RewardProgramStatus::Active->value)
             ->orderBy('family_key')
             ->orderBy('id')
-            ->get(['id', 'family_key', 'status']);
+            ->select(['id', 'family_key', 'status'])
+            ->addSelect(['effective_policy_id' => $effectiveVersion])
+            ->get();
         $result = [];
 
-        foreach ($programs as $program) {
-            $id = (string) $program->getKey();
-            $policy = $this->effectivePolicyForProgram($id, $decision);
+        foreach ($programs->chunk(200) as $batch) {
+            $versionIds = $batch->pluck('effective_policy_id')->filter()->all();
+            $versions = RewardProgramVersion::query()->whereKey($versionIds)->get()->keyBy('id');
 
-            if ($policy !== null) {
-                $result[] = [
-                    'program' => new RewardProgramSnapshot($id, $program->family_key, $program->status->value),
-                    'policy' => $policy,
-                ];
+            foreach ($batch as $program) {
+                $versionId = $program->getAttribute('effective_policy_id');
+                $version = is_string($versionId) ? $versions->get($versionId) : null;
+
+                if ($version instanceof RewardProgramVersion) {
+                    $result[] = [
+                        'program' => new RewardProgramSnapshot((string) $program->getKey(), $program->family_key, $program->status->value),
+                        'policy' => $this->snapshot($version),
+                    ];
+                }
             }
         }
 
