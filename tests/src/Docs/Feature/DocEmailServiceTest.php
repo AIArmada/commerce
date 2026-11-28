@@ -7,7 +7,7 @@ use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use Illuminate\Support\Facades\Route;

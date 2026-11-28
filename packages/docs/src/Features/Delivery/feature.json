@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "Delivery",
+  "owns": {
+    "table:docs_emails": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DocEmailService",
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DeliverDocEmail"
+    ],
+    "store:docs.email.delivery": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\DeliverDocEmail"
+    ]
+  },
+  "extensions": {}
+}

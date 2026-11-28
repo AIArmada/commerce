@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Actions\DeliverDocReminders;
-use AIArmada\Docs\EntryPoints\Jobs\SendDocReminderJob;
+use AIArmada\Docs\Features\Delivery\Actions\DeliverDocReminders;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocReminderJob;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DueDocReminders;
+use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;

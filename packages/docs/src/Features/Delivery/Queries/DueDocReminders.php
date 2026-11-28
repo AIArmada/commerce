@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Delivery\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;

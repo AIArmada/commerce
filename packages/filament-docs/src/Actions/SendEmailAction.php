@@ -7,7 +7,7 @@ namespace AIArmada\FilamentDocs\Actions;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

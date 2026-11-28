@@ -2,20 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\EntryPoints\Jobs\SendDocEmailJob;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Enums\EmailStatus;
-use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
@@ -41,6 +40,14 @@ final class DocEmailService
         array $metadata = [],
     ): DocEmail {
         $this->assertValidRecipient($recipientEmail, $recipientName);
+
+        if (config('docs.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey(), owner: OwnerContext::resolve(), includeGlobal: (bool) config('docs.owner.include_global', false));
+        }
+
+        if ($template !== null) {
+            $template = $this->resolveTemplate($doc, (string) $template->getKey(), $template->trigger);
+        }
 
         // Find template if not provided
         $template ??= $this->findTemplate($doc, 'send');
@@ -209,7 +216,7 @@ final class DocEmailService
             });
         }
 
-        return $data['url'] ?? null;
+        return $email instanceof DocEmail ? ($data['url'] ?? null) : null;
     }
 
     /**
@@ -270,26 +277,8 @@ final class DocEmailService
             return;
         }
 
-        try {
-            Mail::send(new DocMail(
-                docEmail: $email,
-                doc: $doc,
-                attachPdf: (bool) config('docs.email.attach_pdf', true),
-            ));
-
-            $email->update([
-                'status' => EmailStatus::Sent,
-                'sent_at' => CarbonImmutable::now(),
-            ]);
-        } catch (Throwable $e) {
-            $email->update([
-                'status' => EmailStatus::Failed,
-                'failed_at' => CarbonImmutable::now(),
-                'failure_reason' => $e->getMessage(),
-            ]);
-
-            throw $e;
-        }
+        app(DeliverDocEmail::class)->execute((string) $email->getKey(), (string) $doc->getKey(), (bool) config('docs.email.attach_pdf', true));
+        $email->refresh();
     }
 
     private function assertValidRecipient(string $recipientEmail, ?string $recipientName): void

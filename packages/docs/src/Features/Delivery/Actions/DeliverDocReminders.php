@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Actions;
+namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\Docs\Services\DocEmailService;
-use AIArmada\Docs\Services\DueDocReminders;
+use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
@@ -47,7 +46,7 @@ final readonly class DeliverDocReminders
         $recipientEmail = $this->getRecipientEmail($doc);
 
         if (! $doc || ! $recipientEmail) {
-            Log::warning('SendDocReminderJob: Document not found or has no recipient email', [
+            Log::warning('docs.reminder: Document not found or has no recipient email', [
                 'doc_id' => $docId,
             ]);
 
@@ -55,7 +54,7 @@ final readonly class DeliverDocReminders
         }
 
         if (filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
-            Log::warning('SendDocReminderJob: Document has an invalid recipient email', [
+            Log::warning('docs.reminder: Document has an invalid recipient email', [
                 'doc_id' => $docId,
             ]);
 
@@ -69,12 +68,12 @@ final readonly class DeliverDocReminders
         try {
             $emailService->sendReminder($doc, $recipientEmail);
 
-            Log::info('SendDocReminderJob: Reminder sent', [
+            Log::info('docs.reminder: Reminder sent', [
                 'doc_id' => $doc->id,
                 'doc_number' => $doc->doc_number,
             ]);
         } catch (Throwable $e) {
-            Log::error('SendDocReminderJob: Failed to send reminder', [
+            Log::error('docs.reminder: Failed to send reminder', [
                 'doc_id' => $doc->id,
                 'error' => $e->getMessage(),
             ]);
@@ -114,13 +113,13 @@ final readonly class DeliverDocReminders
                     metadata: ['reminder_type' => 'due_soon'],
                 );
 
-                Log::info('SendDocReminderJob: Due soon reminder sent', [
+                Log::info('docs.reminder: Due soon reminder sent', [
                     'doc_id' => $doc->id,
                     'doc_number' => $doc->doc_number,
                     'days_until_due' => CarbonImmutable::now()->diffInDays($doc->due_date, false),
                 ]);
             } catch (Throwable $e) {
-                Log::error('SendDocReminderJob: Failed to send due soon reminder', [
+                Log::error('docs.reminder: Failed to send due soon reminder', [
                     'doc_id' => $doc->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -149,13 +148,13 @@ final readonly class DeliverDocReminders
             try {
                 $emailService->sendReminder($doc, $recipientEmail, [], $templates[$doc->doc_type]);
 
-                Log::info('SendDocReminderJob: Overdue reminder sent', [
+                Log::info('docs.reminder: Overdue reminder sent', [
                     'doc_id' => $doc->id,
                     'doc_number' => $doc->doc_number,
                     'days_overdue' => $doc->due_date?->diffInDays(CarbonImmutable::now(), false),
                 ]);
             } catch (Throwable $e) {
-                Log::error('SendDocReminderJob: Failed to send overdue reminder', [
+                Log::error('docs.reminder: Failed to send overdue reminder', [
                     'doc_id' => $doc->id,
                     'error' => $e->getMessage(),
                 ]);

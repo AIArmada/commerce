@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\EntryPoints\Http\Controllers;
+namespace AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers;
 
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;

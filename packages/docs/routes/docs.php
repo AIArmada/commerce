@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocShareController;
-use AIArmada\Docs\EntryPoints\Http\Controllers\DocTrackingController;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers\DocTrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'throttle:60,1'])->prefix('docs/track')->group(function (): void {

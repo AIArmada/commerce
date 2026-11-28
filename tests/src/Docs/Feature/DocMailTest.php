@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Services\DocService;

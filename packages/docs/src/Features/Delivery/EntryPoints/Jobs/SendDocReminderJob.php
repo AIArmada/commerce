@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\EntryPoints\Jobs;
+namespace AIArmada\Docs\Features\Delivery\EntryPoints\Jobs;
 
-use AIArmada\Docs\Actions\DeliverDocReminders;
-use AIArmada\Docs\Services\DueDocReminders;
+use AIArmada\Docs\Features\Delivery\Actions\DeliverDocReminders;
+use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

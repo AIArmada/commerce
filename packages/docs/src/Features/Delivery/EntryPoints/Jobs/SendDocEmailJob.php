@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\EntryPoints\Jobs;
+namespace AIArmada\Docs\Features\Delivery\EntryPoints\Jobs;
 
-use AIArmada\Docs\Actions\DeliverDocEmail;
+use AIArmada\Docs\Features\Delivery\Actions\DeliverDocEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

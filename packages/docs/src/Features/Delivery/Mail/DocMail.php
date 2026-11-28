@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Mail;
+namespace AIArmada\Docs\Features\Delivery\Mail;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Attachment;

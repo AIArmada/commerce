@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\EntryPoints\Http\Controllers\DocTrackingController;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers\DocTrackingController;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 
 test('click tracking rejects non-http redirect schemes', function (): void {
     config()->set('app.url', 'https://app.example.test');

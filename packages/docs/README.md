@@ -5,7 +5,7 @@
 ## What ships today
 
 - `AIArmada\Docs\Services\DocService` for document creation, updates, conversion, payment recording, and PDF generation
-- `AIArmada\Docs\Services\DocEmailService` for send/send-reminder flows with tracking records
+- `AIArmada\Docs\Features\Delivery\Actions\DocEmailService` for send/send-reminder flows with tracking records
 - Config-backed numbering through `AIArmada\Docs\Features\Numbering\Actions\SequenceManager`
 - Models for documents, templates, payments, versions, emails, approvals, workflows, and e-invoice submissions
 - Optional owner scoping through `aiarmada/commerce-support`
