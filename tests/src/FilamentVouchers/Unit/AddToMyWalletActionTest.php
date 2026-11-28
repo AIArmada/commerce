@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\Lifecycle\Models\Voucher;
-use AIArmada\Vouchers\Features\Lifecycle\Models\VoucherWallet;
+use AIArmada\Vouchers\Features\Wallet\Models\VoucherWallet;
 
 uses(TestCase::class);
 

@@ -8,7 +8,7 @@ use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \AIArmada\Vouchers\Data\VoucherData|null find(string $code)
+ * @method static \AIArmada\Vouchers\Data\VoucherData|null find(string $code, ?string $voucherId = null)
  * @method static \AIArmada\Vouchers\Data\VoucherData findOrFail(string $code)
  * @method static void invalidate(string $code)
  * @method static \AIArmada\Vouchers\Data\VoucherData create(array<string, mixed> $data)

@@ -171,8 +171,8 @@ class VoucherService implements VoucherServiceInterface
     /**
      * Reserve a voucher for a checkout session.
      *
-     * Reservations prevent the voucher from being used elsewhere
-     * during the checkout process.
+     * Reservations track checkout intent; the locked redemption operation
+     * enforces usage limits and records committed usage.
      */
     public function reserve(string $code, string $sessionId, ?string $voucherId = null): void
     {

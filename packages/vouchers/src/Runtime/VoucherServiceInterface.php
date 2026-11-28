@@ -76,7 +76,8 @@ interface VoucherServiceInterface
         ?string $channel = null,
         ?array $metadata = null,
         ?Model $redeemedBy = null,
-        ?string $notes = null
+        ?string $notes = null,
+        ?string $voucherId = null,
     ): void;
 
     /**
