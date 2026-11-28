@@ -9,6 +9,7 @@ use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -165,6 +166,7 @@ final class RewardPointLedger
     {
         $remaining = $points;
         $plan = [];
+        $movementsByLot = $movements->groupBy('lot_id');
 
         foreach (self::oldestExpiringFirst($lots) as $lot) {
             if ($remaining <= 0) {
@@ -173,7 +175,7 @@ final class RewardPointLedger
 
             $available = self::lotAvailable(
                 $lot,
-                $movements->filter(fn (RewardPointMovement $movement): bool => (string) $movement->lot_id === (string) $lot->getKey()),
+                $movementsByLot->get((string) $lot->getKey(), new Collection),
                 $asOf,
             );
 
@@ -207,16 +209,17 @@ final class RewardPointLedger
             return new RewardPointBuckets;
         }
 
-        $movements = RewardPointMovement::query()
+        RewardPointLotScope::assertAccessible($lots);
+
+        $movementsByLot = RewardPointMovement::query()
             ->whereIn('lot_id', $lots->map(fn (RewardPointLot $lot): string => (string) $lot->getKey())->all())
-            ->get();
+            ->get()
+            ->groupBy('lot_id');
 
         $buckets = ['pending' => 0, 'available' => 0, 'reserved' => 0, 'spent' => 0, 'expired' => 0];
 
         foreach ($lots as $lot) {
-            $lotMovements = $movements->filter(
-                fn (RewardPointMovement $movement): bool => (string) $movement->lot_id === (string) $lot->getKey()
-            );
+            $lotMovements = $movementsByLot->get((string) $lot->getKey(), new Collection);
             $availableAt = CarbonImmutable::parse($lot->available_at)->setTimezone('UTC');
 
             $credited = self::sumKind($lotMovements, [RewardPointMovementKind::Credit, RewardPointMovementKind::Refund])

@@ -9,6 +9,7 @@ use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
+use AIArmada\Rewards\Features\Points\Persistence\RewardPointLotScope;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -66,16 +67,15 @@ final readonly class MarkRewardReservationSubmittedAction
             : CarbonImmutable::parse($at)->setTimezone('UTC');
 
         return DB::transaction(function () use ($reservationKey, $status, $reference, $stamped): RewardPointReservationSubmission {
-            $hasLedgerPieces = $status !== RewardReservationSubmissionStatus::Failed->value
-                ? $this->lockReservationLots($reservationKey)
-                : false;
+            $failed = $status === RewardReservationSubmissionStatus::Failed->value;
+            $hasLedgerPieces = $this->authorizeReservationLots($reservationKey, ! $failed);
 
             $existing = RewardPointReservationSubmission::query()
                 ->where('reservation_key', $reservationKey)
                 ->lockForUpdate()
                 ->first();
 
-            if ($hasLedgerPieces && ! $existing instanceof RewardPointReservationSubmission) {
+            if ($hasLedgerPieces && ! $failed && ! $existing instanceof RewardPointReservationSubmission) {
                 $this->assertPendingPieces($reservationKey);
             }
 
@@ -128,11 +128,11 @@ final readonly class MarkRewardReservationSubmittedAction
     }
 
     /**
-     * Production lot guard: lock every lot touched by the key's ledger
-     * movements in sorted id order. Returns whether ledger pieces exist —
-     * no movements means a non-point handoff with nothing to lock.
+     * Authorize immutable lot provenance for every status, including failure.
+     * Non-failure transitions also lock lots in sorted order before the registry.
+     * A non-point handoff has no ledger pieces to authorize or lock.
      */
-    private function lockReservationLots(string $reservationKey): bool
+    private function authorizeReservationLots(string $reservationKey, bool $lock): bool
     {
         $lotIds = RewardPointMovement::query()
             ->where('reservation_key', $reservationKey)
@@ -145,7 +145,18 @@ final readonly class MarkRewardReservationSubmittedAction
             return false;
         }
 
-        RewardPointLot::query()->whereIn('id', $lotIds)->orderBy('id')->lockForUpdate()->get();
+        $query = RewardPointLot::query()->whereIn('id', $lotIds)->orderBy('id');
+        $lots = $query->get(['id', 'program_id', 'award_id']);
+
+        if ($lots->count() !== count($lotIds)) {
+            throw new InvalidArgumentException('Reservation lot is missing.');
+        }
+
+        RewardPointLotScope::assertAccessible($lots);
+
+        if ($lock) {
+            $query->lockForUpdate()->get(['id']);
+        }
 
         return true;
     }

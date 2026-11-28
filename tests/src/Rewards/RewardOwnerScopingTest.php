@@ -38,11 +38,14 @@ use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
+use AIArmada\Rewards\Features\Points\Actions\MarkRewardReservationSubmittedAction;
 use AIArmada\Rewards\Features\Points\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReleaseRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
+use AIArmada\Rewards\Features\Points\Models\RewardPointReservationSubmission;
+use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
@@ -778,4 +781,40 @@ it('refuses spending reserving capturing releasing and replaying foreign program
 
     expect(fn () => OwnerContext::withOwner($other, static fn (): array => ReleaseRewardPointsAction::run('reserve:owner-ledger', 'release', $at)))
         ->toThrow(AuthorizationException::class);
+});
+
+it('refuses foreign balance reads and reservation submission transitions', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = (string) Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-21T00:00:00Z');
+    $program = OwnerContext::withOwner($owner, static fn (): RewardProgram => RewardProgram::factory()->create());
+    $family = $program->family_key;
+    $reservation = 'reserve:scope-handoff';
+
+    OwnerContext::withOwner($owner, static function () use ($program, $recipient, $family, $reservation, $at): void {
+        CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, $at, null, null, (string) $program->getKey(), 'credit:scope-handoff');
+        ReserveRewardPointsAction::run('user', $recipient, $family, 'pts', 10, $reservation, 'hold', $at);
+
+        expect(RewardPointLedger::balancesFor('user', $recipient, $family, 'pts', $at)->available)->toBe(40);
+        MarkRewardReservationSubmittedAction::run($reservation, 'sending', 'scope-handoff-ref', $at);
+    });
+
+    OwnerContext::withOwner($other, static function () use ($recipient, $family, $reservation, $at): void {
+        expect(fn () => RewardPointLedger::balancesFor('user', $recipient, $family, 'pts', $at))
+            ->toThrow(AuthorizationException::class);
+
+        foreach (['sending', 'submitted', 'delivered', 'failed'] as $status) {
+            expect(fn () => MarkRewardReservationSubmittedAction::run($reservation, $status, 'scope-handoff-ref', $at))
+                ->toThrow(AuthorizationException::class);
+        }
+    });
+
+    expect(RewardPointReservationSubmission::query()->where('reservation_key', $reservation)->value('status'))->toBe('sending');
+
+    OwnerContext::withOwner($owner, static function () use ($reservation, $at): void {
+        MarkRewardReservationSubmittedAction::run($reservation, 'failed', 'scope-handoff-ref', $at);
+    });
+
+    expect(RewardPointReservationSubmission::query()->where('reservation_key', $reservation)->value('status'))->toBe('failed');
 });
