@@ -50,17 +50,21 @@ final class RewardBudgetLedger
     {
         $currency = self::normalizeCurrency($currency);
 
-        $funded = (int) RewardFundingEntry::query()
+        $funding = RewardFundingEntry::query()
             ->where('program_id', $programId)
             ->where('currency', $currency)
-            ->sum('amount_minor');
+            ->selectRaw("'funded' as kind, COALESCE(SUM(amount_minor), 0) as total")
+            ->toBase();
 
-        $byKind = RewardBudgetMovement::query()
+        $movements = RewardBudgetMovement::query()
             ->where('program_id', $programId)
             ->where('currency', $currency)
             ->selectRaw('kind, COALESCE(SUM(amount_minor), 0) as total')
             ->groupBy('kind')
-            ->pluck('total', 'kind');
+            ->toBase();
+
+        $byKind = $funding->unionAll($movements)->get()->pluck('total', 'kind');
+        $funded = (int) ($byKind['funded'] ?? 0);
 
         $reserve = (int) ($byKind[RewardBudgetMovementKind::Reserve->value] ?? 0);
         $release = (int) ($byKind[RewardBudgetMovementKind::Release->value] ?? 0);

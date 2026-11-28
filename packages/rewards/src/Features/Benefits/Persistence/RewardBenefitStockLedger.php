@@ -72,7 +72,7 @@ final class RewardBenefitStockLedger
             ->where('item_id', $item->getKey())
             ->orderBy('id')
             ->lockForUpdate()
-            ->get();
+            ->get(['kind', 'quantity']);
 
         $byKind = [];
 

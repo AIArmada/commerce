@@ -54,6 +54,7 @@ use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use AIArmada\Rewards\Tests\Ledgers\Support\ScriptedPayoutExecutor;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function financeLedgerProgram(string $prefix, int $fundedMinor = 10000): array
@@ -567,4 +568,25 @@ it('freezes recovery economics at opening time', function (): void {
 
     expect(fn () => $recovery->forceFill(['amount_minor' => 1])->save())
         ->toThrow(LogicException::class, 'frozen at opening time');
+});
+
+it('reads a currency budget in one statement with a consistent zero balance for an unused program', function (): void {
+    [$program] = financeLedgerProgram('single-budget-read');
+    $id = (string) $program->getKey();
+
+    $connection = DB::connection();
+    $connection->flushQueryLog();
+    $connection->enableQueryLog();
+
+    try {
+        $balances = RewardBudgetLedger::balances($id, ' myr ');
+        expect($balances)->toBe(['funded' => 10000, 'reserved' => 0, 'net_spent' => 0, 'available' => 10000])
+            ->and($connection->getQueryLog())->toHaveCount(1);
+    } finally {
+        $connection->disableQueryLog();
+        $connection->flushQueryLog();
+    }
+
+    expect(RewardBudgetLedger::balances((string) Str::uuid(), 'MYR'))
+        ->toBe(['funded' => 0, 'reserved' => 0, 'net_spent' => 0, 'available' => 0]);
 });
