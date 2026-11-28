@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
 use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Enums\SeatStatus;
+use AIArmada\Seating\Exceptions\StaleSeatHoldException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatHold;
@@ -83,4 +85,18 @@ it('enforces one active allocation per seat at the database boundary', function 
     expect(fn (): SeatAllocation => DB::transaction(
         fn (): SeatAllocation => SeatAllocation::factory()->create(['seat_id' => $this->hold->seat_id]),
     ))->toThrow(QueryException::class);
+});
+
+it('does not convert a hold after its seat has been blocked', function (): void {
+    $this->hold->seat->update(['status' => SeatStatus::Blocked]);
+
+    expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+        holds: [$this->hold],
+        mode: SeatingMode::Assigned,
+        allocToType: 'pass',
+        allocToId: (string) Str::orderedUuid(),
+    ))->toThrow(StaleSeatHoldException::class);
+
+    expect(SeatAllocation::count())->toBe(0)
+        ->and($this->hold->fresh()->isConverted())->toBeFalse();
 });

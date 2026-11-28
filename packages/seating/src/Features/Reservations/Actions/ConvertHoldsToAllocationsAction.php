@@ -6,6 +6,7 @@ namespace AIArmada\Seating\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Seating\Enums\SeatingMode;
+use AIArmada\Seating\Enums\SeatStatus;
 use AIArmada\Seating\Exceptions\StaleSeatHoldException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatAllocation;
@@ -32,6 +33,17 @@ final readonly class ConvertHoldsToAllocationsAction
             $allocations = new Collection;
 
             foreach ($holds as $hold) {
+                $current = SeatHold::query()->whereKey($hold->getKey())->firstOrFail();
+
+                if ($current->isConverted()) {
+                    continue;
+                }
+
+                $seat = Seat::query()
+                    ->whereKey($current->seat_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
                 $lockedHold = SeatHold::query()
                     ->whereKey($hold->getKey())
                     ->lockForUpdate()
@@ -41,16 +53,11 @@ final readonly class ConvertHoldsToAllocationsAction
                     continue;
                 }
 
-                if ($lockedHold->isExpired()) {
+                if ($lockedHold->seat_id !== $seat->getKey() || $seat->status !== SeatStatus::Available || $lockedHold->isExpired()) {
                     throw new StaleSeatHoldException(
-                        "SeatHold {$lockedHold->id} has expired and cannot be converted."
+                        "SeatHold {$lockedHold->id} is no longer eligible for conversion."
                     );
                 }
-
-                $seat = Seat::query()
-                    ->whereKey($lockedHold->seat_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
 
                 if (SeatAllocation::query()
                     ->where('seat_id', $seat->getKey())

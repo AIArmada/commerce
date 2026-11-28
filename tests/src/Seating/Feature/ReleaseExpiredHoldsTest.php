@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Seating\EntryPoints\Console\ReleaseExpiredHoldsCommand;
+use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;

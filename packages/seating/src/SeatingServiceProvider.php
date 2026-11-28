@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Seating;
 
-use AIArmada\Seating\EntryPoints\Console\ReleaseExpiredHoldsCommand;
-use AIArmada\Seating\Contracts\SeatAllocatorInterface;
+use AIArmada\Seating\Features\Reservations\EntryPoints\Console\ReleaseExpiredHoldsCommand;
 use AIArmada\Seating\EntryPoints\Livewire\SeatMap;
-use AIArmada\Seating\Services\DefaultSeatAllocator;
 use AIArmada\Seating\Platform\ExtensionRegistry;
 use AIArmada\Seating\Platform\FeatureCatalog;
 use AIArmada\Seating\Platform\FeatureModule;
-use Illuminate\Console\Scheduling\Schedule;
 use RuntimeException;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
@@ -35,7 +32,6 @@ final class SeatingServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->bind(SeatAllocatorInterface::class, DefaultSeatAllocator::class);
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
@@ -59,11 +55,5 @@ final class SeatingServiceProvider extends PackageServiceProvider
 
         Livewire::component('seating.seat-map', SeatMap::class);
 
-        if ((bool) config('seating.scheduling.release_expired_holds', true)) {
-            $this->app->booted(function (): void {
-                $schedule = $this->app->make(Schedule::class);
-                $schedule->command(ReleaseExpiredHoldsCommand::class)->everyFiveMinutes();
-            });
-        }
     }
 }

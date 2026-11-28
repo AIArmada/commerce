@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Seating\EntryPoints\Console;
+namespace AIArmada\Seating\Features\Reservations\EntryPoints\Console;
 
 use AIArmada\Seating\Features\Reservations\Actions\ReleaseExpiredHoldsAction;
 use Illuminate\Console\Command;
