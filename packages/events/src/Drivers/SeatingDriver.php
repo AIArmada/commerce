@@ -164,8 +164,8 @@ final class SeatingDriver implements EventSeatingDriver
 
     public function allocatePassSeats(string $passId): void
     {
-        $pass = Pass::query()->whereKey($passId)->lockForUpdate()->first();
         (new Pass)->getConnection()->transaction(function () use ($passId): void {
+            $pass = Pass::query()->whereKey($passId)->lockForUpdate()->first();
 
             if (! $pass instanceof Pass || ! ($pass->status instanceof Issued || $pass->status instanceof Activated) || ! $pass->isValid()) {
                 return;
