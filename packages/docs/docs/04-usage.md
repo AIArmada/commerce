@@ -185,12 +185,12 @@ $version->restore(); // or $version->restore('Rollback to signed copy');
 
 ## Recording Payments
 
-Use `DocService::recordPayment()` for document payments. Recorded payments are always stored with status `paid` and a server-set `paid_at`; the method must exist in `docs.payment_methods`.
+Use `DocumentPaymentRecorder::record()` for document payments. Recorded payments are always stored with status `paid` and a server-set `paid_at`; the method must exist in `docs.payment_methods`.
 
 ```php
-use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 
-$payment = app(DocService::class)->recordPayment($document, [
+$paymentId = app(DocumentPaymentRecorder::class)->record((string) $document->getKey(), [
     'amount_minor' => 10_000,
     'currency' => 'MYR',
     'payment_method' => 'bank_transfer',

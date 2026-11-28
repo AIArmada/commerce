@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Data\DocData;
@@ -21,7 +22,7 @@ use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
@@ -392,10 +393,11 @@ test('refunded payments do not reduce the outstanding balance', function (): voi
         'paid_at' => CarbonImmutable::now()->subDay(),
     ]);
 
-    $payment = app(DocService::class)->recordPayment($doc, [
+    $paymentId = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 60,
         'payment_method' => 'cash',
     ]);
+    $payment = $doc->payments()->findOrFail($paymentId);
 
     expect($payment->status)->toBe(DocPaymentStatus::Paid)
         ->and($doc->fresh()->status->equals(PartiallyPaid::class))->toBeTrue();
@@ -404,19 +406,20 @@ test('refunded payments do not reduce the outstanding balance', function (): voi
 test('payment method is validated, status is forced paid, and the submitted date is honored', function (): void {
     $doc = Doc::factory()->create(['status' => Sent::class, 'total_minor' => 100]);
 
-    expect(fn (): DocPayment => app(DocService::class)->recordPayment($doc, [
+    expect(fn (): string => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 10,
         'payment_method' => 'barter',
     ]))->toThrow(InvalidArgumentException::class, 'payment_method');
 
     $submittedPaidAt = CarbonImmutable::now()->subYear()->startOfDay();
 
-    $payment = app(DocService::class)->recordPayment($doc, [
+    $paymentId = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 10,
         'payment_method' => 'cash',
         'status' => DocPaymentStatus::Voided,
         'paid_at' => $submittedPaidAt->toDateTimeString(),
     ]);
+    $payment = $doc->payments()->findOrFail($paymentId);
 
     expect($payment->status)->toBe(DocPaymentStatus::Paid)
         ->and($payment->paid_at->equalTo($submittedPaidAt))->toBeTrue();

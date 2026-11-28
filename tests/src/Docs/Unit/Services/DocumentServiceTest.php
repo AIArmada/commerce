@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
-use AIArmada\Docs\Features\Payments\Actions\RecordDocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\Services\DocService;
@@ -24,7 +24,6 @@ beforeEach(function (): void {
         $this->numberRegistry,
         $this->sequenceManager,
         new DocTotals,
-        new RecordDocPayment,
     );
 });
 
@@ -119,17 +118,18 @@ test('can record payment', function (): void {
         'status' => Sent::class,
     ]);
 
-    $payment = $this->service->recordPayment($doc, [
+    $paymentId = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 50,
         'payment_method' => 'bank_transfer',
         'reference' => 'REF123',
     ]);
+    $payment = $doc->payments()->findOrFail($paymentId);
 
     expect($payment->amount_minor)->toBe(50);
     expect($doc->fresh()->status->equals(PartiallyPaid::class))->toBeTrue();
 
     // Pay remaining
-    $this->service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 50,
         'payment_method' => 'bank_transfer',
     ]);
@@ -182,7 +182,7 @@ test('preserves document financial terms after a partial payment while allowing 
         'items' => [['quantity' => 1, 'unit_price_minor' => 100]],
     ]);
 
-    $this->service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 50,
         'payment_method' => 'bank_transfer',
     ]);

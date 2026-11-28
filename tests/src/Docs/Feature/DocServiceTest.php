@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
@@ -242,7 +243,7 @@ test('it rejects payments above the outstanding balance', function (): void {
         'total_minor' => 100,
     ]);
 
-    expect(fn (): mixed => app(DocService::class)->recordPayment($doc, [
+    expect(fn (): mixed => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 101,
         'payment_method' => 'bank_transfer',
     ]))->toThrow(InvalidArgumentException::class);

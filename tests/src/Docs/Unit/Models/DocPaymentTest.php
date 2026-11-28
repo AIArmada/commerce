@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 
 it('casts payment status to the DocPaymentStatus enum', function (): void {
     $doc = Doc::factory()->create();

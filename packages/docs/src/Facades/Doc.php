@@ -6,7 +6,6 @@ namespace AIArmada\Docs\Facades;
 
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
-use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +18,6 @@ use Illuminate\Support\Facades\Facade;
  * @method static \AIArmada\Docs\Models\Doc createFromType(DocType $type, array $data, ?Model $owner = null)
  * @method static \AIArmada\Docs\Models\Doc update(\AIArmada\Docs\Models\Doc $doc, array $data)
  * @method static \AIArmada\Docs\Models\Doc convert(\AIArmada\Docs\Models\Doc $source, DocType $targetType, ?Model $owner = null)
- * @method static DocPayment recordPayment(\AIArmada\Docs\Models\Doc $doc, array $paymentData)
  * @method static \AIArmada\Docs\Models\Doc clone(\AIArmada\Docs\Models\Doc $source, ?Model $owner = null)
  * @method static string generatePdf(\AIArmada\Docs\Models\Doc $doc, bool $save = true)
  * @method static string downloadPdf(\AIArmada\Docs\Models\Doc $doc)

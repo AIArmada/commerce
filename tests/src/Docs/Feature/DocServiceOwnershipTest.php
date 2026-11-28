@@ -10,7 +10,6 @@ use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -47,7 +46,7 @@ test('doc service assigns explicit owners and blocks cross-owner payments', func
     expect($doc->owner_type)->toBe($ownerA->getMorphClass())
         ->and((string) $doc->owner_id)->toBe((string) $ownerA->getKey());
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): DocPayment => $service->recordPayment($doc, [
+    expect(fn (): mixed => OwnerContext::withOwner($ownerB, fn (): string => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 25,
         'payment_method' => 'cash',
     ])))->toThrow(AuthorizationException::class);

@@ -7,13 +7,11 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentVersions;
-use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentSequence;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Data\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
 use AIArmada\Docs\States\Cancelled;
@@ -44,7 +42,6 @@ final class DocService
         protected DocumentNumberRegistry $numberRegistry,
         protected DocumentSequence $sequenceManager,
         protected DocTotals $totals,
-        protected DocumentPaymentRecorder $paymentRecorder,
     ) {}
 
     /**
@@ -408,18 +405,6 @@ final class DocService
                 ],
             ]),
         ], $owner);
-    }
-
-    /**
-     * Record a payment against a document.
-     *
-     * @param  array<string, mixed>  $paymentData
-     */
-    public function recordPayment(Doc $doc, array $paymentData): DocPayment
-    {
-        $paymentId = $this->paymentRecorder->record((string) $doc->getKey(), $paymentData);
-
-        return $doc->payments()->findOrFail($paymentId);
     }
 
     /**

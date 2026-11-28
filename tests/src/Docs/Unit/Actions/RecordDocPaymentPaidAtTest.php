@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 

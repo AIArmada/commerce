@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Sent;

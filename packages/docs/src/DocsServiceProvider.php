@@ -64,7 +64,6 @@ final class DocsServiceProvider extends PackageServiceProvider
                 $app->make(Numbering\DocumentNumberRegistry::class),
                 $app->make(DocumentSequence::class),
                 $app->make(Services\DocTotals::class),
-                $app->make(DocumentPaymentRecorder::class),
             );
         });
 

@@ -11,7 +11,7 @@ use AIArmada\Docs\Models\DocApproval;
 use AIArmada\Docs\Models\DocEInvoiceSubmission;
 use AIArmada\Docs\Features\Delivery\Models\DocEmail;
 use AIArmada\Docs\Features\Delivery\Models\DocEmailTemplate;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Models\DocTemplate;

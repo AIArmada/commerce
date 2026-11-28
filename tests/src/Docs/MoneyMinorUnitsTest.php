@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
@@ -45,7 +46,7 @@ it('uses exact integer payment comparisons and rejects overpayment and currency 
     ]);
 
     $service = app(DocService::class);
-    $service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1_000,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
@@ -53,19 +54,19 @@ it('uses exact integer payment comparisons and rejects overpayment and currency 
 
     expect($doc->fresh()->status->equals(PartiallyPaid::class))->toBeTrue();
 
-    expect(fn () => $service->recordPayment($doc, [
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 2,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
     ]))->toThrow(InvalidArgumentException::class);
 
-    expect(fn () => $service->recordPayment($doc, [
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1,
         'currency' => 'USD',
         'payment_method' => 'bank_transfer',
     ]))->toThrow(InvalidArgumentException::class);
 
-    $service->recordPayment($doc, [
+    app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), [
         'amount_minor' => 1,
         'currency' => 'KWD',
         'payment_method' => 'bank_transfer',
@@ -109,12 +110,12 @@ it('replays the same document payment transaction without recording it twice', f
     $service = app(DocService::class);
     $data = ['amount_minor' => 100, 'currency' => 'MYR', 'payment_method' => 'cash', 'transaction_id' => 'payment-replay-1'];
 
-    $first = $service->recordPayment($doc, $data);
-    $second = $service->recordPayment($doc, $data);
+    $first = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), $data);
+    $second = app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), $data);
 
-    expect($second->getKey())->toBe($first->getKey())
+    expect($second)->toBe($first)
         ->and($doc->payments()->count())->toBe(1);
 
-    expect(fn () => $service->recordPayment($doc, array_replace($data, ['amount_minor' => 99])))
+    expect(fn () => app(DocumentPaymentRecorder::class)->record((string) $doc->getKey(), array_replace($data, ['amount_minor' => 99])))
         ->toThrow(InvalidArgumentException::class, 'different payment details');
 });

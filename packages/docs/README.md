@@ -67,7 +67,7 @@ Use `DocService::create()` with `DocData::from([...])`.
 
 ### Record payments
 
-Use `app(DocService::class)->recordPayment($doc, $paymentData)`.
+Use `app(\AIArmada\Docs\Contracts\DocumentPaymentRecorder::class)->record((string) $doc->getKey(), $paymentData)`.
 
 ### Send emails
 

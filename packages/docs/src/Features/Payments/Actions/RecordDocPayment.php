@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;

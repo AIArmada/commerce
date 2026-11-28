@@ -9,7 +9,6 @@ use AIArmada\Docs\Contracts\DocumentPaymentEditor;
 use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -17,7 +16,7 @@ final readonly class EditDocPayment implements DocumentPaymentEditor
 {
     public function edit(string $docId, string $paymentId, array $data): void
     {
-        DB::transaction(function () use ($docId, $paymentId, $data): void {
+        (new Doc)->getConnection()->transaction(function () use ($docId, $paymentId, $data): void {
             if (config('docs.owner.enabled', false)) {
                 OwnerWriteGuard::findOrFailForOwner(Doc::class, $docId);
             }

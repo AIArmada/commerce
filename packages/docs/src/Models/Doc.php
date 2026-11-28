@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
+use AIArmada\Docs\Runtime\PaymentRelationModel;
 use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Support\DocPdfPath;
@@ -71,7 +72,8 @@ use Throwable;
  * @property CarbonImmutable $updated_at
  * @property-read DocTemplate|null $template
  * @property-read Collection<int, DocStatusHistory> $statusHistories
- * @property-read Collection<int, DocPayment> $payments
+ * @property-read Collection<int, RelatedDocPayment> $payments
+ * @phpstan-type RelatedDocPayment \AIArmada\Docs\Features\Payments\Models\DocPayment
  * @property-read Collection<int, RelatedDocVersion> $versions
  * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
  * @property-read Collection<int, RelatedDocEmail> $emails
@@ -152,11 +154,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocPayment, $this>
+     * @return HasMany<RelatedDocPayment, $this>
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(DocPayment::class);
+        return $this->hasMany(app(PaymentRelationModel::class)->payment(), 'doc_id');
     }
 
     /**

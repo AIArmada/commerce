@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Contracts\DocumentPaymentEditor;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\Features\Payments\Models\DocPayment;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\CreateAction;
