@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocVersion;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class RestoreDocVersion
 {
@@ -22,7 +23,7 @@ final readonly class RestoreDocVersion
         $doc = Doc::query()->forOwner($owner, $includeGlobal)->findOrFail($version->doc_id);
 
         if ($version->owner_type !== $doc->owner_type || (string) $version->owner_id !== (string) $doc->owner_id) {
-            throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(DocVersion::class, [$versionId]);
+            throw (new ModelNotFoundException)->setModel(DocVersion::class, [$versionId]);
         }
 
         $this->documents->update($doc, $version->snapshot, $summary ?? "Restored version {$version->version_number}");

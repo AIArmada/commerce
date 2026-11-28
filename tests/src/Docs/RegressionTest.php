@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Features\Delivery\Actions\DeliverDocEmail;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocPreviewController;
-use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
+use AIArmada\Docs\Features\Delivery\Actions\DeliverDocEmail;
+use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
+use AIArmada\Docs\Features\Delivery\Mail\DocMail;
+use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\Features\Numbering\Actions\SequenceManager;
 use AIArmada\Docs\Features\Numbering\Models\DocSequence;
-use AIArmada\Docs\Features\Delivery\Mail\DocMail;
-use AIArmada\Docs\Contracts\DocumentVersions;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
-use AIArmada\Docs\Features\Delivery\Actions\DocEmailService;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\Features\Delivery\Queries\DueDocReminders;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
@@ -678,4 +678,20 @@ test('sequence generation works under the default test cache driver', function (
     $second = app(SequenceManager::class)->generate('receipt');
 
     expect($first)->not->toBe($second);
+});
+
+test('tracking links for deleted email records cannot redirect', function (): void {
+    $doc = Doc::factory()->create();
+    $email = $doc->emails()->create([
+        'recipient_email' => 'deleted@example.test',
+        'subject' => 'Subject',
+        'body' => 'Body',
+        'status' => EmailStatus::Sent,
+    ]);
+    $service = app(DocEmailService::class);
+    $url = $service->getTrackedLinkUrl($email, 'https://example.test/');
+    $token = rawurldecode(basename((string) parse_url($url, PHP_URL_PATH)));
+    $email->delete();
+
+    expect($service->trackClick($token))->toBeNull();
 });

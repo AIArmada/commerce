@@ -6,9 +6,9 @@ namespace AIArmada\Docs\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Enums\EmailStatus;
+use AIArmada\Docs\Features\Delivery\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
@@ -42,7 +42,12 @@ final class DocEmailService
         $this->assertValidRecipient($recipientEmail, $recipientName);
 
         if (config('docs.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey(), owner: OwnerContext::resolve(), includeGlobal: (bool) config('docs.owner.include_global', false));
+            OwnerWriteGuard::findOrFailForOwner(
+                Doc::class,
+                (string) $doc->getKey(),
+                owner: OwnerContext::resolve(),
+                includeGlobal: (bool) config('docs.owner.include_global', false),
+            );
         }
 
         if ($template !== null) {
