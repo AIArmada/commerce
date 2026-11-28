@@ -11,15 +11,15 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Actions\Exemption\ApproveExemptionAction;
+use AIArmada\Tax\Actions\Exemption\ExpireExemptionAction;
+use AIArmada\Tax\Actions\Exemption\MarkExemptionUnderReviewAction;
 use AIArmada\Tax\Actions\Exemption\RejectExemptionAction;
+use AIArmada\Tax\Actions\Exemption\RevokeExemptionAction;
 use AIArmada\Tax\Database\Factories\TaxExemptionFactory;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
-use AIArmada\Tax\States\TaxExemptionState\ExpiredState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
-use AIArmada\Tax\States\TaxExemptionState\RevokedState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
-use AIArmada\Tax\States\TaxExemptionState\UnderReviewState;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -342,23 +342,17 @@ class TaxExemption extends Model implements Auditable
 
     public function markUnderReview(): self
     {
-        $this->status->transitionTo(UnderReviewState::class);
-
-        return $this;
+        return app(MarkExemptionUnderReviewAction::class)->execute($this);
     }
 
     public function revoke(): self
     {
-        $this->status->transitionTo(RevokedState::class);
-
-        return $this;
+        return app(RevokeExemptionAction::class)->execute($this);
     }
 
     public function expire(): self
     {
-        $this->status->transitionTo(ExpiredState::class);
-
-        return $this;
+        return app(ExpireExemptionAction::class)->execute($this);
     }
 
     // =========================================================================

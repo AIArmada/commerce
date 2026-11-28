@@ -23,6 +23,11 @@ final class CreateOrganizationAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly AddMemberAction $addMember,
+        private readonly OrganizationLifecycleHook $lifecycleHook,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -75,8 +80,8 @@ final class CreateOrganizationAction
                     ]);
                     $organization->save();
 
-                    app(AddMemberAction::class)->handle($organization, $creator, MemberRole::Owner);
-                    app(OrganizationLifecycleHook::class)->created($organization, $creator);
+                    $this->addMember->handle($organization, $creator, MemberRole::Owner);
+                    $this->lifecycleHook->created($organization, $creator);
 
                     return $organization;
                 });
@@ -92,7 +97,8 @@ final class CreateOrganizationAction
 
     private function uniqueSlug(string $slug): string
     {
-        $base = mb_trim($slug) !== '' ? Str::slug($slug) : Str::lower((string) Str::uuid());
+        $base = Str::slug($slug);
+        $base = $base !== '' ? $base : Str::lower((string) Str::uuid());
         $base = mb_substr($base, 0, 250);
         $candidate = $base;
         $suffix = 2;

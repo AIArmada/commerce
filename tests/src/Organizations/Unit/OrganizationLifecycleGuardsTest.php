@@ -142,3 +142,18 @@ it('rejects publication using a stale active organization instance', function ()
 
     expect($organization->fresh()->isPublic())->toBeFalse();
 });
+
+it('denies a former owner attempting to transfer ownership again', function (): void {
+    $creator = User::factory()->create();
+    $newOwner = User::factory()->create();
+    $other = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Single Owner Circle']);
+    AddMemberAction::make()->handle($organization, $newOwner, MemberRole::Admin);
+    AddMemberAction::make()->handle($organization, $other, MemberRole::Admin);
+
+    TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $newOwner);
+
+    expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $other))
+        ->toThrow(AuthorizationException::class);
+    expect($organization->fresh()->ownerMember()->first()->is($newOwner))->toBeTrue();
+});

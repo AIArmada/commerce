@@ -6,15 +6,19 @@ namespace AIArmada\Tax\Actions\Exemption;
 
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
+use Illuminate\Support\Facades\DB;
 
-final class RejectExemptionAction
+final readonly class RejectExemptionAction
 {
     public function execute(TaxExemption $exemption, string $reason): TaxExemption
     {
-        $exemption->status->transitionTo(RejectedState::class);
-        $exemption->rejection_reason = $reason;
-        $exemption->save();
+        return DB::transaction(function () use ($exemption, $reason): TaxExemption {
+            $locked = $exemption->newQuery()->whereKey($exemption->getKey())->lockForUpdate()->firstOrFail();
+            $exemption->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
+            $exemption->rejection_reason = $reason;
+            $exemption->status->transitionTo(RejectedState::class);
 
-        return $exemption;
+            return $exemption;
+        });
     }
 }
