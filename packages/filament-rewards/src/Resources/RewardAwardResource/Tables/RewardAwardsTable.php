@@ -118,7 +118,7 @@ class RewardAwardsTable
                         $staff = self::authorize($record, 'dismissFraud');
 
                         try {
-                            $dismiss->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $dismiss->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -162,7 +162,7 @@ class RewardAwardsTable
                                 (string) $payee->method,
                                 (string) ($data['fee_payer'] ?? 'program'),
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                             );
                         } catch (InvalidArgumentException $exception) {
@@ -198,7 +198,7 @@ class RewardAwardsTable
                                 $record,
                                 RewardAwardStatus::Fulfilled,
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                                 (string) $data['reason'],
                                 ['payout_request_id' => $confirmed->id],
@@ -261,7 +261,7 @@ class RewardAwardsTable
                 $outcome = ReverseRewardFulfillmentAction::run(
                     $record,
                     'user',
-                    (string) $staff->getKey(),
+                    (string) $staff->getAuthIdentifier(),
                     RewardAdminPresenter::staffRole(),
                     $reason,
                 );
@@ -293,7 +293,7 @@ class RewardAwardsTable
         $staff = self::authorize($record, $ability);
 
         try {
-            $transition->handle($record, $to, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), $reason);
+            $transition->handle($record, $to, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), $reason);
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
         }

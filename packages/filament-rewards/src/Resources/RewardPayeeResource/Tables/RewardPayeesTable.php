@@ -65,7 +65,7 @@ class RewardPayeesTable
                                 (string) $record->account_ref,
                                 (string) $record->account_display,
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                                 ['verified_from_registration_id' => (string) $record->getKey()],
                             );
@@ -89,7 +89,7 @@ class RewardPayeesTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $reject->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $reject->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

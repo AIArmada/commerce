@@ -51,7 +51,7 @@ class ListRewardFunding extends ListRecords
                             (string) $data['currency'],
                             (int) $data['amount_minor'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );
@@ -85,7 +85,7 @@ class ListRewardFunding extends ListRecords
                             (int) $data['amount_minor'],
                             (string) $data['source_ref'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );

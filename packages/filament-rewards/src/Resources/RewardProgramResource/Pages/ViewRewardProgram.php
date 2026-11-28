@@ -84,7 +84,7 @@ class ViewRewardProgram extends ViewRecord
                         $payload['terms'],
                         filled($data['reason'] ?? null) ? (string) $data['reason'] : null,
                         'user',
-                        (string) $staff->getKey(),
+                        (string) $staff->getAuthIdentifier(),
                     );
                 } catch (InvalidArgumentException $exception) {
                     throw ValidationException::withMessages([$this->publishErrorField($exception) => $exception->getMessage()]);
@@ -438,6 +438,8 @@ class ViewRewardProgram extends ViewRecord
                 Toggle::make('self_credit')->label('Actor is the sharer (self credit)')->default(false),
             ])
             ->action(function (array $data, PreviewRewardQualificationAction $preview): void {
+                abort_unless(RewardAdminPresenter::staffActor() !== null, 403);
+
                 $actorId = '11111111-1111-4111-8111-111111111111';
                 $sharerId = ($data['self_credit'] ?? false) ? $actorId : '22222222-2222-4222-8222-222222222222';
 

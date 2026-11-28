@@ -210,6 +210,12 @@ final class RewardAdminPresenter
             return null;
         }
 
+        $id = $user->getAuthIdentifier();
+
+        if ((! is_string($id) && ! is_int($id)) || mb_trim((string) $id) === '') {
+            return null;
+        }
+
         if (method_exists($user, 'hasAnyRole')) {
             $roles = config('filament-rewards.staff_roles', ['super_admin', 'admin']);
 
@@ -239,24 +245,16 @@ final class RewardAdminPresenter
 
     public static function canDecideAward(mixed $award, string $ability): bool
     {
-        $user = auth()->user();
+        $user = self::staffActor();
 
-        if (! $user instanceof Authenticatable) {
-            return false;
-        }
-
-        return Gate::forUser($user)->allows($ability, $award);
+        return $user instanceof Authorizable && Gate::forUser($user)->allows($ability, $award);
     }
 
     public static function canOperatePayout(mixed $request, string $ability): bool
     {
-        $user = auth()->user();
+        $user = self::staffActor();
 
-        if (! $user instanceof Authenticatable) {
-            return false;
-        }
-
-        return Gate::forUser($user)->allows($ability, $request);
+        return $user instanceof Authorizable && Gate::forUser($user)->allows($ability, $request);
     }
 
     public static function recipientLabel(string $recipientType, string $recipientId): string

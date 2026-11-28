@@ -77,7 +77,7 @@ class RewardAppealsTable
                                 $record,
                                 (string) $data['to'],
                                 'user',
-                                (string) $staff->getKey(),
+                                (string) $staff->getAuthIdentifier(),
                                 RewardAdminPresenter::staffRole(),
                                 (string) $data['reason'],
                             );

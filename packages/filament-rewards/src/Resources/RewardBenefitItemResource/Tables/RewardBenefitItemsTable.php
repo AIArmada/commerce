@@ -59,7 +59,7 @@ class RewardBenefitItemsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $retire->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $retire->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

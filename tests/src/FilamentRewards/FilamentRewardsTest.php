@@ -86,6 +86,25 @@ describe('RewardAdminPresenter', function (): void {
             ->and(RewardProgramResource::canCreate())->toBeTrue();
     });
 
+    it('requires a valid staff identity before exposing decision abilities', function (): void {
+        $user = new class(['id' => '']) extends GenericUser implements AuthorizableContract
+        {
+            use Authorizable;
+        };
+        auth()->setUser($user);
+        Gate::define('reward-staff', static fn (): bool => true);
+
+        expect(RewardAdminPresenter::staffActor())->toBeNull();
+
+        $outsider = User::factory()->create();
+        auth()->setUser($outsider);
+        Gate::define('approve', static fn (): bool => true);
+        Gate::define('submit', static fn (): bool => true);
+
+        expect(RewardAdminPresenter::canDecideAward(new RewardAward, 'approve'))->toBeFalse()
+            ->and(RewardAdminPresenter::canOperatePayout(new RewardAward, 'submit'))->toBeFalse();
+    });
+
     it('serves outcome and currency options from the rewards registry', function (): void {
         expect(RewardAdminPresenter::outcomeOptions())->toBe([
             'contribution' => 'contribution',

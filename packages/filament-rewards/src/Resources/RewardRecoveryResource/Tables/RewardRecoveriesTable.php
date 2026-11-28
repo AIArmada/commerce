@@ -55,7 +55,7 @@ class RewardRecoveriesTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $settle->handle($record, ['recovery_proof' => (string) $data['recovery_proof']], 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $settle->handle($record, ['recovery_proof' => (string) $data['recovery_proof']], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['recovery_proof' => $exception->getMessage()]);
                         }
@@ -76,7 +76,7 @@ class RewardRecoveriesTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $writeOff->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $writeOff->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

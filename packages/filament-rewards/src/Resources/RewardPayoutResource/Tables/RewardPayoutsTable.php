@@ -80,7 +80,7 @@ class RewardPayoutsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $approve->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $approve->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -101,7 +101,7 @@ class RewardPayoutsTable
                         abort_unless(RewardAdminPresenter::canOperatePayout($record, 'submit'), 403);
 
                         try {
-                            $submit->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $submit->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             Notification::make()->title('Submission refused')->body($exception->getMessage())->danger()->send();
 
@@ -123,7 +123,7 @@ class RewardPayoutsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $confirm->handle($record, ['bank_reference' => (string) $data['bank_reference']], 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $confirm->handle($record, ['bank_reference' => (string) $data['bank_reference']], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['bank_reference' => $exception->getMessage()]);
                         }
@@ -143,7 +143,7 @@ class RewardPayoutsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $reconcile->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $reconcile->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             Notification::make()->title('Reconciliation refused')->body($exception->getMessage())->danger()->send();
 
@@ -167,7 +167,7 @@ class RewardPayoutsTable
                         abort_unless(RewardAdminPresenter::canOperatePayout($record, 'cancel'), 403);
 
                         try {
-                            $cancel->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $cancel->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }

@@ -81,7 +81,7 @@ class ListRewardBenefitItems extends ListRecords
                             (bool) ($data['direct_entitlement'] ?? false),
                             (int) $data['capacity'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             is_string($data['expires_at'] ?? null) && $data['expires_at'] !== '' ? new CarbonImmutable($data['expires_at']) : null,
                             $fulfillmentConfig,

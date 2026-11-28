@@ -69,7 +69,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $fulfill->handle($record, array_filter(['handoff_reference' => (string) ($data['handoff_reference'] ?? '')]), 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $fulfill->handle($record, array_filter(['handoff_reference' => (string) ($data['handoff_reference'] ?? '')]), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['handoff_reference' => $exception->getMessage()]);
                         }
@@ -92,7 +92,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $consume->handle($record, array_filter($data), 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $consume->handle($record, array_filter($data), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['use_reference' => $exception->getMessage()]);
                         }
@@ -113,7 +113,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $cancel->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $cancel->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -135,7 +135,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $recall->handle($record, (string) $data['recall_reference'], 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $recall->handle($record, (string) $data['recall_reference'], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['recall_reference' => $exception->getMessage()]);
                         }
@@ -156,7 +156,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $revoke->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
+                            $revoke->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
                         } catch (InvalidArgumentException $exception) {
                             throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
                         }
@@ -176,7 +176,7 @@ class RewardBenefitGrantsTable
                         abort_unless($staff !== null, 403);
 
                         try {
-                            $expire->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
+                            $expire->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
                         } catch (InvalidArgumentException $exception) {
                             Notification::make()->title('Expiry refused')->body($exception->getMessage())->danger()->send();
 

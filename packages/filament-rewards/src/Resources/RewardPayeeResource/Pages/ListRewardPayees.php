@@ -54,7 +54,7 @@ class ListRewardPayees extends ListRecords
                             (string) $data['account_ref'],
                             (string) $data['account_display'],
                             'user',
-                            (string) $staff->getKey(),
+                            (string) $staff->getAuthIdentifier(),
                             RewardAdminPresenter::staffRole(),
                             ['note' => (string) ($data['evidence_note'] ?? '')],
                         );
