@@ -15,6 +15,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Traceability\Queries\BatchLookupService;
 use AIArmada\Inventory\Features\Traceability\Queries\ExpiryMonitorService;
@@ -285,6 +286,22 @@ describe('BatchService', function (): void {
 
         $this->service->transferBatch($batch, $newLocation);
     })->throws(InvalidArgumentException::class);
+
+    it('rejects transferring a batch independently of located serials', function (): void {
+        $batch = $this->service->createBatch($this->item, 'SERIALIZED-BATCH', $this->location->id, 10);
+        $serial = InventorySerial::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'batch_id' => $batch->id,
+            'location_id' => $this->location->id,
+        ]);
+        $destination = InventoryLocation::factory()->create();
+
+        expect(fn () => $this->service->transferBatch($batch, $destination))
+            ->toThrow(InvalidArgumentException::class, 'Cannot transfer batch independently of its located serials')
+            ->and($batch->fresh()->location_id)->toBe($this->location->id)
+            ->and($serial->fresh()->location_id)->toBe($this->location->id);
+    });
 
     it('split batch', function (): void {
         $batch = InventoryBatch::factory()->create([

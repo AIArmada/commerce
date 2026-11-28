@@ -155,6 +155,7 @@ final class SerialService
         return DB::transaction(function () use ($serial, $newLocationId, $userId, $notes): InventorySerial {
             $serial = $this->lockOwnedSerial($serial);
             $this->assertLocationIdAllowedForCurrentOwner($newLocationId);
+            $this->assertBatchLocation($serial, $newLocationId);
 
             $fromLocationId = $serial->location_id;
 
@@ -308,6 +309,7 @@ final class SerialService
         return DB::transaction(function () use ($serial, $locationId, $condition, $notes, $userId): InventorySerial {
             $serial = $this->lockOwnedSerial($serial);
             $this->assertLocationIdAllowedForCurrentOwner($locationId);
+            $this->assertBatchLocation($serial, $locationId);
 
             if (! $serial->canTransitionTo(Returned::class)) {
                 throw new InvalidArgumentException('Serial cannot be returned from current status');
@@ -500,6 +502,25 @@ final class SerialService
         }
 
         return $query->whereKey($serial->getKey())->lockForUpdate()->firstOrFail();
+    }
+
+    private function assertBatchLocation(InventorySerial $serial, string $locationId): void
+    {
+        if ($serial->batch_id === null) {
+            return;
+        }
+
+        $batch = InventoryOwnerScope::forMutation(InventoryBatch::query())
+            ->whereKey($serial->batch_id)
+            ->lockForUpdate()
+            ->first();
+
+        if ($batch === null
+            || $batch->location_id !== $locationId
+            || $batch->inventoryable_type !== $serial->inventoryable_type
+            || $batch->inventoryable_id !== $serial->inventoryable_id) {
+            throw new InvalidArgumentException('Batch does not match the serial item or location');
+        }
     }
 
     private function assertLocationIdAllowedForCurrentOwner(?string $locationId): void

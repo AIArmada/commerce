@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
@@ -105,6 +106,32 @@ describe('SerialService', function (): void {
         $transferred = $this->service->transfer($serial, $newLocation->id, 'user-123', 'Moving to warehouse B');
 
         expect($transferred->location_id)->toBe($newLocation->id);
+    });
+
+    it('rejects moving or returning a serial to a location inconsistent with its batch', function (): void {
+        $batch = InventoryBatch::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+        ]);
+        $serial = $this->service->register($this->item, 'SN-BATCH-LOCATION', $this->location->id, $batch->id);
+        $destination = InventoryLocation::factory()->create();
+
+        expect(fn () => $this->service->transfer($serial, $destination->id))
+            ->toThrow(InvalidArgumentException::class, 'Batch does not match the serial item or location')
+            ->and($serial->fresh()->location_id)->toBe($this->location->id)
+            ->and($serial->history()->count())->toBe(1);
+
+        $serial->update(['status' => SerialStatus::normalize(Shipped::class), 'location_id' => null]);
+
+        expect(fn () => $this->service->processReturn($serial, $destination->id, SerialCondition::Used))
+            ->toThrow(InvalidArgumentException::class, 'Batch does not match the serial item or location')
+            ->and($serial->fresh()->status)->toBeInstanceOf(Shipped::class)
+            ->and($serial->fresh()->location_id)->toBeNull()
+            ->and($serial->history()->count())->toBe(1);
+
+        expect($this->service->processReturn($serial, $this->location->id, SerialCondition::Used)->status)
+            ->toBeInstanceOf(Returned::class);
     });
 
     it('reserve serial', function (): void {

@@ -12,6 +12,7 @@ use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Events\BatchRecalled;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -229,8 +230,17 @@ final class BatchService
             $batch = $this->lockBatch($batch);
             $this->assertOwnedLocation($newLocation->id);
 
-            if ($batch->quantity_reserved > 0 || $batch->allocations()->exists()) {
+            if ($batch->quantity_reserved > 0 || $batch->allocations()->withoutGlobalScopes()->exists()) {
                 throw new InvalidArgumentException('Cannot transfer batch with reserved quantity');
+            }
+
+            if ($batch->location_id !== $newLocation->id && InventorySerial::query()
+                ->withoutGlobalScopes()
+                ->where('batch_id', $batch->getKey())
+                ->whereNotNull('location_id')
+                ->where('location_id', '!=', $newLocation->id)
+                ->exists()) {
+                throw new InvalidArgumentException('Cannot transfer batch independently of its located serials');
             }
 
             $batch->update([
