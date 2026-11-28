@@ -8,6 +8,7 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Persistence\MembershipUniqueViolation;
 use AIArmada\Membership\Queries\MembershipApplicationMapper;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Builder;
@@ -128,11 +129,11 @@ final class ApplyForMembershipAction
 
     private function isApplicationUniquenessViolation(QueryException $exception): bool
     {
-        if (! in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
+        if (! MembershipUniqueViolation::matches($exception)) {
             return false;
         }
 
-        $message = mb_strtolower($exception->getMessage());
+        $message = MembershipUniqueViolation::detail($exception);
 
         if (str_contains($message, self::UNIQUE_INDEX)) {
             return true;

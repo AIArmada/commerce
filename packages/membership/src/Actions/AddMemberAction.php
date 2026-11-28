@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Contracts\MembershipMutationGuard;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Persistence\MembershipUniqueViolation;
 use AIArmada\Membership\Queries\MembershipIdentityMapper;
 use AIArmada\Membership\Queries\MembershipMembersQuery;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
@@ -156,7 +157,7 @@ final class AddMemberAction
     {
         $message = mb_strtolower($exception->getMessage());
 
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
+        return MembershipUniqueViolation::matches($exception)
             && (str_contains($message, mb_strtolower($membershipTable))
                 || str_contains($message, 'organization_id') && str_contains($message, 'user_id'));
     }
