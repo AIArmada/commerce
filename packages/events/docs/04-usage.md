@@ -322,7 +322,11 @@ $eventId = app(EventTemplateService::class)->createFromTemplate($templateId, [
 ```
 
 Cloning delegates scope work to the `events.clone-scope` extension slot, so
-each feature clones exactly the records it owns.
+each feature clones exactly the records it owns. Catalog media files are copied
+only after the outer database transaction commits. A rolled-back clone never
+starts copying media. Storage failures after commit are reported through the
+application exception handler; the committed clone remains available and may
+need its missing media restored.
 
 ## Free registration
 

@@ -24,6 +24,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
+use Throwable;
 
 final class CloneEventContentsAction
 {
@@ -199,8 +200,24 @@ final class CloneEventContentsAction
             return;
         }
 
-        foreach ($source->media()->get() as $media) {
-            $media->copy($target, $media->collection_name, $media->disk);
+        $mediaRecords = $source->media()->get();
+
+        if ($mediaRecords->isEmpty()) {
+            return;
         }
+
+        // Storage is not transactional. Never copy files for a clone that
+        // might still be rolled back by an enclosing database transaction.
+        DB::afterCommit(static function () use ($mediaRecords, $target): void {
+            foreach ($mediaRecords as $media) {
+                try {
+                    $media->copy($target, $media->collection_name, $media->disk);
+                } catch (Throwable $exception) {
+                    // The clone has committed. Report storage failures without
+                    // falsely signalling a database rollback or skipping other copies.
+                    report($exception);
+                }
+            }
+        });
     }
 }

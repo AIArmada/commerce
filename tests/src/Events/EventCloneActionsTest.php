@@ -19,6 +19,7 @@ use AIArmada\Events\Features\Venues\Models\EventLocation;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
 use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
@@ -173,6 +174,19 @@ it('clones Spatie media for occurrences and sessions', function (): void {
     expect($occurrence->getMedia('cover'))->toHaveCount(1)
         ->and($occurrence->media()->count())->toBe(1)
         ->and($session->getMedia('cover'))->toHaveCount(1);
+
+    $filesBefore = Storage::disk('public')->allFiles();
+
+    expect(fn () => DB::transaction(function () use ($occurrence, $filesBefore): void {
+        $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence);
+
+        expect($clone->media()->count())->toBe(0)
+            ->and(Storage::disk('public')->allFiles())->toBe($filesBefore);
+
+        throw new RuntimeException('Rollback clone with media');
+    }))->toThrow(RuntimeException::class, 'Rollback clone with media');
+
+    expect(Storage::disk('public')->allFiles())->toBe($filesBefore);
 
     $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence);
     $clonedSession = $clone->sessions()->firstOrFail();
