@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
@@ -15,7 +16,6 @@ use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayeeSelectionApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
-use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -25,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -34,11 +35,12 @@ class RewardAwardsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => RewardProgramScopeQuery::withProgramTitle($query))
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardAward $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->family_key)),
+                    ->state(fn (RewardAward $record): string => (string) ($record->getAttribute('program_title') ?? $record->family_key)),
                 TextColumn::make('recipient')
                     ->label('Recipient')
                     ->state(fn (RewardAward $record): string => RewardAdminPresenter::recipientLabel((string) $record->recipient_type, (string) $record->recipient_id))

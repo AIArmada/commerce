@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Tables;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
 use AIArmada\Rewards\Features\Benefits\Actions\RetireRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitStockReadApi;
 use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
-use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -27,13 +28,14 @@ class RewardBenefitItemsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => RewardProgramScopeQuery::withProgramTitle($query))
             ->defaultSort('title')
             ->columns([
                 TextColumn::make('title')->searchable(),
                 TextColumn::make('benefit_key')->label('Key')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardBenefitItem $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->program_id)),
+                    ->state(fn (RewardBenefitItem $record): string => (string) ($record->getAttribute('program_title') ?? $record->program_id)),
                 TextColumn::make('cost')->state(fn (RewardBenefitItem $record): string => $record->direct_entitlement ? 'direct' : ((string) $record->cost_points . ' ' . (string) $record->cost_unit)),
                 TextColumn::make('stock')
                     ->state(function (RewardBenefitItem $record): string {

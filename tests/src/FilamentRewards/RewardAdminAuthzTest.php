@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppeals;
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
@@ -534,3 +535,25 @@ it('checks class operation permissions when executing funding and catalog header
     'funding entry' => [ListRewardFunding::class, 'record', 'record'],
     'catalog creation' => [ListRewardBenefitItems::class, 'create', 'create'],
 ]);
+
+it('projects program titles without exposing titles from another owner', function (): void {
+    $award = rewardAuthzHeldAward();
+    $program = RewardProgram::query()->findOrFail($award->program_id);
+
+    $projected = RewardProgramScopeQuery::withProgramTitle(RewardAwardResource::getEloquentQuery())
+        ->whereKey($award->getKey())
+        ->firstOrFail();
+
+    expect($projected->getAttribute('program_title'))->toBe($program->title)
+        ->and($projected->getKey())->toBe($award->getKey());
+
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($other, static function () use ($award): void {
+        $projected = RewardProgramScopeQuery::withProgramTitle(RewardAward::query())
+            ->whereKey($award->getKey())
+            ->firstOrFail();
+
+        expect($projected->getAttribute('program_title'))->toBeNull();
+    });
+});

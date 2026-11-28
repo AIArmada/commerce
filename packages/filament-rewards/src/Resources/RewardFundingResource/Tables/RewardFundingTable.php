@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentRewards\Resources\RewardFundingResource\Tables;
 
+use AIArmada\FilamentRewards\Queries\RewardProgramScopeQuery;
 use AIArmada\Rewards\Features\Finance\Api\RewardBudgetReadApi;
 use AIArmada\Rewards\Features\Finance\Models\RewardFundingEntry;
-use AIArmada\Rewards\Features\Programs\Api\RewardProgramDirectoryApi;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class RewardFundingTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => RewardProgramScopeQuery::withProgramTitle($query))
             ->defaultSort('funded_at', 'desc')
             ->columns([
                 TextColumn::make('program_title')
                     ->label('Program')
-                    ->state(fn (RewardFundingEntry $record): string => (string) (app(RewardProgramDirectoryApi::class)->title((string) $record->program_id) ?? $record->program_id)),
+                    ->state(fn (RewardFundingEntry $record): string => (string) ($record->getAttribute('program_title') ?? $record->program_id)),
                 TextColumn::make('currency')->badge(),
                 TextColumn::make('amount_minor')->label('Amount (minor)')->numeric(),
                 TextColumn::make('source_ref')->label('Source ref')->toggleable(isToggledHiddenByDefault: true),

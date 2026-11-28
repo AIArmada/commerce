@@ -54,6 +54,22 @@ final class RewardProgramScopeQuery
     }
 
     /**
+     * @template TModel of Model
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function withProgramTitle(Builder $query): Builder
+    {
+        $program = new RewardProgram;
+
+        return $query->addSelect([
+            'program_title' => RewardProgram::query()
+                ->select($program->qualifyColumn('title'))
+                ->whereColumn($program->getQualifiedKeyName(), $query->getModel()->qualifyColumn('program_id')),
+        ]);
+    }
+
+    /**
      * Owner-scoped program id subquery. Respects the program OwnerScope
      * (and global inclusion) of the current owner context.
      *
