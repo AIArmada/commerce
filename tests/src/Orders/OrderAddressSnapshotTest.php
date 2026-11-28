@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Contracts\OrderAdministration;
+use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 
 beforeEach(function (): void {

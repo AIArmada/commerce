@@ -146,7 +146,8 @@ describe('OrderService', function (): void {
             });
         });
 
-        it('can add items to an order', function (): void {            $order = Order::create([
+        it('can add items to an order', function (): void {
+            $order = Order::create([
                 'order_number' => 'ORD-SVC2-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
@@ -170,7 +171,8 @@ describe('OrderService', function (): void {
                 ->and($item->total)->toBe(6180); // (3*2000) + 180
         });
 
-        it('can add addresses to an order', function (): void {            $order = Order::create([
+        it('can add addresses to an order', function (): void {
+            $order = Order::create([
                 'order_number' => 'ORD-SVC3-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
@@ -201,7 +203,8 @@ describe('OrderService', function (): void {
     });
 
     describe('Order Operations', function (): void {
-        it('can recalculate order totals', function (): void {            $order = Order::create([
+        it('can recalculate order totals', function (): void {
+            $order = Order::create([
                 'order_number' => 'ORD-SVC4-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
