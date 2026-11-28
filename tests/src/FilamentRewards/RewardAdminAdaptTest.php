@@ -41,7 +41,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitItem;

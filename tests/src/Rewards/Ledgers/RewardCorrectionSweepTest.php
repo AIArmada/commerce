@@ -16,7 +16,7 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
+use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\EntryPoints\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\EntryPoints\Jobs\RecheckRewardAwardsJob;
 use AIArmada\Rewards\Models\RewardAward;

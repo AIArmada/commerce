@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Contracts\RewardCorrectionKeySource;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
+use AIArmada\Rewards\Data\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Support\RewardProgramGuard;

@@ -15,7 +15,7 @@ use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Enums\RewardProgramMode;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
+use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Models\RewardPointLot;

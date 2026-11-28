@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Data;
 
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
-use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
-use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use Carbon\CarbonImmutable;
 
