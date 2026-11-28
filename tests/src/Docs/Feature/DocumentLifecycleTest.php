@@ -85,3 +85,19 @@ it('removes only the canonical PDF belonging to the deleted document', function 
     Storage::disk($disk)->assertMissing($path);
     Storage::disk($disk)->assertExists($otherPath);
 });
+
+it('serializes status changes and records a single history for a repeated transition', function (): void {
+    $doc = Doc::factory()->create(['status' => Draft::class]);
+    $id = (string) $doc->getKey();
+    $lifecycle = app(DocumentLifecycle::class);
+
+    expect($lifecycle->changeStatus($id, Sent::class, 'Sent once'))->toBeTrue()
+        ->and($lifecycle->changeStatus($id, Sent::class, 'Duplicate'))->toBeFalse();
+
+    $doc->refresh();
+
+    expect($doc->status->equals(Sent::class))->toBeTrue()
+        ->and($doc->sent_at)->not->toBeNull()
+        ->and($doc->statusHistories()->count())->toBe(1)
+        ->and($doc->statusHistories()->firstOrFail()->notes)->toBe('Sent once');
+});

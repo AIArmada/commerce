@@ -6,9 +6,9 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPdfCleanup;
 use AIArmada\Docs\Runtime\ApprovalRelationModel;
 use AIArmada\Docs\Runtime\DeliveryRelationModels;
@@ -22,7 +22,6 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
-use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -223,62 +222,29 @@ final class Doc extends Model implements Auditable
         return $this->status->isPayable();
     }
 
-    public function transitionStatusTo(DocStatus | string $status, ?string $notes = null): void
-    {
-        $statusClass = DocStatus::resolveStateClassFor($status, $this);
-
-        if ($this->status->equals($statusClass)) {
-            return;
-        }
-
-        $oldStatus = $this->status;
-
-        $this->getConnection()->transaction(function () use ($oldStatus, $statusClass, $notes): void {
-            $this->status->transitionTo($statusClass);
-
-            $transitionTimestamp = match ($statusClass) {
-                Sent::class => 'sent_at',
-                Paid::class => 'paid_at',
-                Cancelled::class => 'cancelled_at',
-                Overdue::class => 'overdue_at',
-                Refunded::class => 'refunded_at',
-                default => null,
-            };
-
-            if ($transitionTimestamp !== null && $this->{$transitionTimestamp} === null) {
-                $this->update([$transitionTimestamp => CarbonImmutable::now()]);
-            }
-
-            OwnerContext::withOwner($this->owner, function () use ($oldStatus, $statusClass, $notes): void {
-                $this->statusHistories()->create([
-                    'status' => $statusClass,
-                    'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $this),
-                    'created_at' => CarbonImmutable::now(),
-                ]);
-            });
-        });
-    }
-
     public function markAsPaid(?string $notes = null): void
     {
         if (! $this->canBePaid()) {
             return;
         }
 
-        $this->transitionStatusTo(Paid::class, $notes);
+        app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Paid::class, $notes);
+        $this->refresh();
     }
 
     public function markAsSent(?string $notes = null): void
     {
         if ($this->status->equals(Draft::class) || $this->status->equals(Pending::class)) {
-            $this->transitionStatusTo(Sent::class, $notes);
+            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Sent::class, $notes);
+            $this->refresh();
         }
     }
 
     public function cancel(?string $notes = null): void
     {
         if (! $this->status->equals(Paid::class)) {
-            $this->transitionStatusTo(Cancelled::class, $notes);
+            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Cancelled::class, $notes);
+            $this->refresh();
         }
     }
 
@@ -288,7 +254,8 @@ final class Doc extends Model implements Auditable
     public function updateStatus(): void
     {
         if ($this->isOverdue() && ! $this->status->equals(Overdue::class)) {
-            $this->transitionStatusTo(Overdue::class, 'Automatic overdue detection');
+            app(DocumentLifecycle::class)->changeStatus((string) $this->getKey(), Overdue::class, 'Automatic overdue detection');
+            $this->refresh();
         }
     }
 

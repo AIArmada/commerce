@@ -6,10 +6,12 @@ namespace AIArmada\Docs\Features\Payments\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Contracts\DocumentPaymentRecorder;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Features\Payments\Models\DocPayment;
+use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -127,9 +129,10 @@ final readonly class RecordDocPayment implements DocumentPaymentRecorder
                 $totalPaid = $totalPaidBefore + $payment->amount_minor;
 
                 if ($totalPaid === $lockedDoc->total_minor) {
-                    $lockedDoc->markAsPaid("Payment recorded: {$payment->amount_minor} {$payment->currency} minor units");
+                    app(DocumentLifecycle::class)->changeStatus((string) $lockedDoc->getKey(), Paid::class, "Payment recorded: {$payment->amount_minor} {$payment->currency} minor units");
                 } elseif ($totalPaid > 0) {
-                    $lockedDoc->transitionStatusTo(
+                    app(DocumentLifecycle::class)->changeStatus(
+                        (string) $lockedDoc->getKey(),
                         PartiallyPaid::class,
                         "Partial payment recorded: {$payment->amount_minor} {$payment->currency} minor units",
                     );

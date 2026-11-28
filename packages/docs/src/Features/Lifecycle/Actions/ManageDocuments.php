@@ -8,10 +8,15 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
+use Carbon\CarbonImmutable;
 use LogicException;
 
 final readonly class ManageDocuments implements DocumentLifecycle
@@ -27,7 +32,7 @@ final readonly class ManageDocuments implements DocumentLifecycle
             }
 
             return OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc, $target, $notes): bool {
-                $doc->transitionStatusTo($target, $notes);
+                $this->transition($doc, $target, $notes);
 
                 return $doc->status->equals($target);
             });
@@ -72,12 +77,38 @@ final readonly class ManageDocuments implements DocumentLifecycle
                     continue;
                 }
 
-                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn () => $doc->markAsSent());
+                OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), fn () => $this->transition($doc, Sent::class, null));
                 $marked++;
             }
 
             return ['marked' => $marked, 'skipped' => $skipped];
         });
+    }
+
+    /** @param class-string<DocStatus> $target */
+    private function transition(Doc $doc, string $target, ?string $notes): void
+    {
+        $oldStatus = $doc->status;
+        $doc->status->transitionTo($target);
+
+        $timestamp = match ($target) {
+            Sent::class => 'sent_at',
+            Paid::class => 'paid_at',
+            Cancelled::class => 'cancelled_at',
+            Overdue::class => 'overdue_at',
+            Refunded::class => 'refunded_at',
+            default => null,
+        };
+
+        if ($timestamp !== null && $doc->{$timestamp} === null) {
+            $doc->update([$timestamp => CarbonImmutable::now()]);
+        }
+
+        $doc->statusHistories()->create([
+            'status' => $target,
+            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($target, $doc),
+            'created_at' => CarbonImmutable::now(),
+        ]);
     }
 
     private function lockDocument(string $docId): Doc

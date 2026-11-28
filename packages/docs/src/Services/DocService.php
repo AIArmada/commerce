@@ -359,7 +359,7 @@ final class DocService
             }
 
             if ($statusChange !== null) {
-                $doc->transitionStatusTo($statusChange);
+                app(DocumentLifecycle::class)->changeStatus((string) $doc->getKey(), $statusChange);
             }
 
             // Create version snapshot
