@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
-it('requires the billable contract for invoices and supports Stripe payment method previews', function (): void {
+it('rejects non-billable models for invoice and payment method queries', function (): void {
     app()->bind(GatewayDetector::class, function (): object {
         return new class
         {
@@ -127,10 +127,10 @@ it('requires the billable contract for invoices and supports Stripe payment meth
     expect($recentInvoices->getRecentInvoices())->toBeEmpty();
 
     $preview = app(PaymentMethodsPreviewWidget::class);
-    expect($preview->getPaymentMethods())->toHaveKey('stripe');
+    expect($preview->getPaymentMethods())->toBeEmpty();
 
     $paymentMethodsPage = app(ManagePaymentMethods::class);
-    expect($paymentMethodsPage->getPaymentMethods())->toHaveKey('stripe');
+    expect($paymentMethodsPage->getPaymentMethods())->toBeEmpty();
     $paymentMethodsPage->setDefaultPaymentMethod('stripe', 'pm_1');
     $paymentMethodsPage->deletePaymentMethod('stripe', 'pm_1');
 });
@@ -157,7 +157,7 @@ it('sorts customer portal invoices from the gateway contract by actual date desc
 
     $gateway = Mockery::mock(GatewayContract::class);
     $gateway->shouldReceive('invoices')->once()->with($user, ['limit' => 51])->andReturn(collect([$old, $new]));
-    Cashier::shouldReceive('supportedGateways')->andReturn(['stripe']);
+    config()->set('cashier.gateways', ['stripe' => ['driver' => 'stripe']]);
     Cashier::shouldReceive('gateway')->once()->with('stripe')->andReturn($gateway);
 
     $invoices = app(ViewInvoices::class)->getInvoices();

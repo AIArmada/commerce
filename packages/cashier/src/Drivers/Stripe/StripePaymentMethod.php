@@ -129,6 +129,15 @@ class StripePaymentMethod implements PaymentMethodContract
         $this->paymentMethod->delete();
     }
 
+    public function makeDefault(): void
+    {
+        if ($this->billable === null || ! method_exists($this->billable, 'updateDefaultPaymentMethod')) {
+            throw new InvalidArgumentException('Payment method owner cannot update the default payment method.');
+        }
+
+        $this->billable->updateDefaultPaymentMethod($this->id());
+    }
+
     /**
      * Get the underlying payment method.
      */
