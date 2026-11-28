@@ -8,8 +8,8 @@ use AIArmada\Rewards\Features\Entitlements\Actions\ManagePointsEntitlements;
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordConsumedPointsDispute;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardAwardLockApi;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardDisputeApi;
-use AIArmada\Rewards\Features\Entitlements\Queries\RewardAwardLockQuery;
 use AIArmada\Rewards\Features\Entitlements\Api\RewardPointsEntitlementApi;
+use AIArmada\Rewards\Features\Entitlements\Queries\RewardAwardLockQuery;
 use AIArmada\Rewards\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 

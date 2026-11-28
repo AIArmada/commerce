@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardAppealResource\Schemas;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
 use AIArmada\Rewards\Models\RewardAward;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;

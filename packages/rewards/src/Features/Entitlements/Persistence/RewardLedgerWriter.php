@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Entitlements\Persistence;
 
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAppealDecision;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAwardEntry;
-use AIArmada\Rewards\Features\Entitlements\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use Carbon\CarbonImmutable;
 
