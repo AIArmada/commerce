@@ -277,6 +277,7 @@ abstract class TestCase extends Orchestra
             'driver' => 'sqlite',
             'database' => ':memory:',
             'prefix' => '',
+            'foreign_key_constraints' => true,
         ]);
 
         // Configure Spatie Activitylog
@@ -1379,7 +1380,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('order_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('order_id');
+            $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
             $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('purchasable');
             $table->string('name');
@@ -1402,7 +1403,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('order_payments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('order_id');
+            $table->foreignUuid('order_id')->constrained('orders')->restrictOnDelete();
             $table->nullableUuidMorphs('owner');
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
@@ -1419,7 +1420,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('order_refunds', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('order_id');
+            $table->foreignUuid('order_id')->constrained('orders')->restrictOnDelete();
             $table->nullableUuidMorphs('owner');
             $table->uuid('payment_id')->nullable();
             $table->string('gateway', 50);
@@ -1439,7 +1440,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('order_notes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('order_id');
+            $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('user_id')->nullable();
             $table->text('content');

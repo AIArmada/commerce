@@ -124,7 +124,7 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
         ->toThrow(DomainException::class, 'Use an order shipment');
 
     app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $shipment->tracking_number, $shipment->id);
-    expect($order->isShipped())->toBeFalse();
+    expect($order->refresh()->isShipped())->toBeFalse();
 
     $overlap = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), ['package_units' => [$item->id => [1, 2]]]);
     expect($overlap['success'])->toBeFalse()
@@ -133,7 +133,7 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
     $other = shipPackageUnit($order, $item, 1);
     expect($other->id)->not->toBe($shipment->id);
     app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $other->tracking_number, $other->id);
-    expect($order->isShipped())->toBeTrue();
+    expect($order->refresh()->isShipped())->toBeTrue();
 });
 
 it('rejects an incomplete package shipment at the shipment service boundary', function (): void {

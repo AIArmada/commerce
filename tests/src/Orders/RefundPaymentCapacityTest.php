@@ -8,13 +8,13 @@ use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Events\OrderRefundFailed;
 use AIArmada\Orders\Features\Lifecycle\Actions\OrderCanceled;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Queries\RefundAllocator;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
-use AIArmada\Orders\Support\RefundAllocator;
 use Illuminate\Support\Facades\Event;
 
 /**

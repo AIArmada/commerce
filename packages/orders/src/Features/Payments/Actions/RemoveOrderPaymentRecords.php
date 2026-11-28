@@ -21,7 +21,7 @@ final readonly class RemoveOrderPaymentRecords implements OrderPaymentRetention
             $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
             if (! $force && ($order->isPaid() || $order->getTotalPaid() > 0 || $order->isFinal())) {
-                throw new LogicException('Paid or final orders require an explicit administrative retention override.');
+                throw new LogicException('Paid or final orders must be cancelled or refunded instead of deleted. Pass force=true only for an explicit administrative retention override.');
             }
 
             foreach ([$order->refunds(), $order->payments()] as $relation) {

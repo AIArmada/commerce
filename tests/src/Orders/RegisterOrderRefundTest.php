@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Features\Payments\Support\RefundAllocationValidator;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
-use AIArmada\Orders\Support\RefundAllocationValidator;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);

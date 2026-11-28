@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;
@@ -103,14 +104,14 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
         'currency' => 'MYR',
     ]);
 
-    $paymentGlobal = $orderGlobal->payments()->create([
+    $paymentGlobal = OwnerContext::withOwner(null, fn (): OrderPayment => $orderGlobal->payments()->create([
         'gateway' => 'manual',
         'transaction_id' => 'txn_g',
         'amount' => 10000,
         'currency' => 'MYR',
         'status' => 'completed',
         'paid_at' => now(),
-    ]);
+    ]));
 
     $noteGlobal = $orderGlobal->orderNotes()->create([
         'user_id' => null,
@@ -252,14 +253,14 @@ it('can exclude global rows for child reads when includeGlobal is false', functi
         'currency' => 'MYR',
     ]);
 
-    $paymentGlobal = $orderGlobal->payments()->create([
+    $paymentGlobal = OwnerContext::withOwner(null, fn (): OrderPayment => $orderGlobal->payments()->create([
         'gateway' => 'manual',
         'transaction_id' => 'txn_g',
         'amount' => 10000,
         'currency' => 'MYR',
         'status' => 'completed',
         'paid_at' => now(),
-    ]);
+    ]));
 
     $noteGlobal = $orderGlobal->orderNotes()->create([
         'user_id' => null,

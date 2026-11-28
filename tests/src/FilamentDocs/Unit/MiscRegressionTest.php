@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
@@ -13,7 +14,6 @@ use AIArmada\FilamentDocs\Rendering\DocsRichContentFileAttachmentProvider;
 use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(TestCase::class);
