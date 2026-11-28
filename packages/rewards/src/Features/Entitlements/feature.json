@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "name": "Entitlements",
+  "owns": {
+    "table:reward_awards": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\AcknowledgeRewardRecognitionAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\DismissRewardFraudAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\EvaluateRewardEntitlementAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\RecordRewardMilestoneContributionAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\TransitionRewardAwardAction"
+    ],
+    "table:reward_award_entries": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Persistence\\RewardLedgerWriter"
+    ],
+    "table:reward_appeals": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\OpenRewardAppealAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\AdvanceRewardAppealAction"
+    ],
+    "table:reward_appeal_decisions": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Persistence\\RewardLedgerWriter"
+    ],
+    "table:reward_adjustments": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\AppendRewardAdjustmentAction"
+    ],
+    "table:reward_badge_grants": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\GrantRewardBadgeAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\RevokeRewardBadgeAction"
+    ],
+    "table:reward_cap_counters": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\EvaluateRewardEntitlementAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\TransitionRewardAwardAction"
+    ],
+    "table:reward_source_component_claims": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\EvaluateRewardEntitlementAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\TransitionRewardAwardAction"
+    ],
+    "table:reward_source_coordinators": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\EvaluateRewardEntitlementAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Persistence\\RewardApprovalLocks"
+    ],
+    "table:reward_milestone_cycles": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\RecordRewardMilestoneContributionAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\InvalidateRewardMilestoneContributionAction"
+    ],
+    "table:reward_milestone_contributions": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\RecordRewardMilestoneContributionAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\InvalidateRewardMilestoneContributionAction"
+    ],
+    "table:reward_recoveries": [
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\OpenRewardRecoveryAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\SettleRewardRecoveryAction",
+      "AIArmada\\Rewards\\Features\\Entitlements\\Actions\\WriteOffRewardRecoveryAction"
+    ]
+  },
+  "extensions": {}
+}

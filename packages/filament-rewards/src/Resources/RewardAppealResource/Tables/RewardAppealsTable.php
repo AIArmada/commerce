@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardAppealResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use Filament\Actions\Action;

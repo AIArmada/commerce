@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Commands;
 
-use AIArmada\Rewards\Actions\ApplyRewardSourceCorrectionsAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ApplyRewardSourceCorrectionsAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use InvalidArgumentException;

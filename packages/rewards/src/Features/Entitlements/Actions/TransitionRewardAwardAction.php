@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Entitlements\Actions;
+
+use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 
@@ -37,10 +39,10 @@ use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardSourceComponentClaim;
-use AIArmada\Rewards\Persistence\RewardApprovalLocks;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardApprovalLocks;
 use AIArmada\Rewards\Features\Finance\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardCapWindows;
-use AIArmada\Rewards\Persistence\RewardLedgerWriter;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardLedgerLockOrder;
 use AIArmada\Rewards\Data\RewardPreviewContext;

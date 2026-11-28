@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
-use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Data\RewardComponent;

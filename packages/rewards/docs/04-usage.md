@@ -39,7 +39,7 @@ TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
 ```php
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 
@@ -151,7 +151,7 @@ use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
 use AIArmada\Rewards\Features\Finance\Actions\RegisterRewardPayeeAction;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Features\Finance\Actions\SubmitRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 
@@ -202,7 +202,7 @@ configured` instead of storing a destination the host cannot pay.
 ## Corrections sweep
 
 ```php
-use AIArmada\Rewards\Actions\ApplyRewardSourceCorrectionsAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\ApplyRewardSourceCorrectionsAction;
 
 $report = ApplyRewardSourceCorrectionsAction::run('user', $staffId, 'staff', $decided, 200, [
     ['business_key' => $key, 'reason' => 'source-correction', 'evidence' => ['business_key' => $key]],

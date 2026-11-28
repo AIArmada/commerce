@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\AcknowledgeRewardRecognitionAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AcknowledgeRewardRecognitionAction;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;

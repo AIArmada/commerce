@@ -21,12 +21,12 @@ use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardPro
 use AIArmada\FilamentRewards\Resources\RewardRecoveryResource\Pages\ListRewardRecoveries;
 use AIArmada\Rewards\Features\Benefits\Actions\CreateRewardBenefitItemAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
-use AIArmada\Rewards\Actions\OpenRewardAppealAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingAction;
 use AIArmada\Rewards\Features\Finance\Actions\RecordRewardFundingSourceAction;
 use AIArmada\Rewards\Features\Finance\Actions\RequestRewardPayoutAction;
-use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Features\Finance\Actions\VerifyRewardPayeeAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;

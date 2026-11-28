@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardFraudResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Models\RewardAward;

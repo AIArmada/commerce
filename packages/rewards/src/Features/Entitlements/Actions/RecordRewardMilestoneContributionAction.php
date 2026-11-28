@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 
@@ -23,7 +23,7 @@ use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
-use AIArmada\Rewards\Persistence\RewardLedgerWriter;
+use AIArmada\Rewards\Features\Entitlements\Persistence\RewardLedgerWriter;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardMilestoneCycleIdentity;
 use AIArmada\Rewards\Support\RewardProgramGuard;

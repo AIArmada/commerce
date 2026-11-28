@@ -140,7 +140,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         $businessKey = 'referrals:qualified:' . $reward->inviteId . ':' . $reward->side;
 
         $awardClass = 'AIArmada\\Rewards\\Models\\RewardAward';
-        $correctionsClass = 'AIArmada\\Rewards\\Actions\\ApplyRewardSourceCorrectionsAction';
+        $correctionsClass = 'AIArmada\\Rewards\\Features\\Entitlements\\Actions\\ApplyRewardSourceCorrectionsAction';
 
         if (! $this->symbolsExist([$awardClass, $correctionsClass])) {
             return ReferralFulfillmentResult::failed('The rewards corrections API is unavailable.');

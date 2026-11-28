@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Points\Actions;
 
-use AIArmada\Rewards\Actions\AppendRewardAdjustmentAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
 
 use AIArmada\Rewards\Contracts\RewardReservationResolver;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
