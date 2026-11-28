@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\References\Actions;
 
 use AIArmada\References\Models\Reference;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Validation\ValidationException;
 
@@ -27,8 +28,11 @@ final readonly class SaveReference
                     }
                 }
 
+                /** @var CarbonImmutable|null $originalPublishedAt */
+                $originalPublishedAt = $reference->getOriginal('published_at');
+
                 if ($reference->getRawOriginal('status') !== $locked->getRawOriginal('status')
-                    || $reference->getOriginal('published_at') !== $locked->published_at) {
+                    || $originalPublishedAt?->format('U.u') !== $locked->published_at?->format('U.u')) {
                     throw ValidationException::withMessages(['status' => 'The reference publication state has changed. Reload the reference before saving.']);
                 }
             }

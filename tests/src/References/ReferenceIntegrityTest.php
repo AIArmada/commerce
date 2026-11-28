@@ -378,3 +378,16 @@ test('rejects stale saves after a concurrent publication transition', function (
         ->and($reference->fresh()->status)->toBe(ReferenceStatus::Published)
         ->and($reference->fresh()->published_at)->not->toBeNull();
 });
+
+test('allows unchanged publication timestamps across model hydration', function (): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book,
+        'status' => ReferenceStatus::Published,
+        'title' => 'Published before editing',
+    ]);
+    $publishedAt = $reference->fresh()->published_at;
+
+    expect($reference->update(['title' => 'Published after editing']))->toBeTrue()
+        ->and($reference->fresh()->title)->toBe('Published after editing')
+        ->and($reference->fresh()->published_at?->format('U.u'))->toBe($publishedAt?->format('U.u'));
+});
