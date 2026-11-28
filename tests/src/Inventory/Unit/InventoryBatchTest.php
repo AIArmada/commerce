@@ -6,6 +6,8 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -163,15 +165,16 @@ describe('InventoryBatch', function (): void {
 
     it('quarantine', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'status' => BatchStatus::Active->value,
         ]);
 
-        $result = $batch->quarantine('Quality issue detected');
+        $result = app(BatchService::class)->quarantine($batch, 'Quality issue detected');
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->status)->toBe(BatchStatus::Quarantined->value);
         expect($batch->fresh()->quarantine_reason)->toBe('Quality issue detected');
         expect($batch->fresh()->quarantined_at)->not->toBeNull();
@@ -179,6 +182,7 @@ describe('InventoryBatch', function (): void {
 
     it('release from quarantine', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
@@ -187,9 +191,9 @@ describe('InventoryBatch', function (): void {
             'quarantined_at' => now(),
         ]);
 
-        $result = $batch->releaseFromQuarantine();
+        $result = app(BatchService::class)->releaseFromQuarantine($batch);
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->status)->toBe(BatchStatus::Active->value);
         expect($batch->fresh()->quarantined_at)->toBeNull();
         expect($batch->fresh()->quarantine_reason)->toBeNull();
@@ -197,15 +201,16 @@ describe('InventoryBatch', function (): void {
 
     it('recall', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'status' => BatchStatus::Active->value,
         ]);
 
-        $result = $batch->recall('Safety hazard found');
+        $result = app(BatchService::class)->recallBatches([$batch], 'Safety hazard found')->firstOrFail();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         $fresh = $batch->fresh();
         expect($fresh->status)->toBe(BatchStatus::Recalled->value);
         expect($fresh->recall_reason)->toBe('Safety hazard found');
@@ -220,28 +225,33 @@ describe('InventoryBatch', function (): void {
             'status' => BatchStatus::Active->value,
         ]);
 
-        $result = $batch->markExpired();
+        $batch->update(['expires_at' => now()->subDay()]);
+        expect(app(BatchService::class)->processExpiredBatches())->toBe(1);
+        $result = $batch->fresh();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->status)->toBe(BatchStatus::Expired->value);
     });
 
     it('increment on hand', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'quantity_on_hand' => 50,
         ]);
 
-        $result = $batch->incrementOnHand(10);
+        app(BatchAllocationService::class)->restore($batch->id, $batch->inventoryable_type, $batch->inventoryable_id, $batch->location_id, 10);
+        $result = $batch->fresh();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->quantity_on_hand)->toBe(60);
     });
 
     it('decrement on hand', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
@@ -249,14 +259,17 @@ describe('InventoryBatch', function (): void {
             'status' => BatchStatus::Active->value,
         ]);
 
-        $result = $batch->decrementOnHand(10);
+        app(BatchAllocationService::class)->reserveBatches([['batch' => $batch, 'quantity' => 10]]);
+        app(BatchAllocationService::class)->commitBatches([['batch' => $batch, 'quantity' => 10]]);
+        $result = $batch->fresh();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->quantity_on_hand)->toBe(40);
     });
 
     it('decrement on hand to zero depletes', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
@@ -264,7 +277,8 @@ describe('InventoryBatch', function (): void {
             'status' => BatchStatus::Active->value,
         ]);
 
-        $batch->decrementOnHand(10);
+        app(BatchAllocationService::class)->reserveBatches([['batch' => $batch, 'quantity' => 10]]);
+        app(BatchAllocationService::class)->commitBatches([['batch' => $batch, 'quantity' => 10]]);
 
         expect($batch->fresh()->quantity_on_hand)->toBe(0);
         expect($batch->fresh()->status)->toBe(BatchStatus::Depleted->value);
@@ -272,15 +286,17 @@ describe('InventoryBatch', function (): void {
 
     it('increment reserved', function (): void {
         $batch = InventoryBatch::factory()->create([
+            'expires_at' => null,
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'quantity_reserved' => 5,
         ]);
 
-        $result = $batch->incrementReserved(10);
+        app(BatchAllocationService::class)->reserveBatches([['batch' => $batch, 'quantity' => 10]]);
+        $result = $batch->fresh();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->quantity_reserved)->toBe(15);
     });
 
@@ -292,9 +308,10 @@ describe('InventoryBatch', function (): void {
             'quantity_reserved' => 20,
         ]);
 
-        $result = $batch->decrementReserved(5);
+        app(BatchAllocationService::class)->releaseBatches([['batch' => $batch, 'quantity' => 5]]);
+        $result = $batch->fresh();
 
-        expect($result)->toBe($batch);
+        expect($result->id)->toBe($batch->id);
         expect($batch->fresh()->quantity_reserved)->toBe(15);
     });
 
@@ -358,4 +375,12 @@ describe('InventoryBatch', function (): void {
 
         expect($batch->canAllocate())->toBeFalse();
     });
+});
+
+it('does not release recalled or expired quarantined batches into available stock', function (): void {
+    $batch = InventoryBatch::factory()->recalled()->nonPerishable()->create();
+    expect(fn () => app(BatchService::class)->releaseFromQuarantine($batch))->toThrow(InvalidArgumentException::class);
+    $expired = InventoryBatch::factory()->quarantined()->create(['expires_at' => now()->subDay()]);
+    expect(fn () => app(BatchService::class)->releaseFromQuarantine($expired))->toThrow(InvalidArgumentException::class)
+        ->and($expired->fresh()->status)->toBe(BatchStatus::Quarantined->value);
 });

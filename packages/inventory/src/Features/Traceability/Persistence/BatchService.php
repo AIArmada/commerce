@@ -202,11 +202,38 @@ final class BatchService
     {
         return DB::transaction(function () use ($batch, $reason): InventoryBatch {
             $batch = $this->lockBatch($batch);
-            $batch->quarantine($reason);
+            if ($batch->status !== BatchStatus::Active->value || $batch->is_expired) {
+                throw new InvalidArgumentException('Only active, unexpired batches can be quarantined');
+            }
+
+            $batch->update([
+                'status' => BatchStatus::Quarantined->value,
+                'quarantine_reason' => $reason,
+                'quarantined_at' => CarbonImmutable::now(),
+            ]);
 
             $this->releaseBatchAllocations($batch);
 
             return $batch->refresh();
+        }, 3);
+    }
+
+    public function releaseFromQuarantine(InventoryBatch $batch): InventoryBatch
+    {
+        return DB::transaction(function () use ($batch): InventoryBatch {
+            $batch = $this->lockBatch($batch);
+
+            if ($batch->status !== BatchStatus::Quarantined->value || $batch->is_expired) {
+                throw new InvalidArgumentException('Only unexpired quarantined batches can be released');
+            }
+
+            $batch->update([
+                'status' => $batch->quantity_on_hand > 0 ? BatchStatus::Active->value : BatchStatus::Depleted->value,
+                'quarantine_reason' => null,
+                'quarantined_at' => null,
+            ]);
+
+            return $batch;
         }, 3);
     }
 
@@ -230,7 +257,11 @@ final class BatchService
             $batches = $this->lockBatches($batches);
 
             foreach ($batches as $batch) {
-                $batch->recall($reason);
+                $batch->update([
+                    'status' => BatchStatus::Recalled->value,
+                    'recall_reason' => $reason,
+                    'recalled_at' => CarbonImmutable::now(),
+                ]);
 
                 $this->releaseBatchAllocations($batch);
             }
@@ -420,7 +451,7 @@ final class BatchService
                 ->get();
 
             foreach ($expiredBatches as $batch) {
-                $batch->markExpired();
+                $batch->update(['status' => BatchStatus::Expired->value]);
                 $this->releaseBatchAllocations($batch);
 
                 if ($batch->inventoryable !== null) {

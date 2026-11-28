@@ -89,7 +89,7 @@ final class BatchAllocationService implements BatchReservationBalances
                     throw new InvalidArgumentException('Insufficient allocatable batch inventory');
                 }
 
-                $batch->incrementReserved($quantity);
+                $batch->increment('quantity_reserved', $quantity);
             }
         }, 3);
     }
@@ -110,7 +110,7 @@ final class BatchAllocationService implements BatchReservationBalances
                     throw new InvalidArgumentException('Cannot release more than the reserved batch quantity');
                 }
 
-                $batch->decrementReserved($quantity);
+                $batch->decrement('quantity_reserved', $quantity);
             }
         }, 3);
     }
@@ -135,8 +135,13 @@ final class BatchAllocationService implements BatchReservationBalances
                     throw new InvalidArgumentException('Cannot commit more than the reserved or on-hand batch quantity');
                 }
 
-                $batch->decrementReserved($quantity);
-                $batch->decrementOnHand($quantity);
+                $remaining = $batch->quantity_on_hand - $quantity;
+
+                $batch->update([
+                    'quantity_reserved' => $batch->quantity_reserved - $quantity,
+                    'quantity_on_hand' => $remaining,
+                    'status' => $remaining === 0 ? BatchStatus::Depleted->value : $batch->status,
+                ]);
             }
         }, 3);
     }
@@ -174,11 +179,10 @@ final class BatchAllocationService implements BatchReservationBalances
                 throw new InvalidArgumentException('Restored batch quantity exceeds the supported quantity');
             }
 
-            $batch->incrementOnHand($quantity);
-
-            if ($batch->status === BatchStatus::Depleted->value) {
-                $batch->update(['status' => BatchStatus::Active->value]);
-            }
+            $batch->update([
+                'quantity_on_hand' => $batch->quantity_on_hand + $quantity,
+                'status' => BatchStatus::Active->value,
+            ]);
         }, 3);
     }
 

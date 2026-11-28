@@ -388,7 +388,7 @@ $batchAllocationService->commitBatches($allocations);
 $batchService->quarantine($batch, 'Pending QC inspection');
 
 // Release from quarantine
-$batch->releaseFromQuarantine();
+$batchService->releaseFromQuarantine($batch);
 
 // Recall batches
 $batchService->recallBatches([$batch], 'Product recall notice #123');
