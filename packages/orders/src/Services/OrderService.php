@@ -17,11 +17,9 @@ use AIArmada\Orders\Features\Lifecycle\Actions\ShipmentCreated;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use Illuminate\Database\Eloquent\Model;
-use LogicException;
 
 /**
  * Stable facade for order lifecycle operations.
@@ -69,20 +67,6 @@ final class OrderService
             $intakeId,
             $sessionId,
         );
-    }
-
-    public function addItem(Order $order, array $itemData): OrderItem
-    {
-        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
-
-        return $this->createOrder->addItem($order, $itemData);
-    }
-
-    public function addAddress(Order $order, array $addressData, string $type): void
-    {
-        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
-
-        $this->createOrder->addAddress($order, $addressData, $type);
     }
 
     public function cancel(Order $order, string $reason, ?string $canceledBy = null): Order
@@ -176,22 +160,5 @@ final class OrderService
     public function failPendingRefund(OrderRefund $refund, string $reason): OrderRefund
     {
         return $this->registerOrderRefund->failPending($refund, $reason);
-    }
-
-    public function recalculateTotals(Order $order): Order
-    {
-        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
-
-        return $order->getConnection()->transaction(function () use ($order): Order {
-            $locked = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
-            $this->assertOwnerBoundaryForMutation($locked, __METHOD__);
-            if (! $locked->canBeModified() || $locked->payments()->exists()) {
-                throw new LogicException('Only unpaid editable orders can recalculate totals.');
-            }
-
-            $locked->recalculateTotals()->save();
-
-            return $locked->refresh();
-        });
     }
 }

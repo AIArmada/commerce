@@ -20,7 +20,6 @@ use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Actions\CreateCompositeProduct;
@@ -212,21 +211,20 @@ it('ships the package and the standalone line as five units of the same stock id
     $cartId = compositeCheckoutCart($package, $mouse);
 
     $checkout = app(CheckoutServiceInterface::class);
-    $checkoutResult = $checkout->processCheckout($checkout->startCheckout($cartId));
-    expect($checkoutResult->success)->toBeTrue();
-
-    $order = Order::query()->findOrFail(
-        CheckoutSession::query()->where('cart_id', $cartId)->value('order_id'),
-    );
-
-    app(OrderService::class)->addAddress($order, [
-        'name' => 'Checkout Customer',
+    $session = $checkout->startCheckout($cartId);
+    $session->update(['shipping_data' => [
+        'first_name' => 'Checkout',
+        'last_name' => 'Customer',
         'line1' => '456 Shipping Road',
         'city' => 'Johor Bahru',
         'state' => 'Johor',
         'postcode' => '80000',
-        'country' => 'MY',
-    ], 'shipping');
+        'country_code' => 'MY',
+    ]]);
+    $checkoutResult = $checkout->processCheckout($session);
+    expect($checkoutResult->success)->toBeTrue();
+
+    $order = Order::query()->findOrFail($checkoutResult->orderId);
 
     $driver = mock(ShippingDriverInterface::class);
     $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();

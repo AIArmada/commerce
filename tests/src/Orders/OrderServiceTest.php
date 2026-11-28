@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Orders\Contracts\OrderAdministration;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
@@ -145,9 +146,7 @@ describe('OrderService', function (): void {
             });
         });
 
-        it('can add items to an order', function (): void {
-            $service = app(OrderService::class);
-            $order = Order::create([
+        it('can add items to an order', function (): void {            $order = Order::create([
                 'order_number' => 'ORD-SVC2-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
@@ -163,7 +162,7 @@ describe('OrderService', function (): void {
                 'sku' => 'TEST-001',
             ];
 
-            $item = $service->addItem($order, $itemData);
+            $item = $order->items()->findOrFail(app(OrderAdministration::class)->addItem((string) $order->getKey(), $itemData));
 
             expect($item->name)->toBe('Test Product')
                 ->and($item->quantity)->toBe(3)
@@ -171,9 +170,7 @@ describe('OrderService', function (): void {
                 ->and($item->total)->toBe(6180); // (3*2000) + 180
         });
 
-        it('can add addresses to an order', function (): void {
-            $service = app(OrderService::class);
-            $order = Order::create([
+        it('can add addresses to an order', function (): void {            $order = Order::create([
                 'order_number' => 'ORD-SVC3-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
@@ -192,7 +189,7 @@ describe('OrderService', function (): void {
             ];
             $addressSnapshot = $addressData;
 
-            $service->addAddress($order, $addressData, 'billing');
+            app(OrderAdministration::class)->addAddress((string) $order->getKey(), $addressData, 'billing');
 
             $order->refresh();
 
@@ -204,9 +201,7 @@ describe('OrderService', function (): void {
     });
 
     describe('Order Operations', function (): void {
-        it('can recalculate order totals', function (): void {
-            $service = app(OrderService::class);
-            $order = Order::create([
+        it('can recalculate order totals', function (): void {            $order = Order::create([
                 'order_number' => 'ORD-SVC4-' . uniqid(),
                 'status' => Created::class,
                 'currency' => 'MYR',
@@ -215,14 +210,14 @@ describe('OrderService', function (): void {
             ]);
 
             // Add items
-            $service->addItem($order, [
+            app(OrderAdministration::class)->addItem((string) $order->getKey(), [
                 'name' => 'Item 1',
                 'quantity' => 1,
                 'unit_price' => 5000,
                 'tax_amount' => 300,
             ]);
 
-            $service->addItem($order, [
+            app(OrderAdministration::class)->addItem((string) $order->getKey(), [
                 'name' => 'Item 2',
                 'quantity' => 2,
                 'unit_price' => 2500,
@@ -233,7 +228,8 @@ describe('OrderService', function (): void {
             $order->discount_total = 200;
             $order->save();
 
-            $updatedOrder = $service->recalculateTotals($order);
+            app(OrderAdministration::class)->recalculateTotals((string) $order->getKey());
+            $updatedOrder = $order->refresh();
 
             expect($updatedOrder->subtotal)->toBe(10000) // (1 * 5000) + (2 * 2500), ex-tax
                 ->and($updatedOrder->tax_total)->toBe(450) // 300 + 150 (tax_amounts)
@@ -545,15 +541,14 @@ describe('OrderService', function (): void {
 });
 
 it('rejects draft mutations when the persisted order is no longer editable', function (): void {
-    $service = app(OrderService::class);
     $order = Order::factory()->create(['status' => PendingPayment::class]);
     $stale = Order::query()->findOrFail($order->getKey());
     $order->status->transitionTo(Processing::class);
 
-    expect(fn () => $service->addItem($stale, ['name' => 'Extra', 'unit_price' => 100]))
+    expect(fn () => app(OrderAdministration::class)->addItem((string) $stale->getKey(), ['name' => 'Extra', 'unit_price' => 100]))
         ->toThrow(LogicException::class);
-    expect(fn () => $service->addAddress($stale, [], 'shipping'))
+    expect(fn () => app(OrderAdministration::class)->addAddress((string) $stale->getKey(), [], 'shipping'))
         ->toThrow(LogicException::class);
-    expect(fn () => $service->recalculateTotals($stale))
+    expect(fn () => app(OrderAdministration::class)->recalculateTotals((string) $stale->getKey()))
         ->toThrow(LogicException::class);
 });

@@ -12,7 +12,7 @@ use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Features\Payments\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
@@ -119,10 +119,10 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
         ->and($shipment->items()->pluck('package_unit_ordinal')->unique()->values()->all())->toBe([2])
         ->and(shipPackageUnit($order, $item, 2)->id)->toBe($shipment->id);
 
-    expect(fn () => app(OrderService::class)->ship($order, 'Manual', 'unlinked'))
+    expect(fn () => app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', 'unlinked'))
         ->toThrow(DomainException::class, 'Use an order shipment');
 
-    app(OrderService::class)->ship($order, 'Manual', $shipment->tracking_number, $shipment->id);
+    app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $shipment->tracking_number, $shipment->id);
     expect($order->isShipped())->toBeFalse();
 
     $overlap = app(OrderFulfillmentHandler::class)->createShipment((string) $order->getKey(), ['package_units' => [$item->id => [1, 2]]]);
@@ -131,7 +131,7 @@ it('ships complete units separately and keeps multiple parcels in the same shipm
 
     $other = shipPackageUnit($order, $item, 1);
     expect($other->id)->not->toBe($shipment->id);
-    app(OrderService::class)->ship($order, 'Manual', $other->tracking_number, $other->id);
+    app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $other->tracking_number, $other->id);
     expect($order->isShipped())->toBeTrue();
 });
 

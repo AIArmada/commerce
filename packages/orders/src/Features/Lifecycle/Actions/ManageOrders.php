@@ -19,6 +19,8 @@ final readonly class ManageOrders implements OrderAdministration
 {
     use AssertsOrderOwnerBoundary;
 
+    public function __construct(private CreateOrder $orders) {}
+
     public function createDraft(?string $notes = null, ?string $internalNotes = null): string
     {
         if (config('orders.owner.enabled', false)) {
@@ -59,6 +61,29 @@ final readonly class ManageOrders implements OrderAdministration
             }
 
             $order->update($attributes);
+        });
+    }
+
+    public function addItem(string $orderId, array $itemData): string
+    {
+        return (string) $this->orders->addItem(Order::query()->findOrFail($orderId), $itemData)->getKey();
+    }
+
+    public function addAddress(string $orderId, array $addressData, string $type): void
+    {
+        $this->orders->addAddress(Order::query()->findOrFail($orderId), $addressData, $type);
+    }
+
+    public function recalculateTotals(string $orderId): void
+    {
+        DB::transaction(function () use ($orderId): void {
+            $order = $this->lockOrder($orderId);
+
+            if (! $order->canBeModified() || $order->payments()->exists()) {
+                throw new LogicException('Only unpaid editable orders can recalculate totals.');
+            }
+
+            $order->recalculateTotals()->save();
         });
     }
 

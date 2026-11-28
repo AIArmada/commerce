@@ -145,38 +145,34 @@ packages/orders/
 ## Quick Start
 
 ```php
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
-// Create an order — $orderData and $items are both required
-$order = app(OrderService::class)->createOrder(
+$order = app(OrderServiceInterface::class)->createOrder(
     orderData: [
         'currency' => 'MYR',
+        'subtotal' => 19800,
+        'grand_total' => 19800,
         'notes' => 'Customer notes',
     ],
-    items: [],
+    items: [[
+        'name' => 'Product Name',
+        'sku' => 'SKU-001',
+        'quantity' => 2,
+        'unit_price' => 9900,
+    ]],
 );
 
-// Add items
-app(OrderService::class)->addItem($order, [
-    'name' => 'Product Name',
-    'sku' => 'SKU-001',
-    'quantity' => 2,
-    'unit_price' => 9900, // cents
-]);
-
-// Confirm payment
-app(OrderService::class)->confirmPayment(
-    $order,
+app(OrderPaymentConfirmation::class)->confirm(
+    $order->id,
     'txn_123456',
     'stripe',
-    9900 // cents
+    19800,
 );
 
-// Ship the order
-app(OrderService::class)->ship($order, 'DHL', 'TRACK123');
-
-// Confirm delivery
-app(OrderService::class)->confirmDelivery($order);
+app(OrderFulfillment::class)->ship($order->id, 'DHL', 'TRACK123');
+app(OrderFulfillment::class)->confirmDelivery($order->id);
 ```
 
 ## Read next

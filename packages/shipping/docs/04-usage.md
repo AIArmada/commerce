@@ -466,7 +466,7 @@ Fulfill a composite order by passing `package_units` to the order fulfillment ha
 
 ```php
 use AIArmada\Orders\Contracts\FulfillmentHandler;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
 
 $result = app(FulfillmentHandler::class)->createShipment((string) $order->getKey(), [
     'carrier' => 'manual',
@@ -475,7 +475,7 @@ $result = app(FulfillmentHandler::class)->createShipment((string) $order->getKey
 ]);
 
 if ($result['success']) {
-    app(OrderService::class)->ship($order, 'Manual', $result['tracking_number'], $result['shipment_id']);
+    app(OrderFulfillment::class)->ship((string) $order->getKey(), 'Manual', $result['tracking_number'], $result['shipment_id']);
 }
 ```
 
