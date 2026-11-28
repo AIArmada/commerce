@@ -52,6 +52,7 @@ class ViewRewardProgram extends ViewRecord
         $record = $this->getRecord();
 
         abort_unless($record instanceof RewardProgram, 404);
+        abort_unless(RewardProgramResource::canView($record), 403);
 
         return $record;
     }

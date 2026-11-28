@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use UnitEnum;
 
@@ -41,6 +42,12 @@ class RewardFraudResource extends StaffRewardResource
     public static function canViewAny(): bool
     {
         return RewardAdminPresenter::canStewardFraud() && parent::canViewAny();
+    }
+
+    #[Override]
+    public static function canView(Model $record): bool
+    {
+        return RewardAdminPresenter::canStewardFraud() && parent::canView($record);
     }
 
     #[Override]

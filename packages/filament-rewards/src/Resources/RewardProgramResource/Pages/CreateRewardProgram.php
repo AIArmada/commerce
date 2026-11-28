@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
-use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Filament\Resources\Pages\CreateRecord;
@@ -22,7 +21,7 @@ class CreateRewardProgram extends CreateRecord
      */
     protected function handleRecordCreation(array $data): Model
     {
-        abort_unless(RewardAdminPresenter::staffActor() !== null, 403);
+        abort_unless(RewardProgramResource::canCreate(), 403);
 
         try {
             $program = CreateRewardProgramAction::run(

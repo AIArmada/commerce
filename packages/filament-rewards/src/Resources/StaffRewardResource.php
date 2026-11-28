@@ -20,6 +20,10 @@ abstract class StaffRewardResource extends Resource
     #[Override]
     public static function canView(Model $record): bool
     {
-        return RewardAdminPresenter::staffActor() !== null && parent::canView($record);
+        return RewardAdminPresenter::staffActor() !== null
+            && is_a($record, static::getModel())
+            && $record->exists
+            && static::getEloquentQuery()->whereKey($record->getKey())->exists()
+            && parent::canView($record);
     }
 }

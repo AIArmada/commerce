@@ -9,6 +9,7 @@ use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ListRewardAppe
 use AIArmada\FilamentRewards\Resources\RewardAppealResource\Pages\ViewRewardAppeal;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAwards;
 use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ViewRewardAward;
+use AIArmada\FilamentRewards\Resources\RewardAwardResource\RewardAwardResource;
 use AIArmada\FilamentRewards\Resources\RewardBenefitGrantResource\Pages\ListRewardBenefitGrants;
 use AIArmada\FilamentRewards\Resources\RewardBenefitItemResource\Pages\ListRewardBenefitItems;
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
@@ -392,4 +393,26 @@ it('denies non-staff direct access to administrative record pages', function ():
     Livewire::actingAs($outsider)->test(ViewRewardProgram::class, ['record' => $award->program_id])->assertStatus(403);
     Livewire::actingAs($outsider)->test(ViewRewardAward::class, ['record' => $award->getKey()])->assertStatus(403);
     Livewire::actingAs($outsider)->test(ViewRewardAppeal::class, ['record' => $appeal->getKey()])->assertStatus(403);
+});
+
+it('denies direct resource authorization for an award outside the active owner scope', function (): void {
+    $award = rewardAuthzHeldAward();
+    $other = User::factory()->create();
+    $this->actingAs($this->staff);
+
+    Gate::before(static fn (): bool => true);
+
+    expect(RewardAwardResource::canView($award))->toBeTrue()
+        ->and(OwnerContext::withOwner($other, fn (): bool => RewardAwardResource::canView($award)))->toBeFalse();
+});
+
+it('requires fraud stewardship for direct record authorization', function (): void {
+    $award = rewardAuthzHeldAward(true);
+    $this->actingAs($this->staff);
+
+    Gate::define('reward-fraud-steward', static fn (): bool => true);
+    expect(RewardFraudResource::canView($award))->toBeTrue();
+
+    Gate::define('reward-fraud-steward', static fn (): bool => false);
+    expect(RewardFraudResource::canView($award))->toBeFalse();
 });
