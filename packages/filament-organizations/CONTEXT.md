@@ -32,6 +32,7 @@ keywords:
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `organizations`.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- Subclasses of the reusable membership relation managers must implement explicit authorization hooks. User search and label lookup require add-member authorization.
 - If behavior or calculations change, move them to `organizations` and keep this package UI-only.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 

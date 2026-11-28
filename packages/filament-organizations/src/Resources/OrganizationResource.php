@@ -44,6 +44,11 @@ final class OrganizationResource extends Resource
         return Filament::auth()->user() instanceof Model;
     }
 
+    public static function canView(Model $record): bool
+    {
+        return static::canAuthorize($record, 'organization.view');
+    }
+
     public static function canEdit(Model $record): bool
     {
         return static::canAuthorize($record, 'organization.update');

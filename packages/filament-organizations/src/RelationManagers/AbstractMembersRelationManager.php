@@ -92,7 +92,7 @@ abstract class AbstractMembersRelationManager extends RelationManager
 
     abstract protected function removeMember(Model $owner, Model $member): void;
 
-    protected function authorizeMutation(string $ability): void {}
+    abstract protected function authorizeMutation(string $ability): void;
 
     protected function afterMemberMutated(): void {}
 
@@ -187,6 +187,7 @@ abstract class AbstractMembersRelationManager extends RelationManager
      */
     protected function searchUsers(string $search): array
     {
+        $this->authorizeMutation('add');
         $trimmed = mb_trim($search);
         $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($trimmed));
         $userClass = $this->userModelClass();
@@ -209,6 +210,8 @@ abstract class AbstractMembersRelationManager extends RelationManager
 
     protected function getUserOptionLabel(mixed $value): ?string
     {
+        $this->authorizeMutation('add');
+
         if (! is_string($value) || $value === '') {
             return null;
         }
