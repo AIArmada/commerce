@@ -29,6 +29,10 @@ keywords:
 5. `../organizations/CONTEXT.md` when the change crosses UI/domain
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
+## Architecture
+- Single package: UI adapter for the organization aggregate and membership/invitation entry points, with no independently owned persistence.
+- Verify with `composer arch:check` from the package root. Package Pest architecture tests are included in the monorepo test suite.
+
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `organizations`.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).

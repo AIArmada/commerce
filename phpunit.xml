@@ -7,6 +7,10 @@
     <testsuites>
         <testsuite name="Commerce">
             <directory>tests/src</directory>
+            <directory>packages/organizations/tests/Arch</directory>
+            <directory>packages/tax/tests/Arch</directory>
+            <directory>packages/filament-organizations/tests/Arch</directory>
+            <directory>packages/filament-tax/tests/Arch</directory>
         </testsuite>
     </testsuites>
     <source>
