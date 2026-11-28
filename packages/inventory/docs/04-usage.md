@@ -222,7 +222,7 @@ CreateValuationSnapshot::run(method: CostingMethod::Fifo);
 ### Receiving Inventory
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 
 // Basic receive
 Inventory::receive($product, $location->id, 100);

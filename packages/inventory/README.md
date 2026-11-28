@@ -51,13 +51,13 @@ class Product extends Model implements InventoryableInterface
 ### 2. Manage Inventory
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 
 $product = Product::find($id);
 $location = InventoryLocation::where('code', 'WAREHOUSE-A')->first();
 
 // Mutations go through the domain service
-$inventory = app(\AIArmada\Inventory\Services\InventoryService::class);
+$inventory = app(\AIArmada\Inventory\Features\Stock\Services\InventoryService::class);
 $inventory->receive($product, $location->id, 100, 'Initial stock');
 $inventory->ship($product, $location->id, 5, 'sale', 'ORDER-123');
 $inventory->transfer($product, $fromLocationId, $toLocationId, 20);
@@ -73,7 +73,7 @@ $product->hasInventory(10);  // true if >= 10 available across all locations
 ### 3. Use Facades
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // Inventory operations

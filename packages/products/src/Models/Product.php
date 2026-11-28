@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Support\BuyableLineData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;

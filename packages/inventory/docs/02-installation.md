@@ -112,7 +112,7 @@ Stock mutations belong to `InventoryService`; cart allocations belong to
 ## Verify Installation
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 
 // Create a location
 $location = \AIArmada\Inventory\Features\Stock\Models\InventoryLocation::create([

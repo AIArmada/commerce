@@ -16,7 +16,7 @@ use AIArmada\Events\Features\Taxonomy\Queries\EventTaxonomyHierarchyService;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

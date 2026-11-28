@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services;
+namespace AIArmada\Inventory\Features\Stock\Services;
 
 use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Actions\BootstrapInventory;

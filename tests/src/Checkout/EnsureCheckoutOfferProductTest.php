@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Checkout\Actions\EnsureCheckoutOfferProduct;
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;

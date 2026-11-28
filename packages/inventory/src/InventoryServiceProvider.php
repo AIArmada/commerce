@@ -29,7 +29,7 @@ use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService
 use AIArmada\Inventory\Platform\ExtensionRegistry;
 use AIArmada\Inventory\Platform\FeatureCatalog;
 use AIArmada\Inventory\Platform\FeatureModule;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;

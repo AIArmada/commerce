@@ -7,7 +7,7 @@ use AIArmada\FilamentInventory\Actions\CycleCountAction;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 
 beforeEach(function (): void {
     config()->set('inventory.owner.enabled', false);

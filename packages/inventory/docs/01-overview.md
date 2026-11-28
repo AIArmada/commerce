@@ -119,7 +119,7 @@ Use feature-owned actions for writes and named queries for reads. Implement `Con
 ## Quick Example
 
 ```php
-use AIArmada\Inventory\Facades\Inventory;
+use AIArmada\Inventory\Features\Stock\Facades\Inventory;
 use AIArmada\Inventory\Features\Reservations\Facades\InventoryAllocation;
 
 // Receive inventory

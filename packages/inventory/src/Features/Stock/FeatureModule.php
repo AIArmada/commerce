@@ -37,7 +37,7 @@ use AIArmada\Inventory\Features\Stock\Queries\StockIdentityQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockKpiMetricsQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract

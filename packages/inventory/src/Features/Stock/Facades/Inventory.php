@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Facades;
+namespace AIArmada\Inventory\Features\Stock\Facades;
 
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Support\Facades\Facade;
 
 /**

@@ -13,7 +13,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Models\Order;

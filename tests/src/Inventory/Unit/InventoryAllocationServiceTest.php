@@ -16,7 +16,7 @@ use AIArmada\Inventory\Features\Stock\Api\CommittedStockMovement;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 
 describe('InventoryAllocationService', function (): void {

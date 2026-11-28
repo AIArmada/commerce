@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Actions;
 
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Features\Stock\Services\InventoryService;
 use AIArmada\Pricing\Actions\EnsureListPrice;
 use AIArmada\Pricing\Actions\EnsurePriceListBySlug;
 use AIArmada\Products\Actions\EnsureProductBySlug;
