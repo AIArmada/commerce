@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -71,10 +72,10 @@ final class CreateEventOccurrenceAction
             'metadata' => $attributes['metadata'] ?? null,
         ]);
 
-        event(new EventOccurrenceCreated(
+        DB::afterCommit(static fn () => event(new EventOccurrenceCreated(
             (string) $occurrence->getKey(),
             (string) $occurrence->event_id,
-        ));
+        )));
 
         return $occurrence;
     }

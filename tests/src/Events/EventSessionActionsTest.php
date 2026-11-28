@@ -668,3 +668,18 @@ it('ignores direct event reassignment when updating a session', function (): voi
         ->and($result['changes'])->not->toHaveKey('event_id')
         ->and($result['changes'])->not->toHaveKey('event_occurrence_id');
 });
+
+it('does not dispatch session creation when the surrounding transaction rolls back', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventSessionCreated::class]);
+
+    expect(fn () => Illuminate\Support\Facades\DB::transaction(function (): void {
+        app(CreateEventSessionAction::class)->handle($this->occurrence, ['title' => 'Rolled back session']);
+
+        Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
+
+        throw new RuntimeException('Rollback session');
+    }))->toThrow(RuntimeException::class, 'Rollback session');
+
+    expect(EventSession::query()->where('event_occurrence_id', $this->occurrence->id)->where('slug', 'rolled-back-session')->exists())->toBeFalse();
+    Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
+});

@@ -102,11 +102,11 @@ final class CreateEventSessionAction
                 'metadata' => $attributes['metadata'] ?? null,
             ]);
 
-            event(new EventSessionCreated(
+            DB::afterCommit(static fn () => event(new EventSessionCreated(
                 (string) $session->getKey(),
                 (string) $session->event_id,
                 $session->event_occurrence_id !== null ? (string) $session->event_occurrence_id : null,
-            ));
+            )));
 
             return $session;
         });
