@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Programs\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramPublication;
 use AIArmada\Rewards\Models\RewardProgramVersion;
@@ -148,7 +149,7 @@ final readonly class PublishRewardProgramVersionAction
 
                 return $version->refresh();
             } catch (QueryException $exception) {
-                if (CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (RewardUniqueViolation::matches($exception)) {
                     throw new InvalidArgumentException('Concurrent publication conflict; reload the timeline and retry.', 0, $exception);
                 }
 

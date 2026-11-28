@@ -9,9 +9,9 @@ All flows run through invokable actions (`lorisleiva/laravel-actions`). Every ex
 ## Create and activate a program
 
 ```php
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
@@ -38,7 +38,7 @@ TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 ## Enroll a member and evaluate
 
 ```php
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;

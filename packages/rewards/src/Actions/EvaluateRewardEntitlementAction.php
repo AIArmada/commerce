@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 
@@ -173,7 +174,7 @@ final readonly class EvaluateRewardEntitlementAction
                     $actorRole,
                 ));
             } catch (QueryException $exception) {
-                if ($attempt >= 3 || (! CreateRewardProgramAction::isUniqueViolation($exception) && ! self::isDeadlock($exception))) {
+                if ($attempt >= 3 || (! RewardUniqueViolation::matches($exception) && ! self::isDeadlock($exception))) {
                     throw $exception;
                 }
 

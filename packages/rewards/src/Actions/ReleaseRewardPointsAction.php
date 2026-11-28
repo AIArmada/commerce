@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
@@ -58,7 +59,7 @@ final readonly class ReleaseRewardPointsAction
         } catch (QueryException $exception) {
             // A concurrent same-reservation release won; collapse onto its
             // movements (read outside the rolled-back transaction).
-            if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+            if (! RewardUniqueViolation::matches($exception)) {
                 throw $exception;
             }
 

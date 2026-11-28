@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
@@ -104,7 +105,7 @@ final readonly class RefundRewardPointsAction
                 // A concurrent same-key refund won the operation claim;
                 // collapse onto it only when its bound debit aggregate and
                 // amount match. Mismatched contenders fail with no effect.
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

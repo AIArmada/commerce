@@ -3,18 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Rewards\Actions\AdvanceRewardAppealAction;
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Actions\DebitRewardPointsAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Actions\RefundRewardPointsAction;
 use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;

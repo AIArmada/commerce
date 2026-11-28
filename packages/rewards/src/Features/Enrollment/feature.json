@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "Enrollment",
+  "owns": {
+    "table:reward_enrollments": [
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\EnrollRewardMemberAction",
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\LeaveRewardProgramAction",
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\ReacceptRewardTermsAction"
+    ],
+    "table:reward_enrollment_acceptances": [
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\EnrollRewardMemberAction",
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\ReacceptRewardTermsAction"
+    ],
+    "table:reward_enrollment_periods": [
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\EnrollRewardMemberAction",
+      "AIArmada\\Rewards\\Features\\Enrollment\\Actions\\LeaveRewardProgramAction"
+    ]
+  },
+  "extensions": {}
+}

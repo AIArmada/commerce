@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Enums\RewardBadgeStatus;
 use AIArmada\Rewards\Models\RewardBadgeGrant;
@@ -85,7 +86,7 @@ final readonly class GrantRewardBadgeAction
                 // A concurrent grant won this seq, or a deadlock victim lost
                 // the insert race; retry so the attempt collapses onto the
                 // active row (catch outside the transaction, PostgreSQL-safe).
-                if ($attempt >= 3 || (! CreateRewardProgramAction::isUniqueViolation($exception) && ! self::isDeadlock($exception))) {
+                if ($attempt >= 3 || (! RewardUniqueViolation::matches($exception) && ! self::isDeadlock($exception))) {
                     throw $exception;
                 }
             }

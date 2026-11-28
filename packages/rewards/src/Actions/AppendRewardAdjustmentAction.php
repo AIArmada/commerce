@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAdjustmentStatus;
 use AIArmada\Rewards\Models\RewardAdjustment;
@@ -112,7 +113,7 @@ final readonly class AppendRewardAdjustmentAction
                     continue;
                 }
 
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
@@ -129,7 +130,7 @@ final readonly class CreditRewardPointsAction
                     continue;
                 }
 
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

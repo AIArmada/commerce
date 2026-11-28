@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;

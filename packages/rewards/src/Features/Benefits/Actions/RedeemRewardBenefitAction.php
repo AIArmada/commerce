@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Actions\MarkRewardReservationSubmittedAction;
 
 use AIArmada\Rewards\Actions\ReserveRewardPointsAction;
 
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
@@ -144,7 +144,7 @@ final readonly class RedeemRewardBenefitAction
                 // A concurrent same-key redemption won the grant insert;
                 // collapse onto it only when its bound terms match. Every
                 // catch sits outside the transaction, PostgreSQL-safe.
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

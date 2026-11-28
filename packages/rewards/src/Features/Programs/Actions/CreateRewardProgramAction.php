@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Programs\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -70,7 +71,7 @@ final readonly class CreateRewardProgramAction
                 'status' => RewardProgramStatus::Draft,
             ]);
         } catch (QueryException $exception) {
-            if (self::isUniqueViolation($exception)) {
+            if (RewardUniqueViolation::matches($exception)) {
                 throw new InvalidArgumentException('Program family already exists.', 0, $exception);
             }
 
@@ -109,15 +110,4 @@ final readonly class CreateRewardProgramAction
         return [$ownerType, $ownerId];
     }
 
-    public static function isUniqueViolation(QueryException $exception): bool
-    {
-        $code = (string) $exception->getCode();
-
-        if (in_array($code, ['23000', '23505'], true)) {
-            return true;
-        }
-
-        return mb_stripos($exception->getMessage(), 'unique') !== false
-            || mb_stripos($exception->getMessage(), 'duplicate') !== false;
-    }
 }

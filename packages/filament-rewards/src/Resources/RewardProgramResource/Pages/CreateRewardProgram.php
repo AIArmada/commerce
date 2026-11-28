@@ -6,7 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages;
 
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\RewardProgramResource;
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Models\RewardProgram;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;

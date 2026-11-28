@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Features\Benefits\Persistence;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardBenefitStockMovement;
@@ -131,7 +131,7 @@ final class RewardBenefitStockLedger
                 'decided_at' => $decided,
             ]), 1);
         } catch (QueryException $exception) {
-            if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+            if (! RewardUniqueViolation::matches($exception)) {
                 throw $exception;
             }
 

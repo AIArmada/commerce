@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
@@ -101,7 +102,7 @@ final readonly class DebitRewardPointsAction
                 // A concurrent same-key debit won the operation claim;
                 // collapse onto it only when its bound ownership and terms
                 // match. Mismatched contenders fail with no partial effect.
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

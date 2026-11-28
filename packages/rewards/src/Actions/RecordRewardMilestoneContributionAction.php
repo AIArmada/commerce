@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardGratitudePlanner;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
@@ -190,7 +191,7 @@ final readonly class RecordRewardMilestoneContributionAction
                     $windowStart,
                 ));
             } catch (QueryException $exception) {
-                if ($attempt >= 3 || (! CreateRewardProgramAction::isUniqueViolation($exception) && ! self::isDeadlock($exception))) {
+                if ($attempt >= 3 || (! RewardUniqueViolation::matches($exception) && ! self::isDeadlock($exception))) {
                     throw $exception;
                 }
             }

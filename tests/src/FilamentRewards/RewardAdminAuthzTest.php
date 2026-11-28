@@ -10,10 +10,10 @@ use AIArmada\FilamentRewards\Resources\RewardAwardResource\Pages\ListRewardAward
 use AIArmada\FilamentRewards\Resources\RewardFraudResource\Pages\ListRewardFraudCases;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\CreateRewardProgram;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;

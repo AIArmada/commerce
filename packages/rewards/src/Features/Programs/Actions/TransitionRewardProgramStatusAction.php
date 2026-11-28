@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Programs\Actions;
 
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;

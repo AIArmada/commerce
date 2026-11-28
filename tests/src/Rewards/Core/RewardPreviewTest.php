@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\LeaveRewardProgramAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
 use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardPointLotStatus;
 use AIArmada\Rewards\Enums\RewardPointMovementKind;
 use AIArmada\Rewards\Models\RewardPointLot;
@@ -71,7 +72,7 @@ final readonly class ExpireRewardPointsAction
                 // Deadlock victims and lost expiry-key racers retry; the
                 // retry observes the winner's expired lots and returns []
                 // (every catch sits outside the transaction, PostgreSQL-safe).
-                if ($attempt >= 3 || (! self::isDeadlock($exception) && ! CreateRewardProgramAction::isUniqueViolation($exception))) {
+                if ($attempt >= 3 || (! self::isDeadlock($exception) && ! RewardUniqueViolation::matches($exception))) {
                     throw $exception;
                 }
             }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Rewards\Actions\AcknowledgeRewardRecognitionAction;
 use AIArmada\Rewards\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Actions\DismissRewardFraudAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;

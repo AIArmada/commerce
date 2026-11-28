@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Models\RewardFundingSource;
 use AIArmada\Rewards\Persistence\RewardBudgetLedger;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
@@ -96,7 +97,7 @@ final readonly class RecordRewardFundingSourceAction
                     'funded_at' => $decided,
                 ]), 1);
             } catch (QueryException $exception) {
-                if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                if (! RewardUniqueViolation::matches($exception)) {
                     throw $exception;
                 }
 

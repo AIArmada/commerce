@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Rewards\Queries\RewardReadinessMapper;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
 use AIArmada\Rewards\Enums\RewardProgramMode;

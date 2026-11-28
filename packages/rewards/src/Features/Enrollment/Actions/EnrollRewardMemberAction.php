@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Actions;
+namespace AIArmada\Rewards\Features\Enrollment\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
@@ -111,7 +112,7 @@ final readonly class EnrollRewardMemberAction
                         'enrolled_at' => $decision,
                     ]);
                 } catch (QueryException $exception) {
-                    if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+                    if (! RewardUniqueViolation::matches($exception)) {
                         throw $exception;
                     }
 

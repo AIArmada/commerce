@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Actions\CancelRewardPayoutAction;
 use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\ReconcileRewardPayoutAction;
 use AIArmada\Rewards\Actions\RecordRewardFundingAction;

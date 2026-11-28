@@ -6,10 +6,10 @@ namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;

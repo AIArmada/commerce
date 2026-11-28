@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Persistence;
 
-use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Enums\RewardBudgetMovementKind;
 use AIArmada\Rewards\Models\RewardBudgetMovement;
 use AIArmada\Rewards\Models\RewardFundingEntry;
@@ -263,7 +262,7 @@ final class RewardBudgetLedger
                 'decided_at' => $decided,
             ]), 1);
         } catch (QueryException $exception) {
-            if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+            if (! RewardUniqueViolation::matches($exception)) {
                 throw $exception;
             }
 

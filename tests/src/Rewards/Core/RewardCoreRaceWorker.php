@@ -6,9 +6,9 @@ declare(strict_types=1);
 // OS process (`php RewardCoreRaceWorker.php --database=... ...`); returns
 // immediately when merely included, so test runners never execute it.
 
-use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
-use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
+use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreWorkerDb;
 use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use Carbon\CarbonImmutable;

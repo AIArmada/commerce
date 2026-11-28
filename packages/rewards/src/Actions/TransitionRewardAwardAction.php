@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Actions;
 
+use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Queries\RewardModerationPolicyQuery;
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
 
@@ -158,7 +159,7 @@ final readonly class TransitionRewardAwardAction
                 $reader,
             ));
         } catch (QueryException $exception) {
-            if (! CreateRewardProgramAction::isUniqueViolation($exception)) {
+            if (! RewardUniqueViolation::matches($exception)) {
                 throw $exception;
             }
 
