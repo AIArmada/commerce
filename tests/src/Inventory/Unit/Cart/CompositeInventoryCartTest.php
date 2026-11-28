@@ -9,6 +9,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Reservations\Actions\ReserveCartInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\InventoryValidator;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockOnCheckout;
@@ -479,4 +480,56 @@ describe('composite add and checkout reservation listeners', function (): void {
         expect($this->allocationService->getAllocationsForCart((string) $cart->getId()))->toBeEmpty()
             ->and($this->inventoryService->getLevel($available, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
     });
+});
+
+it('rebuilds checkout allocation metadata across all composite components and removes stale entries', function (): void {
+    config()->set('inventory.cart.validate_on_add', false);
+    config()->set('inventory.cart.block_checkout_on_insufficient', true);
+
+    $mouse = InventoryItem::create(['name' => 'Metadata Mouse']);
+    $cable = InventoryItem::create(['name' => 'Metadata Cable']);
+    $parent = InventoryItem::create(['name' => 'Metadata Bundle']);
+    $this->inventoryService->receive($mouse, $this->location->id, 10);
+    $this->inventoryService->receive($cable, $this->location->id, 10);
+
+    $cart = new Cart(new InMemoryStorage, 'composite-metadata-cart');
+    $cart->addBuyable(compositeCartBuyable('metadata-bundle', 'Bundle', 1000, compositeComponentSnapshot([
+        ['product' => $mouse, 'quantity' => 2],
+        ['product' => $cable, 'quantity' => 1],
+    ]), $parent), 2);
+
+    $action = app(ReserveCartInventory::class);
+    $action->execute($cart);
+
+    $metadata = $cart->getMetadata('inventory_allocations')['allocations'];
+    expect($metadata['metadata-bundle']['quantity'])->toBe(6)
+        ->and($metadata['metadata-bundle']['allocation_count'])->toBe(2);
+
+    $cart->remove('metadata-bundle');
+    $action->execute($cart);
+
+    expect($cart->getMetadata('inventory_allocations')['allocations'])->toBe([])
+        ->and($this->inventoryService->getLevel($mouse, $this->location->id)?->fresh()->quantity_reserved)->toBe(0)
+        ->and($this->inventoryService->getLevel($cable, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
+});
+
+it('releases removed identities when the cart is allocated again', function (): void {
+    config()->set('inventory.cart.validate_on_add', false);
+
+    $mouse = InventoryItem::create(['name' => 'Removed Mouse']);
+    $cable = InventoryItem::create(['name' => 'Retained Cable']);
+    $this->inventoryService->receive($mouse, $this->location->id, 10);
+    $this->inventoryService->receive($cable, $this->location->id, 10);
+
+    $cart = new Cart(new InMemoryStorage, 'reallocate-removed-cart');
+    $cart->add(id: 'mouse', name: 'Mouse', price: 100, quantity: 2, associatedModel: $mouse);
+    $cart->add(id: 'cable', name: 'Cable', price: 100, quantity: 3, associatedModel: $cable);
+
+    $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+    $manager->allocateAllInventory();
+    $cart->remove('mouse');
+    $manager->allocateAllInventory();
+
+    expect($this->inventoryService->getLevel($mouse, $this->location->id)?->fresh()->quantity_reserved)->toBe(0)
+        ->and($this->inventoryService->getLevel($cable, $this->location->id)?->fresh()->quantity_reserved)->toBe(3);
 });

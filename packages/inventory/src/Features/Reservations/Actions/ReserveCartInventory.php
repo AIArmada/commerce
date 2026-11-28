@@ -29,6 +29,8 @@ final readonly class ReserveCartInventory
             $allocations = [];
             $errors = [];
 
+            $this->allocationService->releaseAllForCart($cartId);
+
             foreach ($demand as $entry) {
                 try {
                     $itemAllocations = $this->allocationService->allocate(
@@ -43,13 +45,16 @@ final readonly class ReserveCartInventory
                     }
 
                     foreach ($entry['sources'] as $itemId => $source) {
-                        $allocations[$itemId] = [
+                        $allocations[$itemId] ??= [
                             'item_id' => $itemId,
                             'item_name' => $source['name'],
-                            'quantity' => $source['quantity'],
-                            'allocation_count' => $itemAllocations->count(),
+                            'quantity' => 0,
+                            'allocation_count' => 0,
                             'allocated_at' => $reservedAt->toISOString(),
                         ];
+
+                        $allocations[$itemId]['quantity'] += $source['quantity'];
+                        $allocations[$itemId]['allocation_count'] += $itemAllocations->count();
                     }
                 } catch (InsufficientInventoryException $exception) {
                     if (config('inventory.cart.block_checkout_on_insufficient', true)) {
@@ -65,13 +70,11 @@ final readonly class ReserveCartInventory
             return [$allocations, $errors];
         });
 
-        if ($allocations !== [] || $errors !== []) {
-            $cart->setMetadata(self::ALLOCATION_METADATA_KEY, [
-                'allocations' => $allocations,
-                'errors' => $errors,
-                'reserved_at' => $reservedAt->toISOString(),
-                'expires_at' => $reservedAt->addMinutes($ttlMinutes)->toISOString(),
-            ]);
-        }
+        $cart->setMetadata(self::ALLOCATION_METADATA_KEY, [
+            'allocations' => $allocations,
+            'errors' => $errors,
+            'reserved_at' => $reservedAt->toISOString(),
+            'expires_at' => $reservedAt->addMinutes($ttlMinutes)->toISOString(),
+        ]);
     }
 }

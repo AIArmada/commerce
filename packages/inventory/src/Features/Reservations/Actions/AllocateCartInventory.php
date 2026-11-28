@@ -22,8 +22,11 @@ final readonly class AllocateCartInventory
         return DB::transaction(function () use ($cart, $ttlMinutes): array {
             $results = [];
             $cartIdentifier = CartReservationIdentity::fromCart($cart);
+            $demand = InventoryDemandResolver::forCart($cart->getItems());
 
-            foreach (InventoryDemandResolver::forCart($cart->getItems()) as $entry) {
+            $this->allocationService->releaseAllForCart($cartIdentifier);
+
+            foreach ($demand as $entry) {
                 $allocations = $this->allocationService->allocate(
                     $entry['model'],
                     $entry['quantity'],
