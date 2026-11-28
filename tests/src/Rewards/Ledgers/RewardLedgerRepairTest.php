@@ -445,7 +445,7 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
     $programB = $programB->refresh();
 
     $versionB = $programB->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($programB, 'user', $memberId, $versionB, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $programB->getKey(), 'user', $memberId, (string) $versionB->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-r5c-1', $memberId));

@@ -194,7 +194,7 @@ it('assigns unique acceptance seqs under concurrent reaccepts', function (): voi
             null,
             $effective,
         );
-        $enrollment = EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $version, 'api', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        $enrollment = EnrollRewardMemberAction::run((string) $program->getKey(), 'user', (string) Str::uuid(), (string) $version->getKey(), 'api', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
         $payload = [
             'enrollment_id' => (string) $enrollment->getKey(),

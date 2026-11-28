@@ -420,7 +420,7 @@ it('refuses foreign leave and reaccept of an enrollment', function (): void {
 
     expect(fn () => OwnerContext::withOwner(
         $ownerB,
-        static fn () => ReacceptRewardTermsAction::run($enrollment, $version, 'member-portal', $at),
+        static fn () => ReacceptRewardTermsAction::run($enrollment, (string) $version->getKey(), 'member-portal', $at),
     ))->toThrow(AuthorizationException::class);
 
     expect($enrollment->refresh()->status)->toBe(RewardEnrollmentStatus::Active)

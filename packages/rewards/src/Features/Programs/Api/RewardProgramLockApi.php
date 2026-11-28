@@ -8,4 +8,6 @@ interface RewardProgramLockApi
 {
     /** Acquire the scoped program row lock within the caller's transaction. */
     public function lockScopedProgram(string $programId): void;
+
+    public function findEnrollmentPolicy(string $programId, string $versionId): ?RewardEnrollmentPolicySnapshot;
 }

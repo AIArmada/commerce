@@ -433,18 +433,18 @@ it('fulfils each referral side against its own role, recipient, and family', fun
 
     OwnerContext::withOwner($owner, function () use ($rewardsProgram, $version, $referrer, $invitee, $recipientType, $start): void {
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $invitee->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
@@ -486,10 +486,10 @@ it('fulfils each referral side against its own role, recipient, and family', fun
         TransitionRewardProgramStatusAction::run($refereeProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($refereeProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $refereeProgram,
+            (string) $refereeProgram->getKey(),
             $recipientType,
             (string) $invitee->getKey(),
-            $refereeVersion,
+            (string) $refereeVersion->getKey(),
             'member-portal',
             $start,
         );
@@ -618,10 +618,10 @@ it('blocks the referral reversal when the rewards award cannot be reversed', fun
         TransitionRewardProgramStatusAction::run($rewardsProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($rewardsProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $rewardsProgram,
+            (string) $rewardsProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );
@@ -721,10 +721,10 @@ it('fulfils the referrer side only from the family-bound rewards program', funct
             TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $program,
+                (string) $program->getKey(),
                 $recipientType,
                 (string) $referrer->getKey(),
-                $version,
+                (string) $version->getKey(),
                 'member-portal',
                 $start,
             );
@@ -791,10 +791,10 @@ it('keeps a global rewards program outside tenant referral fulfilment by default
         TransitionRewardProgramStatusAction::run($globalProgram, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($globalProgram, RewardProgramStatus::Active);
         EnrollRewardMemberAction::run(
-            $globalProgram,
+            (string) $globalProgram->getKey(),
             $recipientType,
             (string) $referrer->getKey(),
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             $start,
         );

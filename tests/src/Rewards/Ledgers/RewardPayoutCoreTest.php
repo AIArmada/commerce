@@ -42,7 +42,7 @@ function payoutHarness(string $prefix): array
     $staff = RewardLedgerFixtures::staffId();
     $enrolledAt = CarbonImmutable::parse('2026-06-10T00:00:00Z');
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', $enrolledAt);
     RecordRewardFundingSourceAction::run('src-' . $prefix, 'MYR', 100000, 'user', $staff, 'staff');
     RecordRewardFundingAction::run((string) $program->getKey(), 'MYR', 100000, 'src-' . $prefix, 'user', $staff, 'staff');
 

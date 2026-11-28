@@ -251,7 +251,7 @@ it('returns the frozen first award on duplicate evaluation and version switch', 
     $effective = CarbonImmutable::parse('2026-07-01T00:00:00Z');
     $v2 = PublishRewardProgramVersionAction::run($program, $effective, $rules, $terms, 'raise', null, null, $effective);
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
 
     $third = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Recipient, 'src-dup-1', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
 
@@ -444,7 +444,7 @@ it('records cash candidates as held prerequisites, never approved money', functi
 
     $memberId = (string) Str::uuid();
     $version = $program->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-cash-1', $memberId));
@@ -508,7 +508,7 @@ it('records benefit candidates as held prerequisites with exact amount snapshots
 
     $memberId = (string) Str::uuid();
     $version = $program->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-benefit-1', $memberId));

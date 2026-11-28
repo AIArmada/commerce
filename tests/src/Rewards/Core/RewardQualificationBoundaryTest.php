@@ -42,7 +42,7 @@ function c4Harness(string $prefix = 'core-c4'): array
 
     $memberId = (string) Str::uuid();
     $version = RewardProgramVersion::query()->where('program_id', $program->getKey())->orderByDesc('version')->first();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
 
     return [$program->refresh(), $memberId];
 }

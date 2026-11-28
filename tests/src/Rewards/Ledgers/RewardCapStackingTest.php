@@ -37,7 +37,7 @@ function stackingProgram(string $family, array $compatible, ?array $caps, string
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     return [$program->refresh(), $version];
 }
@@ -121,7 +121,7 @@ it('blocks same-family second beneficiaries on an already-claimed source', funct
     [$programA] = stackingProgram('ledger-samef-a', [], null, $memberId);
 
     $version = $programA->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($programA, 'user', $otherId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $programA->getKey(), 'user', $otherId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-samef-1', $memberId));

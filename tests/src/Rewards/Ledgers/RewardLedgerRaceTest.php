@@ -181,7 +181,7 @@ function raceSeedProgram(string $family, string $case, ?array $caps = null, arra
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     $memberId = (string) Str::uuid();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     return [$program->refresh(), $version, $memberId];
 }
@@ -247,7 +247,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
         $terms['version_label'] = 'draft-2';
         $effective = CarbonImmutable::parse('2026-07-01T00:00:00Z');
         $v2 = PublishRewardProgramVersionAction::run($program, $effective, $rules, $terms, 'raise', null, null, $effective);
-        EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-02T00:00:00Z'));
 
         $payload = [
             'program_ids' => [(string) $program->getKey()],
@@ -282,7 +282,7 @@ it('serializes two-family exclusivity races to a single claim', function (): voi
         [$programB] = raceSeedProgram('race-exclb', 'x1');
 
         $versionB = $programB->versions()->orderBy('version')->firstOrFail();
-        EnrollRewardMemberAction::run($programB, 'user', $memberId, $versionB, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $programB->getKey(), 'user', $memberId, (string) $versionB->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
         $payload = [
             'program_ids' => [(string) $programA->getKey(), (string) $programB->getKey()],
@@ -335,7 +335,7 @@ it('stacks compatible families concurrently without losing either award', functi
 
         foreach ([$programA, $programB] as $program) {
             $version = $program->versions()->orderBy('version')->firstOrFail();
-            EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+            EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         }
 
         $payload = [
@@ -519,7 +519,7 @@ it('achieves a milestone exactly once under concurrent contributions', function 
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
         $recipient = (string) Str::uuid();
-        EnrollRewardMemberAction::run($program, 'user', $recipient, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $recipient, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         $program = $program->refresh();
 
         $factA = raceFactPayload('src-race-mile-a', $recipient);
@@ -1130,7 +1130,7 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
         TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
         $recipient = (string) Str::uuid();
-        EnrollRewardMemberAction::run($program, 'user', $recipient, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+        EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $recipient, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
         $program = $program->refresh();
 
         $reader = new FakeRewardSourceFactReader;

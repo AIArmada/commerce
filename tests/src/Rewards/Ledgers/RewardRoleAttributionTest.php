@@ -238,10 +238,10 @@ it('skips incompatible early milestones and grants later tiers for their own rol
 
     $sharerId = (string) Str::uuid();
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $sharerId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );

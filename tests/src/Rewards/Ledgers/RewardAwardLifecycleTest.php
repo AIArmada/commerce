@@ -154,7 +154,7 @@ it('refuses cash and benefit approval and fulfillment while unready', function (
 
     $memberId = (string) Str::uuid();
     $version = $program->versions()->orderBy('version')->firstOrFail();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-lcash-1', $memberId));

@@ -6,7 +6,6 @@ namespace AIArmada\Rewards\Features\Enrollment\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardEnrollmentFactory;
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -34,7 +33,6 @@ use LogicException;
  * @property CarbonImmutable|null $left_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read RewardProgram $program
  * @property-read Collection<int, RewardEnrollmentAcceptance> $acceptances
  * @property-read Collection<int, RewardEnrollmentPeriod> $periods
  * @property-read RewardEnrollmentAcceptance $currentAcceptance
@@ -68,14 +66,6 @@ class RewardEnrollment extends Model
             'enrolled_at' => 'immutable_datetime',
             'left_at' => 'immutable_datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<RewardProgram, $this>
-     */
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(RewardProgram::class, 'program_id');
     }
 
     /**

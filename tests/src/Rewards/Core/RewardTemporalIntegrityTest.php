@@ -20,10 +20,10 @@ it('rejects leave before join and consent before publication', function (): void
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-time');
 
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         (string) Str::uuid(),
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );
@@ -32,17 +32,17 @@ it('rejects leave before join and consent before publication', function (): void
         ->toThrow(InvalidArgumentException::class, 'cannot predate the period join');
 
     expect(fn () => EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         (string) Str::uuid(),
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-05-15T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'cannot predate the policy publication');
 
     expect(fn () => ReacceptRewardTermsAction::run(
         $enrollment,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-05-15T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'cannot predate the policy publication');
@@ -53,16 +53,16 @@ it('rejects backward acceptance and overlapping rejoin', function (): void {
 
     $memberId = (string) Str::uuid();
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );
     ReacceptRewardTermsAction::run(
         $enrollment,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-12T00:00:00Z')
     );
@@ -70,32 +70,32 @@ it('rejects backward acceptance and overlapping rejoin', function (): void {
 
     expect(fn () => ReacceptRewardTermsAction::run(
         $enrollment->refresh(),
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-11T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'cannot move backwards');
 
     expect(fn () => ReacceptRewardTermsAction::run(
         $enrollment->refresh(),
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-05T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'cannot predate the enrollment');
 
     expect(fn () => EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-15T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'strictly after the last leave');
 
     expect(fn () => EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-20T00:00:00Z')
     ))->toThrow(InvalidArgumentException::class, 'strictly after the last leave');
@@ -108,19 +108,19 @@ it('gates gap facts by the relevant period and published lookback', function ():
 
     $memberId = (string) Str::uuid();
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );
     LeaveRewardProgramAction::run($enrollment, 'gap', CarbonImmutable::parse('2026-06-15T00:00:00Z'));
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-25T00:00:00Z')
     );
@@ -164,10 +164,10 @@ it('preserves frozen history across leave and rejoin', function (): void {
 
     $memberId = (string) Str::uuid();
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );
@@ -175,10 +175,10 @@ it('preserves frozen history across leave and rejoin', function (): void {
 
     LeaveRewardProgramAction::run($enrollment, 'bye', CarbonImmutable::parse('2026-06-20T00:00:00Z'));
     $rejoined = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-07-10T00:00:00Z')
     );
@@ -198,10 +198,10 @@ it('rejects inverted period and enrollment timestamps at model boundaries', func
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-model');
 
     $enrollment = EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         (string) Str::uuid(),
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z')
     );

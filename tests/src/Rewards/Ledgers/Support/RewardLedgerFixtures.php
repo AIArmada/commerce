@@ -120,10 +120,10 @@ final class RewardLedgerFixtures
 
         $memberId = (string) Str::uuid();
         $enrollment = EnrollRewardMemberAction::run(
-            $program,
+            (string) $program->getKey(),
             'user',
             $memberId,
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             CarbonImmutable::parse($enrolledAt),
         );
@@ -155,10 +155,10 @@ final class RewardLedgerFixtures
             TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $owned,
+                (string) $owned->getKey(),
                 'user',
                 $memberId,
-                $ownedVersion,
+                (string) $ownedVersion->getKey(),
                 'member-portal',
                 CarbonImmutable::parse('2026-06-10T00:00:00Z'),
             );
@@ -173,10 +173,10 @@ final class RewardLedgerFixtures
             TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Ready);
             TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Active);
             EnrollRewardMemberAction::run(
-                $global,
+                (string) $global->getKey(),
                 'user',
                 $memberId,
-                $globalVersion,
+                (string) $globalVersion->getKey(),
                 'member-portal',
                 CarbonImmutable::parse('2026-06-10T00:00:00Z'),
             );

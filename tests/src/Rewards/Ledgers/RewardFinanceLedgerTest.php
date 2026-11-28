@@ -148,10 +148,10 @@ it('reverses a confirmed cash payout through recovery and settles the budget', f
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -524,10 +524,10 @@ it('freezes recovery economics at opening time', function (): void {
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );

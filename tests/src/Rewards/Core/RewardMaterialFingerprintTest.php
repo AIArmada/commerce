@@ -24,7 +24,7 @@ it('blocks new earning on rule-only material change while old references stay im
     $program = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     $memberId = (string) Str::uuid();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v1, 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v1->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
 
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $eligible = PreviewRewardQualificationAction::run(
@@ -84,7 +84,7 @@ it('blocks new earning on rule-only material change while old references stay im
     expect($oldAcceptance->material_terms_hash)->toBe($v1->material_terms_hash)
         ->and($oldAcceptance->policy_version_id)->toBe((string) $v1->getKey());
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-08-05T00:00:00Z'));
 
     $fresh = PreviewRewardQualificationAction::run(
         $program,

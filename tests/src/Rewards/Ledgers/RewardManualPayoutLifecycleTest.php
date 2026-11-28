@@ -69,10 +69,10 @@ function nativeManualPayout(string $prefix, bool $confirm = true): array
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -222,10 +222,10 @@ it('fulfills a funded cash award through the shipped manual payout lifecycle', f
     $this->travelTo(CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
     );
 

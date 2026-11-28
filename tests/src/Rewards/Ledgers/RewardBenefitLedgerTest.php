@@ -49,10 +49,10 @@ function benefitLedgerFundedMember($program, $version, int $points): array
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -440,10 +440,10 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );

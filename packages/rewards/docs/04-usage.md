@@ -43,7 +43,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Data\RewardBeneficiaryRole;
 use AIArmada\Rewards\Data\RewardComponent;
 
-EnrollRewardMemberAction::run($program, 'user', $memberId, $version, 'member-portal', $enrolledAt);
+EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', $enrolledAt);
 
 $result = EvaluateRewardEntitlementAction::run(
     $program, RewardComponent::Points, 'user', $memberId,

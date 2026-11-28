@@ -83,7 +83,7 @@ function adminAdaptHeldAward(string $staffId, bool $suspect = false): RewardAwar
     );
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
-    EnrollRewardMemberAction::run($program->refresh(), 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact(
@@ -144,10 +144,10 @@ function adminAdaptCashSetup(string $staffId): array
     $memberId = (string) Str::uuid();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );
@@ -707,10 +707,10 @@ it('scopes admin queries to programs visible in the current owner context', func
         ]);
 
         EnrollRewardMemberAction::run(
-            $program,
+            (string) $program->getKey(),
             'user',
             $memberId,
-            $version,
+            (string) $version->getKey(),
             'member-portal',
             CarbonImmutable::parse('2026-06-10T00:00:00Z'),
         );
@@ -872,10 +872,10 @@ it('requests and fulfills a cash award through the awards table', function (): v
     $staffId = (string) $this->staff->getKey();
 
     EnrollRewardMemberAction::run(
-        $program,
+        (string) $program->getKey(),
         'user',
         $memberId,
-        $version,
+        (string) $version->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
     );

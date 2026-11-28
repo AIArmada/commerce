@@ -47,7 +47,7 @@ it('keeps v1 consent valid after advance v2 acceptance before the effective boun
 
     $memberId = (string) Str::uuid();
     $v1 = RewardProgramVersion::query()->where('program_id', $program->getKey())->orderBy('version')->first();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v1, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v1->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $terms2 = RewardCoreTestFixtures::terms();
     $terms2['version_label'] = 'draft-2';
@@ -66,7 +66,7 @@ it('keeps v1 consent valid after advance v2 acceptance before the effective boun
 
     ReacceptRewardTermsAction::run(
         RewardEnrollment::query()->where('member_id', $memberId)->first(),
-        $v2,
+        (string) $v2->getKey(),
         'member-portal',
         CarbonImmutable::parse('2026-07-20T00:00:00Z'),
     );
@@ -107,7 +107,7 @@ it('applies decision-time policy with lookback for pre-claim sources across a ma
     $effective = CarbonImmutable::parse('2026-07-01T00:00:00Z');
     $v2 = PublishRewardProgramVersionAction::run($program, $effective, RewardCoreTestFixtures::rules(), $terms2, null, null, null, $effective);
 
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v2, 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v2->getKey(), 'member-portal', CarbonImmutable::parse('2026-07-05T00:00:00Z'));
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
     $inside = PreviewRewardQualificationAction::run(
@@ -136,7 +136,7 @@ it('resolves exact effective boundaries by decision time', function (): void {
 
     $memberId = (string) Str::uuid();
     $v1 = RewardProgramVersion::query()->where('program_id', $program->getKey())->orderBy('version')->first();
-    EnrollRewardMemberAction::run($program, 'user', $memberId, $v1, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $v1->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $terms2 = RewardCoreTestFixtures::terms();
     $terms2['version_label'] = 'draft-2';

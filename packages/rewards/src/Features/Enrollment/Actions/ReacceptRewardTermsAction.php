@@ -7,7 +7,7 @@ namespace AIArmada\Rewards\Features\Enrollment\Actions;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Persistence\RewardEnrollmentGuard;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +25,7 @@ final readonly class ReacceptRewardTermsAction
 
     public function handle(
         RewardEnrollment | string $enrollment,
-        RewardProgramVersion | string $policyVersion,
+        string $versionId,
         ?string $acceptedVia = null,
         ?CarbonInterface $decisionTime = null,
     ): RewardEnrollmentAcceptance {
@@ -38,7 +38,6 @@ final readonly class ReacceptRewardTermsAction
             : CarbonImmutable::parse($decisionTime)->setTimezone('UTC');
 
         $enrollmentId = $enrollment instanceof RewardEnrollment ? (string) $enrollment->getKey() : $enrollment;
-        $versionId = $policyVersion instanceof RewardProgramVersion ? (string) $policyVersion->getKey() : $policyVersion;
 
         // The program is the tenant boundary: prove the enrollment's program
         // is in the current owner scope before any lock.
@@ -51,13 +50,13 @@ final readonly class ReacceptRewardTermsAction
                 throw new InvalidArgumentException('Unknown reward enrollment.');
             }
 
-            $version = RewardProgramVersion::query()->whereKey($versionId)->first();
+            $version = app(RewardProgramLockApi::class)->findEnrollmentPolicy((string) $locked->program_id, $versionId);
 
-            if (! $version instanceof RewardProgramVersion || (string) $version->program_id !== (string) $locked->program_id) {
+            if ($version === null) {
                 throw new InvalidArgumentException('Policy version does not belong to the enrollment program.');
             }
 
-            $versionPublishedAt = CarbonImmutable::parse($version->published_at)->setTimezone('UTC');
+            $versionPublishedAt = CarbonImmutable::parse($version->publishedAt)->setTimezone('UTC');
 
             if ($decision->lessThan($versionPublishedAt)) {
                 throw new InvalidArgumentException('Acceptance cannot predate the policy publication.');
@@ -93,14 +92,14 @@ final readonly class ReacceptRewardTermsAction
             $acceptance = RewardEnrollmentAcceptance::query()->create([
                 'enrollment_id' => $locked->getKey(),
                 'seq' => $maxSeq + 1,
-                'policy_version_id' => $version->getKey(),
-                'material_terms_hash' => $version->material_terms_hash,
+                'policy_version_id' => $version->id,
+                'material_terms_hash' => $version->materialTermsHash,
                 'terms_label' => (string) ($terms['version_label'] ?? 'v' . $version->version),
                 'accepted_snapshot' => [
                     'material' => $terms['material'] ?? [],
                     'rules' => $version->rules,
                     'policy_version' => $version->version,
-                    'policy_effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC')->toIso8601String(),
+                    'policy_effective_from' => CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC')->toIso8601String(),
                 ],
                 'accepted_at' => $decision,
                 'accepted_via' => $acceptedVia,

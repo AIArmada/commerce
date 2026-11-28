@@ -8,11 +8,10 @@ use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgram;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
+use AIArmada\Rewards\Features\Programs\Api\RewardEnrollmentPolicySnapshot;
+use AIArmada\Rewards\Features\Programs\Api\RewardProgramLockApi;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
-use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -46,15 +45,13 @@ final readonly class EnrollRewardMemberAction
     public const array ACCEPTED_VIA = ['member-portal', 'staff-assisted', 'api'];
 
     public function handle(
-        RewardProgram | string $program,
+        string $programId,
         string $memberType,
         string $memberId,
-        RewardProgramVersion | string $policyVersion,
+        string $versionId,
         ?string $acceptedVia = null,
         ?CarbonInterface $decisionTime = null,
     ): RewardEnrollment {
-        RewardProgramGuard::findProgramOrFail($program);
-
         $allowedMemberTypes = RewardLedgerEntries::recipientTypes();
 
         if (! in_array($memberType, $allowedMemberTypes, true)) {
@@ -73,30 +70,23 @@ final readonly class EnrollRewardMemberAction
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decisionTime)->setTimezone('UTC');
 
-        $programId = $program instanceof RewardProgram ? (string) $program->getKey() : $program;
-        $versionId = $policyVersion instanceof RewardProgramVersion ? (string) $policyVersion->getKey() : $policyVersion;
-
         return DB::transaction(function () use ($programId, $memberType, $memberId, $versionId, $acceptedVia, $decision): RewardEnrollment {
-            $lockedProgram = RewardProgram::query()->whereKey($programId)->lockForUpdate()->first();
+            $programs = app(RewardProgramLockApi::class);
+            $programs->lockScopedProgram($programId);
+            $version = $programs->findEnrollmentPolicy($programId, $versionId);
 
-            if (! $lockedProgram instanceof RewardProgram) {
-                throw new InvalidArgumentException('Unknown reward program.');
-            }
-
-            $version = RewardProgramVersion::query()->whereKey($versionId)->first();
-
-            if (! $version instanceof RewardProgramVersion || (string) $version->program_id !== (string) $lockedProgram->getKey()) {
+            if ($version === null) {
                 throw new InvalidArgumentException('Policy version does not belong to the program.');
             }
 
-            $versionPublishedAt = CarbonImmutable::parse($version->published_at)->setTimezone('UTC');
+            $versionPublishedAt = CarbonImmutable::parse($version->publishedAt)->setTimezone('UTC');
 
             if ($decision->lessThan($versionPublishedAt)) {
                 throw new InvalidArgumentException('Acceptance cannot predate the policy publication.');
             }
 
             $enrollment = RewardEnrollment::query()
-                ->where('program_id', $lockedProgram->getKey())
+                ->where('program_id', $programId)
                 ->where('member_type', $memberType)
                 ->where('member_id', $memberId)
                 ->lockForUpdate()
@@ -105,7 +95,7 @@ final readonly class EnrollRewardMemberAction
             if (! $enrollment instanceof RewardEnrollment) {
                 try {
                     $enrollment = RewardEnrollment::query()->create([
-                        'program_id' => $lockedProgram->getKey(),
+                        'program_id' => $programId,
                         'member_type' => $memberType,
                         'member_id' => $memberId,
                         'status' => RewardEnrollmentStatus::Active,
@@ -117,7 +107,7 @@ final readonly class EnrollRewardMemberAction
                     }
 
                     $enrollment = RewardEnrollment::query()
-                        ->where('program_id', $lockedProgram->getKey())
+                        ->where('program_id', $programId)
                         ->where('member_type', $memberType)
                         ->where('member_id', $memberId)
                         ->lockForUpdate()
@@ -148,8 +138,8 @@ final readonly class EnrollRewardMemberAction
                     : null;
 
                 if ($current instanceof RewardEnrollmentAcceptance
-                    && (string) $current->policy_version_id === (string) $version->getKey()
-                    && $current->material_terms_hash === $version->material_terms_hash
+                    && (string) $current->policy_version_id === $version->id
+                    && $current->material_terms_hash === $version->materialTermsHash
                 ) {
                     return $enrollment;
                 }
@@ -191,7 +181,7 @@ final readonly class EnrollRewardMemberAction
 
     private function appendAcceptance(
         RewardEnrollment $enrollment,
-        RewardProgramVersion $version,
+        RewardEnrollmentPolicySnapshot $version,
         ?string $acceptedVia,
         CarbonImmutable $decision,
     ): RewardEnrollmentAcceptance {
@@ -206,14 +196,14 @@ final readonly class EnrollRewardMemberAction
         return RewardEnrollmentAcceptance::query()->create([
             'enrollment_id' => $enrollment->getKey(),
             'seq' => $maxSeq + 1,
-            'policy_version_id' => $version->getKey(),
-            'material_terms_hash' => $version->material_terms_hash,
+            'policy_version_id' => $version->id,
+            'material_terms_hash' => $version->materialTermsHash,
             'terms_label' => (string) ($terms['version_label'] ?? 'v' . $version->version),
             'accepted_snapshot' => [
                 'material' => $terms['material'] ?? [],
                 'rules' => $version->rules,
                 'policy_version' => $version->version,
-                'policy_effective_from' => CarbonImmutable::parse($version->effective_from)->setTimezone('UTC')->toIso8601String(),
+                'policy_effective_from' => CarbonImmutable::parse($version->effectiveFrom)->setTimezone('UTC')->toIso8601String(),
             ],
             'accepted_at' => $decision,
             'accepted_via' => $acceptedVia,

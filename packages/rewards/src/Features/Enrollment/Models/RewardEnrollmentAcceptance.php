@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Enrollment\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardEnrollmentAcceptanceFactory;
-use AIArmada\Rewards\Features\Programs\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,7 +30,6 @@ use LogicException;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read RewardEnrollment $enrollment
- * @property-read RewardProgramVersion $policyVersion
  */
 class RewardEnrollmentAcceptance extends Model
 {
@@ -71,14 +69,6 @@ class RewardEnrollmentAcceptance extends Model
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(RewardEnrollment::class, 'enrollment_id');
-    }
-
-    /**
-     * @return BelongsTo<RewardProgramVersion, $this>
-     */
-    public function policyVersion(): BelongsTo
-    {
-        return $this->belongsTo(RewardProgramVersion::class, 'policy_version_id');
     }
 
     protected static function booted(): void

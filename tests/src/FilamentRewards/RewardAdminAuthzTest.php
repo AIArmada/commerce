@@ -73,7 +73,7 @@ function rewardAuthzHeldAward(bool $suspect = false): RewardAward
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
-    EnrollRewardMemberAction::run($program->refresh(), 'user', $memberId, $version, 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
+    EnrollRewardMemberAction::run((string) $program->getKey(), 'user', $memberId, (string) $version->getKey(), 'member-portal', CarbonImmutable::parse('2026-06-10T00:00:00Z'));
 
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact(
