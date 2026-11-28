@@ -118,6 +118,14 @@ final readonly class RecordPromotionFulfillmentUsage
                     continue;
                 }
 
+                $amount = $allocation['requested_amount'] ?? null;
+
+                if (! is_int($amount) || $amount <= 0) {
+                    $this->skip('promotion allocation has no positive allocated amount', ['order_id' => $lockedOrder->getKey()]);
+
+                    continue;
+                }
+
                 $meta = $allocation['meta'] ?? null;
                 $promotionId = is_array($meta) ? ($meta['promotion_id'] ?? null) : null;
 

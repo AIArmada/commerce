@@ -12,9 +12,9 @@ use AIArmada\Promotions\EntryPoints\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Str;
 
-function persistedOrderWithPromotion(User $owner, Promotion $promotion): Order
+function persistedOrderWithPromotion(User $owner, Promotion $promotion, mixed $amount = 1000): Order
 {
-    return OwnerContext::withOwner($owner, function () use ($owner, $promotion): Order {
+    return OwnerContext::withOwner($owner, function () use ($owner, $promotion, $amount): Order {
         $session = new CheckoutSession;
         $session->forceFill([
             'id' => (string) Str::uuid(),
@@ -30,7 +30,7 @@ function persistedOrderWithPromotion(User $owner, Promotion $promotion): Order
                     [
                         'provider_key' => 'promotions',
                         'candidate_key' => 'promotion:' . $promotion->id,
-                        'requested_amount' => 1000,
+                        'requested_amount' => $amount,
                         'meta' => ['promotion_id' => $promotion->id],
                     ],
                 ],
@@ -119,3 +119,14 @@ it('does not count another tenant promotion when promotion owner scoping is disa
     expect($promotion->fresh()->usage_count)->toBe(0)
         ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
 });
+
+it('does not consume promotion usage for an invalid allocated amount', function (mixed $amount): void {
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion, $amount);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+})->with([0, -1, '1000', null, 1.5, true]);
