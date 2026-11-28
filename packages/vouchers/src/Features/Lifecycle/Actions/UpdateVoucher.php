@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Features\Lifecycle\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Runtime\VoucherUpdater;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
 use AIArmada\Vouchers\Support\VoucherInputValidator;
@@ -17,21 +19,17 @@ use Lorisleiva\Actions\Concerns\AsAction;
 final class UpdateVoucher implements VoucherUpdater
 {
     use AsAction;
-    use QueriesVouchers;
+    use NormalizesVoucherCodes;
 
     public function __construct(private readonly VoucherInputValidator $validator) {}
 
     /** @param array<string, mixed> $data */
-    public function handle(string | VoucherModel $voucher, array $data): VoucherModel
+    public function handle(string $voucherId, array $data): VoucherData
     {
-        $record = $voucher instanceof VoucherModel
-            ? $voucher
-            : $this->voucherQuery()->where('code', $this->normalizeCode($voucher))->firstOrFail();
-
-        return $record->getConnection()->transaction(function () use ($record, $data): VoucherModel {
+        return (new VoucherModel)->getConnection()->transaction(function () use ($voucherId, $data): VoucherData {
             $locked = config('vouchers.owner.enabled', false)
-                ? OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $record->getKey(), lockForUpdate: true)
-                : VoucherModel::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+                ? OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $voucherId, lockForUpdate: true)
+                : VoucherModel::query()->whereKey($voucherId)->lockForUpdate()->firstOrFail();
 
             if (isset($data['code'])) {
                 $data['code'] = $this->normalizeCode((string) $data['code']);
@@ -75,7 +73,7 @@ final class UpdateVoucher implements VoucherUpdater
                 }
             }
 
-            return $locked->fresh() ?? $locked;
+            return VoucherSnapshot::fromModel($locked->fresh() ?? $locked);
         });
     }
 }

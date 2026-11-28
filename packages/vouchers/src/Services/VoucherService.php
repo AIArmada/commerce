@@ -13,6 +13,7 @@ use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUsageHistory;
 use AIArmada\Vouchers\Features\Wallet\Api\WalletRemoval;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
@@ -21,7 +22,6 @@ use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherRedemption;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
-use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\States\Active;
@@ -80,9 +80,13 @@ class VoucherService implements VoucherServiceInterface
      */
     public function update(string $code, array $data): VoucherData
     {
-        $voucher = app(VoucherUpdater::class)->handle($this->normalizeCode($code), $data);
+        $voucherId = $this->catalog->resolveId($code);
 
-        return VoucherSnapshot::fromModel($voucher);
+        if ($voucherId === null) {
+            throw VoucherNotFoundException::withCode($code);
+        }
+
+        return app(VoucherUpdater::class)->handle($voucherId, $data);
     }
 
     public function delete(string $code): bool

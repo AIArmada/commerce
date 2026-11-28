@@ -9,8 +9,8 @@ use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherDeletion;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +26,9 @@ final class EditVoucher extends EditRecord
             throw new InvalidArgumentException('Expected a voucher record.');
         }
 
-        return app(VoucherUpdater::class)->handle($record, $data);
+        app(VoucherUpdater::class)->handle((string) $record->getKey(), $data);
+
+        return $record->refresh();
     }
 
     protected function getHeaderActions(): array

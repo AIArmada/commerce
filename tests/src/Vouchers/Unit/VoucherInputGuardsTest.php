@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherUpdater;
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -52,6 +54,20 @@ function guardVoucher(array $attributes = []): Voucher
 }
 
 describe('voucher update guards', function (): void {
+    it('updates an exact voucher identifier and returns an immutable snapshot', function (): void {
+        $voucher = guardVoucher();
+        $other = guardVoucher();
+        $otherName = $other->name;
+
+        $updated = app(VoucherUpdater::class)->handle($voucher->id, ['name' => 'Exact update']);
+
+        expect($updated)->toBeInstanceOf(VoucherData::class)
+            ->and($updated->id)->toBe($voucher->id)
+            ->and($updated->name)->toBe('Exact update')
+            ->and($voucher->fresh()->name)->toBe('Exact update')
+            ->and($other->fresh()->name)->toBe($otherName);
+    });
+
     it('rejects invalid updates without partially saving valid fields', function (): void {
         $voucher = guardVoucher();
         $service = app(VoucherService::class);
