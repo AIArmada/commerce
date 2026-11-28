@@ -12,6 +12,7 @@ use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Data\AllocationStrategy;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Persistence\AtomicInventoryLevelPersistence;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -61,6 +62,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 final class InventoryLevel extends Model implements Auditable
 {
+    use AtomicInventoryLevelPersistence;
     use HasCommerceAudit;
 
     /** @use HasFactory<InventoryLevelFactory> */
@@ -351,12 +353,12 @@ final class InventoryLevel extends Model implements Auditable
             $level->owner_id = $location->owner_id;
         });
 
-        static::saving(function (InventoryLevel $level): void {
+        static::updated(function (InventoryLevel $level): void {
             app(InventoryLevelStore::class)->auditDirectOnHandChange($level);
         });
 
         self::deleting(function (InventoryLevel $level): bool {
-            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($level->getKey())->firstOrFail();
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($level->getKey())->lockForUpdate()->firstOrFail();
 
             return $record->quantity_on_hand === 0
                 && $record->quantity_reserved === 0

@@ -9,6 +9,7 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Services\InventoryService;
 
@@ -404,4 +405,45 @@ it('rejects deleting a stale level after stock is received', function (): void {
 
     expect($stale->delete())->toBeFalse()
         ->and($level->fresh()->quantity_on_hand)->toBe(5);
+});
+
+it('rejects stale direct stock edits without creating a false movement', function (): void {
+    $item = InventoryItem::create(['name' => 'Concurrent Stock']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+        'quantity_reserved' => 20,
+    ]);
+    $stale = $level->fresh();
+    app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 110]);
+
+    $movements = InventoryMovement::query()->count();
+
+    expect(fn () => $stale->update(['quantity_on_hand' => 90]))
+        ->toThrow(RuntimeException::class, 'reload it')
+        ->and(fn () => $level->fresh()->update(['quantity_on_hand' => 10]))
+        ->toThrow(InvalidArgumentException::class, 'reserved stock')
+        ->and($level->fresh()->quantity_on_hand)->toBe(110)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
+});
+
+it('does not record a direct adjustment when the stock update is cancelled', function (): void {
+    $item = InventoryItem::create(['name' => 'Cancelled Stock']);
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'inventoryable_type' => $item->getMorphClass(),
+        'inventoryable_id' => $item->getKey(),
+        'location_id' => $location->id,
+        'quantity_on_hand' => 100,
+    ]);
+    $movements = InventoryMovement::query()->count();
+
+    InventoryLevel::updating(static fn (InventoryLevel $record): bool => $record->getKey() !== $level->getKey());
+
+    expect($level->update(['quantity_on_hand' => 80]))->toBeFalse()
+        ->and($level->fresh()->quantity_on_hand)->toBe(100)
+        ->and(InventoryMovement::query()->count())->toBe($movements);
 });

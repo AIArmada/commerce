@@ -12,6 +12,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class InventoryLevelStore
 {
@@ -30,6 +31,22 @@ final readonly class InventoryLevelStore
         return InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate($identity);
     }
 
+    public function guardDirectOnHandChange(InventoryLevel $level): void
+    {
+        $current = InventoryOwnerScope::forMutation(InventoryLevel::query())
+            ->whereKey($level->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if ($current->quantity_on_hand !== (int) $level->getOriginal('quantity_on_hand')) {
+            throw new RuntimeException('Inventory level has changed; reload it before adjusting stock.');
+        }
+
+        if ($level->quantity_on_hand < $current->quantity_reserved) {
+            throw new InvalidArgumentException('On-hand quantity cannot be less than reserved stock.');
+        }
+    }
+
     /**
      * Record an adjustment movement for direct on-hand writes.
      *
@@ -44,7 +61,7 @@ final readonly class InventoryLevelStore
             return;
         }
 
-        if (! $level->isDirty('quantity_on_hand')) {
+        if (! $level->wasChanged('quantity_on_hand')) {
             return;
         }
 
