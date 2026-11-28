@@ -158,7 +158,7 @@ Global storage defaults can be overridden again per document type. Rich-content 
 ],
 ```
 
-Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocRenderService::createShareLink()`.
+Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocumentSharing::issue()`.
 
 The plain token is returned only from the creation call. The database stores its SHA-256 hash, and share responses use private no-store and no-referrer headers.
 

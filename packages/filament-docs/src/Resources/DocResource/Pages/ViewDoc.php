@@ -8,7 +8,7 @@ use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Contracts\DocumentLifecycle;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
@@ -74,12 +74,12 @@ final class ViewDoc extends ViewRecord
                         ->default(CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30))),
                 ])
                 ->action(function (Doc $record, array $data): void {
-                    $shareLink = app(DocRenderService::class)->createShareLink($record, new ShareLinkData(
+                    $shareLink = app(DocumentSharing::class)->issue((string) $record->getKey(), new ShareLinkData(
                         allowedActions: $data['allowed_actions'] ?? [ShareLinkAction::View->value],
                         expiresAt: filled($data['expires_at'] ?? null) ? CarbonImmutable::parse($data['expires_at']) : null,
                     ));
 
-                    $url = route(self::shareLinkRouteName($shareLink->allowed_actions), ['token' => $shareLink->plainToken()]);
+                    $url = route(self::shareLinkRouteName($shareLink->allowedActions), ['token' => $shareLink->plainToken()]);
 
                     Notification::make()
                         ->title('Share link created')
@@ -94,9 +94,7 @@ final class ViewDoc extends ViewRecord
                 ->color('warning')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    $record->shareLinks()
-                        ->whereNull('revoked_at')
-                        ->update(['revoked_at' => CarbonImmutable::now()]);
+                    app(DocumentSharing::class)->revokeAll((string) $record->getKey());
 
                     Notification::make()
                         ->title('Public links revoked')

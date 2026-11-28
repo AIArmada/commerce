@@ -202,9 +202,10 @@ Payment recording is transactional, locks the document inside its owner scope, r
 
 ## Rendering and Share Links
 
-`DocService` delegates HTML/PDF rendering and share-link generation to `DocRenderService`.
+HTML/PDF rendering uses `DocRenderService`; share-link issuance and revocation use `DocumentSharing`.
 
 ```php
+use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Data\ShareLinkAction;
@@ -215,7 +216,7 @@ $renderer = app(DocRenderService::class);
 $html = $renderer->renderHtml($document, RenderAudience::CustomerView);
 $pdf = $renderer->renderPdf($document);
 
-$shareLink = $renderer->createShareLink($document, new ShareLinkData(
+$shareLink = app(DocumentSharing::class)->issue((string) $document->getKey(), new ShareLinkData(
     allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
 ));
 

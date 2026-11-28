@@ -102,12 +102,12 @@ Public customer access uses hashed tokens and action permissions. Raw document I
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Contracts\DocumentSharing;
 use Carbon\CarbonImmutable;
 
 /** @var Doc $doc */
-$shareLink = app(DocRenderService::class)->createShareLink(
-    $doc,
+$shareLink = app(DocumentSharing::class)->issue(
+    (string) $doc->getKey(),
     new ShareLinkData(
         allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
         expiresAt: CarbonImmutable::now()->addDays(14),

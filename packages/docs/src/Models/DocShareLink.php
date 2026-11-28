@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -42,8 +41,6 @@ final class DocShareLink extends Model implements Auditable
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'docs.owner';
-
-    private ?string $plainToken = null;
 
     protected $fillable = [
         'doc_id',
@@ -86,22 +83,6 @@ final class DocShareLink extends Model implements Auditable
     public function revoke(): void
     {
         $this->update(['revoked_at' => CarbonImmutable::now()]);
-    }
-
-    public function setPlainToken(string $plainToken): self
-    {
-        $this->plainToken = $plainToken;
-
-        return $this;
-    }
-
-    public function plainToken(): string
-    {
-        if ($this->plainToken === null) {
-            throw new LogicException('Plain share-link token is only available immediately after link creation.');
-        }
-
-        return $this->plainToken;
     }
 
     public function markAccessed(): void

@@ -2,22 +2,23 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\EntryPoints\Http\Controllers;
+namespace AIArmada\Docs\Features\Delivery\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\RenderAudience;
+use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Services\DocRenderService;
 use Symfony\Component\HttpFoundation\Response;
 
 final class DocShareController
 {
-    public function show(string $token, DocRenderService $renderer): Response
+    public function show(string $token, DocRenderService $renderer, ManageDocShareLinks $sharing): Response
     {
-        $shareLink = $renderer->resolveShareLink($token, ShareLinkAction::View);
+        $shareLink = $sharing->resolve($token, ShareLinkAction::View);
 
         return OwnerContext::withOwner(
-            OwnerContext::fromTypeAndId($shareLink->owner_type, $shareLink->owner_id),
+            OwnerContext::fromTypeAndIdOrFail($shareLink->owner_type, $shareLink->owner_id),
             fn (): Response => response(
                 $renderer->renderHtml($shareLink->doc, RenderAudience::CustomerView)->toHtml(),
                 200,
@@ -28,12 +29,12 @@ final class DocShareController
         );
     }
 
-    public function pdf(string $token, DocRenderService $renderer): Response
+    public function pdf(string $token, DocRenderService $renderer, ManageDocShareLinks $sharing): Response
     {
-        $shareLink = $renderer->resolveShareLink($token, ShareLinkAction::Pdf);
+        $shareLink = $sharing->resolve($token, ShareLinkAction::Pdf);
 
         return OwnerContext::withOwner(
-            OwnerContext::fromTypeAndId($shareLink->owner_type, $shareLink->owner_id),
+            OwnerContext::fromTypeAndIdOrFail($shareLink->owner_type, $shareLink->owner_id),
             fn (): Response => response($renderer->renderPdf($shareLink->doc), 200, [
                 ...$this->shareResponseHeaders(),
                 'Content-Type' => 'application/pdf',

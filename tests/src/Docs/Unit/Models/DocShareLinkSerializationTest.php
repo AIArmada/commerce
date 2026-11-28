@@ -2,44 +2,24 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocumentSharing;
+use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocShareLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-\uses(RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
-it('does not leak plainToken through toArray or toJson', function (): void {
+it('never persists the plain token on the share link model', function (): void {
     $doc = Doc::factory()->create();
-    $link = new DocShareLink;
-    $link->forceFill([
-        'doc_id' => $doc->id,
-        'token_hash' => hash('sha256', 'secret-token'),
-        'allowed_actions' => ['view'],
-    ]);
-    $link->save();
-    $link->setPlainToken('secret-token');
+    $issued = app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData);
+    $link = DocShareLink::query()->findOrFail($issued->id);
+    $token = $issued->plainToken();
 
-    $array = $link->toArray();
-    expect($array)->not->toHaveKey('plainToken');
-    expect($array)->not->toHaveKey('plain_token');
-
-    $json = $link->toJson();
-    expect($json)->not->toContain('plainToken');
-    expect($json)->not->toContain('plain_token');
-    expect($json)->not->toContain('secret-token');
-});
-
-it('does not leak plainToken through serialization when freshly created', function (): void {
-    $doc = Doc::factory()->create();
-    $link = new DocShareLink;
-    $link->forceFill([
-        'doc_id' => $doc->id,
-        'token_hash' => hash('sha256', 'another-token'),
-        'allowed_actions' => ['edit'],
-    ]);
-    $link->save();
-    $link->setPlainToken('another-token');
-
-    $serialized = serialize($link);
-    expect($serialized)->not->toContain('another-token');
+    expect($link->token_hash)->toBe(hash('sha256', $token))
+        ->and($link->toArray())->not->toHaveKey('plainToken')
+        ->and($link->toArray())->not->toHaveKey('plain_token')
+        ->and($link->toJson())->not->toContain($token)
+        ->and(serialize($link))->not->toContain($token)
+        ->and(json_encode($issued))->not->toContain($token);
 });

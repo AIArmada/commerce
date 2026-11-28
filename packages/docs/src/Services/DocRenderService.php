@@ -10,26 +10,20 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Contracts\PdfRenderer;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
 use AIArmada\Docs\Data\PdfRenderOptions;
-use AIArmada\Docs\Data\ShareLinkAction;
-use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Support\DocPdfPath;
 use AIArmada\Docs\Support\DocTypeKey;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Throwable;
 
 final class DocRenderService
 {
@@ -135,70 +129,6 @@ final class DocRenderService
         $fingerprint = hash('sha256', json_encode([$html, $options, $this->pdfRenderer::class], JSON_THROW_ON_ERROR));
 
         return [$html, $options, $fingerprint];
-    }
-
-    public function createShareLink(Doc $doc, ShareLinkData $data): DocShareLink
-    {
-        if (config('docs.owner.enabled', false)) {
-            $doc = OwnerWriteGuard::findOrFailForOwner(Doc::class, (string) $doc->getKey());
-        }
-
-        $plainToken = Str::random(48);
-
-        $shareLink = OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($data, $doc, $plainToken): DocShareLink {
-            $shareLink = new DocShareLink([
-                'doc_id' => $doc->getKey(),
-                'token_hash' => hash('sha256', $plainToken),
-                'allowed_actions' => $data->allowedActionValues(),
-                'expires_at' => $data->expiresAt ?? CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30)),
-            ]);
-
-            $shareLink->save();
-            $shareLink->setRelation('doc', $doc);
-            $shareLink->setPlainToken($plainToken);
-
-            return $shareLink;
-        });
-
-        return $shareLink;
-    }
-
-    public function resolveShareLink(string $plainToken, ShareLinkAction $action): DocShareLink
-    {
-        /** @var DocShareLink|null $shareLink */
-        $shareLink = DocShareLink::query()
-            ->withoutOwnerScope()
-            ->where('token_hash', hash('sha256', $plainToken))
-            ->first();
-
-        if (! $shareLink instanceof DocShareLink) {
-            throw new NotFoundHttpException('Document link not found.');
-        }
-
-        if ($shareLink->isRevoked() || $shareLink->isExpired() || ! $shareLink->allows($action)) {
-            throw new NotFoundHttpException('Document link not found.');
-        }
-
-        try {
-            $owner = OwnerContext::fromTypeAndIdOrFail($shareLink->owner_type, $shareLink->owner_id);
-        } catch (Throwable) {
-            throw new NotFoundHttpException('Document link not found.');
-        }
-
-        return OwnerContext::withOwner($owner, function () use ($shareLink): DocShareLink {
-            $doc = Doc::query()->forOwner()->find($shareLink->doc_id);
-
-            if (! $doc instanceof Doc
-                || $doc->owner_type !== $shareLink->owner_type
-                || (string) $doc->owner_id !== (string) $shareLink->owner_id) {
-                throw new NotFoundHttpException('Document link not found.');
-            }
-
-            $shareLink->setRelation('doc', $doc);
-            $shareLink->markAccessed();
-
-            return $shareLink;
-        });
     }
 
     public function validateDocPayload(DocTemplate $template, ?array $body, array $items): void

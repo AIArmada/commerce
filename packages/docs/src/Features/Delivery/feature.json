@@ -8,6 +8,9 @@
     ],
     "store:docs.email.delivery": [
       "AIArmada\\Docs\\Features\\Delivery\\Actions\\DeliverDocEmail"
+    ],
+    "table:doc_share_links": [
+      "AIArmada\\Docs\\Features\\Delivery\\Actions\\ManageDocShareLinks"
     ]
   },
   "extensions": {}

@@ -10,7 +10,10 @@ use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
+use AIArmada\Docs\Contracts\DocumentSharing;
+use AIArmada\Docs\Features\Delivery\Actions\ManageDocShareLinks;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
@@ -98,46 +101,48 @@ it('does not require items for hidden line item blocks', function (): void {
 it('creates revocable action-limited share links', function (): void {
     $doc = Doc::factory()->create();
 
-    $shareLink = app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    $shareLink = app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: [ShareLinkAction::View],
     ));
 
     $plainToken = $shareLink->plainToken();
 
-    expect($plainToken)->toBeString()
-        ->and($shareLink->token_hash)->not->toBe($plainToken)
-        ->and($shareLink->allows(ShareLinkAction::View))->toBeTrue()
-        ->and($shareLink->allows(ShareLinkAction::Pdf))->toBeFalse()
-        ->and($shareLink->toArray())->not->toHaveKey('plainToken')
-        ->and($shareLink->toJson())->not->toContain($plainToken);
+    $stored = DocShareLink::query()->findOrFail($shareLink->id);
 
-    $resolved = app(DocRenderService::class)->resolveShareLink($plainToken, ShareLinkAction::View);
+    expect($plainToken)->toBeString()
+        ->and($stored->token_hash)->not->toBe($plainToken)
+        ->and($stored->allows(ShareLinkAction::View))->toBeTrue()
+        ->and($stored->allows(ShareLinkAction::Pdf))->toBeFalse()
+        ->and($stored->toArray())->not->toHaveKey('plainToken')
+        ->and($stored->toJson())->not->toContain($plainToken);
+
+    $resolved = app(ManageDocShareLinks::class)->resolve($plainToken, ShareLinkAction::View);
 
     expect($resolved->id)->toBe($shareLink->id)
         ->and($resolved->fresh()->access_count)->toBe(1);
 
-    $shareLink->revoke();
+    app(DocumentSharing::class)->revokeAll((string) $doc->getKey());
 
-    expect(fn (): mixed => app(DocRenderService::class)->resolveShareLink($plainToken, ShareLinkAction::View))
+    expect(fn (): mixed => app(ManageDocShareLinks::class)->resolve($plainToken, ShareLinkAction::View))
         ->toThrow(NotFoundHttpException::class);
 });
 
 it('rejects unsupported share link actions', function (): void {
     $doc = Doc::factory()->create();
 
-    expect(fn (): mixed => app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    expect(fn (): mixed => app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: ['view', 'delete'],
     )))->toThrow(InvalidArgumentException::class);
 });
 
 it('rejects expired share links', function (): void {
     $doc = Doc::factory()->create();
-    $shareLink = app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    $shareLink = app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: [ShareLinkAction::View],
         expiresAt: CarbonImmutable::now()->subMinute(),
     ));
 
-    expect(fn (): mixed => app(DocRenderService::class)->resolveShareLink(
+    expect(fn (): mixed => app(ManageDocShareLinks::class)->resolve(
         $shareLink->plainToken(),
         ShareLinkAction::View,
     ))->toThrow(NotFoundHttpException::class);
@@ -162,7 +167,7 @@ it('does not issue a share link for a document owned by another tenant', functio
     $doc = OwnerContext::withOwner($owner, fn (): Doc => Doc::factory()->create());
 
     OwnerContext::withOwner($other, function () use ($doc): void {
-        expect(fn () => app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+        expect(fn () => app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
             allowedActions: [ShareLinkAction::View],
         )))->toThrow(AuthorizationException::class);
     });

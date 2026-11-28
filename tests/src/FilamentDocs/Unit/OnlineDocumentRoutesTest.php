@@ -7,8 +7,9 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
+use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocRenderService;
+use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\FilamentDocs\Rendering\FilamentRichContentRenderer;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +45,7 @@ it('renders public share links by hashed token only', function (): void {
         'doc_number' => 'INV-SHARE',
     ]);
 
-    $shareLink = app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    $shareLink = app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: [ShareLinkAction::View],
     ));
 
@@ -52,7 +53,7 @@ it('renders public share links by hashed token only', function (): void {
         ->assertSuccessful()
         ->assertSee('INV-SHARE');
 
-    $shareLink->revoke();
+    app(DocumentSharing::class)->revokeAll((string) $doc->getKey());
 
     $this->get(route('docs.share.show', ['token' => $shareLink->plainToken()]))
         ->assertNotFound();
@@ -63,7 +64,7 @@ it('serves public share routes with private no-store headers', function (): void
         'doc_number' => 'INV-SHARE-SECURE',
     ]);
 
-    $shareLink = app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    $shareLink = app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
     ));
 
@@ -106,7 +107,7 @@ it('renders owner scoped public share links without ambient owner context', func
         'doc_number' => 'INV-OWNER-SHARE',
     ]));
 
-    $shareLink = OwnerContext::withOwner($owner, fn () => app(DocRenderService::class)->createShareLink($doc, new ShareLinkData(
+    $shareLink = OwnerContext::withOwner($owner, fn () => app(DocumentSharing::class)->issue((string) $doc->getKey(), new ShareLinkData(
         allowedActions: [ShareLinkAction::View],
     )));
 
@@ -114,7 +115,7 @@ it('renders owner scoped public share links without ambient owner context', func
         ->assertSuccessful()
         ->assertSee('INV-OWNER-SHARE');
 
-    $accessCount = OwnerContext::withOwner($owner, fn (): int => (int) $shareLink->fresh()?->access_count);
+    $accessCount = OwnerContext::withOwner($owner, fn (): int => (int) DocShareLink::query()->findOrFail($shareLink->id)->access_count);
 
     expect($accessCount)->toBe(1);
 });
