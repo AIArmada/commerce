@@ -66,12 +66,12 @@ The shipped `config/membership.php` top-level keys, with their default values:
 - `invitations.channels` maps a channel name to a class implementing `AIArmada\Membership\Contracts\InvitationChannel`. The built-in `email` channel is always available; add SMS, WhatsApp, social DM, or other integrations by registering a channel class here.
 - `invitations.verifiers` maps a channel name to a class implementing `AIArmada\Membership\Contracts\InvitationRecipientVerifier`. Only the `email` verifier ships with the package; every non-email channel must provide one before invitations on that channel can be accepted.
 - `invitations.default_channel` is used when `InviteMemberAction` receives no explicit channel.
-- Registering a channel at runtime (rather than through config) uses `InvitationChannelManager::registerChannel()` and `registerVerifier()`, from your own service provider. Register stateless instances there, or use class configuration so Laravel can resolve scoped dependencies.
+- Registering a channel at runtime (rather than through config) uses `AIArmada\Membership\Support\InvitationChannelManager::registerChannel()` and `registerVerifier()`, from your own service provider. Register stateless instances there, or use class configuration so Laravel can resolve scoped dependencies.
 
 ## Notes
 
 - Invitation tokens are always hashed with SHA-256 before persistence. The plaintext token is carried on the `InvitationDeliveryData` passed to the channel and on `MembershipInvitationSent`.
-- Recipient identifiers are normalized by the channel (`EmailInvitationChannel` lowercases and validates the address); the model stores whatever the channel returns.
+- Recipient identifiers are normalized by the channel (`AIArmada\Membership\Drivers\EmailInvitationChannel` lowercases and validates the address); the model stores whatever the channel returns.
 - Configure owner scoping under `membership.owner`; the legacy nested key is not read.
 - When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
 - `Organization::membersTable()` is the source of truth for organization memberships and reads `organizations.database.tables.members`. The generic `membership.pivot.table_suffix` setting applies to other `HasMembers` subjects only.

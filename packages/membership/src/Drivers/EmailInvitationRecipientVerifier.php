@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Membership\Channels;
+namespace AIArmada\Membership\Drivers;
 
 use AIArmada\Membership\Contracts\InvitationRecipientVerifier;
 use AIArmada\Membership\Data\InvitationActorData;

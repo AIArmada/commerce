@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Membership\Actions\AcceptInvitationAction;
 use AIArmada\Membership\Actions\InviteMemberAction;
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use AIArmada\Membership\Tests\Fixtures\FakeInvitationChannel;
 use AIArmada\Membership\Tests\Fixtures\FakeInvitationRecipientVerifier;
 use AIArmada\Membership\Tests\Fixtures\RegistersFakeInvitationChannel;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Tests\Fixtures;
 
-use AIArmada\Membership\Channels\InvitationChannelManager;
+use AIArmada\Membership\Support\InvitationChannelManager;
 
 trait RegistersFakeInvitationChannel
 {

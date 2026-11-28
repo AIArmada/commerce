@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Actions;
 
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Data\InvitationDeliveryData;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

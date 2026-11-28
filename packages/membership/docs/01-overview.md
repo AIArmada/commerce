@@ -18,7 +18,7 @@ title: Membership Overview
 - Models `MembershipApplication`, `MembershipInvitation` (both `HasOwner`-scoped), and the host-extensible `MembershipPivot`
 - Actions `ApplyForMembershipAction`, `ApproveMembershipApplicationAction`, `RejectMembershipApplicationAction`, `CancelMembershipApplicationAction`, `InviteMemberAction`, `AcceptInvitationAction`, `RevokeInvitationAction`, `AddMemberAction`, `RemoveMemberAction`, `ChangeMemberRoleAction`
 - `Services\SyncMembershipRolesAction` — pivot → Spatie team-role sync
-- `Channels\InvitationChannelManager` — registry for invitation channels and recipient verifiers
+- `Support\InvitationChannelManager` — registry for invitation channels and recipient verifiers
 - Contracts `InvitationChannel` and `InvitationRecipientVerifier`; plugin point for new delivery integrations
 - Config `membership.php`: `database`, `invitations` (token length, expiry, default channel, channel/verifier classes), `pivot`, `role_mapping`, `role_permissions`, `owner`, `features`
 

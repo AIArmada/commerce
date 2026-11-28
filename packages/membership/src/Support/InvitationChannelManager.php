@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Membership\Channels;
+namespace AIArmada\Membership\Support;
 
 use AIArmada\Membership\Contracts\InvitationChannel;
 use AIArmada\Membership\Contracts\InvitationRecipientVerifier;
 use AIArmada\Membership\Data\InvitationActorData;
 use AIArmada\Membership\Data\InvitationRecipientData;
+use AIArmada\Membership\Drivers\EmailInvitationChannel;
+use AIArmada\Membership\Drivers\EmailInvitationRecipientVerifier;
 use InvalidArgumentException;
 
 final class InvitationChannelManager

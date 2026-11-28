@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Membership;
 
 use AIArmada\Membership\Actions\SyncMembershipRolesAction;
-use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Console\Commands\SyncRolesCommand;
+use AIArmada\Membership\Support\InvitationChannelManager;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
