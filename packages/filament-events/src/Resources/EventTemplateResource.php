@@ -42,10 +42,8 @@ final class EventTemplateResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventTemplate> $query */
         $query = parent::getEloquentQuery();
 
         return OwnerUiScope::apply($query, includeGlobal: false);

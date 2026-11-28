@@ -10,6 +10,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
@@ -40,7 +41,10 @@ use UnitEnum;
 
 final class EventOccurrenceResource extends Resource
 {
-    protected static ?string $model = EventOccurrence::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::occurrenceClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
 
@@ -56,10 +60,8 @@ final class EventOccurrenceResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventOccurrence> $query */
         $query = parent::getEloquentQuery();
 
         return $query

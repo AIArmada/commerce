@@ -10,6 +10,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventSessionExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;
@@ -39,7 +40,10 @@ use UnitEnum;
 
 final class EventSessionResource extends Resource
 {
-    protected static ?string $model = EventSession::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::sessionClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-list-bullet';
 
@@ -55,10 +59,8 @@ final class EventSessionResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventSession> $query */
         $query = parent::getEloquentQuery();
 
         return $query

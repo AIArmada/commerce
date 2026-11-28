@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Events\Features\Changes\Models\EventChangeLog;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource\Pages\ListEventChangeLogs;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource\Pages\ViewEventChangeLog;
 use BackedEnum;
@@ -22,7 +23,10 @@ use UnitEnum;
 
 final class EventChangeLogResource extends Resource
 {
-    protected static ?string $model = EventChangeLog::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::changeLogClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
 
@@ -38,10 +42,8 @@ final class EventChangeLogResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventChangeLog> $query */
         $query = parent::getEloquentQuery();
 
         return $query

@@ -50,10 +50,8 @@ final class EventRegistrationResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventRegistration> $query */
         $query = parent::getEloquentQuery();
 
         return $query
@@ -81,12 +79,12 @@ final class EventRegistrationResource extends Resource
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         $pattern = LikeSearch::contains($search);
 
-                        return $query
-                            ->whereHas('registrant', function (Builder $q) use ($pattern): void {
+                        return $query->where(function (Builder $nested) use ($pattern): void {
+                            $nested->whereHasMorph('registrant', [Customer::class], function (Builder $q) use ($pattern): void {
                                 LikeSearch::whereLike($q, 'first_name', $pattern);
                                 LikeSearch::orWhereLike($q, 'last_name', $pattern);
-                            })
-                            ->orWhereHas('participants', fn (Builder $q) => LikeSearch::whereLike($q, 'name', $pattern));
+                            })->orWhereHas('participants', fn (Builder $q) => LikeSearch::whereLike($q, 'name', $pattern));
+                        });
                     }),
                 Tables\Columns\TextColumn::make('registrant.email')
                     ->label('Email')
@@ -103,19 +101,20 @@ final class EventRegistrationResource extends Resource
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         $pattern = LikeSearch::contains($search);
 
-                        return $query->whereHasMorph(
-                            'registrant',
-                            [Customer::class],
-                            fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas(
-                                'contactMethods',
-                                fn (Builder $contactQuery): Builder => $contactQuery
-                                    ->where('type', 'email')
-                                    ->where(function (Builder $valueQuery) use ($pattern): void {
-                                        LikeSearch::whereLike($valueQuery, 'normalized_value', $pattern);
-                                        LikeSearch::orWhereLike($valueQuery, 'value', $pattern);
-                                    }),
-                            ),
-                        );
+                        $matchContact = static fn (Builder $contactQuery): Builder => $contactQuery
+                            ->where('type', 'email')
+                            ->where(function (Builder $valueQuery) use ($pattern): void {
+                                LikeSearch::whereLike($valueQuery, 'normalized_value', $pattern);
+                                LikeSearch::orWhereLike($valueQuery, 'value', $pattern);
+                            });
+
+                        return $query->where(function (Builder $nested) use ($matchContact): void {
+                            $nested->whereHasMorph(
+                                'registrant',
+                                [Customer::class],
+                                fn (Builder $registrantQuery): Builder => $registrantQuery->whereHas('contactMethods', $matchContact),
+                            )->orWhereHas('participants.contactMethods', $matchContact);
+                        });
                     }),
                 Tables\Columns\TextColumn::make('registrant.phone')
                     ->label('Phone')

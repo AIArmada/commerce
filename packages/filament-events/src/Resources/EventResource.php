@@ -64,13 +64,8 @@ class EventResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /**
-     * @return Builder<Event>
-     */
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<Event> $query */
         $query = parent::getEloquentQuery();
 
         return OwnerUiScope::apply($query, includeGlobal: false)

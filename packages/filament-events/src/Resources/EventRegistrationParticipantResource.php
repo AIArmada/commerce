@@ -6,8 +6,10 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
+use AIArmada\Events\Platform\ModelResolver;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -23,7 +25,10 @@ use UnitEnum;
 
 final class EventRegistrationParticipantResource extends Resource
 {
-    protected static ?string $model = EventRegistrationParticipant::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::registrationParticipantClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUserGroup;
 
@@ -56,7 +61,6 @@ final class EventRegistrationParticipantResource extends Resource
         );
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -78,7 +82,16 @@ final class EventRegistrationParticipantResource extends Resource
                     ->label('Email')
                     ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'email'))
                     ->copyable()
-                    ->searchable(),
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $pattern = LikeSearch::contains($search);
+
+                        return $query->whereHas('contactMethods', fn (Builder $contact): Builder => $contact
+                            ->where('type', 'email')
+                            ->where(function (Builder $value) use ($pattern): void {
+                                LikeSearch::whereLike($value, 'normalized_value', $pattern);
+                                LikeSearch::orWhereLike($value, 'value', $pattern);
+                            }));
+                    }),
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Phone')
                     ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'phone'))

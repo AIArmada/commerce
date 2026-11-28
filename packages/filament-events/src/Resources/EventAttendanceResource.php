@@ -43,10 +43,8 @@ final class EventAttendanceResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventAttendance> $query */
         $query = parent::getEloquentQuery();
 
         return $query
