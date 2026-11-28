@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Traits;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
@@ -119,7 +119,7 @@ trait InteractsWithVouchers
     public function getVoucherCondition(string $code): ?VoucherCondition
     {
         $normalized = $this->normalizeVoucherCode($code);
-        $conditions = $this->collectVoucherConditions();
+        $conditions = app(CartVoucherConditions::class)->forCart($this->getUnderlyingCart());
 
         return $conditions[$normalized] ?? null;
     }
@@ -131,7 +131,7 @@ trait InteractsWithVouchers
      */
     public function getAppliedVouchers(): array
     {
-        return array_values($this->collectVoucherConditions());
+        return array_values(app(CartVoucherConditions::class)->forCart($this->getUnderlyingCart()));
     }
 
     /**
@@ -216,7 +216,7 @@ trait InteractsWithVouchers
             $code = $voucherCondition->getVoucherCode();
             $validationResult = Voucher::validate($code, $this->getUnderlyingCart());
 
-            if (! $validationResult->matchesVoucher($voucherCondition->getVoucherId())) {
+            if (! $validationResult->matchesTerms($voucherCondition->getVoucher()->toArray())) {
                 $this->removeVoucher($code);
                 $removedVouchers[] = $code;
             }
@@ -260,40 +260,5 @@ trait InteractsWithVouchers
         }
 
         return $normalized;
-    }
-
-    /**
-     * @return array<string, VoucherCondition>
-     */
-    private function collectVoucherConditions(): array
-    {
-        $cart = $this->getUnderlyingCart();
-
-        $collections = [
-            $cart->getDynamicConditions(),
-            $cart->getConditions(),
-        ];
-
-        $conditions = [];
-
-        foreach ($collections as $collection) {
-            foreach ($collection as $condition) {
-                if ($condition instanceof VoucherCondition) {
-                    $voucherCondition = $condition;
-                } elseif ($condition instanceof CartCondition && $condition->getType() === 'voucher') {
-                    $voucherCondition = VoucherCondition::fromCartCondition($condition);
-
-                    if ($voucherCondition === null) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-
-                $conditions[$this->normalizeVoucherCode($voucherCondition->getVoucherCode())] = $voucherCondition;
-            }
-        }
-
-        return $conditions;
     }
 }

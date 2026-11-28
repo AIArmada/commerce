@@ -10,11 +10,13 @@ use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\ManageVoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Actions\RemoveVoucherFromCart;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
+use AIArmada\Vouchers\Features\CartIntegration\Queries\ReadCartVoucherConditions;
 use AIArmada\Vouchers\Features\CartIntegration\Queries\VoucherValidator;
 use AIArmada\Vouchers\Platform\ExtensionRegistry;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
@@ -30,6 +32,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(VoucherConditionProvider::class);
         $app->bind(VoucherReservations::class, ManageVoucherReservations::class);
         $app->bind(CartVoucherApplicator::class, ApplyVoucherToCart::class);
+        $app->bind(CartVoucherConditions::class, ReadCartVoucherConditions::class);
         $app->bind(CartVoucherRemoval::class, RemoveVoucherFromCart::class);
     }
 

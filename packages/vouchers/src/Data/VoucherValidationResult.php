@@ -86,6 +86,24 @@ final readonly class VoucherValidationResult implements JsonSerializable
             && ($snapshot['id'] ?? null) === $voucherId;
     }
 
+    public function matchesTerms(mixed $snapshot): bool
+    {
+        $current = $this->getDetail('voucher');
+
+        if (! $this->isValid || ! is_array($snapshot) || ! is_array($current)
+            || ! is_string($snapshot['id'] ?? null) || $snapshot['id'] === '') {
+            return false;
+        }
+
+        foreach (['id', 'type', 'value', 'value_config', 'currency', 'max_discount', 'target_definition', 'credit_destination', 'credit_delay_hours'] as $field) {
+            if (! array_key_exists($field, $snapshot) || ! array_key_exists($field, $current) || $snapshot[$field] !== $current[$field]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** @return array{is_valid: bool, reason: ?string, details: ?array} */
     public function toArray(): array
     {

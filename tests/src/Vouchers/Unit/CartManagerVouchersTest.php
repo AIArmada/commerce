@@ -108,3 +108,35 @@ it('removes a cart voucher when its code resolves to a different voucher identit
     expect($cart->validateAppliedVouchers())->toBe(['REUSED'])
         ->and($cart->hasVoucher('REUSED'))->toBeFalse();
 });
+
+it('removes an applied voucher when its discount terms change without changing its identity', function (): void {
+    $original = VoucherData::fromArray([
+        'id' => 'same-voucher',
+        'code' => 'CHANGED',
+        'name' => 'Original',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'USD',
+    ]);
+
+    $updated = VoucherData::fromArray([
+        ...$original->toArray(),
+        'value' => 50,
+    ]);
+
+    Voucher::shouldReceive('validate')
+        ->once()
+        ->ordered()
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
+
+    Voucher::shouldReceive('validate')
+        ->once()
+        ->ordered()
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $updated->toArray()]));
+
+    $cart = new CartWithVouchers(Cart::getCurrentCart());
+    $cart->applyVoucher('CHANGED');
+
+    expect($cart->validateAppliedVouchers())->toBe(['CHANGED'])
+        ->and($cart->hasVoucher('CHANGED'))->toBeFalse();
+});

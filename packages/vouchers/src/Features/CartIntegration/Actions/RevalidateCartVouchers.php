@@ -61,7 +61,7 @@ final readonly class RevalidateCartVouchers
             }
 
             foreach ($conditionSnapshots[$code] ?? [] as $snapshot) {
-                if (! $this->matchesCurrentVoucher($snapshot, $result->getDetail('voucher'))) {
+                if (! $result->matchesTerms($snapshot)) {
                     $invalidCodes[$code] = 'Voucher terms have changed. Apply the voucher again.';
 
                     break;
@@ -95,20 +95,5 @@ final readonly class RevalidateCartVouchers
         if (config('vouchers.checkout.block_on_invalid', false)) {
             throw VoucherValidationException::multipleInvalid($invalidCodes);
         }
-    }
-
-    private function matchesCurrentVoucher(mixed $snapshot, mixed $current): bool
-    {
-        if (! is_array($snapshot) || ! is_array($current)) {
-            return false;
-        }
-
-        foreach (['id', 'type', 'value', 'value_config', 'currency', 'max_discount', 'target_definition', 'credit_destination', 'credit_delay_hours'] as $field) {
-            if (! array_key_exists($field, $snapshot) || ! array_key_exists($field, $current) || $snapshot[$field] !== $current[$field]) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

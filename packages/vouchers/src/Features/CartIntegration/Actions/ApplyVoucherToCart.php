@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
@@ -13,6 +12,7 @@ use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherConditions;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,7 +39,9 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             );
         }
 
-        if ($this->isAlreadyApplied($cart, $code)) {
+        $applied = app(CartVoucherConditions::class)->forCart($cart);
+
+        if (isset($applied[$code])) {
             throw new InvalidVoucherException(
                 "Voucher '{$code}' is already applied to this cart"
             );
@@ -58,7 +60,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
 
         $voucherData = VoucherData::fromArray($snapshot);
         $voucherCondition = new VoucherCondition($voucherData, $order);
-        $existingVouchers = collect($this->getAppliedVoucherConditions($cart));
+        $existingVouchers = collect(array_values($applied));
 
         $policy ??= app(StackingPolicyInterface::class);
         $decision = $policy->canAdd(
@@ -108,54 +110,6 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
         VoucherApplied::dispatch($cart, $voucherData);
 
         return $voucherCondition;
-    }
-
-    private function isAlreadyApplied(Cart $cart, string $code): bool
-    {
-        $normalized = $this->normalizeCode($code);
-
-        foreach ($this->collectVoucherConditions($cart) as $condition) {
-            if ($this->normalizeCode($condition->getVoucherCode()) === $normalized) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function getAppliedVoucherConditions(Cart $cart): array
-    {
-        return array_values($this->collectVoucherConditions($cart));
-    }
-
-    private function collectVoucherConditions(Cart $cart): array
-    {
-        $collections = [
-            $cart->getDynamicConditions(),
-            $cart->getConditions(),
-        ];
-
-        $conditions = [];
-
-        foreach ($collections as $collection) {
-            foreach ($collection as $condition) {
-                if ($condition instanceof VoucherCondition) {
-                    $voucherCondition = $condition;
-                } elseif ($condition instanceof CartCondition && $condition->getType() === 'voucher') {
-                    $voucherCondition = VoucherCondition::fromCartCondition($condition);
-
-                    if ($voucherCondition === null) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-
-                $conditions[$this->normalizeCode($voucherCondition->getVoucherCode())] = $voucherCondition;
-            }
-        }
-
-        return $conditions;
     }
 
     private function ensureVoucherRulesFactory(Cart $cart): void
