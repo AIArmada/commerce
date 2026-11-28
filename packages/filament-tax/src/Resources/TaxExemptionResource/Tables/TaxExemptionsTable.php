@@ -6,7 +6,6 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables;
 
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
 use AIArmada\Tax\Actions\Exemption\ApproveExemptionsAction;
-use AIArmada\Tax\Actions\Exemption\DeleteTaxExemptionAction;
 use AIArmada\Tax\Actions\Exemption\DeleteTaxExemptionsAction;
 use AIArmada\Tax\Actions\Exemption\RejectExemptionsAction;
 use AIArmada\Tax\Actions\Exemption\RenewTaxExemptionAction;
@@ -189,7 +188,7 @@ final class TaxExemptionsTable
                     DeleteAction::make()
                         ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
                         ->using(function (TaxExemption $record): void {
-                            app(DeleteTaxExemptionAction::class)->execute($record->getKey());
+                            app(DeleteTaxExemptionsAction::class)->execute([$record->getKey()]);
                         }),
                 ]),
             ])

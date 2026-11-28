@@ -6,8 +6,8 @@ namespace AIArmada\Tax\Actions\Exemption;
 
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
-use Illuminate\Support\Facades\DB;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 final readonly class ApproveExemptionAction
 {

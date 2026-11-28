@@ -7,7 +7,7 @@ namespace AIArmada\Tax\Actions\Exemption;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 
-final class RequestTaxExemption
+final readonly class RequestTaxExemption
 {
     /**
      * @param  array<string, mixed>  $attributes

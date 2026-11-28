@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Tax\Actions\Exemption\RequestTaxExemption;
+use AIArmada\Tax\Actions\Exemption\UpdateTaxExemptionAction;
 use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('Exemption requests', function (): void {
     it('forces new requests into pending and drops privileged fields', function (): void {
@@ -136,4 +138,31 @@ describe('Owner mass assignment', function (): void {
         expect($exemption->owner_type)->toBeNull()
             ->and($exemption->owner_id)->toBeNull();
     });
+});
+
+it('does not allow ordinary exemption updates to set privileged lifecycle fields', function (): void {
+    $exemption = app(RequestTaxExemption::class)->execute(['reason' => 'Original request']);
+
+    $updated = app(UpdateTaxExemptionAction::class)->execute($exemption->id, [
+        'reason' => 'Updated request',
+        'status' => ApprovedState::class,
+        'verified_at' => now(),
+        'rejection_reason' => 'Forged',
+    ]);
+
+    expect($updated->fresh()->isPending())->toBeTrue()
+        ->and($updated->fresh()->verified_at)->toBeNull()
+        ->and($updated->fresh()->rejection_reason)->toBeNull()
+        ->and($updated->fresh()->reason)->toBe('Updated request');
+});
+
+it('prevents ordinary edits from changing an approved exemption', function (): void {
+    $exemption = app(RequestTaxExemption::class)->execute(['reason' => 'Original request']);
+    $exemption->approve();
+
+    expect(fn () => app(UpdateTaxExemptionAction::class)->execute($exemption->id, ['reason' => 'Replaced request']))
+        ->toThrow(AuthorizationException::class);
+
+    expect($exemption->fresh()->reason)->toBe('Original request')
+        ->and($exemption->fresh()->isApproved())->toBeTrue();
 });

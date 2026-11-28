@@ -6,7 +6,7 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages;
 
 use AIArmada\FilamentTax\Actions\ValidateExemptableEntityAction;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
-use AIArmada\Tax\Actions\Exemption\DeleteTaxExemptionAction;
+use AIArmada\Tax\Actions\Exemption\DeleteTaxExemptionsAction;
 use AIArmada\Tax\Actions\Exemption\UpdateTaxExemptionAction;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -30,7 +30,9 @@ class EditTaxExemption extends EditRecord
                 ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.view') ?? false),
             Actions\DeleteAction::make()
                 ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
-                ->using(fn (Model $record) => app(DeleteTaxExemptionAction::class)->execute($record->getKey())),
+                ->using(function (Model $record): void {
+                    app(DeleteTaxExemptionsAction::class)->execute([$record->getKey()]);
+                }),
         ];
     }
 }

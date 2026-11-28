@@ -63,6 +63,7 @@ final class TaxOwnerScope
             includeGlobal: (bool) config('tax.features.owner.include_global', false),
         );
     }
+
     /**
      * @template TModel of Model
      *
