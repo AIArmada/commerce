@@ -409,7 +409,7 @@ Use `CreateOrderInvoiceDoc` when you want to create a Docs record for a paid ord
 Automatic `OrderPaid` invoice generation is disabled by default. Turn on `orders.integrations.docs.enabled` only when you want that event listener to create persisted Docs invoices automatically.
 
 ```php
-use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
 
 $invoice = app(CreateOrderInvoiceDoc::class)->execute(
     order: $order,
@@ -427,7 +427,7 @@ Use `CreateOrderReceiptDoc` when payment confirmation should also create a recei
 Checkout-driven receipt generation is also opt-in from the checkout package side; manual action usage remains available regardless of the listener defaults.
 
 ```php
-use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
 
 $receipt = app(CreateOrderReceiptDoc::class)->execute(
     order: $order,

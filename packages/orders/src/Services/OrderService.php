@@ -182,8 +182,11 @@ final class OrderService implements OrderServiceInterface
     {
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
-        $order->recalculateTotals()->save();
+        return $order->getConnection()->transaction(function () use ($order): Order {
+            $locked = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
+            $locked->recalculateTotals()->save();
 
-        return $order->fresh();
+            return $locked->refresh();
+        });
     }
 }

@@ -94,8 +94,6 @@ final readonly class CreateOrder
         ?string $intakeSource,
         ?string $intakeId,
     ): Order {
-        $this->validateTotalsInvariant($orderData);
-
         foreach ($items as $itemData) {
             $this->validateItemData($itemData);
         }
@@ -166,7 +164,19 @@ final readonly class CreateOrder
             $totals[$key] = $value;
         }
 
-        if ($totals['grand_total'] === 0 && $totals['discount_total'] < $totals['subtotal'] + $totals['tax_total'] + $totals['shipping_total']) {
+        $remainingDiscount = $totals['discount_total'];
+        $uncovered = false;
+
+        foreach (['subtotal', 'tax_total', 'shipping_total'] as $key) {
+            if ($totals[$key] > $remainingDiscount) {
+                $uncovered = true;
+                break;
+            }
+
+            $remainingDiscount -= $totals[$key];
+        }
+
+        if ($totals['grand_total'] === 0 && $uncovered) {
             throw new InvalidArgumentException('Order totals are inconsistent: a zero grand_total requires discount_total to cover subtotal, tax_total, and shipping_total.');
         }
     }
@@ -212,7 +222,12 @@ final readonly class CreateOrder
         $lineDiscounts = 0;
 
         foreach ($items as $itemData) {
-            $lineDiscounts += $this->coerceOrderInt($itemData['discount_amount'] ?? 0, 'Order item discount_amount');
+            $discount = $this->coerceOrderInt($itemData['discount_amount'] ?? 0, 'Order item discount_amount');
+            if ($discount > PHP_INT_MAX - $lineDiscounts) {
+                throw new InvalidArgumentException('Order line discounts exceed the supported integer range.');
+            }
+
+            $lineDiscounts += $discount;
         }
 
         $discountTotal = $this->coerceOrderInt($orderData['discount_total'] ?? 0, 'Order total discount_total');

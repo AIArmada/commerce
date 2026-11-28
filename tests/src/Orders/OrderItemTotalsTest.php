@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Features\Lifecycle\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
@@ -92,4 +92,12 @@ it('builds invoice documents for orders carrying line discounts', function (): v
 
     expect($doc)->not->toBeNull()
         ->and($doc->total_minor)->toBe(12100);
+});
+
+it('rejects order line arithmetic overflow', function (): void {
+    $item = new OrderItem(['quantity' => 2, 'unit_price' => PHP_INT_MAX, 'discount_amount' => 0, 'tax_amount' => 0]);
+    expect(fn (): int => $item->calculateTotal())->toThrow(InvalidArgumentException::class, 'subtotal exceeds');
+
+    $item = new OrderItem(['quantity' => 1, 'unit_price' => PHP_INT_MAX, 'discount_amount' => 0, 'tax_amount' => 1]);
+    expect(fn (): int => $item->calculateTotal())->toThrow(InvalidArgumentException::class, 'total exceeds');
 });
