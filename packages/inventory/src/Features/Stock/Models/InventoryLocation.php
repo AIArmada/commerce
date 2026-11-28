@@ -16,6 +16,7 @@ use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Persistence\LocationTreeService;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;
@@ -410,13 +411,14 @@ final class InventoryLocation extends Model implements Auditable
             // Safety net for keys assigned after the creating hook: a root
             // path is never left null or placeholder-valued.
             if ($location->parent_id === null && $location->path === null) {
-                $location->forceFill(['path' => $location->getKey(), 'depth' => 0])->saveQuietly();
+                app(LocationTreeService::class)->initializeRootPath($location);
             }
         });
 
         static::updating(function (InventoryLocation $location): void {
             if ($location->isDirty('parent_id')) {
                 $location->updatePathAndDepth();
+                app(LocationTreeService::class)->assertSubtreeDepth($location);
             }
 
             if ($location->isDirty('path')) {
@@ -426,7 +428,8 @@ final class InventoryLocation extends Model implements Auditable
 
         static::saved(function (InventoryLocation $location): void {
             if ($location->wasChanged('path') && $location->previousPathForRebuild !== null) {
-                $location->rebuildDescendantPaths(
+                app(LocationTreeService::class)->rebuildDescendantPaths(
+                    $location,
                     $location->previousPathForRebuild,
                     $location->previousDepthForRebuild ?? $location->depth
                 );
@@ -470,18 +473,13 @@ final class InventoryLocation extends Model implements Auditable
         });
 
         static::deleting(function (InventoryLocation $location): bool {
-            InventoryOwnerScope::forMutation(self::query())->whereKey($location->getKey())->firstOrFail();
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($location->getKey())->firstOrFail();
 
-            if ($location->hasOperationalReferences()) {
+            if ($record->hasOperationalReferences()) {
                 return false;
             }
 
-            // Re-parent only after confirming the location has no operational records.
-            $location->children()->chunkById(200, function ($children) use ($location): void {
-                foreach ($children as $child) {
-                    $child->update(['parent_id' => $location->parent_id]);
-                }
-            });
+            app(LocationTreeService::class)->reparentChildren($record);
 
             return true;
         });
@@ -613,51 +611,6 @@ final class InventoryLocation extends Model implements Auditable
 
         $this->previousPathForRebuild = is_string($previousPath) ? $previousPath : null;
         $this->previousDepthForRebuild = is_int($previousDepth) ? $previousDepth : null;
-    }
-
-    /**
-     * Rewrite descendant paths after this location moved.
-     *
-     * Iterative and chunked: every descendant path shares the previous
-     * path as a prefix, so each new path is a prefix swap plus a depth
-     * delta. Quiet saves keep the rebuild from cascading hooks, and the
-     * visited set skips rows caught in legacy cycles.
-     */
-    protected function rebuildDescendantPaths(string $previousPath, int $previousDepth): void
-    {
-        if ($this->path === null || $previousPath === '') {
-            return;
-        }
-
-        $newPrefix = $this->path . '/';
-        $oldPrefix = $previousPath . '/';
-        $depthDelta = $this->depth - $previousDepth;
-        $visited = [$this->getKey()];
-
-        InventoryOwnerScope::applyToLocationQuery(self::query())
-            ->where('path', 'like', $oldPrefix . '%')
-            ->chunkById(200, function ($descendants) use ($newPrefix, $oldPrefix, $depthDelta, &$visited): void {
-                foreach ($descendants as $descendant) {
-                    $key = $descendant->getKey();
-
-                    if (in_array($key, $visited, true)) {
-                        continue;
-                    }
-
-                    $visited[] = $key;
-
-                    $suffix = mb_substr((string) $descendant->path, mb_strlen($oldPrefix));
-
-                    if ($suffix === '') {
-                        continue;
-                    }
-
-                    $descendant->forceFill([
-                        'path' => $newPrefix . $suffix,
-                        'depth' => max(0, $descendant->depth + $depthDelta),
-                    ])->saveQuietly();
-                }
-            });
     }
 
     /**

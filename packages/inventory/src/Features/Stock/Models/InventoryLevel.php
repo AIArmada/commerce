@@ -11,8 +11,8 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -347,7 +347,7 @@ final class InventoryLevel extends Model implements Auditable
         });
 
         static::saving(function (InventoryLevel $level): void {
-            $level->auditDirectOnHandChange();
+            app(InventoryLevelStore::class)->auditDirectOnHandChange($level);
         });
 
         self::deleting(function (InventoryLevel $level): bool {
@@ -357,46 +357,6 @@ final class InventoryLevel extends Model implements Auditable
                 && $record->quantity_reserved === 0
                 && ! $record->allocations()->withoutGlobalScopes()->exists();
         });
-    }
-
-    /**
-     * Record an adjustment movement for direct on-hand writes.
-     *
-     * Ledger services (receive/ship/transfer/adjust/allocate) record their
-     * own movements and set $suppressLedgerAudit; any other on-hand change
-     * (operator edits, one-off scripts) is auto-audited here so the
-     * movement ledger can never silently disagree with the level.
-     */
-    private function auditDirectOnHandChange(): void
-    {
-        if (! $this->exists || $this->suppressLedgerAudit) {
-            return;
-        }
-
-        if (! $this->isDirty('quantity_on_hand')) {
-            return;
-        }
-
-        $old = (int) $this->getOriginal('quantity_on_hand');
-        $new = (int) $this->quantity_on_hand;
-
-        if ($old === $new) {
-            return;
-        }
-
-        $difference = $new - $old;
-
-        InventoryMovement::create([
-            'inventoryable_type' => $this->inventoryable_type,
-            'inventoryable_id' => $this->inventoryable_id,
-            'from_location_id' => $difference < 0 ? $this->location_id : null,
-            'to_location_id' => $difference > 0 ? $this->location_id : null,
-            'quantity' => abs($difference),
-            'type' => MovementType::Adjustment->value,
-            'reason' => 'direct-level-update',
-            'note' => sprintf('Direct level update from %d to %d', $old, $new),
-            'occurred_at' => CarbonImmutable::now(),
-        ]);
     }
 
     /**

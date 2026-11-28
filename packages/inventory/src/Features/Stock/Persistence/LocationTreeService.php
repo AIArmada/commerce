@@ -264,6 +264,68 @@ final class LocationTreeService
         return ['valid' => true, 'reason' => null];
     }
 
+    public function initializeRootPath(InventoryLocation $location): void
+    {
+        $location->forceFill(['path' => $location->getKey(), 'depth' => 0])->saveQuietly();
+    }
+
+    public function assertSubtreeDepth(InventoryLocation $location): void
+    {
+        $previousPath = $location->getOriginal('path');
+
+        if (! is_string($previousPath) || $previousPath === '') {
+            return;
+        }
+
+        $deepest = InventoryOwnerScope::forMutation(InventoryLocation::query())
+            ->where('path', 'like', $previousPath . '/%')
+            ->max('depth');
+
+        if ($deepest !== null && (int) $deepest + $location->depth - (int) $location->getOriginal('depth') > InventoryLocation::MAX_HIERARCHY_DEPTH) {
+            throw new InvalidArgumentException('Location subtree exceeds the maximum supported depth.');
+        }
+    }
+
+    public function reparentChildren(InventoryLocation $location): void
+    {
+        InventoryOwnerScope::forMutation(InventoryLocation::query())
+            ->where('parent_id', $location->getKey())
+            ->chunkById(200, function ($children) use ($location): void {
+                foreach ($children as $child) {
+                    $child->update(['parent_id' => $location->parent_id]);
+                }
+            });
+    }
+
+    public function rebuildDescendantPaths(InventoryLocation $location, string $previousPath, int $previousDepth): void
+    {
+        if ($location->path === null || $previousPath === '') {
+            return;
+        }
+
+        $newPrefix = $location->path . '/';
+        $oldPrefix = $previousPath . '/';
+        $depthDelta = $location->depth - $previousDepth;
+
+        InventoryOwnerScope::forMutation(InventoryLocation::query())
+            ->whereKeyNot($location->getKey())
+            ->where('path', 'like', $oldPrefix . '%')
+            ->chunkById(200, function ($descendants) use ($newPrefix, $oldPrefix, $depthDelta): void {
+                foreach ($descendants as $descendant) {
+                    $suffix = mb_substr((string) $descendant->path, mb_strlen($oldPrefix));
+
+                    if ($suffix === '') {
+                        continue;
+                    }
+
+                    $descendant->forceFill([
+                        'path' => $newPrefix . $suffix,
+                        'depth' => max(0, $descendant->depth + $depthDelta),
+                    ])->saveQuietly();
+                }
+            });
+    }
+
     /**
      * Build a tree from a flat collection.
      *

@@ -26,7 +26,8 @@
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\TransferInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Persistence\\ReservationStockStore",
-      "AIArmada\\Inventory\\Features\\Stock\\Actions\\RestoreOrderStock"
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\RestoreOrderStock",
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\InventoryLevelStore"
     ]
   },
   "extensions": {}
