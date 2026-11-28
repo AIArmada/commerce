@@ -16,6 +16,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -56,6 +58,7 @@ class RewardPayeesTable
                     ->action(function (RewardPayee $record, VerifyRewardPayeeAction $verify): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('verify', $record), 403);
 
                         try {
                             $verify->handle(
@@ -87,6 +90,7 @@ class RewardPayeesTable
                     ->action(function (RewardPayee $record, array $data, RejectRewardPayeeAction $reject): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('reject', $record), 403);
 
                         try {
                             $reject->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);

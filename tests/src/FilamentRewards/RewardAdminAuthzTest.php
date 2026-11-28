@@ -30,11 +30,14 @@ use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Data\RewardSourceFraudStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitGrant;
+use AIArmada\Rewards\Features\Benefits\Models\RewardBenefitItem;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardAward;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardRecovery;
+use AIArmada\Rewards\Features\Finance\Models\RewardPayee;
 use AIArmada\Rewards\Features\Finance\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Features\Finance\Queries\FundedRewardReadinessChecker;
@@ -451,3 +454,49 @@ it('requires operation-specific recovery authorization inside the handler', func
     'settle' => ['settle', 'settle', ['recovery_proof' => 'BANK-123']],
     'write off' => ['write_off', 'writeOff', ['reason' => 'Unrecoverable']],
 ]);
+
+it('requires operation-specific payee authorization inside the handler', function (string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardPayees::class,
+        $ability,
+        RewardPayee::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'verify' => ['verify', []],
+    'reject' => ['reject', ['reason' => 'Rejected']],
+]);
+
+it('requires operation-specific grant authorization inside the handler', function (string $action, string $ability, array $data): void {
+    Gate::define($ability, static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardBenefitGrants::class,
+        $action,
+        RewardBenefitGrant::factory()->make(),
+        $data,
+    ))->toBe(403);
+})->with([
+    'fulfill' => ['fulfill', 'fulfill', []],
+    'consume' => ['consume', 'consume', []],
+    'cancel' => ['cancel', 'cancel', ['reason' => 'Cancelled']],
+    'recall' => ['record_recall', 'recordRecall', ['recall_reference' => 'REF-123']],
+    'revoke' => ['revoke', 'revoke', ['reason' => 'Revoked']],
+    'expire' => ['expire', 'expire', []],
+]);
+
+it('requires catalog retirement authorization inside the handler', function (): void {
+    Gate::define('retire', static fn (): bool => false);
+
+    expect(rewardAuthzInvokeAction(
+        $this->staff,
+        ListRewardBenefitItems::class,
+        'retire',
+        RewardBenefitItem::factory()->make(),
+        ['reason' => 'Retired'],
+    ))->toBe(403);
+});

@@ -7,3 +7,5 @@ Read budget and benefit stock balances through `AIArmada\Rewards\Features\Financ
 Use `RewardPayeeSelectionApi` for award-bound verified payout destination choices. It exposes masked labels and processor names only; the Finance request action revalidates the selected destination under lock.
 
 Payout handlers require the corresponding `approve`, `submit`, `confirm`, `reconcile`, or `cancel` Gate ability on the payout record; the Finance action independently validates ownership and lifecycle state. Approval reasons are retained in the payout evidence, including each reapproval.
+
+Payee verification and rejection require `verify` and `reject` Gate abilities on the record (or the payee model class for register-and-verify). Benefit grant handlers require `fulfill`, `consume`, `cancel`, `recordRecall`, `revoke`, or `expire` on the grant, and catalog retirement requires `retire` on the item. Host applications must explicitly authorize these operations; staff membership alone is insufficient.

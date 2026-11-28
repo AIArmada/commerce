@@ -22,6 +22,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -68,6 +70,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, FulfillRewardBenefitAction $fulfill): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('fulfill', $record), 403);
 
                         try {
                             $fulfill->handle($record, array_filter(['handoff_reference' => (string) ($data['handoff_reference'] ?? '')]), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
@@ -91,6 +94,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, ConsumeRewardBenefitAction $consume): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('consume', $record), 403);
 
                         try {
                             $consume->handle($record, array_filter($data), 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
@@ -112,6 +116,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, CancelRewardBenefitGrantAction $cancel): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('cancel', $record), 403);
 
                         try {
                             $cancel->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
@@ -134,6 +139,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, RecordRewardBenefitRecallAction $recall): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('recordRecall', $record), 403);
 
                         try {
                             $recall->handle($record, (string) $data['recall_reference'], 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
@@ -155,6 +161,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, array $data, RevokeRewardBenefitGrantAction $revoke): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('revoke', $record), 403);
 
                         try {
                             $revoke->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
@@ -175,6 +182,7 @@ class RewardBenefitGrantsTable
                     ->action(function (RewardBenefitGrant $record, ExpireRewardBenefitGrantAction $expire): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless($staff instanceof Authorizable && Gate::forUser($staff)->allows('expire', $record), 403);
 
                         try {
                             $expire->handle($record, 'user', (string) $staff->getAuthIdentifier(), RewardAdminPresenter::staffRole());
