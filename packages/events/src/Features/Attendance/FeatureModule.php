@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Attendance;
 
+use AIArmada\Events\Contracts\EventAdministrativeCheckIn;
 use AIArmada\Events\Contracts\EventCheckInService;
+use AIArmada\Events\Features\Attendance\Actions\DefaultEventAdministrativeCheckIn;
 use AIArmada\Events\Features\Attendance\Actions\DefaultEventCheckInService;
 use AIArmada\Events\Features\Attendance\Api\AttendanceApi;
 use AIArmada\Events\Features\Attendance\Models\EventAttendance;
@@ -23,6 +25,7 @@ final class FeatureModule implements FeatureModuleContract
         $this->defaultModelConfig('headcount_log', EventHeadcountLog::class);
 
         $app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
+        $app->bind(EventAdministrativeCheckIn::class, DefaultEventAdministrativeCheckIn::class);
 
         $app->bind(AttendanceApi::class, EloquentAttendanceApi::class);
     }

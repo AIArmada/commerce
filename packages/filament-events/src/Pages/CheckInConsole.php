@@ -6,10 +6,7 @@ namespace AIArmada\FilamentEvents\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Events\Contracts\EventCheckInService;
-use AIArmada\Events\Features\Catalog\Api\CatalogApi;
-use AIArmada\Events\Features\Registrations\Models\EventRegistration;
-use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Contracts\EventAdministrativeCheckIn;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use BackedEnum;
@@ -57,22 +54,7 @@ final class CheckInConsole extends Page implements HasTable
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->action(function (Pass $record): void {
-                        $registration = $record->registration;
-
-                        if (! $registration instanceof EventRegistration) {
-                            return;
-                        }
-
-                        app(CatalogApi::class)->authorizeManageAdmissions(Filament::auth()->user(), $registration->event_id);
-
-                        app(EventCheckInService::class)->checkInWithResult([
-                            'event_id' => $registration->event_id,
-                            'event_occurrence_id' => $record->occurrence_id ?? $registration->event_occurrence_id,
-                            'pass_id' => $record->id,
-                            'event_registration_id' => $registration->id,
-                            'attendance_type' => 'registered',
-                            'check_in_source' => 'admin',
-                        ]);
+                        app(EventAdministrativeCheckIn::class)->checkInPass((string) $record->getKey(), Filament::auth()->user());
                     })
                     ->visible(fn (Pass $record) => $record->isValid()),
             ]);
@@ -117,6 +99,7 @@ final class CheckInConsole extends Page implements HasTable
                 ->label('Search')
                 ->form([
                     TextInput::make('query')
+                        ->maxLength(255)
                         ->label('Pass Number or Registration #')
                         ->placeholder('e.g. PASS-ABC123 or REG-001')
                         ->autocomplete(false),
@@ -146,19 +129,16 @@ final class CheckInConsole extends Page implements HasTable
                             ->whereKey($value)
                             ->value('title'))
                         ->required(),
-                    TextInput::make('attendee_name')->label('Name'),
-                    TextInput::make('attendee_email')->label('Email'),
+                    TextInput::make('attendee_name')->label('Name')->maxLength(255),
+                    TextInput::make('attendee_email')->label('Email')->email()->maxLength(255),
                 ])
                 ->action(function (array $data): void {
-                    EventWriteGuard::findOrFail($data['event_id']);
-                    app(CatalogApi::class)->authorizeManageAdmissions(Filament::auth()->user(), $data['event_id']);
-
-                    app(EventCheckInService::class)->checkInWithResult([
-                        'event_id' => $data['event_id'],
-                        'attendance_type' => 'walk_in',
-                        'check_in_source' => 'admin',
-                        'metadata' => ['name' => $data['attendee_name'] ?? null, 'email' => $data['attendee_email'] ?? null],
-                    ]);
+                    app(EventAdministrativeCheckIn::class)->checkInWalkIn(
+                        $data['event_id'],
+                        Filament::auth()->user(),
+                        $data['attendee_name'] ?? null,
+                        $data['attendee_email'] ?? null,
+                    );
                 }),
         ];
     }
