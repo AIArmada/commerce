@@ -13,7 +13,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\AdvanceRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
-use AIArmada\Rewards\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;

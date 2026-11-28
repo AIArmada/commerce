@@ -15,6 +15,7 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Features\Enrollment\Actions\LeaveRewardProgramAction;
 use AIArmada\Rewards\Features\Enrollment\Actions\ReacceptRewardTermsAction;
+use AIArmada\Rewards\Features\Entitlements\Actions\AppendRewardAdjustmentAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\InvalidateRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardRecoveryAction;
@@ -22,10 +23,10 @@ use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContribu
 use AIArmada\Rewards\Features\Entitlements\Actions\SettleRewardRecoveryAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\WriteOffRewardRecoveryAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Points\Actions\ClawBackAwardPointsAction;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
-use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
@@ -540,4 +541,27 @@ it('refuses credit bound to a foreign award or program but allows dangling refer
             $at,
         ),
     );
+});
+
+it('refuses foreign adjustment resolution and linked adjustment creation', function (): void {
+    [$ownerA, $ownerB, , , , $award, , $staff] = guardCrossTenantFixture('guard-adjustment');
+
+    $adjustment = OwnerContext::withOwner($ownerA, static fn () => AppendRewardAdjustmentAction::run(
+        'adjustment', (string) $award->getKey(), null, null, 'guard-adjustment:root',
+        null, 'user', $staff, 'staff', 'audit',
+    ));
+
+    $resolver = (string) Str::uuid();
+
+    expect(fn () => OwnerContext::withOwner($ownerB, static fn () => app(AppendRewardAdjustmentAction::class)->resolve(
+        $adjustment, 'user', $resolver, 'staff', 'foreign-resolution',
+    )))->toThrow(AuthorizationException::class);
+
+    expect(fn () => OwnerContext::withOwner($ownerB, static fn () => AppendRewardAdjustmentAction::run(
+        'adjustment', null, null, (string) $adjustment->getKey(), 'guard-adjustment:foreign',
+        null, 'user', $resolver, 'staff', 'foreign-link',
+    )))->toThrow(AuthorizationException::class);
+
+    expect($adjustment->refresh()->resolved_at)->toBeNull()
+        ->and(RewardAdjustment::query()->where('operation_key', 'guard-adjustment:foreign')->exists())->toBeFalse();
 });

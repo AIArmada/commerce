@@ -15,6 +15,7 @@ use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementActi
 use AIArmada\Rewards\Features\Entitlements\Actions\OpenRewardAppealAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardCapCounter;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardSourceComponentClaim;
 use AIArmada\Rewards\Features\Points\Actions\CreditRewardPointsAction;
@@ -28,7 +29,6 @@ use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
 use AIArmada\Rewards\Features\Programs\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
-use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAppealDecision;
 use AIArmada\Rewards\Models\RewardAward;

@@ -15,12 +15,12 @@ use AIArmada\Rewards\Features\Entitlements\Actions\AcknowledgeRewardRecognitionA
 use AIArmada\Rewards\Features\Entitlements\Actions\DismissRewardFraudAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Features\Entitlements\Actions\TransitionRewardAwardAction;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Features\Entitlements\Models\RewardBadgeGrant;
 use AIArmada\Rewards\Features\Points\Actions\DebitRewardPointsAction;
 use AIArmada\Rewards\Features\Points\Models\RewardPointLot;
 use AIArmada\Rewards\Features\Points\Models\RewardPointMovement;
 use AIArmada\Rewards\Features\Points\Queries\RewardPointLedger;
-use AIArmada\Rewards\Models\RewardAdjustment;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;

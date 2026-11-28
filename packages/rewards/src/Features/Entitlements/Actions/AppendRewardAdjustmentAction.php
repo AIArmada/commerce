@@ -6,7 +6,7 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardAdjustmentKind;
 use AIArmada\Rewards\Enums\RewardAdjustmentStatus;
-use AIArmada\Rewards\Models\RewardAdjustment;
+use AIArmada\Rewards\Features\Entitlements\Models\RewardAdjustment;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
@@ -79,6 +79,10 @@ final readonly class AppendRewardAdjustmentAction
 
         if ($appealId !== null) {
             RewardProgramGuard::assertAppealInScopeWhenExists($appealId);
+        }
+
+        if ($linkedAdjustmentId !== null) {
+            $this->assertAdjustmentChainInScope($linkedAdjustmentId);
         }
 
         $at = $openedAt === null
@@ -209,6 +213,42 @@ final readonly class AppendRewardAdjustmentAction
         }
     }
 
+    /**
+     * Check every existing attachment in a chain, not just its first row.
+     * Missing historical references remain permitted; cycles fail closed.
+     */
+    private function assertAdjustmentChainInScope(string $adjustmentId): void
+    {
+        $visited = [];
+
+        while (true) {
+            if (isset($visited[$adjustmentId])) {
+                throw new InvalidArgumentException('Reward adjustment links contain a cycle.');
+            }
+
+            $visited[$adjustmentId] = true;
+            $adjustment = RewardAdjustment::query()->whereKey($adjustmentId)->first();
+
+            if (! $adjustment instanceof RewardAdjustment) {
+                return;
+            }
+
+            if ($adjustment->award_id !== null) {
+                RewardProgramGuard::assertAwardInScopeWhenExists($adjustment->award_id);
+            }
+
+            if ($adjustment->appeal_id !== null) {
+                RewardProgramGuard::assertAppealInScopeWhenExists($adjustment->appeal_id);
+            }
+
+            if ($adjustment->linked_adjustment_id === null) {
+                return;
+            }
+
+            $adjustmentId = $adjustment->linked_adjustment_id;
+        }
+    }
+
     public function resolve(
         RewardAdjustment | string $adjustment,
         string $resolvedByType,
@@ -242,6 +282,8 @@ final readonly class AppendRewardAdjustmentAction
             if (! $locked instanceof RewardAdjustment) {
                 throw new InvalidArgumentException('Unknown reward adjustment.');
             }
+
+            $this->assertAdjustmentChainInScope($adjustmentId);
 
             if ($locked->status === RewardAdjustmentStatus::Resolved) {
                 return $locked;
