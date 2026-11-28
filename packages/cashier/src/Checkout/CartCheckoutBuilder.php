@@ -9,6 +9,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Exceptions\CheckoutException;
 use AIArmada\Cashier\Exceptions\InsufficientStockException;
 use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
@@ -171,6 +172,12 @@ final class CartCheckoutBuilder
      */
     public function process(): CheckoutContract
     {
+        if ($this->customer === null) {
+            throw new InvalidArgumentException('Customer is required for checkout. Call customer() first.');
+        }
+
+        ActionGuard::assertBillableInScope($this->customer);
+
         DB::transaction(function (): void {
             // Validate stock if configured
             if ($this->validateStock) {

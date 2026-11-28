@@ -9,7 +9,6 @@ use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Illuminate\Http\RedirectResponse;
 
 /**
  * Wrapper for CHIP checkout session (purchase).
@@ -45,14 +44,6 @@ class ChipCheckout implements CheckoutContract
     public function url(): string
     {
         return $this->purchase->getCheckoutUrl() ?? '';
-    }
-
-    /**
-     * Redirect to the checkout page.
-     */
-    public function redirect(): RedirectResponse
-    {
-        return redirect()->to($this->url());
     }
 
     /**

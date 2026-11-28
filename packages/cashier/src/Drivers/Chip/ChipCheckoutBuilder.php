@@ -8,7 +8,6 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\DynamicCheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Drivers\ChipGateway;
-use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
 
 /**
@@ -306,16 +305,6 @@ class ChipCheckoutBuilder implements DynamicCheckoutBuilderContract
         $purchase = $this->gateway->client()->createPurchase($options);
 
         return new ChipCheckout($purchase);
-    }
-
-    /**
-     * Create and redirect to the checkout session.
-     */
-    public function redirect(): RedirectResponse
-    {
-        $checkout = $this->create();
-
-        return redirect()->to($checkout->url());
     }
 
     private function resolveBillableChipId(): ?string

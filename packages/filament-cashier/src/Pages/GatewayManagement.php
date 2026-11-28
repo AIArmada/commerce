@@ -85,7 +85,6 @@ final class GatewayManagement extends Page
             ];
         })->values();
 
-        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
         return $health;
     }
 
@@ -236,7 +235,7 @@ final class GatewayManagement extends Page
         } catch (Exception $e) {
             Log::warning('filament-cashier: gateway health probe failed', [
                 'gateway' => $gateway,
-                'exception' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
             return [
@@ -276,7 +275,7 @@ final class GatewayManagement extends Page
             }
         } catch (Exception $e) {
             Log::warning('filament-cashier: stripe health probe failed', [
-                'exception' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
             return [
@@ -323,7 +322,7 @@ final class GatewayManagement extends Page
             }
         } catch (Exception $e) {
             Log::warning('filament-cashier: chip health probe failed', [
-                'exception' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
             return [

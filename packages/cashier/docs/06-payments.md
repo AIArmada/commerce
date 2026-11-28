@@ -83,6 +83,7 @@ $checkout = $user->checkoutWithGateway('stripe')
     ->cancelUrl(route('checkout.cancel'))
     ->create();
 
+// HTTP responses belong to the application entry point.
 return redirect($checkout->url());
 ```
 

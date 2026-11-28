@@ -8,7 +8,6 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Drivers\StripeGateway;
-use Illuminate\Http\RedirectResponse;
 
 /**
  * Builder for Stripe checkout sessions.
@@ -243,15 +242,5 @@ class StripeCheckoutBuilder implements CheckoutBuilderContract
         $session = $this->gateway->client()->checkout->sessions->create($options);
 
         return new StripeCheckout($session);
-    }
-
-    /**
-     * Create and redirect to the checkout session.
-     */
-    public function redirect(): RedirectResponse
-    {
-        $checkout = $this->create();
-
-        return redirect()->to($checkout->url());
     }
 }

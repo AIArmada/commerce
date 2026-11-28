@@ -7,7 +7,6 @@ namespace AIArmada\Cashier\Drivers\Stripe;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Illuminate\Http\RedirectResponse;
 use Stripe\Checkout\Session;
 
 /**
@@ -44,14 +43,6 @@ class StripeCheckout implements CheckoutContract
     public function url(): string
     {
         return $this->session->url;
-    }
-
-    /**
-     * Redirect to the checkout page.
-     */
-    public function redirect(): RedirectResponse
-    {
-        return redirect()->to($this->url());
     }
 
     /**

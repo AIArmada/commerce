@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use Illuminate\Http\RedirectResponse;
-
 /**
  * Contract for checkout sessions.
  */
@@ -25,11 +23,6 @@ interface CheckoutContract
      * Get the checkout URL.
      */
     public function url(): string;
-
-    /**
-     * Redirect to the checkout page.
-     */
-    public function redirect(): RedirectResponse;
 
     /**
      * Get the success URL.
