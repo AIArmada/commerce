@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Models;
+namespace AIArmada\Docs\Features\Delivery\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Data\ShareLinkAction;
+use AIArmada\Docs\Models\Doc;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -78,30 +79,6 @@ final class DocShareLink extends Model implements Auditable
     public function allows(ShareLinkAction $action): bool
     {
         return in_array($action->value, $this->allowed_actions ?? [], true);
-    }
-
-    public function revoke(): void
-    {
-        $this->update(['revoked_at' => CarbonImmutable::now()]);
-    }
-
-    public function markAccessed(): void
-    {
-        $accessedAt = CarbonImmutable::now();
-
-        self::query()
-            ->withoutOwnerScope()
-            ->whereKey($this->getKey())
-            ->increment('access_count', 1, [
-                'last_accessed_at' => $accessedAt,
-            ]);
-
-        $this->forceFill([
-            'access_count' => (int) $this->access_count + 1,
-            'last_accessed_at' => $accessedAt,
-        ]);
-
-        $this->syncOriginal();
     }
 
     /**

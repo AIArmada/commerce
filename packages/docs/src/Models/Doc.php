@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Runtime\DeliveryRelationModels;
 use AIArmada\Docs\Runtime\VersionRelationModel;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Support\DocPdfPath;
@@ -75,7 +76,8 @@ use Throwable;
  * @phpstan-type RelatedDocVersion \AIArmada\Docs\Features\Versioning\Models\DocVersion
  * @property-read Collection<int, DocEmail> $emails
  * @property-read Collection<int, DocApproval> $approvals
- * @property-read Collection<int, DocShareLink> $shareLinks
+ * @property-read Collection<int, RelatedDocShareLink> $shareLinks
+ * @phpstan-type RelatedDocShareLink \AIArmada\Docs\Features\Delivery\Models\DocShareLink
  * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
  * @property-read Model|null $docable
  */
@@ -181,11 +183,11 @@ final class Doc extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<DocShareLink, $this>
+     * @return HasMany<RelatedDocShareLink, $this>
      */
     public function shareLinks(): HasMany
     {
-        return $this->hasMany(DocShareLink::class);
+        return $this->hasMany(app(DeliveryRelationModels::class)->shareLink(), 'doc_id');
     }
 
     /**

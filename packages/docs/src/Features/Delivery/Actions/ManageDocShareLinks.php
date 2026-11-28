@@ -11,7 +11,7 @@ use AIArmada\Docs\Data\IssuedShareLink;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocShareLink;
+use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -44,7 +44,9 @@ final readonly class ManageDocShareLinks implements DocumentSharing
     {
         (new Doc)->getConnection()->transaction(function () use ($docId): void {
             $doc = $this->lockDocument($docId);
-            $doc->shareLinks()->forOwner()->whereNull('revoked_at')->update(['revoked_at' => CarbonImmutable::now()]);
+            OwnerContext::withOwner(OwnerContext::fromTypeAndIdOrFail($doc->owner_type, $doc->owner_id), function () use ($doc): void {
+                $doc->shareLinks()->forOwner()->whereNull('revoked_at')->update(['revoked_at' => CarbonImmutable::now()]);
+            });
         });
     }
 
@@ -75,7 +77,10 @@ final readonly class ManageDocShareLinks implements DocumentSharing
                 }
 
                 $link->setRelation('doc', $doc);
-                $link->markAccessed();
+                $link->forceFill([
+                    'access_count' => (int) $link->access_count + 1,
+                    'last_accessed_at' => CarbonImmutable::now(),
+                ])->save();
 
                 return $link;
             });

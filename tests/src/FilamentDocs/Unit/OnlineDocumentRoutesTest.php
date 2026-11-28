@@ -9,7 +9,7 @@ use AIArmada\Docs\Contracts\DocumentSharing;
 use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocShareLink;
+use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Support\DocRichContentStorage;
 use AIArmada\FilamentDocs\Rendering\FilamentRichContentRenderer;
 use Illuminate\Support\Facades\Storage;

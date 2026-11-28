@@ -12,7 +12,7 @@ use AIArmada\Docs\Models\DocEInvoiceSubmission;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Models\DocShareLink;
+use AIArmada\Docs\Features\Delivery\Models\DocShareLink;
 use AIArmada\Docs\Models\DocStatusHistory;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Features\Versioning\Models\DocVersion;
