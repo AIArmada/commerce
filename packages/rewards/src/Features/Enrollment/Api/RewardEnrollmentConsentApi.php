@@ -14,6 +14,8 @@ interface RewardEnrollmentConsentApi
      */
     public function requireConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): RewardEnrollmentConsent;
 
+    public function countForProgram(string $programId): int;
+
     public function findConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): ?RewardEnrollmentConsent;
 
     public function requireMilestoneConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): RewardEnrollmentConsent;

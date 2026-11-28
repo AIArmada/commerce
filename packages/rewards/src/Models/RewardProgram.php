@@ -47,7 +47,6 @@ use LogicException;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, RewardProgramVersion> $versions
  * @property-read Collection<int, RewardProgramPublication> $publications
- * @property-read Collection<int, RewardEnrollment> $enrollments
  * @property-read RewardProgramVersion $currentVersion
  */
 class RewardProgram extends Model
@@ -107,14 +106,6 @@ class RewardProgram extends Model
     public function publications(): HasMany
     {
         return $this->hasMany(RewardProgramPublication::class, 'program_id')->orderBy('version');
-    }
-
-    /**
-     * @return HasMany<RewardEnrollment, $this>
-     */
-    public function enrollments(): HasMany
-    {
-        return $this->hasMany(RewardEnrollment::class, 'program_id');
     }
 
     /**

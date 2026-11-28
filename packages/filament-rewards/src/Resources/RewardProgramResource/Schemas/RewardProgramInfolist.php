@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
-use AIArmada\Rewards\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
@@ -57,7 +57,7 @@ class RewardProgramInfolist
                             ->state(fn (RewardProgram $record): int => RewardProgramVersion::query()->where('program_id', $record->getKey())->count()),
                         TextEntry::make('enrollment_count')
                             ->label('Enrollments')
-                            ->state(fn (RewardProgram $record): int => RewardEnrollment::query()->where('program_id', $record->getKey())->count()),
+                            ->state(fn (RewardProgram $record): int => app(RewardEnrollmentConsentApi::class)->countForProgram((string) $record->getKey())),
                     ]),
                 ]),
         ]);

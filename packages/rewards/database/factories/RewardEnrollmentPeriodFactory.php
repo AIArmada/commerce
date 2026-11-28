@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Database\Factories;
 
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

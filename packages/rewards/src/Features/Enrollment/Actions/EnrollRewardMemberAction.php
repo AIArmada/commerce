@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Enrollment\Actions;
 
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Persistence\RewardUniqueViolation;

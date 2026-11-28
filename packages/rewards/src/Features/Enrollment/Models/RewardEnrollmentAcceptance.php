@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Rewards\Models;
+namespace AIArmada\Rewards\Features\Enrollment\Models;
 
 use AIArmada\Rewards\Database\Factories\RewardEnrollmentAcceptanceFactory;
+use AIArmada\Rewards\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

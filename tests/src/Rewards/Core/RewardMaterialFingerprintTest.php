@@ -8,6 +8,7 @@ use AIArmada\Rewards\Data\RewardPreviewDecision;
 use AIArmada\Rewards\Data\RewardPreviewReason;
 use AIArmada\Rewards\Data\RewardProgramStatus;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
 use AIArmada\Rewards\Features\Entitlements\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Features\Programs\Actions\TransitionRewardProgramStatusAction;
@@ -78,7 +79,7 @@ it('blocks new earning on rule-only material change while old references stay im
 
     expect($stale->reasons)->toBe([RewardPreviewReason::AcceptanceStaleMaterialChange]);
 
-    $oldAcceptance = $program->enrollments()->where('member_id', $memberId)->first()->acceptances()->orderBy('seq')->first();
+    $oldAcceptance = RewardEnrollment::query()->where('program_id', $program->getKey())->where('member_id', $memberId)->first()->acceptances()->orderBy('seq')->first();
 
     expect($oldAcceptance->material_terms_hash)->toBe($v1->material_terms_hash)
         ->and($oldAcceptance->policy_version_id)->toBe((string) $v1->getKey());

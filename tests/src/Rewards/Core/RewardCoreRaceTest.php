@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Features\Enrollment\Actions\EnrollRewardMemberAction;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Features\Programs\Actions\PublishRewardProgramVersionAction;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;

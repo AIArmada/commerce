@@ -7,14 +7,22 @@ namespace AIArmada\Rewards\Features\Enrollment\Queries;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsent;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentApi;
 use AIArmada\Rewards\Features\Enrollment\Api\RewardEnrollmentConsentPreview;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
 final readonly class RewardEnrollmentConsentQuery implements RewardEnrollmentConsentApi
 {
+    public function countForProgram(string $programId): int
+    {
+        RewardProgramGuard::findProgramOrFail($programId);
+
+        return RewardEnrollment::query()->where('program_id', $programId)->count();
+    }
+
     public function requireConsent(string $programId, string $recipientType, string $recipientId, string $materialHash, CarbonImmutable $decision): RewardEnrollmentConsent
     {
         return $this->resolve($programId, $recipientType, $recipientId, $materialHash, $decision, true)

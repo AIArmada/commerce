@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Features\Enrollment\Actions;
 
 use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
-use AIArmada\Rewards\Models\RewardEnrollment;
-use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
-use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
-use AIArmada\Rewards\Support\RewardProgramGuard;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollment;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentAcceptance;
+use AIArmada\Rewards\Features\Enrollment\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Features\Enrollment\Persistence\RewardEnrollmentGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +44,7 @@ final readonly class LeaveRewardProgramAction
 
         // The program is the tenant boundary: prove the enrollment's program
         // is in the current owner scope before any lock.
-        RewardProgramGuard::findEnrollmentOrFail($enrollmentId);
+        RewardEnrollmentGuard::findOrFail($enrollmentId);
 
         return DB::transaction(function () use ($enrollmentId, $reason, $decision): RewardEnrollment {
             $locked = RewardEnrollment::query()->whereKey($enrollmentId)->lockForUpdate()->first();

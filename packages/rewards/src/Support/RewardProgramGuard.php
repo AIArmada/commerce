@@ -10,7 +10,6 @@ use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardBenefitItem;
-use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -212,25 +211,6 @@ final class RewardProgramGuard
         }
 
         self::findAwardOrFail((string) $resolved->award_id);
-
-        return $resolved;
-    }
-
-    /**
-     * Resolve the enrollment and prove its program is in the current
-     * owner scope.
-     */
-    public static function findEnrollmentOrFail(RewardEnrollment | string $enrollment): RewardEnrollment
-    {
-        $id = $enrollment instanceof RewardEnrollment ? (string) $enrollment->getKey() : $enrollment;
-
-        $resolved = RewardEnrollment::query()->whereKey($id)->first();
-
-        if (! $resolved instanceof RewardEnrollment) {
-            throw new InvalidArgumentException('Unknown reward enrollment.');
-        }
-
-        self::findProgramOrFail((string) $resolved->program_id);
 
         return $resolved;
     }
