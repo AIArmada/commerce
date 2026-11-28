@@ -1,0 +1,48 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Communications\Features\Delivery\Actions;
+
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Events\DeliveryFailed;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
+use RuntimeException;
+
+final class RecordNotificationFailureAction
+{
+    public function handle(
+        string $communicationId,
+        string $deliveryId,
+        string $failureMessage,
+        ?string $failureCode = null,
+    ): CommunicationDelivery {
+        $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
+
+        if ($delivery->communication_id !== $communicationId) {
+            throw new RuntimeException('Delivery does not belong to the supplied communication.');
+        }
+
+        $delivery->status = DeliveryStatus::Failed;
+        $delivery->failed_at = CarbonImmutable::now();
+        $delivery->failure_message = $failureMessage;
+        $delivery->failure_code = $failureCode;
+        $delivery->save();
+
+        Event::dispatch(new DeliveryFailed(
+            deliveryId: $delivery->id,
+            communicationId: $communicationId,
+            failureCode: $failureCode,
+            failureMessage: $failureMessage,
+        ));
+
+        return $delivery;
+    }
+}

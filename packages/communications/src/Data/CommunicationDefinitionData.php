@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
-
-final class CommunicationDefinitionData extends Data
+final readonly class CommunicationDefinitionData
 {
     public function __construct(
-        public readonly string $notifiableClass,
-        public readonly string $notificationClass,
-        public readonly array $channels = [],
-        public readonly array $recipientIds = [],
-        public readonly array $content = [],
-        public readonly string | null | Optional $locale = null,
-        public readonly string | null | Optional $timezone = null,
+        public string $notifiableClass,
+        public string $notificationClass,
+        public array $channels = [],
+        public array $recipientIds = [],
+        public array $content = [],
+        public ?string $locale = null,
+        public ?string $timezone = null,
     ) {}
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Policies\PaymentMethodPolicy;
 use AIArmada\Cashier\Policies\SubscriptionPolicy;
 use AIArmada\Cashier\Support\UnifiedInvoice;
@@ -148,6 +149,8 @@ function filamentCashier_callMethod(object $object, string $method, array $argum
 }
 
 it('covers the filament-cashier public surface', function (): void {
+    app()->register(CashierServiceProvider::class);
+
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
     config()->set('cashier-chip.features.owner.include_global', false);

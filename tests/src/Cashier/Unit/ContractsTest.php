@@ -60,8 +60,7 @@ describe('Contracts', function (): void {
                 ->and($methods)->toContain('allGatewayInvoices')
                 ->and($methods)->toContain('allSubscriptions')
                 ->and($methods)->toContain('onGenericTrial')
-                ->and($methods)->toContain('asStripeCustomer')
-                ->and($methods)->not->toContain('createOrGetChipCustomer', 'stripeId');
+                ->and($methods)->not->toContain('asStripeCustomer', 'createOrGetChipCustomer', 'stripeId');
         });
     });
 

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "name": "Segmentation",
+  "owns": {
+    "table:customer_segment_customer": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\AssignCustomerToSegment",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RemoveCustomerFromSegment",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RebuildAllSegments",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\EvaluateCustomerSegments",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SyncManualSegmentMemberships",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\TransferSegmentMemberships",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\DetachDeletedSegmentMemberships"
+    ],
+    "table:customer_group_members": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\ManageCustomerGroupMembership",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\DetachDeletedCustomerGroupMemberships",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\TransferCustomerGroupMemberships"
+    ],
+    "table:customer_segments": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SaveSegment"
+    ],
+    "table:customer_groups": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SaveCustomerGroup"
+    ]
+  },
+  "extensions": {}
+}

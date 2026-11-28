@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitleIssuer;
+use AIArmada\Persons\Features\Titles\Actions\SaveTitleIssuer;
+use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -16,11 +20,22 @@ final class EditTitleIssuer extends EditRecord
 {
     protected static string $resource = TitleIssuerResource::class;
 
+    /** @param array<string, mixed> $data */
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        if (! $record instanceof TitleIssuer) {
+            throw new InvalidArgumentException('Invalid TitleIssuer record.');
+        }
+
+        return app(SaveTitleIssuer::class)->update($record, $data);
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (TitleIssuer $record): bool => app(DeleteTitleIssuer::class)->execute($record)),
         ];
     }
 

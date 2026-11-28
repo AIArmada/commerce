@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Language;
+use AIArmada\FilamentPersons\FilamentPersonsServiceProvider;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource;
 use AIArmada\FilamentPersons\Resources\PersonResource;
 use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\AffiliationsRelationManager;
@@ -15,12 +16,13 @@ use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\CreateTitleIssu
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\EditTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleResource;
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Models\Title;
-use AIArmada\Persons\Models\TitleAssignment;
-use AIArmada\Persons\Models\TitleCategory;
+use AIArmada\Persons\PersonsServiceProvider;
 use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
@@ -32,6 +34,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
+    $this->app->register(PersonsServiceProvider::class);
+    $this->app->register(FilamentPersonsServiceProvider::class);
+
     $base = dirname(__DIR__, 3) . '/packages/persons/database/migrations/';
     $migrations = glob($base . '*.php') ?: [];
 

@@ -157,7 +157,7 @@ it('sorts customer portal invoices from the gateway contract by actual date desc
 
     $gateway = Mockery::mock(GatewayContract::class);
     $gateway->shouldReceive('invoices')->once()->with($user, ['limit' => 51])->andReturn(collect([$old, $new]));
-    config()->set('cashier.gateways', ['stripe' => ['driver' => 'stripe']]);
+    Cashier::shouldReceive('supportedGateways')->andReturn(['stripe']);
     Cashier::shouldReceive('gateway')->once()->with('stripe')->andReturn($gateway);
 
     $invoices = app(ViewInvoices::class)->getInvoices();

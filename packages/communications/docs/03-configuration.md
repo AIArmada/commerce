@@ -116,10 +116,7 @@ mime values, and non-negative sizes within the configured maximum.
 - `auto_capture_triggers` - optionally restrict opted-in notifications to `NotificationTrigger` values
 - `auto_capture_ignored_channels` - skip selected notification channels
 
-The standalone package binds consent, preference, quiet-hours, rate-limit, and
-suppression contracts to `PermissiveEligibilityResolver`. Custom bindings must
-implement the renamed `resolveConsent()` and `resolveSuppression()` methods;
-the old method names are not retained.
+Consent, preferences, quiet hours and rate limits default to `Drivers\Eligibility\PermissiveEligibilityResolver`. `SuppressionResolver` defaults to `ActiveSuppressionResolver`, which honors active, unexpired, unlifted records for the current owner, destination, channel and applicable category/recipient. Custom bindings implement `resolveConsent()` and `resolveSuppression()`.
 
 ## Destinations
 
@@ -127,7 +124,7 @@ Configured under `database.tables.destinations` — see the Database section for
 
 - `CommunicationDestination` rows are owner-scoped polymorphic records (`recipient_type` / `recipient_id`) with `channel`, optional `address` / `external_id`, `status`, `is_primary`, and `verified_at`
 - The default `DestinationResolver` binding is `CommunicationDestinationResolver`: it prefers an active primary destination for the channel, then falls back to Laravel notifiable routing (`routeNotificationFor` / `routeNotificationFor{Driver}`)
-- Bind `AIArmada\Communications\Contracts\DestinationResolver` to `NotifiableDestinationResolver` (or a custom implementation) if you want notifiable-only resolution without the destinations table
+- Bind `AIArmada\Communications\Contracts\DestinationResolver` to `Drivers\Notifications\NotifiableDestinationResolver` (or a custom implementation) if you want notifiable-only resolution without the destinations table
 
 ## Preferences
 
@@ -173,7 +170,7 @@ Optional integrations can be enabled explicitly when the package is installed:
 ## Webhooks
 
 ```php
-use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 
 'webhooks' => [
     'middleware' => ['api', 'throttle:communications-webhooks', VerifyWebhookSignature::class],
@@ -194,11 +191,16 @@ use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
     ],
     'route_name_prefix' => 'communications.webhooks.',
 ],
+
+The webhook route is named `{route_name_prefix}handle`, so the default route
+name is `communications.webhooks.handle` for `route()` URL generation.
 ```
 
 The default middleware fails closed unless the provider is configured and sends
-the configured signature header as the HMAC of the raw request body plus a
-recent numeric `X-Webhook-Timestamp`. Replayed timestamps outside the
+the configured signature header as the hexadecimal HMAC of the exact numeric
+`X-Webhook-Timestamp`, followed by a literal `.` and the raw request body.
+For example, `hash_hmac('sha256', $timestamp . '.' . $body, $secret)`.
+Replayed timestamps outside the
 configured tolerance are rejected before dispatch. Each provider entry accepts
 an optional `algorithm` (any `hash_hmac_algos()` value, default `sha256`) and
 an optional `signature_header` (default `X-Webhook-Signature`).
@@ -209,7 +211,7 @@ Payloads larger than `max_payload_bytes` or nested deeper than
 The default `WebhookOwnerResolver` binding returns `null`. Provider events
 applied without a resolved owner derive the delivery's owner scope from the
 delivery itself; bind a custom resolver when webhooks must resolve ownership
-from provider-specific payload fields.
+from provider-specific payload fields. Return a `RecordReference` containing the trusted owner type and ID; the worker rejects explicit references to deleted owners.
 
 ## Cache
 
@@ -223,7 +225,7 @@ from provider-specific payload fields.
 - `cache.idempotency_store` - cache store used for idempotency locks; defaults to `env('CACHE_STORE', 'array')`
 
 > **warning**
-> `IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. With the default `array` store, idempotency keys do **not** dedupe across HTTP requests or queue workers. Set `COMMUNICATIONS_IDEMPOTENCY_STORE` to a shared store (`redis`, `database`, `memcached`) whenever idempotency matters.
+> `Drivers\Cache\IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. With the default `array` store, idempotency keys do **not** dedupe across HTTP requests or queue workers. Set `COMMUNICATIONS_IDEMPOTENCY_STORE` to a shared store (`redis`, `database`, `memcached`) whenever idempotency matters.
 
 - `cache.idempotency_ttl` - lifetime of an acquired idempotency lock, in seconds
 
@@ -234,3 +236,5 @@ from provider-specific payload fields.
     'payload_retention_days' => 90,
 ],
 ```
+
+Managed notification idempotency locks are isolated by the communication's effective owner (or global scope) and hashed separately from webhook fingerprints. Reusing a key in another tenant does not block dispatch.

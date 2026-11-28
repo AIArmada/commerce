@@ -7,8 +7,8 @@ namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
-use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -101,13 +102,11 @@ final class SegmentForm
                                             ->label('Value')
                                             ->required()
                                             ->numeric()
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago']))
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago'])),
 
                                         Toggle::make('value_boolean')
                                             ->label('Value')
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing']))
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing'])),
 
                                         Select::make('value_status')
                                             ->label('Status')
@@ -115,8 +114,7 @@ final class SegmentForm
                                                 collect(CustomerStatus::cases())
                                                     ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
                                             )
-                                            ->visible(fn (Get $get) => $get('field') === 'status')
-                                            ->dehydratedWhenHidden(),
+                                            ->visible(fn (Get $get) => $get('field') === 'status'),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add Condition')
@@ -168,25 +166,19 @@ final class SegmentForm
      */
     public static function syncManualCustomers(Segment $record, ?array $state): void
     {
-        $owner = static::ensureRecordOwnerScope($record);
+        static::ensureRecordOwnerScope($record);
 
-        $ids = array_values(array_filter($state ?? []));
-
-        if ($ids === []) {
-            $record->customers()->sync([]);
-
-            return;
+        $ids = [];
+        foreach ($state ?? [] as $id) {
+            abort_unless(is_string($id) && $id !== '', 403);
+            $ids[] = $id;
         }
 
-        $allowedIds = Customer::query()
-            ->forOwner($owner, includeGlobal: false)
-            ->whereKey($ids)
-            ->pluck('id')
-            ->all();
-
-        abort_unless(array_diff($ids, $allowedIds) === [], 403);
-
-        $record->customers()->sync($allowedIds);
+        try {
+            app(SyncManualSegmentMemberships::class)->forSegment($record, array_values(array_unique($ids)));
+        } catch (AuthorizationException) {
+            abort(403);
+        }
     }
 
     protected static function ensureRecordOwnerScope(Segment $record): ?Model

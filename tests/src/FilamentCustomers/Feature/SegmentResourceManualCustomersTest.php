@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas\SegmentForm;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -41,7 +41,6 @@ it('syncManualCustomers rejects syncing when the segment record is outside curre
         'slug' => 'outside-segment-' . uniqid(),
         'type' => 'custom',
         'is_automatic' => false,
-        'is_active' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]));
@@ -49,4 +48,17 @@ it('syncManualCustomers rejects syncing when the segment record is outside curre
     expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => SegmentForm::syncManualCustomers($segmentOutsideScope, [
         $customerInScope->id,
     ])))->toThrow(HttpException::class);
+});
+
+it('rejects manual changes to automatic segment memberships', function (): void {
+    $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $customer = Customer::factory()->create();
+        $segment = Segment::factory()->automatic()->create();
+        $segment->customers()->attach($customer->getKey());
+
+        expect(fn () => SegmentForm::syncManualCustomers($segment, []))->toThrow(HttpException::class);
+        expect($segment->customers()->whereKey($customer->getKey())->exists())->toBeTrue();
+    });
 });

@@ -4,30 +4,35 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\Title;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
+use JsonSerializable;
 
-final class TitleData extends Data
+final readonly class TitleData implements JsonSerializable
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $category_id,
-        public readonly string $name,
-        public readonly string | null | Optional $short_form,
-        public readonly string $usage_position,
-        public readonly int $sort_order,
+        public string $id,
+        public string $category_id,
+        public string $name,
+        public ?string $short_form,
+        public string $usage_position,
+        public int $sort_order,
     ) {}
 
-    public static function fromTitle(Title $title): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        return new self(
-            id: $title->id,
-            category_id: $title->category_id,
-            name: $title->name,
-            short_form: $title->short_form,
-            usage_position: $title->usage_position->value,
-            sort_order: $title->sort_order,
-        );
+        return [
+            'id' => $this->id,
+            'category_id' => $this->category_id,
+            'name' => $this->name,
+            'short_form' => $this->short_form,
+            'usage_position' => $this->usage_position,
+            'sort_order' => $this->sort_order,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

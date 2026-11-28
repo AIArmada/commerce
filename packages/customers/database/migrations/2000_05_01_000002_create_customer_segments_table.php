@@ -34,7 +34,6 @@ return new class extends Migration
             $table->integer('priority')->default(0);
 
             // Status
-            $table->boolean('is_active')->default(true);
             $table->timestampTz('deactivated_at')->nullable();
 
             $table->{$jsonColumnType}('metadata')->nullable();
@@ -43,8 +42,8 @@ return new class extends Migration
 
             // Indexes
             $table->unique(['owner_scope', 'slug'], 'customers_segments_owner_slug_unique');
-            $table->index(['is_active', 'priority']);
-            $table->index(['owner_type', 'owner_id', 'is_active'], 'customer_segments_owner_is_active_index');
+            $table->index(['deactivated_at', 'priority']);
+            $table->index(['owner_type', 'owner_id', 'deactivated_at'], 'customer_segments_owner_deactivated_index');
             $table->index('type');
         });
     }

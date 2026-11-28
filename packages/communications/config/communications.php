@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 
 $tablePrefix = env('COMMUNICATIONS_TABLE_PREFIX', '');
 
