@@ -5,8 +5,10 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCloneService;
+use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventAction;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventContentsAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
 use AIArmada\Events\Features\Catalog\Actions\SaveEventTemplateAction;
@@ -15,12 +17,21 @@ use AIArmada\Events\Features\Catalog\Models\EventInvolvement;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Venues\Models\EventLocation;
+use AIArmada\Events\Platform\ExtensionRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
 use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
+
+final class CloneConfiguredEvent extends Event {}
+
+final class CloneConfiguredOccurrence extends EventOccurrence {}
+
+final class CloneConfiguredSession extends EventSession {}
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -170,6 +181,19 @@ it('clones Spatie media for occurrences and sessions', function (): void {
     expect($occurrence->getMedia('cover'))->toHaveCount(1)
         ->and($occurrence->media()->count())->toBe(1)
         ->and($session->getMedia('cover'))->toHaveCount(1);
+
+    $filesBefore = Storage::disk('public')->allFiles();
+
+    expect(fn () => DB::transaction(function () use ($occurrence, $filesBefore): void {
+        $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence);
+
+        expect($clone->media()->count())->toBe(0)
+            ->and(Storage::disk('public')->allFiles())->toBe($filesBefore);
+
+        throw new RuntimeException('Rollback clone with media');
+    }))->toThrow(RuntimeException::class, 'Rollback clone with media');
+
+    expect(Storage::disk('public')->allFiles())->toBe($filesBefore);
 
     $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence);
     $clonedSession = $clone->sessions()->firstOrFail();
@@ -470,4 +494,238 @@ it('rejects cross-tenant event writes when cloning', function (): void {
     } finally {
         config()->set('events.features.owner.enabled', $originalOwnerEnabled);
     }
+});
+
+it('rejects cloning a session into an occurrence belonging to another event', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+    $otherEvent = Event::factory()->create();
+
+    expect(fn () => app(CloneEventSessionAction::class)->handle($session, [
+        'event_id' => $otherEvent->id,
+        'clone_children' => false,
+    ]))->toThrow(ModelNotFoundException::class);
+
+    expect(EventSession::query()->where('event_id', $otherEvent->id)->exists())->toBeFalse();
+});
+
+it('preserves the unknown end time when cloning an open-ended occurrence', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'starts_at' => CarbonImmutable::parse('2027-01-01 09:00:00'),
+        'ends_at' => null,
+    ]);
+
+    $clone = app(CloneEventOccurrenceAction::class)->handle($occurrence, ['clone_sessions' => false]);
+
+    expect($clone->ends_at)->toBeNull();
+});
+
+it('rejects invalid time overrides when cloning a session', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+
+    expect(fn () => app(CloneEventSessionAction::class)->handle($session, [
+        'starts_at' => '2027-01-01 10:00:00',
+        'ends_at' => '2027-01-01 09:00:00',
+    ]))->toThrow(InvalidArgumentException::class);
+});
+
+it('rolls back the cloned event if a scope extension fails', function (): void {
+    $event = Event::factory()->create();
+    $cloner = Mockery::mock(EventScopeCloner::class);
+    $cloner->shouldReceive('cloneForScope')->once()->andThrow(new RuntimeException('Extension failed'));
+    app()->instance(EventScopeCloner::class, $cloner);
+
+    $registry = new ExtensionRegistry(app(), [
+        'events.clone-scope' => [EventScopeCloner::class],
+    ]);
+    app()->instance(ExtensionRegistry::class, $registry);
+    app()->forgetInstance(EventCloneService::class);
+    $service = app(EventCloneService::class);
+
+    expect(fn () => $service->cloneEvent($event->id, ['title' => 'Failed clone']))
+        ->toThrow(RuntimeException::class, 'Extension failed');
+
+    expect(Event::query()->where('title', 'Failed clone')->exists())->toBeFalse();
+});
+
+it('rejects cloning content into the source scope', function (): void {
+    $event = Event::factory()->create();
+
+    expect(fn () => app(CloneEventContentsAction::class)->handle($event->id, $event->id))
+        ->toThrow(InvalidArgumentException::class, 'Cannot clone contents into the source scope.');
+});
+
+it('rejects mismatched occurrence scopes before copying contents', function (): void {
+    $event = Event::factory()->create();
+    $other = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    expect(fn () => app(CloneEventContentsAction::class)->handle(
+        $event->id,
+        $other->id,
+        sourceOccurrenceId: $occurrence->id,
+        targetOccurrenceId: $occurrence->id,
+    ))->toThrow(ModelNotFoundException::class);
+});
+
+it('uses the configured event model when cloning', function (): void {
+    $event = Event::factory()->create();
+    config()->set('events.models.event', CloneConfiguredEvent::class);
+
+    $clone = app(CloneEventAction::class)->handle($event);
+
+    expect($clone)->toBeInstanceOf(CloneConfiguredEvent::class)
+        ->and($clone->id)->not->toBe($event->id);
+
+    $id = app(EventCloneService::class)->cloneEvent($event->id);
+
+    expect(CloneConfiguredEvent::query()->findOrFail($id)->id)->not->toBe($event->id);
+});
+
+it('restores each event template session into its original occurrence', function (): void {
+    $event = Event::factory()->create();
+    $first = EventOccurrence::factory()->create(['event_id' => $event->id, 'title' => 'Day One']);
+    $second = EventOccurrence::factory()->create(['event_id' => $event->id, 'title' => 'Day Two']);
+
+    EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $first->id, 'title' => 'Opening', 'sort_order' => 3]);
+    EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $second->id, 'title' => 'Closing', 'sort_order' => 7]);
+
+    $template = app(SaveEventTemplateAction::class)->createFromEvent($event);
+    $id = app(EventTemplateService::class)->createFromTemplate($template->id);
+    $restored = Event::query()->findOrFail($id);
+    $dayOne = $restored->occurrences()->where('title', 'Day One')->firstOrFail();
+    $dayTwo = $restored->occurrences()->where('title', 'Day Two')->firstOrFail();
+
+    expect($dayOne->sessions()->pluck('title')->all())->toBe(['Opening'])
+        ->and($dayTwo->sessions()->pluck('title')->all())->toBe(['Closing'])
+        ->and($dayTwo->sessions()->firstOrFail()->sort_order)->toBe(7);
+});
+
+it('restores an event template using the configured event model', function (): void {
+    $event = Event::factory()->create();
+    EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $template = app(SaveEventTemplateAction::class)->createFromEvent($event);
+    config()->set('events.models.event', CloneConfiguredEvent::class);
+
+    $id = app(EventTemplateService::class)->createFromTemplate($template->id);
+    $restored = CloneConfiguredEvent::query()->findOrFail($id);
+
+    expect($restored->occurrences()->count())->toBe(1);
+});
+
+it('clones only event-level locations into an event-level clone', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => null,
+        'event_session_id' => null,
+        'label' => 'Event hall',
+    ]);
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_session_id' => null,
+        'label' => 'Occurrence hall',
+    ]);
+
+    $cloneId = app(EventCloneService::class)->cloneEvent($event->id);
+    $locations = EventLocation::query()->where('event_id', $cloneId)->get();
+
+    expect($locations)->toHaveCount(1)
+        ->and($locations->first()->label)->toBe('Event hall')
+        ->and($locations->first()->event_occurrence_id)->toBeNull();
+});
+
+it('remaps occurrence location parent IDs when cloning across events', function (): void {
+    $event = Event::factory()->create();
+    $target = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+    EventLocation::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_session_id' => null,
+        'label' => 'Occurrence hall',
+    ]);
+
+    $cloneId = app(EventCloneService::class)->cloneOccurrence($occurrence->id, [
+        'target_event_id' => $target->id,
+        'clone_sessions' => false,
+    ]);
+
+    $location = EventLocation::query()->where('event_occurrence_id', $cloneId)->sole();
+
+    expect($location->event_id)->toBe($target->id)
+        ->and($location->event_session_id)->toBeNull()
+        ->and($location->label)->toBe('Occurrence hall');
+});
+
+it('clones nested location scopes to the corresponding cloned occurrence and session', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id]);
+
+    EventLocation::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id, 'event_session_id' => null, 'label' => 'Occurrence hall']);
+    EventLocation::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $occurrence->id, 'event_session_id' => $session->id, 'label' => 'Session hall']);
+
+    $id = app(EventCloneService::class)->cloneEvent($event->id, ['clone_occurrences' => true]);
+    $clone = Event::query()->findOrFail($id);
+    $clonedOccurrence = $clone->occurrences()->sole();
+    $clonedSession = $clonedOccurrence->sessions()->sole();
+
+    $locations = EventLocation::query()->where('event_id', $id)->get()->keyBy('label');
+
+    expect($locations)->toHaveCount(2)
+        ->and($locations['Occurrence hall']->event_occurrence_id)->toBe($clonedOccurrence->id)
+        ->and($locations['Occurrence hall']->event_session_id)->toBeNull()
+        ->and($locations['Session hall']->event_occurrence_id)->toBe($clonedOccurrence->id)
+        ->and($locations['Session hall']->event_session_id)->toBe($clonedSession->id);
+});
+
+it('creates and clones occurrences and sessions through configured models', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $session = EventSession::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+
+    config([
+        'events.models.occurrence' => CloneConfiguredOccurrence::class,
+        'events.models.session' => CloneConfiguredSession::class,
+    ]);
+
+    $created = [];
+    CloneConfiguredOccurrence::created(function (CloneConfiguredOccurrence $record) use (&$created): void {
+        $created[] = (string) $record->getKey();
+    });
+    CloneConfiguredSession::created(function (CloneConfiguredSession $record) use (&$created): void {
+        $created[] = (string) $record->getKey();
+    });
+
+    $service = app(EventCloneService::class);
+    $occurrenceId = $service->cloneOccurrence((string) $occurrence->getKey(), ['clone_sessions' => false]);
+    $sessionId = $service->cloneSession((string) $session->getKey(), ['clone_children' => false]);
+
+    expect($created)->toBe([$occurrenceId, $sessionId])
+        ->and($event->occurrences()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class)
+        ->and($event->primaryOccurrence()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class)
+        ->and($event->sessions()->getRelated())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($occurrence->sessions()->getRelated())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($session->occurrence()->getRelated())->toBeInstanceOf(CloneConfiguredOccurrence::class);
+
+    $nestedOccurrenceId = $service->cloneOccurrence((string) $occurrence->getKey());
+    $nestedOccurrence = CloneConfiguredOccurrence::query()->findOrFail($nestedOccurrenceId);
+    $nestedSessions = $nestedOccurrence->sessions()->get();
+
+    expect($nestedSessions)->toHaveCount(2)
+        ->and($nestedSessions->first())->toBeInstanceOf(CloneConfiguredSession::class)
+        ->and($created)->toContain($nestedOccurrenceId, ...$nestedSessions->modelKeys());
 });

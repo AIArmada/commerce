@@ -6,8 +6,10 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
+use AIArmada\Events\Platform\ModelResolver;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -23,7 +25,10 @@ use UnitEnum;
 
 final class EventRegistrationParticipantResource extends Resource
 {
-    protected static ?string $model = EventRegistrationParticipant::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::registrationParticipantClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUserGroup;
 
@@ -56,7 +61,6 @@ final class EventRegistrationParticipantResource extends Resource
         );
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -76,12 +80,24 @@ final class EventRegistrationParticipantResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
-                    ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'email'))
+                    ->state(fn (EventRegistrationParticipant $record): ?string => $record->resolveEmail())
                     ->copyable()
-                    ->searchable(),
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $pattern = LikeSearch::contains($search);
+
+                        return $query->whereHas('contactMethods', fn (Builder $contact): Builder => $contact
+                            ->where('type', 'email')
+                            ->whereNotNull('normalized_value')
+                            ->where(fn (Builder $validity): Builder => $validity->whereNull('valid_from')->orWhere('valid_from', '<=', now()))
+                            ->where(fn (Builder $validity): Builder => $validity->whereNull('valid_until')->orWhere('valid_until', '>=', now()))
+                            ->where(function (Builder $value) use ($pattern): void {
+                                LikeSearch::whereLike($value, 'normalized_value', $pattern);
+                                LikeSearch::orWhereLike($value, 'value', $pattern);
+                            }));
+                    }),
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Phone')
-                    ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'phone'))
+                    ->state(fn (EventRegistrationParticipant $record): ?string => $record->resolvePhone())
                     ->copyable(),
                 Tables\Columns\TextColumn::make('event.title')
                     ->label('Event'),
@@ -127,9 +143,9 @@ final class EventRegistrationParticipantResource extends Resource
                     ->schema([
                         TextEntry::make('name'),
                         TextEntry::make('email')
-                            ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'email')),
+                            ->state(fn (EventRegistrationParticipant $record): ?string => $record->resolveEmail()),
                         TextEntry::make('phone')
-                            ->state(fn (EventRegistrationParticipant $record): ?string => static::contactValue($record, 'phone')),
+                            ->state(fn (EventRegistrationParticipant $record): ?string => $record->resolvePhone()),
                         TextEntry::make('event.title'),
                         TextEntry::make('registration.registration_no'),
                         TextEntry::make('is_primary')
@@ -150,30 +166,5 @@ final class EventRegistrationParticipantResource extends Resource
             'index' => EventRegistrationParticipantResource\Pages\ListEventRegistrationParticipants::route('/'),
             'view' => EventRegistrationParticipantResource\Pages\ViewEventRegistrationParticipant::route('/{record}'),
         ];
-    }
-
-    private static function contactValue(EventRegistrationParticipant $participant, string $type): ?string
-    {
-        $contact = $participant->relationLoaded('contactMethods')
-            ? $participant->contactMethods
-                ->where('type', $type)
-                ->sortByDesc('is_primary')
-                ->sortBy('sort_order')
-                ->first()
-            : $participant->contactMethods()
-                ->where('type', $type)
-                ->orderByDesc('is_primary')
-                ->orderBy('sort_order')
-                ->first();
-
-        $value = $contact?->normalized_value ?? $contact?->value;
-
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $value = mb_trim($value);
-
-        return $value !== '' ? $value : null;
     }
 }

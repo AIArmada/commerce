@@ -43,7 +43,7 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         $eventId = $submission->getAttribute('event_id');
 
         if ($eventId !== null) {
-            event(new EventSubmissionApproved($submissionId, (string) $eventId));
+            DB::afterCommit(static fn () => event(new EventSubmissionApproved($submissionId, (string) $eventId)));
         }
     }
 
@@ -60,7 +60,7 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
         $eventId = $submission->getAttribute('event_id');
 
         if ($eventId !== null) {
-            event(new EventSubmissionRejected($submissionId, (string) $eventId, $reason));
+            DB::afterCommit(static fn () => event(new EventSubmissionRejected($submissionId, (string) $eventId, $reason)));
         }
     }
 

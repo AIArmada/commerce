@@ -30,10 +30,10 @@ keywords:
 
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `events`.
-- All mutations go through `events` scalar-ID contracts: `EventLifecycleWorkflow` (`publish($eventId)`, `cancel('occurrence', $id, …)`), `EventCloneService`, `EventModerationWorkflow`, `EventCheckInService`, `EventTemplateService` — never mutate status columns directly.
+- All mutations go through `events` scalar-ID contracts: `EventLifecycleWorkflow` (`publish($eventId)`, `cancel('occurrence', $id, …)`), `EventCloneService`, `EventApprovalWorkflow`, `EventModerationWorkflow`, `EventCheckInService`, `EventTemplateService` — never mutate status columns directly.
 - Resolve event models through `AIArmada\Events\Platform\ModelResolver`; venue and taxonomy resources are global catalogs (no owner scope) while event-bound resources apply `OwnerUiScope::apply(..., includeGlobal: false)`.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
-- If behavior or calculations change, move them to `events` and keep this package UI-only.
+- If behavior or calculations change, move them to `events` and keep this package UI-only. The stats widget reads the owner-scoped `EventAdministrationStats` contract.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast

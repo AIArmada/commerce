@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Venues\Models\Venue;
@@ -23,6 +24,7 @@ use Filament\Actions\Imports\Models\Import;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 
 final class ConfiguredCustomVenue extends Venue {}
@@ -121,6 +123,8 @@ it('resolves configured venue models, navigation groups, and relation managers',
 });
 
 it('enforces model policies on venue, session, and registration importers for create and update', function (): void {
+    app()->bind(Authenticatable::class, User::class);
+
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -162,8 +166,10 @@ it('enforces model policies on venue, session, and registration importers for cr
     Gate::policy(EventSession::class, DenySessionImportPolicy::class);
 
     $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->getKey()]);
     $sessionImporter = new EventSessionImporter($venueImport, [
         'event_id' => 'event_id',
+        'event_occurrence_id' => 'event_occurrence_id',
         'title' => 'title',
         'starts_at' => 'starts_at',
         'ends_at' => 'ends_at',
@@ -173,6 +179,7 @@ it('enforces model policies on venue, session, and registration importers for cr
 
     expect(fn () => $sessionImporter([
         'event_id' => $event->getKey(),
+        'event_occurrence_id' => $occurrence->getKey(),
         'title' => 'Unauthorized Session',
         'starts_at' => now()->toIso8601String(),
         'ends_at' => now()->addHour()->toIso8601String(),

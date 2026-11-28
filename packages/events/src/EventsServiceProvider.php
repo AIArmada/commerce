@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events;
 
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
+use AIArmada\Events\Contracts\EventAdministrationStats;
 use AIArmada\Events\Contracts\EventAuthzDriver;
 use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
@@ -39,6 +40,7 @@ use AIArmada\Events\Platform\ExtensionRegistry;
 use AIArmada\Events\Platform\FeatureCatalog;
 use AIArmada\Events\Platform\FeatureModule;
 use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Events\Platform\Queries\OwnerScopedEventAdministrationStats;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -82,6 +84,7 @@ final class EventsServiceProvider extends PackageServiceProvider
             }
         }
 
+        $this->app->bind(EventAdministrationStats::class, OwnerScopedEventAdministrationStats::class);
         $this->registerConfiguredOverrides();
         $this->registerDrivers();
     }

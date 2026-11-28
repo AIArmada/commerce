@@ -19,7 +19,7 @@ $ownerConfig = [
 
 return [
 
-    /* Model class overrides (defaults are registered by each FeatureModule) */
+    /* Model bindings (defaults are registered by each FeatureModule). Occurrence and session are final domain models. */
     'models' => [
         'event' => null,
         'occurrence' => null,

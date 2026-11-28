@@ -11,6 +11,7 @@ use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\Events\Features\Catalog\Models\EventTemplateItem;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class SaveEventTemplateAction
@@ -20,29 +21,71 @@ final class SaveEventTemplateAction
      */
     public function createFromEvent(Event $event, array $attributes = []): EventTemplate
     {
-        EventWriteGuard::findOrFail($event);
+        return DB::transaction(function () use ($event, $attributes): EventTemplate {
+            EventWriteGuard::findOrFail($event);
 
-        $template = $this->createTemplate([
-            ...$attributes,
-            'owner_type' => $event->owner_type,
-            'owner_id' => $event->owner_id,
-            'templateable_type' => $event->getMorphClass(),
-            'templateable_id' => $event->getKey(),
-            'template_type' => 'event',
-            'name' => $attributes['name'] ?? $event->title . ' Template',
-            'description' => $attributes['description'] ?? $event->summary,
-            'payload' => $this->eventPayload($event),
-        ]);
-
-        $event->loadMissing('occurrences.sessions');
-
-        foreach ($event->occurrences as $occurrence) {
-            $item = $this->createItem($template, [
-                'item_type' => 'occurrence',
-                'item_key' => $occurrence->slug,
-                'payload' => $this->occurrencePayload($occurrence),
-                'sort_order' => 0,
+            $template = $this->createTemplate([
+                ...$attributes,
+                'owner_type' => $event->owner_type,
+                'owner_id' => $event->owner_id,
+                'templateable_type' => $event->getMorphClass(),
+                'templateable_id' => $event->getKey(),
+                'template_type' => 'event',
+                'name' => $attributes['name'] ?? $event->title . ' Template',
+                'description' => $attributes['description'] ?? $event->summary,
+                'payload' => $this->eventPayload($event),
             ]);
+
+            $event->loadMissing('occurrences.sessions');
+
+            foreach ($event->occurrences as $occurrence) {
+                $item = $this->createItem($template, [
+                    'item_type' => 'occurrence',
+                    'item_key' => (string) $occurrence->getKey(),
+                    'payload' => $this->occurrencePayload($occurrence),
+                    'sort_order' => 0,
+                ]);
+
+                foreach ($occurrence->sessions as $session) {
+                    $this->createItem($template, [
+                        'item_type' => 'session',
+                        'item_key' => $session->slug,
+                        'payload' => $this->sessionPayload($session),
+                        'metadata' => ['parent_occurrence_item_key' => $item->item_key],
+                        'sort_order' => $session->sort_order,
+                    ]);
+                }
+            }
+
+            return $template;
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createFromOccurrence(EventOccurrence $occurrence, array $attributes = []): EventTemplate
+    {
+        return DB::transaction(function () use ($occurrence, $attributes): EventTemplate {
+            $event = EventWriteGuard::findOrFail($occurrence->event_id);
+
+            if (! $event instanceof Event) {
+                throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
+            }
+
+            $template = $this->createTemplate([
+                ...$attributes,
+                'owner_type' => $event->owner_type,
+                'owner_id' => $event->owner_id,
+                'templateable_type' => $occurrence->getMorphClass(),
+                'templateable_id' => $occurrence->getKey(),
+                'template_type' => 'occurrence',
+                'name' => $attributes['name'] ?? $occurrence->title . ' Template',
+                'description' => $attributes['description'] ?? null,
+                'payload' => $this->occurrencePayload($occurrence),
+            ]);
+
+            $occurrence->loadMissing('sessions');
 
             foreach ($occurrence->sessions as $session) {
                 $this->createItem($template, [
@@ -52,46 +95,9 @@ final class SaveEventTemplateAction
                     'sort_order' => $session->sort_order,
                 ]);
             }
-        }
 
-        return $template;
-    }
-
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    public function createFromOccurrence(EventOccurrence $occurrence, array $attributes = []): EventTemplate
-    {
-        $event = EventWriteGuard::findOrFail($occurrence->event_id);
-
-        if (! $event instanceof Event) {
-            throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
-        }
-
-        $template = $this->createTemplate([
-            ...$attributes,
-            'owner_type' => $event->owner_type,
-            'owner_id' => $event->owner_id,
-            'templateable_type' => $occurrence->getMorphClass(),
-            'templateable_id' => $occurrence->getKey(),
-            'template_type' => 'occurrence',
-            'name' => $attributes['name'] ?? $occurrence->title . ' Template',
-            'description' => $attributes['description'] ?? null,
-            'payload' => $this->occurrencePayload($occurrence),
-        ]);
-
-        $occurrence->loadMissing('sessions');
-
-        foreach ($occurrence->sessions as $session) {
-            $this->createItem($template, [
-                'item_type' => 'session',
-                'item_key' => $session->slug,
-                'payload' => $this->sessionPayload($session),
-                'sort_order' => $session->sort_order,
-            ]);
-        }
-
-        return $template;
+            return $template;
+        });
     }
 
     /**
@@ -197,6 +203,7 @@ final class SaveEventTemplateAction
     {
         return [
             'title' => $session->title,
+            'sort_order' => $session->sort_order,
             'summary' => $session->summary,
             'description' => $session->description,
             'starts_at' => $session->starts_at?->toIso8601String(),

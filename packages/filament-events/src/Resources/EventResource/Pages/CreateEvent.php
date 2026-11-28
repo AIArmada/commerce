@@ -5,17 +5,29 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventResource\Pages;
 
 use AIArmada\Events\Contracts\EventTemplateService;
-use AIArmada\Events\Features\Catalog\Models\EventTemplate;
+use AIArmada\Events\Features\Catalog\Actions\ManageEventAction;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class CreateEvent extends CreateRecord
 {
     protected static string $resource = EventResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function handleRecordCreation(array $data): Model
+    {
+        return app(ManageEventAction::class)->save(null, $data, Filament::auth()->user());
+    }
 
     protected function getHeaderActions(): array
     {
@@ -27,28 +39,23 @@ class CreateEvent extends CreateRecord
                 ->form([
                     Select::make('event_template_id')
                         ->label('Template')
-                        ->options(
-                            EventTemplate::query()
-                                ->where('template_type', 'event')
-                                ->where('status', 'published')
-                                ->orderBy('name')
-                                ->get()
-                                ->mapWithKeys(fn (EventTemplate $t): array => [$t->id => "{$t->name} ({$t->code})"])
-                                ->toArray(),
-                        )
                         ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => app(EventTemplateService::class)->publishedEventOptions($search))
+                        ->getOptionLabelUsing(fn (string $value): ?string => app(EventTemplateService::class)->publishedEventLabel($value))
                         ->required(),
                 ])
+                ->authorize(fn (): bool => EventResource::canCreate())
                 ->action(function (array $data): void {
-                    $template = EventTemplate::query()->findOrFail($data['event_template_id']);
-
                     try {
-                        $eventId = app(EventTemplateService::class)->createFromTemplate((string) $template->getKey());
+                        $eventId = app(EventTemplateService::class)->createFromPublishedEventTemplate((string) $data['event_template_id'], Filament::auth()->user());
                         redirect(EventResource::getUrl('edit', ['record' => $eventId]));
+                    } catch (AuthorizationException | ValidationException $e) {
+                        throw $e;
                     } catch (Throwable $e) {
+                        report($e);
                         Notification::make()
                             ->title('Failed to create from template')
-                            ->body($e->getMessage())
+                            ->body('The event could not be created. Please try again.')
                             ->danger()
                             ->send();
                     }

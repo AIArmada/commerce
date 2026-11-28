@@ -25,6 +25,7 @@ final class CloneEventOccurrenceAction
      */
     public function handle(EventOccurrence $occurrence, array $options = []): EventOccurrence
     {
+        EventWriteGuard::findOrFail($occurrence->event_id);
         $targetEvent = $this->resolveEvent($occurrence, $options);
         $cloneSessions = $options['clone_sessions'] ?? true;
 
@@ -39,7 +40,7 @@ final class CloneEventOccurrenceAction
                     ? Str::slug($title) . '-' . Str::random(6)
                     : (string) $options['slug'],
                 'starts_at' => $options['starts_at'] ?? CarbonImmutable::parse($occurrence->starts_at),
-                'ends_at' => $options['ends_at'] ?? CarbonImmutable::parse($occurrence->ends_at),
+                'ends_at' => array_key_exists('ends_at', $options) ? $options['ends_at'] : $occurrence->ends_at,
                 'timezone' => $options['timezone'] ?? $occurrence->timezone,
                 'status' => 'scheduled',
                 'visibility' => $options['visibility'] ?? $occurrence->visibility,
@@ -56,27 +57,18 @@ final class CloneEventOccurrenceAction
                 targetEventId: $targetEvent->getKey(),
                 sourceOccurrenceId: $occurrence->getKey(),
                 targetOccurrenceId: $clone->getKey(),
+                options: $options,
             );
 
             if ($cloneSessions) {
                 $occurrence->loadMissing('sessions');
 
                 foreach ($occurrence->sessions as $session) {
-                    $clonedSession = $this->cloneSession->handle($session, [
+                    $this->cloneSession->handle($session, [
                         'event_id' => $targetEvent->getKey(),
                         'event_occurrence_id' => $clone->getKey(),
                         'status' => 'scheduled',
-                        'clone_children' => false,
                     ]);
-
-                    $this->cloneContents->handle(
-                        sourceEventId: $occurrence->event_id,
-                        targetEventId: $targetEvent->getKey(),
-                        sourceSessionId: $session->getKey(),
-                        targetSessionId: $clonedSession->getKey(),
-                        sourceOccurrenceId: $occurrence->getKey(),
-                        targetOccurrenceId: $clone->getKey(),
-                    );
                 }
             }
 

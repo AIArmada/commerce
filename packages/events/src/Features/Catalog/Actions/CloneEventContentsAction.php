@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
-use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
 use AIArmada\Events\Features\Catalog\Models\EventAudience;
 use AIArmada\Events\Features\Catalog\Models\EventAudienceProfile;
@@ -14,19 +14,23 @@ use AIArmada\Events\Features\Catalog\Models\EventLanguage;
 use AIArmada\Events\Features\Catalog\Models\EventLink;
 use AIArmada\Events\Features\Catalog\Models\EventMaterial;
 use AIArmada\Events\Features\Catalog\Models\EventMedia;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventReference;
-use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Catalog\Models\EventTimeExpression;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ExtensionRegistry;
+use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 final class CloneEventContentsAction
 {
+    public function __construct(private readonly ExtensionRegistry $extensions) {}
+
     /**
      * @return array<string, class-string<Model>>
      */
@@ -57,6 +61,7 @@ final class CloneEventContentsAction
 
     /**
      * @param  array<int, string>  $relations
+     * @param  array<string, mixed>  $options
      */
     public function handle(
         string $sourceEventId,
@@ -66,6 +71,7 @@ final class CloneEventContentsAction
         ?string $sourceSessionId = null,
         ?string $targetSessionId = null,
         array $relations = [],
+        array $options = [],
     ): Collection {
         $relations = $relations !== [] ? $relations : self::BLUEPRINT_RELATIONS;
 
@@ -86,7 +92,20 @@ final class CloneEventContentsAction
             $targetEventId,
             $targetOccurrenceId,
             $targetSessionId,
+            $options,
         ): Collection {
+            if (($sourceOccurrenceId === null) !== ($targetOccurrenceId === null)
+                || ($sourceSessionId === null) !== ($targetSessionId === null)) {
+                throw new InvalidArgumentException('Source and target clone scopes must have the same type.');
+            }
+
+            if ($sourceEventId === $targetEventId && $sourceOccurrenceId === $targetOccurrenceId && $sourceSessionId === $targetSessionId) {
+                throw new InvalidArgumentException('Cannot clone contents into the source scope.');
+            }
+
+            $this->validateScope($sourceEventId, $sourceOccurrenceId, $sourceSessionId);
+            $this->validateScope($targetEventId, $targetOccurrenceId, $targetSessionId);
+
             $cloned = new Collection;
 
             foreach ($relations as $relation) {
@@ -129,6 +148,18 @@ final class CloneEventContentsAction
                 });
             }
 
+            $scopeType = $sourceSessionId !== null ? 'session' : ($sourceOccurrenceId !== null ? 'occurrence' : 'event');
+            $sourceScopeId = $sourceSessionId ?? $sourceOccurrenceId ?? $sourceEventId;
+            $targetScopeId = $targetSessionId ?? $targetOccurrenceId ?? $targetEventId;
+
+            foreach ($this->extensions->resolve('events.clone-scope', EventScopeCloner::class) as $cloner) {
+                $cloner->cloneForScope($scopeType, $sourceScopeId, $scopeType, $targetScopeId, [
+                    ...$options,
+                    'target_event_id' => $targetEventId,
+                    'target_occurrence_id' => $targetOccurrenceId,
+                ]);
+            }
+
             $this->cloneSpatieMedia(
                 sourceEventId: $sourceEventId,
                 targetEventId: $targetEventId,
@@ -142,6 +173,20 @@ final class CloneEventContentsAction
         });
     }
 
+    private function validateScope(string $eventId, ?string $occurrenceId, ?string $sessionId): void
+    {
+        if ($occurrenceId !== null) {
+            ModelResolver::occurrenceClass()::query()->where('event_id', $eventId)->findOrFail($occurrenceId);
+        }
+
+        if ($sessionId !== null) {
+            ModelResolver::sessionClass()::query()
+                ->where('event_id', $eventId)
+                ->where('event_occurrence_id', $occurrenceId)
+                ->findOrFail($sessionId);
+        }
+    }
+
     private function cloneSpatieMedia(
         string $sourceEventId,
         string $targetEventId,
@@ -151,30 +196,50 @@ final class CloneEventContentsAction
         ?string $targetSessionId,
     ): void {
         if ($sourceSessionId !== null && $targetSessionId !== null) {
-            $source = EventSession::query()
+            $source = ModelResolver::sessionClass()::query()
                 ->where('event_id', $sourceEventId)
                 ->findOrFail($sourceSessionId);
-            $target = EventSession::query()
+            $target = ModelResolver::sessionClass()::query()
                 ->where('event_id', $targetEventId)
                 ->findOrFail($targetSessionId);
         } elseif ($sourceOccurrenceId !== null && $targetOccurrenceId !== null) {
-            $source = EventOccurrence::query()
+            $source = ModelResolver::occurrenceClass()::query()
                 ->where('event_id', $sourceEventId)
                 ->findOrFail($sourceOccurrenceId);
-            $target = EventOccurrence::query()
+            $target = ModelResolver::occurrenceClass()::query()
                 ->where('event_id', $targetEventId)
                 ->findOrFail($targetOccurrenceId);
         } else {
-            $source = Event::query()->findOrFail($sourceEventId);
-            $target = Event::query()->findOrFail($targetEventId);
+            $source = ModelResolver::eventClass()::query()->findOrFail($sourceEventId);
+            $target = ModelResolver::eventClass()::query()->findOrFail($targetEventId);
         }
 
         if (! $source instanceof HasMedia || ! $target instanceof HasMedia) {
             return;
         }
 
-        foreach ($source->media()->get() as $media) {
-            $media->copy($target, $media->collection_name, $media->disk);
+        $mediaRecords = $source->media()->get();
+
+        if ($mediaRecords->isEmpty()) {
+            return;
         }
+
+        // Storage is not transactional. Never copy files for a clone that
+        // might still be rolled back by an enclosing database transaction.
+        DB::afterCommit(static function () use ($mediaRecords, $target): void {
+            foreach ($mediaRecords as $media) {
+                if (! $media instanceof Media) {
+                    continue;
+                }
+
+                try {
+                    $media->copy($target, $media->collection_name, $media->disk);
+                } catch (Throwable $exception) {
+                    // The clone has committed. Report storage failures without
+                    // falsely signalling a database rollback or skipping other copies.
+                    report($exception);
+                }
+            }
+        });
     }
 }

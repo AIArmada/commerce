@@ -49,7 +49,8 @@ use Illuminate\Support\Carbon;
 final class EventRegistrationParticipant extends Model
 {
     use HasContactMethods {
-        resolveEmail as resolveContactMethodEmail;
+        resolveEmail as private resolveContactMethodEmail;
+        resolvePhone as private resolveContactMethodPhone;
     }
     use HasFactory;
     use HasUuids;
@@ -91,14 +92,28 @@ final class EventRegistrationParticipant extends Model
             return $this->resolveContactMethodEmail($publicOnly);
         }
 
+        return $this->resolveLoadedContact('email', $publicOnly);
+    }
+
+    public function resolvePhone(bool $publicOnly = false): ?string
+    {
+        if (! $this->relationLoaded('contactMethods')) {
+            return $this->resolveContactMethodPhone($publicOnly);
+        }
+
+        return $this->resolveLoadedContact('phone', $publicOnly);
+    }
+
+    private function resolveLoadedContact(string $type, bool $publicOnly): ?string
+    {
         $now = CarbonImmutable::now();
 
         /** @var Collection<int, Model> $contactMethods */
         $contactMethods = $this->getRelation('contactMethods');
 
         $contact = $contactMethods
-            ->filter(function (Model $contactMethod) use ($now, $publicOnly): bool {
-                if ($contactMethod->getAttribute('type') !== 'email'
+            ->filter(function (Model $contactMethod) use ($now, $publicOnly, $type): bool {
+                if ($contactMethod->getAttribute('type') !== $type
                     || $contactMethod->getAttribute('normalized_value') === null) {
                     return false;
                 }

@@ -11,7 +11,6 @@ use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\EditEventTempl
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\ListEventTemplates;
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\ViewEventTemplate;
 use BackedEnum;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -43,10 +42,8 @@ final class EventTemplateResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventTemplate> $query */
         $query = parent::getEloquentQuery();
 
         return OwnerUiScope::apply($query, includeGlobal: false);
@@ -124,8 +121,6 @@ final class EventTemplateResource extends Resource
             ->schema([
                 Section::make('Basic Details')
                     ->schema([
-                        Hidden::make('payload')
-                            ->default([]),
                         TextInput::make('name')->required()->maxLength(255),
                         TextInput::make('code')->maxLength(100),
                         Textarea::make('description')->rows(3),
@@ -136,6 +131,7 @@ final class EventTemplateResource extends Resource
                                 'session' => 'Session',
                             ])
                             ->default('event')
+                            ->disabledOn('edit')
                             ->required(),
                         Select::make('status')
                             ->options([

@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Events\Events\EventOccurrenceCreated;
 use AIArmada\Events\Events\EventOccurrenceUpdated;
 use AIArmada\Events\Features\Catalog\Actions\BatchCreateOccurrencesAction;
 use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -105,3 +107,41 @@ it('rejects an occurrence update with an invalid time range', function (): void 
         'ends_at' => '2026-07-01 11:00:00',
     ]);
 })->throws(InvalidArgumentException::class, 'Occurrence end time must be after the start time.');
+
+it('dispatches occurrence creation only after the surrounding transaction commits', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventOccurrenceCreated::class]);
+    $event = Event::factory()->create();
+
+    $occurrence = DB::transaction(function () use ($event): EventOccurrence {
+        $occurrence = app(CreateEventOccurrenceAction::class)->handle($event, ['title' => 'Committed occurrence']);
+
+        Illuminate\Support\Facades\Event::assertNotDispatched(EventOccurrenceCreated::class);
+
+        return $occurrence;
+    });
+
+    Illuminate\Support\Facades\Event::assertDispatched(EventOccurrenceCreated::class, fn (EventOccurrenceCreated $created): bool => $created->occurrenceId === (string) $occurrence->getKey());
+});
+
+it('does not dispatch occurrence creation when the surrounding transaction rolls back', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventOccurrenceCreated::class]);
+    $event = Event::factory()->create();
+
+    expect(fn () => DB::transaction(function () use ($event): void {
+        app(CreateEventOccurrenceAction::class)->handle($event, ['title' => 'Rolled back occurrence']);
+
+        throw new RuntimeException('Rollback occurrence');
+    }))->toThrow(RuntimeException::class, 'Rollback occurrence');
+
+    expect(EventOccurrence::query()->where('event_id', $event->id)->where('slug', 'rolled-back-occurrence')->exists())->toBeFalse();
+    Illuminate\Support\Facades\Event::assertNotDispatched(EventOccurrenceCreated::class);
+});
+
+it('inherits the event visibility when an occurrence visibility is cleared', function (): void {
+    $event = Event::factory()->create(['visibility' => 'private']);
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id, 'visibility' => 'public']);
+
+    $result = app(UpdateEventOccurrenceAction::class)->handle($occurrence, ['visibility' => null]);
+
+    expect($result['occurrence']->visibility)->toBe('private');
+});

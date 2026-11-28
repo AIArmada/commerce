@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 final class FilamentEventsPlugin implements Plugin
 {
@@ -16,8 +17,13 @@ final class FilamentEventsPlugin implements Plugin
 
     public static function get(): static
     {
-        /* @phpstan-ignore return.type */
-        return filament(app(self::class)->getId());
+        $plugin = filament(app(self::class)->getId());
+
+        if (! $plugin instanceof static) {
+            throw new LogicException('The registered filament-events plugin has an unexpected type.');
+        }
+
+        return $plugin;
     }
 
     public function getId(): string

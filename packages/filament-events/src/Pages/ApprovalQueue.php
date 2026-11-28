@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Pages;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Contracts\EventModerationWorkflow;
-use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Contracts\EventApprovalWorkflow;
 use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
 use AIArmada\Events\Features\Governance\Models\EventSubmission;
+use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
@@ -23,13 +23,12 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
-use RuntimeException;
-use Throwable;
 use UnitEnum;
 
 final class ApprovalQueue extends Page implements HasTable
@@ -44,16 +43,16 @@ final class ApprovalQueue extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $submissionClass = ModelResolver::submissionClass();
+
         return $table
-            ->query(
-                EventApprovalRequest::query()
-                    ->whereHasMorph(
-                        'approvable',
-                        ['event_submission'],
-                        fn (Builder $query): Builder => $query->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false)),
-                    )
-                    ->with('approvable')
-            )
+            ->query(fn (): Builder => ModelResolver::approvalRequestClass()::query()
+                ->whereHasMorph(
+                    'approvable',
+                    [$submissionClass],
+                    fn (Builder $query): Builder => $query->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false)),
+                )
+                ->with(['approvable' => fn (MorphTo $relation) => $relation->morphWith([$submissionClass => ['event.owner']])]))
             ->columns([
                 TextColumn::make('approvable_type')->badge()->label('Type'),
                 TextColumn::make('approvable_id')->label('Subject ID'),
@@ -72,7 +71,7 @@ final class ApprovalQueue extends Page implements HasTable
                 SelectFilter::make('status')
                     ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']),
                 SelectFilter::make('approvable_type')
-                    ->options(['event_submission' => 'Event Submission']),
+                    ->options([(new $submissionClass)->getMorphClass() => 'Event Submission']),
             ])
             ->actions([
                 Action::make('approve')
@@ -84,17 +83,7 @@ final class ApprovalQueue extends Page implements HasTable
                     ])
                     ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (array $data, EventApprovalRequest $record): void {
-                        $submission = $this->resolveSubmission($record);
-
-                        Gate::authorize('update', $submission);
-
-                        app(EventModerationWorkflow::class)->approve((string) $submission->getKey(), Filament::auth()->user(), $data['notes'] ?? null);
-
-                        $record->update([
-                            'status' => 'approved',
-                            'approved_at' => CarbonImmutable::now(),
-                            'notes' => $data['notes'] ?? null,
-                        ]);
+                        app(EventApprovalWorkflow::class)->approve((string) $record->getKey(), Filament::auth()->user(), $data['notes'] ?? null);
                     })
                     ->visible(fn (EventApprovalRequest $record) => $record->status === 'pending'),
                 Action::make('reject')
@@ -107,18 +96,7 @@ final class ApprovalQueue extends Page implements HasTable
                     ])
                     ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (array $data, EventApprovalRequest $record): void {
-                        $submission = $this->resolveSubmission($record);
-
-                        Gate::authorize('update', $submission);
-
-                        app(EventModerationWorkflow::class)->reject((string) $submission->getKey(), Filament::auth()->user(), $data['reason'], $data['notes'] ?? null);
-
-                        $record->update([
-                            'status' => 'rejected',
-                            'rejected_at' => CarbonImmutable::now(),
-                            'reason' => $data['reason'],
-                            'notes' => $data['notes'] ?? null,
-                        ]);
+                        app(EventApprovalWorkflow::class)->reject((string) $record->getKey(), Filament::auth()->user(), $data['reason'], $data['notes'] ?? null);
                     })
                     ->visible(fn (EventApprovalRequest $record) => $record->status === 'pending'),
                 Action::make('assignToMe')
@@ -127,20 +105,7 @@ final class ApprovalQueue extends Page implements HasTable
                     ->color('info')
                     ->authorize(fn (EventApprovalRequest $record): bool => $this->canModerateSubmission($record))
                     ->action(function (EventApprovalRequest $record): void {
-                        $submission = $this->resolveSubmission($record);
-
-                        Gate::authorize('update', $submission);
-
-                        $user = Auth::user();
-
-                        if (! $user instanceof Model) {
-                            throw new RuntimeException('Assigning approval requests requires an authenticated user model.');
-                        }
-
-                        $record->update([
-                            'assigned_to_type' => $user->getMorphClass(),
-                            'assigned_to_id' => $user->getKey(),
-                        ]);
+                        app(EventApprovalWorkflow::class)->assignToActor((string) $record->getKey(), Filament::auth()->user());
                     })
                     ->visible(fn (EventApprovalRequest $record) => $record->status === 'pending'),
             ])
@@ -164,7 +129,7 @@ final class ApprovalQueue extends Page implements HasTable
             throw new InvalidArgumentException('Event submissions in this queue must be attached to an event.');
         }
 
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $submission->event_id);
+        EventWriteGuard::findOrFail($submission->event_id);
 
         return $submission;
     }
@@ -173,7 +138,7 @@ final class ApprovalQueue extends Page implements HasTable
     {
         try {
             $submission = $this->resolveSubmission($record);
-        } catch (Throwable) {
+        } catch (AuthorizationException | ModelNotFoundException | NoCurrentOwnerException | InvalidArgumentException) {
             return false;
         }
 

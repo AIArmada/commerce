@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog\Actions;
 
 use AIArmada\Events\Contracts\EventCloneService;
-use AIArmada\Events\Contracts\EventScopeCloner;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Events\Platform\ExtensionRegistry;
+use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class DefaultEventCloneService implements EventCloneService
 {
@@ -17,61 +19,50 @@ final class DefaultEventCloneService implements EventCloneService
         private readonly CloneEventAction $cloneEvent,
         private readonly CloneEventOccurrenceAction $cloneOccurrence,
         private readonly CloneEventSessionAction $cloneSession,
-        private readonly ExtensionRegistry $extensions,
     ) {}
 
     public function cloneEvent(string $eventId, array $options = []): string
     {
-        $clone = $this->cloneEvent->handle(Event::query()->whereKey($eventId)->firstOrFail(), $options);
+        return DB::transaction(function () use ($eventId, $options): string {
+            $event = EventWriteGuard::findOrFail($eventId);
 
-        $this->cloneCrossFeatureScope('event', $eventId, 'event', (string) $clone->getKey(), $options);
+            if (! $event instanceof Event) {
+                throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
+            }
 
-        return (string) $clone->getKey();
+            $clone = $this->cloneEvent->handle($event, $options);
+
+            return (string) $clone->getKey();
+        });
     }
 
     public function cloneOccurrence(string $occurrenceId, array $options = []): string
     {
-        $clone = $this->cloneOccurrence->handle(
-            EventOccurrence::query()->whereKey($occurrenceId)->firstOrFail(),
-            $options,
-        );
+        return DB::transaction(function () use ($occurrenceId, $options): string {
+            $occurrence = ModelResolver::occurrenceClass()::query()->whereKey($occurrenceId)->firstOrFail();
 
-        $this->cloneCrossFeatureScope('occurrence', $occurrenceId, 'occurrence', (string) $clone->getKey(), [
-            ...$options,
-            'target_event_id' => (string) $clone->event_id,
-        ]);
+            if (! $occurrence instanceof EventOccurrence) {
+                throw new InvalidArgumentException('The configured occurrence model must extend EventOccurrence.');
+            }
 
-        return (string) $clone->getKey();
+            $clone = $this->cloneOccurrence->handle($occurrence, $options);
+
+            return (string) $clone->getKey();
+        });
     }
 
     public function cloneSession(string $sessionId, array $options = []): string
     {
-        $clone = $this->cloneSession->handle(
-            EventSession::query()->whereKey($sessionId)->firstOrFail(),
-            $options,
-        );
+        return DB::transaction(function () use ($sessionId, $options): string {
+            $session = ModelResolver::sessionClass()::query()->whereKey($sessionId)->firstOrFail();
 
-        $this->cloneCrossFeatureScope('session', $sessionId, 'session', (string) $clone->getKey(), [
-            ...$options,
-            'target_event_id' => (string) $clone->event_id,
-            'target_occurrence_id' => $clone->event_occurrence_id,
-        ]);
+            if (! $session instanceof EventSession) {
+                throw new InvalidArgumentException('The configured session model must extend EventSession.');
+            }
 
-        return (string) $clone->getKey();
-    }
+            $clone = $this->cloneSession->handle($session, $options);
 
-    /**
-     * @param  array<string, mixed>  $options
-     */
-    private function cloneCrossFeatureScope(
-        string $sourceScopeType,
-        string $sourceScopeId,
-        string $targetScopeType,
-        string $targetScopeId,
-        array $options = [],
-    ): void {
-        foreach ($this->extensions->resolve('events.clone-scope', EventScopeCloner::class) as $cloner) {
-            $cloner->cloneForScope($sourceScopeType, $sourceScopeId, $targetScopeType, $targetScopeId, $options);
-        }
+            return (string) $clone->getKey();
+        });
     }
 }

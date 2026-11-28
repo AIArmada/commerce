@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog;
 
 use AIArmada\Events\Contracts\EventCloneService;
+use AIArmada\Events\Contracts\EventImportScopeValidator;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventTemplateService;
@@ -18,12 +19,15 @@ use AIArmada\Events\Features\Catalog\Models\EventAttribute;
 use AIArmada\Events\Features\Catalog\Models\EventAudience;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\Events\Features\Catalog\Policies\EventOccurrencePolicy;
 use AIArmada\Events\Features\Catalog\Policies\EventPolicy;
 use AIArmada\Events\Features\Catalog\Policies\EventSessionPolicy;
+use AIArmada\Events\Features\Catalog\Policies\EventTemplatePolicy;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventReferenceResolver;
 use AIArmada\Events\Features\Catalog\Queries\DefaultEventTranslationProvider;
 use AIArmada\Events\Features\Catalog\Queries\EloquentCatalogApi;
+use AIArmada\Events\Features\Catalog\Queries\OwnerScopedEventImportValidator;
 use AIArmada\Events\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Contracts\Foundation\Application;
@@ -36,6 +40,10 @@ final class FeatureModule implements FeatureModuleContract
         $this->defaultModelConfig('event', Event::class);
         $this->defaultModelConfig('occurrence', EventOccurrence::class);
         $this->defaultModelConfig('session', EventSession::class);
+
+        $app->instance('events.model-type.event', Event::class);
+        $app->instance('events.model-type.occurrence', EventOccurrence::class);
+        $app->instance('events.model-type.session', EventSession::class);
         $this->defaultModelConfig('attribute', EventAttribute::class);
         $this->defaultModelConfig('audience', EventAudience::class);
 
@@ -52,6 +60,7 @@ final class FeatureModule implements FeatureModuleContract
         }
 
         $app->bind(CatalogApi::class, EloquentCatalogApi::class);
+        $app->bind(EventImportScopeValidator::class, OwnerScopedEventImportValidator::class);
     }
 
     public function boot(Application $app): void
@@ -59,6 +68,10 @@ final class FeatureModule implements FeatureModuleContract
         Gate::policy(ModelResolver::eventClass(), EventPolicy::class);
         Gate::policy(ModelResolver::occurrenceClass(), EventOccurrencePolicy::class);
         Gate::policy(ModelResolver::sessionClass(), EventSessionPolicy::class);
+
+        if (Gate::getPolicyFor(EventTemplate::class) === null) {
+            Gate::policy(EventTemplate::class, EventTemplatePolicy::class);
+        }
     }
 
     /**

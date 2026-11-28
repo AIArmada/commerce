@@ -92,7 +92,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read EventOccurrence|null $rescheduledFromOccurrence
  * @property-read EventOccurrence|null $rescheduledToOccurrence
  */
-final class EventOccurrence extends Model implements HasMedia
+class EventOccurrence extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;
@@ -184,7 +184,10 @@ final class EventOccurrence extends Model implements HasMedia
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(EventSession::class, 'event_occurrence_id');
+        /** @var class-string<EventSession> $model */
+        $model = ModelResolver::sessionClass();
+
+        return $this->hasMany($model, 'event_occurrence_id');
     }
 
     /**

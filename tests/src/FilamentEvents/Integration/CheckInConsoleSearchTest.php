@@ -40,11 +40,14 @@ it('treats like wildcards in the search box as literal characters', function ():
         createEventPass($ticketType, $registration, ['pass_no' => 'PASS-' . $tag]);
         createEventPass($ticketType, $registration, ['pass_no' => 'PASS-' . $tag . '2']);
 
+        createEventPass($ticketType, $registration, ['pass_no' => 'ZERO-0-' . $tag]);
+
         $page = new CheckInConsole;
 
         expect(checkInConsoleResults($page, 'PASS-' . $tag))->toHaveCount(2)
             ->and(checkInConsoleResults($page, 'PASS-' . $tag . '_'))->toHaveCount(0)
             ->and(checkInConsoleResults($page, 'PASS-' . $tag . '%'))->toHaveCount(0)
-            ->and(checkInConsoleResults($page, 'REG-' . $tag))->toHaveCount(2);
+            ->and(checkInConsoleResults($page, 'REG-' . $tag))->toHaveCount(3)
+            ->and(checkInConsoleResults($page, '  ZERO-0-  '))->toBe(['ZERO-0-' . $tag]);
     });
 });

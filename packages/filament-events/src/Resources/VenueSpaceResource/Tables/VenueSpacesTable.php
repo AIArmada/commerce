@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\VenueSpaceResource\Tables;
 
+use AIArmada\Events\Features\Venues\Actions\ManageVenueSpaceAction;
+use AIArmada\FilamentEvents\Resources\VenueSpaceResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\LazyCollection;
 
 class VenueSpacesTable
 {
@@ -55,7 +60,12 @@ class VenueSpacesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            abort_unless(VenueSpaceResource::canDelete($record), 403);
+                            app(ManageVenueSpaceAction::class)->delete((string) $record->getKey(), Filament::auth()->user());
+                        }
+                    }),
                 ]),
             ]);
     }

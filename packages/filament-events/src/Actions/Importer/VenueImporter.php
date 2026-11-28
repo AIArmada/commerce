@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
-use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Features\Venues\Actions\ImportVenueAction;
 use AIArmada\Events\Features\Venues\Models\Venue;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 use LogicException;
 
 final class VenueImporter extends Importer
 {
     use AuthorizesImportedRecords;
+    use ReadsMappedImportData;
 
     /**
      * @return class-string<Venue>
@@ -38,49 +35,34 @@ final class VenueImporter extends Importer
         return [
             ImportColumn::make('name')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Name'),
             ImportColumn::make('slug')
+                ->rules(['nullable', 'string', 'max:255'])
                 ->label('Slug'),
             ImportColumn::make('venue_type')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Venue Type'),
             ImportColumn::make('address_id')
                 ->label('Primary Address ID')
-                ->rules(['uuid'])
+                ->rules(['nullable', 'uuid'])
                 ->ignoreBlankState()
-                ->fillRecordUsing(static function (): void {})
-                ->saveRelationshipsUsing(function (ImportColumn $column, mixed $state): void {
-                    if (! is_string($state) || $state === '') {
-                        throw new InvalidArgumentException('A valid primary address ID is required when address_id is mapped.');
-                    }
-
-                    $record = $column->getRecord();
-
-                    if (! $record instanceof Venue) {
-                        throw new LogicException('Venue importer did not resolve a Venue record.');
-                    }
-
-                    try {
-                        if (method_exists(Address::class, 'ownerScopeConfig') && ! Address::ownerScopeConfig()->enabled) {
-                            $address = Address::query()->findOrFail($state);
-                        } else {
-                            $address = OwnerWriteGuard::findOrFailForOwner(Address::class, $state);
-                        }
-                    } catch (AuthorizationException | ModelNotFoundException) {
-                        throw ValidationException::withMessages([
-                            'address_id' => 'The selected address does not exist in the current scope.',
-                        ]);
-                    }
-
-                    $record->attachAddress($address, type: 'primary', isPrimary: true);
-                }),
+                ->fillRecordUsing(static function (): void {}),
             ImportColumn::make('status')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Status'),
             ImportColumn::make('phone')
-                ->label('Phone'),
+                ->label('Phone')
+                ->rules(['nullable', 'string', 'max:255'])
+                ->ignoreBlankState()
+                ->fillRecordUsing(static function (): void {}),
             ImportColumn::make('email')
-                ->label('Email'),
+                ->label('Email')
+                ->rules(['nullable', 'email', 'max:254'])
+                ->ignoreBlankState()
+                ->fillRecordUsing(static function (): void {}),
         ];
     }
 
@@ -104,6 +86,17 @@ final class VenueImporter extends Importer
     protected function beforeUpdate(): void
     {
         $this->authorizeRecordUpdate();
+    }
+
+    public function saveRecord(): void
+    {
+        $record = $this->record;
+
+        if (! $record instanceof Venue) {
+            throw new LogicException('Venue importer did not resolve a Venue record.');
+        }
+
+        $this->record = app(ImportVenueAction::class)->handle($record->exists ? (string) $record->getKey() : null, $this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string

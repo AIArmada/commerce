@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventTaxonomyResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Events\Features\Taxonomy\Actions\ManageEventTermAction;
+use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Hidden;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -49,12 +51,12 @@ final class TermsRelationManager extends RelationManager
             ->filters([])
             ->headerActions([
                 CreateAction::make()
+                    ->using(fn (array $data): EventTerm => app(ManageEventTermAction::class)->save((string) $this->getOwnerRecord()->getKey(), null, $data, Filament::auth()->user()))
                     ->form([
-                        Hidden::make('event_taxonomy_id'),
                         TextInput::make('code')
                             ->required()
                             ->maxLength(100)
-                            ->unique(table: 'event_terms', ignoreRecord: true),
+                            ->unique(modifyRuleUsing: fn ($rule) => $rule->where('event_taxonomy_id', $this->getOwnerRecord()->getKey()), ignoreRecord: true),
                         TextInput::make('name')
                             ->required()
                             ->maxLength(255),
@@ -65,7 +67,7 @@ final class TermsRelationManager extends RelationManager
                             ->relationship(
                                 'parent',
                                 'name',
-                                fn ($query, $get) => $query->where('event_taxonomy_id', $get('event_taxonomy_id'))
+                                fn ($query) => $query->where('event_taxonomy_id', $this->getOwnerRecord()->getKey())
                             )
                             ->searchable()
                             ->preload(),
@@ -79,12 +81,12 @@ final class TermsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->using(fn (EventTerm $record, array $data): EventTerm => app(ManageEventTermAction::class)->save((string) $this->getOwnerRecord()->getKey(), $record->id, $data, Filament::auth()->user()))
                     ->form([
-                        Hidden::make('event_taxonomy_id'),
                         TextInput::make('code')
                             ->required()
                             ->maxLength(100)
-                            ->unique(table: 'event_terms', ignoreRecord: true),
+                            ->unique(modifyRuleUsing: fn ($rule) => $rule->where('event_taxonomy_id', $this->getOwnerRecord()->getKey()), ignoreRecord: true),
                         TextInput::make('name')
                             ->required()
                             ->maxLength(255),
@@ -95,7 +97,7 @@ final class TermsRelationManager extends RelationManager
                             ->relationship(
                                 'parent',
                                 'name',
-                                fn ($query, $get) => $query->where('event_taxonomy_id', $get('event_taxonomy_id'))
+                                fn ($query) => $query->where('event_taxonomy_id', $this->getOwnerRecord()->getKey())
                             )
                             ->searchable()
                             ->preload(),
@@ -106,7 +108,7 @@ final class TermsRelationManager extends RelationManager
                         Toggle::make('is_active')
                             ->default(true),
                     ]),
-                DeleteAction::make(),
+                DeleteAction::make()->using(fn (EventTerm $record): bool => app(ManageEventTermAction::class)->delete((string) $this->getOwnerRecord()->getKey(), $record->id, Filament::auth()->user())),
             ]);
     }
 }

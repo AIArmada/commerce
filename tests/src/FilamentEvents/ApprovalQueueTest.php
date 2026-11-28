@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
 use AIArmada\Events\Features\Governance\Models\EventSubmission;
-use Illuminate\Database\Eloquent\Builder;
+use AIArmada\FilamentEvents\Pages\ApprovalQueue;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
 it('only lists approval requests for event submissions', function (): void {
     $owner = User::query()->create([
@@ -33,17 +34,10 @@ it('only lists approval requests for event submissions', function (): void {
             'approvable_id' => $event->id,
         ]);
 
-        $records = EventApprovalRequest::query()
-            ->whereHasMorph(
-                'approvable',
-                [EventSubmission::class],
-                fn (Builder $query): Builder => $query->whereHas(
-                    'event',
-                    fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false),
-                ),
-            )
-            ->get();
+        $records = (new ApprovalQueue)->table(Table::make(Mockery::mock(HasTable::class)))->getQuery()->get();
 
-        expect($records)->toHaveCount(1);
+        expect($records)->toHaveCount(1)
+            ->and($records->first()?->approvable_id)->toBe($submission->id)
+            ->and($records->first()?->approvable?->relationLoaded('event'))->toBeTrue();
     });
 });

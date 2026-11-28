@@ -10,6 +10,7 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -47,7 +48,7 @@ final class CreateEventSessionAction
         return DB::transaction(function () use ($occurrence, $attributes, $title, $startsAt, $endsAt, $slugBase): EventSession {
             /** @var EventOccurrence $occurrence */
             $occurrence = $occurrence->newQuery()
-                ->withoutOwnerScope()
+                ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
                 ->whereKey($occurrence->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -62,12 +63,13 @@ final class CreateEventSessionAction
             $slug = $this->uniqueSlugInEvent((string) $event->getKey(), $slugBase);
 
             $sortOrder = blank($attributes['sort_order'] ?? null)
-                ? (int) EventSession::query()
+                ? (int) ModelResolver::sessionClass()::query()
                     ->where('event_occurrence_id', $occurrence->getKey())
                     ->max('sort_order') + 1
                 : (int) $attributes['sort_order'];
 
-            $session = EventSession::query()->create([
+            /** @var EventSession $session */
+            $session = ModelResolver::sessionClass()::query()->create([
                 'event_id' => $event->getKey(),
                 'event_occurrence_id' => $occurrence->getKey(),
                 'title' => $title,
@@ -100,11 +102,11 @@ final class CreateEventSessionAction
                 'metadata' => $attributes['metadata'] ?? null,
             ]);
 
-            event(new EventSessionCreated(
+            DB::afterCommit(static fn () => event(new EventSessionCreated(
                 (string) $session->getKey(),
                 (string) $session->event_id,
                 $session->event_occurrence_id !== null ? (string) $session->event_occurrence_id : null,
-            ));
+            )));
 
             return $session;
         });
@@ -130,8 +132,8 @@ final class CreateEventSessionAction
     {
         $base = $slug === '' ? 'session' : $slug;
 
-        $query = EventSession::query()
-            ->withoutOwnerScope()
+        $query = ModelResolver::sessionClass()::query()
+            ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
             ->where('event_id', $eventId);
 
         if (str_contains($base, '\\')) {
@@ -164,7 +166,7 @@ final class CreateEventSessionAction
             $suffix++;
         }
 
-        while (EventSession::query()->withoutOwnerScope()->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
+        while (ModelResolver::sessionClass()::query()->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)->where('event_id', $eventId)->where('slug', $candidate)->exists()) {
             $candidate = $base . '-' . $suffix;
             $suffix++;
         }

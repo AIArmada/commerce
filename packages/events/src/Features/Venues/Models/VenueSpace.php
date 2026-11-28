@@ -129,7 +129,7 @@ class VenueSpace extends Model
             throw new InvalidArgumentException('A venue id must be a valid UUID string or null.');
         }
 
-        if ($venueId !== null && ! Venue::query()->whereKey($venueId)->exists()) {
+        if ($venueId !== null && ! ModelResolver::venueClass()::query()->whereKey($venueId)->exists()) {
             throw new InvalidArgumentException("Venue [{$venueId}] does not exist.");
         }
 

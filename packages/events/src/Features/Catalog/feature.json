@@ -7,7 +7,9 @@
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventTemplateService",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
       "AIArmada\\Events\\Features\\Catalog\\Actions\\SynchronizeEventContent",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction"
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\ManageEventAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventLifecycleWorkflow"
     ],
     "table:event_occurrences": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\BatchCreateOccurrencesAction",
@@ -106,7 +108,8 @@
     ],
     "table:event_templates": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteTemplateDependents",
-      "AIArmada\\Events\\Features\\Catalog\\Actions\\SaveEventTemplateAction"
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SaveEventTemplateAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\ManageEventTemplateAction"
     ],
     "table:event_template_items": [
       "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteTemplateDependents",

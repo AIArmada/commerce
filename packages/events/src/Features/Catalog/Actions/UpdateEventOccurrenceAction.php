@@ -37,7 +37,7 @@ final class UpdateEventOccurrenceAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            EventWriteGuard::findOrFail((string) $occurrence->getAttribute('event_id'));
+            $event = EventWriteGuard::findOrFail((string) $occurrence->getAttribute('event_id'));
 
             $original = $occurrence->getRawOriginal();
 
@@ -79,6 +79,10 @@ final class UpdateEventOccurrenceAction
                 throw new InvalidArgumentException('Occurrence end time must be after the start time.');
             }
 
+            if (array_key_exists('visibility', $allowed) && blank($allowed['visibility'])) {
+                $allowed['visibility'] = $event->getAttribute('visibility') ?: 'public';
+            }
+
             $statusValue = $allowed['status'] ?? null;
             unset($allowed['status']);
 
@@ -115,11 +119,11 @@ final class UpdateEventOccurrenceAction
         });
 
         if ($changes !== []) {
-            event(new EventOccurrenceUpdated(
+            DB::afterCommit(static fn () => event(new EventOccurrenceUpdated(
                 (string) $occurrence->getKey(),
                 (string) $occurrence->event_id,
                 $changes,
-            ));
+            )));
         }
 
         if (isset($changes['status'])) {

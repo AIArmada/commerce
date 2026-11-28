@@ -21,6 +21,8 @@ use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->event = Event::factory()->create();
@@ -667,4 +669,70 @@ it('ignores direct event reassignment when updating a session', function (): voi
         ->and($result['changes'])->toHaveKey('title')
         ->and($result['changes'])->not->toHaveKey('event_id')
         ->and($result['changes'])->not->toHaveKey('event_occurrence_id');
+});
+
+it('does not dispatch session creation when the surrounding transaction rolls back', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventSessionCreated::class]);
+
+    expect(fn () => DB::transaction(function (): void {
+        app(CreateEventSessionAction::class)->handle($this->occurrence, ['title' => 'Rolled back session']);
+
+        Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
+
+        throw new RuntimeException('Rollback session');
+    }))->toThrow(RuntimeException::class, 'Rollback session');
+
+    expect(EventSession::query()->where('event_occurrence_id', $this->occurrence->id)->where('slug', 'rolled-back-session')->exists())->toBeFalse();
+    Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCreated::class);
+});
+
+it('inherits occurrence visibility when session visibility is cleared', function (): void {
+    $this->occurrence->update(['visibility' => 'private']);
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'visibility' => 'public',
+    ]);
+
+    $result = app(UpdateEventSessionAction::class)->handle($session, ['visibility' => null]);
+
+    expect($result['session']->visibility)->toBe('private');
+});
+
+it('rejects duplicate session slugs within an event but allows reuse across events', function (): void {
+    $action = app(CreateEventSessionAction::class);
+    $first = $action->handle($this->occurrence, ['title' => 'First session']);
+    $second = $action->handle($this->occurrence, ['title' => 'Second session']);
+    $otherEvent = Event::factory()->create();
+    $otherOccurrence = EventOccurrence::factory()->create(['event_id' => $otherEvent->id]);
+    $other = $action->handle($otherOccurrence, ['title' => 'Other session']);
+
+    $update = app(UpdateEventSessionAction::class);
+
+    expect(fn () => $update->handle($second, ['slug' => $first->slug]))
+        ->toThrow(ValidationException::class);
+
+    expect($second->refresh()->slug)->toBe('second-session')
+        ->and($update->handle($other, ['slug' => $first->slug])['session']->slug)->toBe($first->slug);
+});
+
+it('does not dispatch session lifecycle events from rolled back transactions', function (): void {
+    Illuminate\Support\Facades\Event::fake([EventSessionCancelled::class]);
+
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'status' => 'scheduled',
+    ]);
+
+    expect(fn () => DB::transaction(function () use ($session): void {
+        $session->cancel('Cancelled inside transaction');
+
+        Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCancelled::class);
+
+        throw new RuntimeException('Rollback cancellation');
+    }))->toThrow(RuntimeException::class, 'Rollback cancellation');
+
+    expect($session->refresh()->status->getValue())->toBe('scheduled');
+    Illuminate\Support\Facades\Event::assertNotDispatched(EventSessionCancelled::class);
 });

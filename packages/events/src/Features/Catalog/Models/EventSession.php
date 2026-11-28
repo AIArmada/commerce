@@ -90,7 +90,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Model> $updates
  * @property-read Collection<int, SeatMap> $seatMaps
  */
-final class EventSession extends Model implements HasMedia
+class EventSession extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;
@@ -181,7 +181,10 @@ final class EventSession extends Model implements HasMedia
      */
     public function occurrence(): BelongsTo
     {
-        return $this->belongsTo(EventOccurrence::class, 'event_occurrence_id');
+        /** @var class-string<EventOccurrence> $model */
+        $model = ModelResolver::occurrenceClass();
+
+        return $this->belongsTo($model, 'event_occurrence_id');
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Actions;
 
+use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Events\Contracts\EventTemplateService;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
@@ -12,10 +14,16 @@ use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\Events\Features\Catalog\Models\EventTemplateItem;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class DefaultEventTemplateService implements EventTemplateService
@@ -50,6 +58,74 @@ final class DefaultEventTemplateService implements EventTemplateService
         private readonly CreateEventSessionAction $createSession,
     ) {}
 
+    public function publishedEventOptions(string $search): array
+    {
+        return OwnerScopeOverride::withoutIncludeGlobal(fn (): array => $this->searchPublishedEventTemplates($search));
+    }
+
+    /** @return array<string, string> */
+    private function searchPublishedEventTemplates(string $search): array
+    {
+        $query = $this->publishedEventQuery();
+        $pattern = LikeSearch::contains($search);
+        $query->where(static function (Builder $nested) use ($pattern): void {
+            LikeSearch::whereLike($nested, 'name', $pattern);
+            LikeSearch::orWhereLike($nested, 'code', $pattern);
+        });
+
+        return $query->orderBy('name')->orderBy('id')->limit(50)
+            ->get(['id', 'name', 'code'])
+            ->mapWithKeys(fn (EventTemplate $template): array => [$template->id => $this->templateLabel($template)])
+            ->all();
+    }
+
+    public function publishedEventLabel(string $templateId): ?string
+    {
+        if (! Str::isUuid($templateId)) {
+            return null;
+        }
+
+        $template = OwnerScopeOverride::withoutIncludeGlobal(fn () => $this->publishedEventQuery()->whereKey($templateId)->first(['id', 'name', 'code']));
+
+        return $template instanceof EventTemplate ? $this->templateLabel($template) : null;
+    }
+
+    public function createFromPublishedEventTemplate(string $templateId, mixed $actor): string
+    {
+        if (! $actor instanceof Authenticatable) {
+            throw new AuthorizationException('An authenticated actor is required.');
+        }
+
+        Gate::forUser($actor)->authorize('create', ModelResolver::eventClass());
+
+        return OwnerScopeOverride::withoutIncludeGlobal(fn (): string => DB::transaction(function () use ($templateId): string {
+            $template = Str::isUuid($templateId)
+                ? $this->publishedEventQuery()->whereKey($templateId)->lockForUpdate()->first()
+                : null;
+
+            if (! $template instanceof EventTemplate) {
+                throw ValidationException::withMessages([
+                    'event_template_id' => 'The selected published event template is not available.',
+                ]);
+            }
+
+            return (string) $this->createEventFromTemplate($template, [])->getKey();
+        }));
+    }
+
+    /** @return Builder<EventTemplate> */
+    private function publishedEventQuery(): Builder
+    {
+        return EventTemplate::query()
+            ->where('template_type', 'event')
+            ->where('status', 'published');
+    }
+
+    private function templateLabel(EventTemplate $template): string
+    {
+        return filled($template->code) ? "{$template->name} ({$template->code})" : $template->name;
+    }
+
     public function createFromTemplate(string $templateId, array $overrides = []): string
     {
         $template = $this->findTemplate($templateId);
@@ -72,7 +148,13 @@ final class DefaultEventTemplateService implements EventTemplateService
         $payload = $this->payload($template, $overrides, self::EVENT_OVERRIDES);
 
         return DB::transaction(function () use ($template, $payload): Event {
-            $event = new Event;
+            $class = ModelResolver::eventClass();
+            $event = new $class;
+
+            if (! $event instanceof Event) {
+                throw new InvalidArgumentException('The configured events model must extend the Catalog Event model.');
+            }
+
             $event->forceFill([
                 'owner_type' => $template->owner_type,
                 'owner_id' => $template->owner_id,
@@ -91,8 +173,33 @@ final class DefaultEventTemplateService implements EventTemplateService
                 'metadata' => $payload['metadata'] ?? null,
             ])->save();
 
-            foreach ($template->items as $item) {
-                $this->materializeItem($item, $event);
+            $occurrences = [];
+            $items = $template->items()->where('status', 'active')->orderBy('sort_order')->orderBy('id')->get();
+
+            foreach ($items as $item) {
+                if ($item->item_type !== 'occurrence') {
+                    continue;
+                }
+
+                if (blank($item->item_key) || isset($occurrences[$item->item_key])) {
+                    throw new InvalidArgumentException('Occurrence template item keys must be unique and non-empty.');
+                }
+
+                $occurrences[$item->item_key] = $this->materializeOccurrence($item, $event);
+            }
+
+            foreach ($items as $item) {
+                if ($item->item_type !== 'session') {
+                    continue;
+                }
+
+                $parentKey = $item->metadata['parent_occurrence_item_key'] ?? null;
+
+                if (! is_string($parentKey) || ! isset($occurrences[$parentKey])) {
+                    throw new InvalidArgumentException('A session template item must reference its parent occurrence item.');
+                }
+
+                $this->materializeItem($item, $event, $occurrences[$parentKey]);
             }
 
             return $event;
@@ -134,7 +241,7 @@ final class DefaultEventTemplateService implements EventTemplateService
                 'metadata' => $payload['metadata'] ?? null,
             ]);
 
-            foreach ($template->items as $item) {
+            foreach ($template->items()->where('status', 'active')->orderBy('sort_order')->orderBy('id')->get() as $item) {
                 $this->materializeItem($item, $event, $occurrence);
             }
 
@@ -169,11 +276,32 @@ final class DefaultEventTemplateService implements EventTemplateService
             'visibility' => $payload['visibility'] ?? null,
             'delivery_mode' => $payload['delivery_mode'] ?? null,
             'capacity' => $payload['capacity'] ?? null,
+            'sort_order' => $payload['sort_order'] ?? null,
             'pricing_mode' => $payload['pricing_mode'] ?? null,
             'registration_mode' => $payload['registration_mode'] ?? null,
             'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
             'metadata' => $payload['metadata'] ?? null,
         ]));
+    }
+
+    private function materializeOccurrence(EventTemplateItem $item, Event $event): EventOccurrence
+    {
+        $payload = $item->payload ?? [];
+
+        return $this->createOccurrence->handle($event, [
+            'title' => $payload['title'] ?? "Occurrence {$item->item_key}",
+            'slug' => $payload['slug'] ?? null,
+            'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now()->addDay(),
+            'ends_at' => $payload['ends_at'] ?? null,
+            'timezone' => $payload['timezone'] ?? null,
+            'visibility' => $payload['visibility'] ?? null,
+            'delivery_mode' => $payload['delivery_mode'] ?? null,
+            'capacity' => $payload['capacity'] ?? null,
+            'pricing_mode' => $payload['pricing_mode'] ?? null,
+            'registration_mode' => $payload['registration_mode'] ?? null,
+            'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
+            'metadata' => $payload['metadata'] ?? null,
+        ]);
     }
 
     private function materializeItem(
@@ -182,35 +310,13 @@ final class DefaultEventTemplateService implements EventTemplateService
         ?EventOccurrence $occurrence = null,
     ): void {
         switch ($item->item_type) {
-            case 'occurrence':
-                $payload = $item->payload ?? [];
-
-                $this->createOccurrence->handle($event, [
-                    'title' => $payload['title'] ?? "Occurrence {$item->item_key}",
-                    'slug' => $payload['slug'] ?? null,
-                    'starts_at' => $payload['starts_at'] ?? CarbonImmutable::now()->addDay(),
-                    'ends_at' => $payload['ends_at'] ?? null,
-                    'timezone' => $payload['timezone'] ?? null,
-                    'visibility' => $payload['visibility'] ?? null,
-                    'delivery_mode' => $payload['delivery_mode'] ?? null,
-                    'capacity' => $payload['capacity'] ?? null,
-                    'pricing_mode' => $payload['pricing_mode'] ?? null,
-                    'registration_mode' => $payload['registration_mode'] ?? null,
-                    'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
-                    'metadata' => $payload['metadata'] ?? null,
-                ]);
-
-                break;
-
             case 'session':
                 $payload = $item->payload ?? [];
-                $targetOccurrence = $occurrence ?? $event->occurrences()->first();
-
-                if (! $targetOccurrence instanceof EventOccurrence) {
-                    break;
+                if (! $occurrence instanceof EventOccurrence) {
+                    throw new InvalidArgumentException('A session template item requires an occurrence.');
                 }
 
-                $this->createSession->handle($targetOccurrence, [
+                $this->createSession->handle($occurrence, [
                     'title' => $payload['title'] ?? "Session {$item->item_key}",
                     'slug' => $payload['slug'] ?? null,
                     'summary' => $payload['summary'] ?? null,
@@ -221,6 +327,7 @@ final class DefaultEventTemplateService implements EventTemplateService
                     'visibility' => $payload['visibility'] ?? null,
                     'delivery_mode' => $payload['delivery_mode'] ?? null,
                     'capacity' => $payload['capacity'] ?? null,
+                    'sort_order' => $payload['sort_order'] ?? null,
                     'pricing_mode' => $payload['pricing_mode'] ?? null,
                     'registration_mode' => $payload['registration_mode'] ?? null,
                     'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,

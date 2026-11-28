@@ -18,11 +18,15 @@ trait AuthorizesImportedRecords
     {
         $modelClass = static::getModel();
 
+        $user = $this->resolveImportUser();
+
+        if ($user === null) {
+            throw new RowImportFailedException('You are not authorized to create this record.');
+        }
+
         if (Gate::getPolicyFor($modelClass) === null) {
             return;
         }
-
-        $user = $this->resolveImportUser();
 
         if (! Gate::forUser($user)->allows('create', $modelClass)) {
             throw new RowImportFailedException('You are not authorized to create this record.');
@@ -37,35 +41,35 @@ trait AuthorizesImportedRecords
             throw new RowImportFailedException('Unable to resolve existing record for update authorization.');
         }
 
-        $persisted = $record->newQuery()->whereKey($record->getKey())->first() ?? $record;
+        $persisted = $record->newQuery()->whereKey($record->getKey())->first();
+
+        if (! $persisted instanceof Model) {
+            throw new RowImportFailedException('Unable to resolve existing record for update authorization.');
+        }
+
+        $user = $this->resolveImportUser();
+
+        if ($user === null) {
+            throw new RowImportFailedException('You are not authorized to update this record.');
+        }
 
         if (Gate::getPolicyFor($persisted) === null) {
             return;
         }
-
-        $user = $this->resolveImportUser();
 
         if (! Gate::forUser($user)->allows('update', $persisted)) {
             throw new RowImportFailedException('You are not authorized to update this record.');
         }
     }
 
-    private function resolveImportUser(): ?Authenticatable
+    protected function resolveImportUser(): ?Authenticatable
     {
-        if ($this->import->relationLoaded('user')) {
-            $loaded = $this->import->getRelation('user');
-
-            return $loaded instanceof Authenticatable ? $loaded : null;
+        if ($this->import->getAttribute('user_id') === null) {
+            return null;
         }
 
-        if ($this->import->getAttribute('user_id') !== null) {
-            $resolved = $this->import->user;
+        $user = $this->import->user;
 
-            return $resolved instanceof Authenticatable ? $resolved : null;
-        }
-
-        $current = auth()->user();
-
-        return $current instanceof Authenticatable ? $current : null;
+        return $user instanceof Authenticatable ? $user : null;
     }
 }

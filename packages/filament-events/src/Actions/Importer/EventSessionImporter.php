@@ -4,23 +4,34 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Contracts\EventImportScopeValidator;
+use AIArmada\Events\Features\Catalog\Actions\ImportEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use LogicException;
 
 final class EventSessionImporter extends Importer
 {
     use AuthorizesImportedRecords;
+    use ReadsMappedImportData;
 
-    protected static ?string $model = EventSession::class;
+    /**
+     * @return class-string<EventSession>
+     */
+    public static function getModel(): string
+    {
+        /** @var class-string<EventSession> $model */
+        $model = ModelResolver::sessionClass();
+
+        return $model;
+    }
 
     public static function getColumns(): array
     {
@@ -30,45 +41,62 @@ final class EventSessionImporter extends Importer
                 ->rules(['required', 'uuid'])
                 ->label('Event ID'),
             ImportColumn::make('event_occurrence_id')
-                ->rules(['nullable', 'uuid'])
+                ->requiredMapping()
+                ->rules(['required', 'uuid'])
                 ->label('Occurrence ID'),
             ImportColumn::make('title')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:255'])
                 ->label('Title'),
             ImportColumn::make('slug')
+                ->rules(['nullable', 'string', 'max:255'])
                 ->label('Slug'),
             ImportColumn::make('summary')
                 ->label('Summary'),
             ImportColumn::make('starts_at')
                 ->requiredMapping()
+                ->rules(['required', 'date'])
                 ->label('Starts At'),
             ImportColumn::make('ends_at')
                 ->requiredMapping()
+                ->rules(['required', 'date'])
                 ->label('Ends At'),
             ImportColumn::make('timezone')
                 ->requiredMapping()
+                ->rules(['required', 'timezone'])
                 ->label('Timezone'),
             ImportColumn::make('status')
                 ->requiredMapping()
+                ->rules(['required', Rule::in(array_keys(OccurrenceStatus::options()))])
                 ->label('Status'),
             ImportColumn::make('capacity')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0', 'max:2147483647'])
                 ->label('Capacity'),
             ImportColumn::make('sort_order')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0', 'max:2147483647'])
                 ->label('Sort Order'),
         ];
     }
 
     public function resolveRecord(): ?EventSession
     {
-        return new EventSession;
+        $sessionClass = static::getModel();
+        $record = new $sessionClass;
+
+        if (! $record instanceof EventSession) {
+            throw new LogicException('Configured session model must extend EventSession.');
+        }
+
+        return $record;
     }
 
     public function beforeCreate(): void
     {
         $this->authorizeRecordCreate();
-        $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
+        $data = $this->mappedImportData();
+        $this->assertEventScope($data['event_id'] ?? null, $data['event_occurrence_id'] ?? null);
     }
 
     protected function beforeUpdate(): void
@@ -76,11 +104,12 @@ final class EventSessionImporter extends Importer
         $this->authorizeRecordUpdate();
 
         $record = $this->record;
-        $eventId = array_key_exists('event_id', $this->data)
-            ? $this->data['event_id']
+        $data = $this->mappedImportData();
+        $eventId = array_key_exists('event_id', $data)
+            ? $data['event_id']
             : $record?->getAttribute('event_id');
-        $occurrenceId = array_key_exists('event_occurrence_id', $this->data)
-            ? $this->data['event_occurrence_id']
+        $occurrenceId = array_key_exists('event_occurrence_id', $data)
+            ? $data['event_occurrence_id']
             : $record?->getAttribute('event_occurrence_id');
 
         $this->assertEventScope($eventId, $occurrenceId);
@@ -88,38 +117,12 @@ final class EventSessionImporter extends Importer
 
     private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
     {
-        if (! is_string($eventId) || mb_trim($eventId) === '') {
-            throw ValidationException::withMessages([
-                'event_id' => 'The selected event does not exist in the current scope.',
-            ]);
-        }
+        app(EventImportScopeValidator::class)->validate($eventId, $occurrenceId, $this->resolveImportUser(), 'update');
+    }
 
-        try {
-            if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-                $event = Event::query()->findOrFail($eventId);
-            } else {
-                $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
-            }
-        } catch (AuthorizationException | ModelNotFoundException) {
-            throw ValidationException::withMessages([
-                'event_id' => 'The selected event does not exist in the current scope.',
-            ]);
-        }
-
-        if ($occurrenceId === null || $occurrenceId === '') {
-            return;
-        }
-
-        $belongsToEvent = EventOccurrence::query()
-            ->whereKey($occurrenceId)
-            ->where('event_id', $event->getKey())
-            ->exists();
-
-        if (! $belongsToEvent) {
-            throw ValidationException::withMessages([
-                'event_occurrence_id' => 'The selected occurrence does not belong to the selected event.',
-            ]);
-        }
+    public function saveRecord(): void
+    {
+        $this->record = app(ImportEventSessionAction::class)->handle($this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string

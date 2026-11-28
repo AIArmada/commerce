@@ -11,15 +11,20 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Archived as ArchivedState;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Cancelled as CancelledState;
+use AIArmada\Events\Features\Catalog\States\EventStatus\Published as PublishedState;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
+use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -35,6 +40,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
@@ -61,13 +67,8 @@ class EventResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /**
-     * @return Builder<Event>
-     */
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<Event> $query */
         $query = parent::getEloquentQuery();
 
         return OwnerUiScope::apply($query, includeGlobal: false)
@@ -183,19 +184,25 @@ class EventResource extends Resource
                 ->label('Publish')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('publish', $record))
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('publish', $record);
+
                     app(EventLifecycleWorkflow::class)->publish((string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(PublishedState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('archive')
                 ->label('Archive')
                 ->icon('heroicon-o-archive-box')
                 ->color('warning')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('archive', $record))
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('archive', $record);
+
                     app(EventLifecycleWorkflow::class)->archive('event', (string) $record->getKey());
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && (string) $record->status === 'approved')
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(ArchivedState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('cancel')
                 ->label('Cancel')
@@ -204,16 +211,23 @@ class EventResource extends Resource
                 ->form([
                     Textarea::make('reason')->required(),
                 ])
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('cancel', $record))
                 ->action(static function (array $data, Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('cancel', $record);
+
                     app(EventLifecycleWorkflow::class)->cancel('event', (string) $record->getKey(), $data['reason']);
                 })
-                ->visible(static fn (?Event $record): bool => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
+                ->visible(static fn (?Event $record): bool => $record?->status->canTransitionTo(CancelledState::class) ?? false)
                 ->requiresConfirmation(),
             Action::make('clone')
                 ->label('Clone')
                 ->icon('heroicon-o-document-duplicate')
                 ->color('gray')
+                ->authorize(fn (Event $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record) && static::canCreate())
                 ->action(static function (Event $record): void {
+                    Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                    Gate::forUser(Filament::auth()->user())->authorize('create', static::getModel());
+
                     $cloneId = app(EventCloneService::class)->cloneEvent((string) $record->getKey(), [
                         'clone_occurrences' => false,
                     ]);
@@ -291,7 +305,7 @@ class EventResource extends Resource
             Section::make('Lifecycle')
                 ->schema([
                     Select::make('status')
-                        ->options(static fn (): array => static::getStatusOptions())
+                        ->options(['draft' => 'Draft', 'pending_review' => 'Pending Review', 'scheduled' => 'Scheduled'])
                         ->default('draft')
                         ->hiddenOn('edit')
                         ->required(),
@@ -334,25 +348,7 @@ class EventResource extends Resource
      */
     protected static function configuredFormExtensions(): array
     {
-        $configuredExtensions = config('filament-events.resources.event_form_extensions', []);
-
-        if (! is_array($configuredExtensions)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach ($configuredExtensions as $extensionClass) {
-            if (! is_string($extensionClass) || ! is_a($extensionClass, EventFormExtension::class, true)) {
-                continue;
-            }
-
-            /** @var EventFormExtension $extension */
-            $extension = app($extensionClass);
-            $components = [...$components, ...$extension->components()];
-        }
-
-        return $components;
+        return ConfiguredFormExtensions::components('filament-events.resources.event_form_extensions', EventFormExtension::class);
     }
 
     /**

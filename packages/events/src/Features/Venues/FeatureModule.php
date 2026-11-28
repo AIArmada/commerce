@@ -9,7 +9,10 @@ use AIArmada\Events\Features\Venues\Models\FacilityType;
 use AIArmada\Events\Features\Venues\Models\Venue;
 use AIArmada\Events\Features\Venues\Models\VenueSpace;
 use AIArmada\Events\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Events\Platform\SharedCatalogPolicy;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -21,7 +24,14 @@ final class FeatureModule implements FeatureModuleContract
         $this->defaultModelConfig('facility', FacilityType::class);
     }
 
-    public function boot(Application $app): void {}
+    public function boot(Application $app): void
+    {
+        foreach ([ModelResolver::venueClass(), ModelResolver::venueSpaceClass()] as $model) {
+            if (Gate::getPolicyFor($model) === null) {
+                Gate::policy($model, SharedCatalogPolicy::class);
+            }
+        }
+    }
 
     /**
      * @param  class-string  $model

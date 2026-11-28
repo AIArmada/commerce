@@ -242,6 +242,22 @@ final class ModelResolver
             ));
         }
 
+        $binding = 'events.model-type.' . $key;
+        $required = app()->bound($binding) ? app()->make($binding) : Model::class;
+
+        if (! is_string($required) || ! is_a($required, Model::class, true)) {
+            throw new RuntimeException(sprintf('Invalid model type constraint for events model [%s].', $key));
+        }
+
+        if (! is_a($model, $required, true)) {
+            throw new RuntimeException(sprintf(
+                'The events model [%s] must be %s or a supported subclass; got %s.',
+                $key,
+                $required,
+                $model,
+            ));
+        }
+
         return $model;
     }
 }

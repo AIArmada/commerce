@@ -206,7 +206,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function occurrences(): HasMany
     {
-        return $this->hasMany(EventOccurrence::class);
+        /** @var class-string<EventOccurrence> $model */
+        $model = ModelResolver::occurrenceClass();
+
+        return $this->hasMany($model, 'event_id');
     }
 
     /**
@@ -214,7 +217,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function primaryOccurrence(): HasOne
     {
-        return $this->hasOne(EventOccurrence::class)
+        /** @var class-string<EventOccurrence> $model */
+        $model = ModelResolver::occurrenceClass();
+
+        return $this->hasOne($model, 'event_id')
             ->orderBy('starts_at')
             ->orderBy('created_at')
             ->orderBy('id');
@@ -225,7 +231,10 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(EventSession::class);
+        /** @var class-string<EventSession> $model */
+        $model = ModelResolver::sessionClass();
+
+        return $this->hasMany($model, 'event_id');
     }
 
     /**
@@ -233,7 +242,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function locations(): HasMany
     {
-        return $this->hasMany(ModelResolver::locationClass());
+        return $this->hasMany(ModelResolver::locationClass(), 'event_id');
     }
 
     /**
@@ -241,7 +250,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function primaryLocation(): HasOne
     {
-        return $this->hasOne(ModelResolver::locationClass())
+        return $this->hasOne(ModelResolver::locationClass(), 'event_id')
             ->whereNull('event_occurrence_id')
             ->whereNull('event_session_id')
             ->where('location_role', 'primary')
@@ -255,7 +264,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function facilities(): HasMany
     {
-        return $this->hasMany(ModelResolver::facilityClass());
+        return $this->hasMany(ModelResolver::facilityClass(), 'event_id');
     }
 
     /**
@@ -263,7 +272,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function involvements(): HasMany
     {
-        return $this->hasMany(EventInvolvement::class);
+        return $this->hasMany(EventInvolvement::class, 'event_id');
     }
 
     /**
@@ -271,7 +280,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function accessPolicies(): HasMany
     {
-        return $this->hasMany(EventAccessPolicy::class);
+        return $this->hasMany(EventAccessPolicy::class, 'event_id');
     }
 
     /**
@@ -324,7 +333,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function attendances(): HasMany
     {
-        return $this->hasMany(ModelResolver::attendanceClass());
+        return $this->hasMany(ModelResolver::attendanceClass(), 'event_id');
     }
 
     /**
@@ -332,7 +341,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function materials(): HasMany
     {
-        return $this->hasMany(EventMaterial::class);
+        return $this->hasMany(EventMaterial::class, 'event_id');
     }
 
     /**
@@ -340,7 +349,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function referenceRecords(): HasMany
     {
-        return $this->hasMany(EventReference::class);
+        return $this->hasMany(EventReference::class, 'event_id');
     }
 
     /**
@@ -348,7 +357,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function links(): HasMany
     {
-        return $this->hasMany(EventLink::class);
+        return $this->hasMany(EventLink::class, 'event_id');
     }
 
     /**
@@ -356,7 +365,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function mediaRecords(): HasMany
     {
-        return $this->hasMany(EventMedia::class);
+        return $this->hasMany(EventMedia::class, 'event_id');
     }
 
     /**
@@ -364,7 +373,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function languages(): HasMany
     {
-        return $this->hasMany(EventLanguage::class);
+        return $this->hasMany(EventLanguage::class, 'event_id');
     }
 
     /**
@@ -372,7 +381,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function audiences(): HasMany
     {
-        return $this->hasMany(EventAudience::class);
+        return $this->hasMany(EventAudience::class, 'event_id');
     }
 
     /**
@@ -380,7 +389,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function audienceProfiles(): HasMany
     {
-        return $this->hasMany(EventAudienceProfile::class);
+        return $this->hasMany(EventAudienceProfile::class, 'event_id');
     }
 
     /**
@@ -388,7 +397,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function eligibilityRules(): HasMany
     {
-        return $this->hasMany(EventEligibilityRule::class);
+        return $this->hasMany(EventEligibilityRule::class, 'event_id');
     }
 
     /**
@@ -396,7 +405,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function classifications(): HasMany
     {
-        return $this->hasMany(ModelResolver::classificationClass());
+        return $this->hasMany(ModelResolver::classificationClass(), 'event_id');
     }
 
     /**
@@ -404,7 +413,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function timeExpressions(): HasMany
     {
-        return $this->hasMany(EventTimeExpression::class);
+        return $this->hasMany(EventTimeExpression::class, 'event_id');
     }
 
     /**
@@ -412,7 +421,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function itineraries(): HasMany
     {
-        return $this->hasMany(EventItinerary::class);
+        return $this->hasMany(EventItinerary::class, 'event_id');
     }
 
     /**
@@ -420,7 +429,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function changeLogs(): HasMany
     {
-        return $this->hasMany(ModelResolver::changeLogClass());
+        return $this->hasMany(ModelResolver::changeLogClass(), 'event_id');
     }
 
     /**
@@ -428,7 +437,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function updates(): HasMany
     {
-        return $this->hasMany(ModelResolver::updateClass());
+        return $this->hasMany(ModelResolver::updateClass(), 'event_id');
     }
 
     /**
@@ -641,7 +650,7 @@ class Event extends Model implements HasMedia, TicketableInterface
      */
     public function escalations(): HasMany
     {
-        return $this->hasMany(ModelResolver::escalationClass());
+        return $this->hasMany(ModelResolver::escalationClass(), 'event_id');
     }
 
     public function resolveEscalations(): void

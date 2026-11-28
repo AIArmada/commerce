@@ -27,7 +27,10 @@ the legacy-name mapping.
 ## Resolving models
 
 Application code that may run with model overrides resolves classes through
-`ModelResolver`:
+`ModelResolver`. The event binding must extend the Catalog Event model.
+Occurrence and session models are final domain models, not substitution points;
+invalid bindings are rejected during resolution rather than allowing different
+models to be used for reads and writes.
 
 ```php
 use AIArmada\Events\Platform\ModelResolver;
@@ -319,7 +322,11 @@ $eventId = app(EventTemplateService::class)->createFromTemplate($templateId, [
 ```
 
 Cloning delegates scope work to the `events.clone-scope` extension slot, so
-each feature clones exactly the records it owns.
+each feature clones exactly the records it owns. Catalog media files are copied
+only after the outer database transaction commits. A rolled-back clone never
+starts copying media. Storage failures after commit are reported through the
+application exception handler; the committed clone remains available and may
+need its missing media restored.
 
 ## Free registration
 

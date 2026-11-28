@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
@@ -10,6 +11,7 @@ use AIArmada\FilamentEvents\Resources\EventSessionResource\Pages\CreateEventSess
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
+    $this->actingAs(User::factory()->create());
 });
 
 it('creates event occurrences through the create page', function (): void {

@@ -10,14 +10,22 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Data\EventVisibility;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Cancelled as CancelledState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Completed as CompletedState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Delayed as DelayedState;
 use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Postponed as PostponedState;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
+use AIArmada\FilamentEvents\Extensions\ConfiguredFormExtensions;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -33,11 +41,15 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 final class EventOccurrenceResource extends Resource
 {
-    protected static ?string $model = EventOccurrence::class;
+    public static function getModel(): string
+    {
+        return ModelResolver::occurrenceClass();
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
 
@@ -53,10 +65,8 @@ final class EventOccurrenceResource extends Resource
         return is_numeric($sort) ? (int) $sort : null;
     }
 
-    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<EventOccurrence> $query */
         $query = parent::getEloquentQuery();
 
         return $query
@@ -120,12 +130,19 @@ final class EventOccurrenceResource extends Resource
                     ->color('warning')
                     ->form([
                         Textarea::make('reason'),
-                        DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
+                        DateTimePicker::make('expected_starts_at')->label('Expected New Start')->rules(['nullable', 'date']),
                     ])
+                    ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventOccurrence $record): void {
-                        app(EventLifecycleWorkflow::class)->delay('occurrence', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
+                        $expectedStartsAt = filled($data['expected_starts_at'] ?? null)
+                            ? CarbonImmutable::parse($data['expected_starts_at'])
+                            : null;
+
+                        app(EventLifecycleWorkflow::class)->delay('occurrence', (string) $record->getKey(), $data['reason'] ?? null, $expectedStartsAt);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(DelayedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
@@ -134,10 +151,13 @@ final class EventOccurrenceResource extends Resource
                     ->form([
                         Textarea::make('reason')->required(),
                     ])
+                    ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventOccurrence $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->postpone('occurrence', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(PostponedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel Occurrence')
@@ -146,25 +166,35 @@ final class EventOccurrenceResource extends Resource
                     ->form([
                         Textarea::make('reason')->required(),
                     ])
+                    ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (array $data, EventOccurrence $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->cancel('occurrence', (string) $record->getKey(), $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(CancelledState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('complete')
                     ->label('Complete')
                     ->icon('heroicon-o-check')
                     ->color('success')
+                    ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record))
                     ->action(function (EventOccurrence $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+
                         app(EventLifecycleWorkflow::class)->complete('occurrence', (string) $record->getKey());
                     })
-                    ->visible(fn (?EventOccurrence $record) => (string) ($record?->status ?? '') === 'published')
+                    ->visible(static fn (?EventOccurrence $record): bool => $record?->status->canTransitionTo(CompletedState::class) ?? false)
                     ->requiresConfirmation(),
                 Action::make('clone')
                     ->label('Clone')
                     ->icon('heroicon-o-document-duplicate')
                     ->color('gray')
+                    ->authorize(fn (EventOccurrence $record): bool => Gate::forUser(Filament::auth()->user())->allows('update', $record) && static::canCreate())
                     ->action(function (EventOccurrence $record): void {
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                        Gate::forUser(Filament::auth()->user())->authorize('create', static::getModel());
+
                         $cloneId = app(EventCloneService::class)->cloneOccurrence((string) $record->getKey(), [
                             'clone_sessions' => false,
                         ]);
@@ -226,7 +256,7 @@ final class EventOccurrenceResource extends Resource
                             ->hiddenOn('edit')
                             ->required(),
                         TextInput::make('title')->required()->maxLength(255),
-                        TextInput::make('slug')->maxLength(255)->unique(ignoreRecord: true),
+                        TextInput::make('slug')->maxLength(255),
                         DateTimePicker::make('starts_at')->required(),
                         DateTimePicker::make('ends_at')->required(),
                         TextInput::make('timezone')
@@ -300,25 +330,7 @@ final class EventOccurrenceResource extends Resource
      */
     private static function configuredFormExtensions(): array
     {
-        $configuredExtensions = config('filament-events.resources.occurrence_form_extensions', []);
-
-        if (! is_array($configuredExtensions)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach ($configuredExtensions as $extensionClass) {
-            if (! is_string($extensionClass) || ! is_a($extensionClass, EventOccurrenceFormExtension::class, true)) {
-                continue;
-            }
-
-            /** @var EventOccurrenceFormExtension $extension */
-            $extension = app($extensionClass);
-            $components = [...$components, ...$extension->components()];
-        }
-
-        return $components;
+        return ConfiguredFormExtensions::components('filament-events.resources.occurrence_form_extensions', EventOccurrenceFormExtension::class);
     }
 
     public static function getPages(): array

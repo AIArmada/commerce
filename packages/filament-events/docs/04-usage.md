@@ -24,7 +24,7 @@ The table header carries a single **Export Events** action using the built-in Fi
 - **Pricing & Registration** — `pricing_mode` (select: paid/free/mixed), `registration_mode` (select: required/optional/none), `issue_passes_for_free` (tri-state select)
 - The inheritance chain is Event → Occurrence → Session; placeholder options indicate the fallback behavior at each level
 
-Create pages also expose a **From Template** header action (`CreateEvent::getHeaderActions()`), which calls `EventTemplateService::createFromTemplate($templateId)` and redirects to the created event.
+Create pages also expose a **From Template** header action (`CreateEvent::getHeaderActions()`), which searches up to 50 owner-scoped published event templates and calls `EventTemplateService::createFromPublishedEventTemplate($templateId, $actor)` before redirecting. The service revalidates the published template type, owner and create permission under the transaction.
 
 **Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
 
@@ -117,16 +117,18 @@ app(EventCheckInService::class)->checkInWithResult([
 ]);
 ```
 
-The console uses `checkInWithResult()` so duplicate scans resolve to the
+Both check-in actions require the event `manageAdmissions` permission. The console uses `checkInWithResult()` so duplicate scans resolve to the
 existing attendance instead of erroring.
 
 ## Approval Queue
 
 The Approval Queue page (`/events/approvals`) processes event submissions
-through the scalar-ID `EventModerationWorkflow`:
+through the scalar-ID `EventApprovalWorkflow`:
 
 - **Table:** approvable_type (badge), approvable_id, status (badge), requested_by_type, assigned_to_type, created_at, approved_at, rejected_at
-- **Row actions:** Approve (optional notes → `approve($submissionId, $actor, $notes)`), Reject (required reason → `reject($submissionId, $actor, $reason, $notes)`), Assign to Me (requires an authenticated user model)
+- **Row actions:** Approve (optional notes → `approve($requestId, $actor, $notes)`), Reject (required reason → `reject($requestId, $actor, $reason, $notes)`), Assign to Me (requires an authenticated user model)
+
+Approval decisions and request updates are atomic. Only pending requests can be assigned or decided; moderation notifications are dispatched after commit.
 
 ## Event Public Preview
 
@@ -193,3 +195,7 @@ Individual resources can be disabled via config:
     ],
 ],
 ```
+
+### Shared catalog authorization
+
+Taxonomies, terms, venues and venue spaces are shared across owners. Their default policy requires the `manageSharedEventCatalog` Gate ability for mutations. Define that ability in the host application for trusted catalog administrators, or register a model-specific policy. Authentication alone is not sufficient. Event templates instead use owner-specific authorization.

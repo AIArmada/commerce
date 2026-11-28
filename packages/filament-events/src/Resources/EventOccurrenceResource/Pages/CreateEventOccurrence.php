@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Gate;
+use LogicException;
 
 final class CreateEventOccurrence extends CreateRecord
 {
@@ -20,17 +23,15 @@ final class CreateEventOccurrence extends CreateRecord
      */
     protected function handleRecordCreation(array $data): EventOccurrence
     {
-        $event = $this->resolveEventForWrite($data['event_id']);
+        $event = EventWriteGuard::findOrFail($data['event_id']);
 
-        return app(CreateEventOccurrenceAction::class)->handle($event, $data);
-    }
-
-    private function resolveEventForWrite(int | string $eventId): Event
-    {
-        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-            return Event::query()->findOrFail($eventId);
+        if (! $event instanceof Event) {
+            throw new LogicException('Configured event model must extend Event.');
         }
 
-        return OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
+        Gate::forUser(Filament::auth()->user())->authorize('create', EventOccurrenceResource::getModel());
+        Gate::forUser(Filament::auth()->user())->authorize('update', $event);
+
+        return app(CreateEventOccurrenceAction::class)->handle($event, $data);
     }
 }

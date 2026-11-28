@@ -4,25 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Features\Catalog\Models\Event;
-use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Registrations\Actions\ImportEventRegistrationAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\RegistrationStatus;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
-use Closure;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
+use Illuminate\Validation\Rule;
 use LogicException;
 
 final class EventRegistrationImporter extends Importer
 {
     use AuthorizesImportedRecords;
+    use ReadsMappedImportData;
 
     /**
      * @return class-string<EventRegistration>
@@ -47,35 +44,27 @@ final class EventRegistrationImporter extends Importer
                 ->label('Occurrence ID'),
             ImportColumn::make('registration_type')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:64'])
                 ->label('Registration Type'),
             ImportColumn::make('status')
                 ->requiredMapping()
-                ->rules([
-                    function (string $attribute, mixed $value, Closure $fail): void {
-                        if (! is_string($value)) {
-                            $fail('A valid registration status is required.');
-
-                            return;
-                        }
-
-                        try {
-                            static::newRegistration()->initializeStatus($value);
-                        } catch (InvalidArgumentException | LogicException $exception) {
-                            $fail($exception->getMessage());
-                        }
-                    },
-                ])
+                ->rules(['required', Rule::in(array_keys(RegistrationStatus::options()))])
+                ->fillRecordUsing(static function (): void {})
                 ->label('Status'),
             ImportColumn::make('source')
                 ->requiredMapping()
+                ->rules(['required', 'string', 'max:64'])
                 ->label('Source'),
             ImportColumn::make('total_participants')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:1', 'max:2147483647'])
                 ->label('Total Participants'),
             ImportColumn::make('total_amount')
                 ->numeric()
+                ->rules(['nullable', 'integer', 'min:0'])
                 ->label('Total Amount'),
             ImportColumn::make('currency')
+                ->rules(['nullable', 'string', 'max:16'])
                 ->label('Currency'),
         ];
     }
@@ -100,75 +89,11 @@ final class EventRegistrationImporter extends Importer
     protected function beforeCreate(): void
     {
         $this->authorizeRecordCreate();
-        $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
-
-        $record = $this->record;
-        $status = $this->data['status'] ?? null;
-
-        if (! $record instanceof EventRegistration || ! is_string($status)) {
-            throw ValidationException::withMessages([
-                'status' => 'A valid registration status is required.',
-            ]);
-        }
-
-        try {
-            $record->initializeStatus($status);
-        } catch (InvalidArgumentException | LogicException $exception) {
-            throw ValidationException::withMessages([
-                'status' => $exception->getMessage(),
-            ]);
-        }
     }
 
-    protected function beforeUpdate(): void
+    public function saveRecord(): void
     {
-        $this->authorizeRecordUpdate();
-
-        $record = $this->record;
-        $eventId = array_key_exists('event_id', $this->data)
-            ? $this->data['event_id']
-            : $record?->getAttribute('event_id');
-        $occurrenceId = array_key_exists('event_occurrence_id', $this->data)
-            ? $this->data['event_occurrence_id']
-            : $record?->getAttribute('event_occurrence_id');
-
-        $this->assertEventScope($eventId, $occurrenceId);
-    }
-
-    private function assertEventScope(mixed $eventId, mixed $occurrenceId): void
-    {
-        if (! is_string($eventId) || mb_trim($eventId) === '') {
-            throw ValidationException::withMessages([
-                'event_id' => 'The selected event does not exist in the current scope.',
-            ]);
-        }
-
-        try {
-            if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
-                $event = Event::query()->findOrFail($eventId);
-            } else {
-                $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
-            }
-        } catch (AuthorizationException | ModelNotFoundException) {
-            throw ValidationException::withMessages([
-                'event_id' => 'The selected event does not exist in the current scope.',
-            ]);
-        }
-
-        if ($occurrenceId === null || $occurrenceId === '') {
-            return;
-        }
-
-        $belongsToEvent = EventOccurrence::query()
-            ->whereKey($occurrenceId)
-            ->where('event_id', $event->getKey())
-            ->exists();
-
-        if (! $belongsToEvent) {
-            throw ValidationException::withMessages([
-                'event_occurrence_id' => 'The selected occurrence does not belong to the selected event.',
-            ]);
-        }
+        $this->record = app(ImportEventRegistrationAction::class)->handle($this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string

@@ -10,8 +10,10 @@ use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as
 use AIArmada\Events\Features\Changes\Api\ChangesApi;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class UpdateEventSessionAction
@@ -29,12 +31,12 @@ final class UpdateEventSessionAction
         [$session, $changes, $original] = DB::transaction(function () use ($session, $attributes): array {
             /** @var EventSession $session */
             $session = $session->newQuery()
-                ->withoutOwnerScope()
+                ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
                 ->whereKey($session->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            EventWriteGuard::findOrFail((string) $session->getAttribute('event_id'));
+            $event = EventWriteGuard::findOrFail((string) $session->getAttribute('event_id'));
 
             $original = $session->getRawOriginal();
 
@@ -66,6 +68,40 @@ final class UpdateEventSessionAction
 
             if (array_key_exists('description', $allowed)) {
                 $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
+            }
+
+            if (array_key_exists('starts_at', $allowed) && blank($allowed['starts_at'])) {
+                throw new InvalidArgumentException('Session start time is required.');
+            }
+
+            $startsAt = array_key_exists('starts_at', $allowed)
+                ? CarbonImmutable::parse($allowed['starts_at'])
+                : $session->starts_at;
+            $endsAt = ! array_key_exists('ends_at', $allowed)
+                ? $session->ends_at
+                : ($allowed['ends_at'] === null ? null : CarbonImmutable::parse($allowed['ends_at']));
+
+            if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
+                throw new InvalidArgumentException('Session end time must be after the start time.');
+            }
+
+            if (array_key_exists('visibility', $allowed) && blank($allowed['visibility'])) {
+                $allowed['visibility'] = $session->occurrence?->visibility ?: ($event->getAttribute('visibility') ?: 'public');
+            }
+
+            if (array_key_exists('slug', $allowed) && ! blank($allowed['slug']) && $allowed['slug'] !== $session->slug) {
+                $event->newQuery()->whereKey($event->getKey())->lockForUpdate()->firstOrFail();
+
+                $duplicate = ModelResolver::sessionClass()::query()
+                    ->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)
+                    ->where('event_id', $session->event_id)
+                    ->whereKeyNot($session->getKey())
+                    ->where('slug', $allowed['slug'])
+                    ->exists();
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages(['slug' => 'This slug is already used by a session in this event.']);
+                }
             }
 
             $statusValue = $allowed['status'] ?? null;
@@ -103,11 +139,11 @@ final class UpdateEventSessionAction
         });
 
         if ($changes !== []) {
-            event(new EventSessionUpdated(
+            DB::afterCommit(static fn () => event(new EventSessionUpdated(
                 (string) $session->getKey(),
                 (string) $session->event_id,
                 $changes,
-            ));
+            )));
         }
 
         if (isset($changes['status'])) {
