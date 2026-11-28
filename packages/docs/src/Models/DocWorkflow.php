@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Data\DocType;
+use AIArmada\Docs\Features\Approvals\Support\WorkflowConditions;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -82,7 +83,7 @@ final class DocWorkflow extends Model implements Auditable
             return true;
         }
 
-        return $this->evaluateRules($doc);
+        return WorkflowConditions::matches($doc->attributesToArray(), $this->rules ?? []);
     }
 
     protected static function booted(): void
@@ -90,51 +91,6 @@ final class DocWorkflow extends Model implements Auditable
         static::deleting(function (DocWorkflow $workflow): void {
             $workflow->steps()->delete();
         });
-    }
-
-    /**
-     * Evaluate workflow rules against a document.
-     */
-    protected function evaluateRules(Doc $doc): bool
-    {
-        $rules = $this->rules ?? [];
-
-        foreach ($rules as $field => $condition) {
-            if (! $this->evaluateCondition($doc, $field, $condition)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Evaluate a single condition against the document.
-     *
-     * @param  array<string, mixed>|mixed  $condition
-     */
-    protected function evaluateCondition(Doc $doc, string $field, mixed $condition): bool
-    {
-        $value = $doc->getAttribute($field);
-
-        if (is_array($condition)) {
-            $operator = $condition['operator'] ?? '=';
-            $compareValue = $condition['value'] ?? null;
-
-            return match ($operator) {
-                '=' => $value === $compareValue,
-                '!=' => $value !== $compareValue,
-                '>' => $value > $compareValue,
-                '>=' => $value >= $compareValue,
-                '<' => $value < $compareValue,
-                '<=' => $value <= $compareValue,
-                'in' => in_array($value, (array) $compareValue, true),
-                'not_in' => ! in_array($value, (array) $compareValue, true),
-                default => true,
-            };
-        }
-
-        return $value === $condition;
     }
 
     /**

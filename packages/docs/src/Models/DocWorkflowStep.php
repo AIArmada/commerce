@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Features\Approvals\Support\WorkflowConditions;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -60,9 +61,6 @@ final class DocWorkflowStep extends Model implements Auditable
         'conditions',
         'is_required',
         'timeout_hours',
-        'completed_at',
-        'timed_out_at',
-        'escalated_at',
     ];
 
     public function getTable(): string
@@ -130,36 +128,7 @@ final class DocWorkflowStep extends Model implements Auditable
      */
     public function conditionsMet(Doc $doc): bool
     {
-        if (empty($this->conditions)) {
-            return true;
-        }
-
-        foreach ($this->conditions as $field => $condition) {
-            $value = $doc->getAttribute($field);
-
-            if (is_array($condition)) {
-                $operator = $condition['operator'] ?? '=';
-                $compareValue = $condition['value'] ?? null;
-
-                $result = match ($operator) {
-                    '=' => $value === $compareValue,
-                    '!=' => $value !== $compareValue,
-                    '>' => $value > $compareValue,
-                    '>=' => $value >= $compareValue,
-                    '<' => $value < $compareValue,
-                    '<=' => $value <= $compareValue,
-                    default => true,
-                };
-
-                if (! $result) {
-                    return false;
-                }
-            } elseif ($value !== $condition) {
-                return false;
-            }
-        }
-
-        return true;
+        return WorkflowConditions::matches($doc->attributesToArray(), $this->conditions ?? []);
     }
 
     /**

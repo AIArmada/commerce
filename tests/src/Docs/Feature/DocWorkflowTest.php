@@ -8,8 +8,8 @@ use AIArmada\Docs\Models\DocWorkflow;
 use AIArmada\Docs\Models\DocWorkflowStep;
 
 beforeEach(function (): void {
-    DocWorkflow::query()->delete();
     DocWorkflowStep::query()->delete();
+    DocWorkflow::query()->delete();
 });
 
 describe('DocWorkflow', function (): void {
@@ -297,4 +297,31 @@ describe('DocWorkflowStep', function (): void {
             ->and($steps->get(1)->name)->toBe('Second')
             ->and($steps->last()->name)->toBe('Third');
     });
+});
+
+test('workflow and step rules reject unknown fields and malformed operators consistently', function (): void {
+    $doc = Doc::factory()->create(['currency' => 'MYR', 'total_minor' => 5000]);
+    $workflow = new DocWorkflow(['is_active' => true]);
+    $step = new DocWorkflowStep;
+
+    foreach ([
+        ['total_minor' => ['operator' => 'unknown', 'value' => 5000]],
+        ['missing_field' => null],
+        ['total_minor' => ['operator' => '>']],
+        ['total_minor' => ['operator' => '>', 'value' => '100']],
+        ['currency' => ['operator' => 'not_in', 'value' => 'USD']],
+    ] as $rules) {
+        $workflow->rules = $rules;
+        $step->conditions = $rules;
+
+        expect($workflow->appliesTo($doc))->toBeFalse()
+            ->and($step->conditionsMet($doc))->toBeFalse();
+    }
+
+    $rules = ['currency' => ['operator' => 'in', 'value' => ['MYR', 'SGD']]];
+    $workflow->rules = $rules;
+    $step->conditions = $rules;
+
+    expect($workflow->appliesTo($doc))->toBeTrue()
+        ->and($step->conditionsMet($doc))->toBeTrue();
 });

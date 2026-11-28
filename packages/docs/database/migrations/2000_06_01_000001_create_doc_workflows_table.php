@@ -31,10 +31,10 @@ return new class extends Migration
             $table->index(['is_active', 'doc_type', 'priority']);
         });
 
-        Schema::create($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType): void {
+        Schema::create($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType, $workflowsTable): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
-            $table->foreignUuid('workflow_id');
+            $table->foreignUuid('workflow_id')->constrained($workflowsTable)->cascadeOnDelete();
             $table->string('name');
             $table->unsignedInteger('order')->default(0);
             $table->string('action_type');
