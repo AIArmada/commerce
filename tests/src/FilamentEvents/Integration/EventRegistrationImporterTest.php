@@ -93,3 +93,31 @@ it('imports through the configured registration model', function (): void {
     expect($registration)->toBeInstanceOf(ConfiguredEventRegistration::class)
         ->and(EventRegistrationImporter::getModel())->toBe(ConfiguredEventRegistration::class);
 });
+
+it('does not persist unmapped registration columns', function (): void {
+    $owner = OwnerContext::resolve();
+
+    if ($owner instanceof Authenticatable) {
+        $this->actingAs($owner);
+    }
+
+    $event = Event::factory()->create();
+    $importer = new EventRegistrationImporter(new Import, [
+        'event_id' => 'event_id',
+        'registration_type' => 'registration_type',
+        'status' => 'status',
+        'source' => 'source',
+    ], []);
+
+    $importer([
+        'event_id' => $event->getKey(),
+        'registration_type' => 'individual',
+        'status' => 'confirmed',
+        'source' => 'import',
+        'total_amount' => '999999',
+    ]);
+
+    $registration = EventRegistration::query()->where('event_id', $event->getKey())->firstOrFail();
+
+    expect($registration->total_amount)->not->toBe(999999);
+});

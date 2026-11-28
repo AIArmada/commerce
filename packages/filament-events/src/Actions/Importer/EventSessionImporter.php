@@ -9,6 +9,7 @@ use AIArmada\Events\Features\Catalog\Actions\ImportEventSessionAction;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -17,6 +18,7 @@ use LogicException;
 final class EventSessionImporter extends Importer
 {
     use AuthorizesImportedRecords;
+    use ReadsMappedImportData;
 
     /**
      * @return class-string<EventSession>
@@ -83,7 +85,8 @@ final class EventSessionImporter extends Importer
     public function beforeCreate(): void
     {
         $this->authorizeRecordCreate();
-        $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
+        $data = $this->mappedImportData();
+        $this->assertEventScope($data['event_id'] ?? null, $data['event_occurrence_id'] ?? null);
     }
 
     protected function beforeUpdate(): void
@@ -91,11 +94,12 @@ final class EventSessionImporter extends Importer
         $this->authorizeRecordUpdate();
 
         $record = $this->record;
-        $eventId = array_key_exists('event_id', $this->data)
-            ? $this->data['event_id']
+        $data = $this->mappedImportData();
+        $eventId = array_key_exists('event_id', $data)
+            ? $data['event_id']
             : $record?->getAttribute('event_id');
-        $occurrenceId = array_key_exists('event_occurrence_id', $this->data)
-            ? $this->data['event_occurrence_id']
+        $occurrenceId = array_key_exists('event_occurrence_id', $data)
+            ? $data['event_occurrence_id']
             : $record?->getAttribute('event_occurrence_id');
 
         $this->assertEventScope($eventId, $occurrenceId);
@@ -108,7 +112,7 @@ final class EventSessionImporter extends Importer
 
     public function saveRecord(): void
     {
-        $this->record = app(ImportEventSessionAction::class)->handle($this->data, $this->resolveImportUser());
+        $this->record = app(ImportEventSessionAction::class)->handle($this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string

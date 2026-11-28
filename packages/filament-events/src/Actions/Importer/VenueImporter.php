@@ -8,6 +8,7 @@ use AIArmada\Events\Features\Venues\Actions\ImportVenueAction;
 use AIArmada\Events\Features\Venues\Models\Venue;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\ReadsMappedImportData;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -16,6 +17,7 @@ use LogicException;
 final class VenueImporter extends Importer
 {
     use AuthorizesImportedRecords;
+    use ReadsMappedImportData;
 
     /**
      * @return class-string<Venue>
@@ -89,7 +91,7 @@ final class VenueImporter extends Importer
             throw new LogicException('Venue importer did not resolve a Venue record.');
         }
 
-        $this->record = app(ImportVenueAction::class)->handle($record->exists ? (string) $record->getKey() : null, $this->data, $this->resolveImportUser());
+        $this->record = app(ImportVenueAction::class)->handle($record->exists ? (string) $record->getKey() : null, $this->mappedImportData(), $this->resolveImportUser());
     }
 
     public static function getCompletedNotificationBody(Import $import): string
