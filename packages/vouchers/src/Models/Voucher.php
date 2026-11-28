@@ -242,7 +242,7 @@ class Voucher extends Model implements Auditable
                 $builder->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
             ->where(function (Builder $builder) use ($now): void {
-                $builder->whereNull('expires_at')->orWhere('expires_at', '>', $now);
+                $builder->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
             })
             ->leftJoinSub($usageCounts, 'voucher_usage_counts', static function (JoinClause $join) use ($voucherTable): void {
                 $join->on('voucher_usage_counts.voucher_id', '=', $voucherTable . '.id');
@@ -284,7 +284,7 @@ class Voucher extends Model implements Auditable
         /** @var Carbon|null $startsAt */
         $startsAt = $this->getAttribute('starts_at');
 
-        return $startsAt === null || $startsAt->isPast();
+        return $startsAt === null || $startsAt <= CarbonImmutable::now();
     }
 
     public function hasUsageLimitRemaining(): bool

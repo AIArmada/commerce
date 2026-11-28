@@ -10,8 +10,6 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -86,8 +84,6 @@ trait HasVouchers
      */
     public function getAvailableVouchers(?int $limit = null): Collection
     {
-        $now = CarbonImmutable::now();
-
         /** @var Collection<int, VoucherWallet> $wallets */
         $wallets = $this->voucherWallets()
             ->with(['voucher' => static function (BelongsTo $query): void {
@@ -95,14 +91,8 @@ trait HasVouchers
             }])
             ->whereNotNull('claimed_at')
             ->whereNull('redeemed_at')
-            ->whereHas('voucher', static function (Builder $query) use ($now): void {
-                $query->where('status', VoucherStatus::normalize(Active::class))
-                    ->where(static function (Builder $builder) use ($now): void {
-                        $builder->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
-                    })
-                    ->where(static function (Builder $builder) use ($now): void {
-                        $builder->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
-                    });
+            ->whereHas('voucher', static function (Builder $query): void {
+                $query->live();
             })
             ->when($limit !== null, static function (Builder $query) use ($limit): void {
                 $query->limit(max(1, $limit));
@@ -144,7 +134,7 @@ trait HasVouchers
             ->whereNotNull('claimed_at')
             ->whereNull('redeemed_at')
             ->whereHas('voucher', static function (Builder $query): void {
-                $query->whereNotNull('expires_at')->where('expires_at', '<=', CarbonImmutable::now());
+                $query->whereNotNull('expires_at')->where('expires_at', '<', CarbonImmutable::now());
             })
             ->when($limit !== null, static function (Builder $query) use ($limit): void {
                 $query->limit(max(1, $limit));

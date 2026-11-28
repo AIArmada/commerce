@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Traits\HasVouchers;
@@ -271,6 +272,44 @@ test('can get available vouchers from wallet', function (): void {
     $availableVouchers = $user->getAvailableVouchers();
 
     expect($availableVouchers)->toHaveCount(2);
+});
+
+test('exhausted vouchers cannot be used and do not consume the available wallet limit', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $exhausted = Voucher::create([
+        'code' => 'EXHAUSTED',
+        'name' => 'Exhausted Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit' => 1,
+    ]);
+
+    $wallet = $user->addVoucherToWallet('EXHAUSTED');
+
+    VoucherUsage::create([
+        'voucher_id' => $exhausted->id,
+        'discount_amount' => 100,
+        'currency' => 'MYR',
+        'channel' => 'web',
+        'used_at' => now(),
+    ]);
+
+    Voucher::create([
+        'code' => 'STILL-USABLE',
+        'name' => 'Still Usable Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $available = $user->addVoucherToWallet('STILL-USABLE');
+
+    expect($wallet->fresh()->canBeUsed())->toBeFalse()
+        ->and($user->getAvailableVouchers(1)->pluck('id')->all())->toBe([$available->id]);
 });
 
 test('can get redeemed vouchers from wallet', function (): void {

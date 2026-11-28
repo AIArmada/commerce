@@ -6,6 +6,7 @@ use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Depleted;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -33,6 +34,22 @@ describe('Voucher Model Scopes', function (): void {
 
         expect($affiliateVouchers)->toHaveCount(2);
         $affiliateVouchers->each(fn ($v) => expect($v->affiliate_id)->toBe('affiliate-123'));
+    });
+
+    it('uses the same inclusive start and expiry boundaries for model and live query', function (): void {
+        $now = CarbonImmutable::parse('2026-01-01 12:00:00');
+        CarbonImmutable::setTestNow($now);
+
+        try {
+            $starting = createVoucherForScopesTest(['starts_at' => $now]);
+            $expiring = createVoucherForScopesTest(['expires_at' => $now]);
+
+            expect($starting->canBeRedeemed())->toBeTrue()
+                ->and($expiring->canBeRedeemed())->toBeTrue()
+                ->and(Voucher::query()->live()->pluck('id')->all())->toContain($starting->id, $expiring->id);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
     });
 
     it('filters live vouchers by state, wall-clock window, and usage limit', function (): void {

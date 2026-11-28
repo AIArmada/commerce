@@ -116,22 +116,10 @@ final class VoucherWallet extends Model implements Auditable
             return false;
         }
 
-        if ($this->isExpired()) {
-            return false;
-        }
-
         /** @var Voucher|null $voucher */
         $voucher = $this->voucher;
 
-        if ($voucher === null || ! $voucher->isActive()) {
-            return false;
-        }
-
-        if (! $voucher->hasStarted()) {
-            return false;
-        }
-
-        return true;
+        return $voucher !== null && $voucher->canBeRedeemed();
     }
 
     protected function casts(): array
