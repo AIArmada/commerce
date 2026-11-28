@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Actions\RejectReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -35,7 +35,7 @@ class RejectReturnAction extends Action
             ->visible(fn (ReturnAuthorization $record): bool => $record->isPending())
             ->authorize(fn (ReturnAuthorization $record): bool => auth()->user()?->can('reject', $record) ?? false)
             ->action(function (ReturnAuthorization $record, array $data): void {
-                RejectReturnAuthorization::run($record, $data['rejection_reason'], auth()->id() !== null ? (string) auth()->id() : null);
+                app(RejectReturn::class)->execute((string) $record->getKey(), $data['rejection_reason'], auth()->id() !== null ? (string) auth()->id() : null);
 
                 Notification::make()
                     ->title('Return Rejected')

@@ -22,6 +22,11 @@ JNT_PASSWORD=your_testing_password
 
 The default testing endpoint is configured by `JNT_BASE_URL_TESTING`. Override it only when J&T provides a different endpoint for your account.
 
+The repository's demo environment template includes the sandbox account and key used by the test fixtures. It explicitly selects `testing`. These values cover request signing only; they do not prove live authentication.
+
+> [!WARNING]
+> Live sandbox authentication is unverified. The testing base URL answers with HTTP 404, and a signed business request still requires the sandbox customer code and password. `jnt:health` treats connectivity failures as warnings, so an exit code of `0` does not prove the credentials work. Live verification is tracked in [#50](https://github.com/AIArmada/commerce/issues/50).
+
 ## Production Environment
 
 Production also requires explicit credentials:

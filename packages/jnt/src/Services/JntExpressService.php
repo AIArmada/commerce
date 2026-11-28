@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Services;
 
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Builders\OrderBuilder;
+use AIArmada\Jnt\Contracts\CarrierTransport;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
@@ -16,24 +17,27 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Http\JntClient;
+use AIArmada\Jnt\Features\Tracking\Api\TrackingPollCache;
 use AIArmada\Jnt\Support\FieldNameConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Throwable;
 
 class JntExpressService
 {
-    protected ?JntClient $client = null;
+    protected ?CarrierTransport $client = null;
 
     /**
      * @param  array<string, mixed>  $config
      */
     public function __construct(
+        protected readonly CarrierTransportFactory $transportFactory,
         protected readonly ?string $customerCode,
         protected readonly ?string $password,
         protected readonly array $config = [],
+        protected ?TrackingPollCache $pollCache = null,
     ) {
         // Client is now lazy-loaded on first use
     }
@@ -96,7 +100,11 @@ class JntExpressService
     {
         $response = $this->getClient()->post('/api/order/addOrder', $orderData);
 
-        return OrderData::fromApiArray($response['data']);
+        try {
+            return OrderData::fromApiArray($this->responseData($response, '/api/order/addOrder'));
+        } catch (InvalidArgumentException $e) {
+            throw JntApiException::invalidApiResponse('/api/order/addOrder', $e->getMessage());
+        }
     }
 
     /**
@@ -110,7 +118,7 @@ class JntExpressService
             'txlogisticId' => $orderId,
         ]);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/getOrders');
     }
 
     /**
@@ -159,7 +167,7 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/order/cancelOrder', $payload);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/cancelOrder');
     }
 
     /**
@@ -183,7 +191,7 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/order/printOrder', $payload);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/printOrder');
     }
 
     public function trackParcel(?string $orderId = null, ?string $trackingNumber = null): TrackingData
@@ -213,7 +221,15 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/logistics/trace', $payload);
 
-        $trackingData = TrackingData::fromApiArray($response['data']);
+        try {
+            $trackingData = TrackingData::fromApiArray($this->responseData($response, '/api/logistics/trace'));
+
+            if (! $this->matchesTrackingRequest($trackingData, $orderId, $trackingNumber)) {
+                throw new InvalidArgumentException('Tracking response does not match the requested identifiers.');
+            }
+        } catch (InvalidArgumentException $e) {
+            throw JntApiException::invalidApiResponse('/api/logistics/trace', $e->getMessage());
+        }
 
         $this->cacheTrackingData($trackingData, $orderId, $trackingNumber);
 
@@ -228,10 +244,8 @@ class JntExpressService
             return null;
         }
 
-        $owner = OwnerContext::resolve();
-
         foreach ($this->trackingCacheIdentifiers($orderId, $trackingNumber) as $identifier) {
-            $cached = OwnerCache::get($owner, $this->trackingCacheKey($identifier));
+            $cached = $this->pollCache()->get($this->trackingCacheKey($identifier));
 
             if (! is_array($cached) || ! is_string($cached['last_polled_at'] ?? null) || ! is_array($cached['tracking_data'] ?? null)) {
                 continue;
@@ -244,7 +258,11 @@ class JntExpressService
                     continue;
                 }
 
-                return TrackingData::fromApiArray($cached['tracking_data']);
+                $trackingData = TrackingData::fromApiArray($cached['tracking_data']);
+
+                if ($this->matchesTrackingRequest($trackingData, $orderId, $trackingNumber)) {
+                    return $trackingData;
+                }
             } catch (Throwable) {
                 continue;
             }
@@ -265,11 +283,8 @@ class JntExpressService
             'last_polled_at' => CarbonImmutable::now()->toIso8601String(),
             'tracking_data' => $trackingData->toApiArray(),
         ];
-        $owner = OwnerContext::resolve();
-
         foreach ($this->trackingCacheIdentifiers($orderId, $trackingNumber, $trackingData) as $identifier) {
-            OwnerCache::put(
-                $owner,
+            $this->pollCache()->put(
                 $this->trackingCacheKey($identifier),
                 $cached,
                 $debounceMinutes * 60 + random_int(0, 60),
@@ -277,22 +292,47 @@ class JntExpressService
         }
     }
 
+    private function pollCache(): TrackingPollCache
+    {
+        return $this->pollCache ??= app(TrackingPollCache::class);
+    }
+
     /**
      * @return list<string>
      */
     private function trackingCacheIdentifiers(?string $orderId, ?string $trackingNumber, ?TrackingData $trackingData = null): array
     {
-        return array_values(array_unique(array_filter([
-            $orderId,
-            $trackingNumber,
-            $trackingData?->orderId,
-            $trackingData?->trackingNumber,
-        ], static fn (?string $identifier): bool => $identifier !== null && $identifier !== '')));
+        $identifiers = [];
+
+        foreach ([$orderId, $trackingData?->orderId] as $id) {
+            if ($id !== null && $id !== '') {
+                $identifiers[] = 'order:' . $id;
+            }
+        }
+
+        foreach ([$trackingNumber, $trackingData?->trackingNumber] as $number) {
+            if ($number !== null && $number !== '') {
+                $identifiers[] = 'tracking:' . $number;
+            }
+        }
+
+        return array_values(array_unique($identifiers));
+    }
+
+    private function matchesTrackingRequest(TrackingData $data, ?string $orderId, ?string $trackingNumber): bool
+    {
+        return ($trackingNumber === null || $data->trackingNumber === $trackingNumber)
+            && ($orderId === null || $data->orderId === null || $data->orderId === $orderId);
     }
 
     private function trackingCacheKey(string $identifier): string
     {
-        return 'jnt.tracking.poll.' . sha1(($this->customerCode ?? '') . '|' . $identifier);
+        return 'jnt.tracking.poll.' . hash('sha256', serialize([
+            $this->config['environment'] ?? null,
+            $this->config['api_account'] ?? null,
+            $this->customerCode,
+            $identifier,
+        ]));
     }
 
     private function trackingPollingDebounceMinutes(): int
@@ -396,21 +436,26 @@ class JntExpressService
         // Each closure will resolve a fresh service instance in its child process.
         // Tasks use list keys so duplicate identifiers are preserved, not collapsed.
         $tasks = [];
+        $inOwnerContext = $this->requiresLocalBatchExecution();
 
         // Tasks for order IDs
         foreach (array_values($orderIds) as $index => $orderId) {
-            $tasks["order:{$index}:{$orderId}"] = static fn (): array => self::executeTrackingTask(
-                orderId: $orderId,
-                trackingNumber: null,
-            );
+            $tasks["order:{$index}:{$orderId}"] = $inOwnerContext
+                ? fn (): array => self::executeTrackingTask($orderId, null, $this)
+                : static fn (): array => self::executeTrackingTask(
+                    orderId: $orderId,
+                    trackingNumber: null,
+                );
         }
 
         // Tasks for tracking numbers
         foreach (array_values($trackingNumbers) as $index => $trackingNumber) {
-            $tasks["tracking:{$index}:{$trackingNumber}"] = static fn (): array => self::executeTrackingTask(
-                orderId: null,
-                trackingNumber: $trackingNumber,
-            );
+            $tasks["tracking:{$index}:{$trackingNumber}"] = $inOwnerContext
+                ? fn (): array => self::executeTrackingTask(null, $trackingNumber, $this)
+                : static fn (): array => self::executeTrackingTask(
+                    orderId: null,
+                    trackingNumber: $trackingNumber,
+                );
         }
 
         // If no tasks, return early
@@ -420,7 +465,7 @@ class JntExpressService
 
         // Execute tracking requests in bounded parallel chunks
         /** @var list<array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}> $results */
-        $results = $this->runTasksInChunks($tasks);
+        $results = $this->runTasksInChunks($tasks, $inOwnerContext);
 
         // Process results
         foreach ($results as $result) {
@@ -528,13 +573,16 @@ class JntExpressService
         // Build concurrent tasks - pass primitives only. Tasks use list keys
         // so duplicate order IDs are preserved, not collapsed.
         $tasks = [];
+        $inOwnerContext = $this->requiresLocalBatchExecution();
         foreach (array_values($orderIds) as $index => $orderId) {
-            $tasks["print:{$index}:{$orderId}"] = static fn (): array => self::executePrintTask($orderId, $templateName);
+            $tasks["print:{$index}:{$orderId}"] = $inOwnerContext
+                ? fn (): array => self::executePrintTask($orderId, $templateName, $this)
+                : static fn (): array => self::executePrintTask($orderId, $templateName);
         }
 
         // Execute print requests in bounded parallel chunks
         /** @var list<array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}> $results */
-        $results = $this->runTasksInChunks($tasks);
+        $results = $this->runTasksInChunks($tasks, $inOwnerContext);
 
         $successful = [];
         $failed = [];
@@ -562,34 +610,24 @@ class JntExpressService
     /**
      * Lazy load the HTTP client only when needed
      */
-    protected function getClient(): JntClient
+    /**
+     * @param  array<string, mixed>  $response
+     * @return array<string, mixed>
+     */
+    private function responseData(array $response, string $endpoint): array
     {
-        if (! $this->client instanceof JntClient) {
-            $baseUrl = $this->getBaseUrl();
-            $apiAccount = $this->config['api_account'] ?? throw JntConfigurationException::missingApiAccount();
-            $privateKey = $this->config['private_key'] ?? throw JntConfigurationException::missingPrivateKey();
+        $data = $response['data'] ?? null;
 
-            $this->client = new JntClient($baseUrl, $apiAccount, $privateKey, $this->config);
+        if (! is_array($data)) {
+            throw JntApiException::invalidApiResponse($endpoint, 'Missing or invalid response data.');
         }
 
-        return $this->client;
+        return $data;
     }
 
-    protected function getBaseUrl(): string
+    protected function getClient(): CarrierTransport
     {
-        $environment = $this->normalizeEnvironment((string) ($this->config['environment'] ?? 'testing'));
-        $baseUrls = $this->config['base_urls'] ?? [];
-
-        return $baseUrls[$environment] ?? throw JntConfigurationException::invalidEnvironment($environment);
-    }
-
-    protected function normalizeEnvironment(string $environment): string
-    {
-        return match ($environment) {
-            'production' => 'production',
-            'testing', 'local', 'development' => 'testing',
-            default => throw JntConfigurationException::invalidEnvironment($environment),
-        };
+        return $this->client ??= $this->transportFactory->create($this->config);
     }
 
     protected function getCustomerCode(): string
@@ -610,6 +648,11 @@ class JntExpressService
         return $this->password;
     }
 
+    private function requiresLocalBatchExecution(): bool
+    {
+        return (bool) config('jnt.owner.enabled', false) || OwnerContext::resolve() !== null;
+    }
+
     /**
      * Run concurrency tasks in bounded chunks so huge batches cannot exhaust
      * processes or connections.
@@ -617,14 +660,16 @@ class JntExpressService
      * @param  array<string, callable>  $tasks
      * @return list<mixed>
      */
-    private function runTasksInChunks(array $tasks): array
+    private function runTasksInChunks(array $tasks, bool $local): array
     {
         $chunkSize = max(1, (int) config('jnt.batch.concurrency_chunk_size', 25));
         $results = [];
 
         foreach (array_chunk($tasks, $chunkSize, true) as $chunk) {
             /** @var array<string, mixed> $chunkResults */
-            $chunkResults = Concurrency::run($chunk);
+            $chunkResults = $local
+                ? array_map(static fn (callable $task): mixed => $task(), $chunk)
+                : Concurrency::run($chunk);
 
             foreach ($chunkResults as $result) {
                 $results[] = $result;
@@ -642,7 +687,7 @@ class JntExpressService
      *
      * @return array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}
      */
-    private static function executeTrackingTask(?string $orderId, ?string $trackingNumber): array
+    private static function executeTrackingTask(?string $orderId, ?string $trackingNumber, ?self $service = null): array
     {
         $identifier = $orderId ?? $trackingNumber ?? '';
         $type = $orderId !== null ? 'orderId' : 'trackingNumber';
@@ -650,7 +695,7 @@ class JntExpressService
         try {
             // Resolve a fresh service instance in the child process
             /** @var JntExpressService $service */
-            $service = app(self::class);
+            $service ??= app(self::class);
             $tracking = $service->trackParcel(orderId: $orderId, trackingNumber: $trackingNumber);
 
             return [
@@ -674,11 +719,11 @@ class JntExpressService
      *
      * @return array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}
      */
-    private static function executePrintTask(string $orderId, ?string $templateName): array
+    private static function executePrintTask(string $orderId, ?string $templateName, ?self $service = null): array
     {
         try {
             /** @var JntExpressService $service */
-            $service = app(self::class);
+            $service ??= app(self::class);
             $data = $service->printOrder($orderId, null, $templateName);
 
             return [

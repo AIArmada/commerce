@@ -18,7 +18,7 @@ keywords:
 - Composer: `aiarmada/jnt`
 - Role: J&T Express MY carrier adapter: orders, waybills, tracking, webhooks on top of shipping.
 - Triggers: jnt, jt-express, waybill, tracking, carrier
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
+- Search first: `src/Features/{Orders,Tracking,Waybills,Notifications}, src/Data, src/Drivers, src/Support, config, docs`
 - Related: `filament-jnt`, `shipping`, `checkout`
 - Paired: `filament-jnt` (Filament admin adapter)
 
@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Models: `JntOrder`, `JntOrderItem`, `JntOrderParcel`, `JntTrackingEvent`, `JntWebhookLog`
-- Actions/Services: `Actions/Orders/CancelOrder`, `Actions/Orders/CreateOrder`, `Actions/Tracking/TrackParcel`, `Actions/Waybills/PrintWaybill`, `Services/JntExpressService`, `Services/JntStatusMapper`, `Services/JntTrackingService`, `Services/WebhookService`
+- Actions/Services: `Features/Orders/Actions/{CreateOrder,CancelStoredJntOrder,SyncOrderTracking}`, `Features/Tracking/Actions/{TrackParcel,ProcessTrackingWebhook,JntTrackingService}`, `Features/Tracking/Support/{JntStatusMapper,WebhookService}`, `Features/Waybills/Actions/{PrintWaybill,IssuePrintableWaybill}`, `Services/JntExpressService`
 - Config `jnt.php`: `orders`, `order_items`, `order_parcels`, `tracking_events`, `database`, `table_prefix`, `json_column_type`, `tables`, `environment`, `api_account`
 
 ## Docs map

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Schemas;
 
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -38,10 +38,13 @@ final class ShipmentForm
 
                         Select::make('status')
                             ->options(ShipmentStatus::options())
-                            ->required(),
+                            ->default('pending')
+                            ->disabled()
+                            ->dehydrated(false),
 
                         TextInput::make('tracking_number')
-                            ->maxLength(255),
+                            ->disabled()
+                            ->dehydrated(false),
                     ])
                     ->columns(2),
 

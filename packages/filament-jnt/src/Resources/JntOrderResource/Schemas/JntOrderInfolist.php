@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -251,7 +251,7 @@ final class JntOrderInfolist
                 ->schema([
                     RepeatableEntry::make('trackingEvents')
                         ->label('')
-                        ->getStateUsing(fn (JntOrder $record): mixed => $record->trackingEvents()
+                        ->getStateUsing(fn (JntOrder $record): mixed => JntTrackingEvent::query()->where('order_id', $record->id)->where('owner_type', $record->owner_type)->where('owner_id', $record->owner_id)
                             ->latest('scan_time')
                             ->limit((int) config('filament-jnt.infolist.tracking_events_limit', 50))
                             ->get())
@@ -273,8 +273,7 @@ final class JntOrderInfolist
                                 ->label('Location')
                                 ->placeholder('—'),
                         ])
-                        ->grid(1)
-                        ->visible(fn (JntOrder $record): bool => $record->trackingEvents()->exists()),
+                        ->grid(1),
                 ])
                 ->collapsible(),
 

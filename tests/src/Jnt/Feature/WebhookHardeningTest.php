@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
+use AIArmada\Jnt\Events\TrackingUpdatedEvent;
+use AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('webhook payload hardening', function (): void {
@@ -34,6 +39,38 @@ describe('webhook payload hardening', function (): void {
         Queue::assertNothingPushed();
     });
 
+    it('rejects oversized persisted webhook content before decoding', function (): void {
+        config(['jnt.webhooks.max_biz_content_bytes' => 64]);
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $processor = new ProcessJntWebhook($webhookCall);
+        $method = new ReflectionMethod($processor, 'decodeBizContent');
+
+        expect($method->invoke($processor, ['bizContent' => json_encode(['billCode' => 'JNTBIG', 'details' => [], 'pad' => str_repeat('x', 128)])]))->toBeNull();
+    });
+
+    it('enforces the same byte limit at ingress, signature verification and queue processing', function (): void {
+        Queue::fake();
+        $content = json_encode(['billCode' => 'JNTBIG', 'details' => [], 'pad' => str_repeat('收', 32)], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $signature = base64_encode(md5($content . $this->privateKey, true));
+        config(['jnt.webhooks.max_biz_content_bytes' => mb_strlen($content, 'UTF-8')]);
+
+        $this->postJson('/webhooks/jnt/status', ['bizContent' => $content], ['digest' => $signature])
+            ->assertStatus(422)
+            ->assertJson(['code' => '0']);
+        Queue::assertNothingPushed();
+
+        $service = app(WebhookService::class);
+        expect($service->verifySignature($signature, $content))->toBeFalse();
+
+        $processor = new ProcessJntWebhook(Mockery::mock(WebhookCall::class)->makePartial());
+        $method = new ReflectionMethod($processor, 'decodeBizContent');
+        expect($method->invoke($processor, ['bizContent' => $content]))->toBeNull();
+
+        config(['jnt.webhooks.max_biz_content_bytes' => mb_strlen($content, '8bit')]);
+        expect($service->verifySignature($signature, $content))->toBeTrue()
+            ->and($method->invoke($processor, ['bizContent' => $content]))->toBe(json_decode($content, true));
+    });
+
     it('rejects excessive detail counts with 422', function (): void {
         Queue::fake();
         config(['jnt.webhooks.max_details' => 2]);
@@ -57,6 +94,22 @@ describe('webhook payload hardening', function (): void {
 
         $response->assertStatus(422)->assertJson(['code' => '0']);
         Queue::assertNothingPushed();
+    });
+
+    it('rejects a non-string tracking number before querying or dispatching', function (): void {
+        Event::fake([TrackingUpdatedEvent::class]);
+
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $webhookCall->id = 1000;
+
+        $processor = new ProcessJntWebhook($webhookCall);
+        $method = new ReflectionMethod($processor, 'processEvent');
+        $method->invoke($processor, 'POD', [
+            'bizContent' => json_encode(['billCode' => ['invalid'], 'details' => []]),
+        ]);
+
+        expect(JntTrackingEvent::query()->withoutOwnerScope()->count())->toBe(0);
+        Event::assertNotDispatched(TrackingUpdatedEvent::class);
     });
 
     it('tolerates malformed scan times while syncing the rest', function (): void {
@@ -108,6 +161,41 @@ describe('webhook payload hardening', function (): void {
             ->and($shipment->refresh()->last_status_code)->toBe('602');
 
         Mockery::close();
+    });
+
+    it('stores late events without regressing delivery status', function (): void {
+        config(['jnt.owner.enabled' => false]);
+        $order = JntOrder::query()->create([
+            'order_id' => 'ORDER-LATE',
+            'tracking_number' => 'JNTLATE',
+            'customer_code' => 'CUST',
+            'status' => 'pending',
+        ]);
+
+        foreach ([
+            ['2024-01-16 12:00:00', '602', 'Delivered', 'POD'],
+            ['2024-01-15 09:00:00', '301', 'Collected', 'PICKUP'],
+        ] as $index => [$time, $code, $description, $scanType]) {
+            $call = Mockery::mock(WebhookCall::class)->makePartial();
+            $call->id = 5000 + $index;
+            $processor = new ProcessJntWebhook($call);
+            (new ReflectionMethod($processor, 'processEvent'))->invoke($processor, $scanType, [
+                'bizContent' => json_encode([
+                    'billCode' => 'JNTLATE',
+                    'details' => [[
+                        'scanTime' => $time,
+                        'scanTypeCode' => $code,
+                        'scanTypeName' => $description,
+                        'desc' => $description,
+                        'scanType' => $scanType,
+                    ]],
+                ]),
+            ]);
+        }
+
+        expect($order->refresh()->status)->toBe('delivered')
+            ->and($order->last_status_code)->toBe('602')
+            ->and(JntTrackingEvent::query()->where('order_id', $order->id)->count())->toBe(2);
     });
 
     it('dedupes replayed webhooks through the canonical event hash', function (): void {
@@ -196,6 +284,52 @@ describe('webhook payload hardening', function (): void {
         Mockery::close();
     });
 
+    it('rejects tracking updates for an orphaned order owner', function (): void {
+        config()->set('jnt.owner.enabled', true);
+        config()->set('jnt.owner.include_global', false);
+        config()->set('jnt.owner.auto_assign_on_create', true);
+        Event::fake([TrackingUpdatedEvent::class]);
+
+        $owner = User::query()->create([
+            'name' => 'Orphaned Webhook Owner',
+            'email' => 'orphan-webhook@example.test',
+            'password' => 'secret',
+        ]);
+
+        $order = OwnerContext::withOwner($owner, fn () => JntOrder::query()->create([
+            'order_id' => 'ORDER-ORPHAN',
+            'tracking_number' => 'JNTORPHAN',
+            'customer_code' => 'CUST',
+            'status' => 'pending',
+        ]));
+
+        DB::table($order->getTable())->where('id', $order->getKey())->update([
+            'owner_id' => (string) Str::uuid(),
+        ]);
+
+        $call = Mockery::mock(WebhookCall::class)->makePartial();
+        $call->id = 4002;
+        $processor = new ProcessJntWebhook($call);
+
+        (new ReflectionMethod($processor, 'processEvent'))->invoke($processor, 'PICKUP', [
+            'bizContent' => json_encode([
+                'billCode' => 'JNTORPHAN',
+                'details' => [[
+                    'scanTime' => '2024-01-15 09:00:00',
+                    'scanTypeCode' => '301',
+                    'scanTypeName' => 'Collection',
+                    'desc' => 'Package collected',
+                    'scanType' => 'PICKUP',
+                ]],
+            ]),
+        ]);
+
+        expect(JntTrackingEvent::query()->withoutOwnerScope()->where('order_id', $order->id)->count())->toBe(0)
+            ->and(JntOrder::query()->withoutOwnerScope()->findOrFail($order->id)->status)->toBe('pending');
+
+        Event::assertNotDispatched(TrackingUpdatedEvent::class);
+    });
+
     it('syncs webhook events under the shipment owner', function (): void {
         config()->set('jnt.owner.enabled', true);
         config()->set('jnt.owner.include_global', false);
@@ -242,5 +376,23 @@ describe('webhook payload hardening', function (): void {
             ->and($stored->event_hash)->not->toBeNull();
 
         Mockery::close();
+    });
+    it('rejects a webhook snapshot after the stored order identity changes', function (): void {
+        config()->set('jnt.owner.enabled', false);
+
+        $order = JntOrder::query()->create([
+            'order_id' => 'ORDER-IDENTITY',
+            'tracking_number' => 'JNT-IDENTITY',
+            'customer_code' => 'CUST',
+        ]);
+
+        $reader = app(ReadWebhookOrder::class);
+        $snapshot = $reader->findByTrackingNumber('JNT-IDENTITY');
+        expect($snapshot)->not->toBeNull();
+
+        $order->update(['tracking_number' => 'JNT-CHANGED']);
+
+        expect(fn () => DB::transaction(fn () => $reader->lockForUpdate($snapshot)))
+            ->toThrow(DomainException::class, 'The tracked order changed');
     });
 });

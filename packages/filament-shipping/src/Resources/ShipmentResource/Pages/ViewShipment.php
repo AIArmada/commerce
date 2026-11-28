@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 
+use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\Integrations\PackageReturns;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Exception;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -34,7 +35,7 @@ class ViewShipment extends ViewRecord
                 ->schema(fn (Shipment $record): array => [
                     Select::make('unit')
                         ->label('Package Unit')
-                        ->options(fn (): array => app(PackageReturns::class)->shippedUnits($record))
+                        ->options(fn (): array => app(PackageReturnWorkflow::class)->shippedUnits((string) $record->getKey()))
                         ->required(),
                     Select::make('reason')
                         ->options(collect(ReturnReason::cases())->mapWithKeys(fn (ReturnReason $reason): array => [
@@ -44,9 +45,9 @@ class ViewShipment extends ViewRecord
                 ])
                 ->action(function (Shipment $record, array $data): void {
                     [$itemId, $ordinal] = explode(':', $data['unit'], 2);
-                    $rma = app(PackageReturns::class)->request($record, $itemId, (int) $ordinal, $data['reason']);
+                    $rmaId = app(PackageReturnWorkflow::class)->request((string) $record->getKey(), $itemId, (int) $ordinal, $data['reason']);
 
-                    $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rma]));
+                    $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rmaId]));
                 }),
 
             Actions\Action::make('ship')
@@ -58,7 +59,8 @@ class ViewShipment extends ViewRecord
                 ->authorize(fn (Shipment $record): bool => auth()->user()?->can('ship', $record) ?? false)
                 ->action(function (Shipment $record): void {
                     try {
-                        app(ShipmentService::class)->ship($record);
+                        app(ShipmentOperations::class)->ship((string) $record->getKey());
+                        $record->refresh();
 
                         Notification::make()
                             ->title('Shipment Shipped')
@@ -66,9 +68,11 @@ class ViewShipment extends ViewRecord
                             ->success()
                             ->send();
                     } catch (Exception $e) {
+                        report($e);
+
                         Notification::make()
                             ->title('Ship Failed')
-                            ->body($e->getMessage())
+                            ->body('The operation failed. Please check the logs.')
                             ->danger()
                             ->send();
                     }
@@ -83,28 +87,25 @@ class ViewShipment extends ViewRecord
                 ->authorize(fn (Shipment $record): bool => auth()->user()?->can('cancel', $record) ?? false)
                 ->action(function (Shipment $record): void {
                     try {
-                        app(ShipmentService::class)->cancel($record);
+                        app(ShipmentOperations::class)->cancel((string) $record->getKey());
+                        $record->refresh();
 
                         Notification::make()
                             ->title('Shipment Cancelled')
                             ->success()
                             ->send();
                     } catch (Exception $e) {
+                        report($e);
+
                         Notification::make()
                             ->title('Cancel Failed')
-                            ->body($e->getMessage())
+                            ->body('The operation failed. Please check the logs.')
                             ->danger()
                             ->send();
                     }
                 }),
 
-            Actions\Action::make('print_label')
-                ->label('Print Label')
-                ->icon('heroicon-o-printer')
-                ->visible(fn (Shipment $record) => $record->latestLabel()?->url !== null)
-                ->authorize(fn (Shipment $record): bool => auth()->user()?->can('printLabel', $record) ?? false)
-                ->url(fn (Shipment $record) => $record->latestLabel()?->url)
-                ->openUrlInNewTab(),
+            PrintLabelAction::make(),
         ];
     }
 }

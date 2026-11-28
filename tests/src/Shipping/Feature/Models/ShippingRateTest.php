@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('ShippingRate Model', function (): void {
@@ -224,6 +224,21 @@ describe('ShippingRate Model', function (): void {
 
         $calculated = $rate->calculateRate($packages);
         expect($calculated)->toBe(1100); // 500 + (200 * 3) for 4kg total (ceil(3.5))
+    });
+
+    it('includes package quantity in weight pricing and eligibility', function (): void {
+        $rate = new ShippingRate([
+            'calculation_type' => 'per_kg',
+            'base_rate' => 500,
+            'per_unit_rate' => 200,
+            'conditions' => [['type' => 'min_weight', 'value' => 2000]],
+        ]);
+
+        $packages = [new PackageData(weight: 1000, quantity: 3)];
+
+        expect($rate->calculateRate($packages))->toBe(900)
+            ->and($rate->meetsConditions($packages))->toBeTrue()
+            ->and($rate->meetsConditions([new PackageData(weight: 1000)]))->toBeFalse();
     });
 
     it('applies free shipping threshold', function (): void {

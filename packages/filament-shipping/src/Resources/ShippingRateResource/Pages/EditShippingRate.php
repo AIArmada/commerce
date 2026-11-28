@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource;
-use AIArmada\Shipping\Models\ShippingZone;
-use Filament\Actions;
+use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Model;
 
 class EditShippingRate extends EditRecord
 {
@@ -19,46 +18,15 @@ class EditShippingRate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            DeleteAction::make()
+                ->using(fn (ShippingRate $record): bool => app(ManageRateConfiguration::class)->deleteRate((string) $record->getKey())),
         ];
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $this->validateZoneOwnership($data['zone_id'] ?? null);
+        app(ManageRateConfiguration::class)->updateRate((string) $record->getKey(), $data);
 
-        return $data;
-    }
-
-    private function validateZoneOwnership(?string $zoneId): void
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return;
-        }
-
-        if ($zoneId === null) {
-            return;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            throw ValidationException::withMessages(['zone_id' => 'Owner context is required.']);
-        }
-
-        $exists = ShippingZone::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->where('id', $zoneId)
-            ->where('owner_id', $owner->getKey())
-            ->where('owner_type', $owner->getMorphClass())
-            ->exists();
-
-        if (! $exists) {
-            throw ValidationException::withMessages(['zone_id' => 'The selected zone does not belong to your account.']);
-        }
+        return $record->refresh();
     }
 }
