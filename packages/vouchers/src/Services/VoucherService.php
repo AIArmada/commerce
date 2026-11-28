@@ -13,12 +13,12 @@ use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
@@ -38,31 +38,12 @@ class VoucherService implements VoucherServiceInterface
 
     public function __construct(
         protected VoucherValidation $validator,
-        private readonly VoucherLookup $lookupCache,
+        private readonly VoucherCatalog $catalog,
     ) {}
 
     public function find(string $code, ?string $voucherId = null): ?VoucherData
     {
-        if ($voucherId !== null) {
-            $voucher = $this->voucherIdentityQuery($code, $voucherId)->first();
-
-            return $voucher === null ? null : VoucherSnapshot::fromModel($voucher);
-        }
-
-        $normalizedCode = $this->normalizeCode($code);
-
-        return $this->lookupCache->remember(
-            $normalizedCode,
-            $this->resolveOwner(),
-            $this->shouldIncludeGlobal(),
-            function () use ($normalizedCode): ?VoucherData {
-                $voucher = $this->voucherQuery()
-                    ->where('code', $normalizedCode)
-                    ->first();
-
-                return $voucher ? VoucherSnapshot::fromModel($voucher) : null;
-            },
-        );
+        return $this->catalog->find($code, $voucherId);
     }
 
     public function findOrFail(string $code): VoucherData
@@ -78,7 +59,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function invalidate(string $code): void
     {
-        $this->lookupCache->forget($this->normalizeCode($code), $this->resolveOwner());
+        $this->catalog->invalidate($code);
     }
 
     /**
@@ -120,15 +101,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function getRemainingUses(string $code): int
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return 0;
-        }
-
-        return $voucher->getRemainingUses() ?? PHP_INT_MAX;
+        return $this->catalog->getRemainingUses($code);
     }
 
     /**

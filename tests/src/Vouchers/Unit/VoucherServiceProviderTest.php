@@ -14,6 +14,7 @@ use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation as VoucherValidator;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
+use AIArmada\Vouchers\Features\Lifecycle\Api\VoucherCatalog;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Platform\ExtensionRegistry;
@@ -41,6 +42,11 @@ describe('VoucherServiceProvider', function (): void {
 
             expect($validator1)->toBeInstanceOf(VoucherValidator::class)
                 ->and($validator1)->toBe($validator2);
+        });
+
+        it('registers the lifecycle voucher catalog as singleton', function (): void {
+            expect(app(VoucherCatalog::class))->toBeInstanceOf(VoucherCatalog::class)
+                ->and(app(VoucherCatalog::class))->toBe(app(VoucherCatalog::class));
         });
 
         it('registers VoucherRulesFactory as singleton', function (): void {
