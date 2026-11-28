@@ -90,7 +90,7 @@ class SeatHold extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at?->isPast() ?? false;
+        return $this->expires_at?->lessThanOrEqualTo(CarbonImmutable::now()) ?? false;
     }
 
     /** @return BelongsTo<Seat, $this> */

@@ -113,12 +113,14 @@ final readonly class EnsureSeatHoldAction
 
     private function assertOwnerContextForHoldCreation(): void
     {
-        if (! SeatHold::ownerScopeConfig()->enabled) {
+        $config = SeatHold::ownerScopeConfig();
+
+        if (! $config->enabled) {
             return;
         }
 
         OwnerContext::assertResolvedOrExplicitGlobal(
-            OwnerContext::resolve(),
+            OwnerContext::resolveConfigured($config),
             'Seat hold creation requires an owner context when seating owner mode is enabled. Use OwnerContext::withOwner($owner, ...) or OwnerContext::withOwner(null, ...) for explicit global holds.'
         );
     }
@@ -135,7 +137,8 @@ final readonly class EnsureSeatHoldAction
         ?string $reference,
     ): Collection {
         $now = Carbon::now();
-        $owner = OwnerContext::resolve();
+        $config = SeatHold::ownerScopeConfig();
+        $owner = $config->enabled && $config->autoAssignOnCreate ? OwnerContext::resolveConfigured($config) : null;
         /** @var Collection<int, SeatHold> $holds */
         $holds = new Collection;
 
@@ -150,7 +153,7 @@ final readonly class EnsureSeatHoldAction
             $hold->created_at = $now;
             $hold->updated_at = $now;
 
-            if ($owner !== null && config('seating.owner.auto_assign_on_create', true)) {
+            if ($owner !== null) {
                 $hold->assignOwner($owner);
             }
 

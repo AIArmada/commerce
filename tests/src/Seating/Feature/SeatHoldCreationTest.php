@@ -152,3 +152,20 @@ it('creates global holds inside explicit global scope', function (): void {
     expect($holds)->toHaveCount(2)
         ->and($holds->every(fn (SeatHold $hold): bool => $hold->owner_type === null && $hold->owner_id === null))->toBeTrue();
 });
+
+it('does not assign an ambient owner to bulk holds when owner mode is disabled', function (): void {
+    config()->set('seating.owner.enabled', false);
+    Model::clearBootedModels();
+
+    $owner = User::factory()->create();
+
+    $holds = OwnerContext::withOwner($owner, fn () => app(EnsureSeatHoldAction::class)->handle(
+        map: $this->map,
+        quantity: 1,
+        mode: SeatingMode::Assigned,
+    ));
+
+    expect($holds)->toHaveCount(1)
+        ->and($holds->firstOrFail()->fresh()->owner_type)->toBeNull()
+        ->and($holds->firstOrFail()->fresh()->owner_id)->toBeNull();
+});

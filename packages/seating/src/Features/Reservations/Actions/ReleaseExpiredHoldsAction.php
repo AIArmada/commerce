@@ -30,13 +30,13 @@ final readonly class ReleaseExpiredHoldsAction
         $released = 0;
 
         SeatHold::query()
-            ->where('expires_at', '<', $cutoff)
+            ->where('expires_at', '<=', $cutoff)
             ->whereNull('converted_at')
             ->chunkById($chunk, function (Collection $holds) use (&$released, $cutoff): void {
                 $released += (new SeatHold)->getConnection()->transaction(function () use ($holds, $cutoff): int {
                     $locked = SeatHold::query()
                         ->whereKey($holds->modelKeys())
-                        ->where('expires_at', '<', $cutoff)
+                        ->where('expires_at', '<=', $cutoff)
                         ->whereNull('converted_at')
                         ->orderBy('id')
                         ->lockForUpdate()

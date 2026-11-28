@@ -11,6 +11,7 @@ use AIArmada\Seating\Features\Maps\Models\SeatSection;
 use AIArmada\Seating\Features\Reservations\Actions\ConvertHoldsToAllocationsAction;
 use AIArmada\Seating\Features\Reservations\Models\SeatAllocation;
 use AIArmada\Seating\Features\Reservations\Models\SeatHold;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -99,4 +100,25 @@ it('does not convert a hold after its seat has been blocked', function (): void 
 
     expect(SeatAllocation::count())->toBe(0)
         ->and($this->hold->fresh()->isConverted())->toBeFalse();
+});
+
+it('rejects conversion at the exact hold expiry timestamp', function (): void {
+    $expiry = CarbonImmutable::now()->startOfSecond();
+    $this->hold->update(['expires_at' => $expiry]);
+
+    CarbonImmutable::setTestNow($expiry);
+
+    try {
+        expect(fn () => app(ConvertHoldsToAllocationsAction::class)->handle(
+            holds: [$this->hold],
+            mode: SeatingMode::Assigned,
+            allocToType: 'pass',
+            allocToId: (string) Str::orderedUuid(),
+        ))->toThrow(StaleSeatHoldException::class);
+
+        expect(SeatAllocation::count())->toBe(0)
+            ->and($this->hold->fresh()->isConverted())->toBeFalse();
+    } finally {
+        CarbonImmutable::setTestNow();
+    }
 });
