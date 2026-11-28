@@ -13,6 +13,7 @@ use AIArmada\Ticketing\Features\Passes\Actions\UsePassAction;
 use AIArmada\Ticketing\Features\Passes\Models\Pass;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
 beforeEach(function (): void {
@@ -126,4 +127,27 @@ it('does not consider pending passes valid or transferable', function (): void {
 
     expect($pass->isValid())->toBeFalse()
         ->and(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
+});
+
+it('rejects passes whose linked registration is missing', function (): void {
+    $pass = Pass::factory()->create([
+        'registration_type' => User::class,
+        'registration_id' => (string) Str::uuid(),
+        'status' => 'issued',
+    ]);
+
+    expect($pass->isValid())->toBeFalse()
+        ->and(app(PassTransferServiceInterface::class)->canTransfer((string) $pass->getKey()))->toBeFalse();
+
+    expect(fn () => app(ActivatePassAction::class)->handle($pass))->toThrow(AuthorizationException::class);
+});
+
+it('rejects incomplete registration references but permits standalone issued passes', function (): void {
+    $pass = Pass::factory()->create(['status' => 'issued']);
+
+    expect($pass->isValid())->toBeTrue();
+
+    $pass->registration_type = User::class;
+
+    expect($pass->isValid())->toBeFalse();
 });

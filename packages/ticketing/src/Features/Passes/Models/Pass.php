@@ -220,27 +220,33 @@ class Pass extends Model
             return false;
         }
 
-        $registration = $this->registration;
-
-        if ($registration instanceof Model) {
-            $registrationStatus = $registration->getAttribute('status');
-            $registrationStatus = is_object($registrationStatus) && method_exists($registrationStatus, 'getValue')
-                ? $registrationStatus->getValue()
-                : $registrationStatus;
-
-            if (in_array($registrationStatus, [
-                'refund_pending',
-                'refunded',
-                'cancelled',
-                'canceled',
-                'rejected',
-                'expired',
-            ], true)) {
-                return false;
-            }
+        if ($this->registration_type === null && $this->registration_id === null) {
+            return true;
         }
 
-        return true;
+        if (blank($this->registration_type) || blank($this->registration_id)) {
+            return false;
+        }
+
+        $registration = $this->registration;
+
+        if (! $registration instanceof Model) {
+            return false;
+        }
+
+        $registrationStatus = $registration->getAttribute('status');
+        $registrationStatus = is_object($registrationStatus) && method_exists($registrationStatus, 'getValue')
+            ? $registrationStatus->getValue()
+            : $registrationStatus;
+
+        return ! in_array($registrationStatus, [
+            'refund_pending',
+            'refunded',
+            'cancelled',
+            'canceled',
+            'rejected',
+            'expired',
+        ], true);
     }
 
     public function generateQrCode(): string
