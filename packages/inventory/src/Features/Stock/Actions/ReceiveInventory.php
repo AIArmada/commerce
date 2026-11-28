@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
-use RuntimeException;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class ReceiveInventory
 {

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Queries\NearestLocationStrategy;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
+use AIArmada\Inventory\Features\Stock\Queries\NearestLocationStrategy;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Collection;

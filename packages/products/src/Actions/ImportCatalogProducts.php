@@ -254,12 +254,12 @@ final readonly class ImportCatalogProducts
 
         $whole = $matches[1] ?? '';
         $fraction = $matches[3] ?? ($matches[2] ?? '');
-        $digits = ltrim($whole . str_pad(substr($fraction, 0, 2), 2, '0'), '0');
+        $digits = mb_ltrim($whole . mb_str_pad(mb_substr($fraction, 0, 2), 2, '0'), '0');
         $digits = $digits === '' ? '0' : $digits;
         $limit = (string) PHP_INT_MAX;
 
-        if (strlen($digits) > strlen($limit)
-            || (strlen($digits) === strlen($limit) && strcmp($digits, $limit) > 0)) {
+        if (mb_strlen($digits) > mb_strlen($limit)
+            || (mb_strlen($digits) === mb_strlen($limit) && strcmp($digits, $limit) > 0)) {
             throw new Exception("The {$key} must be a positive number.");
         }
 

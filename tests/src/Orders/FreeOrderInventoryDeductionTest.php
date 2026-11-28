@@ -14,8 +14,8 @@ use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationServ
 use AIArmada\Inventory\Features\Stock\FeatureModule as StockFeatureModule;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Traceability\FeatureModule as TraceabilityFeatureModule;
 use AIArmada\Inventory\Features\Stock\Services\InventoryService;
+use AIArmada\Inventory\Features\Traceability\FeatureModule as TraceabilityFeatureModule;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;

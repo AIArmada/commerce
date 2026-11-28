@@ -9,8 +9,8 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class ReplaceOptionValues
 {

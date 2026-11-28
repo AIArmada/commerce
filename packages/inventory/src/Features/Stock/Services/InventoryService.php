@@ -6,8 +6,8 @@ namespace AIArmada\Inventory\Features\Stock\Services;
 
 use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Actions\BootstrapInventory;
-use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use AIArmada\Inventory\Features\Stock\Actions\ReceiveAtDefault;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use AIArmada\Inventory\Features\Stock\Actions\ShipFromDefault;
 use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;

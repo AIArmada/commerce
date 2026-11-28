@@ -49,12 +49,12 @@ final readonly class StockAvailabilityQuery implements StockAvailability
                 : InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query());
 
             $query->where(function (Builder $query) use ($byType): void {
-                    foreach ($byType as $type => $ids) {
-                        $query->orWhere(function (Builder $match) use ($type, $ids): void {
-                            $match->where('inventoryable_type', $type)->whereIn('inventoryable_id', $ids);
-                        });
-                    }
-                })
+                foreach ($byType as $type => $ids) {
+                    $query->orWhere(function (Builder $match) use ($type, $ids): void {
+                        $match->where('inventoryable_type', $type)->whereIn('inventoryable_id', $ids);
+                    });
+                }
+            })
                 ->whereHas('location', fn (Builder $query): Builder => ($exactOwner ? InventoryOwnerScope::forMutation($query) : InventoryOwnerScope::applyToLocationQuery($query))->where('is_active', true))
                 ->select(['inventoryable_type', 'inventoryable_id', 'location_id'])
                 ->selectRaw('SUM(CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END) as available')

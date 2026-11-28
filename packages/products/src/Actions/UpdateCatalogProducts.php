@@ -10,8 +10,8 @@ use AIArmada\Products\Models\Product;
 use Closure;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class UpdateCatalogProducts
 {

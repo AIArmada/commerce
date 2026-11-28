@@ -274,5 +274,4 @@ final readonly class InventoryKpiService
         return $counts['total'] === 0 ? 100.0 : round(($counts['fulfilled'] / $counts['total']) * 100, 2);
 
     }
-
 }

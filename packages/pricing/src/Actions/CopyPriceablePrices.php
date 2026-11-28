@@ -9,8 +9,8 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceTier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class CopyPriceablePrices
 {

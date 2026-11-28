@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Returns\Actions;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Inventory\Features\Stock\Services\InventoryService;
+use AIArmada\Inventory\Queries\CompositeComponents;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Actions\RegisterOrderRefund;

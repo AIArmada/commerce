@@ -87,6 +87,7 @@ final readonly class ReservationReconciliationQuery implements ReservationReconc
                 ->count(),
         ];
     }
+
     private function identity(string $reference, ?string $ownerType, ?string $ownerId, bool $ownerScoped): string
     {
         return $ownerScoped ? serialize([$reference, $ownerType, $ownerId]) : $reference;

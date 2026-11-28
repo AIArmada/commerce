@@ -14,8 +14,8 @@ use AIArmada\Inventory\Features\Stock\Api\ReorderStock;
 use AIArmada\Inventory\Features\Stock\Api\ReservationStock;
 use AIArmada\Inventory\Features\Stock\Api\RestoreOrderStock;
 use AIArmada\Inventory\Features\Stock\Api\StockAvailability;
-use AIArmada\Inventory\Features\Stock\Api\StockExportRows;
 use AIArmada\Inventory\Features\Stock\Api\StockBalances;
+use AIArmada\Inventory\Features\Stock\Api\StockExportRows;
 use AIArmada\Inventory\Features\Stock\Api\StockHealth;
 use AIArmada\Inventory\Features\Stock\Api\StockIdentity;
 use AIArmada\Inventory\Features\Stock\Api\StockKpiMetrics;
@@ -30,14 +30,14 @@ use AIArmada\Inventory\Features\Stock\Queries\MovementAnalysisReport;
 use AIArmada\Inventory\Features\Stock\Queries\MovementReferencesQuery;
 use AIArmada\Inventory\Features\Stock\Queries\ReorderStockQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockAvailabilityQuery;
-use AIArmada\Inventory\Features\Stock\Queries\StockExportRowsQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockBalancesQuery;
+use AIArmada\Inventory\Features\Stock\Queries\StockExportRowsQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockIdentityQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockKpiMetricsQuery;
 use AIArmada\Inventory\Features\Stock\Queries\StockLevelReport;
-use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Inventory\Features\Stock\Services\InventoryService;
+use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract

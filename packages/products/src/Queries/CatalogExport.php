@@ -54,7 +54,7 @@ final readonly class CatalogExport
 
                 if (in_array($field, ['price', 'compare_price', 'cost'], true) && is_numeric($value)) {
                     $minor = (int) $value;
-                    $row[] = ($minor < 0 ? '-' : '') . abs(intdiv($minor, 100)) . '.' . str_pad((string) abs($minor % 100), 2, '0', STR_PAD_LEFT);
+                    $row[] = ($minor < 0 ? '-' : '') . abs(intdiv($minor, 100)) . '.' . mb_str_pad((string) abs($minor % 100), 2, '0', STR_PAD_LEFT);
 
                     continue;
                 }

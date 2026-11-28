@@ -9,8 +9,8 @@ use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class EnsureProductBySlug
 {

@@ -9,8 +9,8 @@ use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class SaveCollection
 {

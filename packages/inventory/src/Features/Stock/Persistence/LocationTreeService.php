@@ -9,7 +9,6 @@ use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;

@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
 {
