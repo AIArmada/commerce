@@ -4,12 +4,14 @@
   "owns": {
     "table:event_taxonomies": [
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
-      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\ManageEventTaxonomyAction"
     ],
     "table:event_terms": [
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTermDependents",
-      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\ManageEventTermAction"
     ],
     "table:event_classifications": [
       "AIArmada\\Events\\Features\\Taxonomy\\Actions\\CloneTaxonomyScopeAction",

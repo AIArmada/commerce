@@ -126,11 +126,12 @@ final class EventTermResource extends Resource
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->live(),
+                            ->live()
+                            ->disabledOn('edit'),
                         TextInput::make('code')
                             ->required()
                             ->maxLength(100)
-                            ->unique(ignoreRecord: true)
+                            ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule, $get) => $rule->where('event_taxonomy_id', $get('event_taxonomy_id')))
                             ->helperText('Machine-readable identifier (e.g. "workshop", "beginner")'),
                         TextInput::make('name')
                             ->required()
