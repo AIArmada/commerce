@@ -18,7 +18,7 @@ final class VerifiedWebhookPayload
             throw WebhookVerificationException::invalidPayload($gateway);
         }
 
-        if (! is_array($payload) || ! str_starts_with(ltrim($rawPayload), '{')) {
+        if (! is_array($payload) || ! str_starts_with(mb_ltrim($rawPayload), '{')) {
             throw WebhookVerificationException::invalidPayload($gateway);
         }
 

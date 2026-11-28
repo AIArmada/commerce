@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Actions;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
 use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\Cashier\Contracts\PaymentMethodContract;
-use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;

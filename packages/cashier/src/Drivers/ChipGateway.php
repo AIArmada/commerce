@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Drivers;
 
 use AIArmada\Cashier\Contracts\BillableContract;
-use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
@@ -22,10 +21,12 @@ use AIArmada\Cashier\Drivers\Chip\ChipSubscription;
 use AIArmada\Cashier\Drivers\Chip\ChipSubscriptionBuilder;
 use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Exceptions\Webhook\WebhookVerificationException;
-use AIArmada\Cashier\Support\VerifiedWebhookPayload;
+use AIArmada\Cashier\Support\ActionGuard;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
+use AIArmada\Cashier\Support\VerifiedWebhookPayload;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PaymentData;
@@ -413,7 +414,7 @@ class ChipGateway extends AbstractGateway
         /** @var iterable<int, mixed> $rawInvoices */
         $invoices = collect($rawInvoices)
             ->take($limit)
-            ->map(fn ($invoice) => new Chip\ChipInvoice($invoice instanceof \AIArmada\CashierChip\Invoice\Invoice ? $invoice->asChipPurchase() : $invoice))
+            ->map(fn ($invoice) => new Chip\ChipInvoice($invoice instanceof Invoice ? $invoice->asChipPurchase() : $invoice))
             ->values();
 
         /** @var Collection<int, InvoiceContract> $invoices */

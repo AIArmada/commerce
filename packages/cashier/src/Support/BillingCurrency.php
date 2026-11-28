@@ -28,7 +28,7 @@ final class BillingCurrency
     }
 
     /** @param array<string, int> $amounts
-     * @param array<string, float|int> $rates
+     * @param  array<string, float|int>  $rates
      */
     public static function total(array $amounts, string $base, bool $convert, array $rates): int
     {

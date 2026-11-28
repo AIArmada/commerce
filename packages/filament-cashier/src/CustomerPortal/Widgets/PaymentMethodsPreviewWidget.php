@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
 use AIArmada\Cashier\Queries\CustomerPaymentMethodsQuery;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Model;
 
 final class PaymentMethodsPreviewWidget extends Widget
 {

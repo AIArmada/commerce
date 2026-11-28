@@ -5,18 +5,20 @@ declare(strict_types=1);
 use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Data\SnapshotPayment;
+use AIArmada\Cashier\Data\SnapshotSubscription;
 use AIArmada\Cashier\Drivers\Chip\ChipCheckoutBuilder;
 use AIArmada\Cashier\Drivers\Chip\ChipPayment;
+use AIArmada\Cashier\Drivers\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Drivers\Chip\ChipSubscription;
 use AIArmada\Cashier\Drivers\ChipGateway;
 use AIArmada\Cashier\Drivers\StripeGateway;
 use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\Cashier\Events\SubscriptionCreated;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\Cashier\Data\SnapshotPayment;
-use AIArmada\Cashier\Data\SnapshotSubscription;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscriptionModel;
+use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Akaunting\Money\Money;
@@ -270,14 +272,14 @@ describe('Credential and queue hygiene', function (): void {
 });
 
 it('preserves native CHIP card details and default state in the unified adapter', function (): void {
-    $native = Mockery::mock(\AIArmada\CashierChip\Payment\PaymentMethod::class);
+    $native = Mockery::mock(PaymentMethod::class);
     $native->shouldReceive('id')->once()->andReturn('token_card');
     $native->shouldReceive('type')->once()->andReturn('card');
     $native->shouldReceive('brand')->once()->andReturn('visa');
     $native->shouldReceive('lastFour')->once()->andReturn('4242');
     $native->shouldReceive('isDefault')->once()->andReturnTrue();
 
-    $method = new \AIArmada\Cashier\Drivers\Chip\ChipPaymentMethod($native);
+    $method = new ChipPaymentMethod($native);
 
     expect($method->id())->toBe('token_card')
         ->and($method->brand())->toBe('visa')

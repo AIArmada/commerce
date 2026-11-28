@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
+use AIArmada\Cashier\Support\BillingCurrency;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus as ChipSubscriptionStatus;
@@ -11,7 +12,6 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem as ChipS
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
-use AIArmada\Cashier\Support\BillingCurrency;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
