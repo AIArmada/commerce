@@ -129,3 +129,16 @@ it('rejects an ownership transfer target from a different member model', functio
     expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $otherOrg->refresh()))
         ->toThrow(InvalidArgumentException::class, 'member model');
 });
+
+it('rejects publication using a stale active organization instance', function (): void {
+    $creator = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Stale Circle']);
+    $stale = $organization->fresh();
+
+    SuspendOrganizationAction::make()->handle($organization, $creator);
+
+    expect(fn () => MakeOrganizationPublicAction::make()->handle($stale, $creator))
+        ->toThrow(LogicException::class, 'Only active organizations can be made public');
+
+    expect($organization->fresh()->isPublic())->toBeFalse();
+});

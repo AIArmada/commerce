@@ -6,7 +6,7 @@ namespace AIArmada\Tax\Services\ZoneResolver;
 
 use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Services\TaxOwnerScope;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 
 final class ZoneIdResolver implements TaxZoneResolverInterface
 {

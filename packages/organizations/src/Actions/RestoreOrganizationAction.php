@@ -9,7 +9,6 @@ use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
-use AIArmada\Organizations\Support\OrganizationStateTransition;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -19,33 +18,38 @@ final class RestoreOrganizationAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly OrganizationAuthorization $authorization,
+        private readonly OrganizationLifecycleHook $lifecycleHook,
+    ) {}
+
     public function handle(Organization $organization, Model $actor): Organization
     {
-        app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.change-status');
-
         return DB::transaction(function () use ($actor, $organization): Organization {
+            $locked = $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+            $organization->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
+            $this->authorization->authorize($actor, $organization, 'organization.change-status');
+
             $from = $organization->status;
 
             if ($from !== OrganizationStatus::Active) {
-                app(OrganizationStateTransition::class)->status(
-                    $organization,
+                $organization->transitionToStatus(
                     OrganizationStatus::Active,
                     CarbonImmutable::now(),
                 );
 
                 if ($organization->visibility === OrganizationVisibility::Public) {
-                    app(OrganizationStateTransition::class)->visibility(
-                        $organization,
+                    $organization->transitionToVisibility(
                         OrganizationVisibility::Private,
                         CarbonImmutable::now(),
                     );
                     $organization->save();
-                    app(OrganizationLifecycleHook::class)->visibilityChanged($organization, OrganizationVisibility::Public, OrganizationVisibility::Private, $actor);
+                    $this->lifecycleHook->visibilityChanged($organization, OrganizationVisibility::Public, OrganizationVisibility::Private, $actor);
                 } else {
                     $organization->save();
                 }
 
-                app(OrganizationLifecycleHook::class)->statusChanged($organization, $from, OrganizationStatus::Active, $actor);
+                $this->lifecycleHook->statusChanged($organization, $from, OrganizationStatus::Active, $actor);
             }
 
             return $organization->fresh();

@@ -16,7 +16,7 @@ final class DefaultOrganizationAuthorization implements OrganizationAuthorizatio
     {
         $member = $organization->members()->whereKey($actor->getKey())->first();
 
-        if (! $member instanceof Model) {
+        if (! $member instanceof Model || ! $member->is($actor)) {
             throw new AuthorizationException('The actor is not a member of this organization.');
         }
 

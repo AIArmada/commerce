@@ -6,6 +6,8 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
+use AIArmada\Tax\Actions\Exemption\DeleteTaxExemptionAction;
+use AIArmada\Tax\Actions\Exemption\RenewTaxExemptionAction;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use Carbon\CarbonImmutable;
@@ -184,23 +186,13 @@ final class TaxExemptionsTable
                                 ->after('today'),
                         ])
                         ->action(function (TaxExemption $record, array $data): void {
-                            OwnerWriteGuard::findOrFailForOwner(
-                                TaxExemption::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax exemption is not accessible in the current owner scope.',
-                            )->update(['expires_at' => $data['new_expires_at']]);
+                            app(RenewTaxExemptionAction::class)->execute($record->getKey(), $data['new_expires_at']);
                         })
                         ->successNotificationTitle('Exemption renewed'),
                     DeleteAction::make()
                         ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
                         ->using(function (TaxExemption $record): void {
-                            OwnerWriteGuard::findOrFailForOwner(
-                                TaxExemption::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax exemption is not accessible in the current owner scope.',
-                            )->delete();
+                            app(DeleteTaxExemptionAction::class)->execute($record->getKey());
                         }),
                 ]),
             ])
@@ -251,14 +243,7 @@ final class TaxExemptionsTable
                     ->requiresConfirmation()
                     ->action(function ($records): void {
                         foreach ($records as $record) {
-                            $verified = OwnerWriteGuard::findOrFailForOwner(
-                                TaxExemption::class,
-                                $record->getKey(),
-                                includeGlobal: false,
-                                message: 'Tax exemption is not accessible in the current owner scope.',
-                            );
-
-                            $verified->delete();
+                            app(DeleteTaxExemptionAction::class)->execute($record->getKey());
                         }
                     })
                     ->deselectRecordsAfterCompletion(),

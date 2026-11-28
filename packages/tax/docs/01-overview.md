@@ -181,9 +181,10 @@ packages/tax/
     │   ├── TaxExemption.php
     │   ├── TaxRate.php
     │   └── TaxZone.php
+    ├── Queries/
+    │   └── TaxOwnerScope.php        # Owner query-scoping helper
     ├── Services/
     │   ├── TaxCalculator.php        # Main calculation engine
-    │   ├── TaxOwnerScope.php        # Owner query-scoping helper
     │   ├── RateApplier/
     │   │   └── StandardRateApplier.php
     │   └── ZoneResolver/

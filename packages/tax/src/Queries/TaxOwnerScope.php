@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\Services;
+namespace AIArmada\Tax\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;

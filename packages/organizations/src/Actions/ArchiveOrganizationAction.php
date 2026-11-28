@@ -8,7 +8,6 @@ use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Models\Organization;
-use AIArmada\Organizations\Support\OrganizationStateTransition;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -18,21 +17,27 @@ final class ArchiveOrganizationAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly OrganizationAuthorization $authorization,
+        private readonly OrganizationLifecycleHook $lifecycleHook,
+    ) {}
+
     public function handle(Organization $organization, Model $actor): Organization
     {
-        app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.change-status');
-
         return DB::transaction(function () use ($actor, $organization): Organization {
+            $locked = $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+            $organization->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
+            $this->authorization->authorize($actor, $organization, 'organization.change-status');
+
             $from = $organization->status;
 
             if ($from !== OrganizationStatus::Archived) {
-                app(OrganizationStateTransition::class)->status(
-                    $organization,
+                $organization->transitionToStatus(
                     OrganizationStatus::Archived,
                     CarbonImmutable::now(),
                 );
                 $organization->save();
-                app(OrganizationLifecycleHook::class)->statusChanged($organization, $from, OrganizationStatus::Archived, $actor);
+                $this->lifecycleHook->statusChanged($organization, $from, OrganizationStatus::Archived, $actor);
             }
 
             return $organization->fresh();

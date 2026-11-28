@@ -7,7 +7,7 @@ namespace AIArmada\Tax\Services\ZoneResolver;
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
 use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Services\TaxOwnerScope;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 
 final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZoneResolverInterface

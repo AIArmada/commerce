@@ -15,6 +15,7 @@ use AIArmada\Tax\Events\TaxZoneResolved;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\Settings\TaxSettings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
