@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Documents\Actions;
 
-use AIArmada\Orders\Actions\Concerns\BuildsOrderDocs;
+use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelPdf\PdfBuilder;

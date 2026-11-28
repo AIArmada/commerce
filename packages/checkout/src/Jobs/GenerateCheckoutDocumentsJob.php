@@ -8,8 +8,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Contracts\OrderDocuments;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -83,8 +82,8 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
     private function generateDocument(Order $order, string $type, string $transactionId, string $gateway): void
     {
         match ($type) {
-            'invoice' => app(CreateOrderInvoiceDoc::class)->execute($order, $transactionId, $gateway),
-            'receipt' => app(CreateOrderReceiptDoc::class)->execute($order, $transactionId, $gateway),
+            'invoice' => app(OrderDocuments::class)->issue((string) $order->getKey(), 'invoice', $transactionId, $gateway),
+            'receipt' => app(OrderDocuments::class)->issue((string) $order->getKey(), 'receipt', $transactionId, $gateway),
             default => null,
         };
     }

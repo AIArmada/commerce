@@ -94,7 +94,10 @@ final class DocService implements DocServiceInterface
             $calculatedSubtotalMinor = $this->calculateSubtotalMinor($data->items, $currency);
             $taxRateBasisPoints = $data->taxRateBasisPoints ?? $this->resolveConfiguredTaxRateBasisPoints();
             $this->assertBasisPoints($taxRateBasisPoints);
-            $calculatedTaxMinor = $this->applyBasisPoints($calculatedSubtotalMinor, $taxRateBasisPoints);
+            $hasLineTaxes = array_any($data->items, static fn (array $item): bool => array_key_exists('tax_amount_minor', $item));
+            $calculatedTaxMinor = $hasLineTaxes
+                ? $this->totals->calculate($data->items, 0, $currency)['tax_amount_minor']
+                : $this->applyBasisPoints($calculatedSubtotalMinor, $taxRateBasisPoints);
             $discountAmountMinor = $data->discountAmountMinor ?? 0;
 
             if ($data->items !== []) {

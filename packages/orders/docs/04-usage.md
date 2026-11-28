@@ -409,7 +409,7 @@ Use `CreateOrderInvoiceDoc` when you want to create a Docs record for a paid ord
 Automatic `OrderPaid` invoice generation is disabled by default. Turn on `orders.integrations.docs.enabled` only when you want that event listener to create persisted Docs invoices automatically.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Features\Documents\Actions\CreateOrderInvoiceDoc;
 
 $invoice = app(CreateOrderInvoiceDoc::class)->execute(
     order: $order,
@@ -427,7 +427,7 @@ Use `CreateOrderReceiptDoc` when payment confirmation should also create a recei
 Checkout-driven receipt generation is also opt-in from the checkout package side; manual action usage remains available regardless of the listener defaults.
 
 ```php
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
 
 $receipt = app(CreateOrderReceiptDoc::class)->execute(
     order: $order,
@@ -442,12 +442,12 @@ Both actions share the same internal order-doc builder, so customer data, order 
 
 ### Shared Builder: `BuildsOrderDocs`
 
-`CreateOrderInvoiceDoc`, `CreateOrderReceiptDoc`, `GenerateInvoice`, and `GenerateReceipt` all share the `AIArmada\Orders\Actions\Concerns\BuildsOrderDocs` trait. Persist actions write `Docs` rows through that builder; generators are render-only — they return a PDF download (or HTML fallback without a PDF runtime) and never create `Docs` records.
+`CreateOrderInvoiceDoc`, `CreateOrderReceiptDoc`, `GenerateInvoice`, and `GenerateReceipt` all share the `AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs` trait. Persist actions write `Docs` rows through that builder; generators are render-only — they return a PDF download (or HTML fallback without a PDF runtime) and never create `Docs` records.
 
 ### PDF Invoice Output
 
 ```php
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 
 $generator = app(GenerateInvoice::class);
 

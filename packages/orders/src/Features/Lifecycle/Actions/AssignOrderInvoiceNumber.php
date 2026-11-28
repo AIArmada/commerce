@@ -2,20 +2,22 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 
-final readonly class AssignOrderInvoiceNumber
+final readonly class AssignOrderInvoiceNumber implements OrderInvoiceNumber
 {
     use AssertsOrderOwnerBoundary;
 
-    public function execute(Order $order): string
+    public function assign(string $orderId): string
     {
+        $order = Order::query()->findOrFail($orderId);
         $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
         $number = $order->getConnection()->transaction(function () use ($order): string {

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Documents\Actions;
 
-use AIArmada\Orders\Actions\Concerns\BuildsOrderDocs;
+use AIArmada\Orders\Features\Documents\Actions\Concerns\BuildsOrderDocs;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelPdf\PdfBuilder;
@@ -64,8 +65,8 @@ final class GenerateInvoice
     {
         return $this->runWithinOrderOwnerScope($order, function () use ($order): array {
             return [
-                'invoiceNumber' => app(AssignOrderInvoiceNumber::class)->execute($order),
-                'invoiceDate' => CarbonImmutable::now(),
+                'invoiceNumber' => app(OrderInvoiceNumber::class)->assign((string) $order->getKey()),
+                'invoiceDate' => $order->paid_at ?? $order->created_at ?? CarbonImmutable::now(),
                 'documentTitle' => 'Invoice',
                 'documentNumberLabel' => 'Invoice No:',
                 'documentDateLabel' => 'Invoice Date:',

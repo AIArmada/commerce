@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\GenerateReceipt;
+use AIArmada\Orders\Features\Documents\Actions\GenerateReceipt;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
 use Spatie\LaravelPdf\Facades\Pdf;

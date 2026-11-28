@@ -78,7 +78,9 @@ describe('Orders ↔ Docs Integration', function (): void {
             ->first();
 
         expect($doc)->not->toBeNull();
-        expect($doc->status->equals(Paid::class))->toBeTrue();
+        expect($doc->status->equals(Paid::class))->toBeTrue()
+            ->and($doc->tax_amount_minor)->toBe(1200)
+            ->and($doc->total_minor)->toBe(22700);
     });
 
     it('waits for full settlement before creating the paid invoice', function (): void {

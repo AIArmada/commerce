@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;

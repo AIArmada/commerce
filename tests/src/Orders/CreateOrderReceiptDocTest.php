@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Features\Documents\Actions\CreateOrderReceiptDoc;
 use AIArmada\Orders\Models\Order;
 
 it('creates a receipt document for a paid order', function (): void {

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\AssignOrderInvoiceNumber;
-use AIArmada\Orders\Actions\GenerateInvoice;
+use AIArmada\Orders\Contracts\OrderInvoiceNumber;
+use AIArmada\Orders\Features\Documents\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
 use Illuminate\Database\Schema\Blueprint;
@@ -70,11 +70,11 @@ it('reuses the persisted invoice number when the caller holds a stale order', fu
     ]);
 
     $stale = Order::query()->findOrFail($order->getKey());
-    $action = app(AssignOrderInvoiceNumber::class);
+    $action = app(OrderInvoiceNumber::class);
 
-    $first = $action->execute($order);
+    $first = $action->assign((string) $order->getKey());
 
     expect($stale->invoice_number)->toBeNull()
-        ->and($action->execute($stale))->toBe($first)
+        ->and($action->assign((string) $stale->getKey()))->toBe($first)
         ->and($order->refresh()->invoice_number)->toBe($first);
 });

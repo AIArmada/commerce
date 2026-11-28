@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Documents\Actions;
 
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Orders\Enums\PaymentStatus;

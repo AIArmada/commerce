@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions\Concerns;
+namespace AIArmada\Orders\Features\Documents\Actions\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\States\Paid;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Carbon\CarbonImmutable;
@@ -82,26 +81,19 @@ trait BuildsOrderDocs
         array $metadata = [],
         bool $generatePdf = false,
     ): DocData {
-        // DocService validates explicit totals against the items-derived values,
-        // and shipping travels as a document line, so the supplied subtotal must
-        // include it; the tax rate is derived from the order so the doc-side
-        // computation reproduces the order tax.
+        // Preserve exact allocated taxes rather than reconstructing a rounded rate.
         $linesSubtotalMinor = (int) $order->subtotal + max(0, (int) $order->shipping_total);
-        $taxRateBasisPoints = $linesSubtotalMinor > 0
-            ? (int) round(((int) $order->tax_total) * 10000 / $linesSubtotalMinor)
-            : 0;
 
         return new DocData(
             docType: $docType->value,
             docableType: $order->getMorphClass(),
             docableId: (string) $order->getKey(),
-            status: Paid::class,
+            status: 'paid',
             issueDate: $order->paid_at ?? CarbonImmutable::now(),
             items: $this->buildItems($order),
             subtotalMinor: $linesSubtotalMinor,
             totalMinor: $order->grand_total,
             taxAmountMinor: $order->tax_total,
-            taxRateBasisPoints: $taxRateBasisPoints,
             discountAmountMinor: $order->discount_total,
             currency: $order->currency,
             notes: $order->notes,
@@ -128,7 +120,7 @@ trait BuildsOrderDocs
 
     protected function runWithinOrderOwnerScope(Order $order, callable $callback): mixed
     {
-        $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
+        $owner = OwnerContext::fromTypeAndIdOrFail($order->owner_type, $order->owner_id);
 
         return OwnerContext::withOwner($owner, $callback);
     }
@@ -145,6 +137,7 @@ trait BuildsOrderDocs
                     'description' => $item->sku ? "SKU: {$item->sku}" : null,
                     'quantity' => $item->quantity,
                     'unit_price_minor' => $item->unit_price,
+                    'tax_amount_minor' => $item->tax_amount,
                 ], static fn (mixed $value): bool => $value !== null && $value !== '');
             })
             ->values()
@@ -156,6 +149,21 @@ trait BuildsOrderDocs
                 'quantity' => 1,
                 'unit_price_minor' => $order->shipping_total,
             ];
+        }
+
+        // Order-level tax can include charges that are not stored on item rows.
+        // Allocate the remainder once to a line so subsequent document edits
+        // preserve the exact tax amount without recomputing a rate.
+        $lineTax = array_sum(array_column($items, 'tax_amount_minor'));
+        $remainder = $order->tax_total - $lineTax;
+
+        if ($remainder < 0) {
+            throw new \InvalidArgumentException('Order item taxes exceed the order tax total.');
+        }
+
+        if ($remainder > 0 && $items !== []) {
+            $last = array_key_last($items);
+            $items[$last]['tax_amount_minor'] = ($items[$last]['tax_amount_minor'] ?? 0) + $remainder;
         }
 
         return $items;

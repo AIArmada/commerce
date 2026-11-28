@@ -12,7 +12,8 @@
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderFlaggedAsFraud",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\OrderCanceled",
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\FreeOrderConfirmed",
-      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder"
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\CreateOrder",
+      "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\AssignOrderInvoiceNumber"
     ],
     "table:order_items": [
       "AIArmada\\Orders\\Features\\Lifecycle\\Actions\\ShipmentCreated",
