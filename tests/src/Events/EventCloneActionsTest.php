@@ -568,3 +568,34 @@ it('uses the configured event model when cloning', function (): void {
 
     expect(CloneConfiguredEvent::query()->findOrFail($id)->id)->not->toBe($event->id);
 });
+
+it('restores each event template session into its original occurrence', function (): void {
+    $event = Event::factory()->create();
+    $first = EventOccurrence::factory()->create(['event_id' => $event->id, 'title' => 'Day One']);
+    $second = EventOccurrence::factory()->create(['event_id' => $event->id, 'title' => 'Day Two']);
+
+    EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $first->id, 'title' => 'Opening', 'sort_order' => 3]);
+    EventSession::factory()->create(['event_id' => $event->id, 'event_occurrence_id' => $second->id, 'title' => 'Closing', 'sort_order' => 7]);
+
+    $template = app(SaveEventTemplateAction::class)->createFromEvent($event);
+    $id = app(EventTemplateService::class)->createFromTemplate($template->id);
+    $restored = Event::query()->findOrFail($id);
+    $dayOne = $restored->occurrences()->where('title', 'Day One')->firstOrFail();
+    $dayTwo = $restored->occurrences()->where('title', 'Day Two')->firstOrFail();
+
+    expect($dayOne->sessions()->pluck('title')->all())->toBe(['Opening'])
+        ->and($dayTwo->sessions()->pluck('title')->all())->toBe(['Closing'])
+        ->and($dayTwo->sessions()->firstOrFail()->sort_order)->toBe(7);
+});
+
+it('restores an event template using the configured event model', function (): void {
+    $event = Event::factory()->create();
+    EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $template = app(SaveEventTemplateAction::class)->createFromEvent($event);
+    config()->set('events.models.event', CloneConfiguredEvent::class);
+
+    $id = app(EventTemplateService::class)->createFromTemplate($template->id);
+    $restored = CloneConfiguredEvent::query()->findOrFail($id);
+
+    expect($restored->occurrences()->count())->toBe(1);
+});
