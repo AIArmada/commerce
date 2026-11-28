@@ -29,7 +29,7 @@ use AIArmada\Rewards\Support\NullRewardGratitudePlanner;
 use AIArmada\Rewards\Support\NullRewardReadinessChecker;
 use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\NullRewardSourceFactReader;
-use AIArmada\Rewards\Actions\RewardBenefitCatalogService;
+use AIArmada\Rewards\Features\Benefits\Actions\RewardBenefitCatalogService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 

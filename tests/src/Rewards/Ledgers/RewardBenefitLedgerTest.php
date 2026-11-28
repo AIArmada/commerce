@@ -22,6 +22,7 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardBenefitItemStatus;
+use AIArmada\Rewards\Enums\RewardBenefitStockKind;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
@@ -487,4 +488,28 @@ it('fulfills a direct-entitlement benefit award through the catalog', function (
     );
 
     expect($fulfilled->status)->toBe(RewardAwardStatus::Fulfilled);
+});
+
+it('rejects a stock movement replay against a different catalog item', function (): void {
+    [$program] = benefitLedgerProgram('ben-stock-key');
+    $staff = RewardLedgerFixtures::staffId();
+    $first = CreateRewardBenefitItemAction::run($program, 'first-item', 'First', [], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $second = CreateRewardBenefitItemAction::run($program, 'second-item', 'Second', [], 100, 'pts', false, 5, 'user', $staff, 'staff');
+    $at = CarbonImmutable::now();
+
+    $movement = RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $first->getKey(), 1, null, 'user', $staff, 'staff', $at,
+    );
+
+    $replay = RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $first->getKey(), 1, null, 'user', $staff, 'staff', $at,
+    );
+
+    expect($replay->getKey())->toBe($movement->getKey());
+
+    expect(fn () => RewardBenefitStockLedger::append(
+        RewardBenefitStockKind::Reserve, 'stock-key-collision', (string) $second->getKey(), 1, null, 'user', $staff, 'staff', $at,
+    ))->toThrow(InvalidArgumentException::class, 'different terms');
+
+    expect(RewardBenefitStockLedger::balances($second)['available'])->toBe(5);
 });
