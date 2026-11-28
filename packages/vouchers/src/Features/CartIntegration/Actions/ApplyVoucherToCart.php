@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Lorisleiva\Actions\Concerns\AsAction;

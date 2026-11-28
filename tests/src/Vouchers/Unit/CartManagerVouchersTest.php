@@ -76,3 +76,35 @@ it('rejects vouchers when stacking is disabled even if auto replacement is enabl
         ->toThrow(InvalidVoucherException::class);
     expect($cart->hasVoucher())->toBeFalse();
 });
+
+it('removes a cart voucher when its code resolves to a different voucher identity', function (): void {
+    $original = VoucherData::fromArray([
+        'id' => 'original-voucher',
+        'code' => 'REUSED',
+        'name' => 'Original',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'USD',
+    ]);
+
+    $replacement = VoucherData::fromArray([
+        ...$original->toArray(),
+        'id' => 'replacement-voucher',
+    ]);
+
+    Voucher::shouldReceive('validate')
+        ->once()
+        ->ordered()
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $original->toArray()]));
+
+    Voucher::shouldReceive('validate')
+        ->once()
+        ->ordered()
+        ->andReturn(VoucherValidationResult::valid(['voucher' => $replacement->toArray()]));
+
+    $cart = new CartWithVouchers(Cart::getCurrentCart());
+    $cart->applyVoucher('REUSED');
+
+    expect($cart->validateAppliedVouchers())->toBe(['REUSED'])
+        ->and($cart->hasVoucher('REUSED'))->toBeFalse();
+});

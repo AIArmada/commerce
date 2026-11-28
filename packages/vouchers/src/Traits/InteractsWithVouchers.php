@@ -10,8 +10,8 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
-use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
@@ -216,7 +216,7 @@ trait InteractsWithVouchers
             $code = $voucherCondition->getVoucherCode();
             $validationResult = Voucher::validate($code, $this->getUnderlyingCart());
 
-            if (! $validationResult->isValid) {
+            if (! $validationResult->matchesVoucher($voucherCondition->getVoucherId())) {
                 $this->removeVoucher($code);
                 $removedVouchers[] = $code;
             }

@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Events\VoucherRemoved;
-use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherRemoval;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use Lorisleiva\Actions\Concerns\AsAction;
 

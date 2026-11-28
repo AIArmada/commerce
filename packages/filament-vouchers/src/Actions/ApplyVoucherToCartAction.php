@@ -8,7 +8,7 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\FilamentVouchers\Support\CartSnapshotAccess;
 use AIArmada\Vouchers\Exceptions\VoucherException;
-use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\CartVoucherApplicator;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
