@@ -21,17 +21,10 @@ final class ChangeMemberRoleAction
     {
         app(MembershipSubjectGuard::class)->validate($subject);
 
-        /** @phpstan-ignore method.notFound */
-        $member = $subject->members()->whereKey($user->getKey())->first();
-
-        if ($member === null) {
-            throw new RuntimeException('Cannot change the role of a non-member.');
-        }
-
         $oldRole = null;
 
         DB::transaction(function () use ($role, $subject, $user, &$oldRole): void {
-            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->first();
+            $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
 
             /** @phpstan-ignore method.notFound */
             $freshMember = $subject->members()->whereKey($user->getKey())->first();
@@ -47,7 +40,7 @@ final class ChangeMemberRoleAction
             /** @phpstan-ignore property.notFound */
             $oldRole = MemberRole::fromSpatieRoleName((string) $freshMember->pivot?->role);
 
-            AddMemberAction::make()->handleResolvedMember($subject, $user, $role, $freshMember, false);
+            AddMemberAction::make()->handle($subject, $user, $role, notifyAdded: false);
         });
 
         if ($oldRole !== null && $oldRole !== $role && app()->bound(MembershipHook::class)) {

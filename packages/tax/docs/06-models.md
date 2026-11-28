@@ -65,7 +65,7 @@ TaxZone::forOwner($owner, $includeGlobal);   // Owner scoped
 ```
 
 > **info**
-> `forAddress()` filters by country and state in SQL and orders by priority. Postcode patterns are evaluated in PHP, so the `$postcode` argument does not narrow the query — call `matchesAddress()` on each candidate before accepting a zone.
+> `forAddress()` filters by country and state in SQL and orders by priority. Missing state or postcode values exclude restricted zones in SQL. Postcode patterns are evaluated in PHP — call `matchesAddress()` on each candidate before accepting a zone.
 
 ### Methods
 
@@ -91,12 +91,13 @@ TaxZone::factory()->withPriority(10)->create();
 
 ### Postcode Matching
 
-Postcodes support three patterns:
+Postcodes support exact values, ranges and wildcards:
 
 | Pattern | Example | Matches |
 |---------|---------|---------|
 | Exact | `43000` | Only `43000` |
 | Range | `43000-43999` | `43000` through `43999` |
+| Prefixed range | `SW1A1-SW1A9` | `SW1A1` through `SW1A9`; prefixes must match exactly |
 | Wildcard | `43*` | `43000`, `43100`, etc. |
 
 ---
@@ -403,7 +404,7 @@ public function getActivitylogOptions(): LogOptions
 Responsible for applying one or more tax rates to an amount and computing the total tax with a breakdown.
 
 ```php
-use AIArmada\Tax\Contracts\TaxRateApplierInterface;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
 use AIArmada\Tax\Models\TaxRate;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -467,7 +468,7 @@ It handles:
 Responsible for resolving a `TaxZone` from a zone ID and/or address context.
 
 ```php
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 
 class CheckoutService
 {
@@ -515,17 +516,10 @@ $this->app->singleton(
 );
 ```
 
-### Cascade Deletes
+### Zone Deletion
 
-`TaxZone` implements application-level cascade deletes:
+Use `DeleteTaxZonesAction` to delete zones in a transaction. `CascadeTaxZoneDeletionAction` removes eligible rates and refuses to delete a zone referenced by any exemption, including historical records. Deactivate such zones instead to preserve their audit history and exemption boundaries.
 
-```php
-protected static function booted(): void
-{
-    static::deleting(function (TaxZone $zone): void {
-        $zone->rates()->delete();
-    });
-}
-```
+Exemption requests and updates reject nonexistent or inaccessible zones and expiry dates at or before the start date.
 
 No database-level foreign key constraints are used.

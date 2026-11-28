@@ -64,8 +64,7 @@ owner context in the handler.
 ## Lifecycle and audit hook
 
 Archive, restore, suspend, make-public, and make-private go through
-`AIArmada\Organizations\Support\OrganizationStateTransition` (timestamps are
-retained as history); ownership transfer is a separate transactional
+transactional organization lifecycle actions (timestamps are retained as history); ownership transfer is a separate transactional
 workflow. All six invoke `OrganizationLifecycleHook`; bind that hook to the
 host activity logger when lifecycle audit records are required.
 

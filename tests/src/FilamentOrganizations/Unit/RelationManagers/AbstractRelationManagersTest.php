@@ -9,6 +9,7 @@ use AIArmada\FilamentOrganizations\RelationManagers\AbstractMembersRelationManag
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 uses(FilamentOrganizationsTestCase::class);
@@ -31,6 +32,20 @@ test('abstract members and invitations relation managers expose reusable hooks a
 
         protected function removeMember(Model $owner, Model $member): void {}
 
+        public bool $allowSearch = true;
+
+        protected function authorizeMutation(string $ability): void
+        {
+            if (! $this->allowSearch) {
+                throw new AuthorizationException('Member lookup forbidden.');
+            }
+        }
+
+        public function probeLabel(mixed $id): ?string
+        {
+            return $this->getUserOptionLabel($id);
+        }
+
         public function probeSearch(string $term): array
         {
             return $this->searchUsers($term);
@@ -46,6 +61,10 @@ test('abstract members and invitations relation managers expose reusable hooks a
     expect($results)->toHaveCount(1)
         ->and(array_values($results)[0])->toContain('100%_Special User')
         ->and($membersRm->probeRoleOptions())->toHaveKey(MemberRole::Owner->value);
+
+    $membersRm->allowSearch = false;
+    expect(fn () => $membersRm->probeSearch('ordinary'))->toThrow(AuthorizationException::class)
+        ->and(fn () => $membersRm->probeLabel('unknown'))->toThrow(AuthorizationException::class);
 
     $invitesRm = new class extends AbstractMemberInvitationsRelationManager
     {
@@ -63,6 +82,8 @@ test('abstract members and invitations relation managers expose reusable hooks a
             MembershipInvitation $invitation,
             Model $actor,
         ): void {}
+
+        protected function authorizeInvitationMutation(string $ability, Model $owner): void {}
     };
 
     expect($invitesRm)->toBeInstanceOf(AbstractMemberInvitationsRelationManager::class);

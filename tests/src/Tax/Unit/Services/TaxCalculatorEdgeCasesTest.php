@@ -5,9 +5,11 @@ declare(strict_types=1);
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Services\RateApplier\StandardRateApplier;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use AIArmada\Tax\Settings\TaxZoneSettings;
+use Illuminate\Database\Eloquent\Collection;
 
 describe('TaxCalculatorEdgeCases', function (): void {
     beforeEach(function (): void {
@@ -64,6 +66,9 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $compoundBreakdown = collect($result->breakdown)->firstWhere('is_compound', true);
         $this->assertNotNull($compoundBreakdown);
         $this->assertEquals('Compound Rate', $compoundBreakdown['name']);
+        $this->assertSame(753, $result->taxAmount);
+        $this->assertSame(462, $result->breakdown[0]['amount']);
+        $this->assertSame(291, $result->breakdown[1]['amount']);
     });
 
     it('compound tax with tax exclusive pricing', function (): void {
@@ -106,6 +111,54 @@ describe('TaxCalculatorEdgeCases', function (): void {
         $this->assertEquals(815, $result->taxAmount);
         $this->assertFalse($result->includedInPrice);
         $this->assertTrue($result->hasCompoundTaxes());
+    });
+
+    it('rounds the aggregate tax when per-rate rounding is disabled', function (): void {
+        $rates = new Collection([
+            new TaxRate(['name' => 'First', 'rate' => 500, 'is_compound' => false]),
+            new TaxRate(['name' => 'Second', 'rate' => 500, 'is_compound' => false]),
+        ]);
+
+        $perRate = (new StandardRateApplier(true))->apply(10, $rates, false);
+        $aggregate = (new StandardRateApplier(false))->apply(10, $rates, false);
+
+        expect($perRate['total'])->toBe(2)
+            ->and($aggregate['total'])->toBe(1)
+            ->and(array_sum(array_column($aggregate['breakdown'], 'amount')))->toBe(1);
+    });
+
+    it('extracts parallel inclusive taxes from one net amount', function (): void {
+        $rates = new Collection([
+            new TaxRate(['name' => 'First', 'rate' => 500, 'is_compound' => false]),
+            new TaxRate(['name' => 'Second', 'rate' => 500, 'is_compound' => false]),
+        ]);
+
+        $result = (new StandardRateApplier)->apply(11000, $rates, true);
+
+        expect($result['total'])->toBe(1000)
+            ->and($result['breakdown'][0]['amount'])->toBe(500)
+            ->and($result['breakdown'][1]['amount'])->toBe(500);
+    });
+
+    it('bounds inclusive per-rate rounding by the gross amount for sales and credits', function (): void {
+        $rates = new Collection;
+
+        for ($index = 0; $index < 5; $index++) {
+            $rates->push(new TaxRate([
+                'name' => 'Rate ' . $index,
+                'rate' => 10000,
+                'is_compound' => false,
+            ]));
+        }
+
+        $applier = new StandardRateApplier(roundPerRate: true);
+        $sale = $applier->apply(3, $rates, true);
+        $credit = $applier->apply(-3, $rates, true);
+
+        expect($sale['total'])->toBe(3)
+            ->and($credit['total'])->toBe(-3)
+            ->and(array_sum(array_column($sale['breakdown'], 'amount')))->toBe(3)
+            ->and(array_sum(array_column($credit['breakdown'], 'amount')))->toBe(-3);
     });
 
     it('fallback zone id resolution', function (): void {

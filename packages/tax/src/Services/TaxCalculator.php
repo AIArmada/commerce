@@ -6,8 +6,6 @@ namespace AIArmada\Tax\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
-use AIArmada\Tax\Contracts\TaxRateApplierInterface;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Events\TaxCalculated;
 use AIArmada\Tax\Events\TaxExemptionApplied;
@@ -15,6 +13,9 @@ use AIArmada\Tax\Events\TaxZoneResolved;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Queries\TaxOwnerScope;
+use AIArmada\Tax\Services\RateApplier\TaxRateApplierInterface;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use AIArmada\Tax\Settings\TaxSettings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -42,25 +43,29 @@ class TaxCalculator implements TaxCalculatorInterface
             return $this->createZeroResult($zoneId, $context);
         }
 
-        $exemption = $this->checkExemption($context);
-        if ($exemption !== null) {
-            TaxExemptionApplied::dispatch($exemption, $amountInCents, $zoneId, $context);
+        $zone = $this->zoneResolver->resolve($zoneId, $context);
+        $context['zone_id'] = $zone?->id;
 
-            return $this->createExemptResult($exemption, $zoneId, $context);
+        if ($zone !== null) {
+            TaxZoneResolved::dispatch($zone, $zoneId, $context);
         }
 
-        $zone = $this->zoneResolver->resolve($zoneId, $context);
+        $exemption = $this->checkExemption($context);
+
+        if ($exemption !== null) {
+            TaxExemptionApplied::dispatch($exemption, $amountInCents, $zone?->id, $context);
+
+            return $this->createExemptResult($exemption, $zone, $context);
+        }
 
         if ($zone === null) {
-            return $this->createZeroResult($zoneId, $context);
+            return $this->createZeroResult(null, $context);
         }
-
-        TaxZoneResolved::dispatch($zone, $zoneId, $context);
 
         $rates = $this->getRates($taxClass, $zone, (bool) ($context['is_shipping'] ?? false), $context);
 
         if ($rates->isEmpty()) {
-            return $this->createZeroResult($zone->id, $context);
+            return $this->createZeroResult($zone->id, $context, $zone);
         }
 
         $pricesIncludeTax = $this->getPricesIncludeTax();
@@ -68,7 +73,7 @@ class TaxCalculator implements TaxCalculatorInterface
         $primaryRate = $result['primary_rate'];
 
         if ($primaryRate === null) {
-            return $this->createZeroResult($zone->id, $context);
+            return $this->createZeroResult($zone->id, $context, $zone);
         }
 
         $taxResult = new TaxResultData(
@@ -90,6 +95,8 @@ class TaxCalculator implements TaxCalculatorInterface
 
     public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResultData
     {
+        $context['owner'] = TaxOwnerScope::resolve($context);
+
         if (! $this->isShippingTaxable()) {
             return $this->createZeroResult($zoneId, $context);
         }
@@ -109,7 +116,8 @@ class TaxCalculator implements TaxCalculatorInterface
             ->where('tax_class', $taxClass)
             ->active()
             ->orderBy('is_compound', 'asc')
-            ->orderBy('priority', 'desc');
+            ->orderBy('priority', 'desc')
+            ->orderBy('id');
 
         if ($isShipping) {
             $query->where('is_shipping', true);
@@ -135,8 +143,13 @@ class TaxCalculator implements TaxCalculatorInterface
         $exemptable = $context['exemptable'] ?? $context['customer'] ?? null;
 
         if ($exemptable instanceof Model) {
-            $exemptableId ??= $exemptable->getKey();
-            $exemptableType ??= $exemptable->getMorphClass();
+            if (($exemptableId !== null && (string) $exemptableId !== (string) $exemptable->getKey())
+                || ($exemptableType !== null && $exemptableType !== $exemptable->getMorphClass())) {
+                throw new InvalidArgumentException('Tax exemption identity does not match the supplied model.');
+            }
+
+            $exemptableId = $exemptable->getKey();
+            $exemptableType = $exemptable->getMorphClass();
         }
 
         if ($exemptableId === null || $exemptableId === '') {
@@ -165,10 +178,8 @@ class TaxCalculator implements TaxCalculatorInterface
      *
      * @param  array<string, mixed>  $context
      */
-    protected function createExemptResult(TaxExemption $exemption, ?string $zoneId, array $context): TaxResultData
+    protected function createExemptResult(TaxExemption $exemption, ?TaxZone $zone, array $context): TaxResultData
     {
-        $zone = $this->findZone($zoneId, $context);
-
         return new TaxResultData(
             taxAmount: 0,
             rateId: 'exempt',
@@ -188,9 +199,9 @@ class TaxCalculator implements TaxCalculatorInterface
      *
      * @param  array<string, mixed>  $context
      */
-    protected function createZeroResult(?string $zoneId, array $context = []): TaxResultData
+    protected function createZeroResult(?string $zoneId, array $context = [], ?TaxZone $zone = null): TaxResultData
     {
-        $zone = $this->findZone($zoneId, $context);
+        $zone ??= $this->findZone($zoneId, $context);
 
         return new TaxResultData(
             taxAmount: 0,

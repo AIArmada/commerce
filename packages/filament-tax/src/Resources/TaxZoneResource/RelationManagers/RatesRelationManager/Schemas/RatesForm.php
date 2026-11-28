@@ -34,7 +34,9 @@ final class RatesForm
 
                 TextInput::make('rate')
                     ->label('Rate (basis points)')
-                    ->numeric()
+                    ->integer()
+                    ->minValue(0)
+                    ->maxValue(10000)
                     ->required()
                     ->helperText('Enter 600 for 6%, 1000 for 10%')
                     ->suffix('bp'),

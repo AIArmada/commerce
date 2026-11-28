@@ -6,8 +6,8 @@ namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
-use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -20,31 +20,19 @@ final class TransferOrganizationOwnershipAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly OrganizationAuthorization $authorization,
+        private readonly OrganizationLifecycleHook $lifecycleHook,
+        private readonly MembershipRoleSyncService $roleSync,
+    ) {}
+
     public function handle(Organization $organization, Model $actor, Model $newOwner): Organization
     {
-        app(OrganizationAuthorization::class)->authorize($actor, $organization, 'organization.transfer-ownership');
-
-        if ($actor->is($newOwner)) {
-            return DB::transaction(function () use ($actor, $organization): Organization {
-                $owners = $organization->ownerMember()->lockForUpdate()->get();
-
-                if ($owners->count() !== 1) {
-                    throw new RuntimeException('Organization ownership invariant violated: exactly one owner must exist.');
-                }
-
-                $currentOwner = $owners->first();
-
-                if (! $currentOwner instanceof Model || ! $currentOwner->is($actor)) {
-                    throw new AuthorizationException('Only the current owner can self-transfer organization ownership.');
-                }
-
-                return $organization;
-            });
-        }
-
         return DB::transaction(function () use ($actor, $newOwner, $organization): Organization {
+            $organization = $organization->newQuery()->whereKey($organization->getKey())->lockForUpdate()->firstOrFail();
+            $this->authorization->authorize($actor, $organization, 'organization.transfer-ownership');
+
             $owners = $organization->ownerMember()->lockForUpdate()->get();
-            $target = $organization->members()->lockForUpdate()->whereKey($newOwner->getKey())->first();
 
             if ($owners->count() !== 1) {
                 throw new RuntimeException('Organization ownership invariant violated: exactly one owner must exist.');
@@ -52,11 +40,21 @@ final class TransferOrganizationOwnershipAction
 
             $currentOwner = $owners->first();
 
+            if (! $currentOwner instanceof Model || ! $currentOwner->is($actor)) {
+                throw new AuthorizationException('Only the current owner can transfer organization ownership.');
+            }
+
+            if ($actor->is($newOwner)) {
+                return $organization;
+            }
+
+            $target = $organization->members()->lockForUpdate()->whereKey($newOwner->getKey())->first();
+
             if (! $target instanceof Model) {
                 throw new RuntimeException('The new owner must already be an organization member.');
             }
 
-            if ($target->getMorphClass() !== $newOwner->getMorphClass()) {
+            if (! $target->is($newOwner)) {
                 throw new InvalidArgumentException('The new owner must use the organization member model.');
             }
 
@@ -67,20 +65,21 @@ final class TransferOrganizationOwnershipAction
             }
 
             $members = $organization->members();
-            $members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]);
-            $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]);
-
-            $roleSync = app(MembershipRoleSyncService::class);
-            $roleSync->revokeFromUser($organization, $currentOwner, MemberRole::Owner);
-            $roleSync->assignToUser($organization, $currentOwner, MemberRole::Admin);
-
-            if ($targetRole !== null && $targetRole !== MemberRole::Owner) {
-                $roleSync->revokeFromUser($organization, $target, $targetRole);
+            if ($members->updateExistingPivot($currentOwner->getKey(), ['role' => MemberRole::Admin->spatieRoleName()]) !== 1
+                || $members->updateExistingPivot($target->getKey(), ['role' => MemberRole::Owner->spatieRoleName()]) !== 1) {
+                throw new RuntimeException('Organization ownership transfer did not update both membership records.');
             }
 
-            $roleSync->assignToUser($organization, $target, MemberRole::Owner);
+            $this->roleSync->revokeFromUser($organization, $currentOwner, MemberRole::Owner);
+            $this->roleSync->assignToUser($organization, $currentOwner, MemberRole::Admin);
 
-            app(OrganizationLifecycleHook::class)->ownershipTransferred($organization, $currentOwner, $target, $actor);
+            if ($targetRole !== null && $targetRole !== MemberRole::Owner) {
+                $this->roleSync->revokeFromUser($organization, $target, $targetRole);
+            }
+
+            $this->roleSync->assignToUser($organization, $target, MemberRole::Owner);
+
+            $this->lifecycleHook->ownershipTransferred($organization, $currentOwner, $target, $actor);
 
             return $organization->fresh();
         });

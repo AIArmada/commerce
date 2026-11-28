@@ -57,5 +57,18 @@ describe('Currency handling', function (): void {
         );
 
         expect($invalid->getMoney()->getCurrency()->getCurrency())->toBe('MYR');
+
+        config()->set('tax.defaults.currency', 'ZZZ');
+        $unsupported = new TaxResultData(
+            taxAmount: 600,
+            rateId: null,
+            rateName: 'Rate',
+            ratePercentage: 600,
+            zoneId: null,
+            zoneName: 'Zone',
+            currency: 'ZZZ',
+        );
+
+        expect($unsupported->getMoney()->getCurrency()->getCurrency())->toBe('MYR');
     });
 });

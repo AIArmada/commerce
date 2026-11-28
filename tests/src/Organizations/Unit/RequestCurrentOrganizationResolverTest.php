@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Organizations\OrganizationsTestCase;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Organizations\Actions\CreateOrganizationAction;
-use AIArmada\Organizations\Contracts\CurrentOrganizationResolver;
+use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 use AIArmada\Organizations\Resolvers\RequestCurrentOrganizationResolver;
 use Illuminate\Http\Request;
 

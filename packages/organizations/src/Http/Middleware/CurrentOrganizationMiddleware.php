@@ -6,7 +6,7 @@ namespace AIArmada\Organizations\Http\Middleware;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Organizations\Contracts\CurrentOrganizationResolver;
+use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -16,7 +16,11 @@ final class CurrentOrganizationMiddleware
     {
         $contextRequired = $required === null
             ? (bool) config('organizations.middleware.require_context', true)
-            : filter_var($required, FILTER_VALIDATE_BOOLEAN);
+            : filter_var($required, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        if ($contextRequired === null) {
+            throw new NoCurrentOwnerException('Invalid organization context middleware configuration.');
+        }
 
         if (! $contextRequired) {
             return OwnerContext::withOwner(null, static fn (): mixed => $next($request));

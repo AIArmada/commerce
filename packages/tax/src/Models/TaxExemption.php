@@ -11,15 +11,16 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Actions\Exemption\ApproveExemptionAction;
+use AIArmada\Tax\Actions\Exemption\ExpireExemptionAction;
+use AIArmada\Tax\Actions\Exemption\MarkExemptionUnderReviewAction;
 use AIArmada\Tax\Actions\Exemption\RejectExemptionAction;
+use AIArmada\Tax\Actions\Exemption\RevokeExemptionAction;
 use AIArmada\Tax\Database\Factories\TaxExemptionFactory;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
-use AIArmada\Tax\States\TaxExemptionState\ExpiredState;
 use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\RejectedState;
-use AIArmada\Tax\States\TaxExemptionState\RevokedState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
-use AIArmada\Tax\States\TaxExemptionState\UnderReviewState;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -29,6 +30,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Validation\ValidationException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\ModelStates\HasStates;
@@ -104,6 +107,23 @@ class TaxExemption extends Model implements Auditable
     protected static function booted(): void
     {
         static::saving(function (self $exemption): void {
+            if ($exemption->starts_at !== null && $exemption->expires_at !== null && $exemption->expires_at->lessThanOrEqualTo($exemption->starts_at)) {
+                throw ValidationException::withMessages([
+                    'expires_at' => 'The exemption expiry must be after its start date.',
+                ]);
+            }
+
+            if ($exemption->tax_zone_id !== null && ($exemption->isDirty('tax_zone_id') || ! $exemption->exists)) {
+                $zoneExists = TaxOwnerScope::apply(TaxZone::query(), [])
+                    ->whereKey($exemption->tax_zone_id)
+                    ->lockForUpdate()
+                    ->first() !== null;
+
+                if (! $zoneExists) {
+                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
+                }
+            }
+
             if (! config('tax.features.owner.enabled', false)) {
                 return;
             }
@@ -115,10 +135,8 @@ class TaxExemption extends Model implements Auditable
                     throw new AuthorizationException('Cannot write owned tax exemptions without an owner context.');
                 }
 
-                return;
-            }
-
-            if ($exemption->owner_type === null && $exemption->owner_id === null) {
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            } elseif ($exemption->owner_type === null && $exemption->owner_id === null) {
                 if ($exemption->exists) {
                     throw new AuthorizationException('Cannot mutate global tax exemptions without explicit global context.');
                 }
@@ -128,9 +146,13 @@ class TaxExemption extends Model implements Auditable
                 }
             }
 
-            if (! $exemption->belongsToOwner($owner)) {
+            if ($owner !== null && ! $exemption->belongsToOwner($owner)) {
                 throw new AuthorizationException('Cannot write tax exemptions outside the current owner scope.');
             }
+
+            $exemptableClass = is_string($exemption->exemptable_type)
+                ? (Relation::getMorphedModel($exemption->exemptable_type) ?? $exemption->exemptable_type)
+                : null;
 
             if (
                 $exemption->exemptable_id !== null
@@ -141,31 +163,18 @@ class TaxExemption extends Model implements Auditable
                     || $exemption->isDirty('exemptable_id')
                     || ! $exemption->exists
                 )
-                && class_exists($exemption->exemptable_type)
-                && is_a($exemption->exemptable_type, Model::class, true)
-                && in_array(HasOwner::class, class_uses_recursive($exemption->exemptable_type), true)
+                && $exemptableClass !== null
+                && is_a($exemptableClass, Model::class, true)
+                && in_array(HasOwner::class, class_uses_recursive($exemptableClass), true)
+                && (! method_exists($exemptableClass, 'ownerScopeConfig') || $exemptableClass::ownerScopeConfig()->enabled)
             ) {
                 OwnerWriteGuard::findOrFailForOwner(
-                    modelClass: $exemption->exemptable_type,
+                    modelClass: $exemptableClass,
                     id: $exemption->exemptable_id,
                     owner: $owner,
                     includeGlobal: (bool) config('tax.features.owner.include_global', false),
                     message: 'Exemptable entity is not accessible in the current owner scope.',
                 );
-            }
-
-            if ($exemption->tax_zone_id !== null && ($exemption->isDirty('tax_zone_id') || ! $exemption->exists)) {
-                $zoneExists = TaxZone::query()
-                    ->forOwner(
-                        $owner,
-                        includeGlobal: (bool) config('tax.features.owner.include_global', false),
-                    )
-                    ->whereKey($exemption->tax_zone_id)
-                    ->exists();
-
-                if (! $zoneExists) {
-                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
-                }
             }
         });
     }
@@ -228,6 +237,20 @@ class TaxExemption extends Model implements Auditable
                 $q->whereNull('starts_at')
                     ->orWhere('starts_at', '<=', $now);
             });
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeExpiringWithin(Builder $query, int $days): Builder
+    {
+        $now = CarbonImmutable::now();
+
+        return $query->approved()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>=', $now)
+            ->where('expires_at', '<=', $now->addDays($days));
     }
 
     /**
@@ -342,23 +365,17 @@ class TaxExemption extends Model implements Auditable
 
     public function markUnderReview(): self
     {
-        $this->status->transitionTo(UnderReviewState::class);
-
-        return $this;
+        return app(MarkExemptionUnderReviewAction::class)->execute($this);
     }
 
     public function revoke(): self
     {
-        $this->status->transitionTo(RevokedState::class);
-
-        return $this;
+        return app(RevokeExemptionAction::class)->execute($this);
     }
 
     public function expire(): self
     {
-        $this->status->transitionTo(ExpiredState::class);
-
-        return $this;
+        return app(ExpireExemptionAction::class)->execute($this);
     }
 
     // =========================================================================

@@ -181,11 +181,13 @@ $exemption = TaxExemption::create([
 ### Renewals
 
 ```php
-// Extend an existing exemption
-$exemption->update([
-    'expires_at' => now()->addYear(),
-]);
+use AIArmada\Tax\Actions\Exemption\RenewTaxExemptionAction;
+
+// Extend an approved exemption
+app(RenewTaxExemptionAction::class)->execute($exemption->id, now()->addYear()->toDateString());
 ```
+
+Renewal requires an approved state and a new expiry after today and any existing expiry. A terminal state cannot be renewed; submit a new request for a rejected, revoked, or explicitly expired exemption.
 
 ## Querying Exemptions
 
@@ -196,6 +198,9 @@ use AIArmada\Tax\Models\TaxExemption;
 
 // Active = approved + started + not expired
 $active = TaxExemption::active()->get();
+
+// Approved exemptions due to expire within the next 30 days
+$expiring = TaxExemption::expiringWithin(30)->get();
 ```
 
 ### By Status
@@ -477,7 +482,6 @@ $result->exemptionReason;  // 'Registered charity - Tax ID: 12345'
 // ExpiringExemptionsWidget shows exemptions expiring in 30 days
 
 // 5. Admin renews
-$exemption->update([
-    'expires_at' => now()->addYear(),
-]);
+app(\AIArmada\Tax\Actions\Exemption\RenewTaxExemptionAction::class)
+    ->execute($exemption->id, now()->addYear()->toDateString());
 ```

@@ -6,9 +6,9 @@ namespace AIArmada\Organizations\Actions;
 
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
 use AIArmada\Organizations\Models\Organization;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -18,16 +18,32 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 
 final class CreateOrganizationAction
 {
     use AsAction;
+
+    public function __construct(
+        private readonly AddMemberAction $addMember,
+        private readonly OrganizationLifecycleHook $lifecycleHook,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function handle(Model $creator, array $attributes = []): Organization
     {
+        if (! $creator->exists || $creator->getKey() === null) {
+            throw new InvalidArgumentException('The creator must use the organization member model and be persisted.');
+        }
+
+        $member = (new Organization)->members()->getRelated()->newQuery()->whereKey($creator->getKey())->first();
+
+        if ($member === null || ! $member->is($creator)) {
+            throw new InvalidArgumentException('The creator must use the organization member model and be persisted.');
+        }
+
         $name = $attributes['name'] ?? null;
 
         if (! is_string($name) || mb_trim($name) === '') {
@@ -73,10 +89,12 @@ final class CreateOrganizationAction
                         'created_by' => (string) $creator->getKey(),
                         'last_state_change_at' => $now,
                     ]);
-                    $organization->save();
+                    if (! $organization->save()) {
+                        throw new RuntimeException('Organization save was cancelled.');
+                    }
 
-                    app(AddMemberAction::class)->handle($organization, $creator, MemberRole::Owner);
-                    app(OrganizationLifecycleHook::class)->created($organization, $creator);
+                    $this->addMember->handle($organization, $creator, MemberRole::Owner);
+                    $this->lifecycleHook->created($organization, $creator);
 
                     return $organization;
                 });
@@ -92,7 +110,8 @@ final class CreateOrganizationAction
 
     private function uniqueSlug(string $slug): string
     {
-        $base = mb_trim($slug) !== '' ? Str::slug($slug) : Str::lower((string) Str::uuid());
+        $base = Str::slug($slug);
+        $base = $base !== '' ? $base : Str::lower((string) Str::uuid());
         $base = mb_substr($base, 0, 250);
         $candidate = $base;
         $suffix = 2;

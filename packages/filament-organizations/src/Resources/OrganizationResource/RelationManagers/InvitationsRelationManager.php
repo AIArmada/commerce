@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\Resources\OrganizationResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
-use AIArmada\Membership\Actions\InviteMemberAction;
-use AIArmada\Membership\Actions\RevokeInvitationAction;
 use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Organizations\Actions\InviteOrganizationMemberAction;
+use AIArmada\Organizations\Actions\RevokeOrganizationInvitationAction;
 use AIArmada\Organizations\Models\Organization;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -47,19 +46,17 @@ final class InvitationsRelationManager extends RelationManager
                             ->default(fn (): string => app(InvitationChannelManager::class)->defaultChannelName())
                             ->required(),
                         TextInput::make('recipient')->required()->maxLength(255),
-                        Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
+                        Select::make('role')->options(collect(MemberRole::cases())->reject(fn (MemberRole $role): bool => $role === MemberRole::Owner)->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
                     ])
                     ->action(function (InvitationsRelationManager $livewire, array $data): void {
                         $organization = self::ownerOrganization($livewire);
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
-                        OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-                        app(InviteMemberAction::class)->handle(
+                        app(InviteOrganizationMemberAction::class)->handle(
                             $organization,
+                            $actor,
                             $data['recipient'],
                             MemberRole::from($data['role']),
-                            $actor,
-                            null,
                             $data['channel'],
                         );
                     }),
@@ -82,12 +79,10 @@ final class InvitationsRelationManager extends RelationManager
                             404,
                         );
 
-                        OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
 
-                        app(RevokeInvitationAction::class)->handle($record, $actor);
+                        app(RevokeOrganizationInvitationAction::class)->handle($organization, $actor, $record);
                     }),
             ]);
     }

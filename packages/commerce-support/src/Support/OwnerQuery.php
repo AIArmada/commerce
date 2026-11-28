@@ -32,6 +32,7 @@ final class OwnerQuery
      * @template TModel of Model
      *
      * @param  EloquentBuilder<TModel>  $query
+     * @return EloquentBuilder<TModel>
      */
     public static function applyToEloquentBuilder(
         EloquentBuilder $query,

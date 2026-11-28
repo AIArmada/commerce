@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Organizations\Resolvers;
 
 use AIArmada\Membership\Enums\MemberRole;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +16,7 @@ final class DefaultOrganizationAuthorization implements OrganizationAuthorizatio
     {
         $member = $organization->members()->whereKey($actor->getKey())->first();
 
-        if (! $member instanceof Model) {
+        if (! $member instanceof Model || ! $member->is($actor)) {
             throw new AuthorizationException('The actor is not a member of this organization.');
         }
 

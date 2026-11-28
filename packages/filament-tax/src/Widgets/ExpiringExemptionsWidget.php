@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Tax\Models\TaxExemption;
-use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -18,6 +19,14 @@ final class ExpiringExemptionsWidget extends BaseWidget
     protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = 2;
+
+    public static function canView(): bool
+    {
+        $actor = Filament::auth()->user();
+
+        return $actor !== null
+            && $actor->can('tax.exemptions.view');
+    }
 
     public function table(Table $table): Table
     {
@@ -54,14 +63,9 @@ final class ExpiringExemptionsWidget extends BaseWidget
      */
     protected function getTableQuery(): Builder
     {
-        $now = CarbonImmutable::now();
-
-        return TaxExemption::query()
+        return OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
             ->with('exemptable')
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', $now->addDays(30))
-            ->where('expires_at', '>=', $now)
-            ->where('status', 'approved')
+            ->expiringWithin(30)
             ->orderBy('expires_at');
     }
 }

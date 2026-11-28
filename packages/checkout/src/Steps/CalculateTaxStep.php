@@ -51,14 +51,18 @@ final class CalculateTaxStep extends AbstractCheckoutStep
 
         $taxData = [
             'breakdown' => $taxResult['breakdown'] ?? [],
-            'total' => $taxResult['total'] ?? 0,
+            'total' => $taxResult['total'],
+            'included_total' => $taxResult['included_total'],
+            'additional_total' => $taxResult['additional_total'],
+            'lines' => $taxResult['lines'],
+            'shipping_additional_tax' => $taxResult['shipping_additional_tax'],
             'tax_rate' => $taxResult['rate'] ?? 0,
             'taxable_amount' => $taxResult['taxable_amount'] ?? 0,
             'tax_exempt' => $taxResult['exempt'] ?? false,
             'calculated_at' => CarbonImmutable::now()->toIso8601String(),
         ];
 
-        $taxTotal = $taxResult['total'] ?? 0;
+        $taxTotal = $taxResult['additional_total'];
 
         $session->forceFill([
             'tax_data' => $taxData,

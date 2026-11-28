@@ -109,7 +109,7 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
         Model $actor,
     ): void;
 
-    protected function authorizeInvitationMutation(string $ability, Model $owner): void {}
+    abstract protected function authorizeInvitationMutation(string $ability, Model $owner): void;
 
     /**
      * @param  Builder<MembershipInvitation>  $query

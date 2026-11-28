@@ -8,7 +8,7 @@ use AIArmada\FilamentOrganizations\Resources\OrganizationResource\RelationManage
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Organizations\Actions\CreateOrganizationAction;
 use Filament\Tables\Table;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Validation\ValidationException;
 
 uses(FilamentOrganizationsTestCase::class);
 
@@ -69,10 +69,10 @@ it('reports unknown member emails generically', function (): void {
             'data' => ['email' => 'nobody-knows-this@example.com', 'role' => MemberRole::Viewer->value],
         ]);
 
-        $this->fail('Expected an HttpException for an unknown email.');
-    } catch (HttpException $exception) {
-        expect($exception->getStatusCode())->toBe(422)
-            ->and($exception->getMessage())->toBe('Unable to add this member.');
+        $this->fail('Expected a validation exception for an unknown email.');
+    } catch (ValidationException $exception) {
+        expect($exception->status)->toBe(422)
+            ->and($exception->errors())->toBe(['email' => ['Unable to add this member.']]);
     }
 });
 

@@ -83,7 +83,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             // A composite checkout is sold from its frozen snapshot. Re-reading
             // the live cart here could swap the reviewed composition or price
             // after payment has already been taken.
-            $liveCart = CompositeCartRevalidator::supports($session)
+            $liveCart = CompositeCartRevalidator::supports($session) || data_get($session->tax_data, 'lines', []) !== [] || (int) data_get($session->tax_data, 'shipping_additional_tax', 0) > 0
                 ? null
                 : app(CheckoutCartResolver::class)->resolveLiveCart($session);
 
@@ -225,26 +225,40 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $lineBases[$index] = $baseUnitPrice * $quantity;
         }
 
+        $taxLines = $session->tax_data['lines'] ?? [];
         $checkoutDiscountAllocations = $this->allocateAmount((int) $session->discount_total, $lineBases);
 
-        $taxBases = [];
+        $taxAllocations = [];
+        $includedTaxAllocations = [];
+        $shippingTax = (int) ($session->tax_data['shipping_additional_tax'] ?? 0);
 
-        foreach ($cartItems as $index => $cartItem) {
-            $pricingItem = $pricingByItemId[(string) ($cartItem['id'] ?? '')] ?? [];
-            $line = $lines[$index];
-            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $line->quantity));
-            $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $line->unitPrice);
-            $baseUnitPrice = max($finalUnitPrice, (int) ($pricingItem['original_unit_price'] ?? $finalUnitPrice));
-            $pricingDiscount = max(0, ($baseUnitPrice - $finalUnitPrice) * $quantity);
+        if ($taxLines !== []) {
+            $matched = [];
 
-            $taxBases[$index] = $line->isTaxable
-                ? max(0, ($lineBases[$index] ?? 0) - $pricingDiscount - ($checkoutDiscountAllocations[$index] ?? 0))
-                : 0;
+            foreach ($lines as $index => $line) {
+                $taxLine = $taxLines[$line->lineId] ?? null;
+
+                if (! is_array($taxLine) || isset($matched[$line->lineId])) {
+                    throw new InvalidArgumentException('Order lines do not match the calculated checkout taxes.');
+                }
+
+                $matched[$line->lineId] = true;
+                $checkoutDiscountAllocations[$index] = (int) $taxLine['discount'];
+                $taxAllocations[$index] = (int) $taxLine['additional_tax'];
+                $includedTaxAllocations[$index] = (int) $taxLine['included_tax'];
+            }
+
+            if (count($matched) !== count($taxLines)
+                || array_sum($checkoutDiscountAllocations) !== $session->discount_total) {
+                throw new InvalidArgumentException('Order tax snapshot does not reconcile with checkout discounts.');
+            }
         }
 
-        $taxAllocations = $this->allocateAmount((int) $session->tax_total, $taxBases);
+        if (array_sum($taxAllocations) + $shippingTax !== $session->tax_total) {
+            throw new InvalidArgumentException('Order tax snapshot does not reconcile with checkout tax.');
+        }
 
-        return array_map(function (array $cartItem, int $index) use ($session, $pricingByItemId, $lines, $checkoutDiscountAllocations, $taxAllocations): array {
+        return array_map(function (array $cartItem, int $index) use ($session, $pricingByItemId, $lines, $checkoutDiscountAllocations, $taxAllocations, $includedTaxAllocations): array {
             $pricingItem = $pricingByItemId[(string) ($cartItem['id'] ?? '')] ?? [];
             $line = $lines[$index];
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $line->quantity));
@@ -266,7 +280,10 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 'options' => $line->attributes !== [] ? $line->attributes : ($cartItem['options'] ?? null),
                 'metadata' => $line->orderItemMetadata(array_merge(
                     $metadata,
-                    ['pricing_breakdown' => $pricingItem['pricing_breakdown'] ?? []],
+                    [
+                        'pricing_breakdown' => $pricingItem['pricing_breakdown'] ?? [],
+                        'included_tax_minor' => $includedTaxAllocations[$index] ?? 0,
+                    ],
                 )),
             ];
         }, $cartItems, array_keys($cartItems));

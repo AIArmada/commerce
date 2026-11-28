@@ -5,17 +5,27 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Actions\Exemption;
 
 use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
-final class ApproveExemptionAction
+final readonly class ApproveExemptionAction
 {
     public function execute(TaxExemption $exemption): TaxExemption
     {
-        $exemption->status->transitionTo(ApprovedState::class);
-        $exemption->verified_at ??= CarbonImmutable::now();
-        $exemption->save();
+        return DB::transaction(function () use ($exemption): TaxExemption {
+            $locked = TaxOwnerScope::lockWritable(TaxExemption::query(), [$exemption->getKey()])->firstOrFail();
+            $exemption->setRawAttributes($locked->getAttributes(), true)->unsetRelations();
+            $exemption->verified_at ??= CarbonImmutable::now();
+            $exemption->status->transitionTo(ApprovedState::class);
 
-        return $exemption;
+            if ($exemption->isDirty('status')) {
+                throw new RuntimeException('Tax exemption state transition was cancelled.');
+            }
+
+            return $exemption;
+        });
     }
 }

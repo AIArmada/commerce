@@ -43,9 +43,8 @@ final class TaxExemptionResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $query = OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false);
 
-        /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->with(['exemptable', 'taxZone']);
     }
 
@@ -76,12 +75,8 @@ final class TaxExemptionResource extends Resource
             'filament-tax.nav-badge.expiring-exemptions',
             CarbonImmutable::now()->addSeconds(30),
             function (): int {
-                $now = CarbonImmutable::now();
-
-                return (int) OwnerUiScope::apply(self::getModel()::query(), includeGlobal: false)
-                    ->whereNotNull('expires_at')
-                    ->where('expires_at', '>=', $now)
-                    ->where('expires_at', '<=', $now->addDays(30))
+                return (int) OwnerUiScope::apply(TaxExemption::query(), includeGlobal: false)
+                    ->expiringWithin(30)
                     ->count();
             }
         );

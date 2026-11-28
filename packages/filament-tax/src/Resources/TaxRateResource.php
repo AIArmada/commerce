@@ -41,8 +41,7 @@ final class TaxRateResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        /** @phpstan-ignore return.type (template type not preserved through helper) */
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        return OwnerUiScope::apply(TaxRate::query(), includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

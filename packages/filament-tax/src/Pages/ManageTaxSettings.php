@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Pages;
 
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
+use AIArmada\Tax\Actions\UpdateTaxSettingsAction;
 use AIArmada\Tax\Settings\TaxSettings;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Arr;
 use UnitEnum;
 
 /**
@@ -142,7 +143,7 @@ final class ManageTaxSettings extends Page
 
     public function save(): void
     {
-        if (! (auth()->user()?->can('tax.settings.manage') ?? false)) {
+        if (! (Filament::auth()->user()?->can('tax.settings.manage') ?? false)) {
             Notification::make()
                 ->title(__('Unauthorized'))
                 ->danger()
@@ -154,20 +155,7 @@ final class ManageTaxSettings extends Page
         /** @var array<string, mixed> $state */
         $state = $this->getSchema('form')?->getState() ?? [];
 
-        $settings = app(TaxSettings::class);
-
-        $settings->enabled = (bool) Arr::get($state, 'enabled', true);
-        $settings->defaultTaxRate = (float) Arr::get($state, 'defaultTaxRate', 0.0);
-        $settings->defaultTaxName = (string) Arr::get($state, 'defaultTaxName', 'Tax');
-        $settings->pricesIncludeTax = (bool) Arr::get($state, 'pricesIncludeTax', false);
-        $settings->taxBasedOnShippingAddress = (bool) Arr::get($state, 'taxBasedOnShippingAddress', true);
-        $settings->digitalGoodsTaxable = (bool) Arr::get($state, 'digitalGoodsTaxable', true);
-        $settings->shippingTaxable = (bool) Arr::get($state, 'shippingTaxable', false);
-        $settings->taxIdLabel = (string) Arr::get($state, 'taxIdLabel', 'Tax ID');
-        $settings->validateTaxIds = (bool) Arr::get($state, 'validateTaxIds', false);
-        $settings->requireExemptionCertificate = (bool) Arr::get($state, 'requireExemptionCertificate', false);
-
-        $settings->save();
+        app(UpdateTaxSettingsAction::class)->execute(Filament::auth()->user(), $state);
 
         Notification::make()
             ->title(__('Saved'))
@@ -179,7 +167,7 @@ final class ManageTaxSettings extends Page
     {
         return [
             Action::make('save')
-                ->authorize(fn (): bool => auth()->user()?->can('tax.settings.manage') ?? false)
+                ->authorize(fn (): bool => Filament::auth()->user()?->can('tax.settings.manage') ?? false)
                 ->label(__('Save'))
                 ->icon('heroicon-o-check')
                 ->color('primary')

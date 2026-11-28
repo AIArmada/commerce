@@ -7,13 +7,14 @@ namespace AIArmada\Checkout\Integrations;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
+use InvalidArgumentException;
 
 final class TaxAdapter
 {
     /**
      * Calculate tax for the checkout session.
      *
-     * @return array{total: int, rate: float, breakdown: array<array<string, mixed>>, taxable_amount: int, exempt: bool}
+     * @return array{total: int, included_total: int, additional_total: int, lines: array<string, array{discount: int, additional_tax: int, included_tax: int}>, shipping_additional_tax: int, rate: float, breakdown: array<array<string, mixed>>, taxable_amount: int, exempt: bool}
      */
     public function calculateTax(CheckoutSession $session): array
     {
@@ -28,14 +29,23 @@ final class TaxAdapter
         $taxableItems = $this->buildTaxableItems($session);
 
         $totalTax = 0;
+        $includedTax = 0;
         $weightedRateAmount = 0;
         $weightedRateBase = 0;
         $taxableAmount = 0;
         $breakdown = [];
+        $lines = [];
+        $shippingAdditionalTax = 0;
         $isExempt = true;
 
         foreach ($taxableItems as $taxableItem) {
-            $lineTaxableAmount = (int) ($taxableItem['taxable_amount'] ?? 0);
+            $lineId = $taxableItem['line_id'];
+            $lines[$lineId] = [
+                'discount' => $taxableItem['discount'],
+                'additional_tax' => 0,
+                'included_tax' => 0,
+            ];
+            $lineTaxableAmount = $taxableItem['taxable_amount'];
 
             if ($lineTaxableAmount <= 0) {
                 continue;
@@ -48,11 +58,13 @@ final class TaxAdapter
             );
 
             $taxableAmount += $lineTaxableAmount;
+            $lines[$lineId][$result->includedInPrice ? 'included_tax' : 'additional_tax'] = $result->taxAmount;
             $totalTax += $result->taxAmount;
+            $includedTax += $result->includedInPrice ? $result->taxAmount : 0;
             $weightedRateAmount += $result->ratePercentage * $lineTaxableAmount;
             $weightedRateBase += $lineTaxableAmount;
             $isExempt = $isExempt && $result->isExempt();
-            $breakdown = array_merge($breakdown, $this->normalizeBreakdown($result, 'items'));
+            array_push($breakdown, ...$this->normalizeBreakdown($result, 'items', (string) $lineId));
         }
 
         if ($session->shipping_total > 0) {
@@ -61,7 +73,9 @@ final class TaxAdapter
                 context: $context,
             );
 
+            $shippingAdditionalTax = $shippingResult->includedInPrice ? 0 : $shippingResult->taxAmount;
             $totalTax += $shippingResult->taxAmount;
+            $includedTax += $shippingResult->includedInPrice ? $shippingResult->taxAmount : 0;
             $weightedRateAmount += $shippingResult->ratePercentage * $session->shipping_total;
             $weightedRateBase += $session->shipping_total;
             $isExempt = $isExempt && $shippingResult->isExempt();
@@ -70,7 +84,7 @@ final class TaxAdapter
                 $taxableAmount += $session->shipping_total;
             }
 
-            $breakdown = array_merge($breakdown, $this->normalizeBreakdown($shippingResult, 'shipping'));
+            array_push($breakdown, ...$this->normalizeBreakdown($shippingResult, 'shipping'));
         }
 
         $rate = $weightedRateBase > 0
@@ -79,6 +93,10 @@ final class TaxAdapter
 
         return [
             'total' => $totalTax,
+            'included_total' => $includedTax,
+            'additional_total' => $totalTax - $includedTax,
+            'lines' => $lines,
+            'shipping_additional_tax' => $shippingAdditionalTax,
             'rate' => $rate,
             'breakdown' => $breakdown,
             'taxable_amount' => $taxableAmount,
@@ -87,13 +105,17 @@ final class TaxAdapter
     }
 
     /**
-     * @return array{total: int, rate: float, breakdown: array<mixed>, taxable_amount: int, exempt: bool}
+     * @return array{total: int, included_total: int, additional_total: int, lines: array<string, array{discount: int, additional_tax: int, included_tax: int}>, shipping_additional_tax: int, rate: float, breakdown: array<mixed>, taxable_amount: int, exempt: bool}
      */
     private function getDefaultTaxResult(CheckoutSession $session): array
     {
         // Default: no tax when tax package is not installed
         return [
             'total' => 0,
+            'included_total' => 0,
+            'additional_total' => 0,
+            'lines' => [],
+            'shipping_additional_tax' => 0,
             'rate' => 0.0,
             'breakdown' => [],
             'taxable_amount' => $session->subtotal - $session->discount_total,
@@ -111,6 +133,7 @@ final class TaxAdapter
         $preferredAddress = $shippingAddress !== [] ? $shippingAddress : $billingAddress;
 
         return [
+            'currency' => $session->currency,
             'address' => $preferredAddress,
             'shipping_address' => $shippingAddress,
             'billing_address' => $billingAddress,
@@ -120,28 +143,56 @@ final class TaxAdapter
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array{line_id: string, discount: int, tax_class: mixed, taxable_amount: int}>
      */
     private function buildTaxableItems(CheckoutSession $session): array
     {
         $pricingItems = array_values($session->pricing_data['items'] ?? []);
         $cartItems = array_values($session->cart_snapshot['items'] ?? []);
 
-        $baseAmounts = [];
+        $pricingById = [];
+        foreach ($pricingItems as $pricingItem) {
+            $id = $this->lineIdentity($pricingItem['item_id'] ?? null);
 
-        foreach ($pricingItems as $index => $pricingItem) {
-            $cartItem = $cartItems[$index] ?? [];
+            if (isset($pricingById[$id])) {
+                throw new InvalidArgumentException('Duplicate checkout pricing line identity.');
+            }
+
+            $pricingById[$id] = $pricingItem;
+        }
+
+        $baseAmounts = [];
+        $matchedPricing = [];
+        $cartIds = [];
+
+        foreach ($cartItems as $index => $cartItem) {
+            $pricingItem = [];
+            $id = $this->lineIdentity($cartItem['id'] ?? null);
+
+            if (isset($cartIds[$id])) {
+                throw new InvalidArgumentException('Duplicate checkout cart line identity.');
+            }
+
+            $cartIds[$id] = true;
+
+            if ($pricingById !== []) {
+
+                if (! isset($pricingById[$id]) || isset($matchedPricing[$id])) {
+                    throw new InvalidArgumentException('Checkout pricing does not match the cart snapshot.');
+                }
+
+                $pricingItem = $pricingById[$id];
+                $matchedPricing[$id] = true;
+            }
+
             $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
             $lineTotal = (int) ($pricingItem['line_total'] ?? (($pricingItem['unit_price'] ?? $cartItem['price'] ?? 0) * $quantity));
 
             $baseAmounts[$index] = max(0, $lineTotal);
         }
 
-        if ($baseAmounts === []) {
-            foreach ($cartItems as $index => $cartItem) {
-                $quantity = max(1, (int) ($cartItem['quantity'] ?? 1));
-                $baseAmounts[$index] = max(0, (int) (($cartItem['price'] ?? 0) * $quantity));
-            }
+        if (count($matchedPricing) !== count($pricingById)) {
+            throw new InvalidArgumentException('Checkout pricing contains an unknown cart line.');
         }
 
         $allocatedDiscounts = $this->allocateAmount((int) $session->discount_total, $baseAmounts);
@@ -149,13 +200,15 @@ final class TaxAdapter
         $taxableItems = [];
 
         foreach ($baseAmounts as $index => $baseAmount) {
-            $pricingItem = $pricingItems[$index] ?? [];
-            $cartItem = $cartItems[$index] ?? [];
+            $cartItem = $cartItems[$index];
+            $pricingItem = $pricingById === [] ? [] : $pricingById[$this->lineIdentity($cartItem['id'] ?? null)];
             $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
-            $isTaxable = (bool) ($attributes['is_taxable'] ?? true);
+            $isTaxable = (bool) ($attributes['is_taxable'] ?? $cartItem['is_taxable'] ?? $pricingItem['is_taxable'] ?? true);
 
             $taxableItems[] = [
-                'tax_class' => $attributes['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
+                'line_id' => $this->lineIdentity($cartItem['id'] ?? null),
+                'discount' => $allocatedDiscounts[$index] ?? 0,
+                'tax_class' => $attributes['tax_class'] ?? $cartItem['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
                 'taxable_amount' => $isTaxable
                     ? max(0, $baseAmount - ($allocatedDiscounts[$index] ?? 0))
                     : 0,
@@ -165,6 +218,15 @@ final class TaxAdapter
         return $taxableItems;
     }
 
+    private function lineIdentity(mixed $value): string
+    {
+        if ((! is_string($value) && ! is_int($value)) || (string) $value === '') {
+            throw new InvalidArgumentException('Checkout tax calculation requires a stable cart line identity.');
+        }
+
+        return (string) $value;
+    }
+
     /**
      * @param  array<int, int>  $bases
      * @return array<int, int>
@@ -172,7 +234,7 @@ final class TaxAdapter
     private function allocateAmount(int $amount, array $bases): array
     {
         $allocations = array_fill(0, count($bases), 0);
-        $remainingAmount = max(0, $amount);
+        $remainingAmount = min(max(0, $amount), array_sum($bases));
         $positiveIndexes = array_values(array_filter(array_keys($bases), fn (int $index): bool => ($bases[$index] ?? 0) > 0));
 
         if ($positiveIndexes === [] || $remainingAmount === 0) {
@@ -202,10 +264,10 @@ final class TaxAdapter
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function normalizeBreakdown(TaxResultData $result, string $source): array
+    private function normalizeBreakdown(TaxResultData $result, string $source, ?string $lineId = null): array
     {
         return array_map(
-            fn (array $entry): array => array_merge($entry, ['source' => $source]),
+            fn (array $entry): array => array_merge($entry, ['source' => $source, 'line_id' => $lineId, 'included_in_price' => $result->includedInPrice]),
             $result->breakdown,
         );
     }

@@ -161,9 +161,7 @@ packages/tax/
     │       └── RejectExemptionAction.php
     ├── Contracts/
     │   ├── TaxCalculatorInterface.php
-    │   ├── TaxRateApplierInterface.php
     │   ├── TaxZoneResolverCacheInterface.php
-    │   └── TaxZoneResolverInterface.php
     ├── Data/
     │   └── TaxResultData.php        # Result DTO
     ├── Enums/
@@ -181,10 +179,12 @@ packages/tax/
     │   ├── TaxExemption.php
     │   ├── TaxRate.php
     │   └── TaxZone.php
+    ├── Queries/
+    │   └── TaxOwnerScope.php        # Owner query-scoping helper
     ├── Services/
     │   ├── TaxCalculator.php        # Main calculation engine
-    │   ├── TaxOwnerScope.php        # Owner query-scoping helper
     │   ├── RateApplier/
+    │   │   ├── TaxRateApplierInterface.php
     │   │   └── StandardRateApplier.php
     │   └── ZoneResolver/
     │       ├── AddressZoneResolver.php

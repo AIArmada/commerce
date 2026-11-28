@@ -1608,22 +1608,7 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
         });
 
-        Schema::create('tax_exemptions', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
-            $table->uuidMorphs('exemptable');
-            $table->foreignUuid('tax_zone_id')->nullable();
-            $table->string('reason');
-            $table->string('certificate_number')->nullable();
-            $table->string('document_path')->nullable();
-            $table->string('status')->default('pending');
-            $table->text('rejection_reason')->nullable();
-            $table->timestamp('verified_at')->nullable();
-            $table->uuid('verified_by')->nullable();
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamps();
-        });
+        (require __DIR__ . '/../../packages/tax/database/migrations/2001_03_01_000004_create_tax_exemptions_table.php')->up();
 
         // Test tables for addressing package tests
         Schema::create('test_models', function (Blueprint $table): void {

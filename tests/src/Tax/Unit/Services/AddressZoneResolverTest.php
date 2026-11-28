@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Services\ZoneResolver\TaxZoneResolverInterface;
 use Illuminate\Support\Facades\DB;
 
 describe('AddressZoneResolver', function (): void {
@@ -85,6 +85,58 @@ describe('AddressZoneResolver', function (): void {
         expect(DB::getQueryLog())->not->toBeEmpty();
 
         DB::disableQueryLog();
+    });
+
+    it('does not select a restricted zone when address fields are missing', function (): void {
+        $country = TaxZone::create([
+            'name' => 'Malaysia',
+            'code' => 'MY-COUNTRY-FALLBACK',
+            'countries' => ['MY'],
+            'priority' => 1,
+            'is_active' => true,
+        ]);
+
+        $state = TaxZone::create([
+            'name' => 'Selangor',
+            'code' => 'MY-STATE-RESTRICTED',
+            'countries' => ['MY'],
+            'states' => ['Selangor'],
+            'priority' => 10,
+            'is_active' => true,
+        ]);
+
+        $postcode = TaxZone::create([
+            'name' => 'Kajang',
+            'code' => 'MY-POSTCODE-RESTRICTED',
+            'countries' => ['MY'],
+            'states' => ['Selangor'],
+            'postcodes' => ['43000'],
+            'priority' => 20,
+            'is_active' => true,
+        ]);
+
+        $resolver = app(TaxZoneResolverInterface::class);
+
+        expect($state->matchesAddress('MY'))->toBeFalse()
+            ->and($state->matchesAddress('MY', ''))->toBeFalse()
+            ->and($state->matchesAddress('MY', '   '))->toBeFalse()
+            ->and($resolver->resolve(null, ['address' => ['country' => 'MY']])?->is($country))->toBeTrue()
+            ->and($resolver->resolve(null, ['address' => ['country' => 'MY', 'state' => 'Selangor']])?->is($state))->toBeTrue()
+            ->and($resolver->resolve(null, ['address' => ['country' => 'MY', 'state' => 'Selangor', 'postcode' => '43000']])?->is($postcode))->toBeTrue();
+    });
+
+    it('does not infer a country from an incomplete address', function (): void {
+        TaxZone::create([
+            'name' => 'Malaysia',
+            'code' => 'MY-INCOMPLETE',
+            'countries' => ['MY'],
+            'is_active' => true,
+        ]);
+
+        $resolver = app(TaxZoneResolverInterface::class);
+
+        expect($resolver->resolve(null, ['address' => ['postcode' => '43000']]))->toBeNull()
+            ->and($resolver->resolve(null, ['address' => ['country' => ['MY']]]))->toBeNull();
     });
 
     it('keeps cached resolutions isolated by owner', function (): void {

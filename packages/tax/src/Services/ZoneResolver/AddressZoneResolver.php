@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Services\ZoneResolver;
 
 use AIArmada\Tax\Contracts\TaxZoneResolverCacheInterface;
-use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Services\TaxOwnerScope;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 
 final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZoneResolverInterface
@@ -51,15 +50,25 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             return null;
         }
 
-        $address = $context[$this->getAddressPriority() . '_address'] ?? $context['address'] ?? null;
+        $address = $context[$this->getAddressPriority() . '_address'] ?? null;
 
-        if ($address === null) {
+        if (! is_array($address) || $address === []) {
+            $address = $context['address'] ?? null;
+        }
+
+        if (! is_array($address) || $address === []) {
             return null;
         }
 
-        $country = $address['country'] ?? 'MY';
+        $country = $address['country'] ?? null;
         $state = $address['state'] ?? null;
         $postcode = $address['postcode'] ?? null;
+
+        if (! is_string($country) || mb_trim($country) === ''
+            || ($state !== null && ! is_string($state))
+            || ($postcode !== null && ! is_string($postcode))) {
+            return null;
+        }
         $cacheKey = $this->buildCacheKey($country, $state, $postcode, $context);
 
         if (array_key_exists($cacheKey, $this->resolvedZones)) {
@@ -93,7 +102,7 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             'owner_enabled' => (bool) config('tax.features.owner.enabled', false),
             'owner_type' => $owner?->getMorphClass(),
             'owner_id' => $owner?->getKey(),
-            'include_global' => (bool) config('tax.features.owner.include_global', false),
+            'include_global' => TaxOwnerScope::includesGlobal(),
         ]));
     }
 
@@ -106,6 +115,7 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
         $query = TaxOwnerScope::apply(TaxZone::forAddress($country, $state, $postcode), $context);
 
         return $query
+            ->orderBy('id')
             ->cursor()
             ->first(fn (TaxZone $zone) => $zone->matchesAddress($country, $state, $postcode));
     }

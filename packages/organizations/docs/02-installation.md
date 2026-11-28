@@ -18,7 +18,7 @@ conventions.
 
 ## Application integration
 
-Bind `AIArmada\Organizations\Contracts\CurrentOrganizationResolver` to the
+Bind `AIArmada\Organizations\Resolvers\CurrentOrganizationResolver` to the
 application resolver, then apply
 `AIArmada\Organizations\Http\Middleware\CurrentOrganizationMiddleware` to
 routes that need organization context.

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Organizations;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Organizations\Contracts\CurrentOrganizationResolver;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
-use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
-use AIArmada\Organizations\Contracts\OrganizationPresentation;
-use AIArmada\Organizations\Contracts\OrganizationVisibilityTransitionAuthorizer;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationVisibilityTransitionAuthorizer;
+use AIArmada\Organizations\Extensions\OrganizationLifecycleHook;
+use AIArmada\Organizations\Extensions\OrganizationPresentation;
 use AIArmada\Organizations\Http\Middleware\CurrentOrganizationMiddleware;
+use AIArmada\Organizations\Resolvers\CurrentOrganizationResolver;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationAuthorization;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationPresentation;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationVisibilityTransitionAuthorizer;

@@ -6,7 +6,7 @@ title: Organizations Troubleshooting
 
 Apply `CurrentOrganizationMiddleware` with the `true` parameter to routes that
 must have a tenant. Configure a non-null
-`AIArmada\Organizations\Contracts\CurrentOrganizationResolver`; an
+`AIArmada\Organizations\Resolvers\CurrentOrganizationResolver`; an
 unconfigured `AIArmada\Organizations\Resolvers\NullCurrentOrganizationResolver`
 fails at resolution with a
 diagnostic `LogicException` when context is required. Once an application

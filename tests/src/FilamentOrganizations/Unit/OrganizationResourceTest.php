@@ -6,6 +6,10 @@ use AIArmada\Commerce\Tests\FilamentOrganizations\FilamentOrganizationsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Organizations\Actions\CreateOrganizationAction;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
+use AIArmada\Organizations\Models\Organization;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 
 uses(FilamentOrganizationsTestCase::class);
 
@@ -43,4 +47,22 @@ it('restricts resource queries to organizations the actor belongs to', function 
 
     expect(OrganizationResource::getEloquentQuery()->pluck('id')->all())
         ->toBe([$visible->getKey()]);
+});
+
+it('honors the configured domain authorization for record views', function (): void {
+    $actor = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($actor, ['name' => 'Restricted View']);
+    $this->actingAs($actor);
+
+    expect(OrganizationResource::canView($organization))->toBeTrue();
+
+    app()->instance(OrganizationAuthorization::class, new class implements OrganizationAuthorization
+    {
+        public function authorize(Model $actor, Organization $organization, string $ability): void
+        {
+            throw new AuthorizationException('View restricted by host policy.');
+        }
+    });
+
+    expect(OrganizationResource::canView($organization))->toBeFalse();
 });

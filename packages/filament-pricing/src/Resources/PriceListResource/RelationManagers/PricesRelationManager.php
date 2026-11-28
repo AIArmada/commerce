@@ -105,16 +105,16 @@ final class PricesRelationManager extends RelationManager
 
                         $owner = $this->resolveOwner();
 
-                        if (! in_array($type, CatalogReference::allowedTypes(), true)) {
+                        if ($type !== Product::class && $type !== Variant::class) {
                             return null;
                         }
 
-                        /** @var Builder<Model> $query */
-                        $query = OwnerQuery::applyToEloquentBuilder(
-                            $type::query(),
-                            $owner,
-                            (bool) config('products.features.owner.include_global', false),
-                        );
+                        $includeGlobal = (bool) config('products.features.owner.include_global', false);
+                        $query = $type === Product::class
+                            ? OwnerQuery::applyToEloquentBuilder(Product::query(), $owner, $includeGlobal)
+                            : Variant::query()->whereHas('product', static function (Builder $query) use ($owner, $includeGlobal): void {
+                                OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
+                            });
 
                         $record = $query
                             ->whereKey($value)

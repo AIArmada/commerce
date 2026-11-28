@@ -32,6 +32,8 @@ describe('TaxZonePostcodeMatching', function (): void {
         $this->assertTrue($zone->matchesAddress('MY', null, '49999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '39999'));
         $this->assertFalse($zone->matchesAddress('MY', null, '50000'));
+        $this->assertFalse($zone->matchesAddress('MY', null, '4@5000'));
+        $this->assertFalse($zone->matchesAddress('MY', null, '45-000'));
     });
 
     it('matches postcode range with non numeric postcodes', function (): void {
@@ -45,6 +47,9 @@ describe('TaxZonePostcodeMatching', function (): void {
 
         $this->assertTrue($zone->matchesAddress('GB', null, 'SW1A5'));
         $this->assertFalse($zone->matchesAddress('GB', null, 'SW2A5'));
+        $this->assertFalse($zone->matchesAddress('GB', null, 'NW1A5'));
+        $this->assertFalse($zone->matchesAddress('GB', null, '15'));
+        $this->assertFalse($zone->matchesAddress('GB', null, 'SW1B5'));
     });
 
     it('matches postcode range with zero start and end', function (): void {
@@ -106,7 +111,7 @@ describe('TaxZonePostcodeMatching', function (): void {
         $this->assertFalse($zone->matchesAddress('TEST', null, 'ABCD'));
     });
 
-    it('matches postcode wildcard empty match', function (): void {
+    it('requires a postcode even for a wildcard restriction', function (): void {
         $zone = TaxZone::create([
             'name' => 'Wildcard Empty',
             'code' => 'WILD-EMPTY',
@@ -115,7 +120,8 @@ describe('TaxZonePostcodeMatching', function (): void {
             'is_active' => true,
         ]);
 
-        $this->assertTrue($zone->matchesAddress('MY', null, ''));
+        $this->assertFalse($zone->matchesAddress('MY', null, ''));
+        $this->assertFalse($zone->matchesAddress('MY', null, '   '));
         $this->assertTrue($zone->matchesAddress('MY', null, '43000'));
         $this->assertTrue($zone->matchesAddress('MY', null, 'ANY'));
     });
@@ -148,7 +154,7 @@ describe('TaxZonePostcodeMatching', function (): void {
         $this->assertFalse($zone->matchesAddress('MY', null, '60001'));
     });
 
-    it('matches address postcode null', function (): void {
+    it('rejects a missing postcode for a restricted zone', function (): void {
         $zone = TaxZone::create([
             'name' => 'Postcode Null Test',
             'code' => 'NULL-POST',
@@ -157,7 +163,7 @@ describe('TaxZonePostcodeMatching', function (): void {
             'is_active' => true,
         ]);
 
-        $this->assertTrue($zone->matchesAddress('MY', null, null));
+        $this->assertFalse($zone->matchesAddress('MY', null, null));
     });
 
     it('matches address empty postcodes with postcode', function (): void {

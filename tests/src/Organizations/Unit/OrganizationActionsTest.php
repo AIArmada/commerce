@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Organizations\OrganizationsTestCase;
 use AIArmada\Membership\Actions\AddMemberAction;
+use AIArmada\Membership\Actions\ChangeMemberRoleAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Organizations\Actions\ArchiveOrganizationAction;
@@ -129,4 +130,24 @@ it('allows an explicit global route override', function (): void {
     );
 
     expect($result)->toBe('ok');
+});
+
+it('protects a transferred owner from generic membership demotion and removal', function (): void {
+    $creator = User::factory()->create();
+    $target = User::factory()->create();
+    $organization = CreateOrganizationAction::make()->handle($creator, ['name' => 'Protected Owner']);
+    AddMemberAction::make()->handle($organization, $target, MemberRole::Admin);
+    $stale = $organization->fresh();
+
+    TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $target);
+
+    expect(fn () => AddMemberAction::make()->handle($stale, $target, MemberRole::Admin))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => ChangeMemberRoleAction::make()->handle($stale, $target, MemberRole::Admin))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => RemoveMemberAction::make()->handle($stale, $target))
+        ->toThrow(AuthorizationException::class);
+
+    expect($organization->ownerMember()->count())->toBe(1)
+        ->and($organization->ownerMember()->first()?->is($target))->toBeTrue();
 });

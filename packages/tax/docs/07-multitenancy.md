@@ -154,3 +154,5 @@ it('scopes tax zones to owner', function () {
     expect(TaxZone::query()->count())->toBe(1);
 });
 ```
+
+Owner context is required for both item and shipping tax calculations when owner scoping is enabled, even when the applicable tax is disabled. Use an explicitly global context for intentional global calculations.

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Services\RateApplier;
 
-use AIArmada\Tax\Contracts\TaxRateApplierInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 final class StandardRateApplier implements TaxRateApplierInterface
@@ -20,39 +19,40 @@ final class StandardRateApplier implements TaxRateApplierInterface
     {
         $breakdown = [];
         $totalTax = 0;
+        $unroundedTax = 0.0;
 
         $nonCompoundRates = $rates->where('is_compound', false);
         $compoundRates = $rates->where('is_compound', true);
 
-        foreach ($nonCompoundRates as $rate) {
-            $taxAmount = $pricesIncludeTax
-                ? $rate->extractTax($amountInCents)
-                : $rate->calculateTax($amountInCents);
+        $netAmount = (float) $amountInCents;
 
-            if ($this->roundPerRate) {
-                $taxAmount = (int) round($taxAmount);
+        if ($pricesIncludeTax) {
+            $multiplier = 1 + $nonCompoundRates->sum('rate') / 10000;
+
+            foreach ($compoundRates as $rate) {
+                $multiplier *= 1 + $rate->getRateDecimal();
             }
 
-            $totalTax += $taxAmount;
-            $breakdown[] = [
-                'name' => $rate->name,
-                'rate' => $rate->rate,
-                'amount' => $taxAmount,
-                'is_compound' => false,
-            ];
+            $netAmount /= $multiplier;
         }
 
-        /**
-         * Compound rates build on the original taxable amount plus the tax
-         * already accumulated from non-compound rates. Tax-inclusive prices
-         * retain the original amount as their extraction base.
-         */
-        foreach ($compoundRates as $rate) {
-            $compoundBase = $pricesIncludeTax ? $amountInCents : ($amountInCents + $totalTax);
-            $taxAmount = $rate->calculateTax($compoundBase);
+        foreach ($nonCompoundRates->concat($compoundRates) as $rate) {
+            $base = $rate->is_compound
+                ? $netAmount + ($this->roundPerRate && ! $pricesIncludeTax ? $totalTax : $unroundedTax)
+                : $netAmount;
 
-            if ($this->roundPerRate) {
-                $taxAmount = (int) round($taxAmount);
+            $rawTax = $base * $rate->getRateDecimal();
+            $unroundedTax += $rawTax;
+
+            $taxAmount = $this->roundPerRate
+                ? (int) round($rawTax)
+                : (int) round($unroundedTax) - $totalTax;
+
+            if ($pricesIncludeTax) {
+                $remaining = $amountInCents - $totalTax;
+                $taxAmount = $amountInCents >= 0
+                    ? min($taxAmount, $remaining)
+                    : max($taxAmount, $remaining);
             }
 
             $totalTax += $taxAmount;
@@ -60,7 +60,7 @@ final class StandardRateApplier implements TaxRateApplierInterface
                 'name' => $rate->name,
                 'rate' => $rate->rate,
                 'amount' => $taxAmount,
-                'is_compound' => true,
+                'is_compound' => $rate->is_compound,
             ];
         }
 

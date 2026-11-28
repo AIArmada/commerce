@@ -30,41 +30,26 @@ final class AddMemberAction
      */
     private static array $pivotIdColumnCache = [];
 
-    public function handle(Model $subject, Model $user, MemberRole $role): void
-    {
-        app(MembershipSubjectGuard::class)->validate($subject);
-
-        /** @phpstan-ignore method.notFound */
-        $existingMember = $subject->members()->whereKey($user->getKey())->first();
-
-        $this->persist($subject, $user, $role, $existingMember);
-    }
-
-    /**
-     * Persist a membership when the caller already resolved the member row.
-     * This keeps role-change workflows from issuing the same membership read twice.
-     * Role changes suppress the added hook because they dispatch a role-changed hook instead.
-     */
-    public function handleResolvedMember(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
-    {
-        app(MembershipSubjectGuard::class)->validate($subject);
-
-        $this->persist($subject, $user, $role, $existingMember, $notifyAdded);
-    }
-
     public static function flushPivotIdColumnCache(): void
     {
         self::$pivotIdColumnCache = [];
     }
 
-    private function persist(Model $subject, Model $user, MemberRole $role, ?Model $existingMember, bool $notifyAdded = true): void
+    public function handle(Model $subject, Model $user, MemberRole $role, bool $notifyAdded = true): void
     {
-        /** @phpstan-ignore property.notFound */
-        $existingRole = $existingMember?->pivot?->role;
+        app(MembershipSubjectGuard::class)->validate($subject);
         $membershipTable = $this->membershipTable($subject);
 
         try {
-            DB::transaction(function () use ($existingMember, $existingRole, $membershipTable, $role, $subject, $user): void {
+            DB::transaction(function () use ($membershipTable, $role, $subject, $user): void {
+                $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
+
+                /** @phpstan-ignore method.notFound */
+                $existingMember = $subject->members()->whereKey($user->getKey())->first();
+
+                /** @phpstan-ignore property.notFound */
+                $existingRole = $existingMember?->pivot?->role;
+
                 if ($subject instanceof MembershipMutationGuard) {
                     $subject->assertMemberCanBeAdded($user, $role, $existingMember);
                 }

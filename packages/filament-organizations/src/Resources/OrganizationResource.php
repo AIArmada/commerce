@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\Resources;
 
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource\Pages;
-use AIArmada\Organizations\Contracts\OrganizationAuthorization;
+use AIArmada\Organizations\Authorization\OrganizationAuthorization;
 use AIArmada\Organizations\Models\Organization;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
@@ -44,6 +44,11 @@ final class OrganizationResource extends Resource
         return Filament::auth()->user() instanceof Model;
     }
 
+    public static function canView(Model $record): bool
+    {
+        return static::canAuthorize($record, 'organization.view');
+    }
+
     public static function canEdit(Model $record): bool
     {
         return static::canAuthorize($record, 'organization.update');
@@ -58,13 +63,12 @@ final class OrganizationResource extends Resource
     {
         $user = Filament::auth()->user();
 
-        if (! $user instanceof Model) {
+        if (! $user instanceof Model || $user->getMorphClass() !== (new Organization)->members()->getRelated()->getMorphClass()) {
             return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
 
         return parent::getEloquentQuery()
-            ->whereHas('members', fn (Builder $query): Builder => $query->whereKey($user->getKey()))
-            ->withCount('members');
+            ->whereHas('members', fn (Builder $query): Builder => $query->whereKey($user->getKey()));
     }
 
     public static function form(Schema $schema): Schema

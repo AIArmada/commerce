@@ -10,12 +10,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Database\Factories\TaxRateFactory;
+use AIArmada\Tax\Queries\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -87,6 +89,25 @@ class TaxRate extends Model implements Auditable
     protected static function booted(): void
     {
         static::saving(function (self $rate): void {
+            if (! $rate->exists || $rate->isDirty('rate')) {
+                $basisPoints = filter_var($rate->getAttributes()['rate'] ?? null, FILTER_VALIDATE_INT);
+
+                if ($basisPoints === false || $basisPoints < 0 || $basisPoints > 10000) {
+                    throw new InvalidArgumentException('Tax rate must be between 0 and 10000 basis points.');
+                }
+            }
+
+            if ($rate->isDirty('zone_id') || ! $rate->exists) {
+                $zone = TaxOwnerScope::apply(TaxZone::query(), [])
+                    ->whereKey($rate->zone_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($zone === null) {
+                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
+                }
+            }
+
             if (! config('tax.features.owner.enabled', false)) {
                 return;
             }
@@ -110,20 +131,6 @@ class TaxRate extends Model implements Auditable
 
                 if (! $rate->belongsToOwner($owner)) {
                     throw new AuthorizationException('Cannot write tax rates outside the current owner scope.');
-                }
-            }
-
-            if ($rate->isDirty('zone_id') || ! $rate->exists) {
-                $zoneExists = TaxZone::query()
-                    ->forOwner(
-                        $owner,
-                        includeGlobal: (bool) config('tax.features.owner.include_global', false),
-                    )
-                    ->whereKey($rate->zone_id)
-                    ->exists();
-
-                if (! $zoneExists) {
-                    throw new AuthorizationException('Tax zone is not accessible in the current owner scope.');
                 }
             }
         });
