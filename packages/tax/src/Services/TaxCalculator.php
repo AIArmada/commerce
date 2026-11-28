@@ -65,7 +65,7 @@ class TaxCalculator implements TaxCalculatorInterface
         $rates = $this->getRates($taxClass, $zone, (bool) ($context['is_shipping'] ?? false), $context);
 
         if ($rates->isEmpty()) {
-            return $this->createZeroResult($zone->id, $context);
+            return $this->createZeroResult($zone->id, $context, $zone);
         }
 
         $pricesIncludeTax = $this->getPricesIncludeTax();
@@ -73,7 +73,7 @@ class TaxCalculator implements TaxCalculatorInterface
         $primaryRate = $result['primary_rate'];
 
         if ($primaryRate === null) {
-            return $this->createZeroResult($zone->id, $context);
+            return $this->createZeroResult($zone->id, $context, $zone);
         }
 
         $taxResult = new TaxResultData(
@@ -141,8 +141,13 @@ class TaxCalculator implements TaxCalculatorInterface
         $exemptable = $context['exemptable'] ?? $context['customer'] ?? null;
 
         if ($exemptable instanceof Model) {
-            $exemptableId ??= $exemptable->getKey();
-            $exemptableType ??= $exemptable->getMorphClass();
+            if (($exemptableId !== null && (string) $exemptableId !== (string) $exemptable->getKey())
+                || ($exemptableType !== null && $exemptableType !== $exemptable->getMorphClass())) {
+                throw new InvalidArgumentException('Tax exemption identity does not match the supplied model.');
+            }
+
+            $exemptableId = $exemptable->getKey();
+            $exemptableType = $exemptable->getMorphClass();
         }
 
         if ($exemptableId === null || $exemptableId === '') {
@@ -192,9 +197,9 @@ class TaxCalculator implements TaxCalculatorInterface
      *
      * @param  array<string, mixed>  $context
      */
-    protected function createZeroResult(?string $zoneId, array $context = []): TaxResultData
+    protected function createZeroResult(?string $zoneId, array $context = [], ?TaxZone $zone = null): TaxResultData
     {
-        $zone = $this->findZone($zoneId, $context);
+        $zone ??= $this->findZone($zoneId, $context);
 
         return new TaxResultData(
             taxAmount: 0,

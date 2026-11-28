@@ -153,10 +153,10 @@ final class TaxAdapter
             $pricingItem = $pricingItems[$index] ?? [];
             $cartItem = $cartItems[$index] ?? [];
             $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
-            $isTaxable = (bool) ($attributes['is_taxable'] ?? true);
+            $isTaxable = (bool) ($attributes['is_taxable'] ?? $cartItem['is_taxable'] ?? $pricingItem['is_taxable'] ?? true);
 
             $taxableItems[] = [
-                'tax_class' => $attributes['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
+                'tax_class' => $attributes['tax_class'] ?? $cartItem['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
                 'taxable_amount' => $isTaxable
                     ? max(0, $baseAmount - ($allocatedDiscounts[$index] ?? 0))
                     : 0,
@@ -173,7 +173,7 @@ final class TaxAdapter
     private function allocateAmount(int $amount, array $bases): array
     {
         $allocations = array_fill(0, count($bases), 0);
-        $remainingAmount = max(0, $amount);
+        $remainingAmount = min(max(0, $amount), array_sum($bases));
         $positiveIndexes = array_values(array_filter(array_keys($bases), fn (int $index): bool => ($bases[$index] ?? 0) > 0));
 
         if ($positiveIndexes === [] || $remainingAmount === 0) {

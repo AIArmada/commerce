@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
@@ -478,4 +479,16 @@ describe('TaxCalculator', function (): void {
         $this->assertEquals(600, $result->taxAmount);
         $this->assertNull($result->exemptionReason);
     });
+});
+
+it('rejects conflicting exemption identities rather than applying another entity exemption', function (): void {
+    $customer = User::factory()->create();
+    $other = User::factory()->create();
+    $calculator = app(TaxCalculator::class);
+
+    expect(fn () => $calculator->calculateTax(10000, context: [
+        'customer' => $customer,
+        'customer_id' => $other->getKey(),
+        'customer_type' => $customer->getMorphClass(),
+    ]))->toThrow(InvalidArgumentException::class, 'identity does not match');
 });

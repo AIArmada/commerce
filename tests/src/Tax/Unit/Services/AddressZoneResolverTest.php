@@ -125,6 +125,20 @@ describe('AddressZoneResolver', function (): void {
             ->and($resolver->resolve(null, ['address' => ['country' => 'MY', 'state' => 'Selangor', 'postcode' => '43000']])?->is($postcode))->toBeTrue();
     });
 
+    it('does not infer a country from an incomplete address', function (): void {
+        TaxZone::create([
+            'name' => 'Malaysia',
+            'code' => 'MY-INCOMPLETE',
+            'countries' => ['MY'],
+            'is_active' => true,
+        ]);
+
+        $resolver = app(TaxZoneResolverInterface::class);
+
+        expect($resolver->resolve(null, ['address' => ['postcode' => '43000']]))->toBeNull()
+            ->and($resolver->resolve(null, ['address' => ['country' => ['MY']]]))->toBeNull();
+    });
+
     it('keeps cached resolutions isolated by owner', function (): void {
         config()->set('tax.features.owner.enabled', true);
         config()->set('tax.features.owner.include_global', false);

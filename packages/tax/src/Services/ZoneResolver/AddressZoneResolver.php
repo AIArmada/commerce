@@ -60,9 +60,15 @@ final class AddressZoneResolver implements TaxZoneResolverCacheInterface, TaxZon
             return null;
         }
 
-        $country = $address['country'] ?? 'MY';
+        $country = $address['country'] ?? null;
         $state = $address['state'] ?? null;
         $postcode = $address['postcode'] ?? null;
+
+        if (! is_string($country) || mb_trim($country) === ''
+            || ($state !== null && ! is_string($state))
+            || ($postcode !== null && ! is_string($postcode))) {
+            return null;
+        }
         $cacheKey = $this->buildCacheKey($country, $state, $postcode, $context);
 
         if (array_key_exists($cacheKey, $this->resolvedZones)) {

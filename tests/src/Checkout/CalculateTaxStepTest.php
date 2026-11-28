@@ -20,7 +20,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
     $expectation->once()
         ->withArgs(function (int $amount, string $taxClass, ?string $zoneId, array $context): bool {
             expect($amount)->toBe(900)
-                ->and($taxClass)->toBe('standard')
+                ->and($taxClass)->toBe('reduced')
                 ->and($zoneId)->toBeNull()
                 ->and($context['currency'])->toBe('MYR')
                 ->and($context['shipping_address']['country'])->toBe('MY')
@@ -83,7 +83,7 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
                 [
                     'quantity' => 1,
                     'price' => 1000,
-                    'tax_class' => 'standard',
+                    'tax_class' => 'reduced',
                 ],
             ],
         ],
@@ -108,4 +108,23 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
         ->and($session->tax_total)->toBe(66)
         ->and($session->tax_data['taxable_amount'])->toBe(1100)
         ->and($session->tax_data['breakdown'])->toHaveCount(2);
+});
+
+it('does not calculate item tax for a non-taxable cart snapshot line', function (): void {
+    $calculator = mock(TaxCalculatorInterface::class);
+    $calculator->shouldNotReceive('calculateTax');
+    $calculator->shouldNotReceive('calculateShippingTax');
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'non-taxable-snapshot-cart',
+        'subtotal' => 1000,
+        'cart_snapshot' => [
+            'items' => [['quantity' => 1, 'price' => 1000, 'is_taxable' => false]],
+        ],
+    ]);
+
+    $result = (new TaxAdapter)->calculateTax($session);
+
+    expect($result['total'])->toBe(0)
+        ->and($result['taxable_amount'])->toBe(0);
 });
