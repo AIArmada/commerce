@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
@@ -71,24 +72,23 @@ it('counts each order only once when payment events are redelivered', function (
     expect($promotion->fresh()->usage_count)->toBe(1);
 });
 
-test('stamp persistence failure aborts instead of being swallowed', function (): void {
+test('stamp persistence failure rolls back the promotion usage increment', function (): void {
     $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
+    $event = new OrderFulfillmentRequired(order: $order, transactionId: 'txn_1', gateway: 'chip');
 
-    $order = new class extends Order
-    {
-        public function saveQuietly(array $options = []): bool
-        {
-            throw new RuntimeException('disk on fire');
-        }
-    };
-    $order->forceFill([
-        'id' => (string) Str::uuid(),
-        'metadata' => [],
-    ]);
-    $order->exists = true;
+    $writer = Mockery::mock(OrderMetadataWriter::class);
+    $writer->shouldReceive('merge')->once()
+        ->with((string) $order->getKey(), ['promotions_usage_counted' => [(string) $promotion->getKey()]])
+        ->andThrow(new RuntimeException('stamp failed'));
+    app()->instance(OrderMetadataWriter::class, $writer);
 
-    $method = new ReflectionMethod(MarkPromotionAsUsedOnFulfillment::class, 'persistCountedPromotionIds');
+    expect(fn () => (new MarkPromotionAsUsedOnFulfillment)->handle($event))
+        ->toThrow(RuntimeException::class, 'stamp failed');
 
-    expect(fn (): mixed => $method->invoke(new MarkPromotionAsUsedOnFulfillment, $order, $owner, ['promo-1']))
-        ->toThrow(RuntimeException::class, 'disk on fire');
+    OwnerContext::withOwner($owner, function () use ($promotion, $order): void {
+        expect($promotion->refresh()->usage_count)->toBe(0)
+            ->and($order->refresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+    });
 });

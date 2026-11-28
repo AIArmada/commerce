@@ -225,3 +225,27 @@ test('automatic email templates prefer the document owner and only fall back to 
         expect($service->findTemplate($doc, 'send'))->toBeNull();
     });
 });
+
+test('subject lookup does not reuse globally visible documents for tenant issuance', function (): void {
+    config()->set('docs.owner.include_global', true);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $attributes = [
+        'doc_type' => DocType::Invoice->value,
+        'docable_type' => $owner->getMorphClass(),
+        'docable_id' => (string) $owner->getKey(),
+    ];
+    $global = OwnerContext::withOwner(null, fn (): Doc => Doc::factory()->create($attributes));
+    $service = app(DocServiceInterface::class);
+
+    OwnerContext::withOwner($owner, function () use ($attributes, $service): void {
+        expect($service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type']))->toBeNull();
+
+        $doc = Doc::factory()->create($attributes);
+
+        expect($service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type']))->toBe((string) $doc->getKey());
+    });
+
+    expect(OwnerContext::withOwner($other, fn (): ?string => $service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type'])))->toBeNull()
+        ->and(OwnerContext::withOwner(null, fn (): ?string => $service->findForSubject($attributes['docable_type'], $attributes['docable_id'], $attributes['doc_type'])))->toBe((string) $global->getKey());
+});

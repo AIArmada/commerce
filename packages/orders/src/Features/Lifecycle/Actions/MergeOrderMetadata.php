@@ -7,6 +7,7 @@ namespace AIArmada\Orders\Features\Lifecycle\Actions;
 use AIArmada\Orders\Support\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Models\Order;
+use RuntimeException;
 
 final readonly class MergeOrderMetadata implements OrderMetadataWriter
 {
@@ -20,7 +21,9 @@ final readonly class MergeOrderMetadata implements OrderMetadataWriter
             $this->assertOwnerBoundaryForMutation($order, 'merge order metadata');
 
             $current = is_array($order->metadata) ? $order->metadata : [];
-            $order->update(['metadata' => array_replace($current, $patch)]);
+            if (! $order->update(['metadata' => array_replace($current, $patch)])) {
+                throw new RuntimeException('Order metadata update was rejected.');
+            }
         }, attempts: 3);
     }
 }

@@ -8,12 +8,11 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 use Throwable;
 
 final class MarkPromotionAsUsedOnFulfillment
@@ -80,7 +79,7 @@ final class MarkPromotionAsUsedOnFulfillment
         // retryable without double-counting, and overlapping deliveries
         // serialize on the order row. The order lookup is unscoped by a
         // known id because this listener must work without ambient scope.
-        DB::transaction(function () use ($order, $allocations, $owner): void {
+        $order->getConnection()->transaction(function () use ($order, $allocations, $owner, $sessionId): void {
             $lockedOrder = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($order->getKey())
@@ -93,7 +92,16 @@ final class MarkPromotionAsUsedOnFulfillment
                 return;
             }
 
+            if ($lockedOrder->owner_type !== $order->owner_type
+                || (string) $lockedOrder->owner_id !== (string) $order->owner_id
+                || $this->resolveSessionId($lockedOrder) !== $sessionId) {
+                $this->skip('locked order no longer matches the fulfillment context', ['order_id' => $order->getKey()]);
+
+                return;
+            }
+
             $countedPromotionIds = $this->countedPromotionIds($lockedOrder);
+            $previousCountedIds = $countedPromotionIds;
 
             foreach ($allocations as $allocation) {
                 if (($allocation['provider_key'] ?? '') !== 'promotions') {
@@ -145,7 +153,12 @@ final class MarkPromotionAsUsedOnFulfillment
                 $countedPromotionIds[] = (string) $promotionId;
             }
 
-            $this->persistCountedPromotionIds($lockedOrder, $owner, $countedPromotionIds);
+            if ($previousCountedIds !== $countedPromotionIds) {
+                OwnerContext::withOwner($owner, static fn () => app(OrderMetadataWriter::class)->merge(
+                    (string) $lockedOrder->getKey(),
+                    ['promotions_usage_counted' => $countedPromotionIds],
+                ));
+            }
         });
     }
 
@@ -172,39 +185,6 @@ final class MarkPromotionAsUsedOnFulfillment
             array_map(static fn (mixed $id): string => (string) $id, $counted),
             static fn (string $id): bool => $id !== '',
         ));
-    }
-
-    /**
-     * @param  list<string>  $countedPromotionIds
-     */
-    private function persistCountedPromotionIds(mixed $order, mixed $owner, array $countedPromotionIds): void
-    {
-        if ($countedPromotionIds === []) {
-            return;
-        }
-
-        if (! is_object($order) || ! method_exists($order, 'getAttribute') || ! $order->exists) {
-            return;
-        }
-
-        $metadata = $order->getAttribute('metadata');
-
-        if (! is_array($metadata)) {
-            $metadata = [];
-        }
-
-        $metadata['promotions_usage_counted'] = $countedPromotionIds;
-
-        // Stamp failures must abort the transaction: the usage increments
-        // commit together with the stamp, or a relay retry would count
-        // them again.
-        OwnerContext::withOwner($owner, static function () use ($order, $metadata): void {
-            $saved = $order->forceFill(['metadata' => $metadata])->saveQuietly();
-
-            if ($saved === false) {
-                throw new RuntimeException(sprintf('Promotion usage stamp could not be persisted for order [%s].', (string) $order->getKey()));
-            }
-        });
     }
 
     private function resolveSessionId(mixed $order): ?string

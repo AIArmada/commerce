@@ -100,7 +100,7 @@ is written; the core action no longer assumes a Filament source.
 ## Order snapshot example
 
 ```php
-namespace AIArmada\Orders\Actions;
+namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;

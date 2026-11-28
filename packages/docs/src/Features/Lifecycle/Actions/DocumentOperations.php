@@ -22,7 +22,7 @@ final readonly class DocumentOperations implements DocServiceInterface
     public function findForSubject(string $subjectType, string $subjectId, string $docType): ?string
     {
         $id = Doc::query()
-            ->forOwner()
+            ->forOwner(includeGlobal: false)
             ->where('docable_type', $subjectType)
             ->where('docable_id', $subjectId)
             ->where('doc_type', $docType)
