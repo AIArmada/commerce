@@ -43,30 +43,23 @@ class TaxCalculator implements TaxCalculatorInterface
             return $this->createZeroResult($zoneId, $context);
         }
 
-        $exemption = $this->checkExemption($context);
-        if ($exemption !== null) {
-            TaxExemptionApplied::dispatch($exemption, $amountInCents, $zoneId, $context);
+        $zone = $this->zoneResolver->resolve($zoneId, $context);
+        $context['zone_id'] = $zone?->id;
 
-            return $this->createExemptResult($exemption, $zoneId, $context);
+        if ($zone !== null) {
+            TaxZoneResolved::dispatch($zone, $zoneId, $context);
         }
 
-        $zone = $this->zoneResolver->resolve($zoneId, $context);
+        $exemption = $this->checkExemption($context);
+
+        if ($exemption !== null) {
+            TaxExemptionApplied::dispatch($exemption, $amountInCents, $zone?->id, $context);
+
+            return $this->createExemptResult($exemption, $zone, $context);
+        }
 
         if ($zone === null) {
-            return $this->createZeroResult($zoneId, $context);
-        }
-
-        TaxZoneResolved::dispatch($zone, $zoneId, $context);
-
-        if ($zoneId === null) {
-            $context['zone_id'] = $zone->id;
-            $exemption = $this->checkExemption($context);
-
-            if ($exemption !== null) {
-                TaxExemptionApplied::dispatch($exemption, $amountInCents, $zone->id, $context);
-
-                return $this->createExemptResult($exemption, $zone->id, $context);
-            }
+            return $this->createZeroResult(null, $context);
         }
 
         $rates = $this->getRates($taxClass, $zone, (bool) ($context['is_shipping'] ?? false), $context);
@@ -178,10 +171,8 @@ class TaxCalculator implements TaxCalculatorInterface
      *
      * @param  array<string, mixed>  $context
      */
-    protected function createExemptResult(TaxExemption $exemption, ?string $zoneId, array $context): TaxResultData
+    protected function createExemptResult(TaxExemption $exemption, ?TaxZone $zone, array $context): TaxResultData
     {
-        $zone = $this->findZone($zoneId, $context);
-
         return new TaxResultData(
             taxAmount: 0,
             rateId: 'exempt',

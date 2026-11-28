@@ -257,6 +257,64 @@ describe('TaxCalculator', function (): void {
         $this->assertEquals(800, $result2->taxAmount);
     });
 
+    it('uses the active fallback zone for exemption eligibility', function (): void {
+        $inactive = TaxZone::create([
+            'name' => 'Inactive zone',
+            'code' => 'INACTIVE-ZONE',
+            'is_active' => false,
+        ]);
+
+        $fallback = TaxZone::create([
+            'name' => 'Active fallback',
+            'code' => 'ACTIVE-FALLBACK',
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+
+        foreach ([$inactive, $fallback] as $zone) {
+            TaxRate::create([
+                'zone_id' => $zone->id,
+                'name' => 'Standard Rate',
+                'rate' => 600,
+                'tax_class' => 'standard',
+                'is_active' => true,
+            ]);
+        }
+
+        $context = [
+            'customer_id' => 'fallback-customer',
+            'customer_type' => 'App\\Models\\Customer',
+        ];
+
+        TaxExemption::create([
+            'exemptable_id' => $context['customer_id'],
+            'exemptable_type' => $context['customer_type'],
+            'tax_zone_id' => $inactive->id,
+            'reason' => 'Inactive zone only',
+            'status' => 'approved',
+        ]);
+
+        $result = $this->calculator->calculateTax(10000, 'standard', $inactive->id, $context);
+
+        expect($result->zoneId)->toBe($fallback->id)
+            ->and($result->taxAmount)->toBe(600)
+            ->and($result->isExempt())->toBeFalse();
+
+        TaxExemption::create([
+            'exemptable_id' => $context['customer_id'],
+            'exemptable_type' => $context['customer_type'],
+            'tax_zone_id' => $fallback->id,
+            'reason' => 'Active fallback exemption',
+            'status' => 'approved',
+        ]);
+
+        $result = $this->calculator->calculateTax(10000, 'standard', $inactive->id, $context);
+
+        expect($result->zoneId)->toBe($fallback->id)
+            ->and($result->taxAmount)->toBe(0)
+            ->and($result->exemptionReason)->toBe('Active fallback exemption');
+    });
+
     it('calculate shipping tax enabled', function (): void {
         $this->app->bind(TaxSettings::class, fn () => throw new Exception('Use static tax configuration.'));
 

@@ -17,6 +17,7 @@ final class ZoneIdResolver implements TaxZoneResolverInterface
 
         return TaxOwnerScope::apply(TaxZone::query(), $context)
             ->whereKey($zoneId)
+            ->active()
             ->first();
     }
 }
