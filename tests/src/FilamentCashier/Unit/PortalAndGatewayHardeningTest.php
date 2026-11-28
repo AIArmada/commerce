@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Actions\ChangeCustomerSubscription;
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Cashier\Queries\CustomerSubscriptionsQuery;
+use AIArmada\Cashier\Queries\FindCustomerSubscription;
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Chip\Services\ChipCollectService;
@@ -15,6 +18,7 @@ use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables\InvoicesTable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Facades\Auth;
 
 beforeEach(function (): void {
@@ -187,4 +191,18 @@ it('forces a fresh connection probe and evicts previously cached health', functi
         ->and($method->invoke($page, 'chip')['status'])->toBe('healthy')
         ->and($method->invoke($page, 'chip', true)['status'])->toBe('error')
         ->and($method->invoke($page, 'chip')['status'])->toBe('error');
+});
+
+it('rejects subscription mutations for non-billable authenticated models before gateway lookup', function (): void {
+    $user = new AuthenticatableUser;
+    $user->forceFill(['id' => 123]);
+    $user->exists = true;
+
+    app()->bind(GatewayDetector::class, static function (): never {
+        throw new RuntimeException('Gateway must not be resolved for a non-billable user.');
+    });
+
+    expect(app(FindCustomerSubscription::class)->handle($user, 'stripe', '456'))->toBeNull()
+        ->and(fn () => app(ChangeCustomerSubscription::class)->cancel($user, 'stripe', '456'))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(ChangeCustomerSubscription::class)->resume($user, 'stripe', '456'))->toThrow(AuthorizationException::class);
 });

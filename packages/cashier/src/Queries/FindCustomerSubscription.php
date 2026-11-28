@@ -17,13 +17,11 @@ final class FindCustomerSubscription
 {
     public function handle(Model $user, string $gateway, string $id): ?UnifiedSubscription
     {
-        if (! $user->exists || $user->getKey() === null || mb_trim($id) === '' || ! app(GatewayDetector::class)->isAvailable($gateway)) {
+        if (! $user instanceof BillableContract || ! $user->exists || $user->getKey() === null || mb_trim($id) === '' || ! app(GatewayDetector::class)->isAvailable($gateway)) {
             return null;
         }
 
-        if ($user instanceof BillableContract) {
-            ActionGuard::assertBillableInScope($user);
-        }
+        ActionGuard::assertBillableInScope($user);
 
         if ($gateway === 'stripe' && class_exists(Subscription::class)) {
             $model = new Subscription;
