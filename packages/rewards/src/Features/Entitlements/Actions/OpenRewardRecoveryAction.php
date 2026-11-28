@@ -6,9 +6,9 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
@@ -39,7 +39,7 @@ final readonly class OpenRewardRecoveryAction
         RewardAward | string $award,
         RewardRecoveryKind | string $kind,
         ?string $payoutRequest,
-        RewardBenefitGrant | string | null $grant,
+        ?string $grant,
         ?int $amountMinor,
         ?string $currency,
         ?int $points,
@@ -70,7 +70,7 @@ final readonly class OpenRewardRecoveryAction
         $hasPoints = $points !== null || $unit !== null;
 
         $payoutIdEarly = $payoutRequest;
-        $grantIdEarly = $grant instanceof RewardBenefitGrant ? (string) $grant->getKey() : $grant;
+        $grantIdEarly = $grant;
         $benefitUnit = ! $hasCash && ! $hasPoints && $grantIdEarly !== null && $kindEnum === RewardRecoveryKind::Dispute;
 
         if ($hasCash && $hasPoints) {
@@ -148,11 +148,7 @@ final readonly class OpenRewardRecoveryAction
             }
 
             if ($grantId !== null) {
-                $grantRow = RewardBenefitGrant::query()->whereKey($grantId)->lockForUpdate()->first();
-
-                if (! $grantRow instanceof RewardBenefitGrant || (string) $grantRow->award_id !== $awardId) {
-                    throw new InvalidArgumentException('Recovery grant source must belong to the award.');
-                }
+                app(RewardBenefitRecoveryApi::class)->assertGrantBelongsToAward($grantId, $awardId);
             }
 
             return RewardRecovery::query()->create([

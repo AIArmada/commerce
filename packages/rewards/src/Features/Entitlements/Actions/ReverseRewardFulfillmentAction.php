@@ -6,12 +6,11 @@ namespace AIArmada\Rewards\Features\Entitlements\Actions;
 
 use AIArmada\Rewards\Data\RewardComponent;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
-use AIArmada\Rewards\Enums\RewardBenefitGrantStatus;
 use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
+use AIArmada\Rewards\Features\Benefits\Api\RewardBenefitRecoveryApi;
 use AIArmada\Rewards\Features\Finance\Api\RewardPayoutQueryApi;
 use AIArmada\Rewards\Models\RewardAward;
-use AIArmada\Rewards\Models\RewardBenefitGrant;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
@@ -183,36 +182,15 @@ final readonly class ReverseRewardFulfillmentAction
         string $reason,
         CarbonImmutable $decided,
     ): array {
-        $grants = RewardBenefitGrant::query()
-            ->where('award_id', $award->getKey())
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
+        $grants = app(RewardBenefitRecoveryApi::class)->consumedGrantsForReversal((string) $award->getKey());
         $recoveryIds = [];
 
         foreach ($grants as $grant) {
-            if (in_array($grant->status, [
-                RewardBenefitGrantStatus::Reserved,
-                RewardBenefitGrantStatus::Issued,
-            ], true)) {
-                throw new InvalidArgumentException(
-                    'Benefit reversal refuses while grant [' . (string) $grant->grant_key . '] is ['
-                    . $grant->status->value . ']; cancel, revoke-unused, or confirm use first.'
-                );
-            }
-
-            if ($grant->status !== RewardBenefitGrantStatus::Consumed) {
-                continue;
-            }
-
-            $item = $grant->item()->firstOrFail();
-
             $recovery = OpenRewardRecoveryAction::run(
                 $award,
                 RewardRecoveryKind::Dispute,
                 null,
-                $grant,
+                $grant->id,
                 null,
                 null,
                 null,
@@ -221,7 +199,7 @@ final readonly class ReverseRewardFulfillmentAction
                 $actorId,
                 $actorRole,
                 $reason,
-                ['source' => 'consumed-benefit-reversal', 'benefit_key' => (string) $item->benefit_key],
+                ['source' => 'consumed-benefit-reversal', 'benefit_key' => $grant->benefitKey],
                 $decided,
             );
 
