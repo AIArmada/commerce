@@ -12,7 +12,8 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderFulfillment;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 use Filament\Facades\Filament;
@@ -78,28 +79,13 @@ beforeEach(function (): void {
 
     Filament::shouldReceive('auth')->andReturn($guard);
 
-    app()->instance(OrderService::class, new class
-    {
-        public function confirmPayment(Order $order, string $transactionId, string $gateway, int $amount): void
-        {
-            throw new RuntimeException('fail confirmPayment');
-        }
+    $payment = Mockery::mock(OrderPaymentConfirmation::class);
+    $payment->shouldReceive('settleOutstanding')->once()->andThrow(new RuntimeException('fail confirmPayment'));
+    app()->instance(OrderPaymentConfirmation::class, $payment);
 
-        public function ship(Order $order, string $carrier, string $trackingNumber): void
-        {
-            throw new RuntimeException('fail ship');
-        }
-
-        public function confirmDelivery(Order $order): void
-        {
-            throw new RuntimeException('fail confirmDelivery');
-        }
-
-        public function cancel(Order $order, string $reason, ?string $canceledBy = null): void
-        {
-            throw new RuntimeException('fail cancel');
-        }
-    });
+    $fulfillment = Mockery::mock(OrderFulfillment::class);
+    $fulfillment->shouldReceive('ship')->once()->andThrow(new RuntimeException('fail ship'));
+    app()->instance(OrderFulfillment::class, $fulfillment);
 });
 
 afterEach(function (): void {

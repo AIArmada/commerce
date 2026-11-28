@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\PackageShipmentVerifier;
 use AIArmada\Orders\Enums\OrderItemStatus;
 use AIArmada\Orders\Events\OrderShipped;
@@ -24,6 +25,8 @@ use Spatie\ModelStates\Transition;
  */
 final class ShipmentCreated extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
         private string $carrier,
@@ -35,9 +38,12 @@ final class ShipmentCreated extends Transition
 
     public function handle(): Order
     {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
         return DB::transaction(function (): Order {
             $this->order->newQuery()->lockForUpdate()->findOrFail($this->order->id);
             $this->order->refresh();
+            $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
 
             if ($this->order->items()->get()->contains(fn ($item): bool => PackageUnit::hasShippableComponents($item))) {
                 if (! app()->bound(PackageShipmentVerifier::class)) {

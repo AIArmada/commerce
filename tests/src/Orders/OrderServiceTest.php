@@ -543,3 +543,17 @@ describe('OrderService', function (): void {
         });
     });
 });
+
+it('rejects draft mutations when the persisted order is no longer editable', function (): void {
+    $service = app(OrderService::class);
+    $order = Order::factory()->create(['status' => PendingPayment::class]);
+    $stale = Order::query()->findOrFail($order->getKey());
+    $order->status->transitionTo(Processing::class);
+
+    expect(fn () => $service->addItem($stale, ['name' => 'Extra', 'unit_price' => 100]))
+        ->toThrow(LogicException::class);
+    expect(fn () => $service->addAddress($stale, [], 'shipping'))
+        ->toThrow(LogicException::class);
+    expect(fn () => $service->recalculateTotals($stale))
+        ->toThrow(LogicException::class);
+});

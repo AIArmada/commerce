@@ -10,7 +10,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\Contracts\OrderMetadataWriter;
+use AIArmada\Orders\Contracts\OrderPaymentConfirmation;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,8 @@ use Illuminate\Support\Facades\Log;
 final class HandleChipPaymentSuccess
 {
     public function __construct(
-        private readonly OrderService $orderService,
+        private readonly OrderPaymentConfirmation $payments,
+        private readonly OrderMetadataWriter $metadata,
     ) {}
 
     /**
@@ -57,8 +59,8 @@ final class HandleChipPaymentSuccess
             return;
         }
 
-        $this->orderService->confirmPayment(
-            order: $order,
+        $this->payments->confirm(
+            orderId: (string) $order->getKey(),
             transactionId: $event->getPurchaseId(),
             gateway: 'chip',
             amount: $event->getAmount(),
@@ -69,17 +71,21 @@ final class HandleChipPaymentSuccess
             ],
         );
 
-        $order->metadata = array_merge($order->metadata ?? [], [
+        $this->metadata->merge((string) $order->getKey(), [
             'chip_purchase_id' => $event->getPurchaseId(),
             'chip_payment_method' => $event->getPaymentMethod(),
             'chip_paid_at' => now()->toISOString(),
         ]);
-        $order->save();
+        $order->refresh();
 
         Log::info('Order updated to paid status', [
             'order_id' => $order->id,
             'order_number' => $order->order_number,
         ]);
+
+        if (! $order->isPaid()) {
+            return;
+        }
 
         $this->ensureShipmentCreated($order);
 

@@ -73,6 +73,7 @@ abstract class OrderStatus extends State
             ->default(self::resolveDefaultStateClass())
             // Initial → Payment
             ->allowTransition(Created::class, PendingPayment::class)
+            ->allowTransition(Created::class, Canceled::class)
             ->allowTransition(Created::class, Processing::class)
             // Payment outcomes
             ->allowTransition(PendingPayment::class, Processing::class)

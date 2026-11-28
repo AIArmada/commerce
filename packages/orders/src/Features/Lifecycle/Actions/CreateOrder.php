@@ -22,6 +22,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
 use RuntimeException;
 
 final readonly class CreateOrder
@@ -309,15 +310,15 @@ final readonly class CreateOrder
             }
 
             foreach ($items as $itemData) {
-                $this->addItem($order, $itemData);
+                $this->insertItem($order, $itemData);
             }
 
             if ($billingAddress !== null) {
-                $this->addAddress($order, $billingAddress, 'billing');
+                $this->attachAddress($order, $billingAddress, 'billing');
             }
 
             if ($shippingAddress !== null) {
-                $this->addAddress($order, $shippingAddress, 'shipping');
+                $this->attachAddress($order, $shippingAddress, 'shipping');
             }
 
             $order->status->transitionTo(PendingPayment::class);
@@ -417,9 +418,20 @@ final readonly class CreateOrder
      */
     public function addItem(Order $order, array $itemData): OrderItem
     {
-        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
         $this->validateItemData($itemData);
 
+        return $order->getConnection()->transaction(function () use ($order, $itemData): OrderItem {
+            $locked = $this->lockEditableOrder($order);
+            $item = $this->insertItem($locked, $itemData);
+            $order->unsetRelation('items');
+
+            return $item;
+        });
+    }
+
+    /** @param array<string, mixed> $itemData */
+    private function insertItem(Order $order, array $itemData): OrderItem
+    {
         return $order->items()->create([
             'purchasable_id' => $itemData['purchasable_id'] ?? null,
             'purchasable_type' => $itemData['purchasable_type'] ?? null,
@@ -440,8 +452,17 @@ final readonly class CreateOrder
      */
     public function addAddress(Order $order, array $addressData, string $type): void
     {
-        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+        $order->getConnection()->transaction(function () use ($order, $addressData, $type): void {
+            $locked = $this->lockEditableOrder($order);
+            $this->attachAddress($locked, $addressData, $type);
+            $order->unsetRelation('addresses');
+            $order->unsetRelation('addressAttachments');
+        });
+    }
 
+    /** @param array<string, mixed> $addressData */
+    private function attachAddress(Order $order, array $addressData, string $type): void
+    {
         if (! in_array($type, ['billing', 'shipping'], true)) {
             throw new InvalidArgumentException('Order address type must be billing or shipping.');
         }
@@ -525,6 +546,19 @@ final readonly class CreateOrder
                 reason: 'order_' . $type,
             );
         }
+    }
+
+    private function lockEditableOrder(Order $order): Order
+    {
+        $this->assertOwnerBoundaryForMutation($order, __METHOD__);
+        $locked = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
+        $this->assertOwnerBoundaryForMutation($locked, __METHOD__);
+
+        if (! $locked->canBeModified() || $locked->payments()->exists()) {
+            throw new LogicException('Only unpaid editable orders can change items or addresses.');
+        }
+
+        return $locked;
     }
 
     private function findExistingIntake(string $intakeSource, string $intakeId): ?Order

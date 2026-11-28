@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Features\Lifecycle\Actions;
 
+use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
@@ -18,16 +19,21 @@ use Spatie\ModelStates\Transition;
 
 final class FreeOrderConfirmed extends Transition
 {
+    use AssertsOrderOwnerBoundary;
+
     public function __construct(
         private Order $order,
     ) {}
 
     public function handle(): Order
     {
+        $this->assertOwnerBoundaryForMutation($this->order, __METHOD__);
+
         return DB::transaction(function (): Order {
             $order = $this->order->newQuery()
                 ->lockForUpdate()
                 ->findOrFail($this->order->getKey());
+            $this->assertOwnerBoundaryForMutation($order, __METHOD__);
 
             // Money guards first: "free" means nothing owed AND nothing
             // paid. A zero balance alone is not enough — a fully paid
